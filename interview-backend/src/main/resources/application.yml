@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: interview-backend
+  config:
+    import: optional:classpath:application-local.yml
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+jwt:
+  secret: change-this-secret-in-local-file-please-change-0123456789
+  expire-days: 7
+
+deepseek:
+  base-url: https://api.deepseek.com/chat/completions
+  model: deepseek-chat
+
+app:
+  sse-timeout-ms: 120000
+
+logging:
+  level:
+    root: info
+    com.interview: info

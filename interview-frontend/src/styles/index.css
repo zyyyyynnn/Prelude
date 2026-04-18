@@ -1,0 +1,72 @@
+:root {
+  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+  color: #1f2933;
+  background: #f4f1e8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f4f1e8;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.shell-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.shell-card {
+  display: grid;
+  width: min(100%, 560px);
+  gap: 16px;
+  border: 1px solid rgba(80, 72, 63, 0.24);
+  border-radius: 12px;
+  padding: clamp(28px, 6vw, 48px);
+  background: #fbfaf5;
+  box-shadow: 0 18px 54px rgba(31, 41, 51, 0.1);
+}
+
+.shell-kicker {
+  margin: 0;
+  color: #546dcf;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.shell-card h1 {
+  margin: 0;
+  font-size: clamp(36px, 8vw, 64px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.shell-card p {
+  margin: 0;
+  color: #5b5249;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.shell-card .el-button {
+  width: fit-content;
+}

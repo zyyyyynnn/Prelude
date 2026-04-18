@@ -1,0 +1,8 @@
+interview-backend/target/
+interview-backend/src/main/resources/application-local.yml
+interview-frontend/node_modules/
+interview-frontend/dist/
+interview-frontend/.env*
+interview-frontend/.env.local
+.playwright-cli/
+*.log
