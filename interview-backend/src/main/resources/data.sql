@@ -26,3 +26,33 @@ SELECT '算法工程师',
 WHERE NOT EXISTS (
     SELECT 1 FROM `position_template` WHERE `name` = '算法工程师'
 );
+
+INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
+SELECT 'deepseek',
+       'DeepSeek',
+       'https://api.deepseek.com/chat/completions',
+       '["deepseek-chat","deepseek-reasoner"]',
+       1
+WHERE NOT EXISTS (
+    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'deepseek'
+);
+
+INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
+SELECT 'openai',
+       'OpenAI',
+       'https://api.openai.com/v1/chat/completions',
+       '["gpt-4o","gpt-4o-mini"]',
+       1
+WHERE NOT EXISTS (
+    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai'
+);
+
+UPDATE `user`
+SET `llm_provider` = COALESCE(`llm_provider`, 'deepseek'),
+    `llm_model` = COALESCE(`llm_model`, 'deepseek-chat')
+WHERE `llm_provider` IS NULL OR `llm_model` IS NULL;
+
+UPDATE `interview_session`
+SET `llm_provider` = COALESCE(`llm_provider`, 'deepseek'),
+    `llm_model` = COALESCE(`llm_model`, 'deepseek-chat')
+WHERE `llm_provider` IS NULL OR `llm_model` IS NULL;

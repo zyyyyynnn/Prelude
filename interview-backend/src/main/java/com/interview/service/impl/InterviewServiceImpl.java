@@ -12,12 +12,13 @@ import com.interview.entity.InterviewMessage;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.PositionTemplate;
 import com.interview.entity.Resume;
+import com.interview.llm.LlmRouter;
+import com.interview.llm.LlmSelection;
 import com.interview.mapper.InterviewMessageMapper;
 import com.interview.mapper.InterviewSessionMapper;
 import com.interview.mapper.PositionTemplateMapper;
 import com.interview.mapper.ResumeMapper;
 import com.interview.service.InterviewService;
-import com.interview.util.LlmUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final PositionTemplateMapper positionTemplateMapper;
     private final InterviewSessionMapper interviewSessionMapper;
     private final InterviewMessageMapper interviewMessageMapper;
-    private final LlmUtil llmUtil;
+    private final LlmRouter llmRouter;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
 
@@ -68,6 +69,9 @@ public class InterviewServiceImpl implements InterviewService {
         session.setResumeId(resume.getId());
         session.setPositionId(position.getId());
         session.setTargetPosition(position.getName());
+        LlmSelection selection = llmRouter.resolveCurrentUserSelection();
+        session.setLlmProvider(selection.providerKey());
+        session.setLlmModel(selection.model());
         session.setStatus(STATUS_ONGOING);
         interviewSessionMapper.insert(session);
 
@@ -112,7 +116,7 @@ public class InterviewServiceImpl implements InterviewService {
                 insertMessage(session.getId(), ROLE_USER, request.getContent(), nextSeqNum(session.getId()));
 
                 List<Map<String, String>> messages = buildContextMessages(session.getId());
-                llmUtil.streamChat(messages, delta -> {
+                llmRouter.streamWithSnapshot(session.getLlmProvider(), session.getLlmModel(), messages, delta -> {
                     assistantReply.append(delta);
                     sendDelta(emitter, delta);
                 });
@@ -141,7 +145,14 @@ public class InterviewServiceImpl implements InterviewService {
             .orderByAsc(InterviewMessage::getSeqNum));
 
         String prompt = buildFinishPrompt(session, messages);
-        String report = llmUtil.chat("你是严谨的面试评估助手，请只输出 Markdown。", prompt);
+        String report = llmRouter.chatWithSnapshot(
+            session.getLlmProvider(),
+            session.getLlmModel(),
+            List.of(
+                Map.of("role", "system", "content", "你是严谨的面试评估助手，请只输出 Markdown。"),
+                Map.of("role", "user", "content", prompt)
+            )
+        );
 
         session.setStatus(STATUS_FINISHED);
         session.setSummaryReport(report);

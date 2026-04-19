@@ -9,9 +9,9 @@ import com.interview.dto.ResumeItemResponse;
 import com.interview.dto.ResumeParseResult;
 import com.interview.dto.ResumeUploadResponse;
 import com.interview.entity.Resume;
+import com.interview.llm.LlmRouter;
 import com.interview.mapper.ResumeMapper;
 import com.interview.service.ResumeService;
-import com.interview.util.LlmUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.List;
 
 @Service
@@ -31,7 +32,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     private final ResumeMapper resumeMapper;
     private final ObjectMapper objectMapper;
-    private final LlmUtil llmUtil;
+    private final LlmRouter llmRouter;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -98,7 +99,10 @@ public class ResumeServiceImpl implements ResumeService {
             JSON 格式必须为：{"skills":["技能1"],"projects":[{"name":"项目名","description":"项目描述"}]}
             """;
         String userPrompt = "请从以下中文简历文本中提取技能列表和项目经历：\n" + rawText;
-        String content = stripJsonFence(llmUtil.chat(systemPrompt, userPrompt));
+        String content = stripJsonFence(llmRouter.chatCurrentUser(List.of(
+            Map.of("role", "system", "content", systemPrompt),
+            Map.of("role", "user", "content", userPrompt)
+        )));
         try {
             return objectMapper.readValue(content, ResumeParseResult.class);
         } catch (JsonProcessingException exception) {

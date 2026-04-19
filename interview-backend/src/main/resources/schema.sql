@@ -3,10 +3,52 @@ CREATE TABLE IF NOT EXISTS `user` (
   `username` VARCHAR(64) NOT NULL COMMENT '用户名',
   `password` VARCHAR(255) NOT NULL COMMENT 'BCrypt加密密码',
   `email` VARCHAR(128) DEFAULT NULL COMMENT '邮箱',
+  `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT 'LLM Provider',
+  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-chat' COMMENT 'LLM 模型',
+  `llm_api_key_encrypted` VARCHAR(512) DEFAULT NULL COMMENT '加密后的用户 API Key',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `llm_provider` VARCHAR(32) NOT NULL DEFAULT ''deepseek'' COMMENT ''LLM Provider''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_provider'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `llm_model` VARCHAR(64) NOT NULL DEFAULT ''deepseek-chat'' COMMENT ''LLM 模型''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_model'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `llm_api_key_encrypted` VARCHAR(512) DEFAULT NULL COMMENT ''加密后的用户 API Key''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_api_key_encrypted'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS `resume` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -35,6 +77,8 @@ CREATE TABLE IF NOT EXISTS `interview_session` (
   `resume_id` BIGINT NOT NULL COMMENT '简历ID',
   `position_id` BIGINT NOT NULL COMMENT '岗位模板ID',
   `target_position` VARCHAR(100) NOT NULL COMMENT '目标岗位',
+  `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT '会话使用的 Provider 快照',
+  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-chat' COMMENT '会话使用的模型快照',
   `status` ENUM('ongoing','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
   `summary_report` TEXT COMMENT '评估报告',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -46,6 +90,32 @@ CREATE TABLE IF NOT EXISTS `interview_session` (
   CONSTRAINT `fk_session_resume` FOREIGN KEY (`resume_id`) REFERENCES `resume` (`id`),
   CONSTRAINT `fk_session_position` FOREIGN KEY (`position_id`) REFERENCES `position_template` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试会话表';
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `interview_session` ADD COLUMN `llm_provider` VARCHAR(32) NOT NULL DEFAULT ''deepseek'' COMMENT ''会话使用的 Provider 快照''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'llm_provider'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `interview_session` ADD COLUMN `llm_model` VARCHAR(64) NOT NULL DEFAULT ''deepseek-chat'' COMMENT ''会话使用的模型快照''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'llm_model'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS `interview_message` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -59,3 +129,15 @@ CREATE TABLE IF NOT EXISTS `interview_message` (
   KEY `idx_message_session_seq` (`session_id`, `seq_num`),
   CONSTRAINT `fk_message_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试消息表';
+
+CREATE TABLE IF NOT EXISTS `llm_provider_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `provider_key` VARCHAR(32) NOT NULL COMMENT 'Provider 标识',
+  `display_name` VARCHAR(64) NOT NULL COMMENT '展示名称',
+  `base_url` VARCHAR(255) NOT NULL COMMENT 'API 端点',
+  `available_models` TEXT NOT NULL COMMENT '可选模型 JSON 数组',
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_llm_provider_config_provider_key` (`provider_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LLM Provider 配置表';

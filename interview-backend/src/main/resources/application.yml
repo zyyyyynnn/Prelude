@@ -30,8 +30,16 @@ jwt:
 deepseek:
   base-url: https://api.deepseek.com/chat/completions
   model: deepseek-chat
+  api-key: ${DEEPSEEK_API_KEY:}
+
+openai:
+  base-url: https://api.openai.com/v1/chat/completions
+  model: gpt-4o-mini
+  api-key: ${OPENAI_API_KEY:}
 
 app:
+  crypto:
+    aes-secret: ${APP_CRYPTO_AES_SECRET:}
   sse-timeout-ms: 120000
 
 logging:
