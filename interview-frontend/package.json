@@ -15,7 +15,11 @@
     "vue-tsc": "^3.2.6"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "element-plus": "^2.13.7",
+    "pinia": "^3.0.3",
+    "pinia-plugin-persistedstate": "^4.5.0",
+    "vue-router": "^4.6.1",
     "vue": "^3.5.32"
   }
 }

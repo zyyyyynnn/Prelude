@@ -14,6 +14,8 @@ public class InterviewSession {
     private Long resumeId;
     private Long positionId;
     private String targetPosition;
+    private String llmProvider;
+    private String llmModel;
     private String status;
     private String summaryReport;
     private LocalDateTime createdAt;

@@ -2,30 +2,39 @@
 
 ## 项目简介
 
-本项目是《基于大语言模型的沉浸式模拟面试与简历诊断系统》的完整 MVP，实现了从用户登录、PDF 简历解析、岗位化面试创建、SSE 流式对话到 Markdown 评估报告生成的主链路。
+本项目是《基于大语言模型的沉浸式模拟面试与简历诊断系统》的毕业设计工程，实现了用户登录、PDF 简历解析、岗位化面试创建、SSE 流式对话、Markdown 评估报告生成，以及一期新增的多模型 Provider 配置与用户自定义 API Key 管理。
+
+当前一期重点：
+
+- 系统默认支持 DeepSeek 与 OpenAI 兼容协议 Provider。
+- 用户可在前端 LLM 设置页选择 Provider、模型并保存个人 API Key。
+- 用户 API Key 使用 AES-256-GCM 加密存储，接口只返回末 4 位脱敏值。
+- 面试会话创建时快照本场使用的 Provider 与模型，后续对话和报告生成使用会话快照。
+- 前端按 `DESIGN-SPEC.md` 恢复 Vue Router、Pinia、Axios、Element Plus 与统一设计 Token。
 
 ## 技术栈
 
-- 后端：Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.0、Apache PDFBox 3.0
-- 前端：Vue 3、TypeScript、Vite、Element Plus、Pinia、markdown-it
-- 外部模型：DeepSeek API，兼容 OpenAI Chat Completions 协议
+- 后端：Java 21、Spring Boot 3.2、MyBatis-Plus 3.5、MySQL 8.0、Apache PDFBox 3.0、OkHttp 4.12、jjwt 0.12、BCrypt、AES-256-GCM
+- 前端：Vue 3.5、TypeScript 6、Vite 8、Element Plus 2.13、Vue Router 4、Pinia、Axios
+- 外部模型：DeepSeek API、OpenAI 兼容 Chat Completions 协议
 - 流式方案：后端 `SseEmitter`，前端 `fetch + ReadableStream`
 
 ## 目录结构
 
 ```text
 E:\Graduation project
-├── interview-backend      # Spring Boot 后端
-├── interview-frontend     # Vue 前端
-├── thesis-assets          # 论文与测试过程材料
-└── thesis-handbook        # 毕设全流程手册
+├── DESIGN-SPEC.md        # 前端 UI 设计规范
+├── interview-backend     # Spring Boot 后端
+├── interview-frontend    # Vue 前端
+├── thesis-assets         # 论文与测试过程材料
+└── thesis-handbook       # 毕设全流程手册
 ```
 
 ## 本地启动
 
 ### 1. 数据库
 
-默认数据库名为 `interview_system`，本地账号按 `root/mysql123456` 配置。首次启动前执行：
+默认数据库名为 `interview_system`。首次启动前执行：
 
 ```powershell
 mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_system DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
@@ -37,7 +46,37 @@ mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_system DEFAULT CHARA
 E:\DevEnv\MySQL\bin\mysqld.exe --defaults-file=E:\DevEnv\MySQL\conf\my.ini --console
 ```
 
-### 2. 后端
+### 2. 后端配置
+
+后端敏感配置位于：
+
+```text
+interview-backend/src/main/resources/application-local.yml
+```
+
+该文件已被 `.gitignore` 忽略。至少需要配置数据库连接与 AES secret；如果要使用系统默认 DeepSeek Key，也在这里配置。
+
+示例结构：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: your_mysql_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+deepseek:
+  api-key: your_deepseek_key
+
+app:
+  crypto:
+    aes-secret: at-least-32-bytes-local-secret
+```
+
+`app.crypto.aes-secret` 必须至少 32 字节，用于加密用户自定义 API Key。真实 Key 和 secret 不应写入 README、前端代码或任何可提交文档。
+
+### 3. 启动后端
 
 ```powershell
 cd "E:\Graduation project\interview-backend"
@@ -46,60 +85,79 @@ mvn spring-boot:run
 
 后端默认端口为 `8080`。`application.yml` 会自动导入本地忽略配置 `application-local.yml`。
 
-### 3. 前端
+### 4. 启动前端
 
 ```powershell
 cd "E:\Graduation project\interview-frontend"
+npm install
 npm run dev
 ```
 
-前端默认端口为 `5173`，开发环境接口基址由 `.env.development` 配置。
-
-## 环境配置
-
-后端敏感配置位于：
-
-```text
-interview-backend/src/main/resources/application-local.yml
-```
-
-该文件已被根目录 `.gitignore` 忽略，只用于本地运行。DeepSeek API Key 不应写入前端代码、README 或任何可提交文档。
-
-前端环境变量位于：
-
-```text
-interview-frontend/.env.development
-interview-frontend/.env.production
-```
+前端默认端口为 `5173`。开发环境通过 Vite proxy 将 `/api` 转发到 `http://localhost:8080`。
 
 ## 核心接口
 
+### 认证与基础数据
+
 - `POST /api/auth/register`：用户注册
 - `POST /api/auth/login`：用户登录并返回 JWT
+- `GET /api/health`：健康检查
+- `GET /api/position/list`：查询岗位模板
+
+### LLM Provider 与用户配置
+
+- `GET /api/llm/providers`：查询启用的 Provider 列表，无需登录
+- `GET /api/user/llm-config`：查询当前用户 Provider、模型和脱敏 Key
+- `PUT /api/user/llm-config`：保存当前用户 Provider、模型和 API Key
+
+`PUT /api/user/llm-config` 请求体示例：
+
+```json
+{
+  "providerKey": "deepseek",
+  "model": "deepseek-chat",
+  "apiKey": ""
+}
+```
+
+约定：
+
+- `apiKey` 非空：加密后写入数据库。
+- `apiKey` 为空字符串：清空用户自定义 Key，回退系统默认 Key。
+- 响应只返回 `apiKeyMasked`，不会返回明文或密文。
+
+### 简历与面试
+
 - `POST /api/resume/upload`：PDF 简历上传、文本提取与结构化解析
 - `GET /api/resume/list`：查询当前用户简历
-- `GET /api/position/list`：查询岗位模板
-- `POST /api/interview/start`：创建面试会话并写入 `system` 消息
+- `POST /api/interview/start`：创建面试会话并快照 Provider / 模型
 - `GET /api/interview/sessions`：查询历史会话
 - `POST /api/interview/{sessionId}/chat`：SSE 流式面试对话
 - `POST /api/interview/{sessionId}/finish`：生成 Markdown 面试评估报告
+
+## 前端页面
+
+- `/login`：登录 / 注册
+- `/interview`：简历上传、岗位选择、面试对话、报告生成
+- `/settings/llm`：Provider、模型与用户 API Key 设置
 
 ## 验证命令
 
 ```powershell
 cd "E:\Graduation project\interview-backend"
+mvn -q test
 mvn -q -DskipTests package
 
 cd "E:\Graduation project\interview-frontend"
 npm run build
 ```
 
-本轮自动测试默认只验证构建、接口边界、会话状态和敏感信息隔离，不主动消耗 DeepSeek 真实模型调用。若需要完整真实链路，可在本地启动前后端后依次执行“上传 PDF → 选择岗位 → 流式问答 → 生成报告”。
+本地接口基础验收建议：
 
-## 论文截图占位
+1. 启动 MySQL、后端和前端。
+2. 访问 `GET /api/llm/providers`，确认未登录可返回 DeepSeek 与 OpenAI。
+3. 登录 demo 用户或新注册用户。
+4. 在 `/settings/llm` 保存新 API Key，确认页面只显示脱敏末 4 位。
+5. 使用真实 PDF 完成“上传简历 → 创建面试 → 流式问答 → 生成报告”的完整链路。
 
-- 此处插入截图：登录注册页
-- 此处插入截图：简历上传与解析结果页
-- 此处插入截图：流式面试打字机页面
-- 此处插入截图：评估报告页
-- 此处插入截图：数据库 `interview_message` 表中 `role` 与 `seq_num` 数据
+自动构建和接口边界验证默认不主动消耗真实模型调用。论文第五章所需的 PDF 解析耗时、SSE TTFB、报告截图和数据库截图，需要使用真实 PDF 与少量模型调用单独采集。
