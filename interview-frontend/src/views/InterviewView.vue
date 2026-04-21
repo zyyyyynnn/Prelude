@@ -34,9 +34,11 @@ const loading = ref(false)
 const uploading = ref(false)
 const sending = ref(false)
 const finishing = ref(false)
+const uploadInput = ref<HTMLInputElement | null>(null)
 
 const statusMessage = ref('')
 const statusType = ref<'success' | 'warning' | 'error' | 'info'>('info')
+const uploadDisplayName = ref('未选择任何文件')
 
 const resumes = ref<{ id: number; fileName: string }[]>([])
 const positions = ref<{ id: number; name: string }[]>([])
@@ -72,11 +74,18 @@ async function loadBaseData() {
     positions.value = positionList
     selectedResumeId.value = resumeList[0]?.id ?? null
     selectedPositionId.value = positionList[0]?.id ?? null
-    setStatus('数据已加载', 'success')
+    uploadDisplayName.value = resumeList[0]?.fileName || '未选择任何文件'
+    statusMessage.value = ''
   } catch (error) {
     setStatus(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
+  }
+}
+
+function openResumePicker() {
+  if (!uploading.value) {
+    uploadInput.value?.click()
   }
 }
 
@@ -187,6 +196,8 @@ async function handleUpload(event: Event) {
     return
   }
 
+  const previousUploadName = uploadDisplayName.value
+  uploadDisplayName.value = file.name
   uploading.value = true
   setStatus('正在上传简历', 'info')
 
@@ -202,6 +213,7 @@ async function handleUpload(event: Event) {
     selectedResumeId.value = result.resumeId
     setStatus('简历已上传', 'success')
   } catch (error) {
+    uploadDisplayName.value = previousUploadName
     setStatus(getErrorMessage(error), 'error')
   } finally {
     uploading.value = false
@@ -286,16 +298,28 @@ onMounted(() => {
         </div>
 
         <div class="field-stack">
-          <label class="field">
+          <div class="field">
             <span class="field__label">上传 PDF 简历</span>
-            <input
-              class="ui-file-input"
-              :disabled="uploading"
-              accept="application/pdf"
-              type="file"
-              @change="handleUpload"
-            />
-          </label>
+            <div class="upload-field" :class="{ 'is-uploading': uploading }">
+              <input
+                ref="uploadInput"
+                class="upload-field__native"
+                :disabled="uploading"
+                accept="application/pdf"
+                type="file"
+                @change="handleUpload"
+              />
+              <button
+                class="upload-field__button"
+                :disabled="uploading"
+                type="button"
+                @click="openResumePicker"
+              >
+                {{ uploading ? '上传中' : '选择文件' }}
+              </button>
+              <span class="upload-field__name">{{ uploadDisplayName }}</span>
+            </div>
+          </div>
 
           <label class="field">
             <span class="field__label">简历</span>
@@ -348,8 +372,20 @@ onMounted(() => {
         </div>
 
         <div class="conversation">
-          <div v-if="conversation.length === 0" class="empty-state">
-            先创建面试，然后发送第一条回答。
+          <div v-if="conversation.length === 0" class="conversation__empty-state">
+            <svg
+              class="conversation__empty-art"
+              viewBox="0 0 240 240"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <circle cx="120" cy="120" r="72" fill="none" stroke="currentColor" stroke-width="2" />
+              <path d="M120 44V196M44 120H196" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <path d="M66 66L174 174M174 66L66 174" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <rect x="92" y="92" width="56" height="56" rx="10" fill="none" stroke="currentColor" stroke-width="2" />
+              <path d="M72 120H88M152 120H168M120 72V88M120 152V168" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <p class="conversation__empty-copy">先创建面试，然后发送第一条回答。</p>
           </div>
 
           <article
@@ -414,7 +450,7 @@ onMounted(() => {
         </div>
 
         <pre v-if="report" class="report-surface">{{ report }}</pre>
-        <div v-else class="empty-state">生成完成后在这里查看报告内容。</div>
+        <div v-else class="report-panel__empty">生成完成后在这里查看报告内容。</div>
       </ElCard>
     </div>
   </section>

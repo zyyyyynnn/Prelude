@@ -1,27 +1,62 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const menuOpen = ref(false)
+const menuAnchor = ref<HTMLElement | null>(null)
 
-const showShell = computed(() => route.path !== '/login')
-const navItems = [
-  { label: '面试', to: '/interview' },
-  { label: 'LLM 设置', to: '/settings/llm' },
-]
+const showHeader = computed(() => route.path !== '/login')
+
+function navigateTo(path: string) {
+  menuOpen.value = false
+  if (route.path !== path) {
+    void router.push(path)
+  }
+}
 
 function logout() {
+  menuOpen.value = false
   authStore.clearSession()
   void router.replace('/login')
 }
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+
+function closeMenu() {
+  menuOpen.value = false
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  const target = event.target
+  if (!(target instanceof Node)) {
+    return
+  }
+
+  if (menuAnchor.value?.contains(target)) {
+    return
+  }
+
+  menuOpen.value = false
+}
+
+onMounted(() => {
+  window.addEventListener('pointerdown', handleDocumentPointerDown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('pointerdown', handleDocumentPointerDown)
+})
 </script>
 
 <template>
   <div class="app-shell">
-    <header class="app-shell__header">
+    <header v-if="showHeader" class="app-shell__header">
       <div class="app-shell__brand">
         <span class="app-shell__brand-mark">I</span>
         <div>
@@ -30,24 +65,80 @@ function logout() {
         </div>
       </div>
 
-      <nav v-if="showShell" class="app-shell__nav" aria-label="主导航">
-        <RouterLink
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="app-shell__nav-link"
-          active-class="is-active"
-        >
-          {{ item.label }}
-        </RouterLink>
-      </nav>
+      <div
+        v-if="authStore.isLoggedIn"
+        ref="menuAnchor"
+        class="app-shell__actions"
+        @keydown.escape="closeMenu"
+      >
+        <div v-if="menuOpen" class="app-shell__action-menu-popper">
+          <div class="app-shell__action-menu" role="menu" aria-label="主导航">
+            <button
+              :class="['app-shell__action-menu-item', { 'is-active': route.path === '/interview' }]"
+              type="button"
+              @click="navigateTo('/interview')"
+            >
+              <span class="app-shell__action-menu-label">主工作台</span>
+            </button>
+            <button
+              :class="['app-shell__action-menu-item', { 'is-active': route.path === '/settings/llm' }]"
+              type="button"
+              @click="navigateTo('/settings/llm')"
+            >
+              <span class="app-shell__action-menu-label">LLM配置</span>
+            </button>
+            <button
+              class="app-shell__action-menu-item"
+              type="button"
+              @click="logout"
+            >
+              <span class="app-shell__action-menu-label">退出</span>
+            </button>
+          </div>
+        </div>
 
-      <div v-if="authStore.isLoggedIn" class="app-shell__actions">
-        <span class="ui-badge">已登录</span>
-        <button class="ui-button ui-button--secondary" type="button" @click="logout">退出</button>
+        <button
+          :class="['app-shell__menu-trigger', { 'is-open': menuOpen }]"
+          type="button"
+          aria-label="打开菜单"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen"
+          @click="toggleMenu"
+        >
+          <svg
+            class="app-shell__menu-icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              class="app-shell__menu-icon-line app-shell__menu-icon-line--top"
+              d="M5 6.5H19"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.7"
+            />
+            <path
+              class="app-shell__menu-icon-line app-shell__menu-icon-line--middle"
+              d="M8 12H19"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.7"
+            />
+            <path
+              class="app-shell__menu-icon-line app-shell__menu-icon-line--bottom"
+              d="M5 17.5H16"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.7"
+            />
+          </svg>
+        </button>
       </div>
     </header>
-
     <main class="app-shell__content">
       <RouterView />
     </main>

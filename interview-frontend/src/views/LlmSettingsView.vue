@@ -64,7 +64,7 @@ async function loadSettings() {
     const provider = providers.find((item) => item.providerKey === providerKey) ?? providers[0] ?? null
     applySelection(provider?.providerKey || '', config.model || provider?.models[0] || '')
     apiKeyMasked.value = config.apiKeyMasked || ''
-    setStatus('配置已加载', 'success')
+    statusMessage.value = ''
   } catch (error) {
     setStatus(getErrorMessage(error), 'error')
   } finally {
