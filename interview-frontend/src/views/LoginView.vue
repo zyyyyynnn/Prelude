@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElCard, ElForm, ElFormItem, ElInput } from 'element-plus'
+import { ElAlert, ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
 import { login as loginRequest, register as registerRequest } from '../api/auth'
 import { useAuthStore } from '../stores/auth'
+
+type AuthMode = 'login' | 'register'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
+const authMode = ref<AuthMode>('login')
 const loading = ref(false)
 const notice = ref('')
 const form = reactive({
   username: '',
   password: '',
+  email: '',
 })
 
 const redirectTarget = computed(() => {
@@ -23,12 +27,22 @@ const redirectTarget = computed(() => {
 })
 
 const expiredNotice = computed(() => route.query.reason === 'expired')
+const isRegisterMode = computed(() => authMode.value === 'register')
+const authEyebrow = computed(() => (isRegisterMode.value ? '注册' : '登录'))
+const authTitle = computed(() => (isRegisterMode.value ? '创建工作台账号' : '进入面试工作台'))
+const submitLabel = computed(() => (isRegisterMode.value ? '完成注册' : '登录'))
+const switchLabel = computed(() => (isRegisterMode.value ? '登录' : '注册'))
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message
   }
   return '请求失败'
+}
+
+function switchMode(mode: AuthMode) {
+  authMode.value = mode
+  notice.value = ''
 }
 
 async function handleLogin() {
@@ -51,84 +65,177 @@ async function handleRegister() {
   notice.value = ''
 
   try {
-    await registerRequest(form.username.trim(), form.password)
+    await registerRequest(form.username.trim(), form.password, form.email.trim() || undefined)
     notice.value = '注册成功，请继续登录。'
+    authMode.value = 'login'
   } catch (error) {
     notice.value = getErrorMessage(error)
   } finally {
     loading.value = false
   }
 }
+
+async function submitAuth() {
+  if (isRegisterMode.value) {
+    await handleRegister()
+    return
+  }
+
+  await handleLogin()
+}
 </script>
 
 <template>
-  <section class="page page--center">
-    <ElCard class="ui-card auth-card">
-      <div class="page__header">
-        <p class="eyebrow">登录</p>
-        <h2 class="page__title">进入面试工作台</h2>
-        <p class="page__lead">使用账号登录后继续面试和 LLM 配置。</p>
-      </div>
+  <section class="page page--center page--auth">
+    <div class="login-card">
+      <svg
+        class="login-card-border"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <rect
+          class="login-card-border__inner"
+          x="0.5"
+          y="0.5"
+          width="100%"
+          height="100%"
+          rx="8"
+          ry="8"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="0.75"
+          stroke-dasharray="4 4"
+        />
+      </svg>
 
-      <ElAlert
-        v-if="expiredNotice"
-        class="status-banner"
-        type="warning"
-        :closable="false"
-        title="登录已失效，请重新登录。"
-      />
+      <div class="login-card__content">
+        <aside class="login-card__brand-panel">
+          <div class="login-card__brand">
+            <span class="login-card__brand-mark">I</span>
+            <div class="login-card__brand-copy">
+              <p class="login-card__brand-eyebrow">INTERVIEW PLATFORM</p>
+              <h1 class="login-card__brand-title">模拟面试系统</h1>
+            </div>
+          </div>
 
-      <ElAlert
-        v-if="notice"
-        class="status-banner"
-        :closable="false"
-        :type="notice.includes('成功') ? 'success' : 'error'"
-        :title="notice"
-      />
+          <div class="login-card__logo-slot" aria-hidden="true">
+            <svg class="login-card__logo-art" viewBox="0 0 280 280" focusable="false">
+              <path
+                d="M80 42H152L198 88V210C198 222 188 232 176 232H80C68 232 58 222 58 210V64C58 52 68 42 80 42Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M152 42V88H198"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M88 100H138M88 128H170M88 156H170M88 184H152"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M88 212H126"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+        </aside>
 
-      <ElForm class="form-grid" label-position="top" @submit.prevent>
-        <ElFormItem label="用户名">
-          <ElInput
-            v-model="form.username"
-            class="ui-input"
-            autocomplete="username"
-            placeholder="请输入用户名"
-            size="large"
+        <div class="login-card__form-panel">
+          <div class="page__header login-card__header">
+            <p class="eyebrow">{{ authEyebrow }}</p>
+            <h2 class="page__title">{{ authTitle }}</h2>
+          </div>
+
+          <ElAlert
+            v-if="expiredNotice"
+            class="status-banner"
+            type="warning"
+            :closable="false"
+            title="登录已失效，请重新登录。"
           />
-        </ElFormItem>
 
-        <ElFormItem label="密码">
-          <ElInput
-            v-model="form.password"
-            class="ui-input"
-            autocomplete="current-password"
-            placeholder="请输入密码"
-            show-password
-            type="password"
-            size="large"
+          <ElAlert
+            v-if="notice"
+            class="status-banner"
+            :closable="false"
+            :type="notice.includes('成功') ? 'success' : 'error'"
+            :title="notice"
           />
-        </ElFormItem>
 
-        <div class="button-row">
-          <ElButton
-            class="ui-button ui-button--primary"
-            :loading="loading"
-            size="large"
-            type="primary"
-            @click="handleLogin"
-          >
-            登录
-          </ElButton>
-          <ElButton
-            class="ui-button ui-button--secondary"
-            :loading="loading"
-            size="large"
-            @click="handleRegister"
-          >
-            注册
-          </ElButton>
+          <ElForm class="form-grid" label-position="top" @submit.prevent="submitAuth">
+            <ElFormItem label="用户名">
+              <ElInput
+                v-model="form.username"
+                class="ui-input"
+                autocomplete="username"
+                placeholder="请输入用户名"
+                size="large"
+              />
+            </ElFormItem>
+
+            <ElFormItem label="密码">
+              <ElInput
+                v-model="form.password"
+                class="ui-input"
+                autocomplete="current-password"
+                placeholder="请输入密码"
+                show-password
+                type="password"
+                size="large"
+              />
+            </ElFormItem>
+
+            <div
+              :class="['login-card__email-slot', { 'is-hidden': !isRegisterMode }]"
+              :aria-hidden="!isRegisterMode"
+            >
+              <ElFormItem label="邮箱">
+                <ElInput
+                  v-model="form.email"
+                  class="ui-input"
+                  :disabled="!isRegisterMode"
+                  autocomplete="email"
+                  placeholder="请输入邮箱"
+                  size="large"
+                />
+              </ElFormItem>
+            </div>
+
+            <div class="button-row">
+              <ElButton
+                class="ui-button ui-button--primary"
+                :loading="loading"
+                native-type="submit"
+                size="large"
+                type="primary"
+              >
+                {{ submitLabel }}
+              </ElButton>
+              <ElButton
+                class="ui-button ui-button--secondary"
+                :disabled="loading"
+                size="large"
+                @click="switchMode(isRegisterMode ? 'login' : 'register')"
+              >
+                {{ switchLabel }}
+              </ElButton>
+            </div>
+          </ElForm>
         </div>
-      </ElForm>
-    </ElCard>
+      </div>
+    </div>
   </section>
 </template>

@@ -17,10 +17,11 @@ export async function login(username: string, password: string) {
   return unwrapResult(response.data)
 }
 
-export async function register(username: string, password: string) {
+export async function register(username: string, password: string, email?: string) {
   const response = await http.post<ApiResult<void>>('/auth/register', {
     username,
     password,
+    email,
   })
   return unwrapResult(response.data)
 }
