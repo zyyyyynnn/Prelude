@@ -163,10 +163,11 @@ box-shadow: var(--shadow-ring);
 - 当前页高亮：只允许轻量底色与边框变化，禁止“当前”文字标记，禁止整块高饱和填充
 - 动画：仅允许 `opacity + translateX`，120–160ms；禁止弹簧、缩放、胶囊滑块
 - 响应式：窄屏宽度不足时允许回退为纵向紧凑菜单，但不得遮挡品牌区或超出视口
+- 桌面端展开：动作条作为触发器左侧独立元素与按钮同线排布，不允许覆盖或压住触发器本体
 
 ### Hero 栏（AppHeader）
 
-- 适用页：当前登录后的 `主工作台` 与 `LLM 配置` 页统一使用
+- 适用页：当前所有登录后业务页统一使用，包括 `主工作台`、`LLM配置`、`用户设置`、`数据看板`
 - 结构：品牌区在左，菜单触发器在右；整条 header 作为一个独立容器呈现
 - 质感：允许使用毛玻璃效果，`background` 需为半透明浅色表面，配合 `backdrop-filter: blur(...)`
 - 外观：必须保留轻边框、轻阴影和暖灰底色，不得做冷色蓝调玻璃
@@ -194,6 +195,14 @@ color: var(--color-text-primary);
 - 文件名：单行省略，`overflow: hidden; text-overflow: ellipsis`
 - 禁止直接暴露未收口的原生 file input 大块样式
 
+### 设置内页切换（SettingsSubnav）
+
+- 位置：页面标题区下方，状态提示上方
+- 布局：单行横向排列，允许换行；按钮间距 10px
+- 按钮：复用次要按钮样式，不新增独立组件皮肤
+- 当前页：使用轻量底色 + 边框高亮，禁止增加“当前”字样或彩色下划线
+- 适用页：`/settings/llm` 与 `/settings/profile`
+
 ### 卡片
 
 ```css
@@ -210,22 +219,23 @@ padding: 24px;
 - 外观：沿用标准卡片边框、圆角、阴影
 - 内边距：28px
 - 内部节奏：区块间距 22px；表单组 / 字段组间距 16px；按钮组间距 12px
+- 分栏面板：允许在卡片内部使用左右双栏，但列间距不得小于 22px
 
 ### 登录卡片（LoginCard）
 
-- 布局：页面垂直水平居中，卡片固定宽度 940px，左右双栏；左栏放品牌信息与 SVG logo 预留位，右栏放登录 / 注册内容
+- 布局：页面垂直水平居中，卡片固定宽度 980px，左右双栏；左栏放品牌信息与 SVG logo 预留位，右栏放登录 / 注册内容
 - 品牌整合：登录页不再显示页面级品牌头，`模拟面试系统` 与 `INTERVIEW PLATFORM` 必须整合进卡片左栏
 - 品牌排布：左栏品牌区使用两列布局，左侧品牌块固定 54px，右侧 eyebrow 与标题垂直排布并居中对齐
 - 标题：`模拟面试系统` 在桌面端禁止换行，宽度不足时优先缩小字号而不是折行
 - 外框：容器原生 1px solid var(--color-line-decor)，#c8c6be；必须完整闭合，底边不得裁切或发虚
 - 内侧虚线框：距外框 inset 8px，stroke-dasharray: 4 4，颜色 var(--color-line-decor-light)，#dddbd3
 - 圆角：var(--radius-lg)，12px
-- 内边距：36px 40px 38px
+- 内边距：38px 42px 40px
 - 左栏：品牌块置顶，中部预留独立 SVG logo 区域；删除底部说明提示文案，不放输入框、不放角落装饰 SVG
-- 左栏预留位：logo 容器最小高度 240px；内部放与主题一致的“简历 / 笔记元素”线稿 SVG，不放默认文案，不再保留额外占位外框
-- 右栏：登录 / 注册在同一卡片内切换，表单区最大宽度 460px
+- 左栏预留位：logo 容器最小高度 300px；内部放与主题一致的“文档 / 简历”线稿 SVG，只保留文档轮廓、折角和 3 条笔记线，不放默认文案，不再保留额外占位外框
+- 右栏：登录 / 注册在同一卡片内切换，表单区最大宽度 520px
 - 右栏文案：删除标题下方辅助提示词，只保留 eyebrow 与主标题
-- 按钮：登录 / 注册切换按钮移动到表单底部，与主提交按钮同一行；按钮组宽度与右侧标题 / 表单列保持一致，使用双列等宽排布；按钮间距保持舒展，不要挤压成紧贴状态；禁止顶部再出现一组切换按钮
+- 按钮：登录 / 注册切换按钮移动到表单底部，与主提交按钮同一行；按钮组宽度与右侧标题 / 表单列保持一致，使用双列等宽排布；按钮间距 18px；禁止顶部再出现一组切换按钮
 - 高度稳定：登录态必须预留与注册邮箱输入同高的空位，切换登录 / 注册时卡片整体尺寸不得变化
 - 禁止：box-shadow、background-color、backdrop-blur
 - 卡片内表单元素背景色使用 var(--color-surface) #faf9f5，与页面纸感底色形成轻微分层
@@ -258,6 +268,30 @@ letter-spacing: 0.12px;
 - 禁止：页面初始化加载成功时自动显示“已加载”“配置已加载”“数据已加载”类提示
 - 外观：`background: var(--color-surface)`，`border: 1px solid var(--color-border-warm)`，圆角 `var(--radius-md)`
 - 内边距：12px 14px
+
+### 回放消息层级（ReplayMessage）
+
+- system：浅底说明块，允许使用虚线边框；不得渲染成聊天气泡
+- user：靠右显示，背景使用 `var(--color-sand)`
+- assistant：靠左显示，背景使用 `var(--color-surface)`
+- 元信息：时间与角色标签放在消息头部，字号 14px
+
+### Markdown 报告面板（MarkdownReportPanel）
+
+- 容器：`1px solid var(--color-border)`，圆角 `var(--radius-md)`，背景 `var(--color-surface)`
+- 内边距：22px 24px
+- 最小高度：300px
+- 正文：16px 以下只能用于代码与辅助说明；正文行高不低于 1.65
+- 标题：复用 serif 标题体系；禁止回退到 `<pre>` 纯文本面板
+- 代码块：允许使用 `var(--font-mono)` 与浅沙色底，但不能使用深色终端风格
+
+### 数据看板图表容器（AnalyticsPanel）
+
+- 图表只能放在标准卡片内，不允许独立悬浮
+- 图表容器最小高度：300px
+- 图表主色：沿用 `--color-brand` / `--color-coral` / 中性暖灰，不新增高饱和彩色主题
+- 图表颜色来源：必须读取现有 CSS token；禁止在脚本里硬编码十六进制颜色
+- 无数据：显示空态，不渲染空图
 
 ---
 
@@ -308,36 +342,6 @@ letter-spacing: 0.12px;
 - 尾巴位置：用户消息气泡右上，AI 消息气泡左上
 - 气泡背景色（填充在 SVG 外层容器）：用户消息 `var(--color-sand)`，AI 消息 `var(--color-surface)`
 - 禁止 box-shadow
-
-### 6.3 线条填充字形
-
-实现方案：SVG `<clipPath>` + `<pattern>`
-
-```svg
-<svg viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <clipPath id="text-clip">
-      <text x="0" y="80"
-            font-family="'Lora', Georgia, serif"
-            font-size="96" font-weight="500">AI</text>
-    </clipPath>
-    <pattern id="h-lines" x="0" y="0" width="400" height="4"
-             patternUnits="userSpaceOnUse">
-      <line x1="0" y1="2" x2="400" y2="2"
-            stroke="#cac8c0" stroke-width="1"/>
-    </pattern>
-  </defs>
-  <rect width="400" height="100"
-        fill="url(#h-lines)"
-        clip-path="url(#text-clip)" />
-</svg>
-```
-
-硬约束：
-- 线间距（pattern height）：3–5px，stroke-width：0.75–1px
-- 字形本身无描边、无填充色
-- 最小使用字号：80px，低于此尺寸线条细节丢失
-- 使用场景：大标题装饰、空态页品牌字、报告页顶部
 
 ---
 

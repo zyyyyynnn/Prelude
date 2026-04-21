@@ -25,9 +25,41 @@ const router = createRouter({
       },
     },
     {
+      path: '/interview/replay/:sessionId',
+      name: 'interview-replay',
+      component: () => import('../views/ReplayView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/resumes',
+      name: 'resumes',
+      component: () => import('../views/ResumeManagementView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
       path: '/settings/llm',
       name: 'llm-settings',
       component: () => import('../views/LlmSettingsView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/settings/profile',
+      name: 'profile-settings',
+      component: () => import('../views/ProfileSettingsView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/analytics',
+      name: 'analytics',
+      component: () => import('../views/AnalyticsView.vue'),
       meta: {
         requiresAuth: true,
       },

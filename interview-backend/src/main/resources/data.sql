@@ -56,3 +56,13 @@ UPDATE `interview_session`
 SET `llm_provider` = COALESCE(`llm_provider`, 'deepseek'),
     `llm_model` = COALESCE(`llm_model`, 'deepseek-chat')
 WHERE `llm_provider` IS NULL OR `llm_model` IS NULL;
+
+INSERT INTO `interview_stage` (`session_id`, `stage_name`, `started_at`, `ended_at`)
+SELECT s.`id`,
+       'warmup',
+       s.`created_at`,
+       CASE WHEN s.`status` = 'finished' THEN s.`created_at` ELSE NULL END
+FROM `interview_session` s
+WHERE NOT EXISTS (
+    SELECT 1 FROM `interview_stage` st WHERE st.`session_id` = s.`id`
+);

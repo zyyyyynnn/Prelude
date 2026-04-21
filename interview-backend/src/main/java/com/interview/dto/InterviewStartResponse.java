@@ -1,12 +1,8 @@
 package com.interview.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-@Data
-@AllArgsConstructor
-public class InterviewStartResponse {
-
-    private Long sessionId;
-    private String targetPosition;
+public record InterviewStartResponse(
+    Long sessionId,
+    String targetPosition,
+    String currentStage
+) {
 }

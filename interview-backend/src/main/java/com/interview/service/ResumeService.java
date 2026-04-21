@@ -11,4 +11,6 @@ public interface ResumeService {
     ResumeUploadResponse upload(MultipartFile file);
 
     List<ResumeItemResponse> listCurrentUserResumes();
+
+    void deleteCurrentUserResume(Long resumeId);
 }
