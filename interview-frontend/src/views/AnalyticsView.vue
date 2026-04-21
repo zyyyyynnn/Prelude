@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="page">
     <div class="page__header">
-      <p class="eyebrow">三期</p>
+      <p class="eyebrow">分析</p>
       <h2 class="page__title">数据看板</h2>
       <p class="page__lead">查看最近面试的三维能力平均分、时间趋势和高频薄弱点。</p>
     </div>
@@ -169,7 +169,6 @@ onBeforeUnmount(() => {
         <ElCard class="ui-card panel">
           <div class="panel__head">
             <div>
-              <p class="panel__eyebrow">三期</p>
               <h3 class="panel__title">能力雷达</h3>
             </div>
             <ElTag class="ui-badge" effect="light">{{ radar.sessionCount }} 场</ElTag>
@@ -180,7 +179,6 @@ onBeforeUnmount(() => {
         <ElCard class="ui-card panel">
           <div class="panel__head">
             <div>
-              <p class="panel__eyebrow">三期</p>
               <h3 class="panel__title">分数趋势</h3>
             </div>
           </div>
@@ -192,7 +190,6 @@ onBeforeUnmount(() => {
         <ElCard class="ui-card panel">
           <div class="panel__head">
             <div>
-              <p class="panel__eyebrow">三期</p>
               <h3 class="panel__title">薄弱点列表</h3>
             </div>
           </div>

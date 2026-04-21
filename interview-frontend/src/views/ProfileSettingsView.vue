@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElCard, ElForm, ElFormItem, ElInput } from 'element-plus'
+import { ElAlert, ElButton, ElCard, ElForm, ElFormItem, ElInput, ElTag } from 'element-plus'
 import { fetchUserProfile, updateUserProfile } from '../api/user'
-
-const router = useRouter()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -100,15 +97,6 @@ onMounted(() => {
       <p class="page__lead">修改邮箱并维护登录密码。</p>
     </div>
 
-    <div class="page__subnav">
-      <ElButton class="ui-button ui-button--secondary is-active" size="large" @click="router.push('/settings/profile')">
-        用户设置
-      </ElButton>
-      <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/settings/llm')">
-        LLM配置
-      </ElButton>
-    </div>
-
     <ElAlert
       v-if="statusMessage"
       class="status-banner"
@@ -121,9 +109,9 @@ onMounted(() => {
       <ElCard class="ui-card panel">
         <div class="panel__head">
           <div>
-            <p class="panel__eyebrow">二期</p>
             <h3 class="panel__title">账号资料</h3>
           </div>
+          <ElTag class="ui-badge" effect="light">邮箱与密码维护</ElTag>
         </div>
 
         <ElForm class="form-grid" label-position="top" @submit.prevent>

@@ -5,7 +5,6 @@ import {
   ElAlert,
   ElButton,
   ElCard,
-  ElEmpty,
   ElInput,
   ElOption,
   ElSelect,
@@ -412,7 +411,7 @@ onMounted(() => {
     <div class="page__header">
       <p class="eyebrow">面试</p>
       <h2 class="page__title">主工作台</h2>
-      <p class="page__lead">上传简历、选择岗位、创建面试并进行阶段化流式对话。</p>
+      <p class="page__lead page__lead--nowrap">上传简历、选择岗位、创建面试并进行阶段化流式对话。</p>
     </div>
 
     <ElAlert
@@ -430,7 +429,7 @@ onMounted(() => {
             <p class="panel__eyebrow">1. 准备</p>
             <h3 class="panel__title">简历与岗位</h3>
           </div>
-          <ElTag class="ui-badge" effect="light">二期入口</ElTag>
+          <ElTag class="ui-badge" effect="light">简历管理入口</ElTag>
         </div>
 
         <div class="field-stack">
@@ -554,12 +553,6 @@ onMounted(() => {
 
         <div class="conversation">
           <div v-if="!activeSessionId && !sessionLoading" class="conversation__empty-state">
-            <svg class="conversation__empty-art" viewBox="0 0 240 240" aria-hidden="true" focusable="false">
-              <circle cx="120" cy="120" r="72" fill="none" stroke="currentColor" stroke-width="1" />
-              <path d="M120 44V196M44 120H196" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
-              <path d="M66 66L174 174M174 66L66 174" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
-              <rect x="92" y="92" width="56" height="56" rx="10" fill="none" stroke="currentColor" stroke-width="1" />
-            </svg>
             <p class="conversation__empty-copy">先创建一场面试，或从右侧历史列表切换已有会话。</p>
           </div>
 
@@ -626,79 +619,77 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="split-panel">
-          <div class="split-panel__side">
-            <div class="session-group">
-              <div class="session-group__head">
-                <p class="panel__eyebrow">进行中 / 未完成</p>
-              </div>
-              <div v-if="primarySessionList.length" class="session-list">
-                <article
-                  v-for="item in primarySessionList"
-                  :key="item.sessionId"
-                  :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
-                >
-                  <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
-                    <div class="session-item__head">
-                      <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
-                      <ElTag class="ui-badge" effect="light">{{ stageLabel(item.currentStage) }}</ElTag>
-                    </div>
-                    <p class="session-item__meta">
-                      {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
-                    </p>
-                    <p class="session-item__summary">
-                      {{ item.llmProvider || 'deepseek' }} / {{ item.llmModel || 'default' }}
-                    </p>
-                  </button>
-                  <ElButton
-                    class="ui-button ui-button--secondary"
-                    size="large"
-                    @click="router.push(`/interview/replay/${item.sessionId}`)"
-                  >
-                    回放
-                  </ElButton>
-                </article>
-              </div>
-              <ElEmpty v-else description="还没有进行中的会话。" />
+        <div class="split-panel split-panel--history">
+          <div class="session-group">
+            <div class="session-group__head">
+              <p class="panel__eyebrow">进行中 / 未完成</p>
             </div>
+            <div v-if="primarySessionList.length" class="session-list">
+              <article
+                v-for="item in primarySessionList"
+                :key="item.sessionId"
+                :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
+              >
+                <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
+                  <div class="session-item__head">
+                    <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
+                    <ElTag class="ui-badge" effect="light">{{ stageLabel(item.currentStage) }}</ElTag>
+                  </div>
+                  <p class="session-item__meta">
+                    {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
+                  </p>
+                  <p class="session-item__summary">
+                    {{ item.llmProvider || 'deepseek' }} / {{ item.llmModel || 'default' }}
+                  </p>
+                </button>
+                <ElButton
+                  class="ui-button ui-button--secondary"
+                  size="large"
+                  @click="router.push(`/interview/replay/${item.sessionId}`)"
+                >
+                  回放
+                </ElButton>
+              </article>
+            </div>
+            <div v-else class="empty-state">还没有进行中的会话。</div>
+          </div>
 
-            <div class="session-group">
-              <div class="session-group__head">
-                <p class="panel__eyebrow">已完成</p>
-              </div>
-              <div v-if="finishedSessionList.length" class="session-list">
-                <article
-                  v-for="item in finishedSessionList"
-                  :key="item.sessionId"
-                  :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
-                >
-                  <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
-                    <div class="session-item__head">
-                      <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
-                      <ElTag class="ui-badge" effect="light">已完成</ElTag>
-                    </div>
-                    <p class="session-item__meta">
-                      {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
-                    </p>
-                    <p class="session-item__summary">{{ item.summaryReport ? '可预览报告' : '暂无报告摘要' }}</p>
-                  </button>
-                  <ElButton
-                    class="ui-button ui-button--secondary"
-                    size="large"
-                    @click="router.push(`/interview/replay/${item.sessionId}`)"
-                  >
-                    回放
-                  </ElButton>
-                </article>
-              </div>
-              <ElEmpty v-else description="还没有已完成的会话。" />
+          <div class="session-group">
+            <div class="session-group__head">
+              <p class="panel__eyebrow">已完成</p>
             </div>
+            <div v-if="finishedSessionList.length" class="session-list">
+              <article
+                v-for="item in finishedSessionList"
+                :key="item.sessionId"
+                :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
+              >
+                <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
+                  <div class="session-item__head">
+                    <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
+                    <ElTag class="ui-badge" effect="light">已完成</ElTag>
+                  </div>
+                  <p class="session-item__meta">
+                    {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
+                  </p>
+                  <p class="session-item__summary">{{ item.summaryReport ? '可预览报告' : '暂无报告摘要' }}</p>
+                </button>
+                <ElButton
+                  class="ui-button ui-button--secondary"
+                  size="large"
+                  @click="router.push(`/interview/replay/${item.sessionId}`)"
+                >
+                  回放
+                </ElButton>
+              </article>
+            </div>
+            <div v-else class="empty-state">还没有已完成的会话。</div>
           </div>
 
           <div class="split-panel__main">
             <div class="panel__head panel__head--compact">
               <div>
-                <p class="panel__eyebrow">Markdown 报告</p>
+                <p class="panel__eyebrow">报告预览</p>
                 <h4 class="panel__title panel__title--small">
                   {{ activeSession?.targetPosition || '面试报告预览' }}
                 </h4>

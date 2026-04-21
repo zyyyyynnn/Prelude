@@ -92,7 +92,7 @@ onMounted(() => {
 <template>
   <section class="page">
     <div class="page__header">
-      <p class="eyebrow">二期</p>
+      <p class="eyebrow">简历</p>
       <h2 class="page__title">简历管理</h2>
       <p class="page__lead">集中查看上传记录、使用状态，并在未被面试占用时删除简历。</p>
     </div>
@@ -118,7 +118,6 @@ onMounted(() => {
       <ElCard class="ui-card panel">
         <div class="panel__head">
           <div>
-            <p class="panel__eyebrow">二期</p>
             <h3 class="panel__title">上传与清理</h3>
           </div>
           <ElButton
