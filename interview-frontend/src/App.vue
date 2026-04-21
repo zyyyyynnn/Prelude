@@ -10,14 +10,15 @@ const menuOpen = ref(false)
 const menuAnchor = ref<HTMLElement | null>(null)
 
 const showHeader = computed(() => route.path !== '/login')
-const interviewMenuActive = computed(
+const mainMenuActive = computed(
   () =>
     route.path === '/interview' ||
     route.path === '/resumes' ||
     route.path === '/analytics' ||
     route.path.startsWith('/interview/replay/'),
 )
-const settingsMenuActive = computed(() => route.path.startsWith('/settings/'))
+const profileMenuActive = computed(() => route.path === '/settings/profile')
+const llmMenuActive = computed(() => route.path === '/settings/llm')
 
 function navigateTo(path: string) {
   menuOpen.value = false
@@ -79,32 +80,6 @@ onBeforeUnmount(() => {
         class="app-shell__actions"
         @keydown.escape="closeMenu"
       >
-        <div v-if="menuOpen" class="app-shell__action-menu-popper">
-          <div class="app-shell__action-menu" role="menu" aria-label="主导航">
-            <button
-              :class="['app-shell__action-menu-item', { 'is-active': interviewMenuActive }]"
-              type="button"
-              @click="navigateTo('/interview')"
-            >
-              <span class="app-shell__action-menu-label">主工作台</span>
-            </button>
-            <button
-              :class="['app-shell__action-menu-item', { 'is-active': settingsMenuActive }]"
-              type="button"
-              @click="navigateTo('/settings/llm')"
-            >
-              <span class="app-shell__action-menu-label">LLM配置</span>
-            </button>
-            <button
-              class="app-shell__action-menu-item"
-              type="button"
-              @click="logout"
-            >
-              <span class="app-shell__action-menu-label">退出</span>
-            </button>
-          </div>
-        </div>
-
         <button
           :class="['app-shell__menu-trigger', { 'is-open': menuOpen }]"
           type="button"
@@ -145,6 +120,39 @@ onBeforeUnmount(() => {
             />
           </svg>
         </button>
+
+        <div v-if="menuOpen" class="app-shell__action-menu-popper">
+          <div class="app-shell__action-menu" role="menu" aria-label="主导航">
+            <button
+              :class="['app-shell__action-menu-item', { 'is-active': mainMenuActive }]"
+              type="button"
+              @click="navigateTo('/interview')"
+            >
+              <span class="app-shell__action-menu-label">主菜单栏</span>
+            </button>
+            <button
+              :class="['app-shell__action-menu-item', { 'is-active': profileMenuActive }]"
+              type="button"
+              @click="navigateTo('/settings/profile')"
+            >
+              <span class="app-shell__action-menu-label">用户设置</span>
+            </button>
+            <button
+              :class="['app-shell__action-menu-item', { 'is-active': llmMenuActive }]"
+              type="button"
+              @click="navigateTo('/settings/llm')"
+            >
+              <span class="app-shell__action-menu-label">LLM配置</span>
+            </button>
+            <button
+              class="app-shell__action-menu-item"
+              type="button"
+              @click="logout"
+            >
+              <span class="app-shell__action-menu-label">退出</span>
+            </button>
+          </div>
+        </div>
       </div>
     </header>
     <main class="app-shell__content">

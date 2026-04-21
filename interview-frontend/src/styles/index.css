@@ -196,6 +196,10 @@ a {
   align-items: center;
   gap: 10px;
   justify-content: flex-end;
+  min-width: 42px;
+  min-height: 42px;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .app-shell__menu-trigger {
@@ -256,9 +260,13 @@ a {
 }
 
 .app-shell__action-menu-popper {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
   display: flex;
   align-items: center;
   z-index: 20;
+  transform: translateY(-50%);
   border: 0 !important;
   border-radius: 0 !important;
   padding: 0 !important;
@@ -270,13 +278,13 @@ a {
 .app-shell__action-menu {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: nowrap;
-  padding: 6px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-whisper);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   white-space: nowrap;
   animation: app-shell-menu-enter 0.14s ease-out both;
 }
@@ -285,10 +293,10 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 96px;
+  min-width: 104px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 9px 14px;
+  padding: 10px 18px;
   background: var(--color-surface);
   color: var(--color-text-primary);
   font: 500 15px var(--font-sans);
@@ -426,13 +434,6 @@ a {
   place-items: center;
 }
 
-.login-card__logo-art {
-  width: min(100%, 240px);
-  height: auto;
-  color: color-mix(in srgb, var(--color-line-decor) 74%, var(--color-text-secondary) 26%);
-  opacity: 0.96;
-}
-
 .login-card__form-panel {
   display: grid;
   gap: 22px;
@@ -492,6 +493,11 @@ a {
 .page__lead {
   max-width: 36ch;
   font-size: 17px;
+}
+
+.page__lead--nowrap {
+  max-width: none;
+  white-space: nowrap;
 }
 
 .page__grid {
@@ -799,7 +805,7 @@ a {
 .conversation__empty-state {
   display: grid;
   justify-items: center;
-  gap: 18px;
+  align-content: center;
   min-height: 340px;
   border: 1px dashed var(--color-border-warm);
   border-radius: var(--radius-lg);
@@ -807,16 +813,6 @@ a {
   background: color-mix(in srgb, var(--color-surface) 96%, transparent);
   color: var(--color-text-tertiary);
   text-align: center;
-}
-
-.conversation__empty-art {
-  width: min(180px, 100%);
-  max-width: 200px;
-  color: var(--color-line-decor);
-}
-
-.conversation__empty-art * {
-  stroke-width: 1;
 }
 
 .conversation__empty-copy {
@@ -861,9 +857,12 @@ a {
 }
 
 .empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 92px;
   border: 1px dashed var(--color-border-warm);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 18px;
   color: var(--color-text-tertiary);
   text-align: center;
 }
@@ -942,20 +941,34 @@ a {
 
 .split-panel {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  gap: 22px;
+  gap: 24px;
 }
 
-.split-panel__side,
-.split-panel__main {
-  display: grid;
-  gap: 18px;
-  align-content: start;
+.split-panel--history {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  align-items: start;
 }
 
 .session-group {
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  align-content: start;
+  min-height: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-sand));
+}
+
+.split-panel__main {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  min-height: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-sand));
 }
 
 .session-group__head {
@@ -1221,7 +1234,8 @@ a {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .split-panel {
+  .split-panel,
+  .split-panel--history {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -1231,6 +1245,7 @@ a {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
+    transform: none;
   }
 
   .app-shell__action-menu {
@@ -1244,6 +1259,11 @@ a {
     justify-content: flex-start;
     padding: 10px 12px;
     text-align: left;
+  }
+
+  .page__lead--nowrap {
+    max-width: 32ch;
+    white-space: normal;
   }
 
   .stage-rail {

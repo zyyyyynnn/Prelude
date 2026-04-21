@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCard, ElForm, ElFormItem, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
 import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig } from '../api/llm'
 import type { LlmProviderOption } from '../api/contracts'
 
-const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const statusMessage = ref('')
@@ -120,15 +118,6 @@ onMounted(() => {
       <p class="page__lead">选择 Provider、模型，并维护用户 API Key。</p>
     </div>
 
-    <div class="page__subnav">
-      <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/settings/profile')">
-        用户设置
-      </ElButton>
-      <ElButton class="ui-button ui-button--secondary is-active" size="large" @click="router.push('/settings/llm')">
-        LLM配置
-      </ElButton>
-    </div>
-
     <ElAlert
       v-if="statusMessage"
       class="status-banner"
@@ -141,10 +130,9 @@ onMounted(() => {
       <ElCard class="ui-card panel">
         <div class="panel__head">
           <div>
-            <p class="panel__eyebrow">一期</p>
             <h3 class="panel__title">Provider 抽象层</h3>
           </div>
-          <ElTag class="ui-badge" effect="light">/api/llm/providers</ElTag>
+          <ElTag class="ui-badge" effect="light">Provider 与模型</ElTag>
         </div>
 
         <ElForm class="form-grid" label-position="top" @submit.prevent>

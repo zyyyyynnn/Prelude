@@ -118,32 +118,7 @@ async function submitAuth() {
             </div>
           </div>
 
-          <div class="login-card__logo-slot" aria-hidden="true">
-            <svg class="login-card__logo-art" viewBox="0 0 240 240" focusable="false">
-              <path
-                d="M74 28H136L174 66V188C174 200 164 210 152 210H74C62 210 52 200 52 188V50C52 38 62 28 74 28Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M136 28V66H174"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M88 98H134M88 126H150M88 154H142"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linecap="round"
-              />
-            </svg>
-          </div>
+          <div class="login-card__logo-slot" aria-hidden="true" />
         </aside>
 
         <div class="login-card__form-panel">

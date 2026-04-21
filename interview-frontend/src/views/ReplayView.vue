@@ -39,7 +39,7 @@ onMounted(() => {
 <template>
   <section class="page">
     <div class="page__header">
-      <p class="eyebrow">二期</p>
+      <p class="eyebrow">回放</p>
       <h2 class="page__title">会话回放</h2>
       <p class="page__lead">查看完整消息记录、system 提示和阶段推进时间线。</p>
     </div>
