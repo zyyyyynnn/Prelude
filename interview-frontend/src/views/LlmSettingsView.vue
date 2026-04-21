@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElAlert, ElButton, ElCard, ElForm, ElFormItem, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
 import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig } from '../api/llm'
 import type { LlmProviderOption } from '../api/contracts'
 
+const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const statusMessage = ref('')
@@ -90,7 +92,12 @@ async function saveSettings() {
 
     selectedProviderKey.value = result.providerKey || selectedProviderKey.value
     selectedModel.value = result.model || selectedModel.value
-    apiKeyMasked.value = result.apiKeyMasked || (apiKeyInput.value ? '已更新' : '')
+    apiKeyMasked.value = result.apiKeyMasked || ''
+    if (apiKeyInput.value && !result.apiKeyMasked) {
+      apiKeyInput.value = ''
+      setStatus('配置已保存，但接口未返回脱敏 Key', 'warning')
+      return
+    }
     apiKeyInput.value = ''
     setStatus('LLM 配置已保存', 'success')
   } catch (error) {
@@ -111,6 +118,15 @@ onMounted(() => {
       <p class="eyebrow">设置</p>
       <h2 class="page__title">LLM 配置</h2>
       <p class="page__lead">选择 Provider、模型，并维护用户 API Key。</p>
+    </div>
+
+    <div class="page__subnav">
+      <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/settings/profile')">
+        用户设置
+      </ElButton>
+      <ElButton class="ui-button ui-button--secondary is-active" size="large" @click="router.push('/settings/llm')">
+        LLM配置
+      </ElButton>
     </div>
 
     <ElAlert

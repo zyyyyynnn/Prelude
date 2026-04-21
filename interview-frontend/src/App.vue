@@ -10,6 +10,14 @@ const menuOpen = ref(false)
 const menuAnchor = ref<HTMLElement | null>(null)
 
 const showHeader = computed(() => route.path !== '/login')
+const interviewMenuActive = computed(
+  () =>
+    route.path === '/interview' ||
+    route.path === '/resumes' ||
+    route.path === '/analytics' ||
+    route.path.startsWith('/interview/replay/'),
+)
+const settingsMenuActive = computed(() => route.path.startsWith('/settings/'))
 
 function navigateTo(path: string) {
   menuOpen.value = false
@@ -74,14 +82,14 @@ onBeforeUnmount(() => {
         <div v-if="menuOpen" class="app-shell__action-menu-popper">
           <div class="app-shell__action-menu" role="menu" aria-label="主导航">
             <button
-              :class="['app-shell__action-menu-item', { 'is-active': route.path === '/interview' }]"
+              :class="['app-shell__action-menu-item', { 'is-active': interviewMenuActive }]"
               type="button"
               @click="navigateTo('/interview')"
             >
               <span class="app-shell__action-menu-label">主工作台</span>
             </button>
             <button
-              :class="['app-shell__action-menu-item', { 'is-active': route.path === '/settings/llm' }]"
+              :class="['app-shell__action-menu-item', { 'is-active': settingsMenuActive }]"
               type="button"
               @click="navigateTo('/settings/llm')"
             >

@@ -9,7 +9,9 @@ import com.interview.dto.ResumeItemResponse;
 import com.interview.dto.ResumeParseResult;
 import com.interview.dto.ResumeUploadResponse;
 import com.interview.entity.Resume;
+import com.interview.entity.InterviewSession;
 import com.interview.llm.LlmRouter;
+import com.interview.mapper.InterviewSessionMapper;
 import com.interview.mapper.ResumeMapper;
 import com.interview.service.ResumeService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class ResumeServiceImpl implements ResumeService {
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
 
     private final ResumeMapper resumeMapper;
+    private final InterviewSessionMapper interviewSessionMapper;
     private final ObjectMapper objectMapper;
     private final LlmRouter llmRouter;
 
@@ -62,8 +65,36 @@ public class ResumeServiceImpl implements ResumeService {
                 .eq(Resume::getUserId, currentUserId())
                 .orderByDesc(Resume::getCreatedAt))
             .stream()
-            .map(resume -> new ResumeItemResponse(resume.getId(), resume.getFileName(), resume.getCreatedAt()))
+            .map(resume -> {
+                long sessionCount = interviewSessionMapper.selectCount(new LambdaQueryWrapper<InterviewSession>()
+                    .eq(InterviewSession::getResumeId, resume.getId()));
+                return new ResumeItemResponse(
+                    resume.getId(),
+                    resume.getFileName(),
+                    resume.getCreatedAt(),
+                    sessionCount,
+                    sessionCount > 0
+                );
+            })
             .toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCurrentUserResume(Long resumeId) {
+        Long userId = currentUserId();
+        Resume resume = resumeMapper.selectById(resumeId);
+        if (resume == null || !userId.equals(resume.getUserId())) {
+            throw BusinessException.badRequest("简历不存在或无权访问");
+        }
+
+        long sessionCount = interviewSessionMapper.selectCount(new LambdaQueryWrapper<InterviewSession>()
+            .eq(InterviewSession::getResumeId, resumeId));
+        if (sessionCount > 0) {
+            throw BusinessException.badRequest("该简历已被面试使用，无法删除");
+        }
+
+        resumeMapper.deleteById(resumeId);
     }
 
     private void validateFile(MultipartFile file) {

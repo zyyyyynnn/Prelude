@@ -2,20 +2,30 @@
 
 ## 项目简介
 
-本项目是《基于大语言模型的沉浸式模拟面试与简历诊断系统》的毕业设计工程，实现了用户登录、PDF 简历解析、岗位化面试创建、SSE 流式对话、Markdown 评估报告生成，以及一期新增的多模型 Provider 配置与用户自定义 API Key 管理。
+本项目是《基于大语言模型的沉浸式模拟面试与简历诊断系统》的毕业设计工程。当前已落地一期、二期、三期的核心范围：
 
-当前一期重点：
+- 一期：多 Provider 配置、用户自定义 API Key、会话级 Provider 快照。
+- 二期：阶段化面试、AI 主动首问、会话回放、简历管理、用户资料设置。
+- 三期：Markdown 报告评分解析、薄弱点提取、能力雷达、趋势图、薄弱点看板。
 
-- 系统默认支持 DeepSeek 与 OpenAI 兼容协议 Provider。
-- 用户可在前端 LLM 设置页选择 Provider、模型并保存个人 API Key。
-- 用户 API Key 使用 AES-256-GCM 加密存储，接口只返回末 4 位脱敏值。
-- 面试会话创建时快照本场使用的 Provider 与模型，后续对话和报告生成使用会话快照。
-- 前端按 `DESIGN-SPEC.md` 恢复 Vue Router、Pinia、Axios、Element Plus 与统一设计 Token。
+当前工程已实现：
+
+- 用户登录 / 注册
+- PDF 简历上传、文本提取与结构化解析
+- 岗位化面试创建
+- SSE 流式对话
+- 阶段推进（warmup / technical / deep_dive / closing）
+- 面试回放与 system 消息查看
+- Markdown 面试评估报告生成
+- Provider / 模型 / 用户 API Key 管理
+- 用户邮箱 / 密码修改
+- 简历管理与占用校验删除
+- 数据看板（雷达图、趋势图、薄弱点）
 
 ## 技术栈
 
 - 后端：Java 21、Spring Boot 3.2、MyBatis-Plus 3.5、MySQL 8.0、Apache PDFBox 3.0、OkHttp 4.12、jjwt 0.12、BCrypt、AES-256-GCM
-- 前端：Vue 3.5、TypeScript 6、Vite 8、Element Plus 2.13、Vue Router 4、Pinia、Axios
+- 前端：Vue 3.5、TypeScript 6、Vite 8、Element Plus 2.13、Vue Router 4、Pinia、Axios、markdown-it、ECharts
 - 外部模型：DeepSeek API、OpenAI 兼容 Chat Completions 协议
 - 流式方案：后端 `SseEmitter`，前端 `fetch + ReadableStream`
 
@@ -109,6 +119,8 @@ npm run dev
 - `GET /api/llm/providers`：查询启用的 Provider 列表，无需登录
 - `GET /api/user/llm-config`：查询当前用户 Provider、模型和脱敏 Key
 - `PUT /api/user/llm-config`：保存当前用户 Provider、模型和 API Key
+- `GET /api/user/profile`：查询当前用户资料
+- `PUT /api/user/profile`：修改当前用户邮箱或密码
 
 `PUT /api/user/llm-config` 请求体示例：
 
@@ -129,17 +141,31 @@ npm run dev
 ### 简历与面试
 
 - `POST /api/resume/upload`：PDF 简历上传、文本提取与结构化解析
-- `GET /api/resume/list`：查询当前用户简历
+- `GET /api/resume/list`：查询当前用户简历，包含创建时间、使用次数、占用状态
+- `DELETE /api/resume/{resumeId}`：删除未被面试占用的简历
 - `POST /api/interview/start`：创建面试会话并快照 Provider / 模型
-- `GET /api/interview/sessions`：查询历史会话
+- `GET /api/interview/sessions`：查询历史会话，包含阶段、Provider、模型和报告摘要
+- `GET /api/interview/{sessionId}/messages`：查询完整会话消息、阶段时间线和当前会话报告内容
 - `POST /api/interview/{sessionId}/chat`：SSE 流式面试对话
+- `POST /api/interview/{sessionId}/chat?autoStart=true`：在首轮未开始时由 AI 主动发起第一问
+- `POST /api/interview/{sessionId}/stage`：推进面试阶段
 - `POST /api/interview/{sessionId}/finish`：生成 Markdown 面试评估报告
+
+### 三期数据分析
+
+- `GET /api/analytics/radar`：最近 10 场已完成面试的三维平均分
+- `GET /api/analytics/trend`：历史评分趋势
+- `GET /api/analytics/weaknesses`：薄弱点聚合统计
 
 ## 前端页面
 
 - `/login`：登录 / 注册
-- `/interview`：简历上传、岗位选择、面试对话、报告生成
+- `/interview`：主工作台，包含准备区、阶段面试区、历史会话与报告区
+- `/interview/replay/:sessionId`：查看完整会话回放与阶段时间线
+- `/resumes`：简历管理
 - `/settings/llm`：Provider、模型与用户 API Key 设置
+- `/settings/profile`：邮箱与密码设置
+- `/analytics`：三期数据看板
 
 ## 验证命令
 
@@ -156,8 +182,12 @@ npm run build
 
 1. 启动 MySQL、后端和前端。
 2. 访问 `GET /api/llm/providers`，确认未登录可返回 DeepSeek 与 OpenAI。
-3. 登录 demo 用户或新注册用户。
+3. 注册新用户并登录。
 4. 在 `/settings/llm` 保存新 API Key，确认页面只显示脱敏末 4 位。
-5. 使用真实 PDF 完成“上传简历 → 创建面试 → 流式问答 → 生成报告”的完整链路。
+5. 在 `/settings/profile` 修改邮箱，尝试旧密码 + 新密码修改登录密码。
+6. 使用真实 PDF 完成“上传简历 → 创建面试 → AI开始提问 / 发送回答 → 阶段推进 → 生成报告”的完整链路。
+7. 进入 `/interview/replay/:sessionId`，确认 system 消息、user / assistant 消息和阶段时间线可见。
+8. 进入 `/resumes`，确认已占用简历不可删除，未占用简历可删除。
+9. 完成至少一场面试后进入 `/analytics`，确认雷达图、趋势图、薄弱点正常显示。
 
 自动构建和接口边界验证默认不主动消耗真实模型调用。论文第五章所需的 PDF 解析耗时、SSE TTFB、报告截图和数据库截图，需要使用真实 PDF 与少量模型调用单独采集。

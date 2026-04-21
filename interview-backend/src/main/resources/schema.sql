@@ -130,6 +130,47 @@ CREATE TABLE IF NOT EXISTS `interview_message` (
   CONSTRAINT `fk_message_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试消息表';
 
+CREATE TABLE IF NOT EXISTS `interview_stage` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `session_id` BIGINT NOT NULL COMMENT '会话ID',
+  `stage_name` ENUM('warmup','technical','deep_dive','closing') NOT NULL COMMENT '阶段名',
+  `started_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
+  `ended_at` DATETIME DEFAULT NULL COMMENT '结束时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_interview_stage_session_id` (`session_id`),
+  KEY `idx_interview_stage_session_started_at` (`session_id`, `started_at`),
+  CONSTRAINT `fk_interview_stage_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试阶段表';
+
+CREATE TABLE IF NOT EXISTS `score_history` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` BIGINT NOT NULL COMMENT '用户ID',
+  `session_id` BIGINT NOT NULL COMMENT '面试会话ID',
+  `technical_score` TINYINT DEFAULT NULL COMMENT '技术能力分',
+  `expression_score` TINYINT DEFAULT NULL COMMENT '表达清晰度分',
+  `logic_score` TINYINT DEFAULT NULL COMMENT '逻辑思维分',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_score_history_session_id` (`session_id`),
+  KEY `idx_score_history_user_id` (`user_id`),
+  CONSTRAINT `fk_score_history_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `fk_score_history_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评分历史表';
+
+CREATE TABLE IF NOT EXISTS `user_weakness` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` BIGINT NOT NULL COMMENT '用户ID',
+  `session_id` BIGINT NOT NULL COMMENT '来源会话ID',
+  `category` VARCHAR(64) NOT NULL COMMENT '薄弱点分类',
+  `description` TEXT NOT NULL COMMENT '薄弱点描述',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_weakness_user_id` (`user_id`),
+  KEY `idx_user_weakness_session_id` (`session_id`),
+  CONSTRAINT `fk_user_weakness_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `fk_user_weakness_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户薄弱点表';
+
 CREATE TABLE IF NOT EXISTS `llm_provider_config` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `provider_key` VARCHAR(32) NOT NULL COMMENT 'Provider 标识',
