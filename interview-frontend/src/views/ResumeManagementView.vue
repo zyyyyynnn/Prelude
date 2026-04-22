@@ -1,23 +1,18 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElCard, ElEmpty, ElMessageBox, ElTag } from 'element-plus'
+import { ElButton, ElCard, ElEmpty, ElMessageBox, ElTag } from 'element-plus'
 import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
 import type { ResumeItem } from '../api/contracts'
+import { usePageNotice } from '../composables/usePageNotice'
 
 const router = useRouter()
+const { showNotice } = usePageNotice()
 
 const loading = ref(false)
 const uploading = ref(false)
 const uploadInput = ref<HTMLInputElement | null>(null)
-const statusMessage = ref('')
-const statusType = ref<'success' | 'warning' | 'error' | 'info'>('info')
 const items = ref<ResumeItem[]>([])
-
-function setStatus(message: string, type: typeof statusType.value = 'info') {
-  statusMessage.value = message
-  statusType.value = type
-}
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
@@ -27,9 +22,8 @@ async function loadResumes() {
   loading.value = true
   try {
     items.value = await fetchResumes()
-    statusMessage.value = ''
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
@@ -50,13 +44,12 @@ async function handleUpload(event: Event) {
   }
 
   uploading.value = true
-  setStatus('正在上传简历', 'info')
   try {
     await uploadResume(file)
     await loadResumes()
-    setStatus('简历已上传', 'success')
+    showNotice('简历已上传', 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     uploading.value = false
   }
@@ -64,7 +57,7 @@ async function handleUpload(event: Event) {
 
 async function removeResume(item: ResumeItem) {
   if (item.inUse) {
-    setStatus('该简历已被面试使用，无法删除', 'warning')
+    showNotice('该简历已被面试使用，无法删除', 'warning')
     return
   }
 
@@ -76,10 +69,10 @@ async function removeResume(item: ResumeItem) {
     })
     await deleteResume(item.id)
     items.value = items.value.filter((resume) => resume.id !== item.id)
-    setStatus('简历已删除', 'success')
+    showNotice('简历已删除', 'success')
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
-      setStatus(getErrorMessage(error), 'error')
+      showNotice(getErrorMessage(error), 'error')
     }
   }
 }
@@ -94,7 +87,7 @@ onMounted(() => {
     <div class="page__header">
       <p class="eyebrow">简历</p>
       <h2 class="page__title">简历管理</h2>
-      <p class="page__lead">集中查看上传记录、使用状态，并在未被面试占用时删除简历。</p>
+      <p class="page__lead page__lead--nowrap">查看上传记录与占用状态，未占用时可删除。</p>
     </div>
 
     <div class="page__subnav">
@@ -105,14 +98,6 @@ onMounted(() => {
         数据看板
       </ElButton>
     </div>
-
-    <ElAlert
-      v-if="statusMessage"
-      class="status-banner"
-      :closable="false"
-      :title="statusMessage"
-      :type="statusType"
-    />
 
     <div class="page__grid page__grid--single">
       <ElCard class="ui-card panel">

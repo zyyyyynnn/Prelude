@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
+import { ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
 import { login as loginRequest, register as registerRequest } from '../api/auth'
+import projectLogo from '../assets/brand-logo.png'
+import { usePageNotice } from '../composables/usePageNotice'
 import { useAuthStore } from '../stores/auth'
 
 type AuthMode = 'login' | 'register'
@@ -10,10 +12,10 @@ type AuthMode = 'login' | 'register'
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const { showNotice } = usePageNotice()
 
 const authMode = ref<AuthMode>('login')
 const loading = ref(false)
-const notice = ref('')
 const form = reactive({
   username: '',
   password: '',
@@ -42,19 +44,17 @@ function getErrorMessage(error: unknown) {
 
 function switchMode(mode: AuthMode) {
   authMode.value = mode
-  notice.value = ''
 }
 
 async function handleLogin() {
   loading.value = true
-  notice.value = ''
 
   try {
     const response = await loginRequest(form.username.trim(), form.password)
     authStore.setToken(response.token)
     await router.replace(redirectTarget.value)
   } catch (error) {
-    notice.value = getErrorMessage(error)
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
@@ -62,14 +62,13 @@ async function handleLogin() {
 
 async function handleRegister() {
   loading.value = true
-  notice.value = ''
 
   try {
     await registerRequest(form.username.trim(), form.password, form.email.trim() || undefined)
-    notice.value = '注册成功，请继续登录。'
+    showNotice('注册成功，请继续登录。', 'success')
     authMode.value = 'login'
   } catch (error) {
-    notice.value = getErrorMessage(error)
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
@@ -83,6 +82,12 @@ async function submitAuth() {
 
   await handleLogin()
 }
+
+onMounted(() => {
+  if (expiredNotice.value) {
+    showNotice('登录已失效，请重新登录。', 'warning')
+  }
+})
 </script>
 
 <template>
@@ -118,7 +123,9 @@ async function submitAuth() {
             </div>
           </div>
 
-          <div class="login-card__logo-slot" aria-hidden="true" />
+          <div class="login-card__logo-slot" aria-hidden="true">
+            <img class="login-card__logo-image" :src="projectLogo" alt="" />
+          </div>
         </aside>
 
         <div class="login-card__form-panel">
@@ -126,22 +133,6 @@ async function submitAuth() {
             <p class="eyebrow">{{ authEyebrow }}</p>
             <h2 class="page__title">{{ authTitle }}</h2>
           </div>
-
-          <ElAlert
-            v-if="expiredNotice"
-            class="status-banner"
-            type="warning"
-            :closable="false"
-            title="登录已失效，请重新登录。"
-          />
-
-          <ElAlert
-            v-if="notice"
-            class="status-banner"
-            :closable="false"
-            :type="notice.includes('成功') ? 'success' : 'error'"
-            :title="notice"
-          />
 
           <ElForm class="form-grid" label-position="top" @submit.prevent="submitAuth">
             <ElFormItem label="用户名">

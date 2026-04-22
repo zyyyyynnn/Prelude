@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElAlert, ElButton, ElCard, ElForm, ElFormItem, ElInput, ElTag } from 'element-plus'
+import { ElButton, ElCard, ElForm, ElFormItem, ElInput, ElTag } from 'element-plus'
+import { usePageNotice } from '../composables/usePageNotice'
 import { fetchUserProfile, updateUserProfile } from '../api/user'
 
 const loading = ref(false)
 const saving = ref(false)
-const statusMessage = ref('')
-const statusType = ref<'success' | 'warning' | 'error' | 'info'>('info')
+const { showNotice } = usePageNotice()
 const initialEmail = ref('')
 const profile = reactive({
   username: '',
@@ -16,11 +16,6 @@ const profile = reactive({
 })
 
 const hasPasswordChange = computed(() => Boolean(profile.oldPassword.trim() || profile.newPassword.trim()))
-
-function setStatus(message: string, type: typeof statusType.value = 'info') {
-  statusMessage.value = message
-  statusType.value = type
-}
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
@@ -33,9 +28,8 @@ async function loadProfile() {
     profile.username = result.username || ''
     profile.email = result.email || ''
     initialEmail.value = profile.email
-    statusMessage.value = ''
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
@@ -49,22 +43,21 @@ async function saveProfile() {
   const passwordChanged = Boolean(oldPassword || newPassword)
 
   if (!emailChanged && !passwordChanged) {
-    setStatus('未检测到资料变更', 'warning')
+    showNotice('未检测到资料变更', 'warning')
     return
   }
 
   if (Boolean(oldPassword) !== Boolean(newPassword)) {
-    setStatus('修改密码时必须同时填写旧密码和新密码', 'warning')
+    showNotice('修改密码时必须同时填写旧密码和新密码', 'warning')
     return
   }
 
   if (oldPassword && newPassword && oldPassword === newPassword) {
-    setStatus('新密码不能与旧密码相同', 'warning')
+    showNotice('新密码不能与旧密码相同', 'warning')
     return
   }
 
   saving.value = true
-  setStatus('正在保存资料', 'info')
   try {
     const result = await updateUserProfile({
       email: email || undefined,
@@ -76,9 +69,9 @@ async function saveProfile() {
     initialEmail.value = profile.email
     profile.oldPassword = ''
     profile.newPassword = ''
-    setStatus('资料已保存', 'success')
+    showNotice('资料已保存', 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     saving.value = false
   }
@@ -96,14 +89,6 @@ onMounted(() => {
       <h2 class="page__title">用户设置</h2>
       <p class="page__lead">修改邮箱并维护登录密码。</p>
     </div>
-
-    <ElAlert
-      v-if="statusMessage"
-      class="status-banner"
-      :closable="false"
-      :title="statusMessage"
-      :type="statusType"
-    />
 
     <div class="page__grid page__grid--single">
       <ElCard class="ui-card panel">

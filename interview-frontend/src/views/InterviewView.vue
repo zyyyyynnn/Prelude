@@ -2,7 +2,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  ElAlert,
   ElButton,
   ElCard,
   ElInput,
@@ -28,6 +27,7 @@ import {
   startInterview,
   streamInterviewChat,
 } from '../api/interview'
+import { usePageNotice } from '../composables/usePageNotice'
 import { fetchResumes, uploadResume } from '../api/resume'
 import { useAuthStore } from '../stores/auth'
 import { nextStage, stageLabel, STAGE_ORDER } from '../utils/interview'
@@ -35,6 +35,7 @@ import { renderMarkdown } from '../utils/markdown'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { showNotice } = usePageNotice()
 
 const loading = ref(false)
 const sessionLoading = ref(false)
@@ -45,8 +46,6 @@ const finishing = ref(false)
 const stageUpdating = ref(false)
 const uploadInput = ref<HTMLInputElement | null>(null)
 
-const statusMessage = ref('')
-const statusType = ref<'success' | 'warning' | 'error' | 'info'>('info')
 const uploadDisplayName = ref('未选择任何文件')
 const answer = ref('')
 
@@ -85,11 +84,6 @@ const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || rep
 const primarySessionList = computed(() => sessions.value.filter((item) => item.status !== 'finished'))
 const finishedSessionList = computed(() => sessions.value.filter((item) => item.status === 'finished'))
 
-function setStatus(message: string, type: typeof statusType.value = 'info') {
-  statusMessage.value = message
-  statusType.value = type
-}
-
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
 }
@@ -118,12 +112,9 @@ async function loadSession(sessionId: number, silent = false) {
     replay.value = detail
     activeSessionId.value = sessionId
     reportMarkdown.value = detail.summaryReport || ''
-    if (!silent) {
-      statusMessage.value = ''
-    }
   } catch (error) {
     if (!silent) {
-      setStatus(getErrorMessage(error), 'error')
+      showNotice(getErrorMessage(error), 'error')
     }
   } finally {
     sessionLoading.value = false
@@ -148,10 +139,8 @@ async function loadDashboard() {
       activeSessionId.value = null
       reportMarkdown.value = ''
     }
-
-    statusMessage.value = ''
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
@@ -178,9 +167,9 @@ async function handleUpload(event: Event) {
     resumes.value = updated
     selectedResumeId.value = result.resumeId
     uploadDisplayName.value = updated.find((item) => item.id === result.resumeId)?.fileName || file.name
-    setStatus('简历已上传', 'success')
+    showNotice('简历已上传', 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     uploading.value = false
   }
@@ -188,7 +177,7 @@ async function handleUpload(event: Event) {
 
 async function createNewInterview() {
   if (!selectedResumeId.value || !selectedPositionId.value) {
-    setStatus('请选择简历和岗位', 'warning')
+    showNotice('请选择简历和岗位', 'warning')
     return
   }
 
@@ -202,9 +191,9 @@ async function createNewInterview() {
     await loadSession(result.sessionId, true)
     answer.value = ''
     reportMarkdown.value = ''
-    setStatus('面试已创建', 'success')
+    showNotice('面试已创建', 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     creating.value = false
   }
@@ -263,7 +252,7 @@ function appendAssistantDelta(id: number, delta: string) {
 
 async function streamReply(content: string, autoStart = false) {
   if (!activeSessionId.value) {
-    setStatus('请先创建或选择一场面试', 'warning')
+    showNotice('请先创建或选择一场面试', 'warning')
     return false
   }
 
@@ -298,7 +287,7 @@ async function streamReply(content: string, autoStart = false) {
     )
     await refreshSessionList()
     await loadSession(activeSessionId.value, true)
-    setStatus(autoStart ? '面试官已开始提问' : '回答已发送', 'success')
+    showNotice(autoStart ? '面试官已开始提问' : '回答已发送', 'success')
     return true
   } catch (error) {
     removeMessageById(assistantMessageId)
@@ -309,7 +298,7 @@ async function streamReply(content: string, autoStart = false) {
       await router.replace('/login?reason=expired')
       return false
     }
-    setStatus(message, 'error')
+    showNotice(message, 'error')
     return false
   }
 }
@@ -329,7 +318,7 @@ async function handleAutoStart() {
 async function handleSend() {
   const content = answer.value.trim()
   if (!content) {
-    setStatus('请输入回答内容', 'warning')
+    showNotice('请输入回答内容', 'warning')
     return
   }
 
@@ -353,9 +342,9 @@ async function handleAdvanceStage() {
     await changeInterviewStage(activeSessionId.value, { stageName: nextStageName.value })
     await refreshSessionList()
     await loadSession(activeSessionId.value, true)
-    setStatus(`已进入${stageLabel(nextStageName.value)}阶段`, 'success')
+    showNotice(`已进入${stageLabel(nextStageName.value)}阶段`, 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     stageUpdating.value = false
   }
@@ -381,9 +370,9 @@ async function handleFinish() {
     if (activeSessionId.value) {
       await loadSession(activeSessionId.value, true)
     }
-    setStatus('报告已生成', 'success')
+    showNotice('报告已生成', 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     finishing.value = false
   }
@@ -411,16 +400,8 @@ onMounted(() => {
     <div class="page__header">
       <p class="eyebrow">面试</p>
       <h2 class="page__title">主工作台</h2>
-      <p class="page__lead page__lead--nowrap">上传简历、选择岗位、创建面试并进行阶段化流式对话。</p>
+      <p class="page__lead page__lead--nowrap">上传简历、选择岗位并创建阶段化面试对话。</p>
     </div>
-
-    <ElAlert
-      v-if="statusMessage"
-      class="status-banner"
-      :closable="false"
-      :title="statusMessage"
-      :type="statusType"
-    />
 
     <div class="page__grid">
       <ElCard class="ui-card panel">
