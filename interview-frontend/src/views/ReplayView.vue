@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElCard, ElTag } from 'element-plus'
+import { ElButton, ElCard, ElTag } from 'element-plus'
 import { fetchInterviewMessages } from '../api/interview'
 import type { InterviewReplayResponse } from '../api/contracts'
+import { usePageNotice } from '../composables/usePageNotice'
 import { stageLabel } from '../utils/interview'
 
 const route = useRoute()
 const router = useRouter()
+const { showNotice } = usePageNotice()
 
 const loading = ref(false)
-const statusMessage = ref('')
 const replay = ref<InterviewReplayResponse | null>(null)
 
 const sessionId = computed(() => Number(route.params.sessionId))
@@ -23,9 +24,8 @@ async function loadReplay() {
   loading.value = true
   try {
     replay.value = await fetchInterviewMessages(sessionId.value)
-    statusMessage.value = ''
   } catch (error) {
-    statusMessage.value = getErrorMessage(error)
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
@@ -49,14 +49,6 @@ onMounted(() => {
         返回主工作台
       </ElButton>
     </div>
-
-    <ElAlert
-      v-if="statusMessage"
-      class="status-banner"
-      :closable="false"
-      :title="statusMessage"
-      type="error"
-    />
 
     <div v-if="replay" class="page__grid page__grid--single">
       <ElCard class="ui-card panel">

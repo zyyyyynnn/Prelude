@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { ElAlert, ElButton, ElCard, ElForm, ElFormItem, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
+import { ElButton, ElCard, ElForm, ElFormItem, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
 import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig } from '../api/llm'
 import type { LlmProviderOption } from '../api/contracts'
+import { usePageNotice } from '../composables/usePageNotice'
 
 const loading = ref(false)
 const saving = ref(false)
-const statusMessage = ref('')
-const statusType = ref<'success' | 'warning' | 'error' | 'info'>('info')
+const { showNotice } = usePageNotice()
 
 const providerOptions = ref<LlmProviderOption[]>([])
 const selectedProviderKey = ref('')
@@ -20,11 +20,6 @@ const currentProvider = computed(
 )
 
 const modelOptions = computed(() => currentProvider.value?.models ?? [])
-
-function setStatus(message: string, type: typeof statusType.value = 'info') {
-  statusMessage.value = message
-  statusType.value = type
-}
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -64,9 +59,9 @@ async function loadSettings() {
     const provider = providers.find((item) => item.providerKey === providerKey) ?? providers[0] ?? null
     applySelection(provider?.providerKey || '', config.model || provider?.models[0] || '')
     apiKeyMasked.value = config.apiKeyMasked || ''
-    statusMessage.value = ''
+    showNotice('配置已加载', 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
@@ -74,12 +69,11 @@ async function loadSettings() {
 
 async function saveSettings() {
   if (!selectedProviderKey.value || !selectedModel.value) {
-    setStatus('请选择 Provider 和模型', 'warning')
+    showNotice('请选择 Provider 和模型', 'warning')
     return
   }
 
   saving.value = true
-  setStatus('正在保存配置', 'info')
 
   try {
     const result = await saveUserLlmConfig({
@@ -93,13 +87,13 @@ async function saveSettings() {
     apiKeyMasked.value = result.apiKeyMasked || ''
     if (apiKeyInput.value && !result.apiKeyMasked) {
       apiKeyInput.value = ''
-      setStatus('配置已保存，但接口未返回脱敏 Key', 'warning')
+      showNotice('配置已保存，但接口未返回脱敏 Key', 'warning')
       return
     }
     apiKeyInput.value = ''
-    setStatus('LLM 配置已保存', 'success')
+    showNotice('LLM 配置已保存', 'success')
   } catch (error) {
-    setStatus(getErrorMessage(error), 'error')
+    showNotice(getErrorMessage(error), 'error')
   } finally {
     saving.value = false
   }
@@ -117,14 +111,6 @@ onMounted(() => {
       <h2 class="page__title">LLM 配置</h2>
       <p class="page__lead">选择 Provider、模型，并维护用户 API Key。</p>
     </div>
-
-    <ElAlert
-      v-if="statusMessage"
-      class="status-banner"
-      :closable="false"
-      :title="statusMessage"
-      :type="statusType"
-    />
 
     <div class="page__grid page__grid--single">
       <ElCard class="ui-card panel">

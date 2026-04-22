@@ -2,13 +2,14 @@
 import * as echarts from 'echarts'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElAlert, ElButton, ElCard, ElEmpty, ElTag } from 'element-plus'
+import { ElButton, ElCard, ElEmpty, ElTag } from 'element-plus'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint, AnalyticsWeaknessItem } from '../api/contracts'
+import { usePageNotice } from '../composables/usePageNotice'
 
 const router = useRouter()
+const { showNotice } = usePageNotice()
 
-const statusMessage = ref('')
 const radar = ref<AnalyticsRadarResponse | null>(null)
 const trend = ref<AnalyticsTrendPoint[]>([])
 const weaknesses = ref<AnalyticsWeaknessItem[]>([])
@@ -47,11 +48,10 @@ async function loadAnalytics() {
     radar.value = radarData
     trend.value = trendData
     weaknesses.value = weaknessData
-    statusMessage.value = ''
     await nextTick()
     renderCharts()
   } catch (error) {
-    statusMessage.value = getErrorMessage(error)
+    showNotice(getErrorMessage(error), 'error')
   }
 }
 
@@ -147,7 +147,7 @@ onBeforeUnmount(() => {
     <div class="page__header">
       <p class="eyebrow">分析</p>
       <h2 class="page__title">数据看板</h2>
-      <p class="page__lead">查看最近面试的三维能力平均分、时间趋势和高频薄弱点。</p>
+      <p class="page__lead page__lead--nowrap">查看能力均分、趋势与高频薄弱点。</p>
     </div>
 
     <div class="page__subnav">
@@ -155,14 +155,6 @@ onBeforeUnmount(() => {
         返回主工作台
       </ElButton>
     </div>
-
-    <ElAlert
-      v-if="statusMessage"
-      class="status-banner"
-      :closable="false"
-      :title="statusMessage"
-      type="error"
-    />
 
     <template v-if="radar && radar.sessionCount > 0">
       <div class="page__grid">
