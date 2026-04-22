@@ -1,14 +1,15 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { test, expect } from '@playwright/test'
+import { test, expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const outputDir = path.resolve(__dirname, '../../output/playwright/demo')
-const manifestPath = path.join(outputDir, 'manifest.md')
+const outputDir = path.resolve(__dirname, '../../output/demo/screenshots')
+const manifestPath = path.resolve(__dirname, '../../output/demo/manifest.md')
 const demoResetUrl = 'http://127.0.0.1:8081/api/demo/reset'
+const resumeFixturePath = path.resolve(__dirname, './fixtures/demo-resume.pdf')
 
 type ManifestItem = {
   file: string
@@ -22,6 +23,29 @@ async function ensureOutputDir() {
   await fs.mkdir(outputDir, { recursive: true })
 }
 
+async function ensureScreenshotMode(page: Page) {
+  await page.evaluate(() => {
+    const styleId = 'demo-capture-style'
+    document.documentElement.setAttribute('data-demo-capture', 'true')
+
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style')
+      style.id = styleId
+      style.textContent = `
+        html[data-demo-capture='true'] body {
+          background-attachment: scroll !important;
+        }
+
+        html[data-demo-capture='true'] .app-shell__header {
+          position: static !important;
+          top: auto !important;
+        }
+      `
+      document.head.appendChild(style)
+    }
+  })
+}
+
 async function appendManifest(item: ManifestItem) {
   manifestItems.push(item)
   const lines = [
@@ -29,13 +53,34 @@ async function appendManifest(item: ManifestItem) {
     '',
     `生成时间：${new Date().toLocaleString('zh-CN', { hour12: false })}`,
     '',
-    ...manifestItems.map((entry) => `- \`${entry.file}\` | ${entry.page} | ${entry.state}`),
+    ...manifestItems
+      .slice()
+      .sort((left, right) => left.file.localeCompare(right.file, 'en'))
+      .map((entry) => `- \`${entry.file}\` | ${entry.page} | ${entry.state}`),
     '',
   ]
   await fs.writeFile(manifestPath, lines.join('\n'), 'utf8')
 }
 
-async function capture(page: import('@playwright/test').Page, file: string, pageName: string, state: string) {
+async function waitForTransientUiToClear(page: Page) {
+  await page.waitForFunction(() => !document.querySelector('.el-message.page-notice'), undefined, {
+    timeout: 5000,
+  }).catch(() => null)
+  await page.waitForFunction(
+    () => !document.querySelector('.el-loading-mask:not(.is-hidden)'),
+    undefined,
+    { timeout: 5000 },
+  ).catch(() => null)
+  await page.waitForTimeout(200)
+}
+
+async function capture(page: Page, file: string, pageName: string, state: string, readyLocator?: Locator) {
+  await page.waitForLoadState('domcontentloaded')
+  if (readyLocator) {
+    await expect(readyLocator).toBeVisible()
+  }
+  await ensureScreenshotMode(page)
+  await waitForTransientUiToClear(page)
   await page.screenshot({
     path: path.join(outputDir, file),
     fullPage: true,
@@ -43,59 +88,24 @@ async function capture(page: import('@playwright/test').Page, file: string, page
   await appendManifest({ file, page: pageName, state })
 }
 
-async function resetDemo(request: import('@playwright/test').APIRequestContext) {
+async function resetDemo(request: APIRequestContext) {
   const response = await request.post(demoResetUrl)
   expect(response.ok()).toBeTruthy()
 }
 
-async function createDummyPdf() {
-  const pdfPath = path.join(outputDir, 'demo-resume.pdf')
-  const content = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Count 1 /Kids [3 0 R] >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
-endobj
-4 0 obj
-<< /Length 63 >>
-stream
-BT
-/F1 16 Tf
-40 88 Td
-(Demo resume placeholder) Tj
-ET
-endstream
-endobj
-5 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000010 00000 n 
-0000000060 00000 n 
-0000000117 00000 n 
-0000000243 00000 n 
-0000000357 00000 n 
-trailer
-<< /Root 1 0 R /Size 6 >>
-startxref
-430
-%%EOF`
-  await fs.writeFile(pdfPath, content, 'utf8')
-  return pdfPath
-}
-
-async function login(page: import('@playwright/test').Page) {
+async function login(page: Page) {
   await page.goto('/login')
   await page.getByPlaceholder('请输入用户名').fill('demo')
   await page.getByPlaceholder('请输入密码').fill('123456')
   await page.getByRole('button', { name: '登录' }).first().click()
   await page.waitForURL('**/interview')
+}
+
+async function sendAnswer(page: Page, content: string) {
+  await page.getByPlaceholder('输入回答后发送').fill(content)
+  await page.getByRole('button', { name: '发送回答' }).click()
+  await expect(page.getByText(content)).toBeVisible()
+  await waitForTransientUiToClear(page)
 }
 
 test('capture demo twin full-page screenshots', async ({ page, request }) => {
@@ -104,58 +114,71 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await resetDemo(request)
 
   await page.goto('/login')
-  await capture(page, '01-login.png', '登录页', '登录态空白')
+  await capture(page, '01-login.png', '登录页', '登录态空白', page.getByRole('button', { name: '登录' }).first())
 
   await page.getByRole('button', { name: '注册' }).click()
-  await capture(page, '02-register.png', '注册页', '注册表单')
+  await capture(page, '02-register.png', '注册页', '注册表单', page.getByRole('button', { name: '完成注册' }))
 
   await page.getByRole('button', { name: '登录' }).last().click()
   await login(page)
 
-  await capture(page, '03-interview-empty.png', '主工作台', '空态')
+  await capture(page, '03-interview-empty.png', '主工作台', '空态', page.getByRole('button', { name: '创建面试' }))
 
   await page.goto('/resumes')
-  await capture(page, '08-resumes-empty.png', '简历管理', '空态')
+  await capture(page, '08-resumes-empty.png', '简历管理', '空态', page.getByRole('heading', { name: '简历管理' }))
 
   await page.goto('/settings/llm')
-  await capture(page, '10-settings-llm.png', 'LLM配置', '默认配置')
+  await capture(page, '10-settings-llm.png', 'LLM配置', '默认配置', page.getByRole('heading', { name: 'Provider 抽象层' }))
 
   await page.goto('/settings/profile')
-  await capture(page, '11-settings-profile.png', '用户设置', '默认配置')
+  await capture(page, '11-settings-profile.png', '用户设置', '默认配置', page.getByRole('heading', { name: '用户设置' }))
 
   await page.goto('/analytics')
-  await capture(page, '12-analytics-empty.png', '数据看板', '空态')
+  await capture(page, '12-analytics-empty.png', '数据看板', '空态', page.getByRole('heading', { name: '数据看板' }))
 
   await page.goto('/interview')
-  const pdfPath = await createDummyPdf()
-  await page.locator('input[type="file"]').setInputFiles(pdfPath)
+  await page.locator('input[type="file"]').setInputFiles(resumeFixturePath)
   await expect(page.getByText('demo-resume.pdf').first()).toBeVisible()
   await page.getByRole('button', { name: '创建面试' }).click()
   await expect(page.getByText(/会话 #\d+/)).toBeVisible()
-  await capture(page, '04-interview-session-started.png', '主工作台', '已创建会话')
+  await capture(page, '04-interview-session-started.png', '主工作台', '已创建会话', page.getByText(/会话 #\d+/))
 
   await page.getByRole('button', { name: 'AI开始提问' }).click()
   await expect(page.getByText('面试官', { exact: true }).first()).toBeVisible()
-  await page.getByPlaceholder('输入回答后发送').fill('我主要负责后端接口、流式问答和报告落库。')
-  await page.getByRole('button', { name: '发送回答' }).click()
-  await expect(page.getByText('我主要负责后端接口、流式问答和报告落库。')).toBeVisible()
+  await sendAnswer(page, '我主要负责后端接口、流式问答和报告落库。')
   await page.getByRole('button', { name: '进入技术阶段' }).click()
   await expect(page.getByRole('button', { name: '进入深挖阶段' })).toBeVisible()
-  await capture(page, '05-interview-stage-technical.png', '主工作台', '技术阶段')
+  await sendAnswer(page, '技术阶段里，我重点负责 Spring Boot 接口、异常处理和报告持久化。')
+  await capture(page, '05-interview-stage-technical.png', '主工作台', '技术阶段', page.getByRole('button', { name: '进入深挖阶段' }))
+
+  await page.getByRole('button', { name: '进入深挖阶段' }).click()
+  await expect(page.getByRole('button', { name: '进入收尾阶段' })).toBeVisible()
+  await sendAnswer(page, '深挖阶段我会重点解释幂等控制、阶段推进顺序和回放一致性。')
+
+  await page.getByRole('button', { name: '进入收尾阶段' }).click()
+  await expect(page.getByRole('button', { name: '阶段已完成' })).toBeVisible()
+  await sendAnswer(page, '收尾阶段我会总结项目取舍、风险控制和后续优化方向。')
 
   await page.getByRole('button', { name: '生成报告' }).click()
   await expect(page.getByRole('heading', { name: '面试评估报告' })).toBeVisible()
   await expect(page.getByText('技术能力：7/10')).toBeVisible()
-  await capture(page, '06-interview-report.png', '主工作台', '报告已生成')
+  await capture(page, '06-interview-report.png', '主工作台', '报告已生成', page.getByRole('heading', { name: '面试评估报告' }))
 
   await page.getByRole('button', { name: '回放' }).first().click()
   await page.waitForURL('**/interview/replay/**')
-  await capture(page, '07-replay.png', '回放页', '完整回放')
+  await expect(page.getByRole('heading', { name: '破冰', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '技术', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '深挖', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '收尾', exact: true })).toBeVisible()
+  await expect(page.locator('.replay-item .el-tag').filter({ hasText: '系统' }).first()).toBeVisible()
+  await expect(page.locator('.replay-item .el-tag').filter({ hasText: '面试官' }).first()).toBeVisible()
+  await expect(page.locator('.replay-item .el-tag').filter({ hasText: '我' }).first()).toBeVisible()
+  await capture(page, '07-replay.png', '回放页', '完整回放', page.getByRole('heading', { name: '会话回放' }))
 
   await page.goto('/resumes')
-  await capture(page, '09-resumes-filled.png', '简历管理', '已有演示简历')
+  await capture(page, '09-resumes-filled.png', '简历管理', '已有演示简历', page.getByText('demo-resume.pdf').first())
 
   await page.goto('/analytics')
   await expect(page.getByText('能力雷达')).toBeVisible()
-  await capture(page, '13-analytics-filled.png', '数据看板', '已有演示数据')
+  await capture(page, '13-analytics-filled.png', '数据看板', '已有演示数据', page.getByRole('heading', { name: '能力雷达' }))
 })
