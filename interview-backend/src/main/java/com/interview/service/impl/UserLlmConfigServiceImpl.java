@@ -10,6 +10,7 @@ import com.interview.llm.LlmRouter;
 import com.interview.llm.LlmSelection;
 import com.interview.mapper.UserMapper;
 import com.interview.security.AesGcmEncryptor;
+import com.interview.service.DemoModeService;
 import com.interview.service.UserLlmConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     private final UserMapper userMapper;
     private final LlmRouter llmRouter;
     private final AesGcmEncryptor aesGcmEncryptor;
+    private final DemoModeService demoModeService;
 
     @Override
     public UserLlmConfigResponse getCurrentUserConfig() {
@@ -42,7 +44,9 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
 
         String encryptedApiKey = user.getLlmApiKeyEncrypted();
         if (request.apiKey() != null) {
-            encryptedApiKey = request.apiKey().isBlank() ? null : aesGcmEncryptor.encrypt(request.apiKey());
+            encryptedApiKey = isDemoEnabled()
+                ? demoModeService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
+                : request.apiKey().isBlank() ? null : aesGcmEncryptor.encrypt(request.apiKey());
         }
 
         userMapper.update(
@@ -70,6 +74,9 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     }
 
     private String maskApiKey(String encryptedApiKey) {
+        if (isDemoEnabled()) {
+            return demoModeService.maskApiKey(encryptedApiKey);
+        }
         if (encryptedApiKey == null || encryptedApiKey.isBlank()) {
             return null;
         }
@@ -79,5 +86,9 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
             log.warn("Failed to mask user API key");
             return null;
         }
+    }
+
+    private boolean isDemoEnabled() {
+        return demoModeService != null && demoModeService.isEnabled();
     }
 }
