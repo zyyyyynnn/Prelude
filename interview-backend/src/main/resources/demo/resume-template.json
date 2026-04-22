@@ -1,0 +1,21 @@
+{
+  "skills": [
+    "Java",
+    "Spring Boot",
+    "MySQL",
+    "Redis",
+    "RabbitMQ",
+    "Vue 3"
+  ],
+  "projects": [
+    {
+      "name": "校园面试模拟平台",
+      "description": "负责后端接口与流式问答链路实现，完成 JWT 登录、简历解析、会话记录与评估报告落库。"
+    },
+    {
+      "name": "课程选课管理系统",
+      "description": "参与教师、课程、选课数据建模与权限管理，优化查询接口并补充缓存层。"
+    }
+  ],
+  "rawText": "张三\\nJava 后端开发方向\\n技能：Java、Spring Boot、MySQL、Redis、RabbitMQ、Vue 3\\n项目一：校园面试模拟平台，负责后端接口、JWT 登录、SSE 流式消息、报告落库。\\n项目二：课程选课管理系统，负责课程选课接口、权限管理、缓存与查询优化。"
+}

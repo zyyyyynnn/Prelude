@@ -1,0 +1,5 @@
+{
+  "providerKey": "deepseek",
+  "model": "deepseek-chat",
+  "apiKeyMasked": "****demo"
+}

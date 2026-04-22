@@ -32,6 +32,7 @@ import com.interview.mapper.PositionTemplateMapper;
 import com.interview.mapper.ResumeMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserWeaknessMapper;
+import com.interview.service.DemoModeService;
 import com.interview.service.InterviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +81,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final ScoreHistoryMapper scoreHistoryMapper;
     private final UserWeaknessMapper userWeaknessMapper;
     private final LlmRouter llmRouter;
+    private final DemoModeService demoModeService;
     private final ObjectMapper objectMapper;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
@@ -219,20 +221,14 @@ public class InterviewServiceImpl implements InterviewService {
 
                 if (autoStart && firstRound && content.isEmpty()) {
                     List<Map<String, String>> messages = buildAutoStartMessages(session);
-                    llmRouter.streamWithSnapshot(session.getLlmProvider(), session.getLlmModel(), messages, delta -> {
-                        assistantReply.append(delta);
-                        sendDelta(emitter, delta);
-                    });
+                    streamAssistantReply(session.getId(), session.getLlmProvider(), session.getLlmModel(), messages, assistantReply, emitter);
                 } else {
                     if (content.isEmpty()) {
                         throw BusinessException.badRequest("回答内容不能为空");
                     }
                     insertMessage(session.getId(), ROLE_USER, content, nextSeqNum(session.getId()));
                     List<Map<String, String>> messages = buildContextMessages(session.getId());
-                    llmRouter.streamWithSnapshot(session.getLlmProvider(), session.getLlmModel(), messages, delta -> {
-                        assistantReply.append(delta);
-                        sendDelta(emitter, delta);
-                    });
+                    streamAssistantReply(session.getId(), session.getLlmProvider(), session.getLlmModel(), messages, assistantReply, emitter);
                 }
 
                 if (!assistantReply.isEmpty()) {
@@ -257,14 +253,16 @@ public class InterviewServiceImpl implements InterviewService {
         List<InterviewMessage> messages = listMessages(sessionId);
 
         String prompt = buildFinishPrompt(session, messages);
-        String report = llmRouter.chatWithSnapshot(
-            session.getLlmProvider(),
-            session.getLlmModel(),
-            List.of(
-                Map.of("role", "system", "content", "你是严谨的面试评估助手，请只输出 Markdown。"),
-                Map.of("role", "user", "content", prompt)
-            )
-        );
+        String report = isDemoEnabled()
+            ? demoModeService.resolveReport(session.getTargetPosition())
+            : llmRouter.chatWithSnapshot(
+                session.getLlmProvider(),
+                session.getLlmModel(),
+                List.of(
+                    Map.of("role", "system", "content", "你是严谨的面试评估助手，请只输出 Markdown。"),
+                    Map.of("role", "user", "content", prompt)
+                )
+            );
 
         session.setStatus(STATUS_FINISHED);
         session.setSummaryReport(report);
@@ -461,7 +459,9 @@ public class InterviewServiceImpl implements InterviewService {
 
     private void persistWeaknesses(InterviewSession session, String report) {
         try {
-            List<UserWeakness> weaknesses = extractWeaknesses(session, report);
+            List<UserWeakness> weaknesses = isDemoEnabled()
+                ? demoModeService.buildWeaknesses(session.getUserId(), session.getId())
+                : extractWeaknesses(session, report);
             userWeaknessMapper.delete(new LambdaQueryWrapper<UserWeakness>()
                 .eq(UserWeakness::getSessionId, session.getId()));
             for (UserWeakness weakness : weaknesses) {
@@ -501,6 +501,45 @@ public class InterviewServiceImpl implements InterviewService {
             weaknesses.add(weakness);
         }
         return weaknesses;
+    }
+
+    private void streamAssistantReply(
+        Long sessionId,
+        String providerKey,
+        String model,
+        List<Map<String, String>> messages,
+        StringBuilder assistantReply,
+        SseEmitter emitter
+    ) {
+        if (isDemoEnabled()) {
+            String currentStage = currentStageName(sessionId);
+            int replyIndex = assistantRepliesInCurrentStage(sessionId);
+            String scriptedReply = demoModeService.resolveScriptedReply(currentStage, replyIndex);
+            demoModeService.streamReply(scriptedReply, delta -> {
+                assistantReply.append(delta);
+                sendDelta(emitter, delta);
+            });
+            return;
+        }
+
+        llmRouter.streamWithSnapshot(providerKey, model, messages, delta -> {
+            assistantReply.append(delta);
+            sendDelta(emitter, delta);
+        });
+    }
+
+    private int assistantRepliesInCurrentStage(Long sessionId) {
+        InterviewStage stage = currentOrLatestStage(sessionId);
+        List<InterviewMessage> messages = listMessages(sessionId);
+        if (stage == null || stage.getStartedAt() == null) {
+            return (int) messages.stream()
+                .filter(message -> ROLE_ASSISTANT.equals(message.getRole()))
+                .count();
+        }
+        return (int) messages.stream()
+            .filter(message -> ROLE_ASSISTANT.equals(message.getRole()))
+            .filter(message -> message.getCreatedAt() == null || !message.getCreatedAt().isBefore(stage.getStartedAt()))
+            .count();
     }
 
     private void closeCurrentStage(Long sessionId) {
@@ -574,6 +613,10 @@ public class InterviewServiceImpl implements InterviewService {
             throw BusinessException.unauthorized("请先登录");
         }
         return userId;
+    }
+
+    private boolean isDemoEnabled() {
+        return demoModeService != null && demoModeService.isEnabled();
     }
 
     private record WeaknessExtractionItem(String category, String description) {

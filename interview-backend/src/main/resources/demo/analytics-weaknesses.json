@@ -1,0 +1,9 @@
+[
+  {
+    "category": "JVM 与并发",
+    "count": 1,
+    "descriptions": [
+      "对线程调度、锁竞争和 JVM 运行细节的回答还不够深入。"
+    ]
+  }
+]

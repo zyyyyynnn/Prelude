@@ -13,6 +13,7 @@ import com.interview.entity.InterviewSession;
 import com.interview.llm.LlmRouter;
 import com.interview.mapper.InterviewSessionMapper;
 import com.interview.mapper.ResumeMapper;
+import com.interview.service.DemoModeService;
 import com.interview.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
@@ -36,11 +37,15 @@ public class ResumeServiceImpl implements ResumeService {
     private final InterviewSessionMapper interviewSessionMapper;
     private final ObjectMapper objectMapper;
     private final LlmRouter llmRouter;
+    private final DemoModeService demoModeService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ResumeUploadResponse upload(MultipartFile file) {
         validateFile(file);
+        if (isDemoEnabled()) {
+            return demoModeService.createDemoResume(currentUserId(), file.getOriginalFilename());
+        }
         String rawText = extractPdfText(file);
         ResumeParseResult parseResult = parseByLlm(rawText);
 
@@ -160,5 +165,9 @@ public class ResumeServiceImpl implements ResumeService {
             throw BusinessException.unauthorized("请先登录");
         }
         return userId;
+    }
+
+    private boolean isDemoEnabled() {
+        return demoModeService != null && demoModeService.isEnabled();
     }
 }

@@ -22,6 +22,7 @@
 - 简历管理与占用校验删除
 - 数据看板（雷达图、趋势图、薄弱点）
 - 共享毛玻璃顶部 Hero 栏与页面顶部居中提示
+- Demo Twin：与真实版 UI 一致的独立演示运行时、独立数据库与全页面截图链路
 
 ## 技术栈
 
@@ -105,6 +106,72 @@ npm run dev
 ```
 
 前端默认端口为 `5173`。开发环境通过 Vite proxy 将 `/api` 转发到 `http://localhost:8080`。
+
+## Demo Twin 本地演示
+
+Demo Twin 用于答辩演示、录屏和 UI 审查，不使用真实 API Key，也不依赖真实简历内容。它与真实版共用同一套页面、路由、组件和样式，但运行时、数据库、登录态和截图产物完全隔离。
+
+### 1. Demo 数据库
+
+```powershell
+mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_demo DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+### 2. 启动 Demo 后端
+
+```powershell
+cd "E:\Graduation project\interview-backend"
+mvn "-Dspring-boot.run.profiles=demo" spring-boot:run
+```
+
+Demo 后端端口固定为 `8081`，并使用 `interview_demo` 数据库。
+
+### 3. 启动 Demo 前端
+
+```powershell
+cd "E:\Graduation project\interview-frontend"
+npm run dev:demo
+```
+
+Demo 前端端口固定为 `5174`，并通过 `VITE_API_BASE_URL` 直接请求 `http://localhost:8081/api`。
+
+### 4. 重置演示数据
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8081/api/demo/reset"
+```
+
+该接口只在 Demo 后端可用，用于重置演示用户、演示简历、演示会话、评分和薄弱点数据。
+
+### 5. 生成全页面截图
+
+```powershell
+cd "E:\Graduation project\interview-frontend"
+npm run capture:demo
+```
+
+截图使用本机 Edge 渠道，不下载 Chromium。输出目录：
+
+```text
+E:\Graduation project\output\playwright\demo
+```
+
+默认生成：
+
+- `01-login.png`
+- `02-register.png`
+- `03-interview-empty.png`
+- `04-interview-session-started.png`
+- `05-interview-stage-technical.png`
+- `06-interview-report.png`
+- `07-replay.png`
+- `08-resumes-empty.png`
+- `09-resumes-filled.png`
+- `10-settings-llm.png`
+- `11-settings-profile.png`
+- `12-analytics-empty.png`
+- `13-analytics-filled.png`
+- `manifest.md`
 
 ## 核心接口
 
@@ -192,3 +259,11 @@ npm run build
 9. 完成至少一场面试后进入 `/analytics`，确认雷达图、趋势图、薄弱点正常显示。
 
 自动构建和接口边界验证默认不主动消耗真实模型调用。论文第五章所需的 PDF 解析耗时、SSE TTFB、报告截图和数据库截图，需要使用真实 PDF 与少量模型调用单独采集。
+
+Demo 版额外验收建议：
+
+1. 同时启动真实版和 Demo Twin，确认两个版本可并行打开且登录态不串扰。
+2. 访问 `http://127.0.0.1:5174/login`，使用 `demo / 123456` 登录。
+3. 不上传真实 PDF，直接通过占位 PDF 完成“上传简历 → 创建面试 → AI开始提问 → 阶段推进 → 生成报告”链路。
+4. 确认 `/resumes`、`/settings/llm`、`/settings/profile`、`/analytics` 都能在 Demo Twin 中独立展示。
+5. 执行 `npm run capture:demo`，确认 `output/playwright/demo/` 下 13 张截图与 `manifest.md` 全部生成。
