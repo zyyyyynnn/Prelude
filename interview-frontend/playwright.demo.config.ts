@@ -11,7 +11,7 @@ export default defineConfig({
   timeout: 180000,
   fullyParallel: false,
   workers: 1,
-  outputDir: path.resolve(__dirname, '../output/playwright/.artifacts'),
+  outputDir: path.resolve(__dirname, '../output/demo/.artifacts'),
   reporter: [['list']],
   use: {
     baseURL: 'http://127.0.0.1:5174',
