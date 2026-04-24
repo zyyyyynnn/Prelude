@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
 import { login as loginRequest, register as registerRequest } from '../api/auth'
-import projectLogo from '../assets/brand-logo.png'
+import BrandMetaballs from '../components/BrandMetaballs.vue'
 import { usePageNotice } from '../composables/usePageNotice'
 import { useAuthStore } from '../stores/auth'
 
@@ -33,11 +33,6 @@ const isRegisterMode = computed(() => authMode.value === 'register')
 const authEyebrow = computed(() => (isRegisterMode.value ? '注册' : '登录'))
 const authTitle = computed(() => (isRegisterMode.value ? '创建工作台账号' : '进入面试工作台'))
 const submitLabel = computed(() => (isRegisterMode.value ? '完成注册' : '登录'))
-const authLead = computed(() =>
-  isRegisterMode.value
-    ? '创建账号后进入主工作台。'
-    : '登录后进入主工作台。',
-)
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -119,24 +114,14 @@ onMounted(() => {
 
       <div class="login-card__content">
         <aside class="login-card__brand-panel">
-          <div class="login-card__brand">
-            <span class="login-card__brand-mark">I</span>
-            <div class="login-card__brand-copy">
-              <p class="login-card__brand-eyebrow">INTERVIEW PLATFORM</p>
-              <h1 class="login-card__brand-title">模拟面试系统</h1>
-            </div>
-          </div>
-
-          <div class="login-card__logo-slot" aria-hidden="true">
-            <img class="login-card__logo-image" :src="projectLogo" alt="" />
-          </div>
+          <BrandMetaballs class="login-card__logo" />
+          <p class="login-card__brand-caption">LLM Moke Interview System</p>
         </aside>
 
         <div class="login-card__form-panel">
           <div class="page__header login-card__header">
             <p class="eyebrow">{{ authEyebrow }}</p>
             <h2 class="page__title">{{ authTitle }}</h2>
-            <p class="page__lead login-card__lead">{{ authLead }}</p>
           </div>
 
           <div class="auth-switch" role="tablist" aria-label="认证模式">

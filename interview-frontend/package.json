@@ -12,18 +12,23 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-vue": "^6.0.6",
     "typescript": "~6.0.2",
     "vite": "^8.0.4",
     "vue-tsc": "^3.2.6"
   },
   "dependencies": {
+    "@paper-design/shaders-react": "^0.0.76",
     "axios": "^1.12.2",
     "echarts": "^6.0.0",
     "element-plus": "^2.13.7",
     "markdown-it": "^14.1.1",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.5.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "vue": "^3.5.32",
     "vue-router": "^4.6.1"
   }

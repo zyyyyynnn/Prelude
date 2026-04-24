@@ -50,6 +50,12 @@ if errorlevel 1 (
   exit /b 1
 )
 
+call :check_backend_config
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
+
 if not exist "%FRONTEND_DIR%\node_modules" (
   echo [INFO] Frontend dependencies missing, running npm install ...
   call npm --prefix "%FRONTEND_DIR%" install
@@ -107,6 +113,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "  Start-Sleep -Seconds 2;" ^
   "}" ^
   "if ($ready) { exit 0 } else { exit 1 }"
+exit /b %errorlevel%
+
+:check_backend_config
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$root = '%ROOT%';" ^
+  "$helper = Join-Path $root 'scripts\common\runtime-helpers.ps1';" ^
+  "$config = Join-Path $root 'interview-backend\src\main\resources\application-local.yml';" ^
+  ". $helper;" ^
+  "try {" ^
+  "  Assert-BackendLocalConfig -ConfigPath $config;" ^
+  "  Write-Host '[INFO] Backend local config is valid.';" ^
+  "  exit 0;" ^
+  "} catch {" ^
+  "  Write-Host ('[ERROR] ' + $_.Exception.Message);" ^
+  "  exit 1;" ^
+  "}"
 exit /b %errorlevel%
 
 :ensure_mysql

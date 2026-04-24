@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElTag } from 'element-plus'
+import { useRoute } from 'vue-router'
+import { ElCard, ElEmpty, ElTag } from 'element-plus'
 import { fetchInterviewMessages } from '../api/interview'
 import type { InterviewReplayResponse } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
 import { stageLabel } from '../utils/interview'
 
 const route = useRoute()
-const router = useRouter()
 const { showNotice } = usePageNotice()
 
 const loading = ref(false)
@@ -45,9 +44,6 @@ onMounted(() => {
         <p class="page__lead">查看阶段时间线、消息记录与报告结果。</p>
       </div>
       <div class="page__hero-actions">
-        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/interview')">
-          返回主工作台
-        </ElButton>
         <ElTag v-if="replay" class="ui-badge" effect="light">会话 #{{ replay.sessionId }}</ElTag>
       </div>
     </div>

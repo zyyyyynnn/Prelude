@@ -220,7 +220,7 @@ public class DemoModeService {
         insertMessage(
             session.getId(),
             ROLE_USER,
-            "我主要负责后端接口、JWT 登录、SSE 流式问答和面试报告落库，重点做了会话记录与阶段推进的闭环。",
+            "我主要做后端这一块，从登录鉴权、简历上传，到面试会话、SSE 流式回复和报告落库都参与了。实际开发里我花时间最多的是把阶段推进和消息记录串成闭环，保证后面回放和看板都有数据可用。",
             2,
             createdAt.plusMinutes(4)
         );
@@ -248,7 +248,7 @@ public class DemoModeService {
         insertMessage(
             session.getId(),
             ROLE_USER,
-            "我把简历解析、会话记录和报告生成拆成独立服务，核心考虑是降低耦合，便于在 Demo 和真实模式之间复用流程。",
+            "一开始我也想过直接写在一个服务里，但很快发现会越来越乱。后来拆成简历解析、会话记录和报告生成三块，是为了让每块职责清楚一点。比如 Demo 模式可以复用会话和报告流程，只把模型调用替换成脚本数据。",
             2,
             createdAt.plusMinutes(4)
         );
@@ -257,7 +257,7 @@ public class DemoModeService {
         insertMessage(
             session.getId(),
             ROLE_USER,
-            "高并发下我会先看慢查询和命中率，再判断是否需要缓存；如果列表查询稳定且读多写少，会优先补索引和结果缓存。",
+            "我会先确认慢在哪里，而不是直接加缓存。比如先看接口耗时、SQL 执行时间和返回数据量。如果是列表查询扫表，我会先补索引和分页；如果读多写少、结果变化不频繁，再考虑加一层缓存。",
             5,
             createdAt.plusMinutes(13)
         );
@@ -266,7 +266,7 @@ public class DemoModeService {
         insertMessage(
             session.getId(),
             ROLE_USER,
-            "SSE 断连时我会在 emitter 的 timeout 和 completion 回调里释放资源，并通过会话状态表保证阶段与消息不会重复写入。",
+            "我会把它当成两个问题处理：一是连接断了以后，emitter 的 completion、timeout、error 回调里要释放资源；二是消息不能靠内存状态判断是否写过，最终还是要用数据库里的会话和消息记录来兜底，避免重复写或漏写。",
             8,
             createdAt.plusMinutes(23)
         );
@@ -275,7 +275,7 @@ public class DemoModeService {
         insertMessage(
             session.getId(),
             ROLE_USER,
-            "如果继续完善，我会先补评分解释和 Demo 数据播种，让面试结果、回放和看板能形成一条完整答辩链路。",
+            "如果继续做，我会先补评分解释。现在报告能给分，但用户更关心为什么扣分、下一次该怎么改。把每个分数和具体回答片段关联起来，会比单纯多做几个页面更有价值。",
             11,
             createdAt.plusMinutes(31)
         );

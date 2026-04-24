@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
+import BrandMetaballs from './components/BrandMetaballs.vue'
 import { useAuthStore } from './stores/auth'
 
 const authStore = useAuthStore()
@@ -8,15 +9,13 @@ const route = useRoute()
 const router = useRouter()
 const menuOpen = ref(false)
 const menuAnchor = ref<HTMLElement | null>(null)
+const recentReplayPath = ref(localStorage.getItem('recentReplayPath') || '')
 
 const showHeader = computed(() => route.path !== '/login')
-const mainMenuActive = computed(
-  () =>
-    route.path === '/interview' ||
-    route.path === '/resumes' ||
-    route.path === '/analytics' ||
-    route.path.startsWith('/interview/replay/'),
-)
+const interviewMenuActive = computed(() => route.path === '/interview')
+const resumesMenuActive = computed(() => route.path === '/resumes')
+const analyticsMenuActive = computed(() => route.path === '/analytics')
+const replayMenuActive = computed(() => route.path.startsWith('/interview/replay/'))
 const profileMenuActive = computed(() => route.path === '/settings/profile')
 const llmMenuActive = computed(() => route.path === '/settings/llm')
 
@@ -31,6 +30,12 @@ function logout() {
   menuOpen.value = false
   authStore.clearSession()
   void router.replace('/login')
+}
+
+function navigateToRecentReplay() {
+  if (recentReplayPath.value) {
+    navigateTo(recentReplayPath.value)
+  }
 }
 
 function toggleMenu() {
@@ -58,6 +63,17 @@ onMounted(() => {
   window.addEventListener('pointerdown', handleDocumentPointerDown)
 })
 
+watch(
+  () => route.fullPath,
+  (fullPath) => {
+    if (fullPath.startsWith('/interview/replay/')) {
+      recentReplayPath.value = fullPath
+      localStorage.setItem('recentReplayPath', fullPath)
+    }
+  },
+  { immediate: true },
+)
+
 onBeforeUnmount(() => {
   window.removeEventListener('pointerdown', handleDocumentPointerDown)
 })
@@ -67,10 +83,10 @@ onBeforeUnmount(() => {
   <div class="app-shell">
     <header v-if="showHeader" class="app-shell__header">
       <div class="app-shell__brand">
-        <span class="app-shell__brand-mark">I</span>
+        <BrandMetaballs class="app-shell__brand-logo" />
         <div>
-          <p class="app-shell__eyebrow">Interview Platform</p>
           <h1 class="app-shell__title">模拟面试系统</h1>
+          <p class="app-shell__eyebrow">LLM Moke Interview System</p>
         </div>
       </div>
 
@@ -123,34 +139,74 @@ onBeforeUnmount(() => {
 
         <div v-if="menuOpen" class="app-shell__action-menu-popper">
           <div class="app-shell__action-menu" role="menu" aria-label="主导航">
-            <button
-              :class="['app-shell__action-menu-item', { 'is-active': mainMenuActive }]"
-              type="button"
-              @click="navigateTo('/interview')"
-            >
-              <span class="app-shell__action-menu-label">主菜单栏</span>
-            </button>
-            <button
-              :class="['app-shell__action-menu-item', { 'is-active': profileMenuActive }]"
-              type="button"
-              @click="navigateTo('/settings/profile')"
-            >
-              <span class="app-shell__action-menu-label">用户设置</span>
-            </button>
-            <button
-              :class="['app-shell__action-menu-item', { 'is-active': llmMenuActive }]"
-              type="button"
-              @click="navigateTo('/settings/llm')"
-            >
-              <span class="app-shell__action-menu-label">LLM配置</span>
-            </button>
-            <button
-              class="app-shell__action-menu-item"
-              type="button"
-              @click="logout"
-            >
-              <span class="app-shell__action-menu-label">退出</span>
-            </button>
+            <section class="app-shell__action-menu-section" aria-label="工作区">
+              <p class="app-shell__action-menu-heading">工作区</p>
+              <button
+                :class="['app-shell__action-menu-item', { 'is-active': interviewMenuActive }]"
+                type="button"
+                role="menuitem"
+                @click="navigateTo('/interview')"
+              >
+                <span class="app-shell__action-menu-label">主工作台</span>
+              </button>
+              <button
+                :class="['app-shell__action-menu-item', { 'is-active': resumesMenuActive }]"
+                type="button"
+                role="menuitem"
+                @click="navigateTo('/resumes')"
+              >
+                <span class="app-shell__action-menu-label">简历管理</span>
+              </button>
+              <button
+                :class="['app-shell__action-menu-item', { 'is-active': analyticsMenuActive }]"
+                type="button"
+                role="menuitem"
+                @click="navigateTo('/analytics')"
+              >
+                <span class="app-shell__action-menu-label">数据看板</span>
+              </button>
+              <button
+                :class="['app-shell__action-menu-item', { 'is-active': replayMenuActive }]"
+                :disabled="!recentReplayPath"
+                type="button"
+                role="menuitem"
+                @click="navigateToRecentReplay"
+              >
+                <span class="app-shell__action-menu-label">最近回放</span>
+              </button>
+            </section>
+
+            <section class="app-shell__action-menu-section" aria-label="设置">
+              <p class="app-shell__action-menu-heading">设置</p>
+              <button
+                :class="['app-shell__action-menu-item', { 'is-active': llmMenuActive }]"
+                type="button"
+                role="menuitem"
+                @click="navigateTo('/settings/llm')"
+              >
+                <span class="app-shell__action-menu-label">LLM 配置</span>
+              </button>
+              <button
+                :class="['app-shell__action-menu-item', { 'is-active': profileMenuActive }]"
+                type="button"
+                role="menuitem"
+                @click="navigateTo('/settings/profile')"
+              >
+                <span class="app-shell__action-menu-label">用户设置</span>
+              </button>
+            </section>
+
+            <section class="app-shell__action-menu-section" aria-label="账户">
+              <p class="app-shell__action-menu-heading">账户</p>
+              <button
+                class="app-shell__action-menu-item"
+                type="button"
+                role="menuitem"
+                @click="logout"
+              >
+                <span class="app-shell__action-menu-label">退出登录</span>
+              </button>
+            </section>
           </div>
         </div>
       </div>

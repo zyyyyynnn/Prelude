@@ -20,7 +20,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(rollbackFor = Exception.class)

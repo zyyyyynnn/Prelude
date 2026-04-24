@@ -229,11 +229,13 @@ function Assert-BackendLocalConfig {
   $urlMatch = [regex]::Match($content, '(?m)^\s*url:\s*(?<value>jdbc:mysql://[^\r\n]+)')
   $userMatch = [regex]::Match($content, '(?m)^\s*username:\s*(?<value>[^\r\n#]+)')
   $passwordMatch = [regex]::Match($content, '(?m)^\s*password:\s*(?<value>[^\r\n#]+)')
+  $jwtSecretMatch = [regex]::Match($content, '(?m)^\s*secret:\s*(?<value>[^\r\n#]+)')
   $aesSecretMatch = [regex]::Match($content, '(?m)^\s*aes-secret:\s*(?<value>[^\r\n#]+)')
 
   $datasourceUrl = if ($env:SPRING_DATASOURCE_URL) { $env:SPRING_DATASOURCE_URL } elseif ($urlMatch.Success) { $urlMatch.Groups['value'].Value.Trim() } else { $null }
   $datasourceUsername = if ($env:SPRING_DATASOURCE_USERNAME) { $env:SPRING_DATASOURCE_USERNAME } elseif ($userMatch.Success) { $userMatch.Groups['value'].Value.Trim() } else { $null }
   $datasourcePassword = if ($env:SPRING_DATASOURCE_PASSWORD) { $env:SPRING_DATASOURCE_PASSWORD } elseif ($passwordMatch.Success) { $passwordMatch.Groups['value'].Value.Trim() } else { $null }
+  $jwtSecret = if ($env:JWT_SECRET) { $env:JWT_SECRET } elseif ($jwtSecretMatch.Success) { $jwtSecretMatch.Groups['value'].Value.Trim() } else { $null }
   $aesSecret = if ($env:APP_CRYPTO_AES_SECRET) { $env:APP_CRYPTO_AES_SECRET } elseif ($aesSecretMatch.Success) { $aesSecretMatch.Groups['value'].Value.Trim() } else { $null }
 
   $missingFields = New-Object System.Collections.Generic.List[string]
@@ -245,6 +247,11 @@ function Assert-BackendLocalConfig {
   }
   if ([string]::IsNullOrWhiteSpace($datasourcePassword)) {
     $missingFields.Add('spring.datasource.password')
+  }
+  if ([string]::IsNullOrWhiteSpace($jwtSecret)) {
+    $missingFields.Add('jwt.secret')
+  } elseif ($jwtSecret.Length -lt 32) {
+    $missingFields.Add('jwt.secret (at least 32 chars)')
   }
   if ([string]::IsNullOrWhiteSpace($aesSecret)) {
     $missingFields.Add('app.crypto.aes-secret')
@@ -258,10 +265,10 @@ function Assert-BackendLocalConfig {
 
   $missingText = $missingFields -join ', '
   if (-not $hasConfigFile) {
-    throw "Backend local config not found: $ConfigPath`nCreate application-local.yml with $missingText, or set the matching SPRING_DATASOURCE_* / APP_CRYPTO_AES_SECRET environment variables."
+    throw "Backend local config not found: $ConfigPath`nCreate application-local.yml with $missingText, or set the matching SPRING_DATASOURCE_* / JWT_SECRET / APP_CRYPTO_AES_SECRET environment variables."
   }
 
-  throw "Backend local config is incomplete: $ConfigPath`nMissing: $missingText`nFill the values in application-local.yml, or set the matching SPRING_DATASOURCE_* / APP_CRYPTO_AES_SECRET environment variables."
+  throw "Backend local config is incomplete: $ConfigPath`nMissing: $missingText`nFill the values in application-local.yml, or set the matching SPRING_DATASOURCE_* / JWT_SECRET / APP_CRYPTO_AES_SECRET environment variables."
 }
 
 function Ensure-MySqlReady {
@@ -371,6 +378,12 @@ function Try-EnsureDatabase {
   $arguments += '-e'
   $arguments += "CREATE DATABASE IF NOT EXISTS $DatabaseName DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-  & $mysql.Source @arguments 2>$null | Out-Null
-  return $LASTEXITCODE -eq 0
+  $previousErrorActionPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    & $mysql.Source @arguments 2>$null | Out-Null
+    return $LASTEXITCODE -eq 0
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
 }

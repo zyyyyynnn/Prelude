@@ -1,11 +1,3 @@
-INSERT INTO `user` (`username`, `password`, `email`)
-SELECT 'demo',
-       '$2a$10$cwL4a7RrPcB895DFoO2MyuhK6QGDWhU0fScSmKj/LuBDtIzmL2zL2',
-       'demo@example.com'
-WHERE NOT EXISTS (
-    SELECT 1 FROM `user` WHERE `username` = 'demo'
-);
-
 INSERT INTO `position_template` (`name`, `system_prompt`)
 SELECT 'Java 后端工程师',
        '你是一名严谨的 Java 后端面试官，请重点考察候选人在 Spring Boot、JVM、MySQL 与分布式系统方面的基础与实践能力。提问要循序渐进，注重项目经历追问。'

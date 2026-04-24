@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: your_mysql_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+jwt:
+  secret: replace-with-at-least-32-bytes-jwt-secret
+
+app:
+  crypto:
+    aes-secret: replace-with-at-least-32-bytes-aes-secret
+
+deepseek:
+  api-key: your_deepseek_key

@@ -137,23 +137,25 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: '进入深挖阶段' })).toBeVisible()
   await capture(page, '04-interview-stage-technical.png', '主工作台', '技术阶段', page.getByRole('button', { name: '进入深挖阶段' }))
 
-  await sendAnswer(page, '技术阶段里，我重点负责 Spring Boot 接口、异常处理和报告持久化。')
+  await sendAnswer(page, '这条链路我会先在 Controller 做登录态和参数校验，再进入 service 组装会话上下文。用户回答会先落一条 user 消息，随后通过 SSE 推送面试官回复，最后把 assistant 消息按序号落库，确保回放时顺序稳定。')
 
   await page.getByRole('button', { name: '进入深挖阶段' }).click()
   await expect(page.getByRole('button', { name: '进入收尾阶段' })).toBeVisible()
-  await sendAnswer(page, '深挖阶段我会重点解释幂等控制、阶段推进顺序和回放一致性。')
+  await expect(page.getByText('SSE 输出过程中如果浏览器刷新了')).toBeVisible()
+  await sendAnswer(page, '如果浏览器刷新，我会先让 emitter 的 timeout、error 和 completion 都走同一套清理逻辑，避免连接对象挂在内存里。已经生成但还没完整落库的内容，我会用会话状态和消息序号兜底，宁可重试生成，也不写半截消息。')
   await capture(page, '05-interview-stage-deep-dive.png', '主工作台', '深挖阶段', page.getByRole('button', { name: '进入收尾阶段' }))
 
   await page.getByRole('button', { name: '进入收尾阶段' }).click()
   await expect(page.getByRole('button', { name: '阶段已完成' })).toBeVisible()
-  await sendAnswer(page, '收尾阶段我会总结项目取舍、风险控制和后续优化方向。')
+  await expect(page.getByText('最后收个尾')).toBeVisible()
+  await sendAnswer(page, '我会优先补评分解释，把每个扣分点关联到具体回答片段。这样用户不只是看到 7 分或 8 分，而是知道哪一句回答不够完整、下一次应该怎么改。')
 
   await page.getByRole('button', { name: '生成报告' }).click()
   await expect(page.getByRole('heading', { name: '面试评估报告' })).toBeVisible()
   await expect(page.getByText('技术能力：7/10')).toBeVisible()
   await capture(page, '06-interview-report.png', '主工作台', '报告已生成', page.getByRole('heading', { name: '面试评估报告' }))
 
-  await page.getByRole('button', { name: '查看回放' }).click()
+  await page.getByRole('button', { name: '回放' }).first().click()
   await page.waitForURL('**/interview/replay/**')
   await expect(page.getByRole('heading', { name: '破冰', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '技术', exact: true })).toBeVisible()

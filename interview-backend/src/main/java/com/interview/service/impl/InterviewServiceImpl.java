@@ -199,7 +199,11 @@ public class InterviewServiceImpl implements InterviewService {
         stage.setEndedAt(null);
         interviewStageMapper.insert(stage);
 
-        insertMessage(sessionId, ROLE_SYSTEM, STAGE_PROMPTS.get(nextStage), nextSeqNum(sessionId));
+        int seqNum = nextSeqNum(sessionId);
+        insertMessage(sessionId, ROLE_SYSTEM, STAGE_PROMPTS.get(nextStage), seqNum);
+        if (isDemoEnabled()) {
+            insertMessage(sessionId, ROLE_ASSISTANT, demoModeService.resolveScriptedReply(nextStage, 0), seqNum + 1);
+        }
         return new InterviewStageUpdateResponse(stage.getStageName(), stage.getStartedAt());
     }
 

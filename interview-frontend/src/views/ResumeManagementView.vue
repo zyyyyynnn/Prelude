@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElEmpty, ElMessageBox, ElTag } from 'element-plus'
 import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
 import type { ResumeItem } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
 
-const router = useRouter()
 const { showNotice } = usePageNotice()
 
 const loading = ref(false)
@@ -93,12 +91,6 @@ onMounted(() => {
         <p class="page__lead">管理 PDF 简历、占用状态和删除操作。</p>
       </div>
       <div class="page__hero-actions">
-        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/interview')">
-          返回主工作台
-        </ElButton>
-        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/analytics')">
-          数据看板
-        </ElButton>
         <ElButton
           class="ui-button ui-button--primary"
           :loading="uploading"

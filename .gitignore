@@ -3,6 +3,7 @@ interview-backend/src/main/resources/application-local.yml
 interview-frontend/node_modules/
 interview-frontend/dist/
 interview-frontend/.env*
+!interview-frontend/.env.example
 !interview-frontend/.env.demo
 interview-frontend/.env.local
 .playwright-cli/

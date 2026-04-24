@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElTag } from 'element-plus'
+import { ElCard, ElEmpty, ElTag } from 'element-plus'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint, AnalyticsWeaknessItem } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
 
-const router = useRouter()
 const { showNotice } = usePageNotice()
 
 const radar = ref<AnalyticsRadarResponse | null>(null)
@@ -182,14 +180,6 @@ onBeforeUnmount(() => {
         <p class="eyebrow">分析</p>
         <h2 class="page__title">数据看板</h2>
         <p class="page__lead">查看评分、趋势和薄弱点统计。</p>
-      </div>
-      <div class="page__hero-actions">
-        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/interview')">
-          返回主工作台
-        </ElButton>
-        <ElTag v-if="radar && radar.sessionCount > 0" class="ui-badge" effect="light">
-          {{ radar.sessionCount }} 场已评分
-        </ElTag>
       </div>
     </div>
 

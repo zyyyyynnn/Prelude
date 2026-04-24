@@ -3,6 +3,9 @@ import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior() {
+    return { left: 0, top: 0 }
+  },
   routes: [
     {
       path: '/',

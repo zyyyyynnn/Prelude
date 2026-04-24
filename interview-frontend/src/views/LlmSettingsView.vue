@@ -112,10 +112,6 @@ onMounted(() => {
         <h2 class="page__title">LLM 配置</h2>
         <p class="page__lead">管理 Provider、模型和用户 API Key。</p>
       </div>
-      <div class="page__hero-actions">
-        <ElTag v-if="selectedProviderKey" class="ui-badge" effect="light">{{ selectedProviderKey }}</ElTag>
-        <ElTag v-if="selectedModel" class="ui-badge" effect="light">{{ selectedModel }}</ElTag>
-      </div>
     </div>
 
     <div class="page__grid page__grid--single">

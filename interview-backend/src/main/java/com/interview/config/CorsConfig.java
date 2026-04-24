@@ -1,6 +1,7 @@
 package com.interview.config;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -8,15 +9,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 @Configuration
+@EnableConfigurationProperties(CorsProperties.class)
 public class CorsConfig {
 
     @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration() {
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsProperties corsProperties) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://localhost:5173");
-        configuration.addAllowedOrigin("http://127.0.0.1:5173");
-        configuration.addAllowedOrigin("http://localhost:5174");
-        configuration.addAllowedOrigin("http://127.0.0.1:5174");
+        corsProperties.allowedOrigins().forEach(configuration::addAllowedOrigin);
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         configuration.setAllowCredentials(true);

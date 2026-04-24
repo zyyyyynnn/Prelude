@@ -431,14 +431,6 @@ onMounted(() => {
           在同一屏完成面试准备、实时问答、历史复盘和报告预览。
         </p>
       </div>
-      <div class="page__hero-actions">
-        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/resumes')">
-          简历管理
-        </ElButton>
-        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/analytics')">
-          数据看板
-        </ElButton>
-      </div>
     </div>
 
     <div class="insight-strip">
@@ -545,9 +537,6 @@ onMounted(() => {
               >
                 创建面试
               </ElButton>
-              <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/resumes')">
-                管理简历
-              </ElButton>
             </div>
           </div>
         </div>
@@ -565,14 +554,6 @@ onMounted(() => {
               {{ activeSessionId ? `会话 #${activeSessionId}` : '未创建' }}
             </ElTag>
             <ElTag class="ui-badge" effect="light">{{ stageLabel(currentStage) }}</ElTag>
-            <ElButton
-              v-if="activeSessionId"
-              class="ui-button ui-button--secondary"
-              size="large"
-              @click="router.push(`/interview/replay/${activeSessionId}`)"
-            >
-              查看回放
-            </ElButton>
           </div>
         </div>
 
@@ -696,7 +677,6 @@ onMounted(() => {
               <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
                 <div class="session-item__head">
                   <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
-                  <ElTag class="ui-badge" effect="light">{{ stageLabel(item.currentStage) }}</ElTag>
                 </div>
                 <p class="session-item__meta">
                   {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
@@ -706,8 +686,9 @@ onMounted(() => {
                 </p>
               </button>
               <div class="session-item__side">
+                <ElTag class="ui-badge ui-badge--compact" effect="light">{{ stageLabel(item.currentStage) }}</ElTag>
                 <ElButton
-                  class="ui-button ui-button--secondary"
+                  class="ui-button ui-button--secondary ui-button--compact"
                   size="large"
                   @click="router.push(`/interview/replay/${item.sessionId}`)"
                 >
@@ -733,7 +714,6 @@ onMounted(() => {
               <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
                 <div class="session-item__head">
                   <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
-                  <ElTag class="ui-badge" effect="light">已完成</ElTag>
                 </div>
                 <p class="session-item__meta">
                   {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
@@ -741,8 +721,9 @@ onMounted(() => {
                 <p class="session-item__summary">{{ item.summaryReport ? '包含报告与评分' : '暂无报告摘要' }}</p>
               </button>
               <div class="session-item__side">
+                <ElTag class="ui-badge ui-badge--compact" effect="light">已完成</ElTag>
                 <ElButton
-                  class="ui-button ui-button--secondary"
+                  class="ui-button ui-button--secondary ui-button--compact"
                   size="large"
                   @click="router.push(`/interview/replay/${item.sessionId}`)"
                 >
@@ -756,7 +737,7 @@ onMounted(() => {
         </ElCard>
 
         <ElCard class="ui-card panel panel--workspace report-panel">
-        <div class="panel__head panel__head--compact">
+        <div class="panel__head">
           <div>
             <p class="panel__eyebrow">报告预览</p>
             <h3 class="panel__title">{{ reportSource?.title || '面试报告预览' }}</h3>

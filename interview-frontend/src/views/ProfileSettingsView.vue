@@ -90,10 +90,6 @@ onMounted(() => {
         <h2 class="page__title">用户设置</h2>
         <p class="page__lead">管理邮箱和登录密码。</p>
       </div>
-      <div class="page__hero-actions">
-        <ElTag v-if="profile.username" class="ui-badge" effect="light">{{ profile.username }}</ElTag>
-        <ElTag v-if="profile.email" class="ui-badge" effect="light">{{ profile.email }}</ElTag>
-      </div>
     </div>
 
     <div class="page__grid page__grid--single">
