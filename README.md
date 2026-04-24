@@ -38,13 +38,29 @@ flowchart LR
 
 ## 界面预览
 
-| 登录 | 主工作台 | 报告 |
-| --- | --- | --- |
-| ![登录](output/demo/screenshots/01-login.png) | ![主工作台](output/demo/screenshots/04-interview-session-started.png) | ![报告](output/demo/screenshots/06-interview-report.png) |
+### 登录
 
-| 回放 | 数据看板 |
-| --- | --- |
-| ![回放](output/demo/screenshots/07-replay.png) | ![数据看板](output/demo/screenshots/13-analytics-filled.png) |
+![登录](output/demo/screenshots/01-login.png)
+
+### 主工作台
+
+![主工作台](output/demo/screenshots/03-interview-workbench.png)
+
+### 技术阶段
+
+![技术阶段](output/demo/screenshots/04-interview-stage-technical.png)
+
+### 报告生成
+
+![报告生成](output/demo/screenshots/06-interview-report.png)
+
+### 会话回放
+
+![会话回放](output/demo/screenshots/07-replay.png)
+
+### 数据看板
+
+![数据看板](output/demo/screenshots/11-analytics-filled.png)
 
 ## 技术栈
 

@@ -114,7 +114,7 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await page.goto('/login')
   await capture(page, '01-login.png', '登录页', '登录态空白', page.getByRole('button', { name: '登录' }).first())
 
-  await page.getByRole('button', { name: '注册' }).click()
+  await page.getByRole('tab', { name: '注册' }).click()
   await capture(page, '02-register.png', '注册页', '注册表单', page.getByRole('button', { name: '完成注册' }))
 
   await page.getByRole('tab', { name: '登录' }).click()
