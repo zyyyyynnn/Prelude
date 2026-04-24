@@ -5,6 +5,42 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+trap {
+  Write-Host "[ERROR] $($_.Exception.Message)"
+  exit 1
+}
+
+function Assert-DemoFrontendEnv {
+  param([string]$Path)
+
+  if (-not (Test-Path -LiteralPath $Path)) {
+    throw "Demo frontend env not found: $Path`nCreate .env.demo with VITE_PORT=5174 and VITE_PROXY_TARGET=http://127.0.0.1:8081."
+  }
+
+  $content = Get-Content -LiteralPath $Path -Raw
+  $portMatch = [regex]::Match($content, '(?m)^\s*VITE_PORT\s*=\s*(?<value>[^\r\n#]+)')
+  $proxyMatch = [regex]::Match($content, '(?m)^\s*VITE_PROXY_TARGET\s*=\s*(?<value>[^\r\n#]+)')
+
+  $port = if ($portMatch.Success) { $portMatch.Groups['value'].Value.Trim().Trim("'`"") } else { $null }
+  $proxyTarget = if ($proxyMatch.Success) { $proxyMatch.Groups['value'].Value.Trim().Trim("'`"") } else { $null }
+
+  $errors = New-Object System.Collections.Generic.List[string]
+  if ([string]::IsNullOrWhiteSpace($port)) {
+    $errors.Add('missing VITE_PORT')
+  } elseif ($port -ne '5174') {
+    $errors.Add("VITE_PORT must be 5174 (current: $port)")
+  }
+
+  if ([string]::IsNullOrWhiteSpace($proxyTarget)) {
+    $errors.Add('missing VITE_PROXY_TARGET')
+  } elseif ($proxyTarget -ne 'http://127.0.0.1:8081') {
+    $errors.Add("VITE_PROXY_TARGET must be http://127.0.0.1:8081 (current: $proxyTarget)")
+  }
+
+  if ($errors.Count -gt 0) {
+    throw "Demo frontend env is invalid: $Path`n$($errors -join [Environment]::NewLine)"
+  }
+}
 
 $scriptDir = Split-Path -Parent $PSCommandPath
 $rootDir = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..\..'))
@@ -12,6 +48,7 @@ $rootDir = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..\..'))
 
 $backendDir = Join-Path $rootDir 'interview-backend'
 $frontendDir = Join-Path $rootDir 'interview-frontend'
+$frontendDemoEnvPath = Join-Path $frontendDir '.env.demo'
 $runtimeDir = Join-Path $rootDir 'output\runtime'
 $mysqlLogDir = Join-Path $runtimeDir 'mysql'
 $backendLogDir = Join-Path $runtimeDir 'backend-demo'
@@ -37,11 +74,13 @@ Ensure-Directory $backendLogDir
 Ensure-Directory $frontendLogDir
 
 Ensure-FrontendDependencies -FrontendDir $frontendDir
+Assert-DemoFrontendEnv -Path $frontendDemoEnvPath
 
 $mvnPath = (Get-Command mvn -ErrorAction Stop).Source
 $nodePath = (Get-Command node -ErrorAction Stop).Source
 $viteScript = Join-Path $frontendDir 'node_modules\vite\bin\vite.js'
 $applicationLocalPath = Join-Path $backendDir 'src\main\resources\application-local.yml'
+Assert-BackendLocalConfig -ConfigPath $applicationLocalPath
 $datasourceConfig = Get-ApplicationLocalDatasourceConfig -ConfigPath $applicationLocalPath
 
 if (-not (Ensure-MySqlReady -DatasourceConfig $datasourceConfig -MySqlLogDir $mysqlLogDir)) {

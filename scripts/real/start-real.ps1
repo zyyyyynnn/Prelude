@@ -5,6 +5,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+trap {
+  Write-Host "[ERROR] $($_.Exception.Message)"
+  exit 1
+}
 
 $scriptDir = Split-Path -Parent $PSCommandPath
 $rootDir = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..\..'))
@@ -42,6 +46,7 @@ $mvnPath = (Get-Command mvn -ErrorAction Stop).Source
 $nodePath = (Get-Command node -ErrorAction Stop).Source
 $viteScript = Join-Path $frontendDir 'node_modules\vite\bin\vite.js'
 $applicationLocalPath = Join-Path $backendDir 'src\main\resources\application-local.yml'
+Assert-BackendLocalConfig -ConfigPath $applicationLocalPath -RequireDatasourceUrl
 $datasourceConfig = Get-ApplicationLocalDatasourceConfig -ConfigPath $applicationLocalPath
 
 if (-not (Ensure-MySqlReady -DatasourceConfig $datasourceConfig -MySqlLogDir $mysqlLogDir)) {

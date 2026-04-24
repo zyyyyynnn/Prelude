@@ -33,7 +33,11 @@ const isRegisterMode = computed(() => authMode.value === 'register')
 const authEyebrow = computed(() => (isRegisterMode.value ? '注册' : '登录'))
 const authTitle = computed(() => (isRegisterMode.value ? '创建工作台账号' : '进入面试工作台'))
 const submitLabel = computed(() => (isRegisterMode.value ? '完成注册' : '登录'))
-const switchLabel = computed(() => (isRegisterMode.value ? '登录' : '注册'))
+const authLead = computed(() =>
+  isRegisterMode.value
+    ? '创建账号后进入主工作台。'
+    : '登录后进入主工作台。',
+)
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -132,9 +136,31 @@ onMounted(() => {
           <div class="page__header login-card__header">
             <p class="eyebrow">{{ authEyebrow }}</p>
             <h2 class="page__title">{{ authTitle }}</h2>
+            <p class="page__lead login-card__lead">{{ authLead }}</p>
           </div>
 
-          <ElForm class="form-grid" label-position="top" @submit.prevent="submitAuth">
+          <div class="auth-switch" role="tablist" aria-label="认证模式">
+            <button
+              :class="['auth-switch__item', { 'is-active': !isRegisterMode }]"
+              type="button"
+              role="tab"
+              :aria-selected="!isRegisterMode"
+              @click="switchMode('login')"
+            >
+              登录
+            </button>
+            <button
+              :class="['auth-switch__item', { 'is-active': isRegisterMode }]"
+              type="button"
+              role="tab"
+              :aria-selected="isRegisterMode"
+              @click="switchMode('register')"
+            >
+              注册
+            </button>
+          </div>
+
+          <ElForm class="form-grid auth-form" label-position="top" @submit.prevent="submitAuth">
             <ElFormItem label="用户名">
               <ElInput
                 v-model="form.username"
@@ -158,38 +184,30 @@ onMounted(() => {
             </ElFormItem>
 
             <div
-              :class="['login-card__email-slot', { 'is-hidden': !isRegisterMode }]"
+              :class="['auth-form__optional-field', { 'is-hidden': !isRegisterMode }]"
               :aria-hidden="!isRegisterMode"
             >
               <ElFormItem label="邮箱">
                 <ElInput
                   v-model="form.email"
                   class="ui-input"
-                  :disabled="!isRegisterMode"
                   autocomplete="email"
+                  :disabled="!isRegisterMode"
                   placeholder="请输入邮箱"
                   size="large"
                 />
               </ElFormItem>
             </div>
 
-            <div class="button-row">
+            <div class="button-row login-card__actions">
               <ElButton
-                class="ui-button ui-button--primary"
+                class="ui-button ui-button--primary ui-button--block"
                 :loading="loading"
                 native-type="submit"
                 size="large"
                 type="primary"
               >
                 {{ submitLabel }}
-              </ElButton>
-              <ElButton
-                class="ui-button ui-button--secondary"
-                :disabled="loading"
-                size="large"
-                @click="switchMode(isRegisterMode ? 'login' : 'register')"
-              >
-                {{ switchLabel }}
               </ElButton>
             </div>
           </ElForm>

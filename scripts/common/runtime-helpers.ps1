@@ -213,6 +213,57 @@ function Get-ApplicationLocalDatasourceConfig {
   }
 }
 
+function Assert-BackendLocalConfig {
+  param(
+    [string]$ConfigPath,
+    [switch]$RequireDatasourceUrl
+  )
+
+  $hasConfigFile = Test-Path -LiteralPath $ConfigPath
+  $content = if ($hasConfigFile) {
+    Get-Content -LiteralPath $ConfigPath -Raw
+  } else {
+    ''
+  }
+
+  $urlMatch = [regex]::Match($content, '(?m)^\s*url:\s*(?<value>jdbc:mysql://[^\r\n]+)')
+  $userMatch = [regex]::Match($content, '(?m)^\s*username:\s*(?<value>[^\r\n#]+)')
+  $passwordMatch = [regex]::Match($content, '(?m)^\s*password:\s*(?<value>[^\r\n#]+)')
+  $aesSecretMatch = [regex]::Match($content, '(?m)^\s*aes-secret:\s*(?<value>[^\r\n#]+)')
+
+  $datasourceUrl = if ($env:SPRING_DATASOURCE_URL) { $env:SPRING_DATASOURCE_URL } elseif ($urlMatch.Success) { $urlMatch.Groups['value'].Value.Trim() } else { $null }
+  $datasourceUsername = if ($env:SPRING_DATASOURCE_USERNAME) { $env:SPRING_DATASOURCE_USERNAME } elseif ($userMatch.Success) { $userMatch.Groups['value'].Value.Trim() } else { $null }
+  $datasourcePassword = if ($env:SPRING_DATASOURCE_PASSWORD) { $env:SPRING_DATASOURCE_PASSWORD } elseif ($passwordMatch.Success) { $passwordMatch.Groups['value'].Value.Trim() } else { $null }
+  $aesSecret = if ($env:APP_CRYPTO_AES_SECRET) { $env:APP_CRYPTO_AES_SECRET } elseif ($aesSecretMatch.Success) { $aesSecretMatch.Groups['value'].Value.Trim() } else { $null }
+
+  $missingFields = New-Object System.Collections.Generic.List[string]
+  if ($RequireDatasourceUrl -and [string]::IsNullOrWhiteSpace($datasourceUrl)) {
+    $missingFields.Add('spring.datasource.url')
+  }
+  if ([string]::IsNullOrWhiteSpace($datasourceUsername)) {
+    $missingFields.Add('spring.datasource.username')
+  }
+  if ([string]::IsNullOrWhiteSpace($datasourcePassword)) {
+    $missingFields.Add('spring.datasource.password')
+  }
+  if ([string]::IsNullOrWhiteSpace($aesSecret)) {
+    $missingFields.Add('app.crypto.aes-secret')
+  } elseif ($aesSecret.Length -lt 32) {
+    $missingFields.Add('app.crypto.aes-secret (at least 32 chars)')
+  }
+
+  if ($missingFields.Count -eq 0) {
+    return
+  }
+
+  $missingText = $missingFields -join ', '
+  if (-not $hasConfigFile) {
+    throw "Backend local config not found: $ConfigPath`nCreate application-local.yml with $missingText, or set the matching SPRING_DATASOURCE_* / APP_CRYPTO_AES_SECRET environment variables."
+  }
+
+  throw "Backend local config is incomplete: $ConfigPath`nMissing: $missingText`nFill the values in application-local.yml, or set the matching SPRING_DATASOURCE_* / APP_CRYPTO_AES_SECRET environment variables."
+}
+
 function Ensure-MySqlReady {
   param(
     [pscustomobject]$DatasourceConfig,

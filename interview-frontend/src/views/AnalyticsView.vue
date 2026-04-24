@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElEmpty, ElTag } from 'element-plus'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
@@ -17,6 +17,18 @@ const radarRef = ref<HTMLDivElement | null>(null)
 const trendRef = ref<HTMLDivElement | null>(null)
 let radarChart: echarts.ECharts | null = null
 let trendChart: echarts.ECharts | null = null
+
+const scoreCards = computed(() => {
+  if (!radar.value || radar.value.sessionCount === 0) {
+    return []
+  }
+
+  return [
+    { label: '技术能力', value: radar.value.technical.toFixed(1), hint: '最近 10 场均分' },
+    { label: '表达清晰度', value: radar.value.expression.toFixed(1), hint: '结构、表达和节奏' },
+    { label: '逻辑思维', value: radar.value.logic.toFixed(1), hint: '问题拆解与推演' },
+  ]
+})
 
 function cssVar(name: string, fallback: string) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -67,7 +79,7 @@ function renderCharts() {
     radarChart.setOption({
       animation: false,
       radar: {
-        radius: '62%',
+        radius: '64%',
         splitNumber: 5,
         axisName: { color: secondary, fontSize: 14 },
         splitLine: { lineStyle: { color: lineDecor } },
@@ -96,7 +108,7 @@ function renderCharts() {
     trendChart.setOption({
       animation: false,
       tooltip: { trigger: 'axis' },
-      grid: { left: 48, right: 18, top: 24, bottom: 32 },
+      grid: { left: 44, right: 18, top: 30, bottom: 30 },
       xAxis: {
         type: 'category',
         boundaryGap: false,
@@ -112,9 +124,30 @@ function renderCharts() {
         axisLabel: { color: secondary },
       },
       series: [
-        { name: '技术能力', type: 'line', smooth: true, data: trend.value.map((item) => item.technical), lineStyle: { color: brand } },
-        { name: '表达清晰度', type: 'line', smooth: true, data: trend.value.map((item) => item.expression), lineStyle: { color: coral } },
-        { name: '逻辑思维', type: 'line', smooth: true, data: trend.value.map((item) => item.logic), lineStyle: { color: secondary } },
+        {
+          name: '技术能力',
+          type: 'line',
+          smooth: true,
+          data: trend.value.map((item) => item.technical),
+          lineStyle: { color: brand, width: 2 },
+          itemStyle: { color: brand },
+        },
+        {
+          name: '表达清晰度',
+          type: 'line',
+          smooth: true,
+          data: trend.value.map((item) => item.expression),
+          lineStyle: { color: coral, width: 2 },
+          itemStyle: { color: coral },
+        },
+        {
+          name: '逻辑思维',
+          type: 'line',
+          smooth: true,
+          data: trend.value.map((item) => item.logic),
+          lineStyle: { color: secondary, width: 2 },
+          itemStyle: { color: secondary },
+        },
       ],
     })
   }
@@ -144,37 +177,53 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="page">
-    <div class="page__header">
-      <p class="eyebrow">分析</p>
-      <h2 class="page__title">数据看板</h2>
-      <p class="page__lead page__lead--nowrap">查看能力均分、趋势与高频薄弱点。</p>
-    </div>
-
-    <div class="page__subnav">
-      <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/interview')">
-        返回主工作台
-      </ElButton>
+    <div class="page__hero">
+      <div class="page__hero-main">
+        <p class="eyebrow">分析</p>
+        <h2 class="page__title">数据看板</h2>
+        <p class="page__lead">查看评分、趋势和薄弱点统计。</p>
+      </div>
+      <div class="page__hero-actions">
+        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/interview')">
+          返回主工作台
+        </ElButton>
+        <ElTag v-if="radar && radar.sessionCount > 0" class="ui-badge" effect="light">
+          {{ radar.sessionCount }} 场已评分
+        </ElTag>
+      </div>
     </div>
 
     <template v-if="radar && radar.sessionCount > 0">
-      <div class="page__grid">
+      <div class="insight-strip insight-strip--compact">
+        <article v-for="item in scoreCards" :key="item.label" class="insight-card">
+          <p class="panel__eyebrow">{{ item.label }}</p>
+          <h3 class="insight-card__value">{{ item.value }}</h3>
+          <p class="insight-card__meta">{{ item.hint }}</p>
+        </article>
+      </div>
+
+      <div class="page__grid page__grid--dashboard">
         <ElCard class="ui-card panel">
           <div class="panel__head">
             <div>
+              <p class="panel__eyebrow">结构</p>
               <h3 class="panel__title">能力雷达</h3>
+              <p class="panel__lead">展示最近面试在三项核心维度上的平均水平。</p>
             </div>
             <ElTag class="ui-badge" effect="light">{{ radar.sessionCount }} 场</ElTag>
           </div>
-          <div ref="radarRef" class="chart-surface" />
+          <div ref="radarRef" class="chart-surface chart-surface--tall" />
         </ElCard>
 
         <ElCard class="ui-card panel">
           <div class="panel__head">
             <div>
+              <p class="panel__eyebrow">走势</p>
               <h3 class="panel__title">分数趋势</h3>
+              <p class="panel__lead">按时间查看技术、表达与逻辑评分变化。</p>
             </div>
           </div>
-          <div ref="trendRef" class="chart-surface" />
+          <div ref="trendRef" class="chart-surface chart-surface--tall" />
         </ElCard>
       </div>
 
@@ -182,14 +231,20 @@ onBeforeUnmount(() => {
         <ElCard class="ui-card panel">
           <div class="panel__head">
             <div>
+              <p class="panel__eyebrow">聚合</p>
               <h3 class="panel__title">薄弱点列表</h3>
+              <p class="panel__lead">按出现频率汇总薄弱点。</p>
             </div>
+            <ElTag class="ui-badge" effect="light">{{ weaknesses.length }} 类问题</ElTag>
           </div>
 
           <div v-if="weaknesses.length" class="weakness-list">
             <article v-for="item in weaknesses" :key="item.category" class="weakness-item">
               <div class="weakness-item__head">
-                <h4 class="weakness-item__title">{{ item.category }}</h4>
+                <div>
+                  <h4 class="weakness-item__title">{{ item.category }}</h4>
+                  <p class="weakness-item__summary">{{ item.descriptions[0] || '待补充说明' }}</p>
+                </div>
                 <ElTag class="ui-badge" effect="light">{{ item.count }} 次</ElTag>
               </div>
               <ul class="weakness-item__descriptions">

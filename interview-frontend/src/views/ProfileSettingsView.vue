@@ -84,35 +84,58 @@ onMounted(() => {
 
 <template>
   <section class="page">
-    <div class="page__header">
-      <p class="eyebrow">设置</p>
-      <h2 class="page__title">用户设置</h2>
-      <p class="page__lead">修改邮箱并维护登录密码。</p>
+    <div class="page__hero">
+      <div class="page__hero-main">
+        <p class="eyebrow">设置</p>
+        <h2 class="page__title">用户设置</h2>
+        <p class="page__lead">管理邮箱和登录密码。</p>
+      </div>
+      <div class="page__hero-actions">
+        <ElTag v-if="profile.username" class="ui-badge" effect="light">{{ profile.username }}</ElTag>
+        <ElTag v-if="profile.email" class="ui-badge" effect="light">{{ profile.email }}</ElTag>
+      </div>
     </div>
 
     <div class="page__grid page__grid--single">
       <ElCard class="ui-card panel">
         <div class="panel__head">
           <div>
+            <p class="panel__eyebrow">资料层</p>
             <h3 class="panel__title">账号资料</h3>
+            <p class="panel__lead">更新邮箱，或填写旧密码和新密码完成密码修改。</p>
           </div>
           <ElTag class="ui-badge" effect="light">邮箱与密码维护</ElTag>
         </div>
 
         <ElForm class="form-grid" label-position="top" @submit.prevent>
-          <ElFormItem label="用户名">
-            <ElInput v-model="profile.username" class="ui-input" disabled size="large" />
-          </ElFormItem>
+          <div class="detail-grid">
+            <article class="detail-card">
+              <p class="panel__eyebrow">账号</p>
+              <h4 class="detail-card__title">{{ profile.username || '未加载' }}</h4>
+              <p class="detail-card__meta">用户名不可修改。</p>
+            </article>
+            <article class="detail-card">
+              <p class="panel__eyebrow">资料状态</p>
+              <h4 class="detail-card__title">{{ profile.email || '未配置邮箱' }}</h4>
+              <p class="detail-card__meta">密码修改需要同时填写两项。</p>
+            </article>
+          </div>
 
-          <ElFormItem label="邮箱">
-            <ElInput
-              v-model="profile.email"
-              class="ui-input"
-              autocomplete="email"
-              placeholder="请输入邮箱"
-              size="large"
-            />
-          </ElFormItem>
+          <div class="field-grid">
+            <ElFormItem label="用户名">
+              <ElInput v-model="profile.username" class="ui-input" disabled size="large" />
+            </ElFormItem>
+
+            <ElFormItem label="邮箱">
+              <ElInput
+                v-model="profile.email"
+                class="ui-input"
+                autocomplete="email"
+                placeholder="请输入邮箱"
+                size="large"
+              />
+            </ElFormItem>
+          </div>
 
           <div class="form-section">
             <div>
@@ -120,36 +143,34 @@ onMounted(() => {
               <h4 class="form-section__title">可选更新</h4>
             </div>
 
-            <ElFormItem label="旧密码">
-              <ElInput
-                v-model="profile.oldPassword"
-                class="ui-input"
-                autocomplete="current-password"
-                placeholder="留空表示不修改密码"
-                show-password
-                type="password"
-                size="large"
-              />
-            </ElFormItem>
+            <div class="field-grid">
+              <ElFormItem label="旧密码">
+                <ElInput
+                  v-model="profile.oldPassword"
+                  class="ui-input"
+                  autocomplete="current-password"
+                  placeholder="留空表示不修改密码"
+                  show-password
+                  type="password"
+                  size="large"
+                />
+              </ElFormItem>
 
-            <ElFormItem label="新密码">
-              <ElInput
-                v-model="profile.newPassword"
-                class="ui-input"
-                autocomplete="new-password"
-                placeholder="请输入新密码"
-                show-password
-                type="password"
-                size="large"
-              />
-            </ElFormItem>
+              <ElFormItem label="新密码">
+                <ElInput
+                  v-model="profile.newPassword"
+                  class="ui-input"
+                  autocomplete="new-password"
+                  placeholder="请输入新密码"
+                  show-password
+                  type="password"
+                  size="large"
+                />
+              </ElFormItem>
+            </div>
           </div>
 
-          <p class="field__hint">
-            邮箱和密码可独立修改。修改密码时必须同时填写旧密码和新密码。
-          </p>
-
-          <div class="button-row">
+          <div class="button-row panel__footer-actions">
             <ElButton
               class="ui-button ui-button--primary"
               :loading="saving || loading"

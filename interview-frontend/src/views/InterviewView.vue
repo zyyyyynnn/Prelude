@@ -62,6 +62,12 @@ const selectedPositionId = ref<number | null>(null)
 const activeSession = computed(() =>
   sessions.value.find((item) => item.sessionId === activeSessionId.value) ?? null,
 )
+const selectedResume = computed(() =>
+  resumes.value.find((item) => item.id === selectedResumeId.value) ?? null,
+)
+const selectedPosition = computed(() =>
+  positions.value.find((item) => item.id === selectedPositionId.value) ?? null,
+)
 const messages = computed(() => replay.value?.messages ?? [])
 const currentStage = computed(() => replay.value?.currentStage ?? activeSession.value?.currentStage)
 const nextStageName = computed(() => nextStage(currentStage.value))
@@ -80,9 +86,29 @@ const canAutoStart = computed(
 const canFinish = computed(
   () => Boolean(activeSessionId.value) && !finishing.value && !sending.value,
 )
-const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || replay.value?.summaryReport || ''))
 const primarySessionList = computed(() => sessions.value.filter((item) => item.status !== 'finished'))
 const finishedSessionList = computed(() => sessions.value.filter((item) => item.status === 'finished'))
+const reportSource = computed(() => {
+  if (reportMarkdown.value || replay.value?.summaryReport) {
+    return {
+      title: activeSession.value?.targetPosition || '面试报告预览',
+      report: reportMarkdown.value || replay.value?.summaryReport || '',
+      sourceLabel: activeSession.value?.status === 'finished' ? '当前会话' : '最近可预览报告',
+    }
+  }
+
+  const fallback = finishedSessionList.value[0]
+  if (!fallback?.summaryReport) {
+    return null
+  }
+
+  return {
+    title: fallback.targetPosition || '最近已完成面试',
+    report: fallback.summaryReport,
+    sourceLabel: '已完成会话',
+  }
+})
+const renderedReport = computed(() => renderMarkdown(reportSource.value?.report || ''))
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
@@ -132,6 +158,8 @@ async function loadDashboard() {
 
     if (activeSessionId.value && sessions.value.some((item) => item.sessionId === activeSessionId.value)) {
       await loadSession(activeSessionId.value, true)
+    } else if (primarySessionList.value[0]) {
+      await loadSession(primarySessionList.value[0].sessionId, true)
     } else if (sessions.value[0]) {
       await loadSession(sessions.value[0].sessionId, true)
     } else {
@@ -207,22 +235,17 @@ function appendMessage(message: InterviewMessageRecord) {
 }
 
 function removeMessageById(id: number | null) {
-  if (!replay.value) {
-    return
-  }
-  if (id == null) {
+  if (!replay.value || id == null) {
     return
   }
   replay.value.messages = replay.value.messages.filter((message) => message.id !== id)
 }
 
 function ensureAssistantPlaceholder(id: number) {
-  if (!replay.value) {
+  if (!replay.value || replay.value.messages.some((message) => message.id === id)) {
     return
   }
-  if (replay.value.messages.some((message) => message.id === id)) {
-    return
-  }
+
   appendMessage({
     id,
     role: 'assistant',
@@ -235,8 +258,10 @@ function appendAssistantDelta(id: number, delta: string) {
   if (!replay.value) {
     return
   }
+
   const list = [...replay.value.messages]
   const target = list.find((message) => message.id === id)
+
   if (!target || target.role !== 'assistant') {
     list.push({
       id,
@@ -247,6 +272,7 @@ function appendAssistantDelta(id: number, delta: string) {
   } else {
     target.content += delta
   }
+
   replay.value.messages = list
 }
 
@@ -396,102 +422,157 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="page">
-    <div class="page__header">
-      <p class="eyebrow">面试</p>
-      <h2 class="page__title">主工作台</h2>
-      <p class="page__lead page__lead--nowrap">上传简历、选择岗位并创建阶段化面试对话。</p>
+  <section class="page page--workspace">
+    <div class="page__hero">
+      <div class="page__hero-main">
+        <p class="eyebrow">面试</p>
+        <h2 class="page__title">主工作台</h2>
+        <p class="page__lead">
+          在同一屏完成面试准备、实时问答、历史复盘和报告预览。
+        </p>
+      </div>
+      <div class="page__hero-actions">
+        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/resumes')">
+          简历管理
+        </ElButton>
+        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/analytics')">
+          数据看板
+        </ElButton>
+      </div>
     </div>
 
-    <div class="page__grid">
-      <ElCard class="ui-card panel">
+    <div class="insight-strip">
+      <article class="insight-card">
+        <p class="panel__eyebrow">当前简历</p>
+        <h3 class="insight-card__value">{{ selectedResume?.fileName || '待选择' }}</h3>
+        <p class="insight-card__meta">{{ resumes.length }} 份可用简历</p>
+      </article>
+      <article class="insight-card">
+        <p class="panel__eyebrow">当前岗位</p>
+        <h3 class="insight-card__value">{{ selectedPosition?.name || '待选择' }}</h3>
+        <p class="insight-card__meta">{{ positions.length }} 个岗位模板</p>
+      </article>
+      <article class="insight-card">
+        <p class="panel__eyebrow">会话状态</p>
+        <h3 class="insight-card__value">{{ primarySessionList.length }} 进行中</h3>
+        <p class="insight-card__meta">{{ finishedSessionList.length }} 场已完成</p>
+      </article>
+    </div>
+
+    <div class="workspace-stack">
+      <div class="workflow-grid">
+        <ElCard class="ui-card panel panel--workspace panel--prep">
         <div class="panel__head">
           <div>
             <p class="panel__eyebrow">1. 准备</p>
             <h3 class="panel__title">简历与岗位</h3>
+            <p class="panel__lead">选择简历与岗位，创建本场会话。</p>
           </div>
-          <ElTag class="ui-badge" effect="light">简历管理入口</ElTag>
+          <ElTag class="ui-badge" effect="light">{{ resumes.length }} 份简历</ElTag>
         </div>
 
-        <div class="field-stack">
-          <div class="field">
-            <span class="field__label">上传 PDF 简历</span>
-            <div class="upload-field" :class="{ 'is-uploading': uploading }">
-              <input
-                ref="uploadInput"
-                class="upload-field__native"
-                accept="application/pdf"
-                type="file"
-                @change="handleUpload"
-              />
-              <button
-                class="upload-field__button"
-                :disabled="uploading"
-                type="button"
-                @click="openResumePicker"
+        <div class="prep-layout">
+          <div class="prep-layout__form field-stack">
+            <div class="field">
+              <span class="field__label">上传 PDF 简历</span>
+              <div class="upload-field" :class="{ 'is-uploading': uploading }">
+                <input
+                  ref="uploadInput"
+                  class="upload-field__native"
+                  accept="application/pdf"
+                  type="file"
+                  @change="handleUpload"
+                />
+                <button
+                  class="upload-field__button"
+                  :disabled="uploading"
+                  type="button"
+                  @click="openResumePicker"
+                >
+                  {{ uploading ? '上传中' : '选择文件' }}
+                </button>
+                <span class="upload-field__name">{{ uploadDisplayName }}</span>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <label class="field">
+                <span class="field__label">简历</span>
+                <ElSelect v-model="selectedResumeId" class="ui-select" placeholder="请选择简历" size="large">
+                  <ElOption
+                    v-for="item in resumes"
+                    :key="item.id"
+                    :label="item.fileName"
+                    :value="item.id"
+                  />
+                </ElSelect>
+              </label>
+
+              <label class="field">
+                <span class="field__label">岗位</span>
+                <ElSelect v-model="selectedPositionId" class="ui-select" placeholder="请选择岗位" size="large">
+                  <ElOption
+                    v-for="item in positions"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                  />
+                </ElSelect>
+              </label>
+            </div>
+
+            <div class="prep-summary-panel">
+              <section class="prep-summary-panel__section">
+                <p class="panel__eyebrow">本场配置</p>
+                <h4 class="detail-card__title prep-summary-panel__title">{{ selectedResume?.fileName || '未选择简历' }}</h4>
+                <p class="detail-card__meta">{{ selectedPosition?.name || '未选择岗位' }}</p>
+              </section>
+              <section class="prep-summary-panel__section">
+                <p class="panel__eyebrow">创建结果</p>
+                <h4 class="detail-card__title prep-summary-panel__title">{{ activeSessionId ? `会话 #${activeSessionId}` : '尚未创建' }}</h4>
+                <p class="detail-card__meta">{{ currentStage ? `${stageLabel(currentStage)}阶段` : '等待启动' }}</p>
+              </section>
+            </div>
+
+            <div class="button-row panel__footer-actions prep-layout__form-actions">
+              <ElButton
+                class="ui-button ui-button--primary"
+                :disabled="!canCreate"
+                :loading="creating || loading"
+                size="large"
+                type="primary"
+                @click="createNewInterview"
               >
-                {{ uploading ? '上传中' : '选择文件' }}
-              </button>
-              <span class="upload-field__name">{{ uploadDisplayName }}</span>
+                创建面试
+              </ElButton>
+              <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/resumes')">
+                管理简历
+              </ElButton>
             </div>
           </div>
-
-          <label class="field">
-            <span class="field__label">简历</span>
-            <ElSelect v-model="selectedResumeId" class="ui-select" placeholder="请选择简历" size="large">
-              <ElOption
-                v-for="item in resumes"
-                :key="item.id"
-                :label="item.fileName"
-                :value="item.id"
-              />
-            </ElSelect>
-          </label>
-
-          <label class="field">
-            <span class="field__label">岗位</span>
-            <ElSelect v-model="selectedPositionId" class="ui-select" placeholder="请选择岗位" size="large">
-              <ElOption
-                v-for="item in positions"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              />
-            </ElSelect>
-          </label>
         </div>
+        </ElCard>
 
-        <div class="button-row">
-          <ElButton
-            class="ui-button ui-button--primary"
-            :disabled="!canCreate"
-            :loading="creating || loading"
-            size="large"
-            type="primary"
-            @click="createNewInterview"
-          >
-            创建面试
-          </ElButton>
-          <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/resumes')">
-            简历管理
-          </ElButton>
-          <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/analytics')">
-            数据看板
-          </ElButton>
-        </div>
-      </ElCard>
-
-      <ElCard class="ui-card panel">
+        <ElCard class="ui-card panel panel--workspace panel--conversation">
         <div class="panel__head">
           <div>
-            <p class="panel__eyebrow">2. 对话</p>
-            <h3 class="panel__title">阶段面试会话</h3>
+            <p class="panel__eyebrow">2. 实时面试</p>
+            <h3 class="panel__title">阶段问答区</h3>
+            <p class="panel__lead">按阶段推进问答，并在当前会话内实时生成内容。</p>
           </div>
-          <div class="button-row">
+          <div class="panel__actions">
             <ElTag class="ui-badge" effect="light">
               {{ activeSessionId ? `会话 #${activeSessionId}` : '未创建' }}
             </ElTag>
             <ElTag class="ui-badge" effect="light">{{ stageLabel(currentStage) }}</ElTag>
+            <ElButton
+              v-if="activeSessionId"
+              class="ui-button ui-button--secondary"
+              size="large"
+              @click="router.push(`/interview/replay/${activeSessionId}`)"
+            >
+              查看回放
+            </ElButton>
           </div>
         </div>
 
@@ -511,7 +592,7 @@ onMounted(() => {
           </button>
         </div>
 
-        <div class="conversation__toolbar">
+        <div class="conversation__toolbar conversation__toolbar--dense">
           <ElButton
             class="ui-button ui-button--secondary"
             :disabled="!canAutoStart"
@@ -519,7 +600,7 @@ onMounted(() => {
             size="large"
             @click="handleAutoStart"
           >
-            AI开始提问
+            AI 开始提问
           </ElButton>
           <ElButton
             class="ui-button ui-button--secondary"
@@ -534,7 +615,7 @@ onMounted(() => {
 
         <div class="conversation">
           <div v-if="!activeSessionId && !sessionLoading" class="conversation__empty-state">
-            <p class="conversation__empty-copy">先创建一场面试，或从右侧历史列表切换已有会话。</p>
+            <p class="conversation__empty-copy">创建面试后开始问答。</p>
           </div>
 
           <template v-else>
@@ -557,16 +638,16 @@ onMounted(() => {
           <span class="field__label">你的回答</span>
           <ElInput
             v-model="answer"
-            class="ui-input ui-textarea"
+            class="ui-input ui-textarea conversation-answer"
             :disabled="!activeSessionId"
-            :rows="6"
+            :rows="3"
             placeholder="输入回答后发送"
             resize="none"
             type="textarea"
           />
         </label>
 
-        <div class="button-row">
+        <div class="button-row panel__footer-actions">
           <ElButton
             class="ui-button ui-button--primary"
             :disabled="!canSend"
@@ -587,42 +668,44 @@ onMounted(() => {
             生成报告
           </ElButton>
         </div>
-      </ElCard>
+        </ElCard>
+      </div>
 
-      <ElCard class="ui-card panel panel--wide">
+      <div class="history-grid">
+        <ElCard class="ui-card panel panel--workspace history-panel">
         <div class="panel__head">
           <div>
             <p class="panel__eyebrow">3. 历史与结果</p>
-            <h3 class="panel__title">会话列表与报告</h3>
+            <h3 class="panel__title">会话清单</h3>
+            <p class="panel__lead">按进行中与已完成分组查看会话，并快速进入回放。</p>
           </div>
-          <div class="button-row">
-            <ElTag class="ui-badge" effect="light">{{ sessions.length }} 场会话</ElTag>
-          </div>
+          <ElTag class="ui-badge" effect="light">{{ sessions.length }} 场会话</ElTag>
         </div>
 
-        <div class="split-panel split-panel--history">
-          <div class="session-group">
-            <div class="session-group__head">
-              <p class="panel__eyebrow">进行中 / 未完成</p>
-            </div>
-            <div v-if="primarySessionList.length" class="session-list">
-              <article
-                v-for="item in primarySessionList"
-                :key="item.sessionId"
-                :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
-              >
-                <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
-                  <div class="session-item__head">
-                    <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
-                    <ElTag class="ui-badge" effect="light">{{ stageLabel(item.currentStage) }}</ElTag>
-                  </div>
-                  <p class="session-item__meta">
-                    {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
-                  </p>
-                  <p class="session-item__summary">
-                    {{ item.llmProvider || 'deepseek' }} / {{ item.llmModel || 'default' }}
-                  </p>
-                </button>
+        <div class="history-section">
+          <div class="history-section__head">
+            <p class="panel__eyebrow">进行中 / 未完成</p>
+            <span class="field__hint">{{ primarySessionList.length }} 场</span>
+          </div>
+          <div v-if="primarySessionList.length" class="session-list">
+            <article
+              v-for="item in primarySessionList"
+              :key="item.sessionId"
+              :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
+            >
+              <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
+                <div class="session-item__head">
+                  <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
+                  <ElTag class="ui-badge" effect="light">{{ stageLabel(item.currentStage) }}</ElTag>
+                </div>
+                <p class="session-item__meta">
+                  {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
+                </p>
+                <p class="session-item__summary">
+                  {{ item.llmProvider || 'deepseek' }} / {{ item.llmModel || 'default' }}
+                </p>
+              </button>
+              <div class="session-item__side">
                 <ElButton
                   class="ui-button ui-button--secondary"
                   size="large"
@@ -630,60 +713,68 @@ onMounted(() => {
                 >
                   回放
                 </ElButton>
-              </article>
-            </div>
-            <div v-else class="empty-state">还没有进行中的会话。</div>
-          </div>
-
-          <div class="session-group">
-            <div class="session-group__head">
-              <p class="panel__eyebrow">已完成</p>
-            </div>
-            <div v-if="finishedSessionList.length" class="session-list">
-              <article
-                v-for="item in finishedSessionList"
-                :key="item.sessionId"
-                :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
-              >
-                <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
-                  <div class="session-item__head">
-                    <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
-                    <ElTag class="ui-badge" effect="light">已完成</ElTag>
-                  </div>
-                  <p class="session-item__meta">
-                    {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
-                  </p>
-                  <p class="session-item__summary">{{ item.summaryReport ? '可预览报告' : '暂无报告摘要' }}</p>
-                </button>
-                <ElButton
-                  class="ui-button ui-button--secondary"
-                  size="large"
-                  @click="router.push(`/interview/replay/${item.sessionId}`)"
-                >
-                  回放
-                </ElButton>
-              </article>
-            </div>
-            <div v-else class="empty-state">还没有已完成的会话。</div>
-          </div>
-
-          <div class="split-panel__main">
-            <div class="panel__head panel__head--compact">
-              <div>
-                <p class="panel__eyebrow">报告预览</p>
-                <h4 class="panel__title panel__title--small">
-                  {{ activeSession?.targetPosition || '面试报告预览' }}
-                </h4>
               </div>
-            </div>
+            </article>
+          </div>
+          <div v-else class="empty-state">还没有进行中的会话。</div>
+        </div>
 
-            <div v-if="renderedReport" class="markdown-surface">
-              <div class="markdown-body" v-html="renderedReport" />
-            </div>
-            <div v-else class="report-panel__empty">完成面试后在这里查看 Markdown 报告。</div>
+        <div class="history-section">
+          <div class="history-section__head">
+            <p class="panel__eyebrow">已完成</p>
+            <span class="field__hint">{{ finishedSessionList.length }} 场</span>
+          </div>
+          <div v-if="finishedSessionList.length" class="session-list">
+            <article
+              v-for="item in finishedSessionList"
+              :key="item.sessionId"
+              :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
+            >
+              <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
+                <div class="session-item__head">
+                  <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
+                  <ElTag class="ui-badge" effect="light">已完成</ElTag>
+                </div>
+                <p class="session-item__meta">
+                  {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
+                </p>
+                <p class="session-item__summary">{{ item.summaryReport ? '包含报告与评分' : '暂无报告摘要' }}</p>
+              </button>
+              <div class="session-item__side">
+                <ElButton
+                  class="ui-button ui-button--secondary"
+                  size="large"
+                  @click="router.push(`/interview/replay/${item.sessionId}`)"
+                >
+                  回放
+                </ElButton>
+              </div>
+            </article>
+          </div>
+          <div v-else class="empty-state">还没有已完成的会话。</div>
+          </div>
+        </ElCard>
+
+        <ElCard class="ui-card panel panel--workspace report-panel">
+        <div class="panel__head panel__head--compact">
+          <div>
+            <p class="panel__eyebrow">报告预览</p>
+            <h3 class="panel__title">{{ reportSource?.title || '面试报告预览' }}</h3>
+            <p class="panel__lead">查看当前或最近完成的面试报告。</p>
+          </div>
+          <div class="panel__actions">
+            <ElTag v-if="reportSource" class="ui-badge" effect="light">{{ reportSource.sourceLabel }}</ElTag>
           </div>
         </div>
-      </ElCard>
+
+        <div v-if="renderedReport" class="markdown-surface markdown-surface--report">
+          <div class="markdown-body" v-html="renderedReport" />
+        </div>
+        <div v-else class="report-panel__empty">
+          完成面试后显示最近报告。
+        </div>
+        </ElCard>
+      </div>
     </div>
   </section>
 </template>

@@ -3,9 +3,11 @@ interview-backend/src/main/resources/application-local.yml
 interview-frontend/node_modules/
 interview-frontend/dist/
 interview-frontend/.env*
+!interview-frontend/.env.demo
 interview-frontend/.env.local
 .playwright-cli/
 *.log
 output/runtime/
 output/demo/.artifacts/
 output/playwright/
+output/*.txt

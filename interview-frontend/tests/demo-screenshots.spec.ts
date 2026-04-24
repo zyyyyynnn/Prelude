@@ -9,8 +9,6 @@ const __dirname = path.dirname(__filename)
 const outputDir = path.resolve(__dirname, '../../output/demo/screenshots')
 const manifestPath = path.resolve(__dirname, '../../output/demo/manifest.md')
 const demoResetUrl = 'http://127.0.0.1:8081/api/demo/reset'
-const resumeFixturePath = path.resolve(__dirname, './fixtures/demo-resume.pdf')
-
 type ManifestItem = {
   file: string
   page: string
@@ -119,41 +117,32 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await page.getByRole('button', { name: '注册' }).click()
   await capture(page, '02-register.png', '注册页', '注册表单', page.getByRole('button', { name: '完成注册' }))
 
-  await page.getByRole('button', { name: '登录' }).last().click()
+  await page.getByRole('tab', { name: '登录' }).click()
   await login(page)
 
-  await capture(page, '03-interview-empty.png', '主工作台', '空态', page.getByRole('button', { name: '创建面试' }))
+  const sessionBadge = page.locator('.panel--conversation .el-tag').filter({ hasText: /会话 #\d+/ }).first()
+  await capture(page, '03-interview-workbench.png', '主工作台', '默认演示链路', sessionBadge)
 
   await page.goto('/resumes')
-  await capture(page, '08-resumes-empty.png', '简历管理', '空态', page.getByRole('heading', { name: '简历管理' }))
+  await capture(page, '08-resumes-filled.png', '简历管理', '已有演示简历', page.getByText('demo-resume.pdf').first())
 
   await page.goto('/settings/llm')
-  await capture(page, '10-settings-llm.png', 'LLM配置', '默认配置', page.getByRole('heading', { name: 'Provider 抽象层' }))
+  await capture(page, '09-settings-llm.png', 'LLM配置', '默认配置', page.getByRole('heading', { name: 'Provider 抽象层' }))
 
   await page.goto('/settings/profile')
-  await capture(page, '11-settings-profile.png', '用户设置', '默认配置', page.getByRole('heading', { name: '用户设置' }))
-
-  await page.goto('/analytics')
-  await capture(page, '12-analytics-empty.png', '数据看板', '空态', page.getByRole('heading', { name: '数据看板' }))
+  await capture(page, '10-settings-profile.png', '用户设置', '默认配置', page.getByRole('heading', { name: '用户设置' }))
 
   await page.goto('/interview')
-  await page.locator('input[type="file"]').setInputFiles(resumeFixturePath)
-  await expect(page.getByText('demo-resume.pdf').first()).toBeVisible()
-  await page.getByRole('button', { name: '创建面试' }).click()
-  await expect(page.getByText(/会话 #\d+/)).toBeVisible()
-  await capture(page, '04-interview-session-started.png', '主工作台', '已创建会话', page.getByText(/会话 #\d+/))
-
-  await page.getByRole('button', { name: 'AI开始提问' }).click()
-  await expect(page.getByText('面试官', { exact: true }).first()).toBeVisible()
-  await sendAnswer(page, '我主要负责后端接口、流式问答和报告落库。')
-  await page.getByRole('button', { name: '进入技术阶段' }).click()
+  await expect(sessionBadge).toBeVisible()
   await expect(page.getByRole('button', { name: '进入深挖阶段' })).toBeVisible()
+  await capture(page, '04-interview-stage-technical.png', '主工作台', '技术阶段', page.getByRole('button', { name: '进入深挖阶段' }))
+
   await sendAnswer(page, '技术阶段里，我重点负责 Spring Boot 接口、异常处理和报告持久化。')
-  await capture(page, '05-interview-stage-technical.png', '主工作台', '技术阶段', page.getByRole('button', { name: '进入深挖阶段' }))
 
   await page.getByRole('button', { name: '进入深挖阶段' }).click()
   await expect(page.getByRole('button', { name: '进入收尾阶段' })).toBeVisible()
   await sendAnswer(page, '深挖阶段我会重点解释幂等控制、阶段推进顺序和回放一致性。')
+  await capture(page, '05-interview-stage-deep-dive.png', '主工作台', '深挖阶段', page.getByRole('button', { name: '进入收尾阶段' }))
 
   await page.getByRole('button', { name: '进入收尾阶段' }).click()
   await expect(page.getByRole('button', { name: '阶段已完成' })).toBeVisible()
@@ -164,7 +153,7 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await expect(page.getByText('技术能力：7/10')).toBeVisible()
   await capture(page, '06-interview-report.png', '主工作台', '报告已生成', page.getByRole('heading', { name: '面试评估报告' }))
 
-  await page.getByRole('button', { name: '回放' }).first().click()
+  await page.getByRole('button', { name: '查看回放' }).click()
   await page.waitForURL('**/interview/replay/**')
   await expect(page.getByRole('heading', { name: '破冰', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '技术', exact: true })).toBeVisible()
@@ -175,10 +164,7 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await expect(page.locator('.replay-item .el-tag').filter({ hasText: '我' }).first()).toBeVisible()
   await capture(page, '07-replay.png', '回放页', '完整回放', page.getByRole('heading', { name: '会话回放' }))
 
-  await page.goto('/resumes')
-  await capture(page, '09-resumes-filled.png', '简历管理', '已有演示简历', page.getByText('demo-resume.pdf').first())
-
   await page.goto('/analytics')
   await expect(page.getByText('能力雷达')).toBeVisible()
-  await capture(page, '13-analytics-filled.png', '数据看板', '已有演示数据', page.getByRole('heading', { name: '能力雷达' }))
+  await capture(page, '11-analytics-filled.png', '数据看板', '已有演示数据', page.getByRole('heading', { name: '能力雷达' }))
 })

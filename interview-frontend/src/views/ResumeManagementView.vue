@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElEmpty, ElMessageBox, ElTag } from 'element-plus'
 import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
@@ -13,6 +13,8 @@ const loading = ref(false)
 const uploading = ref(false)
 const uploadInput = ref<HTMLInputElement | null>(null)
 const items = ref<ResumeItem[]>([])
+
+const inUseCount = computed(() => items.value.filter((item) => item.inUse).length)
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
@@ -84,36 +86,61 @@ onMounted(() => {
 
 <template>
   <section class="page">
-    <div class="page__header">
-      <p class="eyebrow">简历</p>
-      <h2 class="page__title">简历管理</h2>
-      <p class="page__lead page__lead--nowrap">查看上传记录与占用状态，未占用时可删除。</p>
+    <div class="page__hero">
+      <div class="page__hero-main">
+        <p class="eyebrow">简历</p>
+        <h2 class="page__title">简历管理</h2>
+        <p class="page__lead">管理 PDF 简历、占用状态和删除操作。</p>
+      </div>
+      <div class="page__hero-actions">
+        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/interview')">
+          返回主工作台
+        </ElButton>
+        <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/analytics')">
+          数据看板
+        </ElButton>
+        <ElButton
+          class="ui-button ui-button--primary"
+          :loading="uploading"
+          size="large"
+          type="primary"
+          @click="openUpload"
+        >
+          上传新简历
+        </ElButton>
+      </div>
     </div>
 
-    <div class="page__subnav">
-      <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/interview')">
-        返回主工作台
-      </ElButton>
-      <ElButton class="ui-button ui-button--secondary" size="large" @click="router.push('/analytics')">
-        数据看板
-      </ElButton>
+    <div class="insight-strip insight-strip--compact">
+      <article class="insight-card">
+        <p class="panel__eyebrow">总数</p>
+        <h3 class="insight-card__value">{{ items.length }}</h3>
+        <p class="insight-card__meta">当前账号下的简历数量</p>
+      </article>
+      <article class="insight-card">
+        <p class="panel__eyebrow">已占用</p>
+        <h3 class="insight-card__value">{{ inUseCount }}</h3>
+        <p class="insight-card__meta">被会话引用，暂不可删除</p>
+      </article>
+      <article class="insight-card">
+        <p class="panel__eyebrow">可清理</p>
+        <h3 class="insight-card__value">{{ items.length - inUseCount }}</h3>
+        <p class="insight-card__meta">未被占用，可直接删除</p>
+      </article>
     </div>
 
     <div class="page__grid page__grid--single">
       <ElCard class="ui-card panel">
         <div class="panel__head">
           <div>
+            <p class="panel__eyebrow">列表</p>
             <h3 class="panel__title">上传与清理</h3>
+            <p class="panel__lead">查看文件信息、使用次数和可执行操作。</p>
           </div>
-          <ElButton
-            class="ui-button ui-button--primary"
-            :loading="uploading"
-            size="large"
-            type="primary"
-            @click="openUpload"
-          >
-            上传新简历
-          </ElButton>
+          <div class="panel__actions">
+            <ElTag class="ui-badge" effect="light">{{ items.length }} 份</ElTag>
+            <ElTag class="ui-badge" effect="light">{{ inUseCount }} 份占用</ElTag>
+          </div>
         </div>
 
         <input
@@ -124,10 +151,10 @@ onMounted(() => {
           @change="handleUpload"
         />
 
-        <div v-if="items.length" class="resume-list">
-          <article v-for="item in items" :key="item.id" class="resume-item">
-            <div class="resume-item__meta">
-              <div>
+        <div v-if="items.length" class="resume-catalog">
+          <article v-for="item in items" :key="item.id" class="resume-row">
+            <div class="resume-row__main">
+              <div class="resume-row__title-wrap">
                 <h4 class="resume-item__title">{{ item.fileName }}</h4>
                 <p class="resume-item__hint">
                   {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
@@ -143,7 +170,7 @@ onMounted(() => {
               </div>
             </div>
 
-            <div class="button-row">
+            <div class="resume-row__actions">
               <ElButton
                 class="ui-button ui-button--secondary"
                 :disabled="Boolean(item.inUse)"
@@ -156,7 +183,7 @@ onMounted(() => {
           </article>
         </div>
 
-        <ElEmpty v-else description="暂时还没有上传简历。" />
+        <ElEmpty v-else :description="loading ? '正在加载简历列表…' : '暂时还没有上传简历。'" />
       </ElCard>
     </div>
   </section>

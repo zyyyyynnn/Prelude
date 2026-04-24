@@ -106,58 +106,72 @@ onMounted(() => {
 
 <template>
   <section class="page">
-    <div class="page__header">
-      <p class="eyebrow">设置</p>
-      <h2 class="page__title">LLM 配置</h2>
-      <p class="page__lead">选择 Provider、模型，并维护用户 API Key。</p>
+    <div class="page__hero">
+      <div class="page__hero-main">
+        <p class="eyebrow">设置</p>
+        <h2 class="page__title">LLM 配置</h2>
+        <p class="page__lead">管理 Provider、模型和用户 API Key。</p>
+      </div>
+      <div class="page__hero-actions">
+        <ElTag v-if="selectedProviderKey" class="ui-badge" effect="light">{{ selectedProviderKey }}</ElTag>
+        <ElTag v-if="selectedModel" class="ui-badge" effect="light">{{ selectedModel }}</ElTag>
+      </div>
     </div>
 
     <div class="page__grid page__grid--single">
       <ElCard class="ui-card panel">
         <div class="panel__head">
           <div>
+            <p class="panel__eyebrow">模型层</p>
             <h3 class="panel__title">Provider 抽象层</h3>
+            <p class="panel__lead">查看当前模型与已保存的脱敏 Key。</p>
           </div>
           <ElTag class="ui-badge" effect="light">Provider 与模型</ElTag>
         </div>
 
         <ElForm class="form-grid" label-position="top" @submit.prevent>
-          <ElFormItem label="Provider">
-            <ElSelect
-              v-model="selectedProviderKey"
-              class="ui-select"
-              placeholder="请选择 Provider"
-              size="large"
-            >
-              <ElOption
-                v-for="provider in providerOptions"
-                :key="provider.providerKey"
-                :label="provider.displayName"
-                :value="provider.providerKey"
-              />
-            </ElSelect>
-          </ElFormItem>
+          <div class="detail-grid">
+            <article class="detail-card">
+              <p class="panel__eyebrow">当前 Provider</p>
+              <h4 class="detail-card__title">{{ currentProvider?.displayName || '未选择' }}</h4>
+              <p class="detail-card__meta">{{ modelOptions.length }} 个可选模型</p>
+            </article>
+            <article class="detail-card">
+              <p class="panel__eyebrow">当前 API Key</p>
+              <h4 class="detail-card__title">{{ apiKeyMasked || '未配置' }}</h4>
+              <p class="detail-card__meta">保存新值会覆盖当前 Key。</p>
+            </article>
+          </div>
 
-          <ElFormItem label="模型">
-            <ElSelect
-              v-model="selectedModel"
-              class="ui-select"
-              :disabled="modelOptions.length === 0"
-              placeholder="请选择模型"
-              size="large"
-            >
-              <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
-            </ElSelect>
-          </ElFormItem>
+          <div class="field-grid">
+            <ElFormItem label="Provider">
+              <ElSelect
+                v-model="selectedProviderKey"
+                class="ui-select"
+                placeholder="请选择 Provider"
+                size="large"
+              >
+                <ElOption
+                  v-for="provider in providerOptions"
+                  :key="provider.providerKey"
+                  :label="provider.displayName"
+                  :value="provider.providerKey"
+                />
+              </ElSelect>
+            </ElFormItem>
 
-          <ElFormItem label="当前 API Key">
-            <div class="settings-summary">
-              <ElTag v-if="apiKeyMasked" class="ui-badge" effect="light">
-                {{ apiKeyMasked }}
-              </ElTag>
-              <span v-else class="field__hint">未配置</span>
-            </div>
-          </ElFormItem>
+            <ElFormItem label="模型">
+              <ElSelect
+                v-model="selectedModel"
+                class="ui-select"
+                :disabled="modelOptions.length === 0"
+                placeholder="请选择模型"
+                size="large"
+              >
+                <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
+              </ElSelect>
+            </ElFormItem>
+          </div>
 
           <ElFormItem label="新 API Key / 清空">
             <ElInput
@@ -170,11 +184,7 @@ onMounted(() => {
             />
           </ElFormItem>
 
-          <p class="field__hint">
-            保存时会提交 `apiKey`。输入新值会更新密钥，留空会按规格清空自定义 Key。
-          </p>
-
-          <div class="button-row">
+          <div class="button-row panel__footer-actions">
             <ElButton
               class="ui-button ui-button--primary"
               :loading="saving"
