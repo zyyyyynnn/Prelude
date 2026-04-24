@@ -29,6 +29,10 @@ jobs:
         working-directory: interview-backend
         run: mvn -q -DskipTests compile
 
+      - name: Check backend tests
+        working-directory: interview-backend
+        run: mvn -q test
+
       - name: Install frontend dependencies
         working-directory: interview-frontend
         run: npm ci

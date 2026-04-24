@@ -40,27 +40,23 @@ flowchart LR
 
 ### 登录
 
-![登录](output/demo/screenshots/01-login.png)
+![登录](docs/images/login.png)
 
 ### 主工作台
 
-![主工作台](output/demo/screenshots/03-interview-workbench.png)
-
-### 技术阶段
-
-![技术阶段](output/demo/screenshots/04-interview-stage-technical.png)
+![主工作台](docs/images/interview-workbench.png)
 
 ### 报告生成
 
-![报告生成](output/demo/screenshots/06-interview-report.png)
+![报告生成](docs/images/interview-report.png)
 
 ### 会话回放
 
-![会话回放](output/demo/screenshots/07-replay.png)
+![会话回放](docs/images/replay.png)
 
 ### 数据看板
 
-![数据看板](output/demo/screenshots/11-analytics-filled.png)
+![数据看板](docs/images/analytics.png)
 
 ## 技术栈
 
@@ -75,6 +71,7 @@ flowchart LR
 E:\graduation-project
 ├── README.md
 ├── DESIGN-SPEC.md
+├── docs                      # 展示截图与接口文档
 ├── interview-backend          # Spring Boot 后端
 ├── interview-frontend         # Vue 前端
 ├── scripts                    # 启动、重置和截图脚本
@@ -199,7 +196,7 @@ Demo Twin：
 重置演示数据：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
+pwsh -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
 ```
 
 `/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、回放、报告、评分历史和薄弱点数据。
@@ -213,7 +210,7 @@ demo / 123456
 生成 Demo 截图：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
+pwsh -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
 ```
 
 截图输出目录：
@@ -240,38 +237,16 @@ output\demo\manifest.md
 
 ## 核心接口
 
-认证与基础数据：
+完整接口说明见 [docs/api.md](docs/api.md)。
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/health`
-- `GET /api/position/list`
+## 答辩演示流程
 
-LLM 与用户设置：
-
-- `GET /api/llm/providers`
-- `GET /api/user/llm-config`
-- `PUT /api/user/llm-config`
-- `GET /api/user/profile`
-- `PUT /api/user/profile`
-
-简历与面试：
-
-- `POST /api/resume/upload`
-- `GET /api/resume/list`
-- `DELETE /api/resume/{resumeId}`
-- `POST /api/interview/start`
-- `GET /api/interview/sessions`
-- `GET /api/interview/{sessionId}/messages`
-- `POST /api/interview/{sessionId}/chat`
-- `POST /api/interview/{sessionId}/stage`
-- `POST /api/interview/{sessionId}/finish`
-
-数据分析：
-
-- `GET /api/analytics/radar`
-- `GET /api/analytics/trend`
-- `GET /api/analytics/weaknesses`
+1. 启动 Demo Twin：`.\start-demo.bat`
+2. 登录演示账号：`demo / 123456`
+3. 进入 `/interview` 查看进行中面试
+4. 推进阶段并生成报告
+5. 查看 `/interview/replay/:sessionId`
+6. 查看 `/analytics` 能力分析
 
 ## 验证命令
 
@@ -293,8 +268,8 @@ Demo 链路验收：
 
 ```powershell
 .\start-demo.bat
-powershell -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
+pwsh -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
+pwsh -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
 ```
 
 ## CI
@@ -305,6 +280,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
 - Java 21
 - Node.js 20
 - 后端执行 `mvn -q -DskipTests compile`
+- 后端执行 `mvn -q test`
 - 前端执行 `npm ci` 与 `npm run build`
 
 ## 注意事项
