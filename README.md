@@ -71,7 +71,7 @@ flowchart LR
 E:\graduation-project
 ├── README.md
 ├── DESIGN-SPEC.md
-├── docs                      # 展示截图与接口文档
+├── docs                       # 展示截图与接口文档
 ├── interview-backend          # Spring Boot 后端
 ├── interview-frontend         # Vue 前端
 ├── scripts                    # 启动、重置和截图脚本
