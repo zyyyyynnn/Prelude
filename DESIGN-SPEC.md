@@ -42,7 +42,7 @@
 - 登录页不显示全局 Header。
 - 登录/注册使用同一张卡片，切换时卡片外尺寸不变化。
 - 卡片宽度按当前实现保持 `min(100%, 1180px)`，`transform: scale(1)`。
-- 左栏只包含大号 `BrandMetaballs` Logo 和一行小字 `LLM Moke Interview System`。
+- 左栏只包含大号 `BrandMetaballs` Logo 和一行小字 `LLM Mock Interview System`。
 - 右栏保留 eyebrow、主标题、表单和底部按钮组；删除额外解释性提示词。
 - 登录态为注册邮箱输入预留同高空位，避免切换抽动。
 - 登录/注册切换按钮放在表单底部，与提交按钮同组。
