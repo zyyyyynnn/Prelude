@@ -1,6 +1,6 @@
 # 毕设全流程手册导航
 
-本目录默认采用 `Codex 主导` 的协作方式：人工侧负责提供原始素材、真实数据、学校要求与外部研究报告，协作模型负责整理、写作、整合、校核与最终产出。除必须由你亲自完成的取材、截图、知网检索和真实结果采集外，其余绝大多数任务都可以直接提供给协作模型完成。
+本目录默认采用 `Codex 主导` 的协作方式：人工侧负责提供原始素材、真实数据、学校要求与外部研究报告，协作模型负责整理、写作、整合、校核与最终产出。除必须由人工侧亲自完成的取材、截图、知网检索和真实结果采集外，其余多数任务都可以提供给协作模型完成。
 
 ## 推荐使用顺序
 
@@ -20,7 +20,7 @@
 - [03-第三章-系统分析与设计.md](./03-第三章-系统分析与设计.md)：图表和设计信息准备好后提供给协作模型，协作模型会补写分析与设计章节。
 - [04-第四章-系统实现.md](./04-第四章-系统实现.md)：把真实代码片段和开发记录提供给协作模型，协作模型会扩写实现部分。
 - [05-第五章-系统测试.md](./05-第五章-系统测试.md)：把真实测试数据和环境信息提供给协作模型，协作模型会生成测试章节。
-- [06-第六章-总结与摘要.md](./06-第六章-总结与摘要.md)：确认真实局限点后提供给协作模型，协作模型会完成总结、展望与中英文摘要。
+- [06-第六章-总结与摘要.md](./06-第六章-总结与摘要.md)：历史文件名保留；当前正文口径为“第六章总结与展望”，中英文摘要已独立前置。
 - [07-全卷打磨与格式核查.md](./07-全卷打磨与格式核查.md)：把章节原文、格式要求和核查目标提供给协作模型，协作模型会完成润色、降重、逻辑检查与终审。
 - [07.5-参考文献整理.md](./07.5-参考文献整理.md)：把原始条目信息和访问日期提供给协作模型，协作模型会整理文末参考文献。
 
@@ -42,11 +42,13 @@
 - [assets-template/figure-table-register-template.md](./assets-template/figure-table-register-template.md)
 - [assets-template/defense-slide-map-template.md](./assets-template/defense-slide-map-template.md)
 
-## 执行总控
+## 执行总控与当前材料
 
-- [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md)
-- [../thesis-assets/material-checklist.md](../thesis-assets/material-checklist.md)
-- [../thesis-assets/school-requirements-package.md](../thesis-assets/school-requirements-package.md)
+- [../thesis-assets/README.md](../thesis-assets/README.md)：论文材料目录说明，包含主稿、历史快照、文献、图表、测试和答辩材料放置规则。
+- [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md)：当前状态唯一总控。
+- [../thesis-assets/material-checklist.md](../thesis-assets/material-checklist.md)：资料包维护清单。
+- [../thesis-assets/final-evidence-lock.md](../thesis-assets/final-evidence-lock.md)：最终证据锁版记录。
+- [../thesis-assets/school-requirements-package.md](../thesis-assets/school-requirements-package.md)：学校要求包。
 
 ## 使用建议
 
@@ -55,6 +57,6 @@
 - 默认不要把同一任务拆成多个模型分别执行；若人工侧已经拿到 GPT 或 Gemini 的 deep research 报告，直接把报告原文提供给协作模型，协作模型会吸收、比对和落地。
 - 在各阶段推进中，Codex 可适当、合理地调用本地 skills 与 MCP 工具提升检索、抽取、核验与整理效率，但所有输出仍以真实材料和已确认事实为准。
 - 相关提示词均已包含在对应文档中，无需额外查找模板文件。
-- 若论文已接近完成，别停在格式终审；继续用 [07-全卷打磨与格式核查.md](./07-全卷打磨与格式核查.md) 做一次“最终提交包核查”。
-- 日常只需要维护 [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md) 和 [../thesis-assets/material-checklist.md](../thesis-assets/material-checklist.md) 两个文件即可。
-- 默认采用“阶段断点审查”机制：每个阶段完成后，我会先提交该阶段交付物并提醒你审查，只有在你明确批准后，才进入下一阶段。
+- 若论文已接近完成，继续用 [07-全卷打磨与格式核查.md](./07-全卷打磨与格式核查.md) 做一次“最终提交包核查”。
+- 日常优先维护 [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md)、[../thesis-assets/final-evidence-lock.md](../thesis-assets/final-evidence-lock.md) 和 [../thesis-assets/README.md](../thesis-assets/README.md)。
+- 默认采用“阶段断点审查”机制：每个阶段完成后，先提交该阶段交付物并人工审查，确认后再进入下一阶段。
