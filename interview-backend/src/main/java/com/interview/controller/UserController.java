@@ -1,6 +1,7 @@
 package com.interview.controller;
 
 import com.interview.common.Result;
+import com.interview.dto.LlmConfigTestResponse;
 import com.interview.dto.UserLlmConfigRequest;
 import com.interview.dto.UserLlmConfigResponse;
 import com.interview.dto.UserProfileRequest;
@@ -10,6 +11,7 @@ import com.interview.service.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +28,11 @@ public class UserController {
     @GetMapping("/llm-config")
     public Result<UserLlmConfigResponse> getLlmConfig() {
         return Result.success(userLlmConfigService.getCurrentUserConfig());
+    }
+
+    @PostMapping("/llm-config/test")
+    public Result<LlmConfigTestResponse> testLlmConfig() {
+        return Result.success(userLlmConfigService.testCurrentUserConfig());
     }
 
     @GetMapping("/profile")
