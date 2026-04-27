@@ -3,6 +3,7 @@ import type {
   ApiResult,
   LlmConfigPayload,
   LlmConfigResponse,
+  LlmConfigTestResponse,
   LlmProviderOption,
   LlmProviderRecord,
 } from './contracts'
@@ -88,5 +89,10 @@ export async function fetchUserLlmConfig() {
 
 export async function saveUserLlmConfig(payload: LlmConfigPayload) {
   const response = await http.put<ApiResult<LlmConfigResponse>>('/user/llm-config', payload)
+  return unwrapResult(response.data)
+}
+
+export async function testUserLlmConfig() {
+  const response = await http.post<ApiResult<LlmConfigTestResponse>>('/user/llm-config/test')
   return unwrapResult(response.data)
 }
