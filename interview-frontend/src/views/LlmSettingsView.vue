@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElButton, ElCard, ElForm, ElFormItem, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
-import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig } from '../api/llm'
+import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
 import type { LlmProviderOption } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
 
 const loading = ref(false)
 const saving = ref(false)
+const testing = ref(false)
+const lastTestMessage = ref('未测试')
 const { showNotice } = usePageNotice()
 
 const providerOptions = ref<LlmProviderOption[]>([])
@@ -59,6 +61,7 @@ async function loadSettings() {
     const provider = providers.find((item) => item.providerKey === providerKey) ?? providers[0] ?? null
     applySelection(provider?.providerKey || '', config.model || provider?.models[0] || '')
     apiKeyMasked.value = config.apiKeyMasked || ''
+    lastTestMessage.value = '未测试'
     showNotice('配置已加载', 'success')
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
@@ -85,6 +88,7 @@ async function saveSettings() {
     selectedProviderKey.value = result.providerKey || selectedProviderKey.value
     selectedModel.value = result.model || selectedModel.value
     apiKeyMasked.value = result.apiKeyMasked || ''
+    lastTestMessage.value = '配置已变更，建议重新测试'
     if (apiKeyInput.value && !result.apiKeyMasked) {
       apiKeyInput.value = ''
       showNotice('配置已保存，但接口未返回脱敏 Key', 'warning')
@@ -96,6 +100,20 @@ async function saveSettings() {
     showNotice(getErrorMessage(error), 'error')
   } finally {
     saving.value = false
+  }
+}
+
+async function testSettings() {
+  testing.value = true
+  try {
+    const result = await testUserLlmConfig()
+    lastTestMessage.value = result.message || '模型配置测试通过'
+    showNotice(lastTestMessage.value, result.ok ? 'success' : 'warning')
+  } catch (error) {
+    lastTestMessage.value = getErrorMessage(error)
+    showNotice(lastTestMessage.value, 'error')
+  } finally {
+    testing.value = false
   }
 }
 
@@ -136,6 +154,11 @@ onMounted(() => {
               <p class="panel__eyebrow">当前 API Key</p>
               <h4 class="detail-card__title">{{ apiKeyMasked || '未配置' }}</h4>
               <p class="detail-card__meta">保存新值会覆盖当前 Key。</p>
+            </article>
+            <article class="detail-card">
+              <p class="panel__eyebrow">连通性测试</p>
+              <h4 class="detail-card__title">{{ lastTestMessage }}</h4>
+              <p class="detail-card__meta">保存配置后可测试当前模型服务。</p>
             </article>
           </div>
 
@@ -189,6 +212,15 @@ onMounted(() => {
               @click="saveSettings"
             >
               保存设置
+            </ElButton>
+            <ElButton
+              class="ui-button ui-button--secondary"
+              :disabled="saving || loading"
+              :loading="testing"
+              size="large"
+              @click="testSettings"
+            >
+              测试连接
             </ElButton>
           </div>
         </ElForm>
