@@ -3,6 +3,7 @@ package com.interview.service.impl;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.interview.common.BusinessException;
 import com.interview.common.UserContext;
+import com.interview.dto.LlmConfigTestResponse;
 import com.interview.dto.UserLlmConfigRequest;
 import com.interview.dto.UserLlmConfigResponse;
 import com.interview.entity.User;
@@ -15,6 +16,9 @@ import com.interview.service.UserLlmConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -59,6 +63,23 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         );
 
         return getCurrentUserConfig();
+    }
+
+    @Override
+    public LlmConfigTestResponse testCurrentUserConfig() {
+        LlmSelection selection = llmRouter.resolveCurrentUserSelection();
+        if (isDemoEnabled()) {
+            return new LlmConfigTestResponse(selection.providerKey(), selection.model(), true, "Demo 模式配置可用");
+        }
+
+        String content = llmRouter.chatCurrentUser(List.of(
+            Map.of("role", "system", "content", "你是模型连通性测试助手。"),
+            Map.of("role", "user", "content", "请只回复 OK")
+        ));
+        if (content == null || content.isBlank()) {
+            throw BusinessException.badRequest("模型服务返回内容为空");
+        }
+        return new LlmConfigTestResponse(selection.providerKey(), selection.model(), true, "模型配置测试通过");
     }
 
     private User requireCurrentUser() {
