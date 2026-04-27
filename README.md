@@ -280,7 +280,7 @@ pwsh -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
 
 - Windows runner
 - Java 21
-- Node.js 20
+- Node.js 24
 - 后端执行 `mvn -q -DskipTests compile`
 - 后端执行 `mvn -q test`
 - 前端执行 `npm ci` 与 `npm run build`
