@@ -13,6 +13,11 @@ output/demo/.artifacts/
 output/playwright/
 output/*.txt
 
+# Office temporary lock files
+~$*.docx
+~$*.xlsx
+~$*.pptx
+*.tmp
 
 # Local review bundles and one-off backups
 thesis_literature_enhancement_package.zip
