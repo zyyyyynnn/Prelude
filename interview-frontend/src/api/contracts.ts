@@ -128,6 +128,13 @@ export type LlmConfigResponse = {
   displayName?: string
 }
 
+export type LlmConfigTestResponse = {
+  providerKey: string
+  model: string
+  ok: boolean
+  message: string
+}
+
 export type UserProfilePayload = {
   email?: string
   oldPassword?: string
