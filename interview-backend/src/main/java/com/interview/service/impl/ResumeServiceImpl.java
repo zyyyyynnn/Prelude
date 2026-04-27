@@ -32,6 +32,7 @@ import java.util.List;
 public class ResumeServiceImpl implements ResumeService {
 
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
+    private static final int MAX_LLM_PARSE_TEXT_LENGTH = 12000;
 
     private final ResumeMapper resumeMapper;
     private final InterviewSessionMapper interviewSessionMapper;
@@ -47,7 +48,7 @@ public class ResumeServiceImpl implements ResumeService {
             return demoModeService.createDemoResume(currentUserId(), file.getOriginalFilename());
         }
         String rawText = extractPdfText(file);
-        ResumeParseResult parseResult = parseByLlm(rawText);
+        ResumeParseResult parseResult = parseByLlm(limitText(rawText, MAX_LLM_PARSE_TEXT_LENGTH));
 
         Resume resume = new Resume();
         resume.setUserId(currentUserId());
@@ -144,6 +145,13 @@ public class ResumeServiceImpl implements ResumeService {
         } catch (JsonProcessingException exception) {
             throw BusinessException.badRequest("LLM 返回内容不是合法 JSON，请重试");
         }
+    }
+
+    private String limitText(String text, int maxLength) {
+        if (text == null || text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "\n……（简历文本较长，已截断用于结构化解析）";
     }
 
     private String stripJsonFence(String content) {
