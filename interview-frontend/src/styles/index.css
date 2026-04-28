@@ -698,10 +698,13 @@ a {
 }
 
 .el-message.page-notice {
+  position: fixed;
   justify-content: center;
-  left: 50%;
-  top: 18px;
-  transform: translateX(-50%);
+  top: 18px !important;
+  right: auto !important;
+  left: 50vw !important;
+  margin: 0 !important;
+  transform: translateX(-50%) !important;
   width: min(304px, calc(100vw - 32px));
   min-width: 0;
   max-width: min(304px, calc(100vw - 32px));

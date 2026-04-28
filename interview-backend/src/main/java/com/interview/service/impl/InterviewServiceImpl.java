@@ -205,6 +205,9 @@ public class InterviewServiceImpl implements InterviewService {
         if (nextIndex != currentIndex + 1) {
             throw BusinessException.badRequest("阶段推进顺序不正确");
         }
+        if (hasPendingAssistantPrompt(sessionId)) {
+            throw BusinessException.badRequest("请先回答当前阶段的面试官提问");
+        }
 
         currentStage.setEndedAt(LocalDateTime.now());
         interviewStageMapper.updateById(currentStage);
@@ -578,6 +581,20 @@ public class InterviewServiceImpl implements InterviewService {
             .filter(message -> ROLE_ASSISTANT.equals(message.getRole()))
             .filter(message -> message.getCreatedAt() == null || !message.getCreatedAt().isBefore(stageStartedAt))
             .count();
+    }
+
+    private boolean hasPendingAssistantPrompt(Long sessionId) {
+        List<InterviewMessage> messages = listMessages(sessionId);
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            InterviewMessage message = messages.get(index);
+            if (ROLE_USER.equals(message.getRole())) {
+                return false;
+            }
+            if (ROLE_ASSISTANT.equals(message.getRole())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void closeCurrentStage(Long sessionId) {
