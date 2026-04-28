@@ -48,6 +48,7 @@
 - [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md)：当前状态唯一总控。
 - [../thesis-assets/material-checklist.md](../thesis-assets/material-checklist.md)：资料包维护清单。
 - [../thesis-assets/final-evidence-lock.md](../thesis-assets/final-evidence-lock.md)：最终证据锁版记录。
+- [../thesis-assets/final-supplement-checklist.md](../thesis-assets/final-supplement-checklist.md)：终稿前已完成、仍需人工终审、预留待测和可选补充清单。
 - [../thesis-assets/school-requirements-package.md](../thesis-assets/school-requirements-package.md)：学校要求包。
 
 ## 使用建议
@@ -59,4 +60,7 @@
 - 相关提示词均已包含在对应文档中，无需额外查找模板文件。
 - 若论文已接近完成，继续用 [07-全卷打磨与格式核查.md](./07-全卷打磨与格式核查.md) 做一次“最终提交包核查”。
 - 日常优先维护 [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md)、[../thesis-assets/final-evidence-lock.md](../thesis-assets/final-evidence-lock.md) 和 [../thesis-assets/README.md](../thesis-assets/README.md)。
+- 当前图表编号统一采用 `图3.1`、`表5.1` 点号格式；若阶段记录中出现旧编号，以当前总控和图表登记表为准。
+- 当前 Word 主稿已并入封面和诚信责任书；终稿前仍需人工填写或确认签名、日期、指导教师，并更新目录域和页码。
+- `贵州大学答辩PPT模板.pptx` 已在 `thesis-assets/` 中，后续重点是生成和排版正式答辩 PPT。
 - 默认采用“阶段断点审查”机制：每个阶段完成后，先提交该阶段交付物并人工审查，确认后再进入下一阶段。
