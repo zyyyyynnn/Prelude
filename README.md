@@ -42,13 +42,9 @@ flowchart LR
 
 ![登录](docs/images/login.png)
 
-### 主工作台
+### 主工作台（报告预览）
 
-![主工作台](docs/images/interview-workbench.png)
-
-### 报告生成
-
-![报告生成](docs/images/interview-report.png)
+![主工作台（报告预览）](docs/images/interview-workbench.png)
 
 ### 会话回放
 
