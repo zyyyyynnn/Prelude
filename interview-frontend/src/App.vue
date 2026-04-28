@@ -135,6 +135,7 @@ onBeforeUnmount(() => {
               stroke-width="1.7"
             />
           </svg>
+          <span class="app-shell__menu-trigger-label">菜单</span>
         </button>
 
         <div v-if="menuOpen" class="app-shell__action-menu-popper">

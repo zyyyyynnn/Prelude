@@ -201,7 +201,7 @@ Demo Twin：
 pwsh -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
 ```
 
-`/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、回放、报告、评分历史和薄弱点数据。
+`/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、回放、报告、评分历史和薄弱点数据。默认会话包含 1 场 Java 后端工程师进行中会话，以及 Java 后端工程师、前端工程师、算法工程师各 1 场已完成会话。
 
 默认演示账号：
 
@@ -245,7 +245,7 @@ output\demo\manifest.md
 
 1. 启动 Demo Twin：`.\start-demo.bat`
 2. 登录演示账号：`demo / 123456`
-3. 进入 `/interview` 查看进行中面试
+3. 进入 `/interview` 查看进行中面试和多岗位历史会话
 4. 推进阶段并生成报告
 5. 查看 `/interview/replay/:sessionId`
 6. 查看 `/analytics` 能力分析

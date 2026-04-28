@@ -1,6 +1,6 @@
 # Demo Screenshot Manifest
 
-生成时间：2026/4/24 21:58:39
+生成时间：2026/4/28 16:17:20
 
 - `01-login.png` | 登录页 | 登录态空白
 - `02-register.png` | 注册页 | 注册表单

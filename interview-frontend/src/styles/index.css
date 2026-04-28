@@ -192,12 +192,16 @@ a {
 }
 
 .app-shell__actions {
+  --app-shell-menu-width: 136px;
+  --app-shell-menu-frame-extra: 18px;
+  --app-shell-menu-frame-offset: -9px;
+
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   justify-content: flex-end;
-  min-width: 42px;
+  min-width: var(--app-shell-menu-width);
   min-height: 42px;
   flex: 0 0 auto;
   overflow: visible;
@@ -207,11 +211,12 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
+  gap: 8px;
+  width: var(--app-shell-menu-width);
   height: 42px;
   border: 1px solid var(--color-border-warm);
   border-radius: var(--radius-md);
-  padding: 0;
+  padding: 0 14px;
   background: var(--color-surface);
   color: var(--color-text-button);
   box-shadow: var(--shadow-ring);
@@ -238,7 +243,14 @@ a {
 .app-shell__menu-icon {
   width: 20px;
   height: 20px;
+  flex: 0 0 auto;
   display: block;
+}
+
+.app-shell__menu-trigger-label {
+  color: currentColor;
+  font: 500 15px/1 var(--font-sans);
+  white-space: nowrap;
 }
 
 .app-shell__menu-icon-line {
@@ -263,7 +275,7 @@ a {
 .app-shell__action-menu-popper {
   position: absolute;
   top: calc(100% + 10px);
-  right: 0;
+  right: var(--app-shell-menu-frame-offset);
   z-index: 20;
   transform: none;
   border: 0 !important;
@@ -277,8 +289,8 @@ a {
 .app-shell__action-menu {
   display: grid;
   gap: 10px;
-  width: 196px;
-  padding: 12px;
+  width: calc(var(--app-shell-menu-width) + var(--app-shell-menu-frame-extra));
+  padding: 8px;
   border: 1px solid var(--color-border-warm);
   border-radius: var(--radius-md);
   background: rgba(250, 249, 245, 0.96);
@@ -303,21 +315,23 @@ a {
 
 .app-shell__action-menu-heading {
   margin: 0 0 2px;
-  padding: 0 8px;
+  padding: 0;
   color: var(--color-text-tertiary);
   font-size: 12px;
   letter-spacing: 0.08em;
+  text-align: center;
 }
 
 .app-shell__action-menu-item {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   width: 100%;
   min-width: 0;
+  min-height: 38px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 9px 10px;
+  padding: 9px 8px;
   background: transparent;
   color: var(--color-text-primary);
   font: 500 15px var(--font-sans);
@@ -348,6 +362,12 @@ a {
 .app-shell__action-menu-item:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.app-shell__action-menu-label {
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 
 .app-shell__content {
@@ -680,7 +700,7 @@ a {
 .el-message.page-notice {
   justify-content: center;
   left: 50%;
-  top: 28px;
+  top: 18px;
   transform: translateX(-50%);
   width: min(304px, calc(100vw - 32px));
   min-width: 0;
@@ -1129,9 +1149,19 @@ a {
 }
 
 .session-item__side {
+  --session-item-action-width: 64px;
+
   align-items: flex-end;
   flex-direction: column;
   gap: 8px;
+}
+
+.session-item__side .ui-badge--compact.el-tag,
+.session-item__side .ui-button--compact.el-button {
+  width: var(--session-item-action-width);
+  min-width: var(--session-item-action-width);
+  padding-right: 8px;
+  padding-left: 8px;
 }
 
 .resume-row {
@@ -1518,16 +1548,16 @@ a {
 }
 
 @media (max-width: 720px) {
+  .app-shell__actions {
+    --app-shell-menu-width: min(136px, calc(100vw - 46px));
+  }
+
   .app-shell__action-menu-popper {
     top: calc(100% + 8px);
   }
 
-  .app-shell__action-menu {
-    width: min(196px, calc(100vw - 28px));
-  }
-
   .app-shell__action-menu-item {
-    padding: 10px 12px;
+    padding: 10px 8px;
   }
 
   .page__hero,

@@ -88,6 +88,13 @@ const canFinish = computed(
 )
 const primarySessionList = computed(() => sessions.value.filter((item) => item.status !== 'finished'))
 const finishedSessionList = computed(() => sessions.value.filter((item) => item.status === 'finished'))
+const sessionPositionCounts = computed(() =>
+  sessions.value.reduce<Record<string, number>>((counts, item) => {
+    const title = sessionPositionTitle(item)
+    counts[title] = (counts[title] ?? 0) + 1
+    return counts
+  }, {}),
+)
 const reportSource = computed(() => {
   if (reportMarkdown.value || replay.value?.summaryReport) {
     return {
@@ -119,6 +126,15 @@ function setResumeDefaults(items: ResumeItem[]) {
     selectedResumeId.value = items[0]?.id ?? null
   }
   uploadDisplayName.value = items.find((item) => item.id === selectedResumeId.value)?.fileName || '未选择任何文件'
+}
+
+function sessionPositionTitle(item: InterviewSessionItem) {
+  return item.targetPosition?.trim() || '未命名岗位'
+}
+
+function displaySessionTitle(item: InterviewSessionItem) {
+  const title = sessionPositionTitle(item)
+  return sessionPositionCounts.value[title] > 1 ? `${title} #${item.sessionId}` : title
 }
 
 function setPositionDefaults(items: PositionTemplate[]) {
@@ -206,6 +222,9 @@ async function handleUpload(event: Event) {
 async function createNewInterview() {
   if (!selectedResumeId.value || !selectedPositionId.value) {
     showNotice('请选择简历和岗位', 'warning')
+    return
+  }
+  if (creating.value || loading.value) {
     return
   }
 
@@ -676,7 +695,7 @@ onMounted(() => {
             >
               <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
                 <div class="session-item__head">
-                  <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
+                  <h4 class="session-item__title">{{ displaySessionTitle(item) }}</h4>
                 </div>
                 <p class="session-item__meta">
                   {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
@@ -713,7 +732,7 @@ onMounted(() => {
             >
               <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
                 <div class="session-item__head">
-                  <h4 class="session-item__title">{{ item.targetPosition || '未命名岗位' }}</h4>
+                  <h4 class="session-item__title">{{ displaySessionTitle(item) }}</h4>
                 </div>
                 <p class="session-item__meta">
                   {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
