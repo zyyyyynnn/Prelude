@@ -100,6 +100,23 @@ public class InterviewServiceImpl implements InterviewService {
             throw BusinessException.badRequest("岗位模板不存在");
         }
 
+        InterviewSession existingSession = interviewSessionMapper.selectOne(new LambdaQueryWrapper<InterviewSession>()
+            .eq(InterviewSession::getUserId, userId)
+            .eq(InterviewSession::getResumeId, resume.getId())
+            .eq(InterviewSession::getPositionId, position.getId())
+            .eq(InterviewSession::getStatus, STATUS_ONGOING)
+            .orderByDesc(InterviewSession::getCreatedAt)
+            .last("LIMIT 1"));
+        if (existingSession != null) {
+            ensureInitialStage(existingSession);
+            String currentStage = currentStageName(existingSession.getId());
+            return new InterviewStartResponse(
+                existingSession.getId(),
+                existingSession.getTargetPosition(),
+                currentStage == null ? STAGE_WARMUP : currentStage
+            );
+        }
+
         InterviewSession session = new InterviewSession();
         session.setUserId(userId);
         session.setResumeId(resume.getId());
@@ -540,9 +557,26 @@ public class InterviewServiceImpl implements InterviewService {
                 .filter(message -> ROLE_ASSISTANT.equals(message.getRole()))
                 .count();
         }
+        String stagePrompt = STAGE_PROMPTS.get(stage.getStageName());
+        if (stagePrompt != null && !STAGE_WARMUP.equals(stage.getStageName())) {
+            Integer stagePromptSeq = messages.stream()
+                .filter(message -> ROLE_SYSTEM.equals(message.getRole()))
+                .filter(message -> stagePrompt.equals(message.getContent()))
+                .map(InterviewMessage::getSeqNum)
+                .filter(seqNum -> seqNum != null)
+                .max(Integer::compareTo)
+                .orElse(null);
+            if (stagePromptSeq != null) {
+                return (int) messages.stream()
+                    .filter(message -> ROLE_ASSISTANT.equals(message.getRole()))
+                    .filter(message -> message.getSeqNum() != null && message.getSeqNum() > stagePromptSeq)
+                    .count();
+            }
+        }
+        LocalDateTime stageStartedAt = stage.getStartedAt().minusSeconds(1);
         return (int) messages.stream()
             .filter(message -> ROLE_ASSISTANT.equals(message.getRole()))
-            .filter(message -> message.getCreatedAt() == null || !message.getCreatedAt().isBefore(stage.getStartedAt()))
+            .filter(message -> message.getCreatedAt() == null || !message.getCreatedAt().isBefore(stageStartedAt))
             .count();
     }
 
