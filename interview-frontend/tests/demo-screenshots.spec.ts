@@ -100,9 +100,14 @@ async function login(page: Page) {
 }
 
 async function sendAnswer(page: Page, content: string) {
+  const sendButton = page.getByRole('button', { name: '发送回答' })
   await page.getByPlaceholder('输入回答后发送').fill(content)
-  await page.getByRole('button', { name: '发送回答' }).click()
+  await expect(sendButton).toBeEnabled()
+  await sendButton.click()
   await expect(page.getByText(content)).toBeVisible()
+  await expect(page.locator('.el-message.page-notice').filter({ hasText: '回答已发送' })).toBeVisible({
+    timeout: 30000,
+  })
   await waitForTransientUiToClear(page)
 }
 
@@ -138,11 +143,13 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await capture(page, '04-interview-stage-technical.png', '主工作台', '技术阶段', page.getByRole('button', { name: '进入深挖阶段' }))
 
   await sendAnswer(page, '这条链路我会先在 Controller 做登录态和参数校验，再进入 service 组装会话上下文。用户回答会先落一条 user 消息，随后通过 SSE 推送面试官回复，最后把 assistant 消息按序号落库，确保回放时顺序稳定。')
+  await sendAnswer(page, '我会先看接口耗时、SQL 执行计划和返回数据量。如果是查询慢，就先确认索引命中、分页边界和排序字段；如果接口本身重复请求多，再考虑缓存或前端请求节流。')
 
   await page.getByRole('button', { name: '进入深挖阶段' }).click()
   await expect(page.getByRole('button', { name: '进入收尾阶段' })).toBeVisible()
   await expect(page.getByText('SSE 输出过程中如果浏览器刷新了')).toBeVisible()
   await sendAnswer(page, '如果浏览器刷新，我会先让 emitter 的 timeout、error 和 completion 都走同一套清理逻辑，避免连接对象挂在内存里。已经生成但还没完整落库的内容，我会用会话状态和消息序号兜底，宁可重试生成，也不写半截消息。')
+  await sendAnswer(page, '我会把最关键的幂等判断放在接口层和数据库层。前端可以防重复点击，但不能作为最终保障；接口层负责识别重复阶段推进，数据库层用会话状态和阶段记录兜底。')
   await capture(page, '05-interview-stage-deep-dive.png', '主工作台', '深挖阶段', page.getByRole('button', { name: '进入收尾阶段' }))
 
   await page.getByRole('button', { name: '进入收尾阶段' }).click()

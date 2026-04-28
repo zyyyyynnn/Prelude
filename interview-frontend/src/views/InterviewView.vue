@@ -71,6 +71,12 @@ const selectedPosition = computed(() =>
 const messages = computed(() => replay.value?.messages ?? [])
 const currentStage = computed(() => replay.value?.currentStage ?? activeSession.value?.currentStage)
 const nextStageName = computed(() => nextStage(currentStage.value))
+const latestConversationMessage = computed(() =>
+  messages.value
+    .filter((message) => message.role === 'user' || message.role === 'assistant')
+    .at(-1) ?? null,
+)
+const hasPendingAssistantPrompt = computed(() => latestConversationMessage.value?.role === 'assistant')
 const conversationStarted = computed(() =>
   messages.value.some((message) => message.role === 'user' || message.role === 'assistant'),
 )
@@ -85,6 +91,9 @@ const canAutoStart = computed(
 )
 const canFinish = computed(
   () => Boolean(activeSessionId.value) && !finishing.value && !sending.value,
+)
+const canAdvanceStage = computed(
+  () => Boolean(nextStageName.value) && !stageUpdating.value && !sending.value && !hasPendingAssistantPrompt.value,
 )
 const primarySessionList = computed(() => sessions.value.filter((item) => item.status !== 'finished'))
 const finishedSessionList = computed(() => sessions.value.filter((item) => item.status === 'finished'))
@@ -382,6 +391,10 @@ async function handleAdvanceStage() {
   if (!activeSessionId.value || !nextStageName.value) {
     return
   }
+  if (hasPendingAssistantPrompt.value) {
+    showNotice('请先回答当前阶段的面试官提问', 'warning')
+    return
+  }
   stageUpdating.value = true
   try {
     await changeInterviewStage(activeSessionId.value, { stageName: nextStageName.value })
@@ -604,7 +617,7 @@ onMounted(() => {
           </ElButton>
           <ElButton
             class="ui-button ui-button--secondary"
-            :disabled="!nextStageName || stageUpdating || sending"
+            :disabled="!canAdvanceStage"
             :loading="stageUpdating"
             size="large"
             @click="handleAdvanceStage"

@@ -48,6 +48,10 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
 }
 
+function weaknessDetails(item: AnalyticsWeaknessItem) {
+  return item.descriptions.slice(1)
+}
+
 async function loadAnalytics() {
   try {
     const [radarData, trendData, weaknessData] = await Promise.all([
@@ -237,8 +241,8 @@ onBeforeUnmount(() => {
                 </div>
                 <ElTag class="ui-badge" effect="light">{{ item.count }} 次</ElTag>
               </div>
-              <ul class="weakness-item__descriptions">
-                <li v-for="description in item.descriptions" :key="description">{{ description }}</li>
+              <ul v-if="weaknessDetails(item).length" class="weakness-item__descriptions">
+                <li v-for="description in weaknessDetails(item)" :key="description">{{ description }}</li>
               </ul>
             </article>
           </div>

@@ -127,7 +127,10 @@ public class DemoModeService {
         if (replies == null || replies.isEmpty()) {
             throw BusinessException.badRequest("演示阶段回复未配置");
         }
-        int index = Math.max(0, Math.min(replyIndex, replies.size() - 1));
+        if (replyIndex >= replies.size()) {
+            return "";
+        }
+        int index = Math.max(0, replyIndex);
         return replies.get(index);
     }
 

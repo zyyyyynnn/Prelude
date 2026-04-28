@@ -201,7 +201,7 @@ Demo Twin：
 pwsh -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
 ```
 
-`/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、回放、报告、评分历史和薄弱点数据。默认会话包含 1 场 Java 后端工程师进行中会话，以及 Java 后端工程师、前端工程师、算法工程师各 1 场已完成会话。
+`/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、回放、报告、评分历史和薄弱点数据。默认会话包含 1 场 `Java 后端工程师` 进行中会话，以及 `Java 后端工程师`、`前端工程师`、`算法工程师` 各 1 场已完成会话，避免演示清单只出现单一岗位。
 
 默认演示账号：
 
@@ -219,6 +219,12 @@ pwsh -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
 
 ```text
 output\demo\screenshots
+```
+
+README 使用的精选截图同步存放在：
+
+```text
+docs\images
 ```
 
 截图清单输出到：
