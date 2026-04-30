@@ -86,7 +86,7 @@ E:\graduation-project
 - Windows PowerShell 5.1+ 或 PowerShell 7+
 - Java 21
 - Maven 3.9+
-- Node.js 20+ 与 npm
+- Node.js 24 与 npm 11.6.0
 - MySQL 8.0
 
 推荐使用 PowerShell 7+ 执行手动命令；双击启动脚本内部会使用系统自带 Windows PowerShell 做兼容校验。
