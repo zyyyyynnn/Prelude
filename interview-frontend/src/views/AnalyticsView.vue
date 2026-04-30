@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import * as echarts from 'echarts'
+import { LineChart, RadarChart } from 'echarts/charts'
+import { GridComponent, RadarComponent, TooltipComponent } from 'echarts/components'
+import { init, use, type ECharts } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElCard, ElEmpty, ElTag } from 'element-plus'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
@@ -8,13 +11,15 @@ import { usePageNotice } from '../composables/usePageNotice'
 
 const { showNotice } = usePageNotice()
 
+use([LineChart, RadarChart, GridComponent, RadarComponent, TooltipComponent, CanvasRenderer])
+
 const radar = ref<AnalyticsRadarResponse | null>(null)
 const trend = ref<AnalyticsTrendPoint[]>([])
 const weaknesses = ref<AnalyticsWeaknessItem[]>([])
 const radarRef = ref<HTMLDivElement | null>(null)
 const trendRef = ref<HTMLDivElement | null>(null)
-let radarChart: echarts.ECharts | null = null
-let trendChart: echarts.ECharts | null = null
+let radarChart: ECharts | null = null
+let trendChart: ECharts | null = null
 
 const scoreCards = computed(() => {
   if (!radar.value || radar.value.sessionCount === 0) {
@@ -77,7 +82,7 @@ function renderCharts() {
   const ring = cssVar('--color-ring', '#d1cfc5')
 
   if (radar.value && radarRef.value && radar.value.sessionCount > 0) {
-    radarChart ??= echarts.init(radarRef.value)
+    radarChart ??= init(radarRef.value)
     radarChart.setOption({
       animation: false,
       radar: {
@@ -106,7 +111,7 @@ function renderCharts() {
   }
 
   if (trendRef.value && trend.value.length > 0) {
-    trendChart ??= echarts.init(trendRef.value)
+    trendChart ??= init(trendRef.value)
     trendChart.setOption({
       animation: false,
       tooltip: { trigger: 'axis' },
