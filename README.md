@@ -67,15 +67,15 @@ flowchart LR
 E:\graduation-project
 ├── README.md
 ├── DESIGN-SPEC.md
-├── docs                       # 展示截图与接口文档
+├── docs                       # 公开文档、接口说明与 README 展示截图
 ├── interview-backend          # Spring Boot 后端
 ├── interview-frontend         # Vue 前端
 ├── scripts                    # 启动、重置和截图脚本
 │   ├── demo
 │   └── real
-├── output                     # Demo 截图、运行产物与审查材料
-├── thesis-assets              # 论文材料
-├── thesis-handbook            # 毕设手册
+├── output                     # 运行产物、批量截图与可复现输出记录
+├── thesis-assets              # 论文材料、当前交付物、证据、文献与答辩资产
+├── thesis-handbook            # 毕设流程手册、协作提示词与阶段方法说明
 ├── start-real.bat             # 真实版双击启动入口
 └── start-demo.bat             # Demo Twin 双击启动入口
 ```

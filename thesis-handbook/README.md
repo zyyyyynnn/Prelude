@@ -44,12 +44,13 @@
 
 ## 执行总控与当前材料
 
-- [../thesis-assets/README.md](../thesis-assets/README.md)：论文材料目录说明，包含主稿、历史快照、文献、图表、测试和答辩材料放置规则。
+- [../thesis-assets/README.md](../thesis-assets/README.md)：论文材料目录说明，包含主稿、当前交付物、文献、图表、测试和答辩材料放置规则。
 - [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md)：当前状态唯一总控。
 - [../thesis-assets/material-checklist.md](../thesis-assets/material-checklist.md)：资料包维护清单。
 - [../thesis-assets/final-evidence-lock.md](../thesis-assets/final-evidence-lock.md)：最终证据锁版记录。
 - [../thesis-assets/final-supplement-checklist.md](../thesis-assets/final-supplement-checklist.md)：终稿前已完成、仍需人工终审、预留待测和可选补充清单。
-- [../thesis-assets/school-requirements-package.md](../thesis-assets/school-requirements-package.md)：学校要求包。
+- [../thesis-assets/archive/legacy-reports/school-requirements-package.md](../thesis-assets/archive/legacy-reports/school-requirements-package.md)：学校要求包阶段记录。
+- [../thesis-assets/archive/legacy-reports/贵州大学毕业论文（设计）管理办法.pdf](../thesis-assets/archive/legacy-reports/贵州大学毕业论文（设计）管理办法.pdf)：学校论文设计管理办法 PDF。
 
 ## 使用建议
 
@@ -62,5 +63,5 @@
 - 日常优先维护 [../thesis-assets/thesis-control.md](../thesis-assets/thesis-control.md)、[../thesis-assets/final-evidence-lock.md](../thesis-assets/final-evidence-lock.md) 和 [../thesis-assets/README.md](../thesis-assets/README.md)。
 - 当前图表编号统一采用 `图3.1`、`表5.1` 点号格式；若阶段记录中出现旧编号，以当前总控和图表登记表为准。
 - 当前 Word 主稿已并入封面和诚信责任书；终稿前仍需人工填写或确认签名、日期、指导教师，并更新目录域和页码。
-- `贵州大学答辩PPT模板.pptx` 已在 `thesis-assets/` 中，后续重点是生成和排版正式答辩 PPT。
+- `贵州大学答辩PPT模板.pptx` 当前未入库；如需使用，需人工重新提供或从历史提交恢复到 `thesis-assets/defense/贵州大学答辩PPT模板.pptx`。
 - 默认采用“阶段断点审查”机制：每个阶段完成后，先提交该阶段交付物并人工审查，确认后再进入下一阶段。

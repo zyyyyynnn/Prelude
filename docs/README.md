@@ -15,7 +15,7 @@
 | --- | --- |
 | `docs/` | 项目公开文档、接口说明、README 展示图 |
 | `output/` | Demo 截图、运行产物和可复现输出记录 |
-| `thesis-assets/` | 论文主稿、论文证据、文献、测试和答辩材料 |
+| `thesis-assets/` | 论文材料、当前交付物、证据、文献、测试和答辩资产 |
 | `thesis-handbook/` | 毕设写作流程、协作提示词和阶段方法说明 |
 
 ## 图片放置规则
@@ -23,6 +23,7 @@
 - `docs/images/` 只放 README 中长期使用的精选截图。
 - 临时截图、批量截图和 Playwright 输出优先放入 `output/`。
 - 如果某张截图被论文或答辩正式采用，应在 `thesis-assets/final-evidence-lock.md` 中登记。
+- 不把论文过程报告、润色稿、格式检查报告或 `output/` 批量截图放入 `docs/`；除非根 README 正式引用，截图仍优先留在原来源目录。
 
 ## API 文档维护规则
 
