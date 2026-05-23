@@ -281,7 +281,7 @@ function Ensure-MySqlReady {
     return $true
   }
 
-  $serviceCandidates = @('MySQL80', 'MySQL', 'mysql')
+  $serviceCandidates = @('MySQL84', 'MySQL', 'mysql')
   $serviceWarnings = New-Object System.Collections.Generic.List[string]
   foreach ($serviceName in $serviceCandidates) {
     $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
@@ -307,7 +307,7 @@ function Ensure-MySqlReady {
     $mysqldCandidates += $env:MYSQLD_PATH
   }
   $mysqldCandidates += @(
-    'E:\DevEnv\MySQL\bin\mysqld.exe',
+    'E:\DevEnv\MySQL84\bin\mysqld.exe',
     'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqld.exe',
     'C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqld.exe'
   )
@@ -317,7 +317,7 @@ function Ensure-MySqlReady {
     $defaultsCandidates += $env:MYSQL_DEFAULTS_FILE
   }
   $defaultsCandidates += @(
-    'E:\DevEnv\MySQL\conf\my.ini',
+    'E:\DevEnv\MySQL84\conf\my.ini',
     'C:\ProgramData\MySQL\MySQL Server 8.0\my.ini',
     'C:\ProgramData\MySQL\MySQL Server 8.4\my.ini'
   )

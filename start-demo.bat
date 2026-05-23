@@ -141,12 +141,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "  $client.Dispose();" ^
   "} catch { }" ^
   "if ($portOpen) { Write-Host '[INFO] MySQL is ready on 127.0.0.1:3306.'; exit 0 }" ^
-  "$svc = Get-Service -Name 'MySQL80' -ErrorAction SilentlyContinue;" ^
+  "$svc = Get-Service -Name 'MySQL84' -ErrorAction SilentlyContinue;" ^
   "Write-Host '[ERROR] MySQL is not reachable on 127.0.0.1:3306.';" ^
-  "if ($svc) { Write-Host ('[ERROR] MySQL80 service status: ' + $svc.Status) }" ^
+  "if ($svc) { Write-Host ('[ERROR] MySQL84 service status: ' + $svc.Status) }" ^
   "Write-Host '[ERROR] Start MySQL first, then run this script again.';" ^
-  "Write-Host '[ERROR] Admin terminal: net start MySQL80';" ^
-  "Write-Host '[ERROR] Manual foreground: E:\DevEnv\MySQL\bin\mysqld.exe --defaults-file=E:\DevEnv\MySQL\conf\my.ini --console';" ^
+  "Write-Host '[ERROR] Admin terminal: net start MySQL84';" ^
+  "Write-Host '[ERROR] Manual foreground: E:\DevEnv\MySQL84\bin\mysqld.exe --defaults-file=E:\DevEnv\MySQL84\conf\my.ini --console';" ^
   "exit 1"
 exit /b %errorlevel%
 
