@@ -71,11 +71,7 @@ const selectedPosition = computed(() =>
 const messages = computed(() => replay.value?.messages ?? [])
 const currentStage = computed(() => replay.value?.currentStage ?? activeSession.value?.currentStage)
 const nextStageName = computed(() => nextStage(currentStage.value))
-const latestConversationMessage = computed(() =>
-  messages.value
-    .filter((message) => message.role === 'user' || message.role === 'assistant')
-    .at(-1) ?? null,
-)
+
 const hasPendingAssistantPrompt = computed(() => {
   const lastSystemIndex = messages.value.map((m) => m.role).lastIndexOf('system')
   const startIndex = lastSystemIndex === -1 ? 0 : lastSystemIndex + 1
