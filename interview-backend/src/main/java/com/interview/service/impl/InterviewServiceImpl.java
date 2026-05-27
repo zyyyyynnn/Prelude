@@ -585,16 +585,25 @@ public class InterviewServiceImpl implements InterviewService {
 
     private boolean hasPendingAssistantPrompt(Long sessionId) {
         List<InterviewMessage> messages = listMessages(sessionId);
+        int lastSystemIndex = -1;
         for (int index = messages.size() - 1; index >= 0; index--) {
-            InterviewMessage message = messages.get(index);
-            if (ROLE_USER.equals(message.getRole())) {
-                return false;
-            }
-            if (ROLE_ASSISTANT.equals(message.getRole())) {
-                return true;
+            if (ROLE_SYSTEM.equals(messages.get(index).getRole())) {
+                lastSystemIndex = index;
+                break;
             }
         }
-        return false;
+        int startIndex = lastSystemIndex + 1;
+        boolean hasAssistant = false;
+        boolean hasUser = false;
+        for (int index = startIndex; index < messages.size(); index++) {
+            String role = messages.get(index).getRole();
+            if (ROLE_ASSISTANT.equals(role)) {
+                hasAssistant = true;
+            } else if (ROLE_USER.equals(role)) {
+                hasUser = true;
+            }
+        }
+        return hasAssistant && !hasUser;
     }
 
     private void closeCurrentStage(Long sessionId) {

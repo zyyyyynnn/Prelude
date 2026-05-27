@@ -76,7 +76,14 @@ const latestConversationMessage = computed(() =>
     .filter((message) => message.role === 'user' || message.role === 'assistant')
     .at(-1) ?? null,
 )
-const hasPendingAssistantPrompt = computed(() => latestConversationMessage.value?.role === 'assistant')
+const hasPendingAssistantPrompt = computed(() => {
+  const lastSystemIndex = messages.value.map((m) => m.role).lastIndexOf('system')
+  const startIndex = lastSystemIndex === -1 ? 0 : lastSystemIndex + 1
+  const currentStageMessages = messages.value.slice(startIndex)
+  const hasAssistant = currentStageMessages.some((m) => m.role === 'assistant')
+  const hasUser = currentStageMessages.some((m) => m.role === 'user')
+  return hasAssistant && !hasUser
+})
 const conversationStarted = computed(() =>
   messages.value.some((message) => message.role === 'user' || message.role === 'assistant'),
 )
