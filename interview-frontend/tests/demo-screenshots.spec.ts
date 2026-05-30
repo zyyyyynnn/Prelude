@@ -136,6 +136,28 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await page.getByRole('tab', { name: '注册' }).click()
   await capture(page, '02-register.png', '注册页', '注册表单', page.getByRole('button', { name: '完成注册' }))
 
+  // Register a new user to capture the empty state
+  const uniqueEmptyUser = `emptyuser_${Date.now()}`
+  await page.getByPlaceholder('请输入用户名').fill(uniqueEmptyUser)
+  await page.getByPlaceholder('请输入密码').fill('123456')
+  await page.getByRole('button', { name: '完成注册' }).click()
+  await expect(page.getByText('注册成功')).toBeVisible()
+
+  // Login as emptyuser
+  await page.getByPlaceholder('请输入用户名').fill(uniqueEmptyUser)
+  await page.getByPlaceholder('请输入密码').fill('123456')
+  await page.getByRole('button', { name: '登录' }).first().click()
+  await page.waitForURL('**/interview')
+
+  // Capture empty state
+  await capture(page, '03-interview-empty.png', '主工作台', '未开始面试的空状态', page.getByText('准备开始一场沉浸式模拟面试'))
+
+  // Logout emptyuser
+  await page.locator('.app-sidebar__btn--settings').hover()
+  await page.getByRole('button', { name: '退出登录' }).click()
+  await page.waitForURL('**/login')
+
+  // Login as demo user for the rest of the flow
   await page.getByRole('tab', { name: '登录' }).click()
   await login(page)
 
@@ -150,27 +172,27 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   const token = authState.token
   console.log(`parsed token: "${token}"`)
 
-  await capture(page, '03-interview-workbench.png', '主工作台', '默认演示链路', sessionBadge)
+  await capture(page, '04-interview-workbench.png', '主工作台', '默认演示状态', sessionBadge)
 
   await page.goto('/resumes')
-  await capture(page, '08-resumes-filled.png', '简历管理', '已有演示简历', page.getByText('demo-resume.pdf').first())
+  await capture(page, '07-resumes-filled.png', '简历管理', '已有演示简历', page.getByText('demo-resume.pdf').first())
 
   await page.goto('/settings/llm')
-  await capture(page, '09-settings-llm.png', 'LLM配置', '默认配置', page.getByRole('heading', { name: 'Provider 抽象层' }))
+  await capture(page, '08-settings-llm.png', 'LLM配置', '默认配置', page.getByRole('heading', { name: 'Provider 抽象层' }))
 
   await page.goto('/settings/profile')
-  await capture(page, '10-settings-profile.png', '用户设置', '默认配置', page.getByRole('heading', { name: '用户设置' }))
+  await capture(page, '09-settings-profile.png', '用户设置', '默认配置', page.getByRole('heading', { name: '账号资料' }))
 
   await page.goto('/interview')
   await expect(sessionBadge).toBeVisible()
   
-  // Capture technical stage
-  await capture(page, '04-interview-stage-technical.png', '主工作台', '技术阶段', page.getByPlaceholder('输入回答...'))
-
   await sendAnswer(page, '这条链路我会先在 Controller 做登录态和参数校验，再进入 service 组装会话上下文。用户回答会先落一条 user 消息，随后通过 SSE 推送面试官回复，最后把 assistant 消息按序号落库，确保回放时顺序稳定。')
   await sendAnswer(page, '我会先看接口耗时、SQL 执行计划和返回数据量。如果是查询慢，就先确认索引命中、分页边界和排序字段；如果接口本身重复请求多，再考虑缓存或前端请求节流。')
 
-  // Advance to deep_dive
+  // Capture chat in progress
+  await capture(page, '05-interview-chat.png', '主工作台', '模拟面试对话中', page.getByPlaceholder('输入回答...'))
+
+  // Advance to deep_dive silently (no screenshot)
   await advanceStage(request, token, sessionId, 'deep_dive')
   await page.reload()
   await expect(page.getByPlaceholder('输入回答...')).toBeVisible()
@@ -178,9 +200,8 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await expect(page.getByText('SSE 输出过程中如果浏览器刷新了')).toBeVisible()
   await sendAnswer(page, '如果浏览器刷新，我会先让 emitter 的 timeout、error 和 completion 都走同一套清理逻辑，避免连接对象挂在内存里。已经生成但还没完整落库的内容，我会用会话状态和消息序号兜底，宁可重试生成，也不写半截消息。')
   await sendAnswer(page, '我会把最关键的幂等判断放在接口层和数据库层。前端可以防重复点击，但不能作为最终保障；接口层负责识别重复阶段推进，数据库层用会话状态和阶段记录兜底。')
-  await capture(page, '05-interview-stage-deep-dive.png', '主工作台', '深挖阶段', page.getByPlaceholder('输入回答...'))
 
-  // Advance to closing
+  // Advance to closing silently (no screenshot)
   await advanceStage(request, token, sessionId, 'closing')
   await page.reload()
   await expect(page.getByPlaceholder('输入回答...')).toBeVisible()
@@ -199,5 +220,5 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
 
   await page.goto('/analytics')
   await expect(page.getByText('能力雷达')).toBeVisible()
-  await capture(page, '11-analytics-filled.png', '数据看板', '已有演示数据', page.getByRole('heading', { name: '能力雷达' }))
+  await capture(page, '10-analytics-filled.png', '数据看板', '已有演示数据', page.getByRole('heading', { name: '能力雷达' }))
 })
