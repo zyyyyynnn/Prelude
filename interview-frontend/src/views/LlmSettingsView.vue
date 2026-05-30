@@ -123,108 +123,199 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="page">
-    <div class="page__hero">
-      <div class="page__hero-main">
-        <p class="eyebrow">设置</p>
-        <h2 class="page__title">LLM 配置</h2>
-        <p class="page__lead">管理 Provider、模型和用户 API Key。</p>
-      </div>
-    </div>
-
-    <div class="page__grid page__grid--single">
-      <ElCard class="ui-card panel">
-        <div class="panel__head">
-          <div>
-            <p class="panel__eyebrow">模型层</p>
-            <h3 class="panel__title">Provider 抽象层</h3>
-            <p class="panel__lead">查看当前模型与已保存的脱敏 Key。</p>
-          </div>
-          <ElTag class="ui-badge" effect="light">Provider 与模型</ElTag>
+  <section class="workspace-page">
+    <header class="workspace-header">
+      <div class="workspace-header__main">
+        <div class="workspace-header__title-area">
+          <h2 class="workspace-header__title">LLM 配置</h2>
         </div>
+      </div>
+    </header>
 
-        <ElForm class="form-grid" label-position="top" @submit.prevent>
-          <div class="detail-grid">
-            <article class="detail-card">
-              <p class="panel__eyebrow">当前 Provider</p>
-              <h4 class="detail-card__title">{{ currentProvider?.displayName || '未选择' }}</h4>
-              <p class="detail-card__meta">{{ modelOptions.length }} 个可选模型</p>
-            </article>
-            <article class="detail-card">
-              <p class="panel__eyebrow">当前 API Key</p>
-              <h4 class="detail-card__title">{{ apiKeyMasked || '未配置' }}</h4>
-              <p class="detail-card__meta">保存新值会覆盖当前 Key。</p>
-            </article>
-            <article class="detail-card">
-              <p class="panel__eyebrow">连通性测试</p>
-              <h4 class="detail-card__title">{{ lastTestMessage }}</h4>
-              <p class="detail-card__meta">保存配置后可测试当前模型服务。</p>
-            </article>
+    <div class="workspace-page__content scrollable">
+      <div class="page-grid page-grid--single">
+        <ElCard class="ui-card panel">
+          <div class="panel__head">
+            <div>
+              <p class="panel__eyebrow">模型层</p>
+              <h3 class="panel__title">Provider 抽象层</h3>
+              <p class="panel__lead">查看当前模型与已保存的脱敏 Key。</p>
+            </div>
+            <ElTag class="ui-badge" effect="light">Provider 与模型</ElTag>
           </div>
 
-          <div class="field-grid">
-            <ElFormItem label="Provider">
-              <ElSelect
-                v-model="selectedProviderKey"
-                class="ui-select"
-                placeholder="请选择 Provider"
+          <ElForm class="form-grid" label-position="top" @submit.prevent>
+            <div class="detail-grid">
+              <article class="detail-card">
+                <p class="panel__eyebrow">当前 Provider</p>
+                <h4 class="detail-card__title">{{ currentProvider?.displayName || '未选择' }}</h4>
+                <p class="detail-card__meta">{{ modelOptions.length }} 个可选模型</p>
+              </article>
+              <article class="detail-card">
+                <p class="panel__eyebrow">当前 API Key</p>
+                <h4 class="detail-card__title">{{ apiKeyMasked || '未配置' }}</h4>
+                <p class="detail-card__meta">保存新值会覆盖当前 Key。</p>
+              </article>
+              <article class="detail-card">
+                <p class="panel__eyebrow">连通性测试</p>
+                <h4 class="detail-card__title">{{ lastTestMessage }}</h4>
+                <p class="detail-card__meta">保存配置后可测试当前模型服务。</p>
+              </article>
+            </div>
+
+            <div class="field-grid">
+              <ElFormItem label="Provider">
+                <ElSelect
+                  v-model="selectedProviderKey"
+                  class="ui-select"
+                  placeholder="请选择 Provider"
+                  size="large"
+                >
+                  <ElOption
+                    v-for="provider in providerOptions"
+                    :key="provider.providerKey"
+                    :label="provider.displayName"
+                    :value="provider.providerKey"
+                  />
+                </ElSelect>
+              </ElFormItem>
+
+              <ElFormItem label="模型">
+                <ElSelect
+                  v-model="selectedModel"
+                  class="ui-select"
+                  :disabled="modelOptions.length === 0"
+                  placeholder="请选择模型"
+                  size="large"
+                >
+                  <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
+                </ElSelect>
+              </ElFormItem>
+            </div>
+
+            <ElFormItem label="新 API Key / 清空">
+              <ElInput
+                v-model="apiKeyInput"
+                class="ui-input"
+                autocomplete="off"
+                placeholder="留空表示清空当前用户 Key"
+                show-password
                 size="large"
-              >
-                <ElOption
-                  v-for="provider in providerOptions"
-                  :key="provider.providerKey"
-                  :label="provider.displayName"
-                  :value="provider.providerKey"
-                />
-              </ElSelect>
+              />
             </ElFormItem>
 
-            <ElFormItem label="模型">
-              <ElSelect
-                v-model="selectedModel"
-                class="ui-select"
-                :disabled="modelOptions.length === 0"
-                placeholder="请选择模型"
+            <div class="button-row panel__footer-actions">
+              <ElButton
+                class="ui-button ui-button--primary"
+                :loading="saving"
                 size="large"
+                type="primary"
+                @click="saveSettings"
               >
-                <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
-              </ElSelect>
-            </ElFormItem>
-          </div>
-
-          <ElFormItem label="新 API Key / 清空">
-            <ElInput
-              v-model="apiKeyInput"
-              class="ui-input"
-              autocomplete="off"
-              placeholder="留空表示清空当前用户 Key"
-              show-password
-              size="large"
-            />
-          </ElFormItem>
-
-          <div class="button-row panel__footer-actions">
-            <ElButton
-              class="ui-button ui-button--primary"
-              :loading="saving"
-              size="large"
-              type="primary"
-              @click="saveSettings"
-            >
-              保存设置
-            </ElButton>
-            <ElButton
-              class="ui-button ui-button--secondary"
-              :disabled="saving || loading"
-              :loading="testing"
-              size="large"
-              @click="testSettings"
-            >
-              测试连接
-            </ElButton>
-          </div>
-        </ElForm>
-      </ElCard>
+                保存设置
+              </ElButton>
+              <ElButton
+                class="ui-button ui-button--secondary"
+                :disabled="saving || loading"
+                :loading="testing"
+                size="large"
+                @click="testSettings"
+              >
+                测试连接
+              </ElButton>
+            </div>
+          </ElForm>
+        </ElCard>
+      </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.workspace-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  overflow: hidden;
+  height: 100vh;
+}
+.workspace-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(250, 249, 245, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 72px;
+  box-sizing: border-box;
+}
+.workspace-header__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.workspace-header__title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.workspace-header__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.workspace-page__content {
+  flex: 1;
+  padding: 24px 40px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.page-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.detail-card {
+  padding: 16px;
+  background: var(--color-sand);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+.detail-card__title {
+  margin: 4px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.detail-card__meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+.button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+}
+</style>

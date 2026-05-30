@@ -75,7 +75,6 @@
 
 html {
   background: var(--color-bg);
-  scrollbar-gutter: stable;
 }
 
 body {
@@ -1655,3 +1654,28 @@ a {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Custom scrollbar for scrollable areas */
+.scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ring) transparent;
+}
+
+.scrollable::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background-color: var(--color-ring);
+  border-radius: 3px;
+}
+
+.scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-brand);
+}
+

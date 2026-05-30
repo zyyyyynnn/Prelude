@@ -83,100 +83,204 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="page">
-    <div class="page__hero">
-      <div class="page__hero-main">
-        <p class="eyebrow">简历</p>
-        <h2 class="page__title">简历管理</h2>
-        <p class="page__lead">管理 PDF 简历、占用状态和删除操作。</p>
-      </div>
-      <div class="page__hero-actions">
-        <ElButton
-          class="ui-button ui-button--primary"
-          :loading="uploading"
-          size="large"
-          type="primary"
-          @click="openUpload"
-        >
-          上传新简历
-        </ElButton>
-      </div>
-    </div>
-
-    <div class="insight-strip insight-strip--compact">
-      <article class="insight-card">
-        <p class="panel__eyebrow">总数</p>
-        <h3 class="insight-card__value">{{ items.length }}</h3>
-        <p class="insight-card__meta">当前账号下的简历数量</p>
-      </article>
-      <article class="insight-card">
-        <p class="panel__eyebrow">已占用</p>
-        <h3 class="insight-card__value">{{ inUseCount }}</h3>
-        <p class="insight-card__meta">被会话引用，暂不可删除</p>
-      </article>
-      <article class="insight-card">
-        <p class="panel__eyebrow">可清理</p>
-        <h3 class="insight-card__value">{{ items.length - inUseCount }}</h3>
-        <p class="insight-card__meta">未被占用，可直接删除</p>
-      </article>
-    </div>
-
-    <div class="page__grid page__grid--single">
-      <ElCard class="ui-card panel">
-        <div class="panel__head">
-          <div>
-            <p class="panel__eyebrow">列表</p>
-            <h3 class="panel__title">上传与清理</h3>
-            <p class="panel__lead">查看文件信息、使用次数和可执行操作。</p>
-          </div>
-          <div class="panel__actions">
-            <ElTag class="ui-badge" effect="light">{{ items.length }} 份</ElTag>
-            <ElTag class="ui-badge" effect="light">{{ inUseCount }} 份占用</ElTag>
-          </div>
+  <section class="workspace-page">
+    <header class="workspace-header">
+      <div class="workspace-header__main">
+        <div class="workspace-header__title-area">
+          <h2 class="workspace-header__title">简历管理</h2>
         </div>
-
-        <input
-          ref="uploadInput"
-          class="upload-field__native"
-          accept="application/pdf"
-          type="file"
-          @change="handleUpload"
-        />
-
-        <div v-if="items.length" class="resume-catalog">
-          <article v-for="item in items" :key="item.id" class="resume-row">
-            <div class="resume-row__main">
-              <div class="resume-row__title-wrap">
-                <h4 class="resume-item__title">{{ item.fileName }}</h4>
-                <p class="resume-item__hint">
-                  {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
-                </p>
-              </div>
-              <div class="resume-item__badges">
-                <ElTag class="ui-badge" effect="light">
-                  {{ item.sessionCount || 0 }} 场使用
-                </ElTag>
-                <ElTag class="ui-badge" effect="light">
-                  {{ item.inUse ? '已占用' : '可删除' }}
-                </ElTag>
-              </div>
-            </div>
-
-            <div class="resume-row__actions">
-              <ElButton
-                class="ui-button ui-button--secondary"
-                :disabled="Boolean(item.inUse)"
-                size="large"
-                @click="removeResume(item)"
-              >
-                删除
-              </ElButton>
-            </div>
-          </article>
+        <div class="workspace-header__actions">
+          <ElButton
+            class="ui-button ui-button--primary"
+            :loading="uploading"
+            @click="openUpload"
+          >
+            上传新简历
+          </ElButton>
         </div>
+      </div>
+    </header>
 
-        <ElEmpty v-else :description="loading ? '正在加载简历列表…' : '暂时还没有上传简历。'" />
-      </ElCard>
+    <div class="workspace-page__content scrollable">
+      <div class="insight-strip insight-strip--compact">
+        <article class="insight-card">
+          <p class="panel__eyebrow">总数</p>
+          <h3 class="insight-card__value">{{ items.length }}</h3>
+          <p class="insight-card__meta">当前账号下的简历数量</p>
+        </article>
+        <article class="insight-card">
+          <p class="panel__eyebrow">已占用</p>
+          <h3 class="insight-card__value">{{ inUseCount }}</h3>
+          <p class="insight-card__meta">被会话引用，暂不可删除</p>
+        </article>
+        <article class="insight-card">
+          <p class="panel__eyebrow">可清理</p>
+          <h3 class="insight-card__value">{{ items.length - inUseCount }}</h3>
+          <p class="insight-card__meta">未被占用，可直接删除</p>
+        </article>
+      </div>
+
+      <div class="page-grid page-grid--single">
+        <ElCard class="ui-card panel">
+          <div class="panel__head">
+            <div>
+              <p class="panel__eyebrow">列表</p>
+              <h3 class="panel__title">上传与清理</h3>
+              <p class="panel__lead">查看文件信息、使用次数和可执行操作。</p>
+            </div>
+            <div class="panel__actions">
+              <ElTag class="ui-badge" effect="light">{{ items.length }} 份</ElTag>
+              <ElTag class="ui-badge" effect="light">{{ inUseCount }} 份占用</ElTag>
+            </div>
+          </div>
+
+          <input
+            ref="uploadInput"
+            class="upload-field__native"
+            accept="application/pdf"
+            type="file"
+            @change="handleUpload"
+            style="display: none;"
+          />
+
+          <div v-if="items.length" class="resume-catalog">
+            <article v-for="item in items" :key="item.id" class="resume-row">
+              <div class="resume-row__main">
+                <div class="resume-row__title-wrap">
+                  <h4 class="resume-item__title">{{ item.fileName }}</h4>
+                  <p class="resume-item__hint">
+                    {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
+                  </p>
+                </div>
+                <div class="resume-item__badges">
+                  <ElTag class="ui-badge" effect="light">
+                    {{ item.sessionCount || 0 }} 场使用
+                  </ElTag>
+                  <ElTag class="ui-badge" effect="light">
+                    {{ item.inUse ? '已占用' : '可删除' }}
+                  </ElTag>
+                </div>
+              </div>
+
+              <div class="resume-row__actions">
+                <ElButton
+                  class="ui-button ui-button--secondary"
+                  :disabled="Boolean(item.inUse)"
+                  size="small"
+                  @click="removeResume(item)"
+                >
+                  删除
+                </ElButton>
+              </div>
+            </article>
+          </div>
+
+          <ElEmpty v-else :description="loading ? '正在加载简历列表…' : '暂时还没有上传简历。'" />
+        </ElCard>
+      </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.workspace-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  overflow: hidden;
+  height: 100vh;
+}
+.workspace-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(250, 249, 245, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 72px;
+  box-sizing: border-box;
+}
+.workspace-header__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.workspace-header__title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.workspace-header__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.workspace-page__content {
+  flex: 1;
+  padding: 24px 40px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.page-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.resume-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.resume-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: all 0.2s;
+}
+.resume-row:hover {
+  border-color: var(--color-border-warm);
+  background: var(--color-sand);
+}
+.resume-row__main {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+.resume-row__title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+.resume-item__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.resume-item__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+.resume-item__badges {
+  display: flex;
+  gap: 8px;
+}
+</style>
