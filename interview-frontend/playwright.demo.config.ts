@@ -23,6 +23,8 @@ export default defineConfig({
       width: 1440,
       height: 1200,
     },
+    deviceScaleFactor: 2,
+    locale: 'zh-CN',
   },
   webServer: {
     command: 'npm run dev:demo',
