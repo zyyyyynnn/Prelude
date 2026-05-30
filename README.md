@@ -7,12 +7,12 @@
 
 > 毕业设计项目：沉浸式模拟面试与简历诊断系统
 
-基于大语言模型的模拟面试平台，覆盖简历解析、岗位匹配、阶段化问答、会话回放、报告生成和能力分析。项目同时提供真实运行模式与 Demo Twin 演示模式，便于本地开发、答辩演示和截图验收。
+基于大语言模型的模拟面试平台，覆盖简历解析、岗位匹配、模拟面试对话、报告生成和能力分析。项目同时提供真实运行模式与 Demo Twin 演示模式，便于本地开发、答辩演示和截图验收。
 
 ## 项目亮点
 
 - 支持 PDF 简历解析、岗位模板匹配、阶段化模拟面试和 Markdown 评估报告生成。
-- 使用 SSE 实现流式问答体验，完整保留阶段推进、系统提示和消息回放。
+- 使用 SSE 实现流式问答体验，完整保留系统提示与对话历史记录。
 - 提供 Demo Twin 演示模式，数据库、端口、前端环境与真实模式隔离。
 - 支持用户级 LLM Provider、模型和 API Key 配置，Key 使用 AES-256-GCM 加密保存。
 - 提供能力雷达图、评分趋势和薄弱点统计，形成从面试到复盘的闭环。
@@ -42,13 +42,13 @@ flowchart LR
 
 ![登录](docs/images/login.png)
 
+### 主工作台（未开始面试的空状态）
+
+![主工作台（未开始面试的空状态）](docs/images/interview-empty.png)
+
 ### 主工作台（报告预览）
 
 ![主工作台（报告预览）](docs/images/interview-workbench.png)
-
-### 会话回放
-
-![会话回放](docs/images/replay.png)
 
 ### 数据看板
 
@@ -197,7 +197,7 @@ Demo Twin：
 pwsh -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
 ```
 
-`/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、回放、报告、评分历史和薄弱点数据。默认会话包含 1 场 `Java 后端工程师` 进行中会话，以及 `Java 后端工程师`、`前端工程师`、`算法工程师` 各 1 场已完成会话，避免演示清单只出现单一岗位。
+`/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、报告、评分历史和薄弱点数据。默认会话包含 1 场 `Java 后端工程师` 进行中会话，以及 `Java 后端工程师`、`前端工程师`、`算法工程师` 各 1 场已完成会话，避免演示清单只出现单一岗位。
 
 默认演示账号：
 
@@ -233,7 +233,6 @@ output\demo\manifest.md
 
 - `/login`：登录 / 注册
 - `/interview`：主工作台
-- `/interview/replay/:sessionId`：会话回放
 - `/resumes`：简历管理
 - `/analytics`：数据看板
 - `/settings/llm`：LLM 配置
@@ -248,9 +247,8 @@ output\demo\manifest.md
 1. 启动 Demo Twin：`.\start-demo.bat`
 2. 登录演示账号：`demo / 123456`
 3. 进入 `/interview` 查看进行中面试和多岗位历史会话
-4. 推进阶段并生成报告
-5. 查看 `/interview/replay/:sessionId`
-6. 查看 `/analytics` 能力分析
+4. 进行对话并生成报告
+5. 查看 `/analytics` 能力分析
 
 ## 验证命令
 

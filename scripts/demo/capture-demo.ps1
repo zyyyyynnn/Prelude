@@ -14,14 +14,14 @@ $manifestPath = Join-Path $outputDir 'manifest.md'
 $expectedFiles = @(
   '01-login.png',
   '02-register.png',
-  '03-interview-workbench.png',
-  '04-interview-stage-technical.png',
-  '05-interview-stage-deep-dive.png',
+  '03-interview-empty.png',
+  '04-interview-workbench.png',
+  '05-interview-chat.png',
   '06-interview-report.png',
-  '08-resumes-filled.png',
-  '09-settings-llm.png',
-  '10-settings-profile.png',
-  '11-analytics-filled.png'
+  '07-resumes-filled.png',
+  '08-settings-llm.png',
+  '09-settings-profile.png',
+  '10-analytics-filled.png'
 )
 
 function Ensure-Directory {

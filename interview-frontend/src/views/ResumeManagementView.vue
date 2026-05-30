@@ -91,7 +91,7 @@ onMounted(() => {
         </div>
         <div class="workspace-header__actions">
           <ElButton
-            class="ui-button ui-button--primary"
+            class="ui-button ui-button--primary ui-button--compact"
             :loading="uploading"
             @click="openUpload"
           >

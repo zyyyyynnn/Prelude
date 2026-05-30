@@ -1,5 +1,5 @@
 :root {
-  --font-serif: 'Lora', Georgia, serif;
+  --font-serif: 'Lora', 'Noto Serif SC', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
@@ -483,7 +483,7 @@ a {
   gap: 6px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 18px 20px;
+  padding: 24px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0)),
     var(--color-surface);
@@ -528,6 +528,7 @@ a {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 14px;
+  min-height: 108px;
 }
 
 .panel__head--compact {
@@ -555,10 +556,6 @@ a {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.panel--workspace .panel__head {
-  min-height: 108px;
 }
 
 .panel--workspace .panel__head > :first-child {
@@ -1084,7 +1081,7 @@ a {
 .stage-timeline__item {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 24px;
   background: var(--color-surface);
 }
 

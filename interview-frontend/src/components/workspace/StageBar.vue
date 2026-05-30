@@ -25,7 +25,7 @@ const canFinish = computed(
   <div class="stage-bar">
     <div class="stage-actions" v-if="activeSessionId">
       <ElButton
-        class="ui-button ui-button--secondary"
+        class="ui-button ui-button--secondary ui-button--compact"
         :disabled="!canFinish"
         :loading="finishing"
         @click="emit('finish')"
