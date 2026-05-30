@@ -5,7 +5,7 @@ import type {
   InterviewFinishResponse,
   InterviewMessageRecord,
   InterviewMessageRole,
-  InterviewReplayResponse,
+  InterviewSessionDetailResponse,
   InterviewSessionItem,
   InterviewStageChangePayload,
   InterviewStageChangeResponse,
@@ -50,7 +50,7 @@ export async function fetchInterviewSessions() {
 }
 
 export async function fetchInterviewMessages(sessionId: number) {
-  const response = await http.get<ApiResult<InterviewReplayResponse>>(`/interview/${sessionId}/messages`)
+  const response = await http.get<ApiResult<InterviewSessionDetailResponse>>(`/interview/${sessionId}/messages`)
   const data = unwrapResult(response.data)
   return {
     ...data,

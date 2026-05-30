@@ -1073,7 +1073,6 @@ a {
 .session-list,
 .resume-catalog,
 .weakness-list,
-.replay-list,
 .stage-timeline {
   display: grid;
   gap: 14px;
@@ -1082,7 +1081,6 @@ a {
 .session-item,
 .resume-row,
 .weakness-item,
-.replay-item,
 .stage-timeline__item {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1115,7 +1113,6 @@ a {
 .session-item__head,
 .resume-item__meta,
 .weakness-item__head,
-.replay-item__head,
 .history-section__head {
   display: flex;
   align-items: flex-start;
@@ -1136,7 +1133,6 @@ a {
 .session-item__meta,
 .session-item__summary,
 .resume-item__hint,
-.replay-item__meta,
 .stage-timeline__meta {
   margin: 0;
   color: var(--color-text-secondary);
@@ -1293,33 +1289,6 @@ a {
   margin-top: 5px;
 }
 
-.replay-item {
-  display: grid;
-  gap: 10px;
-}
-
-.replay-list--spacious {
-  gap: 16px;
-}
-
-.replay-item--user {
-  margin-left: auto;
-  max-width: 88%;
-  background: var(--color-sand);
-}
-
-.replay-item--assistant {
-  margin-right: auto;
-  max-width: 88%;
-  background: var(--color-surface);
-}
-
-.replay-item--system {
-  border-style: dashed;
-  background: color-mix(in srgb, var(--color-surface) 76%, var(--color-sand));
-}
-
-.replay-item__content,
 .weakness-item__descriptions {
   margin: 0;
   white-space: pre-wrap;

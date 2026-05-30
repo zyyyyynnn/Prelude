@@ -18,7 +18,6 @@ $expectedFiles = @(
   '04-interview-stage-technical.png',
   '05-interview-stage-deep-dive.png',
   '06-interview-report.png',
-  '07-replay.png',
   '08-resumes-filled.png',
   '09-settings-llm.png',
   '10-settings-profile.png',

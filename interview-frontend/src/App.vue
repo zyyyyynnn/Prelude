@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import AppSidebar from './components/workspace/AppSidebar.vue'
@@ -9,16 +9,6 @@ const route = useRoute()
 const isSidebarCollapsed = ref(false)
 
 const showSidebar = computed(() => route.path !== '/login' && authStore.isLoggedIn)
-
-watch(
-  () => route.fullPath,
-  (fullPath) => {
-    if (fullPath.startsWith('/interview/replay/')) {
-      localStorage.setItem('recentReplayPath', fullPath)
-    }
-  },
-  { immediate: true },
-)
 </script>
 
 <template>

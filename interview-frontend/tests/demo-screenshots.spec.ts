@@ -77,6 +77,7 @@ async function capture(page: Page, file: string, pageName: string, state: string
   await waitForTransientUiToClear(page)
   // Wait for web fonts to load
   await page.evaluate(() => document.fonts.ready).catch(() => null)
+
   await page.screenshot({
     path: path.join(outputDir, file),
     fullPage: true,
@@ -123,6 +124,8 @@ async function advanceStage(request: APIRequestContext, token: string, sessionId
 }
 
 test('capture demo twin full-page screenshots', async ({ page, request }) => {
+
+
   await ensureOutputDir()
 
   await resetDemo(request)
@@ -193,18 +196,6 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await expect(page.getByRole('heading', { name: '面试评估报告' })).toBeVisible()
   await expect(page.getByText('技术能力：7/10')).toBeVisible()
   await capture(page, '06-interview-report.png', '主工作台', '报告已生成', page.getByRole('heading', { name: '面试评估报告' }))
-
-  // Replay view
-  await page.goto(`/interview/replay/${sessionId}`)
-  await page.waitForURL('**/interview/replay/**')
-  await expect(page.getByRole('heading', { name: '破冰', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '技术', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '深挖', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '收尾', exact: true })).toBeVisible()
-  await expect(page.locator('.replay-item .el-tag').filter({ hasText: '系统' }).first()).toBeVisible()
-  await expect(page.locator('.replay-item .el-tag').filter({ hasText: '面试官' }).first()).toBeVisible()
-  await expect(page.locator('.replay-item .el-tag').filter({ hasText: '我' }).first()).toBeVisible()
-  await capture(page, '07-replay.png', '回放页', '完整回放', page.getByRole('heading', { name: '会话回放' }))
 
   await page.goto('/analytics')
   await expect(page.getByText('能力雷达')).toBeVisible()

@@ -28,14 +28,6 @@ const router = createRouter({
       },
     },
     {
-      path: '/interview/replay/:sessionId',
-      name: 'interview-replay',
-      component: () => import('../views/ReplayView.vue'),
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
       path: '/resumes',
       name: 'resumes',
       component: () => import('../views/ResumeManagementView.vue'),
