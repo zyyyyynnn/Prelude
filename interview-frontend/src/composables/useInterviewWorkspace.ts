@@ -1,10 +1,10 @@
 import { computed, ref, shallowRef } from 'vue'
 import { fetchInterviewSessions, fetchInterviewMessages } from '../api/interview'
-import type { InterviewSessionItem, InterviewReplayResponse } from '../api/contracts'
+import type { InterviewSessionItem, InterviewSessionDetailResponse } from '../api/contracts'
 
 const sessions = ref<InterviewSessionItem[]>([])
 const activeSessionId = ref<number | null>(null)
-const replay = shallowRef<InterviewReplayResponse | null>(null)
+const replay = shallowRef<InterviewSessionDetailResponse | null>(null)
 const reportMarkdown = ref('')
 const sessionLoading = ref(false)
 

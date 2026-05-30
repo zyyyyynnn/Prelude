@@ -68,7 +68,7 @@ export type InterviewSessionItem = {
   summaryReport?: string
 }
 
-export type InterviewReplayResponse = {
+export type InterviewSessionDetailResponse = {
   sessionId: number
   targetPosition?: string
   status?: string
