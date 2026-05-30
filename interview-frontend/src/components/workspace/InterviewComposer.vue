@@ -86,6 +86,10 @@ function navigateToLlm() {
 
       <div class="composer-actions">
         <div class="composer-actions__left">
+          <!-- Left side empty to let selectors sit right next to the submit button -->
+        </div>
+        
+        <div class="composer-actions__right">
           <div class="composer-toolbar">
             <!-- Resume Picker -->
             <ElDropdown @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
@@ -129,9 +133,7 @@ function navigateToLlm() {
               <span class="toolbar-item__value">{{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}</span>
             </button>
           </div>
-        </div>
-        
-        <div class="composer-actions__right">
+
           <ElButton
             v-if="!activeSessionId"
             type="primary"

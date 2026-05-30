@@ -105,6 +105,7 @@ export async function streamInterviewChat(
   payload: InterviewChatRequest,
   autoStart = false,
   handlers: ChatStreamHandlers = {},
+  signal?: AbortSignal,
 ) {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
   const suffix = autoStart ? '?autoStart=true' : ''
@@ -115,6 +116,7 @@ export async function streamInterviewChat(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
+    signal,
   })
 
   if (response.status === 401) {

@@ -205,15 +205,15 @@ onMounted(() => {
 }
 .workspace-header {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
   padding: 16px 24px;
   border-bottom: 1px solid var(--color-border);
   background: rgba(250, 249, 245, 0.85);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 100;
+  flex-shrink: 0;
   height: 72px;
   box-sizing: border-box;
 }

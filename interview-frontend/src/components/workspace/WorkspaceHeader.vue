@@ -7,7 +7,6 @@ const props = defineProps<{
   activeSessionId?: number | null
   targetPosition?: string
   currentStage?: InterviewStageName
-  hasPendingAssistantPrompt: boolean
   stageUpdating: boolean
   sending: boolean
   finishing: boolean
@@ -17,8 +16,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'advance', stage: InterviewStageName): void
-  (e: 'auto-start'): void
   (e: 'finish'): void
   (e: 'toggle-report', show: boolean): void
 }>()
@@ -38,13 +35,10 @@ const emit = defineEmits<{
           <StageBar 
             :current-stage="currentStage"
             :active-session-id="activeSessionId"
-            :has-pending-assistant-prompt="hasPendingAssistantPrompt"
             :stage-updating="stageUpdating"
             :sending="sending"
             :finishing="finishing"
             :is-finished="isFinished"
-            @advance="(s) => emit('advance', s)"
-            @auto-start="emit('auto-start')"
             @finish="emit('finish')"
           />
         </div>

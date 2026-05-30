@@ -501,15 +501,15 @@ function logout() {
 }
 .settings-dropdown {
   position: absolute;
-  bottom: 100%;
-  left: 0;
-  width: 100%;
+  bottom: 0;
+  left: 100%;
+  width: auto;
   min-width: 180px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 8px;
-  margin-bottom: 8px;
+  margin-left: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
@@ -517,20 +517,14 @@ function logout() {
   z-index: 200;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(10px);
+  transform: translateX(-10px);
   transition: all 0.2s;
-}
-.app-sidebar.is-collapsed .settings-dropdown {
-  left: 100%;
-  bottom: 0;
-  margin-bottom: 0;
-  margin-left: 8px;
 }
 .settings-menu-wrapper:hover .settings-dropdown,
 .settings-menu-wrapper:focus-within .settings-dropdown {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 .settings-dropdown__item {
   display: flex;

@@ -6,7 +6,6 @@ import type { InterviewStageName } from '../../api/contracts'
 const props = defineProps<{
   currentStage?: InterviewStageName
   activeSessionId?: number | null
-  hasPendingAssistantPrompt: boolean
   stageUpdating: boolean
   sending: boolean
   finishing: boolean
@@ -14,8 +13,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'advance', stage: InterviewStageName): void
-  (e: 'auto-start'): void
   (e: 'finish'): void
 }>()
 

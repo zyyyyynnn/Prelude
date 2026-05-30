@@ -11,7 +11,22 @@ const sessionLoading = ref(false)
 const pinnedSessionIds = ref<number[]>(JSON.parse(localStorage.getItem('pinnedSessionIds') || '[]'))
 const deletedSessionIds = ref<number[]>(JSON.parse(localStorage.getItem('deletedSessionIds') || '[]'))
 
+let activeAbortController: AbortController | null = null
+
 export function useInterviewWorkspace() {
+  function abortActiveStream() {
+    if (activeAbortController) {
+      activeAbortController.abort()
+      activeAbortController = null
+    }
+  }
+
+  function getNewAbortSignal() {
+    abortActiveStream()
+    activeAbortController = new AbortController()
+    return activeAbortController.signal
+  }
+
   const primarySessionList = computed(() => {
     return sessions.value
       .filter((item) => item.status !== 'finished' && !deletedSessionIds.value.includes(item.sessionId))
@@ -41,6 +56,7 @@ export function useInterviewWorkspace() {
   }
 
   async function loadSession(sessionId: number, silent = false) {
+    abortActiveStream()
     sessionLoading.value = true
     try {
       const detail = await fetchInterviewMessages(sessionId)
@@ -57,6 +73,7 @@ export function useInterviewWorkspace() {
   }
 
   function startNewInterview() {
+    abortActiveStream()
     activeSessionId.value = null
     replay.value = null
     reportMarkdown.value = ''
@@ -75,6 +92,7 @@ export function useInterviewWorkspace() {
   }
 
   function deleteSessionLocal(sessionId: number) {
+    abortActiveStream()
     const list = [...deletedSessionIds.value]
     if (!list.includes(sessionId)) {
       list.push(sessionId)
@@ -105,6 +123,8 @@ export function useInterviewWorkspace() {
     startNewInterview,
     togglePinSession,
     deleteSessionLocal,
-    isSessionPinned
+    isSessionPinned,
+    abortActiveStream,
+    getNewAbortSignal
   }
 }

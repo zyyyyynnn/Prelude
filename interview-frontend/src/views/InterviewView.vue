@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchPositions } from '../api/auth'
 import type { PositionTemplate, ResumeItem, InterviewMessageRecord } from '../api/contracts'
-import { startInterview, streamInterviewChat, changeInterviewStage, finishInterview } from '../api/interview'
+import { startInterview, streamInterviewChat, finishInterview } from '../api/interview'
 import { usePageNotice } from '../composables/usePageNotice'
 import { fetchResumes, uploadResume } from '../api/resume'
 import { useAuthStore } from '../stores/auth'
@@ -25,7 +25,9 @@ const {
   sessionLoading,
   primarySessionList,
   refreshSessionList,
-  loadSession
+  loadSession,
+  getNewAbortSignal,
+  abortActiveStream
 } = useInterviewWorkspace()
 
 const loading = ref(false)
@@ -54,14 +56,7 @@ const isFinished = computed(() => activeSession.value?.status === 'finished' || 
 const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
 const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || replay.value?.summaryReport || ''))
 
-const hasPendingAssistantPrompt = computed(() => {
-  const lastSystemIndex = messages.value.map((m) => m.role).lastIndexOf('system')
-  const startIndex = lastSystemIndex === -1 ? 0 : lastSystemIndex + 1
-  const currentStageMessages = messages.value.slice(startIndex)
-  const hasAssistant = currentStageMessages.some((m) => m.role === 'assistant')
-  const hasUser = currentStageMessages.some((m) => m.role === 'user')
-  return hasAssistant && !hasUser
-})
+
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
@@ -205,6 +200,8 @@ async function streamReply(content: string, autoStart = false) {
   }
   ensureAssistantPlaceholder(assistantMessageId)
 
+  const signal = getNewAbortSignal()
+
   try {
     await streamInterviewChat(
       authStore.token,
@@ -216,11 +213,15 @@ async function streamReply(content: string, autoStart = false) {
           appendAssistantDelta(assistantMessageId, chunk)
         },
       },
+      signal,
     )
     await refreshSessionList()
     await loadSession(activeSessionId.value, true)
     return true
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return false
+    }
     removeMessageById(assistantMessageId)
     removeMessageById(optimisticUserId)
     const message = getErrorMessage(error)
@@ -234,14 +235,7 @@ async function streamReply(content: string, autoStart = false) {
   }
 }
 
-async function handleAutoStart() {
-  sending.value = true
-  try {
-    await streamReply('', true)
-  } finally {
-    sending.value = false
-  }
-}
+
 
 async function handleSend() {
   const content = answer.value.trim()
@@ -257,25 +251,12 @@ async function handleSend() {
   }
 }
 
-async function handleAdvanceStage(stageName: string) {
-  if (!activeSessionId.value) return
-  stageUpdating.value = true
-  try {
-    await changeInterviewStage(activeSessionId.value, { stageName: stageName as any })
-    await refreshSessionList()
-    await loadSession(activeSessionId.value, true)
-    showNotice('已进入新阶段', 'success')
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    stageUpdating.value = false
-  }
-}
+
 
 async function handleFinish() {
   if (!activeSessionId.value) return
-  if (currentStage.value !== 'closing') {
-    showNotice('会话未结束，不能进行报告的生成', 'warning')
+  if (currentStage.value !== 'closing' || isFinished.value) {
+    showNotice('仅在处于收尾阶段且会话未结束时，才能生成报告', 'warning')
     return
   }
   finishing.value = true
@@ -321,6 +302,10 @@ watch(() => replay.value?.summaryReport, (val) => {
 onMounted(() => {
   void loadDashboard()
 })
+
+onBeforeUnmount(() => {
+  abortActiveStream()
+})
 </script>
 
 <template>
@@ -355,15 +340,12 @@ onMounted(() => {
         :active-session-id="activeSessionId"
         :target-position="targetPosition"
         :current-stage="currentStage"
-        :has-pending-assistant-prompt="hasPendingAssistantPrompt"
         :stage-updating="stageUpdating"
         :sending="sending"
         :finishing="finishing"
         :has-report="hasReport"
         :showing-report="showingReport"
         :is-finished="isFinished"
-        @advance="handleAdvanceStage"
-        @auto-start="handleAutoStart"
         @finish="handleFinish"
         @toggle-report="showingReport = $event"
       />
