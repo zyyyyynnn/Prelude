@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename)
 const outputDir = path.resolve(__dirname, '../../output/demo/screenshots')
 const manifestPath = path.resolve(__dirname, '../../output/demo/manifest.md')
 const demoResetUrl = 'http://127.0.0.1:8081/api/demo/reset'
+
 type ManifestItem = {
   file: string
   page: string
@@ -32,11 +33,6 @@ async function ensureScreenshotMode(page: Page) {
       style.textContent = `
         html[data-demo-capture='true'] body {
           background-attachment: scroll !important;
-        }
-
-        html[data-demo-capture='true'] .app-shell__header {
-          position: static !important;
-          top: auto !important;
         }
       `
       document.head.appendChild(style)
@@ -100,15 +96,28 @@ async function login(page: Page) {
 }
 
 async function sendAnswer(page: Page, content: string) {
-  const sendButton = page.getByRole('button', { name: '发送回答' })
-  await page.getByPlaceholder('输入回答后发送').fill(content)
+  const sendButton = page.getByRole('button', { name: '发送' })
+  await page.getByPlaceholder('输入回答...').fill(content)
   await expect(sendButton).toBeEnabled()
   await sendButton.click()
   await expect(page.getByText(content)).toBeVisible()
-  await expect(page.locator('.el-message.page-notice').filter({ hasText: '回答已发送' })).toBeVisible({
-    timeout: 30000,
-  })
+  // Wait for the send button to finish loading/sending
+  await expect(sendButton).not.toHaveClass(/is-loading/, { timeout: 30000 })
   await waitForTransientUiToClear(page)
+}
+
+async function advanceStage(request: APIRequestContext, token: string, sessionId: number, stageName: string) {
+  const response = await request.post(`http://127.0.0.1:8081/api/interview/${sessionId}/stage`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    data: { stageName }
+  })
+  if (!response.ok()) {
+    console.error(`advanceStage failed! Status: ${response.status()}, Body: ${await response.text()}`)
+  }
+  expect(response.ok()).toBeTruthy()
 }
 
 test('capture demo twin full-page screenshots', async ({ page, request }) => {
@@ -125,7 +134,17 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
   await page.getByRole('tab', { name: '登录' }).click()
   await login(page)
 
-  const sessionBadge = page.locator('.panel--conversation .el-tag').filter({ hasText: /会话 #\d+/ }).first()
+  const sessionBadge = page.locator('.workspace-header .ui-badge').first()
+  await expect(sessionBadge).toBeVisible()
+  const badgeText = await sessionBadge.innerText()
+  const sessionId = parseInt(badgeText.replace('#', ''))
+
+  const authStateStr = await page.evaluate(() => localStorage.getItem('demo:auth') || localStorage.getItem('auth'))
+  console.log(`authStateStr from localStorage: "${authStateStr}"`)
+  const authState = JSON.parse(authStateStr || '{}')
+  const token = authState.token
+  console.log(`parsed token: "${token}"`)
+
   await capture(page, '03-interview-workbench.png', '主工作台', '默认演示链路', sessionBadge)
 
   await page.goto('/resumes')
@@ -139,30 +158,42 @@ test('capture demo twin full-page screenshots', async ({ page, request }) => {
 
   await page.goto('/interview')
   await expect(sessionBadge).toBeVisible()
-  await expect(page.getByRole('button', { name: '进入深挖阶段' })).toBeVisible()
-  await capture(page, '04-interview-stage-technical.png', '主工作台', '技术阶段', page.getByRole('button', { name: '进入深挖阶段' }))
+  
+  // Capture technical stage
+  await capture(page, '04-interview-stage-technical.png', '主工作台', '技术阶段', page.getByPlaceholder('输入回答...'))
 
   await sendAnswer(page, '这条链路我会先在 Controller 做登录态和参数校验，再进入 service 组装会话上下文。用户回答会先落一条 user 消息，随后通过 SSE 推送面试官回复，最后把 assistant 消息按序号落库，确保回放时顺序稳定。')
   await sendAnswer(page, '我会先看接口耗时、SQL 执行计划和返回数据量。如果是查询慢，就先确认索引命中、分页边界和排序字段；如果接口本身重复请求多，再考虑缓存或前端请求节流。')
 
-  await page.getByRole('button', { name: '进入深挖阶段' }).click()
-  await expect(page.getByRole('button', { name: '进入收尾阶段' })).toBeVisible()
+  // Advance to deep_dive
+  await advanceStage(request, token, sessionId, 'deep_dive')
+  await page.reload()
+  await expect(page.getByPlaceholder('输入回答...')).toBeVisible()
+
   await expect(page.getByText('SSE 输出过程中如果浏览器刷新了')).toBeVisible()
   await sendAnswer(page, '如果浏览器刷新，我会先让 emitter 的 timeout、error 和 completion 都走同一套清理逻辑，避免连接对象挂在内存里。已经生成但还没完整落库的内容，我会用会话状态和消息序号兜底，宁可重试生成，也不写半截消息。')
   await sendAnswer(page, '我会把最关键的幂等判断放在接口层和数据库层。前端可以防重复点击，但不能作为最终保障；接口层负责识别重复阶段推进，数据库层用会话状态和阶段记录兜底。')
-  await capture(page, '05-interview-stage-deep-dive.png', '主工作台', '深挖阶段', page.getByRole('button', { name: '进入收尾阶段' }))
+  await capture(page, '05-interview-stage-deep-dive.png', '主工作台', '深挖阶段', page.getByPlaceholder('输入回答...'))
 
-  await page.getByRole('button', { name: '进入收尾阶段' }).click()
-  await expect(page.getByRole('button', { name: '阶段已完成' })).toBeVisible()
+  // Advance to closing
+  await advanceStage(request, token, sessionId, 'closing')
+  await page.reload()
+  await expect(page.getByPlaceholder('输入回答...')).toBeVisible()
+
   await expect(page.getByText('最后收个尾')).toBeVisible()
   await sendAnswer(page, '我会优先补评分解释，把每个扣分点关联到具体回答片段。这样用户不只是看到 7 分或 8 分，而是知道哪一句回答不够完整、下一次应该怎么改。')
 
-  await page.getByRole('button', { name: '生成报告' }).click()
+  const finishButton = page.getByRole('button', { name: '生成报告' })
+  await expect(finishButton).toBeVisible()
+  await expect(finishButton).toBeEnabled()
+  await finishButton.click()
+
   await expect(page.getByRole('heading', { name: '面试评估报告' })).toBeVisible()
   await expect(page.getByText('技术能力：7/10')).toBeVisible()
   await capture(page, '06-interview-report.png', '主工作台', '报告已生成', page.getByRole('heading', { name: '面试评估报告' }))
 
-  await page.getByRole('button', { name: '回放' }).first().click()
+  // Replay view
+  await page.goto(`/interview/replay/${sessionId}`)
   await page.waitForURL('**/interview/replay/**')
   await expect(page.getByRole('heading', { name: '破冰', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '技术', exact: true })).toBeVisible()
