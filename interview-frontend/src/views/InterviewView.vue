@@ -1,76 +1,58 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  ElButton,
-  ElCard,
-  ElInput,
-  ElOption,
-  ElSelect,
-  ElTag,
-} from 'element-plus'
 import { fetchPositions } from '../api/auth'
-import type {
-  InterviewMessageRecord,
-  InterviewMessageRole,
-  InterviewReplayResponse,
-  InterviewSessionItem,
-  InterviewStageName,
-  PositionTemplate,
-  ResumeItem,
-} from '../api/contracts'
-import {
-  changeInterviewStage,
-  fetchInterviewMessages,
-  fetchInterviewSessions,
-  finishInterview,
-  startInterview,
-  streamInterviewChat,
-} from '../api/interview'
+import type { PositionTemplate, ResumeItem, InterviewMessageRecord } from '../api/contracts'
+import { startInterview, streamInterviewChat, changeInterviewStage, finishInterview } from '../api/interview'
 import { usePageNotice } from '../composables/usePageNotice'
 import { fetchResumes, uploadResume } from '../api/resume'
 import { useAuthStore } from '../stores/auth'
-import { nextStage, stageLabel, STAGE_ORDER } from '../utils/interview'
 import { renderMarkdown } from '../utils/markdown'
+import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
+import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
+import MessageThread from '../components/workspace/MessageThread.vue'
+import InterviewComposer from '../components/workspace/InterviewComposer.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const { showNotice } = usePageNotice()
 
+const {
+  sessions,
+  activeSessionId,
+  replay,
+  reportMarkdown,
+  sessionLoading,
+  primarySessionList,
+  refreshSessionList,
+  loadSession
+} = useInterviewWorkspace()
+
 const loading = ref(false)
-const sessionLoading = ref(false)
 const creating = ref(false)
 const uploading = ref(false)
 const sending = ref(false)
 const finishing = ref(false)
 const stageUpdating = ref(false)
-const uploadInput = ref<HTMLInputElement | null>(null)
-
-const uploadDisplayName = ref('未选择任何文件')
-const answer = ref('')
+const showingReport = ref(false)
 
 const resumes = ref<ResumeItem[]>([])
 const positions = ref<PositionTemplate[]>([])
-const sessions = ref<InterviewSessionItem[]>([])
-const replay = ref<InterviewReplayResponse | null>(null)
-const activeSessionId = ref<number | null>(null)
-const reportMarkdown = ref('')
-
 const selectedResumeId = ref<number | null>(null)
 const selectedPositionId = ref<number | null>(null)
+const uploadDisplayName = ref('未选择任何文件')
+const answer = ref('')
 
-const activeSession = computed(() =>
-  sessions.value.find((item) => item.sessionId === activeSessionId.value) ?? null,
-)
-const selectedResume = computed(() =>
-  resumes.value.find((item) => item.id === selectedResumeId.value) ?? null,
-)
-const selectedPosition = computed(() =>
-  positions.value.find((item) => item.id === selectedPositionId.value) ?? null,
-)
 const messages = computed(() => replay.value?.messages ?? [])
-const currentStage = computed(() => replay.value?.currentStage ?? activeSession.value?.currentStage)
-const nextStageName = computed(() => nextStage(currentStage.value))
+const currentStage = computed(() => replay.value?.currentStage)
+const activeSession = computed(() => sessions.value.find(s => s.sessionId === activeSessionId.value))
+const targetPosition = computed(() => activeSession.value?.targetPosition || activeSession.value?.positionName || '')
+const llmProvider = computed(() => activeSession.value?.llmProvider || 'deepseek')
+const llmModel = computed(() => activeSession.value?.llmModel || 'default')
+const isFinished = computed(() => activeSession.value?.status === 'finished' || replay.value?.status === 'finished')
+
+const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
+const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || replay.value?.summaryReport || ''))
 
 const hasPendingAssistantPrompt = computed(() => {
   const lastSystemIndex = messages.value.map((m) => m.role).lastIndexOf('system')
@@ -80,54 +62,6 @@ const hasPendingAssistantPrompt = computed(() => {
   const hasUser = currentStageMessages.some((m) => m.role === 'user')
   return hasAssistant && !hasUser
 })
-const conversationStarted = computed(() =>
-  messages.value.some((message) => message.role === 'user' || message.role === 'assistant'),
-)
-const canCreate = computed(
-  () => Boolean(selectedResumeId.value && selectedPositionId.value) && !creating.value && !loading.value,
-)
-const canSend = computed(
-  () => Boolean(activeSessionId.value && answer.value.trim()) && !sending.value && !stageUpdating.value,
-)
-const canAutoStart = computed(
-  () => Boolean(activeSessionId.value) && !conversationStarted.value && !sending.value && !stageUpdating.value,
-)
-const canFinish = computed(
-  () => Boolean(activeSessionId.value) && !finishing.value && !sending.value,
-)
-const canAdvanceStage = computed(
-  () => Boolean(nextStageName.value) && !stageUpdating.value && !sending.value && !hasPendingAssistantPrompt.value,
-)
-const primarySessionList = computed(() => sessions.value.filter((item) => item.status !== 'finished'))
-const finishedSessionList = computed(() => sessions.value.filter((item) => item.status === 'finished'))
-const sessionPositionCounts = computed(() =>
-  sessions.value.reduce<Record<string, number>>((counts, item) => {
-    const title = sessionPositionTitle(item)
-    counts[title] = (counts[title] ?? 0) + 1
-    return counts
-  }, {}),
-)
-const reportSource = computed(() => {
-  if (reportMarkdown.value || replay.value?.summaryReport) {
-    return {
-      title: activeSession.value?.targetPosition || '面试报告预览',
-      report: reportMarkdown.value || replay.value?.summaryReport || '',
-      sourceLabel: activeSession.value?.status === 'finished' ? '当前会话' : '最近可预览报告',
-    }
-  }
-
-  const fallback = finishedSessionList.value[0]
-  if (!fallback?.summaryReport) {
-    return null
-  }
-
-  return {
-    title: fallback.targetPosition || '最近已完成面试',
-    report: fallback.summaryReport,
-    sourceLabel: '已完成会话',
-  }
-})
-const renderedReport = computed(() => renderMarkdown(reportSource.value?.report || ''))
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败'
@@ -140,38 +74,9 @@ function setResumeDefaults(items: ResumeItem[]) {
   uploadDisplayName.value = items.find((item) => item.id === selectedResumeId.value)?.fileName || '未选择任何文件'
 }
 
-function sessionPositionTitle(item: InterviewSessionItem) {
-  return item.targetPosition?.trim() || '未命名岗位'
-}
-
-function displaySessionTitle(item: InterviewSessionItem) {
-  const title = sessionPositionTitle(item)
-  return sessionPositionCounts.value[title] > 1 ? `${title} #${item.sessionId}` : title
-}
-
 function setPositionDefaults(items: PositionTemplate[]) {
   if (!selectedPositionId.value || !items.some((item) => item.id === selectedPositionId.value)) {
     selectedPositionId.value = items[0]?.id ?? null
-  }
-}
-
-async function refreshSessionList() {
-  sessions.value = await fetchInterviewSessions()
-}
-
-async function loadSession(sessionId: number, silent = false) {
-  sessionLoading.value = true
-  try {
-    const detail = await fetchInterviewMessages(sessionId)
-    replay.value = detail
-    activeSessionId.value = sessionId
-    reportMarkdown.value = detail.summaryReport || ''
-  } catch (error) {
-    if (!silent) {
-      showNotice(getErrorMessage(error), 'error')
-    }
-  } finally {
-    sessionLoading.value = false
   }
 }
 
@@ -188,12 +93,6 @@ async function loadDashboard() {
       await loadSession(activeSessionId.value, true)
     } else if (primarySessionList.value[0]) {
       await loadSession(primarySessionList.value[0].sessionId, true)
-    } else if (sessions.value[0]) {
-      await loadSession(sessions.value[0].sessionId, true)
-    } else {
-      replay.value = null
-      activeSessionId.value = null
-      reportMarkdown.value = ''
     }
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
@@ -202,20 +101,7 @@ async function loadDashboard() {
   }
 }
 
-function openResumePicker() {
-  if (!uploading.value) {
-    uploadInput.value?.click()
-  }
-}
-
-async function handleUpload(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) {
-    return
-  }
-
+async function handleUpload(file: File) {
   uploading.value = true
   try {
     const result = await uploadResume(file)
@@ -249,7 +135,7 @@ async function createNewInterview() {
     await refreshSessionList()
     await loadSession(result.sessionId, true)
     answer.value = ''
-    reportMarkdown.value = ''
+    showingReport.value = false
     showNotice('面试已创建', 'success')
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
@@ -259,24 +145,17 @@ async function createNewInterview() {
 }
 
 function appendMessage(message: InterviewMessageRecord) {
-  if (!replay.value) {
-    return
-  }
+  if (!replay.value) return
   replay.value.messages = [...replay.value.messages, message]
 }
 
 function removeMessageById(id: number | null) {
-  if (!replay.value || id == null) {
-    return
-  }
+  if (!replay.value || id == null) return
   replay.value.messages = replay.value.messages.filter((message) => message.id !== id)
 }
 
 function ensureAssistantPlaceholder(id: number) {
-  if (!replay.value || replay.value.messages.some((message) => message.id === id)) {
-    return
-  }
-
+  if (!replay.value || replay.value.messages.some((message) => message.id === id)) return
   appendMessage({
     id,
     role: 'assistant',
@@ -286,10 +165,7 @@ function ensureAssistantPlaceholder(id: number) {
 }
 
 function appendAssistantDelta(id: number, delta: string) {
-  if (!replay.value) {
-    return
-  }
-
+  if (!replay.value) return
   const list = [...replay.value.messages]
   const target = list.find((message) => message.id === id)
 
@@ -312,7 +188,6 @@ async function streamReply(content: string, autoStart = false) {
     showNotice('请先创建或选择一场面试', 'warning')
     return false
   }
-
   if (!replay.value) {
     await loadSession(activeSessionId.value, true)
   }
@@ -344,7 +219,6 @@ async function streamReply(content: string, autoStart = false) {
     )
     await refreshSessionList()
     await loadSession(activeSessionId.value, true)
-    showNotice(autoStart ? '面试官已开始提问' : '回答已发送', 'success')
     return true
   } catch (error) {
     removeMessageById(assistantMessageId)
@@ -361,9 +235,6 @@ async function streamReply(content: string, autoStart = false) {
 }
 
 async function handleAutoStart() {
-  if (!canAutoStart.value) {
-    return
-  }
   sending.value = true
   try {
     await streamReply('', true)
@@ -374,11 +245,7 @@ async function handleAutoStart() {
 
 async function handleSend() {
   const content = answer.value.trim()
-  if (!content) {
-    showNotice('请输入回答内容', 'warning')
-    return
-  }
-
+  if (!content) return
   sending.value = true
   try {
     const success = await streamReply(content, false)
@@ -390,20 +257,14 @@ async function handleSend() {
   }
 }
 
-async function handleAdvanceStage() {
-  if (!activeSessionId.value || !nextStageName.value) {
-    return
-  }
-  if (hasPendingAssistantPrompt.value) {
-    showNotice('请先回答当前阶段的面试官提问', 'warning')
-    return
-  }
+async function handleAdvanceStage(stageName: string) {
+  if (!activeSessionId.value) return
   stageUpdating.value = true
   try {
-    await changeInterviewStage(activeSessionId.value, { stageName: nextStageName.value })
+    await changeInterviewStage(activeSessionId.value, { stageName: stageName as any })
     await refreshSessionList()
     await loadSession(activeSessionId.value, true)
-    showNotice(`已进入${stageLabel(nextStageName.value)}阶段`, 'success')
+    showNotice('已进入新阶段', 'success')
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
   } finally {
@@ -412,7 +273,9 @@ async function handleAdvanceStage() {
 }
 
 async function handleFinish() {
-  if (!activeSessionId.value) {
+  if (!activeSessionId.value) return
+  if (currentStage.value !== 'closing') {
+    showNotice('会话未结束，不能进行报告的生成', 'warning')
     return
   }
   finishing.value = true
@@ -439,17 +302,21 @@ async function handleFinish() {
   }
 }
 
-function isStageComplete(stage: InterviewStageName) {
-  const current = currentStage.value
-  if (!current) {
-    return false
+watch(activeSessionId, (newId, oldId) => {
+  if (newId !== oldId) {
+    showingReport.value = false
+    answer.value = ''
   }
-  return STAGE_ORDER.indexOf(stage) < STAGE_ORDER.indexOf(current)
-}
+})
 
-function isStageCurrent(stage: InterviewStageName) {
-  return currentStage.value === stage
-}
+watch(() => replay.value?.summaryReport, (val) => {
+  if (val && !reportMarkdown.value) {
+    reportMarkdown.value = val
+  }
+  if (val) {
+    showingReport.value = true
+  }
+})
 
 onMounted(() => {
   void loadDashboard()
@@ -457,340 +324,180 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="page page--workspace">
-    <div class="page__hero">
-      <div class="page__hero-main">
-        <p class="eyebrow">面试</p>
-        <h2 class="page__title">主工作台</h2>
-        <p class="page__lead">
-          在同一屏完成面试准备、实时问答、历史复盘和报告预览。
-        </p>
+  <div class="interview-workspace">
+    <!-- Empty State -->
+    <div v-if="!activeSessionId && !sessionLoading" class="workspace-empty">
+      <div class="workspace-empty__content">
+        <h1 class="workspace-empty__title">准备开始一场沉浸式模拟面试</h1>
+        <InterviewComposer 
+          :is-centered="true"
+          :resumes="resumes"
+          :positions="positions"
+          :selected-resume-id="selectedResumeId"
+          :selected-position-id="selectedPositionId"
+          v-model="answer"
+          :uploading="uploading"
+          :upload-display-name="uploadDisplayName"
+          :sending="sending"
+          :creating="creating"
+          @update:selected-resume-id="id => selectedResumeId = id"
+          @update:selected-position-id="id => selectedPositionId = id"
+          @upload="handleUpload"
+          @start="createNewInterview"
+          @send="handleSend"
+        />
       </div>
     </div>
 
-    <div class="insight-strip">
-      <article class="insight-card">
-        <p class="panel__eyebrow">当前简历</p>
-        <h3 class="insight-card__value">{{ selectedResume?.fileName || '待选择' }}</h3>
-        <p class="insight-card__meta">{{ resumes.length }} 份可用简历</p>
-      </article>
-      <article class="insight-card">
-        <p class="panel__eyebrow">当前岗位</p>
-        <h3 class="insight-card__value">{{ selectedPosition?.name || '待选择' }}</h3>
-        <p class="insight-card__meta">{{ positions.length }} 个岗位模板</p>
-      </article>
-      <article class="insight-card">
-        <p class="panel__eyebrow">会话状态</p>
-        <h3 class="insight-card__value">{{ primarySessionList.length }} 进行中</h3>
-        <p class="insight-card__meta">{{ finishedSessionList.length }} 场已完成</p>
-      </article>
-    </div>
+    <!-- Active Session View -->
+    <div v-else-if="activeSessionId" class="workspace-active">
+      <WorkspaceHeader
+        :active-session-id="activeSessionId"
+        :target-position="targetPosition"
+        :current-stage="currentStage"
+        :has-pending-assistant-prompt="hasPendingAssistantPrompt"
+        :stage-updating="stageUpdating"
+        :sending="sending"
+        :finishing="finishing"
+        :has-report="hasReport"
+        :showing-report="showingReport"
+        :is-finished="isFinished"
+        @advance="handleAdvanceStage"
+        @auto-start="handleAutoStart"
+        @finish="handleFinish"
+        @toggle-report="showingReport = $event"
+      />
 
-    <div class="workspace-stack">
-      <div class="workflow-grid">
-        <ElCard class="ui-card panel panel--workspace panel--prep">
-        <div class="panel__head">
-          <div>
-            <p class="panel__eyebrow">1. 准备</p>
-            <h3 class="panel__title">简历与岗位</h3>
-            <p class="panel__lead">选择简历与岗位，创建本场会话。</p>
-          </div>
-          <ElTag class="ui-badge" effect="light">{{ resumes.length }} 份简历</ElTag>
-        </div>
-
-        <div class="prep-layout">
-          <div class="prep-layout__form field-stack">
-            <div class="field">
-              <span class="field__label">上传 PDF 简历</span>
-              <div class="upload-field" :class="{ 'is-uploading': uploading }">
-                <input
-                  ref="uploadInput"
-                  class="upload-field__native"
-                  accept="application/pdf"
-                  type="file"
-                  @change="handleUpload"
-                />
-                <button
-                  class="upload-field__button"
-                  :disabled="uploading"
-                  type="button"
-                  @click="openResumePicker"
-                >
-                  {{ uploading ? '上传中' : '选择文件' }}
-                </button>
-                <span class="upload-field__name">{{ uploadDisplayName }}</span>
-              </div>
-            </div>
-
-            <div class="field-grid">
-              <label class="field">
-                <span class="field__label">简历</span>
-                <ElSelect v-model="selectedResumeId" class="ui-select" placeholder="请选择简历" size="large">
-                  <ElOption
-                    v-for="item in resumes"
-                    :key="item.id"
-                    :label="item.fileName"
-                    :value="item.id"
-                  />
-                </ElSelect>
-              </label>
-
-              <label class="field">
-                <span class="field__label">岗位</span>
-                <ElSelect v-model="selectedPositionId" class="ui-select" placeholder="请选择岗位" size="large">
-                  <ElOption
-                    v-for="item in positions"
-                    :key="item.id"
-                    :label="item.name"
-                    :value="item.id"
-                  />
-                </ElSelect>
-              </label>
-            </div>
-
-            <div class="prep-summary-panel">
-              <section class="prep-summary-panel__section">
-                <p class="panel__eyebrow">本场配置</p>
-                <h4 class="detail-card__title prep-summary-panel__title">{{ selectedResume?.fileName || '未选择简历' }}</h4>
-                <p class="detail-card__meta">{{ selectedPosition?.name || '未选择岗位' }}</p>
-              </section>
-              <section class="prep-summary-panel__section">
-                <p class="panel__eyebrow">创建结果</p>
-                <h4 class="detail-card__title prep-summary-panel__title">{{ activeSessionId ? `会话 #${activeSessionId}` : '尚未创建' }}</h4>
-                <p class="detail-card__meta">{{ currentStage ? `${stageLabel(currentStage)}阶段` : '等待启动' }}</p>
-              </section>
-            </div>
-
-            <div class="button-row panel__footer-actions prep-layout__form-actions">
-              <ElButton
-                class="ui-button ui-button--primary"
-                :disabled="!canCreate"
-                :loading="creating || loading"
-                size="large"
-                type="primary"
-                @click="createNewInterview"
-              >
-                创建面试
-              </ElButton>
+      <div class="workspace-active__main">
+        <div v-if="showingReport" class="workspace-report scrollable">
+          <div class="report-content">
+            <div class="markdown-surface markdown-surface--paper">
+              <div class="markdown-body" v-html="renderedReport" />
             </div>
           </div>
         </div>
-        </ElCard>
-
-        <ElCard class="ui-card panel panel--workspace panel--conversation">
-        <div class="panel__head">
-          <div>
-            <p class="panel__eyebrow">2. 实时面试</p>
-            <h3 class="panel__title">阶段问答区</h3>
-            <p class="panel__lead">按阶段推进问答，并在当前会话内实时生成内容。</p>
+        
+        <template v-else>
+          <MessageThread :messages="messages" />
+          
+          <div class="workspace-composer-fixed">
+            <InterviewComposer 
+              :is-centered="false"
+              :active-session-id="activeSessionId"
+              :resumes="resumes"
+              :positions="positions"
+              :selected-resume-id="selectedResumeId"
+              :selected-position-id="selectedPositionId"
+              :llm-provider="llmProvider"
+              :llm-model="llmModel"
+              v-model="answer"
+              :uploading="uploading"
+              :upload-display-name="uploadDisplayName"
+              :sending="sending"
+              :creating="creating"
+              @update:selected-resume-id="id => selectedResumeId = id"
+              @update:selected-position-id="id => selectedPositionId = id"
+              @upload="handleUpload"
+              @start="createNewInterview"
+              @send="handleSend"
+            />
           </div>
-          <div class="panel__actions">
-            <ElTag class="ui-badge" effect="light">
-              {{ activeSessionId ? `会话 #${activeSessionId}` : '未创建' }}
-            </ElTag>
-            <ElTag class="ui-badge" effect="light">{{ stageLabel(currentStage) }}</ElTag>
-          </div>
-        </div>
-
-        <div class="stage-rail">
-          <button
-            v-for="stage in STAGE_ORDER"
-            :key="stage"
-            :class="[
-              'stage-rail__item',
-              { 'is-active': isStageCurrent(stage), 'is-complete': isStageComplete(stage) },
-            ]"
-            type="button"
-            disabled
-          >
-            <span class="stage-rail__index">{{ STAGE_ORDER.indexOf(stage) + 1 }}</span>
-            <span class="stage-rail__label">{{ stageLabel(stage) }}</span>
-          </button>
-        </div>
-
-        <div class="conversation__toolbar conversation__toolbar--dense">
-          <ElButton
-            class="ui-button ui-button--secondary"
-            :disabled="!canAutoStart"
-            :loading="sending"
-            size="large"
-            @click="handleAutoStart"
-          >
-            AI 开始提问
-          </ElButton>
-          <ElButton
-            class="ui-button ui-button--secondary"
-            :disabled="!canAdvanceStage"
-            :loading="stageUpdating"
-            size="large"
-            @click="handleAdvanceStage"
-          >
-            {{ nextStageName ? `进入${stageLabel(nextStageName)}阶段` : '阶段已完成' }}
-          </ElButton>
-        </div>
-
-        <div class="conversation">
-          <div v-if="!activeSessionId && !sessionLoading" class="conversation__empty-state">
-            <p class="conversation__empty-copy">创建面试后开始问答。</p>
-          </div>
-
-          <template v-else>
-            <article
-              v-for="message in messages"
-              :key="`${message.id}-${message.createdAt}`"
-              :class="['message-bubble', `message-bubble--${message.role as InterviewMessageRole}`]"
-            >
-              <div class="message-bubble__head">
-                <ElTag class="ui-badge" effect="light">
-                  {{ message.role === 'system' ? '系统' : message.role === 'assistant' ? '面试官' : '我' }}
-                </ElTag>
-              </div>
-              <p class="message-bubble__content">{{ message.content || '...' }}</p>
-            </article>
-          </template>
-        </div>
-
-        <label class="field">
-          <span class="field__label">你的回答</span>
-          <ElInput
-            v-model="answer"
-            class="ui-input ui-textarea conversation-answer"
-            :disabled="!activeSessionId"
-            :rows="3"
-            placeholder="输入回答后发送"
-            resize="none"
-            type="textarea"
-          />
-        </label>
-
-        <div class="button-row panel__footer-actions">
-          <ElButton
-            class="ui-button ui-button--primary"
-            :disabled="!canSend"
-            :loading="sending"
-            size="large"
-            type="primary"
-            @click="handleSend"
-          >
-            发送回答
-          </ElButton>
-          <ElButton
-            class="ui-button ui-button--secondary"
-            :disabled="!canFinish"
-            :loading="finishing"
-            size="large"
-            @click="handleFinish"
-          >
-            生成报告
-          </ElButton>
-        </div>
-        </ElCard>
-      </div>
-
-      <div class="history-grid">
-        <ElCard class="ui-card panel panel--workspace history-panel">
-        <div class="panel__head">
-          <div>
-            <p class="panel__eyebrow">3. 历史与结果</p>
-            <h3 class="panel__title">会话清单</h3>
-            <p class="panel__lead">按进行中与已完成分组查看会话，并快速进入回放。</p>
-          </div>
-          <ElTag class="ui-badge" effect="light">{{ sessions.length }} 场会话</ElTag>
-        </div>
-
-        <div class="history-section">
-          <div class="history-section__head">
-            <p class="panel__eyebrow">进行中 / 未完成</p>
-            <span class="field__hint">{{ primarySessionList.length }} 场</span>
-          </div>
-          <div v-if="primarySessionList.length" class="session-list">
-            <article
-              v-for="item in primarySessionList"
-              :key="item.sessionId"
-              :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
-            >
-              <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
-                <div class="session-item__head">
-                  <h4 class="session-item__title">{{ displaySessionTitle(item) }}</h4>
-                </div>
-                <p class="session-item__meta">
-                  {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
-                </p>
-                <p class="session-item__summary">
-                  {{ item.llmProvider || 'deepseek' }} / {{ item.llmModel || 'default' }}
-                </p>
-              </button>
-              <div class="session-item__side">
-                <ElTag class="ui-badge ui-badge--compact" effect="light">{{ stageLabel(item.currentStage) }}</ElTag>
-                <ElButton
-                  class="ui-button ui-button--secondary ui-button--compact"
-                  size="large"
-                  @click="router.push(`/interview/replay/${item.sessionId}`)"
-                >
-                  回放
-                </ElButton>
-              </div>
-            </article>
-          </div>
-          <div v-else class="empty-state">还没有进行中的会话。</div>
-        </div>
-
-        <div class="history-section">
-          <div class="history-section__head">
-            <p class="panel__eyebrow">已完成</p>
-            <span class="field__hint">{{ finishedSessionList.length }} 场</span>
-          </div>
-          <div v-if="finishedSessionList.length" class="session-list">
-            <article
-              v-for="item in finishedSessionList"
-              :key="item.sessionId"
-              :class="['session-item', { 'is-active': item.sessionId === activeSessionId }]"
-            >
-              <button class="session-item__body" type="button" @click="loadSession(item.sessionId)">
-                <div class="session-item__head">
-                  <h4 class="session-item__title">{{ displaySessionTitle(item) }}</h4>
-                </div>
-                <p class="session-item__meta">
-                  {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
-                </p>
-                <p class="session-item__summary">{{ item.summaryReport ? '包含报告与评分' : '暂无报告摘要' }}</p>
-              </button>
-              <div class="session-item__side">
-                <ElTag class="ui-badge ui-badge--compact" effect="light">已完成</ElTag>
-                <ElButton
-                  class="ui-button ui-button--secondary ui-button--compact"
-                  size="large"
-                  @click="router.push(`/interview/replay/${item.sessionId}`)"
-                >
-                  回放
-                </ElButton>
-              </div>
-            </article>
-          </div>
-          <div v-else class="empty-state">还没有已完成的会话。</div>
-          </div>
-        </ElCard>
-
-        <ElCard class="ui-card panel panel--workspace report-panel">
-        <div class="panel__head">
-          <div>
-            <p class="panel__eyebrow">报告预览</p>
-            <h3 class="panel__title">{{ reportSource?.title || '面试报告预览' }}</h3>
-            <p class="panel__lead">查看当前或最近完成的面试报告。</p>
-          </div>
-          <div class="panel__actions">
-            <ElTag v-if="reportSource" class="ui-badge" effect="light">{{ reportSource.sourceLabel }}</ElTag>
-          </div>
-        </div>
-
-        <div v-if="renderedReport" class="markdown-surface markdown-surface--report">
-          <div class="markdown-body" v-html="renderedReport" />
-        </div>
-        <div v-else class="report-panel__empty">
-          完成面试后显示最近报告。
-        </div>
-        </ElCard>
+        </template>
       </div>
     </div>
-  </section>
+    
+    <div v-else-if="sessionLoading" class="workspace-loading">
+      加载中...
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.interview-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.workspace-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.workspace-empty__content {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+.workspace-empty__title {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+  text-align: center;
+}
+.workspace-active {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  min-height: 0;
+}
+.workspace-active__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+.workspace-report {
+  flex: 1;
+  display: flex;
+  padding: 64px 40px;
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+}
+.report-content {
+  flex: 1;
+  max-width: 800px;
+}
+.markdown-surface--paper {
+  background: #fffdf9;
+  border: 1px solid #e8e6dc;
+  border-radius: var(--radius-md);
+  padding: 48px 56px;
+  box-shadow: 0 12px 24px rgba(158, 123, 106, 0.08), 0 2px 6px rgba(158, 123, 106, 0.04);
+}
+.workspace-composer-fixed {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 40px 24px;
+  background: transparent;
+  z-index: 10;
+  pointer-events: none;
+}
+.workspace-composer-fixed > * {
+  pointer-events: auto;
+}
+.workspace-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+}
+</style>

@@ -183,81 +183,182 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="page">
-    <div class="page__hero">
-      <div class="page__hero-main">
-        <p class="eyebrow">分析</p>
-        <h2 class="page__title">数据看板</h2>
-        <p class="page__lead">查看评分、趋势和薄弱点统计。</p>
+  <section class="workspace-page">
+    <header class="workspace-header">
+      <div class="workspace-header__main">
+        <div class="workspace-header__title-area">
+          <h2 class="workspace-header__title">数据看板</h2>
+        </div>
       </div>
-    </div>
+    </header>
 
-    <template v-if="radar && radar.sessionCount > 0">
-      <div class="insight-strip insight-strip--compact">
-        <article v-for="item in scoreCards" :key="item.label" class="insight-card">
-          <p class="panel__eyebrow">{{ item.label }}</p>
-          <h3 class="insight-card__value">{{ item.value }}</h3>
-          <p class="insight-card__meta">{{ item.hint }}</p>
-        </article>
-      </div>
+    <div class="workspace-page__content scrollable">
+      <template v-if="radar && radar.sessionCount > 0">
+        <div class="insight-strip insight-strip--compact">
+          <article v-for="item in scoreCards" :key="item.label" class="insight-card">
+            <p class="panel__eyebrow">{{ item.label }}</p>
+            <h3 class="insight-card__value">{{ item.value }}</h3>
+            <p class="insight-card__meta">{{ item.hint }}</p>
+          </article>
+        </div>
 
-      <div class="page__grid page__grid--dashboard">
-        <ElCard class="ui-card panel">
-          <div class="panel__head">
-            <div>
-              <p class="panel__eyebrow">结构</p>
-              <h3 class="panel__title">能力雷达</h3>
-              <p class="panel__lead">展示最近面试在三项核心维度上的平均水平。</p>
-            </div>
-            <ElTag class="ui-badge" effect="light">{{ radar.sessionCount }} 场</ElTag>
-          </div>
-          <div ref="radarRef" class="chart-surface chart-surface--tall" />
-        </ElCard>
-
-        <ElCard class="ui-card panel">
-          <div class="panel__head">
-            <div>
-              <p class="panel__eyebrow">走势</p>
-              <h3 class="panel__title">分数趋势</h3>
-              <p class="panel__lead">按时间查看技术、表达与逻辑评分变化。</p>
-            </div>
-          </div>
-          <div ref="trendRef" class="chart-surface chart-surface--tall" />
-        </ElCard>
-      </div>
-
-      <div class="page__grid page__grid--single">
-        <ElCard class="ui-card panel">
-          <div class="panel__head">
-            <div>
-              <p class="panel__eyebrow">聚合</p>
-              <h3 class="panel__title">薄弱点列表</h3>
-              <p class="panel__lead">按出现频率汇总薄弱点。</p>
-            </div>
-            <ElTag class="ui-badge" effect="light">{{ weaknesses.length }} 类问题</ElTag>
-          </div>
-
-          <div v-if="weaknesses.length" class="weakness-list">
-            <article v-for="item in weaknesses" :key="item.category" class="weakness-item">
-              <div class="weakness-item__head">
-                <div>
-                  <h4 class="weakness-item__title">{{ item.category }}</h4>
-                  <p class="weakness-item__summary">{{ item.descriptions[0] || '待补充说明' }}</p>
-                </div>
-                <ElTag class="ui-badge" effect="light">{{ item.count }} 次</ElTag>
+        <div class="page-grid page-grid--dashboard">
+          <ElCard class="ui-card panel">
+            <div class="panel__head">
+              <div>
+                <p class="panel__eyebrow">结构</p>
+                <h3 class="panel__title">能力雷达</h3>
+                <p class="panel__lead">展示最近面试在三项核心维度上的平均水平。</p>
               </div>
-              <ul v-if="weaknessDetails(item).length" class="weakness-item__descriptions">
-                <li v-for="description in weaknessDetails(item)" :key="description">{{ description }}</li>
-              </ul>
-            </article>
-          </div>
-          <ElEmpty v-else description="还没有可聚合的薄弱点。" />
-        </ElCard>
-      </div>
-    </template>
+              <ElTag class="ui-badge" effect="light">{{ radar.sessionCount }} 场</ElTag>
+            </div>
+            <div ref="radarRef" class="chart-surface chart-surface--tall" />
+          </ElCard>
 
-    <ElCard v-else class="ui-card panel">
-      <ElEmpty description="暂无历史面试数据，完成至少一场面试后再回来查看。" />
-    </ElCard>
+          <ElCard class="ui-card panel">
+            <div class="panel__head">
+              <div>
+                <p class="panel__eyebrow">走势</p>
+                <h3 class="panel__title">分数趋势</h3>
+                <p class="panel__lead">按时间查看技术、表达与逻辑评分变化。</p>
+              </div>
+            </div>
+            <div ref="trendRef" class="chart-surface chart-surface--tall" />
+          </ElCard>
+        </div>
+
+        <div class="page-grid page-grid--single">
+          <ElCard class="ui-card panel">
+            <div class="panel__head">
+              <div>
+                <p class="panel__eyebrow">聚合</p>
+                <h3 class="panel__title">薄弱点列表</h3>
+                <p class="panel__lead">按出现频率汇总薄弱点。</p>
+              </div>
+              <ElTag class="ui-badge" effect="light">{{ weaknesses.length }} 类问题</ElTag>
+            </div>
+
+            <div v-if="weaknesses.length" class="weakness-list">
+              <article v-for="item in weaknesses" :key="item.category" class="weakness-item">
+                <div class="weakness-item__head">
+                  <div>
+                    <h4 class="weakness-item__title">{{ item.category }}</h4>
+                    <p class="weakness-item__summary">{{ item.descriptions[0] || '待补充说明' }}</p>
+                  </div>
+                  <ElTag class="ui-badge" effect="light">{{ item.count }} 次</ElTag>
+                </div>
+                <ul v-if="weaknessDetails(item).length" class="weakness-item__descriptions">
+                  <li v-for="description in weaknessDetails(item)" :key="description">{{ description }}</li>
+                </ul>
+              </article>
+            </div>
+            <ElEmpty v-else description="还没有可聚合的薄弱点。" />
+          </ElCard>
+        </div>
+      </template>
+
+      <ElCard v-else class="ui-card panel">
+        <ElEmpty description="暂无历史面试数据，完成至少一场面试后再回来查看。" />
+      </ElCard>
+    </div>
   </section>
 </template>
+
+<style scoped>
+.workspace-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  overflow: hidden;
+  height: 100vh;
+}
+.workspace-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(250, 249, 245, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 72px;
+  box-sizing: border-box;
+}
+.workspace-header__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.workspace-header__title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.workspace-header__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.workspace-page__content {
+  flex: 1;
+  padding: 24px 40px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.page-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.page-grid--dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+.weakness-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+.weakness-item {
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.weakness-item__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.weakness-item__title {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.weakness-item__summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.weakness-item__descriptions {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+.weakness-item__descriptions li {
+  margin-bottom: 4px;
+}
+</style>
