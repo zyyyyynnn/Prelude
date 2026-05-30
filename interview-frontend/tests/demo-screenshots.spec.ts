@@ -75,6 +75,8 @@ async function capture(page: Page, file: string, pageName: string, state: string
   }
   await ensureScreenshotMode(page)
   await waitForTransientUiToClear(page)
+  // Wait for web fonts to load
+  await page.evaluate(() => document.fonts.ready).catch(() => null)
   await page.screenshot({
     path: path.join(outputDir, file),
     fullPage: true,
