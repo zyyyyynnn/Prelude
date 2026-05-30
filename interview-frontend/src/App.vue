@@ -35,10 +35,4 @@ const showSidebar = computed(() => route.path !== '/login' && authStore.isLogged
   height: 100%;
   overflow: hidden;
 }
-.app-shell__content {
-  width: 100%;
-  max-width: 1260px;
-  margin: 0 auto;
-  padding: 30px 40px 44px;
-}
 </style>
