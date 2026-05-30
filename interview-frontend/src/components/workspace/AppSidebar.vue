@@ -322,7 +322,7 @@ function logout() {
 }
 .app-sidebar__title {
   font-family: var(--font-serif);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 16px;
   color: var(--color-text-primary);
 }

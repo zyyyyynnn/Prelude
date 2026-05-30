@@ -87,41 +87,43 @@ function navigateToLlm() {
       <div class="composer-actions">
         <div class="composer-actions__left">
           <div class="composer-toolbar">
-            <!-- Resume Picker -->
-            <ElDropdown @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
-              <button class="toolbar-item" type="button">
-                <span class="toolbar-item__label">简历:</span>
-                <span class="toolbar-item__value">{{ selectedResumeName }}</span>
-              </button>
-              <template #dropdown>
-                <ElDropdownMenu class="custom-dropdown-menu">
-                  <ElDropdownItem v-for="r in resumes" :key="r.id" :command="r.id">{{ r.fileName }}</ElDropdownItem>
-                  <ElDropdownItem divided command="upload" class="upload-action">{{ uploading ? '上传中...' : '+ 上传 PDF' }}</ElDropdownItem>
-                </ElDropdownMenu>
-              </template>
-            </ElDropdown>
-            
-            <!-- Hidden File Input for Resume -->
-            <input
-              type="file"
-              ref="fileInput"
-              accept="application/pdf"
-              style="display: none"
-              @change="handleFileChange"
-            />
+            <template v-if="!activeSessionId">
+              <!-- Resume Picker -->
+              <ElDropdown @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
+                <button class="toolbar-item" type="button">
+                  <span class="toolbar-item__label">简历:</span>
+                  <span class="toolbar-item__value">{{ selectedResumeName }}</span>
+                </button>
+                <template #dropdown>
+                  <ElDropdownMenu class="custom-dropdown-menu">
+                    <ElDropdownItem v-for="r in resumes" :key="r.id" :command="r.id">{{ r.fileName }}</ElDropdownItem>
+                    <ElDropdownItem divided command="upload" class="upload-action">{{ uploading ? '上传中...' : '+ 上传 PDF' }}</ElDropdownItem>
+                  </ElDropdownMenu>
+                </template>
+              </ElDropdown>
+              
+              <!-- Hidden File Input for Resume -->
+              <input
+                type="file"
+                ref="fileInput"
+                accept="application/pdf"
+                style="display: none"
+                @change="handleFileChange"
+              />
 
-            <!-- Position Picker -->
-            <ElDropdown @command="(v: number) => emit('update:selectedPositionId', v)" trigger="click">
-              <button class="toolbar-item" type="button">
-                <span class="toolbar-item__label">岗位:</span>
-                <span class="toolbar-item__value">{{ selectedPositionName }}</span>
-              </button>
-              <template #dropdown>
-                <ElDropdownMenu class="custom-dropdown-menu">
-                  <ElDropdownItem v-for="p in positions" :key="p.id" :command="p.id">{{ p.name }}</ElDropdownItem>
-                </ElDropdownMenu>
-              </template>
-            </ElDropdown>
+              <!-- Position Picker -->
+              <ElDropdown @command="(v: number) => emit('update:selectedPositionId', v)" trigger="click">
+                <button class="toolbar-item" type="button">
+                  <span class="toolbar-item__label">岗位:</span>
+                  <span class="toolbar-item__value">{{ selectedPositionName }}</span>
+                </button>
+                <template #dropdown>
+                  <ElDropdownMenu class="custom-dropdown-menu">
+                    <ElDropdownItem v-for="p in positions" :key="p.id" :command="p.id">{{ p.name }}</ElDropdownItem>
+                  </ElDropdownMenu>
+                </template>
+              </ElDropdown>
+            </template>
 
             <!-- Model Info -->
             <button class="toolbar-item" @click="navigateToLlm" title="前往 LLM 配置" type="button">
