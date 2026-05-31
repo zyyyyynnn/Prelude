@@ -7,13 +7,12 @@ export async function fetchResumes() {
   return unwrapResult(response.data)
 }
 
-export async function uploadResume(file: File) {
+export async function uploadResume(file: File, signal?: AbortSignal) {
   const formData = new FormData()
   formData.append('file', file)
   const response = await http.post<ApiResult<ResumeUploadResponse>>('/resume/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
+    signal,
   })
   return unwrapResult(response.data)
 }

@@ -50,7 +50,9 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         if (request.apiKey() != null) {
             encryptedApiKey = isDemoEnabled()
                 ? demoModeService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
-                : request.apiKey().isBlank() ? null : aesGcmEncryptor.encrypt(request.apiKey());
+                : ("__CLEAR__".equals(request.apiKey()) || request.apiKey().isBlank())
+                    ? null
+                    : aesGcmEncryptor.encrypt(request.apiKey());
         }
 
         userMapper.update(

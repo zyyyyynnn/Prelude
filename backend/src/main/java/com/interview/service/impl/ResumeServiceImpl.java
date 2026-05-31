@@ -33,6 +33,8 @@ public class ResumeServiceImpl implements ResumeService {
 
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final int MAX_LLM_PARSE_TEXT_LENGTH = 12000;
+    private static final int MAX_PDF_PAGES = 50;
+    private static final int MAX_RAW_TEXT_STORE_LENGTH = 100_000;
 
     private final ResumeMapper resumeMapper;
     private final InterviewSessionMapper interviewSessionMapper;
@@ -53,7 +55,7 @@ public class ResumeServiceImpl implements ResumeService {
         Resume resume = new Resume();
         resume.setUserId(currentUserId());
         resume.setFileName(file.getOriginalFilename());
-        resume.setRawText(rawText);
+        resume.setRawText(safeTruncate(rawText, MAX_RAW_TEXT_STORE_LENGTH));
         try {
             resume.setParsedSkills(objectMapper.writeValueAsString(parseResult.getSkills()));
             resume.setParsedProjects(objectMapper.writeValueAsString(parseResult.getProjects()));
@@ -114,10 +116,14 @@ public class ResumeServiceImpl implements ResumeService {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw BusinessException.badRequest("文件大小不能超过 10MB");
         }
+        validatePdfMagicBytes(file);
     }
 
     private String extractPdfText(MultipartFile file) {
         try (PDDocument document = Loader.loadPDF(file.getBytes())) {
+            if (document.getNumberOfPages() > MAX_PDF_PAGES) {
+                throw BusinessException.badRequest("PDF 页数超过上限（" + MAX_PDF_PAGES + " 页），请精简后重试");
+            }
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             String text = stripper.getText(document);
@@ -148,10 +154,22 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     private String limitText(String text, int maxLength) {
+        String truncated = safeTruncate(text, maxLength);
+        if (truncated != null && truncated.length() < (text == null ? 0 : text.length())) {
+            return truncated + "\n……（简历文本较长，已截断用于结构化解析）";
+        }
+        return truncated;
+    }
+
+    private static String safeTruncate(String text, int maxLength) {
         if (text == null || text.length() <= maxLength) {
             return text;
         }
-        return text.substring(0, maxLength) + "\n……（简历文本较长，已截断用于结构化解析）";
+        if (Character.isHighSurrogate(text.charAt(maxLength - 1)) &&
+            Character.isLowSurrogate(text.charAt(maxLength))) {
+            maxLength--;
+        }
+        return text.substring(0, maxLength);
     }
 
     private String stripJsonFence(String content) {
@@ -165,6 +183,22 @@ public class ResumeServiceImpl implements ResumeService {
             trimmed = trimmed.substring(0, trimmed.length() - 3);
         }
         return trimmed.trim();
+    }
+
+    private void validatePdfMagicBytes(MultipartFile file) {
+        try {
+            byte[] header = new byte[4];
+            try (var is = file.getInputStream()) {
+                if (is.read(header) < 4) {
+                    throw BusinessException.badRequest("文件内容过短，不是有效的 PDF");
+                }
+            }
+            if (header[0] != 0x25 || header[1] != 0x50 || header[2] != 0x44 || header[3] != 0x46) {
+                throw BusinessException.badRequest("文件头不是 PDF 格式，请检查上传文件");
+            }
+        } catch (IOException e) {
+            throw BusinessException.badRequest("文件读取失败");
+        }
     }
 
     private Long currentUserId() {
