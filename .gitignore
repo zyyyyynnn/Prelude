@@ -22,3 +22,8 @@ output/*.txt
 # Local review bundles and one-off backups
 thesis_literature_enhancement_package.zip
 thesis-assets/*.before-literature.*
+
+# Updated build outputs for Prelude
+backend/target/
+frontend/dist/
+frontend/node_modules/

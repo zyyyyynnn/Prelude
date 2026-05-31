@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 Set-StrictMode -Version Latest
@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 
 $scriptDir = Split-Path -Parent $PSCommandPath
 $rootDir = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..\..'))
-$frontendDir = Join-Path $rootDir 'interview-frontend'
+$frontendDir = Join-Path $rootDir 'frontend'
 $outputDir = Join-Path $rootDir 'output\demo'
 $screenshotsDir = Join-Path $outputDir 'screenshots'
 $artifactsDir = Join-Path $outputDir '.artifacts'
