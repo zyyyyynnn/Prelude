@@ -61,6 +61,8 @@
 - 次操作与主操作同组排列，不另起孤立按钮区。
 - 历史会话中的状态 Badge 与回放按钮保持同一侧栏节奏，尺寸一致。
 - Badge 使用浅沙底、暖灰文字、小圆角胶囊，不使用高饱和状态色。
+- 所有按钮禁止使用 Element Plus 的 `size` 属性（`large` / `small`），统一使用 `ui-button--compact` class 控制尺寸。
+- 同一页面的主操作按钮与次操作按钮必须使用相同的 `ui-button--compact` 尺寸。
 
 ## 7. 表单与输入
 
@@ -81,10 +83,39 @@
 - 图表色彩读取现有暖灰/品牌 token，不新增高饱和彩色主题。
 - 无数据时显示空态，不渲染空图。
 
-## 10. 禁止项
+## 10. 侧边栏
+
+- 所有组件高度统一为 32px（`app-sidebar__btn`、`session-item-btn`、`settings-dropdown__item`）。
+- 组件间距统一为 12px（margin / gap / padding），例外：会话操作按钮（置顶/删除）内部间距保持 4px。
+- 会话列表使用 `flex + gap` 控制间距，按钮使用 `min-height / max-height / line-height: 1` 锁定高度，防止 flex 的 `min-height: auto` 撑高。
+- LLM 配置图标使用终端样式 `>_`（polyline 4 17 / 10 11 / 4 5 + 底部光标线）。
+
+## 11. 下拉弹层
+
+- `ElDropdown` 和 `ElSelect` 必须通过 `popper-class` 指定自定义弹层 class，禁止使用 Element Plus 默认弹层样式。
+- `ElDropdown` 使用 `popper-class="custom-dropdown-popper"`，配套 CSS 定义在 `index.css`。
+- `ElSelect` 使用 `popper-class="custom-select-popper"`，配套 CSS 定义在 `index.css`。
+- 弹层样式：`border: 1px solid var(--color-border-warm)`，`border-radius: var(--radius-md)`，`background: var(--color-surface)`，`padding: 6px`。
+- 菜单项样式：`border-radius: var(--radius-sm)`，`font-size: 14px`，hover 背景 `var(--color-sand)`。
+
+## 12. 通知
+
+- 所有页面级通知（成功、警告、错误）统一使用 `usePageNotice` composable 的 `showNotice()` 方法。
+- 禁止直接调用 `ElMessage.success()` / `ElMessage.warning()` / `ElMessage.error()`，这些会使用 Element Plus 默认样式而非项目统一的 `page-notice` 样式。
+
+## 13. 可访问性
+
+- `--color-text-tertiary` 对比度必须满足 WCAG AA 4.5:1（当前值 `#6b6a65`，在 `#faf9f5` 上约 4.6:1）。
+- 所有交互元素（按钮、列表项、下拉项）必须定义 `focus-visible` 样式：`outline: 2px solid var(--color-focus); outline-offset: -2px`。
+
+## 14. 禁止项
 
 - 禁止新增页面级跨路由按钮。
 - 禁止重复解释布局设计意图的提示词。
 - 禁止同模块组件出现不同按钮尺寸、Badge 尺寸或卡片边距。
 - 禁止冷色 SaaS 风、深色终端风和高饱和强调色。
 - 禁止为一次性页面效果增加新设计体系。
+- 禁止使用 Element Plus 的 `size` 属性控制按钮/输入框尺寸。
+- 禁止 `ElDropdown` / `ElSelect` 不加 `popper-class` 使用默认弹层样式。
+- 禁止直接调用 `ElMessage`，统一走 `usePageNotice`。
+- 禁止交互元素缺少 `focus-visible` 样式。
