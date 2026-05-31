@@ -2,8 +2,8 @@
 
 ## 断点范围
 
-- 新建后端工程 `interview-backend`
-- 新建前端工程 `interview-frontend`
+- 新建后端工程 `backend`
+- 新建前端工程 `frontend`
 - 补齐根目录 `.gitignore`
 - 补齐根目录 `README.md`
 - 预置后端公共配置、本地配置、数据库初始化脚本与岗位模板数据
@@ -54,7 +54,7 @@
 - 后端打包：通过
 - 前端构建：通过
 - 后端启动验证：通过
-  - 使用 `java -jar target/interview-backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=local`
+  - 使用 `java -jar target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=local`
   - 启动后访问 `http://127.0.0.1:8080/api/health`，返回 `{"status":"ok"}`
 - 前端启动验证：通过
   - 使用 `npm run dev -- --host 127.0.0.1 --port 5173`

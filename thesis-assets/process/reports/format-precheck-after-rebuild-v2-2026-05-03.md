@@ -13,7 +13,7 @@
 
 ## 渲染 QA
 
-- 使用 Documents artifact-tool 渲染到本地临时目录：`C:\Users\ZYN\AppData\Local\Temp\graduation-project-docx-render-v2-current`。
+- 使用 Documents artifact-tool 渲染到本地临时目录：`C:\Users\ZYN\AppData\Local\Temp\Prelude-docx-render-v2-current`。
 - 渲染页数：38 页。
 - 抽查页面：第 1 页、第 20 页、第 38 页未见明显页面级损坏。
 - 全页 PNG 非空检查：未发现疑似空白页。

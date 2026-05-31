@@ -4,8 +4,8 @@
 
 来源文件：
 
-- `interview-backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
-- `interview-backend/src/main/java/com/interview/llm/AbstractOpenAiCompatibleProvider.java`
+- `backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
+- `backend/src/main/java/com/interview/llm/AbstractOpenAiCompatibleProvider.java`
 
 关键实现点：
 
@@ -32,7 +32,7 @@ AbstractOpenAiCompatibleProvider.stream(...)
 
 来源文件：
 
-- `interview-backend/src/main/java/com/interview/service/impl/ResumeServiceImpl.java`
+- `backend/src/main/java/com/interview/service/impl/ResumeServiceImpl.java`
 
 关键实现点：
 
@@ -58,7 +58,7 @@ ResumeServiceImpl.parseByLlm(...)
 
 来源文件：
 
-- `interview-backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
+- `backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
 
 关键实现点：
 

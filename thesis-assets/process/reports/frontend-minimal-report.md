@@ -8,11 +8,11 @@
 
 ## 保留内容
 
-- `interview-frontend/package.json`：保留前端脚本与最小运行依赖。
-- `interview-frontend/src/main.ts`：保留 Vue 应用挂载与 Element Plus 注册。
-- `interview-frontend/src/App.vue`：保留一个空壳首页，用于确认框架可运行。
-- `interview-frontend/src/styles/index.css`：保留最小全局样式。
-- `interview-frontend/index.html`、`vite.config.ts`、`tsconfig.json`、`src/env.d.ts`、`public/favicon.svg`：保留基础工程配置。
+- `frontend/package.json`：保留前端脚本与最小运行依赖。
+- `frontend/src/main.ts`：保留 Vue 应用挂载与 Element Plus 注册。
+- `frontend/src/App.vue`：保留一个空壳首页，用于确认框架可运行。
+- `frontend/src/styles/index.css`：保留最小全局样式。
+- `frontend/index.html`、`vite.config.ts`、`tsconfig.json`、`src/env.d.ts`、`public/favicon.svg`：保留基础工程配置。
 
 ## 删除内容
 
@@ -23,14 +23,14 @@
 
 ## 现阶段项目状态
 
-- 后端 `interview-backend` 代码仍保留原 Spring Boot 主链路实现。
+- 后端 `backend` 代码仍保留原 Spring Boot 主链路实现。
 - 前端已不再调用后端接口，也不再包含登录、注册、简历、面试或报告业务 UI。
 - 根目录已初始化为 git 仓库，并已生成本地首个提交。
 - GitHub CLI 已安装，但当前环境未登录 GitHub。
 
 ## 验证
 
-已在 `interview-frontend` 执行：
+已在 `frontend` 执行：
 
 ```powershell
 npm run build
@@ -46,4 +46,4 @@ npm run build
 - `gh auth status` 返回未登录。
 - 尚未创建 GitHub 远端仓库。
 
-上传前需要完成 GitHub 登录。默认可创建私有仓库 `graduation-project` 并推送 `main` 分支。
+上传前需要完成 GitHub 登录。默认可创建私有仓库 `Prelude` 并推送 `main` 分支。

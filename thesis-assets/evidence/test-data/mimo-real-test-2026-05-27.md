@@ -43,4 +43,4 @@
 
 在全链路测试过程中，我们排查并修复了原系统的**阶段锁死缺陷**：
 - **缺陷表现**：原系统要求“必须回答当前阶段的问题后才能进入下一阶段”，其检测逻辑是检查最后一条消息是否为 `assistant` 角色。然而在真实全链路对话中，用户通过 `/chat` 发送回答（`user` 消息）后，后端线程会当场通过 SSE 返回面试官的下一个追问并存入数据库（`assistant` 消息）。这导致每次请求结束后，最后一项消息永远是 `assistant`，用户被永久判定为“有未答复的追问”而无法通过 `/stage` 进行阶段推进。
-- **修复方案**：重构了前线 [InterviewView.vue](file:///E:/graduation-project/interview-frontend/src/views/InterviewView.vue) 和后端 [InterviewServiceImpl.java](file:///E:/graduation-project/interview-backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java) 的 `hasPendingAssistantPrompt` 判定规则。修改后，逻辑仅在当前阶段（最近一条 `system` 划分点之后）存在 `assistant` 发问、但**没有任何 `user` 回复消息**时，才判定为存在挂起提问。一旦候选人在当前阶段做过至少一次回答，即使后续产生了追问，也允许其推进至下一阶段或直接生成报告。该修复使得项目在人机交互与状态流转上更为科学。
+- **修复方案**：重构了前端 [InterviewView.vue](file:///E:/Prelude/frontend/src/views/InterviewView.vue) 和后端 [InterviewServiceImpl.java](file:///E:/Prelude/backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java) 的 `hasPendingAssistantPrompt` 判定规则。修改后，逻辑仅在当前阶段（最近一条 `system` 划分点之后）存在 `assistant` 发问、但**没有任何 `user` 回复消息**时，才判定为存在挂起提问。一旦候选人在当前阶段做过至少一次回答，即使后续产生了追问，也允许其推进至下一阶段或直接生成报告。该修复使得项目在人机交互与状态流转上更为科学。
