@@ -78,15 +78,15 @@ public class ResumeServiceImpl implements ResumeService {
         List<Long> resumeIds = resumes.stream().map(Resume::getId).toList();
         List<Map<String, Object>> mapList = interviewSessionMapper.selectMaps(
             new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<InterviewSession>()
-                .select("resume_id", "COUNT(*) as cnt")
+                .select("resume_id AS resumeId", "COUNT(*) AS cnt")
                 .in("resume_id", resumeIds)
                 .groupBy("resume_id")
         );
         Map<Long, Long> countMap = new java.util.HashMap<>();
         if (mapList != null) {
             for (Map<String, Object> row : mapList) {
-                Object rIdObj = row.getOrDefault("resumeId", row.getOrDefault("resume_id", row.get("RESUME_ID")));
-                Object cntObj = row.getOrDefault("cnt", row.get("CNT"));
+                Object rIdObj = row.get("resumeId");
+                Object cntObj = row.get("cnt");
                 if (rIdObj instanceof Number && cntObj instanceof Number) {
                     countMap.put(((Number) rIdObj).longValue(), ((Number) cntObj).longValue());
                 }
