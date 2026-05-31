@@ -26,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -77,15 +76,22 @@ public class ResumeServiceImpl implements ResumeService {
             return List.of();
         }
         List<Long> resumeIds = resumes.stream().map(Resume::getId).toList();
-        Map<Long, Long> countMap = interviewSessionMapper.selectMaps(
-                new LambdaQueryWrapper<InterviewSession>()
-                    .in(InterviewSession::getResumeId, resumeIds)
-                    .groupBy(InterviewSession::getResumeId)
-                    .select(InterviewSession::getResumeId, "COUNT(*) AS cnt"))
-            .stream()
-            .collect(Collectors.toMap(
-                row -> ((Number) row.get("resume_id")).longValue(),
-                row -> ((Number) row.get("cnt")).longValue()));
+        List<Map<String, Object>> mapList = interviewSessionMapper.selectMaps(
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<InterviewSession>()
+                .select("resume_id", "COUNT(*) as cnt")
+                .in("resume_id", resumeIds)
+                .groupBy("resume_id")
+        );
+        Map<Long, Long> countMap = new java.util.HashMap<>();
+        if (mapList != null) {
+            for (Map<String, Object> row : mapList) {
+                Object rIdObj = row.getOrDefault("resumeId", row.getOrDefault("resume_id", row.get("RESUME_ID")));
+                Object cntObj = row.getOrDefault("cnt", row.get("CNT"));
+                if (rIdObj instanceof Number && cntObj instanceof Number) {
+                    countMap.put(((Number) rIdObj).longValue(), ((Number) cntObj).longValue());
+                }
+            }
+        }
         return resumes.stream()
             .map(resume -> {
                 long sessionCount = countMap.getOrDefault(resume.getId(), 0L);
