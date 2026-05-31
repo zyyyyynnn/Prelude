@@ -108,7 +108,7 @@ export type LlmProviderOption = {
 export type LlmConfigPayload = {
   providerKey: string
   model: string
-  apiKey: string
+  apiKey?: string
 }
 
 export type LlmConfigResponse = {

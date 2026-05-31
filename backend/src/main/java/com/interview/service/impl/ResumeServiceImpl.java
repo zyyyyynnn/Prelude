@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,13 +70,25 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     public List<ResumeItemResponse> listCurrentUserResumes() {
-        return resumeMapper.selectList(new LambdaQueryWrapper<Resume>()
-                .eq(Resume::getUserId, currentUserId())
-                .orderByDesc(Resume::getCreatedAt))
+        List<Resume> resumes = resumeMapper.selectList(new LambdaQueryWrapper<Resume>()
+            .eq(Resume::getUserId, currentUserId())
+            .orderByDesc(Resume::getCreatedAt));
+        if (resumes.isEmpty()) {
+            return List.of();
+        }
+        List<Long> resumeIds = resumes.stream().map(Resume::getId).toList();
+        Map<Long, Long> countMap = interviewSessionMapper.selectMaps(
+                new LambdaQueryWrapper<InterviewSession>()
+                    .in(InterviewSession::getResumeId, resumeIds)
+                    .groupBy(InterviewSession::getResumeId)
+                    .select(InterviewSession::getResumeId, "COUNT(*) AS cnt"))
             .stream()
+            .collect(Collectors.toMap(
+                row -> ((Number) row.get("resume_id")).longValue(),
+                row -> ((Number) row.get("cnt")).longValue()));
+        return resumes.stream()
             .map(resume -> {
-                long sessionCount = interviewSessionMapper.selectCount(new LambdaQueryWrapper<InterviewSession>()
-                    .eq(InterviewSession::getResumeId, resume.getId()));
+                long sessionCount = countMap.getOrDefault(resume.getId(), 0L);
                 return new ResumeItemResponse(
                     resume.getId(),
                     resume.getFileName(),

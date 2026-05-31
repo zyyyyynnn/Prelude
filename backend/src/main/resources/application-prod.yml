@@ -1,0 +1,14 @@
+spring:
+  sql:
+    init:
+      mode: never
+
+app:
+  cors:
+    allowed-origins:
+      - ${PROD_ORIGIN:https://your-domain.com}
+
+logging:
+  level:
+    root: warn
+    com.interview: info
