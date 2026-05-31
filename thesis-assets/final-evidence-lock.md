@@ -5,6 +5,7 @@
 | 素材类型 | 素材名称 | 采集日期 | 对应代码版本标识 | 是否已同步到论文 | 是否已同步到 PPT | 是否已同步到答辩讲解 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 截图 | `docs/images/login.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 登录页展示图；不等同于学校终稿正文已选用 |
+| 截图 | `docs/images/interview-empty.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 主工作台（未开始面试的空状态）展示图；不等同于学校终稿正文已选用 |
 | 截图 | `docs/images/interview-workbench.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 主工作台（报告预览）展示图；已覆盖多岗位 Demo 会话；不等同于学校终稿正文已选用 |
 | 截图 | `docs/images/analytics.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 数据看板展示图；不等同于学校终稿正文已选用 |
 | 图表 | 图3.1 系统核心用例图 | 2026-04-28 | `thesis-assets/evidence/diagrams/fig-3.1-core-use-case.png` | 是 | 否 | 否 | 由 `fig-3.1-core-use-case.mmd` 渲染生成 |
@@ -12,6 +13,7 @@
 | 图表 | 图3.3 系统整体架构图 | 2026-04-28 | `thesis-assets/evidence/diagrams/fig-3.3-system-architecture.png` | 是 | 否 | 否 | 由 `fig-3.3-system-architecture.mmd` 渲染生成 |
 | 测试数据 | `thesis-assets/evidence/test-data/test-evidence-2026-04-24.md` | 2026-04-24 | 本机验证结果 | 是 | 否 | 否 | 已含环境、后端测试 and 前端构建 |
 | 测试数据 | `thesis-assets/evidence/test-data/demo-business-test-2026-04-25.md` | 2026-04-25 | Demo Twin 本机业务测试 | 是 | 否 | 否 | `TC-01` 到 `TC-09` 通过；含 SSE TTFB 与 PDF 接口耗时；不代表真实公网 LLM 性能 |
+| 测试数据 | `thesis-assets/evidence/test-data/demo-business-test-2026-04-25.json` | 2026-04-25 | Demo Twin 本机业务测试 | 否 | 否 | 否 | 结构化测试指标与数据记录；与 `.md` 同源 |
 | 测试数据 | `thesis-assets/evidence/test-data/mimo-real-test-2026-05-27.md` | 2026-05-27 | MIMO 真实公网全链路测试 | 否 | 否 | 否 | `TC-01` 到 `TC-11` 通过；含真实公网 MIMO API 响应性能数据与逻辑缺陷修复验证 |
 | 测试数据 | `thesis-assets/evidence/test-data/mimo-real-test-2026-05-27.json` | 2026-05-27 | MIMO 真实公网全链路测试 | 否 | 否 | 否 | 全链路结构化测试指标与数据记录 |
 | 实现证据 | `thesis-assets/evidence/code-snippets/implementation-evidence-2026-04-24.md` | 2026-04-24 | 当前代码结构 | 是 | 否 | 否 | 已同步到第四章实现证据来源 |

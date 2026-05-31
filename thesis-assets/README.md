@@ -41,6 +41,7 @@
 | Bug 证据 | `evidence/bug-package-2026-04-24.md`、`evidence/bug-evidence/` |
 | 文献工作库 | `literature/references-draft.bib` |
 | 文献质量与映射 | `literature/literature-quality-review.md`、`literature/literature-evidence-map.md` |
+| 文献补充材料 | `literature/citation-placement-plan.md`、`literature/official-network-references-draft.md`、`literature/official-source-register.md` |
 | 学校要求归档 | `archive/legacy-reports/school-requirements-package.md`、`archive/legacy-reports/贵州大学毕业论文（设计）管理办法.pdf` |
 | 答辩材料 | `defense/defense-package-2026-04-25.md`、`defense/defense-slide-map.md`、`defense/defense-script-5-8min.md` |
 
@@ -66,4 +67,4 @@
 
 - 当前阶段：Word 格式终审与答辩 PPT 制作。
 - 当前卡点：封面和诚信责任书中的指导教师、签名、日期等人工字段仍需确认；Word 目录域更新、页码复核、页眉页脚复核、图题表题格式复核和参考文献格式复核仍需终审。
-- 如导师要求真实性能对比，再单独采集真实公网 LLM 性能数据。
+- 真实公网 LLM 性能测试已于 2026-05-27 完成（MIMO mimo-v2.5-pro，TC-01 至 TC-11 全部通过），见 `evidence/test-data/mimo-real-test-2026-05-27.md`。
