@@ -69,9 +69,9 @@ public class InterviewServiceImpl implements InterviewService {
             .expireAfterAccess(java.time.Duration.ofMinutes(30))
             .maximumSize(10_000)
             .build();
-    private static final Pattern TECHNICAL_SCORE_PATTERN = Pattern.compile("技术能力\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*/\\s*10");
-    private static final Pattern EXPRESSION_SCORE_PATTERN = Pattern.compile("表达清晰度\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*/\\s*10");
-    private static final Pattern LOGIC_SCORE_PATTERN = Pattern.compile("逻辑思维\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*/\\s*10");
+    private static final Pattern TECHNICAL_SCORE_PATTERN  = Pattern.compile("\\*{0,2}技术能力\\*{0,2}\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*(?:分)?\\s*/\\s*10");
+    private static final Pattern EXPRESSION_SCORE_PATTERN = Pattern.compile("\\*{0,2}表达清晰度\\*{0,2}\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*(?:分)?\\s*/\\s*10");
+    private static final Pattern LOGIC_SCORE_PATTERN      = Pattern.compile("\\*{0,2}逻辑思维\\*{0,2}\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*(?:分)?\\s*/\\s*10");
     private static final Map<String, String> STAGE_PROMPTS = Map.of(
         STAGE_WARMUP, "当前处于破冰阶段，请从候选人的简历经历入手，提出一条简洁的开场问题。注意：如果你认为破冰已充分，准备进入技术问答，请在回复的最末尾严格附上 [STAGE_COMPLETE] 标识。",
         "technical", "面试已进入技术问答阶段，请围绕岗位核心技术栈、项目实现细节进行追问。注意：如果技术问答已充分，准备进入深挖阶段，请在末尾严格附上 [STAGE_COMPLETE] 标识。",
@@ -521,7 +521,8 @@ public class InterviewServiceImpl implements InterviewService {
     private Integer extractScore(Pattern pattern, String report, String label) {
         Matcher matcher = pattern.matcher(report);
         if (!matcher.find()) {
-            throw BusinessException.badRequest(label + "评分提取失败");
+            log.warn("Score pattern not matched for label '{}', will store null", label);
+            return null;
         }
         double score = Double.parseDouble(matcher.group(1));
         score = Math.max(0, Math.min(10, score));
@@ -697,7 +698,17 @@ public class InterviewServiceImpl implements InterviewService {
         if (trimmed.endsWith("```")) {
             trimmed = trimmed.substring(0, trimmed.length() - 3);
         }
-        return trimmed.trim();
+        trimmed = trimmed.trim();
+
+        // 兜底：LLM 在 JSON 前输出推理文字时，提取第一个完整数组
+        if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
+            int start = trimmed.indexOf('[');
+            int end   = trimmed.lastIndexOf(']');
+            if (start >= 0 && end > start) {
+                return trimmed.substring(start, end + 1);
+            }
+        }
+        return trimmed;
     }
 
     private void sendDelta(SseEmitter emitter, String delta) {

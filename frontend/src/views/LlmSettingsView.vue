@@ -82,7 +82,7 @@ async function saveSettings() {
     const result = await saveUserLlmConfig({
       providerKey: selectedProviderKey.value,
       model: selectedModel.value,
-      apiKey: apiKeyInput.value,
+      apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
     })
 
     selectedProviderKey.value = result.providerKey || selectedProviderKey.value
@@ -96,6 +96,24 @@ async function saveSettings() {
     }
     apiKeyInput.value = ''
     showNotice('LLM 配置已保存', 'success')
+  } catch (error) {
+    showNotice(getErrorMessage(error), 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function clearApiKey() {
+  saving.value = true
+  try {
+    const result = await saveUserLlmConfig({
+      providerKey: selectedProviderKey.value,
+      model: selectedModel.value,
+      apiKey: '__CLEAR__',
+    })
+    apiKeyMasked.value = result.apiKeyMasked || ''
+    apiKeyInput.value = ''
+    showNotice('API Key 已清除', 'success')
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
   } finally {
@@ -211,6 +229,13 @@ onMounted(() => {
                 @click="saveSettings"
               >
                 保存设置
+              </ElButton>
+              <ElButton
+                class="ui-button ui-button--danger ui-button--compact"
+                :disabled="saving || loading || !apiKeyMasked"
+                @click="clearApiKey"
+              >
+                清除密钥
               </ElButton>
               <ElButton
                 class="ui-button ui-button--secondary ui-button--compact"

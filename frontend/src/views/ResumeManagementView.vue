@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { ElButton, ElCard, ElEmpty, ElMessageBox, ElTag } from 'element-plus'
 import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
+import axios from 'axios'
 import type { ResumeItem } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
 
@@ -11,6 +12,7 @@ const loading = ref(false)
 const uploading = ref(false)
 const uploadInput = ref<HTMLInputElement | null>(null)
 const items = ref<ResumeItem[]>([])
+const uploadAbortController = ref<AbortController | null>(null)
 
 const inUseCount = computed(() => items.value.filter((item) => item.inUse).length)
 
@@ -39,19 +41,30 @@ async function handleUpload(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  if (!file) {
-    return
-  }
+  if (!file) return
+
+  uploadAbortController.value?.abort()
+  const controller = new AbortController()
+  uploadAbortController.value = controller
 
   uploading.value = true
   try {
-    await uploadResume(file)
+    await uploadResume(file, controller.signal)
     await loadResumes()
     showNotice('简历已上传', 'success')
   } catch (error) {
+    if (
+      (error instanceof DOMException && error.name === 'AbortError') ||
+      axios.isCancel(error)
+    ) {
+      return // 静默处理主动取消的请求
+    }
     showNotice(getErrorMessage(error), 'error')
   } finally {
     uploading.value = false
+    if (uploadAbortController.value === controller) {
+      uploadAbortController.value = null
+    }
   }
 }
 
@@ -79,6 +92,10 @@ async function removeResume(item: ResumeItem) {
 
 onMounted(() => {
   void loadResumes()
+})
+
+onBeforeUnmount(() => {
+  uploadAbortController.value?.abort()
 })
 </script>
 

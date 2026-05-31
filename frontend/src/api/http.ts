@@ -31,6 +31,8 @@ export function bindHttpInterceptors(router: Router) {
 
   interceptorsBound = true
 
+  let isRedirectingToLogin = false
+
   http.interceptors.request.use((config) => {
     const authStore = useAuthStore()
 
@@ -55,13 +57,22 @@ export function bindHttpInterceptors(router: Router) {
     },
     async (error: AxiosError<{ code?: number; message?: string }>) => {
       if (error.response?.status === 401) {
-        const authStore = useAuthStore()
-        authStore.clearSession()
-        if (router.currentRoute.value.path !== '/login') {
-          await router.replace({
-            path: '/login',
-            query: { reason: 'expired' },
-          })
+        if (!isRedirectingToLogin) {
+          isRedirectingToLogin = true
+          const authStore = useAuthStore()
+          authStore.clearSession()
+
+          if (router.currentRoute.value.path !== '/login') {
+            try {
+              await router.replace({
+                path: '/login',
+                query: { reason: 'expired' },
+              })
+            } catch {
+              // NavigationDuplicated or guard rejection — safe to ignore
+            }
+          }
+          isRedirectingToLogin = false
         }
       }
 
