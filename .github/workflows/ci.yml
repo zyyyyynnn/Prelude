@@ -26,17 +26,17 @@ jobs:
           cache-dependency-path: interview-frontend/package-lock.json
 
       - name: Build backend
-        working-directory: interview-backend
+        working-directory: backend
         run: mvn -q -DskipTests compile
 
       - name: Check backend tests
-        working-directory: interview-backend
+        working-directory: backend
         run: mvn -q test
 
       - name: Install frontend dependencies
-        working-directory: interview-frontend
+        working-directory: frontend
         run: npm ci
 
       - name: Build frontend
-        working-directory: interview-frontend
+        working-directory: frontend
         run: npm run build
