@@ -64,12 +64,11 @@ flowchart LR
 ## 目录结构
 
 ```text
-E:\graduation-project
+E:\Prelude
 ├── README.md
-├── DESIGN-SPEC.md
 ├── docs                       # 公开文档、接口说明与 README 展示截图
-├── backend          # Spring Boot 后端
-├── frontend         # Vue 前端
+├── backend                    # Spring Boot 后端
+├── frontend                   # Vue 前端
 ├── scripts                    # 启动、重置和截图脚本
 │   ├── demo
 │   └── real

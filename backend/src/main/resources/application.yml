@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: interview-backend
+    name: backend
   config:
     import: optional:classpath:application-local.yml
   servlet:
