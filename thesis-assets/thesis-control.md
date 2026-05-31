@@ -19,7 +19,7 @@
 ## 资料状态
 
 - 学校要求包：已归档至 `archive/legacy-reports/`；封面与诚信责任书已并入主稿，仍需终稿前人工核查字段与签名。
-- 文献包：已完成文献增强与引用顺序重排，见 `literature/references-draft.bib`、`literature/literature-quality-review.md`、`literature/literature-evidence-map.md`。
+- 文献包：已完成文献增强与引用顺序重排，见 `literature/references-draft.bib`、`literature/quality-review.md`、`literature/evidence-map.md`。
 - 素材包：基本齐备，已包含 README 展示截图、第三章图表源文件与 PNG、图表登记、测试环境记录、Demo 业务测试结果和核心代码片段归档。
 - Bug 包：基本齐备，已从真实候选 Bug 中选定主讲 Bug，并补充日志证据文件。
 - 答辩包：基本齐备，已有演示路线、亮点、难点、追问口径、PPT 页级映射表和 5-8 分钟正式讲稿；PPT 模板当前未入库，正式 PPT 尚未生成和排版。
@@ -31,13 +31,13 @@
 | 原始主稿 / 格式母版 | `毕业论文正式版（草稿）.docx` | 保留不覆盖；封面和诚信责任书已并入，签名、日期、指导教师和目录页码仍需人工终审 |
 | 当前 Word 工作稿 | `current/毕业论文正式版（润色回填）.docx` | 已完成 Markdown 润色基准稿真实回填；后续格式终审优先检查 |
 | Markdown 润色基准稿 | `current/thesis-polished.md` | 当前内容定版后的 Markdown 润色基准稿 |
-| 文献质量 | `literature/literature-quality-review.md` | 已完成文献质量筛选记录 |
-| 文献映射 | `literature/literature-evidence-map.md` | 已按当前正文引用顺序更新文献与章节落位映射 |
+| 文献质量 | `literature/quality-review.md` | 已完成文献质量筛选记录 |
+| 文献映射 | `literature/evidence-map.md` | 已按当前正文引用顺序更新文献与章节落位映射 |
 | 参考文献库 | `literature/references-draft.bib` | 已按正文首次引用顺序前置排序；字段不完整文献不强行补造 |
 | 图表登记 | `evidence/figure-table-register.md` | 已统一为 `图3.1`、`表5.1` 格式 |
 | 证据锁版 | `final-evidence-lock.md` | 已同步文献增强、图表编号和任务书口径调整状态 |
-| 答辩映射 | `defense/defense-slide-map.md` | 已完成初版 |
-| 答辩讲稿 | `defense/defense-script-5-8min.md` | 已完成初版 |
+| 答辩映射 | `defense/slide-map.md` | 已完成初版 |
+| 答辩讲稿 | `defense/script.md` | 已完成初版 |
 
 ## 缺失或未恢复材料
 
@@ -63,7 +63,7 @@
 ### P1：答辩前处理
 
 1. 人工重新提供或从历史提交恢复 PPT 模板后，生成正式答辩 PPT。
-2. 根据 `defense/defense-slide-map.md` 控制 10-12 页主线内容。
+2. 根据 `defense/slide-map.md` 控制 10-12 页主线内容。
 3. 本机完整跑通 Demo Twin，并准备离线截图兜底。
 4. 根据导师关注点补充 8-10 个高频追问口径。
 
@@ -76,4 +76,4 @@
 
 - 论文终稿人工字段、目录域和格式核查完成后：提交 DOCX/PDF 供人工审查。
 - 答辩 PPT 完成后：提交 PPT、讲稿和演示路线供人工审查。
-- 真实公网 LLM 性能测试已于 2026-05-27 完成（MIMO mimo-v2.5-pro，TC-01 至 TC-11 全部通过），见 `evidence/test-data/mimo-real-test-2026-05-27.md`。
+- 真实公网 LLM 性能测试已于 2026-05-27 完成（MIMO mimo-v2.5-pro，TC-01 至 TC-11 全部通过），见 `evidence/test-data/mimo-2026-05-27.md`。

@@ -55,7 +55,7 @@
 
 当前状态：
 - 基本齐备
-- 已有：`thesis-assets/evidence/bug-package-2026-04-24.md`、`thesis-assets/evidence/bug-evidence/bug-01-demo-proxy-evidence.md`、`thesis-assets/evidence/bug-evidence/bug-02-mysql-preflight-evidence.md`
+- 已有：`thesis-assets/evidence/bug-evidence/package-2026-04-24.md`、`thesis-assets/evidence/bug-evidence/01-demo-proxy.md`、`thesis-assets/evidence/bug-evidence/02-mysql-preflight.md`
 - 可选补充：若需要放入 PPT，可再补两张截图化证据页
 
 ## E. 答辩包

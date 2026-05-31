@@ -14,9 +14,9 @@
 | 第 6 页 | 数据库设计 | `thesis-assets/evidence/diagrams/fig-3.2-database-er.png` | 第三章 3.3 | 重点讲用户、简历、会话、消息、阶段、评分和薄弱点之间的关系。 | 图3.2 |
 | 第 7 页 | 核心实现一：流式面试 | SSE 代码片段、对话页面截图 | 第四章 4.2 | 说明后端流式返回、前端 ReadableStream 接收和 `[DONE]` 收口。 | 可衔接技术追问 |
 | 第 8 页 | 核心实现二：简历解析与上下文控制 | PDF 解析、上下文截断代码片段 | 第四章 4.3-4.4 | 说明 PDFBox 提取文本、LLM 结构化解析和历史消息窗口截断。 | 避免展开过细代码 |
-| 第 9 页 | 测试验证 | `thesis-assets/evidence/test-data/demo-business-test-2026-04-25.md` | 第五章 | 展示 `TC-01` 到 `TC-09` 全通过，SSE TTFB 59 ms，PDF 接口耗时 36 ms。 | 明确 Demo Twin 口径 |
-| 第 10 页 | Bug 复盘 | `thesis-assets/evidence/bug-package-2026-04-24.md` | 第四章、第五章 | 讲 Demo 代理错连和 MySQL 未就绪两个真实问题，突出排查和脚本前置校验。 | 选 1-2 个重点讲 |
-| 第 11 页 | 系统演示路线 | `thesis-assets/defense/defense-package-2026-04-25.md` | 全文 | 按登录、主工作台、简历、面试、报告、回放、分析、设置演示。 | 准备离线截图兜底 |
+| 第 9 页 | 测试验证 | `thesis-assets/evidence/test-data/demo-2026-04-25.md` | 第五章 | 展示 `TC-01` 到 `TC-09` 全通过，SSE TTFB 59 ms，PDF 接口耗时 36 ms。 | 明确 Demo Twin 口径 |
+| 第 10 页 | Bug 复盘 | `thesis-assets/evidence/bug-evidence/package-2026-04-24.md` | 第四章、第五章 | 讲 Demo 代理错连和 MySQL 未就绪两个真实问题，突出排查和脚本前置校验。 | 选 1-2 个重点讲 |
+| 第 11 页 | 系统演示路线 | `thesis-assets/defense/package-2026-04-25.md` | 全文 | 按登录、主工作台、简历、面试、报告、回放、分析、设置演示。 | 准备离线截图兜底 |
 | 第 12 页 | 总结与展望 | 第六章总结、局限与改进方向 | 第六章 | 总结完整闭环、SSE 体验、Demo Twin 和证据化测试；说明后续补真实公网性能、模型降级和部署监控。 | 收束到可扩展方向 |
 
 ## 关键提示

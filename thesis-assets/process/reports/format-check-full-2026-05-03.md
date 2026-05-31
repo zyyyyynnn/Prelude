@@ -13,7 +13,7 @@
 - 第五章草稿 `drafts/chapter-05-testing-draft.md`
 - 第六章草稿 `drafts/chapter-06-conclusion-abstract-draft.md`
 - 学校要求包 `archive/legacy-reports/school-requirements-package.md`
-- 文献证据映射表 `literature-evidence-map.md`
+- 文献证据映射表 `evidence-map.md`
 - 参考文献草稿库 `literature/references-draft.bib`
 
 ## 总体结论
@@ -46,7 +46,7 @@
 
 处理建议：
 
-1. 依据现有 `literature-evidence-map.md` 为第一章、第二章优先完成引文落位。
+1. 依据现有 `evidence-map.md` 为第一章、第二章优先完成引文落位。
 2. 对第三章至第六章中涉及技术事实、系统局限与测试判断的位置，补齐必要的文献或实证支撑。
 
 #### 3. 第六章摘要中的测试结论表述先于真实测试数据
