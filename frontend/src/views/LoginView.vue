@@ -115,7 +115,7 @@ onMounted(() => {
       <div class="login-card__content">
         <aside class="login-card__brand-panel">
           <BrandMetaballs class="login-card__logo" />
-          <p class="login-card__brand-caption">LLM Moke Interview System</p>
+          <p class="login-card__brand-caption">AI Mock Interview</p>
         </aside>
 
         <div class="login-card__form-panel">

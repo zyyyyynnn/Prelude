@@ -93,7 +93,7 @@ function logout() {
     <div class="app-sidebar__header">
       <div class="app-sidebar__brand">
         <BrandMetaballs class="app-sidebar__logo" />
-        <span class="sidebar-label app-sidebar__title">模拟面试系统</span>
+          <span class="sidebar-label app-sidebar__title">Prelude</span>
       </div>
       <button class="app-sidebar__toggle" @click="toggleCollapse" aria-label="Toggle Sidebar">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
