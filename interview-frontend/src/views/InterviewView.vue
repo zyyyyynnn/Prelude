@@ -35,8 +35,8 @@ const creating = ref(false)
 const uploading = ref(false)
 const sending = ref(false)
 const finishing = ref(false)
-const stageUpdating = ref(false)
 const showingReport = ref(false)
+const streamTimeoutId = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const resumes = ref<ResumeItem[]>([])
 const positions = ref<PositionTemplate[]>([])
@@ -202,6 +202,12 @@ async function streamReply(content: string, autoStart = false) {
 
   const signal = getNewAbortSignal()
 
+  streamTimeoutId.value = setTimeout(() => {
+    abortActiveStream()
+    showNotice('网络或模型响应超时，已强制断开，请重试', 'error')
+    sending.value = false
+  }, 120000)
+
   try {
     await streamInterviewChat(
       authStore.token,
@@ -232,6 +238,11 @@ async function streamReply(content: string, autoStart = false) {
     }
     showNotice(message, 'error')
     return false
+  } finally {
+    if (streamTimeoutId.value !== null) {
+      clearTimeout(streamTimeoutId.value)
+      streamTimeoutId.value = null
+    }
   }
 }
 
@@ -304,6 +315,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (streamTimeoutId.value !== null) {
+    clearTimeout(streamTimeoutId.value)
+    streamTimeoutId.value = null
+  }
   abortActiveStream()
 })
 </script>
@@ -340,7 +355,6 @@ onBeforeUnmount(() => {
         :active-session-id="activeSessionId"
         :target-position="targetPosition"
         :current-stage="currentStage"
-        :stage-updating="stageUpdating"
         :sending="sending"
         :finishing="finishing"
         :has-report="hasReport"

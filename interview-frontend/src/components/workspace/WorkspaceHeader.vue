@@ -7,7 +7,6 @@ const props = defineProps<{
   activeSessionId?: number | null
   targetPosition?: string
   currentStage?: InterviewStageName
-  stageUpdating: boolean
   sending: boolean
   finishing: boolean
   hasReport: boolean
@@ -35,7 +34,6 @@ const emit = defineEmits<{
           <StageBar 
             :current-stage="currentStage"
             :active-session-id="activeSessionId"
-            :stage-updating="stageUpdating"
             :sending="sending"
             :finishing="finishing"
             :is-finished="isFinished"

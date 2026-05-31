@@ -6,7 +6,6 @@ import type { InterviewStageName } from '../../api/contracts'
 const props = defineProps<{
   currentStage?: InterviewStageName
   activeSessionId?: number | null
-  stageUpdating: boolean
   sending: boolean
   finishing: boolean
   isFinished: boolean
@@ -17,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const canFinish = computed(
-  () => props.currentStage === 'closing' && !props.isFinished && !props.finishing && !props.sending && !props.stageUpdating
+  () => props.currentStage === 'closing' && !props.isFinished && !props.finishing && !props.sending
 )
 </script>
 

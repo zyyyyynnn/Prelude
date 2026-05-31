@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElTag } from 'element-plus'
 import type { InterviewMessageRecord, InterviewMessageRole } from '../../api/contracts'
 
@@ -9,8 +9,27 @@ const props = defineProps<{
 
 const threadRef = ref<HTMLElement | null>(null)
 
+const displayMessages = computed(() => {
+  return props.messages
+    .filter(m => m.role !== 'system')
+    .map(m => ({
+      ...m,
+      content: m.content
+        ? m.content
+            .replace(/\[STAGE[_\s]?COMPLETE\]?/g, '')
+            .replace(/\[STAGE(?:_(?:COM(?:P(?:L(?:E(?:TE?)?)?)?)?)?)?$/, '')
+        : ''
+    }))
+})
+
+let scrollRafId: number | null = null
+
 watch(() => props.messages, () => {
-  nextTick(() => {
+  if (scrollRafId != null) {
+    cancelAnimationFrame(scrollRafId)
+  }
+  scrollRafId = requestAnimationFrame(() => {
+    scrollRafId = null
     if (threadRef.value) {
       threadRef.value.scrollTop = threadRef.value.scrollHeight
     }
@@ -20,22 +39,25 @@ watch(() => props.messages, () => {
 
 <template>
   <div class="message-thread scrollable" ref="threadRef">
-    <div v-if="!messages.length" class="message-thread__empty">
+    <div v-if="!displayMessages.length" class="message-thread__empty">
       <p class="message-thread__empty-copy">会话已准备就绪，可以开始面试了。</p>
     </div>
 
     <template v-else>
       <article
-        v-for="message in messages"
+        v-for="message in displayMessages"
         :key="`${message.id}-${message.createdAt}`"
         :class="['message-bubble', `message-bubble--${message.role as InterviewMessageRole}`]"
       >
-        <div class="message-bubble__head" v-if="message.role !== 'system'">
+        <div class="message-bubble__head">
           <ElTag class="ui-badge" effect="light">
             {{ message.role === 'assistant' ? '面试官' : '我' }}
           </ElTag>
         </div>
-        <div class="message-bubble__content">{{ message.content || '...' }}</div>
+        <div class="message-bubble__content">
+          <span v-if="message.role === 'assistant' && !message.content" class="thinking-dots">思考中</span>
+          <span v-else>{{ message.content }}</span>
+        </div>
       </article>
     </template>
   </div>
@@ -72,32 +94,6 @@ watch(() => props.messages, () => {
   align-self: flex-start;
   align-items: flex-start;
 }
-.message-bubble--system {
-  align-self: center;
-  align-items: center;
-  max-width: 90%;
-  margin: 16px 0;
-}
-.message-bubble--system .message-bubble__content {
-  background: transparent;
-  color: var(--color-text-tertiary);
-  font-size: 13px;
-  text-align: center;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-}
-.message-bubble--system .message-bubble__content::before,
-.message-bubble--system .message-bubble__content::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
-  min-width: 40px;
-}
 .message-bubble__content {
   padding: 12px 16px;
   border-radius: var(--radius-lg);
@@ -111,11 +107,21 @@ watch(() => props.messages, () => {
 .message-bubble--user .message-bubble__content {
   background: color-mix(in srgb, var(--color-brand) 8%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
+  border-top-right-radius: 4px;
 }
 .message-bubble--assistant .message-bubble__content {
   border-top-left-radius: 4px;
 }
-.message-bubble--user .message-bubble__content {
-  border-top-right-radius: 4px;
+.thinking-dots {
+  color: var(--color-text-tertiary);
+}
+.thinking-dots::after {
+  content: '';
+  animation: thinking-ellipsis 1.5s infinite;
+}
+@keyframes thinking-ellipsis {
+  0% { content: '.'; }
+  33% { content: '..'; }
+  66% { content: '...'; }
 }
 </style>

@@ -63,14 +63,20 @@ public class InterviewServiceImpl implements InterviewService {
     private static final String STAGE_WARMUP = "warmup";
     private static final List<String> STAGE_ORDER = List.of(STAGE_WARMUP, "technical", "deep_dive", "closing");
     private static final long SSE_TIMEOUT_MS = 120000L;
+    private static final String STAGE_COMPLETE_TAG = "[STAGE_COMPLETE]";
+    private static final com.github.benmanes.caffeine.cache.Cache<String, Object> SESSION_LOCKS =
+        com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+            .expireAfterAccess(java.time.Duration.ofMinutes(30))
+            .maximumSize(10_000)
+            .build();
     private static final Pattern TECHNICAL_SCORE_PATTERN = Pattern.compile("技术能力\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*/\\s*10");
     private static final Pattern EXPRESSION_SCORE_PATTERN = Pattern.compile("表达清晰度\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*/\\s*10");
     private static final Pattern LOGIC_SCORE_PATTERN = Pattern.compile("逻辑思维\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*/\\s*10");
     private static final Map<String, String> STAGE_PROMPTS = Map.of(
-        STAGE_WARMUP, "当前处于破冰阶段，请从候选人的简历经历入手，提出一条简洁的开场问题。",
-        "technical", "面试已进入技术问答阶段，请围绕岗位核心技术栈、项目实现细节和工程实践进行追问。",
-        "deep_dive", "面试已进入深挖阶段，请针对候选人前面回答中的薄弱点和模糊点继续深挖。",
-        "closing", "面试已进入收尾阶段，请用 1 到 2 个总结性问题结束本场面试。"
+        STAGE_WARMUP, "当前处于破冰阶段，请从候选人的简历经历入手，提出一条简洁的开场问题。注意：如果你认为破冰已充分，准备进入技术问答，请在回复的最末尾严格附上 [STAGE_COMPLETE] 标识。",
+        "technical", "面试已进入技术问答阶段，请围绕岗位核心技术栈、项目实现细节进行追问。注意：如果技术问答已充分，准备进入深挖阶段，请在末尾严格附上 [STAGE_COMPLETE] 标识。",
+        "deep_dive", "面试已进入深挖阶段，请针对候选人前面回答中的薄弱点和模糊点继续深挖。注意：如果深挖结束准备收尾，请在末尾严格附上 [STAGE_COMPLETE] 标识。",
+        "closing", "面试已进入收尾阶段，请用 1 到 2 个总结性问题结束本场面试。结束后请明确提示候选人可以点击页面上的「生成报告」按钮查看评估结果。"
     );
 
     private final ResumeMapper resumeMapper;
@@ -238,6 +244,8 @@ public class InterviewServiceImpl implements InterviewService {
         sseTaskExecutor.execute(() -> {
             UserContext.setCurrentUserId(userId);
             StringBuilder assistantReply = new StringBuilder();
+            InterviewMessage insertedUserMsg = null;
+            boolean assistantPersisted = false;
             try {
                 InterviewSession session = requireOngoingSession(sessionId, userId);
                 String content = normalizeContent(request == null ? null : request.getContent());
@@ -250,16 +258,42 @@ public class InterviewServiceImpl implements InterviewService {
                     if (content.isEmpty()) {
                         throw BusinessException.badRequest("回答内容不能为空");
                     }
-                    insertMessage(session.getId(), ROLE_USER, content, nextSeqNum(session.getId()));
+                    Object lock = SESSION_LOCKS.get(sessionId.toString(), k -> new Object());
+                    synchronized (lock) {
+                        insertedUserMsg = new InterviewMessage();
+                        insertedUserMsg.setSessionId(session.getId());
+                        insertedUserMsg.setRole(ROLE_USER);
+                        insertedUserMsg.setContent(content);
+                        insertedUserMsg.setSeqNum(nextSeqNum(session.getId()));
+                        interviewMessageMapper.insert(insertedUserMsg);
+                    }
+
                     List<Map<String, String>> messages = buildContextMessages(session.getId());
                     streamAssistantReply(session.getId(), session.getLlmProvider(), session.getLlmModel(), messages, assistantReply, emitter);
                 }
 
-                if (!assistantReply.isEmpty()) {
-                    insertMessage(session.getId(), ROLE_ASSISTANT, assistantReply.toString(), nextSeqNum(session.getId()));
+                String finalReply = assistantReply.toString();
+                boolean shouldAdvance = false;
+
+                if (finalReply.contains(STAGE_COMPLETE_TAG)) {
+                    finalReply = finalReply.replace(STAGE_COMPLETE_TAG, "").trim();
+                    shouldAdvance = true;
                 }
+
+                if (!finalReply.isEmpty()) {
+                    insertMessage(session.getId(), ROLE_ASSISTANT, finalReply, nextSeqNum(session.getId()));
+                }
+                assistantPersisted = true;
+
+                if (shouldAdvance) {
+                    internalAdvanceStage(session.getId());
+                }
+
                 emitter.complete();
             } catch (Exception exception) {
+                if (insertedUserMsg != null && insertedUserMsg.getId() != null && !assistantPersisted) {
+                    interviewMessageMapper.deleteById(insertedUserMsg.getId());
+                }
                 completeWithError(emitter, exception.getMessage() == null ? "连接已断开，请重试" : exception.getMessage());
             } finally {
                 UserContext.remove();
@@ -295,6 +329,8 @@ public class InterviewServiceImpl implements InterviewService {
 
         persistScoreHistory(session, report);
         persistWeaknesses(session, report);
+
+        SESSION_LOCKS.invalidate(sessionId.toString());
 
         return new InterviewFinishResponse(session.getId(), report, STATUS_FINISHED);
     }
@@ -386,16 +422,27 @@ public class InterviewServiceImpl implements InterviewService {
 
     private List<Map<String, String>> buildContextMessages(Long sessionId) {
         List<InterviewMessage> allMessages = listMessages(sessionId);
-        List<InterviewMessage> selectedMessages;
-        if (allMessages.size() > 20) {
-            selectedMessages = new ArrayList<>();
-            selectedMessages.add(allMessages.get(0));
-            selectedMessages.addAll(allMessages.subList(Math.max(allMessages.size() - 18, 1), allMessages.size()));
-        } else {
-            selectedMessages = allMessages;
+        List<InterviewMessage> systemMsgs = new ArrayList<>();
+        List<InterviewMessage> dialogMsgs = new ArrayList<>();
+
+        for (InterviewMessage m : allMessages) {
+            if (ROLE_SYSTEM.equals(m.getRole())) {
+                systemMsgs.add(m);
+            } else {
+                dialogMsgs.add(m);
+            }
         }
 
-        return selectedMessages.stream()
+        int maxDialogs = 12;
+        if (dialogMsgs.size() > maxDialogs) {
+            dialogMsgs = new ArrayList<>(dialogMsgs.subList(dialogMsgs.size() - maxDialogs, dialogMsgs.size()));
+        }
+
+        List<InterviewMessage> finalMessages = new ArrayList<>(systemMsgs);
+        finalMessages.addAll(dialogMsgs);
+        finalMessages.sort(java.util.Comparator.comparingInt(InterviewMessage::getSeqNum));
+
+        return finalMessages.stream()
             .map(message -> Map.of("role", message.getRole(), "content", message.getContent()))
             .toList();
     }
@@ -681,6 +728,34 @@ public class InterviewServiceImpl implements InterviewService {
 
     private boolean isDemoEnabled() {
         return demoModeService != null && demoModeService.isEnabled();
+    }
+
+    private void internalAdvanceStage(Long sessionId) {
+        InterviewStage currentStage = currentOrLatestStage(sessionId);
+        if (currentStage == null) return;
+
+        int currentIndex = STAGE_ORDER.indexOf(currentStage.getStageName());
+        if (currentIndex < 0) {
+            log.warn("Unknown stage name '{}' for session {}, forcing to warmup", currentStage.getStageName(), sessionId);
+            currentIndex = 0;
+        }
+        if (currentIndex >= STAGE_ORDER.size() - 1) {
+            closeCurrentStage(sessionId);
+            return;
+        }
+
+        String nextStage = STAGE_ORDER.get(currentIndex + 1);
+
+        currentStage.setEndedAt(LocalDateTime.now());
+        interviewStageMapper.updateById(currentStage);
+
+        InterviewStage newStage = new InterviewStage();
+        newStage.setSessionId(sessionId);
+        newStage.setStageName(nextStage);
+        newStage.setStartedAt(LocalDateTime.now());
+        interviewStageMapper.insert(newStage);
+
+        insertMessage(sessionId, ROLE_SYSTEM, STAGE_PROMPTS.get(nextStage), nextSeqNum(sessionId));
     }
 
     private record WeaknessExtractionItem(String category, String description) {
