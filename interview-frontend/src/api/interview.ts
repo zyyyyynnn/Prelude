@@ -7,8 +7,6 @@ import type {
   InterviewMessageRole,
   InterviewSessionDetailResponse,
   InterviewSessionItem,
-  InterviewStageChangePayload,
-  InterviewStageChangeResponse,
   InterviewStageName,
   InterviewStartResponse,
 } from './contracts'
@@ -16,7 +14,6 @@ import { unwrapResult } from './contracts'
 
 type ChatStreamHandlers = {
   onChunk?: (chunk: string) => void
-  onDone?: () => void
 }
 
 function normalizeStageName(value: unknown): InterviewStageName | undefined {
@@ -63,21 +60,6 @@ export async function fetchInterviewMessages(sessionId: number) {
       ...message,
       role: normalizeMessageRole(message.role),
     })),
-  }
-}
-
-export async function changeInterviewStage(
-  sessionId: number,
-  payload: InterviewStageChangePayload,
-) {
-  const response = await http.post<ApiResult<InterviewStageChangeResponse>>(
-    `/interview/${sessionId}/stage`,
-    payload,
-  )
-  const data = unwrapResult(response.data)
-  return {
-    ...data,
-    stageName: normalizeStageName(data.stageName) || payload.stageName,
   }
 }
 
@@ -163,6 +145,4 @@ export async function streamInterviewChat(
     }
     handlers.onChunk?.(data)
   }
-
-  handlers.onDone?.()
 }

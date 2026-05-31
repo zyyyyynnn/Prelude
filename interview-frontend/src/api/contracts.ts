@@ -82,15 +82,6 @@ export type InterviewChatRequest = {
   content: string
 }
 
-export type InterviewStageChangePayload = {
-  stageName: InterviewStageName
-}
-
-export type InterviewStageChangeResponse = {
-  stageName: InterviewStageName
-  startedAt?: string
-}
-
 export type LlmProviderModel = string | {
   key?: string
   model?: string
