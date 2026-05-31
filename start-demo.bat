@@ -1,10 +1,10 @@
-@echo off
+﻿@echo off
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul
 
 set "ROOT=%~dp0"
-set "BACKEND_DIR=%ROOT%interview-backend"
-set "FRONTEND_DIR=%ROOT%interview-frontend"
+set "BACKEND_DIR=%ROOT%backend"
+set "FRONTEND_DIR=%ROOT%frontend"
 set "BACKEND_READY_URL=http://127.0.0.1:8081/api/health"
 set "BACKEND_READY_TIMEOUT=60"
 set "FRONTEND_URL=http://127.0.0.1:5174"
@@ -119,7 +119,7 @@ exit /b %errorlevel%
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$root = '%ROOT%';" ^
   "$helper = Join-Path $root 'scripts\common\runtime-helpers.ps1';" ^
-  "$config = Join-Path $root 'interview-backend\src\main\resources\application-local.yml';" ^
+  "$config = Join-Path $root 'backend\src\main\resources\application-local.yml';" ^
   ". $helper;" ^
   "try {" ^
   "  Assert-BackendLocalConfig -ConfigPath $config;" ^

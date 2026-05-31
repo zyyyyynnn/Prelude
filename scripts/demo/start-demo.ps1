@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
   [switch]$PrepareOnly
 )
@@ -46,8 +46,8 @@ $scriptDir = Split-Path -Parent $PSCommandPath
 $rootDir = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..\..'))
 . (Join-Path $rootDir 'scripts\common\runtime-helpers.ps1')
 
-$backendDir = Join-Path $rootDir 'interview-backend'
-$frontendDir = Join-Path $rootDir 'interview-frontend'
+$backendDir = Join-Path $rootDir 'backend'
+$frontendDir = Join-Path $rootDir 'frontend'
 $frontendDemoEnvPath = Join-Path $frontendDir '.env.demo'
 $runtimeDir = Join-Path $rootDir 'output\runtime'
 $mysqlLogDir = Join-Path $runtimeDir 'mysql'

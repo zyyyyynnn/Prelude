@@ -1,4 +1,4 @@
-# 沉浸式模拟面试与简历诊断系统
+﻿# 沉浸式模拟面试与简历诊断系统
 
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green)
@@ -68,8 +68,8 @@ E:\graduation-project
 ├── README.md
 ├── DESIGN-SPEC.md
 ├── docs                       # 公开文档、接口说明与 README 展示截图
-├── interview-backend          # Spring Boot 后端
-├── interview-frontend         # Vue 前端
+├── backend          # Spring Boot 后端
+├── frontend         # Vue 前端
 ├── scripts                    # 启动、重置和截图脚本
 │   ├── demo
 │   └── real
@@ -100,8 +100,8 @@ E:\graduation-project
 复制后端配置模板：
 
 ```powershell
-Copy-Item .\interview-backend\src\main\resources\application-local.example.yml `
-  .\interview-backend\src\main\resources\application-local.yml
+Copy-Item .\backend\src\main\resources\application-local.example.yml `
+  .\backend\src\main\resources\application-local.yml
 ```
 
 修改 `application-local.yml`：
@@ -131,7 +131,7 @@ deepseek:
 复制前端配置模板：
 
 ```powershell
-Copy-Item .\interview-frontend\.env.example .\interview-frontend\.env.local
+Copy-Item .\frontend\.env.example .\frontend\.env.local
 ```
 
 默认真实版配置：
@@ -142,7 +142,7 @@ VITE_PROXY_TARGET=http://127.0.0.1:8080
 VITE_HOST=127.0.0.1
 ```
 
-Demo 前端固定使用 `interview-frontend/.env.demo`：
+Demo 前端固定使用 `frontend/.env.demo`：
 
 ```env
 VITE_PORT=5174
@@ -255,14 +255,14 @@ output\demo\manifest.md
 后端编译：
 
 ```powershell
-cd .\interview-backend
+cd .\backend
 mvn -q -DskipTests compile
 ```
 
 前端构建：
 
 ```powershell
-cd .\interview-frontend
+cd .\frontend
 npm run build
 ```
 
