@@ -407,13 +407,17 @@ function logout() {
   color: var(--color-brand);
   font-weight: 600;
 }
+.app-sidebar__btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
 .app-sidebar__sessions {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   margin-bottom: 12px;
-  padding-right: 8px;
+  padding-right: 0;
   transition: opacity 0.2s ease;
   opacity: 1;
   scrollbar-width: thin;
@@ -495,6 +499,10 @@ function logout() {
   color: var(--color-brand);
   font-weight: 500;
 }
+.session-item-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
 .session-group__empty {
   font-size: 13px;
   color: var(--color-text-tertiary);
@@ -562,6 +570,10 @@ function logout() {
 .settings-dropdown__item:hover {
   background-color: var(--color-sand);
 }
+.settings-dropdown__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
 .settings-dropdown__divider {
   height: 1px;
   background-color: var(--color-border);
@@ -627,6 +639,10 @@ function logout() {
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+}
+.action-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 .action-btn:hover {
   color: var(--color-text-primary);
