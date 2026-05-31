@@ -169,9 +169,8 @@ onMounted(() => {
 
             <div class="button-row panel__footer-actions">
               <ElButton
-                class="ui-button ui-button--primary"
+                class="ui-button ui-button--primary ui-button--compact"
                 :loading="saving || loading"
-                size="large"
                 type="primary"
                 @click="saveProfile"
               >
@@ -179,9 +178,8 @@ onMounted(() => {
               </ElButton>
               <ElButton
                 v-if="hasPasswordChange"
-                class="ui-button ui-button--secondary"
+                class="ui-button ui-button--secondary ui-button--compact"
                 :disabled="saving"
-                size="large"
                 @click="profile.oldPassword = ''; profile.newPassword = ''"
               >
                 清空密码输入

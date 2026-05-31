@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useInterviewWorkspace } from '../../composables/useInterviewWorkspace'
 import BrandMetaballs from '../BrandMetaballs.vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
+import { usePageNotice } from '../../composables/usePageNotice'
 
 const props = defineProps<{
   collapsed: boolean
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { showNotice } = usePageNotice()
 const {
   activeSessionId,
   primarySessionList,
@@ -30,7 +32,7 @@ const {
 
 function togglePin(sessionId: number) {
   togglePinSession(sessionId)
-  ElMessage.success(isSessionPinned(sessionId) ? '会话已置顶' : '已取消置顶')
+  showNotice(isSessionPinned(sessionId) ? '会话已置顶' : '已取消置顶', 'success')
 }
 
 async function confirmDelete(sessionId: number, targetPosition?: string) {
@@ -45,7 +47,7 @@ async function confirmDelete(sessionId: number, targetPosition?: string) {
       }
     )
     deleteSessionLocal(sessionId)
-    ElMessage.success('会话已删除')
+    showNotice('会话已删除', 'success')
   } catch (error) {
     // cancelled
   }
@@ -253,7 +255,7 @@ function logout() {
         </button>
         <div class="settings-dropdown">
           <RouterLink to="/settings/llm" class="settings-dropdown__item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
             LLM 配置
           </RouterLink>
           <RouterLink to="/settings/profile" class="settings-dropdown__item">
@@ -291,8 +293,8 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  height: 64px;
+  padding: 12px;
+  height: 60px;
 }
 .app-sidebar.is-collapsed .app-sidebar__header {
   justify-content: center;
@@ -363,14 +365,15 @@ function logout() {
   min-height: 0;
 }
 .app-sidebar__actions {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .app-sidebar__btn {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 10px 12px;
+  height: 32px;
+  padding: 0 12px;
   border: none;
   border-radius: var(--radius-md);
   font-size: 15px;
@@ -382,7 +385,7 @@ function logout() {
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
   justify-content: center;
-  padding: 10px;
+  padding: 0;
   gap: 0;
 }
 .app-sidebar__btn--primary {
@@ -409,8 +412,8 @@ function logout() {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  margin-bottom: 16px;
-  padding-right: 4px;
+  margin-bottom: 12px;
+  padding-right: 8px;
   transition: opacity 0.2s ease;
   opacity: 1;
   scrollbar-width: thin;
@@ -432,7 +435,7 @@ function logout() {
   opacity: 1;
   pointer-events: auto;
   height: auto;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 .app-sidebar__sessions::-webkit-scrollbar {
   width: 6px;
@@ -445,30 +448,39 @@ function logout() {
   background: var(--color-brand);
 }
 .session-group {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   white-space: nowrap;
 }
 .session-group__title {
   font-size: 12px;
   color: var(--color-text-tertiary);
-  margin: 0 0 8px 12px;
+  margin: 0 0 12px 12px;
   font-weight: 500;
 }
 .session-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .session-item-btn {
   width: 100%;
   text-align: left;
   background: transparent;
   border: none;
-  padding: 8px 12px;
+  padding: 0 12px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  display: flex;
+  align-items: center;
   border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--color-text-secondary);
   font-size: 14px;
+  line-height: 1;
   transition: all 0.15s;
   white-space: nowrap;
   overflow: hidden;
@@ -491,6 +503,9 @@ function logout() {
 .app-sidebar__tools {
   border-top: 1px solid var(--color-border);
   padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .app-sidebar__footer {
   padding: 12px;
@@ -508,12 +523,12 @@ function logout() {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 8px;
-  margin-left: 8px;
+  padding: 12px;
+  margin-left: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
   z-index: 200;
   opacity: 0;
   visibility: hidden;
@@ -531,7 +546,8 @@ function logout() {
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 10px 12px;
+  height: 32px;
+  padding: 0 12px;
   border: none;
   background: transparent;
   color: var(--color-text-primary);
@@ -560,7 +576,6 @@ function logout() {
 
 .session-item-wrapper {
   position: relative;
-  margin-bottom: 2px;
 }
 .session-item-wrapper:hover .session-item-actions {
   opacity: 1;

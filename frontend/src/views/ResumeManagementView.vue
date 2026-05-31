@@ -164,9 +164,8 @@ onMounted(() => {
 
               <div class="resume-row__actions">
                 <ElButton
-                  class="ui-button ui-button--secondary"
+                  class="ui-button ui-button--secondary ui-button--compact"
                   :disabled="Boolean(item.inUse)"
-                  size="small"
                   @click="removeResume(item)"
                 >
                   删除

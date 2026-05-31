@@ -23,11 +23,16 @@ INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `
 SELECT 'deepseek',
        'DeepSeek',
        'https://api.deepseek.com/chat/completions',
-       '["deepseek-chat","deepseek-reasoner"]',
+        '["deepseek-v4-pro","deepseek-v4-flash"]',
        1
 WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'deepseek'
 );
+
+UPDATE `llm_provider_config`
+SET `available_models` = '["deepseek-v4-pro","deepseek-v4-flash"]'
+WHERE `provider_key` = 'deepseek'
+  AND `available_models` != '["deepseek-v4-pro","deepseek-v4-flash"]';
 
 INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
 SELECT 'openai',
@@ -39,14 +44,34 @@ WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai'
 );
 
+INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
+SELECT 'anthropic',
+       'Anthropic',
+       'https://api.anthropic.com/v1/messages',
+       '["claude-sonnet-4-20250514","claude-3-5-haiku-20241022"]',
+       1
+WHERE NOT EXISTS (
+    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'anthropic'
+);
+
+UPDATE `user`
+SET `llm_model` = 'deepseek-v4-pro'
+WHERE `llm_provider` = 'deepseek'
+  AND `llm_model` IN ('deepseek-chat', 'deepseek-reasoner');
+
 UPDATE `user`
 SET `llm_provider` = COALESCE(`llm_provider`, 'deepseek'),
-    `llm_model` = COALESCE(`llm_model`, 'deepseek-chat')
+    `llm_model` = COALESCE(`llm_model`, 'deepseek-v4-pro')
 WHERE `llm_provider` IS NULL OR `llm_model` IS NULL;
 
 UPDATE `interview_session`
+SET `llm_model` = 'deepseek-v4-pro'
+WHERE `llm_provider` = 'deepseek'
+  AND `llm_model` IN ('deepseek-chat', 'deepseek-reasoner');
+
+UPDATE `interview_session`
 SET `llm_provider` = COALESCE(`llm_provider`, 'deepseek'),
-    `llm_model` = COALESCE(`llm_model`, 'deepseek-chat')
+    `llm_model` = COALESCE(`llm_model`, 'deepseek-v4-pro')
 WHERE `llm_provider` IS NULL OR `llm_model` IS NULL;
 
 INSERT INTO `interview_stage` (`session_id`, `stage_name`, `started_at`, `ended_at`)

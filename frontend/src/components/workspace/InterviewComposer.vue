@@ -89,7 +89,7 @@ function navigateToLlm() {
           <div class="composer-toolbar">
             <template v-if="!activeSessionId">
               <!-- Resume Picker -->
-              <ElDropdown @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
+              <ElDropdown popper-class="custom-dropdown-popper" @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
                 <button class="toolbar-item" type="button">
                   <span class="toolbar-item__label">简历:</span>
                   <span class="toolbar-item__value">{{ selectedResumeName }}</span>
@@ -112,7 +112,7 @@ function navigateToLlm() {
               />
 
               <!-- Position Picker -->
-              <ElDropdown @command="(v: number) => emit('update:selectedPositionId', v)" trigger="click">
+              <ElDropdown popper-class="custom-dropdown-popper" @command="(v: number) => emit('update:selectedPositionId', v)" trigger="click">
                 <button class="toolbar-item" type="button">
                   <span class="toolbar-item__label">岗位:</span>
                   <span class="toolbar-item__value">{{ selectedPositionName }}</span>

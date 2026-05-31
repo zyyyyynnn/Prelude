@@ -168,8 +168,8 @@ onMounted(() => {
                 <ElSelect
                   v-model="selectedProviderKey"
                   class="ui-select"
+                  popper-class="custom-select-popper"
                   placeholder="请选择 Provider"
-                  size="large"
                 >
                   <ElOption
                     v-for="provider in providerOptions"
@@ -184,9 +184,9 @@ onMounted(() => {
                 <ElSelect
                   v-model="selectedModel"
                   class="ui-select"
+                  popper-class="custom-select-popper"
                   :disabled="modelOptions.length === 0"
                   placeholder="请选择模型"
-                  size="large"
                 >
                   <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
                 </ElSelect>
@@ -200,25 +200,22 @@ onMounted(() => {
                 autocomplete="off"
                 placeholder="留空表示清空当前用户 Key"
                 show-password
-                size="large"
               />
             </ElFormItem>
 
             <div class="button-row panel__footer-actions">
               <ElButton
-                class="ui-button ui-button--primary"
+                class="ui-button ui-button--primary ui-button--compact"
                 :loading="saving"
-                size="large"
                 type="primary"
                 @click="saveSettings"
               >
                 保存设置
               </ElButton>
               <ElButton
-                class="ui-button ui-button--secondary"
+                class="ui-button ui-button--secondary ui-button--compact"
                 :disabled="saving || loading"
                 :loading="testing"
-                size="large"
                 @click="testSettings"
               >
                 测试连接
