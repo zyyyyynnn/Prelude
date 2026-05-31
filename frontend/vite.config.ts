@@ -26,6 +26,9 @@ export default defineConfig(({ mode }) => {
             if (/[\\/]node_modules[\\/](@paper-design|react|react-dom)[\\/]/.test(id)) {
               return 'vendor-brand'
             }
+            if (/[\\/]node_modules[\\/]markdown-it[\\/]/.test(id)) {
+              return 'vendor-markdown-it'
+            }
           },
         },
       },
