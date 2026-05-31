@@ -14,6 +14,7 @@
 | Demo 性能采集 | SSE TTFB、SSE 总耗时、PDF 上传/解析接口耗时 | `thesis-assets/evidence/test-data/demo-business-test-2026-04-25.md` | 已完成；仅代表 Demo Twin 本机回环环境 |
 | 构建验证 | 后端 `mvn -q test`、前端 `npm run build` | `thesis-assets/evidence/test-data/test-evidence-2026-04-24.md` | 已完成 |
 | 实现证据 | SSE 推送、PDF 解析、上下文截断核心代码片段 | `thesis-assets/evidence/code-snippets/implementation-evidence-2026-04-24.md` | 已完成 |
+| 实现证据 | LLM 柔性降级、PDF 安全防线、JWT 防抖、API Key 生命周期、N+1 消除与复合索引 | `thesis-assets/evidence/code-snippets/implementation-evidence-2026-05-31.md` | 已完成；可补充到第四章或答辩 |
 | Bug 复盘 | Demo 代理错连、MySQL 启动前置校验 | `thesis-assets/evidence/bug-package-2026-04-24.md`、`thesis-assets/evidence/bug-evidence/` | 已完成 |
 | 文献增强 | 文献质量评估、文献证据映射、参考文献工作库 | `thesis-assets/literature/literature-quality-review.md`、`thesis-assets/literature/literature-evidence-map.md`、`thesis-assets/literature/references-draft.bib` | 已完成；本轮已按正文首次引用顺序前置排序 |
 | 答辩基础材料 | 演示路线、亮点、难点、追问问答、风险预案 | `thesis-assets/defense/defense-package-2026-04-25.md` | 已完成 |

@@ -1,0 +1,136 @@
+# 第四章补充实现证据 2026-05-31
+
+> 本文件记录安全加固与性能优化阶段新增的核心实现证据，与 `implementation-evidence-2026-04-24.md` 互补。可直接用于第四章《系统架构与高可用优化》补充或答辩追问。
+
+---
+
+## 证据 4：LLM 结构化提取的柔性降级
+
+来源文件：
+
+- `backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
+
+关键实现点：
+
+- 三维评分正则（`TECHNICAL_SCORE_PATTERN` / `EXPRESSION_SCORE_PATTERN` / `LOGIC_SCORE_PATTERN`）支持可选 Markdown 加粗 `**` 与可选 `分` 字后缀，兼容 LLM 输出格式波动。
+- `extractScore` 方法在正则未匹配时不再抛出 `BusinessException`，改为记录 `log.warn` 并返回 `null`，实现单项解析失败的柔性降级，避免全局 500 导致评估面板白屏。
+- `stripJsonFence` 方法增加了兜底逻辑：当 LLM 在 JSON 前输出推理文字时，自动截取第一个完整的 `[...]` 数组，解决 Markdown 标签干扰与 JSON 反序列化崩溃问题。
+
+可引用代码位置：
+
+```text
+InterviewServiceImpl.TECHNICAL_SCORE_PATTERN (第 72 行)
+InterviewServiceImpl.EXPRESSION_SCORE_PATTERN (第 73 行)
+InterviewServiceImpl.LOGIC_SCORE_PATTERN (第 74 行)
+InterviewServiceImpl.extractScore(...) (第 521 行)
+InterviewServiceImpl.stripJsonFence(...) (第 698 行)
+```
+
+论文可用表述：
+
+评估报告生成模块在解析大语言模型返回的 Markdown 报告时，采用正则表达式提取三维评分。为应对模型输出格式的不确定性，正则表达式设计为可选匹配加粗标记和单位后缀；当某项评分解析失败时，系统记录警告日志并将该字段置空，而非中断整个报告生成流程，从而实现柔性降级。此外，JSON 剥离方法增加了对 LLM 前置推理文字的兜底截取，保障后续反序列化的稳定性。
+
+---
+
+## 证据 5：PDF 文件安全防线与内存保护
+
+来源文件：
+
+- `backend/src/main/java/com/interview/service/impl/ResumeServiceImpl.java`
+
+关键实现点：
+
+- `validatePdfMagicBytes` 方法读取文件头 4 字节，校验 `%PDF`（`0x25 0x50 0x44 0x46`）签名，阻断伪造扩展名攻击。
+- `MAX_PDF_PAGES = 50` 页数上限与 `MAX_FILE_SIZE = 10MB` 大小上限双重防护，防止恶意多页 PDF 耗尽 CPU。
+- `MAX_RAW_TEXT_STORE_LENGTH = 100_000` 限制数据库写入长度，防止超大简历文本撑爆 MySQL 字段。
+- `safeTruncate` 方法通过 `Character.isHighSurrogate` / `Character.isLowSurrogate` 检测 4 字节 Emoji 的 Surrogate Pair 边界，防止 Java 基于 `char` 的硬截断将 Emoji 从中切断导致 utf8mb4 写入异常。
+
+可引用代码位置：
+
+```text
+ResumeServiceImpl.validatePdfMagicBytes(...) (第 188 行)
+ResumeServiceImpl.extractPdfText(...) — 页数拦截 (第 124 行)
+ResumeServiceImpl.safeTruncate(...) (第 164 行)
+ResumeServiceImpl.MAX_RAW_TEXT_STORE_LENGTH (第 37 行)
+```
+
+论文可用表述：
+
+简历上传模块在文件校验阶段增加了 PDF 魔数（Magic Bytes）深度校验，通过读取文件头 4 字节并与 `%PDF` 签名比对，阻断伪造扩展名的恶意文件。同时，系统对 PDF 页数和文件大小设置上限，防止超大文件耗尽服务端内存与 CPU。在文本存储环节，系统采用安全截断算法，通过检测 Unicode Surrogate Pair 边界避免将 4 字节 Emoji 从中间切断，保障 MySQL utf8mb4 字符集的写入完整性。
+
+---
+
+## 证据 6：JWT 鉴权防抖与路由死锁拦截
+
+来源文件：
+
+- `frontend/src/api/http.ts`
+
+关键实现点：
+
+- `isRedirectingToLogin` 模块级状态锁防止多个并发 401 请求触发冗余路由跳转与状态清理。
+- `router.replace` 调用包裹在 `try...catch` 中，防止 Vue Router 抛出 `NavigationDuplicated` 或守卫拦截异常导致死锁锁永远无法释放，后续鉴权请求直接假死。
+
+可引用代码位置：
+
+```text
+http.ts — isRedirectingToLogin 状态锁 (第 34 行)
+http.ts — 401 拦截器 try...catch (第 65 行)
+```
+
+论文可用表述：
+
+前端 HTTP 拦截器在处理 401 未授权响应时，引入模块级状态锁实现防抖机制。当多个并发请求同时返回 401 时，仅首个请求触发路由跳转与状态清理，后续请求被静默忽略。同时，路由跳转调用包裹在异常捕获中，防止 Vue Router 因重复导航或守卫拦截抛出异常，从而避免全局鉴权死锁。
+
+---
+
+## 证据 7：API Key 生命周期保护
+
+来源文件：
+
+- `frontend/src/views/LlmSettingsView.vue`
+- `backend/src/main/java/com/interview/service/impl/UserLlmConfigServiceImpl.java`
+
+关键实现点：
+
+- 前端保存时 `apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value`，空字符串不传入后端，利用 Axios 自动剔除 `undefined` 的特性触发后端 `!= null` 防空值保护，避免已有密钥被意外覆写。
+- `__CLEAR__` 占位符实现主动清空 API Key 的专用通道，后端识别该哨明值后将加密字段置为 `null`。
+- API Key 采用 AES-GCM 动态 IV 随机加密，前端通过 `apiKeyMasked` 字段展示脱敏值，密钥明文不回传前端。
+
+可引用代码位置：
+
+```text
+LlmSettingsView.vue — saveSettings() apiKey 参数 (第 85 行)
+LlmSettingsView.vue — clearApiKey() (第 106 行)
+UserLlmConfigServiceImpl.java — __CLEAR__ 判断 (第 50 行)
+```
+
+论文可用表述：
+
+LLM 配置模块在 API Key 保存逻辑中引入了防误触覆写机制：当前端输入框为空时，请求体中不携带 `apiKey` 字段，后端通过 `!= null` 判断跳过密钥更新，从而保留用户已有的加密密钥。同时，系统通过 `__CLEAR__` 哨明值提供主动清空密钥的专用入口，避免用户无法解绑已保存的密钥。密钥在后端采用 AES-GCM 加密存储，前端仅展示脱敏后的掩码值。
+
+---
+
+## 证据 8：N+1 查询消除与复合索引优化
+
+来源文件：
+
+- `backend/src/main/java/com/interview/service/impl/ResumeServiceImpl.java`
+- `backend/src/main/resources/schema.sql`
+
+关键实现点：
+
+- `listCurrentUserResumes` 方法从逐简历 `selectCount` 改为基于 `QueryWrapper` 的 `GROUP BY` 聚合查询，将 N+1 查询降为 2 次查询。
+- 通过 SQL 别名 `resume_id AS resumeId` 统一字段命名，使用强类型 `for` 循环遍历 `List<Map<String, Object>>`，兼容驼峰/下划线/大写三种数据库转换规则。
+- `schema.sql` 末尾新增 4 条复合索引：`idx_session_user_created`、`idx_score_user_created`、`idx_weakness_user_created`、`idx_resume_user_created`，均覆盖 `user_id + created_at` 组合。
+
+可引用代码位置：
+
+```text
+ResumeServiceImpl.listCurrentUserResumes() — 聚合查询 (第 79 行)
+schema.sql — 复合索引 (第 186-189 行)
+```
+
+论文可用表述：
+
+简历列表查询模块将原有的逐条计数查询重构为基于 `GROUP BY` 的批量聚合查询，将数据库查询次数从 N+1 降至 2 次，显著降低高频列表场景下的数据库压力。同时，在数据库层补齐了 `user_id + created_at` 复合索引，优化按用户维度排序查询的执行计划。前端构建层面，Vite 配置中针对 `element-plus`、`echarts`、`markdown-it` 等大型依赖实施了精准的 `manualChunks` 拆包策略，降低首屏加载体积。
