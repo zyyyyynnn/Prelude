@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul
 
@@ -38,22 +38,7 @@ if errorlevel 1 (
 echo.
 echo [INFO] Please make sure MySQL is already running.
 echo.
-if "%DB_PASSWORD%"=="" (
-  echo [ERROR] Environment variable DB_PASSWORD is not set.
-  echo [FIX] Run the following command first, then re-run this script:
-  echo       PowerShell: $env:DB_PASSWORD="your_database_password"
-  echo       CMD:        set DB_PASSWORD=your_database_password
-  pause
-  exit /b 1
-)
-
 call :ensure_mysql
-if errorlevel 1 (
-  pause
-  exit /b 1
-)
-
-call :check_backend_config
 if errorlevel 1 (
   pause
   exit /b 1
@@ -116,22 +101,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "  Start-Sleep -Seconds 2;" ^
   "}" ^
   "if ($ready) { exit 0 } else { exit 1 }"
-exit /b %errorlevel%
-
-:check_backend_config
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$root = '%ROOT%';" ^
-  "$helper = Join-Path $root 'scripts\common\runtime-helpers.ps1';" ^
-  "$config = Join-Path $root 'backend\src\main\resources\application-local.yml';" ^
-  ". $helper;" ^
-  "try {" ^
-  "  Assert-BackendLocalConfig -ConfigPath $config -RequireDatasourceUrl;" ^
-  "  Write-Host '[INFO] Backend local config is valid.';" ^
-  "  exit 0;" ^
-  "} catch {" ^
-  "  Write-Host ('[ERROR] ' + $_.Exception.Message);" ^
-  "  exit 1;" ^
-  "}"
 exit /b %errorlevel%
 
 :ensure_mysql

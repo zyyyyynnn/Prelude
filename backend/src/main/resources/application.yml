@@ -29,13 +29,18 @@ jwt:
 
 deepseek:
   base-url: https://api.deepseek.com/chat/completions
-  model: deepseek-chat
+  model: deepseek-v4-pro
   api-key: ${DEEPSEEK_API_KEY:}
 
 openai:
   base-url: https://api.openai.com/v1/chat/completions
   model: gpt-4o-mini
   api-key: ${OPENAI_API_KEY:}
+
+anthropic:
+  base-url: https://api.anthropic.com/v1/messages
+  model: claude-sonnet-4-20250514
+  api-key: ${ANTHROPIC_API_KEY:}
 
 app:
   cors:

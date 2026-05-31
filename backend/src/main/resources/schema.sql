@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `password` VARCHAR(255) NOT NULL COMMENT 'BCrypt加密密码',
   `email` VARCHAR(128) DEFAULT NULL COMMENT '邮箱',
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT 'LLM Provider',
-  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-chat' COMMENT 'LLM 模型',
+  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT 'LLM 模型',
   `llm_api_key_encrypted` VARCHAR(512) DEFAULT NULL COMMENT '加密后的用户 API Key',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),

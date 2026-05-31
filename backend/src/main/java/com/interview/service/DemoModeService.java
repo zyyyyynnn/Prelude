@@ -422,7 +422,7 @@ public class DemoModeService {
         session.setPositionId(position.getId());
         session.setTargetPosition(position.getName());
         session.setLlmProvider("deepseek");
-        session.setLlmModel("deepseek-chat");
+        session.setLlmModel("deepseek-v4-pro");
         session.setStatus(status);
         session.setSummaryReport(report);
         session.setCreatedAt(createdAt);
