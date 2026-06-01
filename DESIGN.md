@@ -150,6 +150,7 @@
 | `--ui-height-base` | 42px | 标准按钮 |
 | `--ui-height-sm` | 34px | 紧凑按钮、输入框、下拉框 wrapper |
 | `--header-height` | 72px | 工作区页头 |
+| `--composer-height` | 260px | 底部输入框占位高度 |
 
 ### 工作区骨架
 
@@ -173,3 +174,5 @@
 - 禁止在侧边栏 scoped CSS 中定义 `::-webkit-scrollbar`，继承全局 `.scrollable`。
 - 禁止在 `WorkspaceHeader.vue` scoped CSS 中定义 `.workspace-header`，必须继承全局骨架。
 - 禁止侧边栏折叠态使用 `justify-content: center` 或 `margin: auto`（离散属性不可动画）。
+- 禁止在 Vue scoped CSS 中使用原生 `white`、`black`、`#hex` 颜色值，统一使用 `var(--color-*)` Token 或 `color-mix()`。
+- 禁止 `height: auto` 参与过渡动画（不可补间），改用 `max-height` 技巧。
