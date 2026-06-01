@@ -800,12 +800,10 @@ a {
   padding: 0 18px;
   font: 500 16px var(--font-sans);
   letter-spacing: 0;
-  box-shadow: var(--shadow-ring);
 }
 
 .ui-button:hover,
 .ui-button:focus-visible {
-  box-shadow: var(--shadow-ring-deep);
   transform: translateY(-1px);
   border-color: transparent;
   outline: none;
@@ -824,7 +822,12 @@ a {
 
 .ui-button.is-disabled,
 .ui-button:disabled {
-  opacity: 0.45;
+  opacity: 1 !important;
+  background: var(--color-surface-muted) !important;
+  color: var(--color-text-tertiary) !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  transform: none !important;
   pointer-events: none;
 }
 
@@ -856,15 +859,7 @@ a {
 .ui-button:active {
   border-color: transparent;
   background: var(--color-surface-muted);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
-}
-
-.ui-button--secondary:disabled,
-.ui-button--secondary.is-disabled {
-  background: var(--color-surface);
-  color: var(--color-text-tertiary);
-  border-color: transparent;
-  opacity: 0.7;
+  box-shadow: none;
 }
 
 .ui-button--danger {
