@@ -196,7 +196,7 @@ onMounted(() => {
   border-top: 1px dashed var(--color-border);
 }
 .form-section__title {
-  margin: 4px 0 16px;
+  margin: var(--spacing-xs) 0 var(--spacing-md);
   font-size: 15px;
   font-weight: 500;
   color: var(--color-text-primary);
