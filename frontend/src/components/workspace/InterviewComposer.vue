@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { ElDropdown, ElDropdownMenu, ElDropdownItem, ElInput, ElButton } from 'element-plus'
 import { useRouter } from 'vue-router'
 import type { ResumeItem, PositionTemplate } from '../../api/contracts'
+import { usePopperMatchTrigger } from '../../composables/usePopperMatchTrigger'
 
 const props = defineProps<{
   isCentered: boolean
@@ -31,6 +32,9 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const fileInput = ref<HTMLInputElement | null>(null)
+
+const resumeDropdown = usePopperMatchTrigger()
+const positionDropdown = usePopperMatchTrigger()
 
 const canStart = computed(() => !!props.selectedResumeId && !!props.selectedPositionId && !props.creating)
 const canSend = computed(() => !!props.modelValue.trim() && !props.sending)
@@ -89,7 +93,7 @@ function navigateToLlm() {
           <div class="composer-toolbar">
             <template v-if="!activeSessionId">
               <!-- Resume Picker -->
-              <ElDropdown popper-class="custom-dropdown-popper" @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
+              <ElDropdown popper-class="custom-dropdown-popper" :popper-style="resumeDropdown.popperStyle.value" :ref="(el: any) => resumeDropdown.bind(el?.$el?.querySelector?.('.toolbar-item') ?? el?.$el ?? null)" @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
                 <button class="toolbar-item" type="button">
                   <span class="toolbar-item__label">简历:</span>
                   <span class="toolbar-item__value">{{ selectedResumeName }}</span>
@@ -112,7 +116,7 @@ function navigateToLlm() {
               />
 
               <!-- Position Picker -->
-              <ElDropdown popper-class="custom-dropdown-popper" @command="(v: number) => emit('update:selectedPositionId', v)" trigger="click">
+              <ElDropdown popper-class="custom-dropdown-popper" :popper-style="positionDropdown.popperStyle.value" :ref="(el: any) => positionDropdown.bind(el?.$el?.querySelector?.('.toolbar-item') ?? el?.$el ?? null)" @command="(v: number) => emit('update:selectedPositionId', v)" trigger="click">
                 <button class="toolbar-item" type="button">
                   <span class="toolbar-item__label">岗位:</span>
                   <span class="toolbar-item__value">{{ selectedPositionName }}</span>
