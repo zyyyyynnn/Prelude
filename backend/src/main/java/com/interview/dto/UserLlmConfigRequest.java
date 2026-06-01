@@ -13,6 +13,6 @@ public record UserLlmConfigRequest(
 
     Integer maxTokens,
 
-    Integer thinkingDepth
+    String thinkingDepth
 ) {
 }

@@ -107,9 +107,9 @@ public class LlmRouter {
         List<Map<String, String>> messages
     ) {
         Integer maxTokens = user.getLlmMaxTokens();
-        Integer thinkingDepth = user.getLlmThinkingDepth();
+        String thinkingDepth = user.getLlmThinkingDepth();
         Map<String, Object> extraParams = null;
-        if (thinkingDepth != null) {
+        if (thinkingDepth != null && !thinkingDepth.isBlank()) {
             extraParams = new HashMap<>();
             extraParams.put("thinking_depth", thinkingDepth);
         }

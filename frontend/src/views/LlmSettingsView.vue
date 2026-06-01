@@ -11,7 +11,6 @@ import {
   ElInputNumber,
   ElOption,
   ElSelect,
-  ElSlider,
   ElTag,
 } from 'element-plus'
 import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
@@ -30,7 +29,7 @@ const selectedModel = ref('')
 const apiKeyInput = ref('')
 const apiKeyMasked = ref('')
 const maxTokens = ref<number | undefined>(undefined)
-const thinkingDepth = ref<number | undefined>(undefined)
+const thinkingDepth = ref<string | undefined>(undefined)
 const advancedOpen = ref<string[]>([])
 
 const currentProvider = computed(
@@ -258,18 +257,18 @@ onMounted(() => {
                     />
                   </ElFormItem>
                   <ElFormItem label="思考深度 (Thinking Depth)">
-                    <div class="slider-row">
-                      <ElSlider
-                        v-model="thinkingDepth"
-                        :min="0"
-                        :max="100"
-                        :step="5"
-                        :show-input="true"
-                        :show-input-controls="false"
-                        class="ui-slider"
-                      />
-                      <span class="slider-hint">0 = 浅层, 100 = 深度</span>
-                    </div>
+                    <ElSelect
+                      v-model="thinkingDepth"
+                      class="ui-select"
+                      popper-class="custom-select-popper"
+                      placeholder="默认 (Default)"
+                      clearable
+                    >
+                      <ElOption label="低 (Low)" value="low" />
+                      <ElOption label="中 (Medium)" value="medium" />
+                      <ElOption label="高 (High)" value="high" />
+                      <ElOption label="极高 (Extreme)" value="xhigh" />
+                    </ElSelect>
                   </ElFormItem>
                 </div>
               </ElCollapseItem>
@@ -400,20 +399,6 @@ onMounted(() => {
   border-radius: var(--radius-lg);
   padding: 0 16px;
   background: var(--color-sand);
-}
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-}
-.ui-slider {
-  flex: 1;
-}
-.slider-hint {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  white-space: nowrap;
 }
 .ui-input-number {
   width: 100%;
