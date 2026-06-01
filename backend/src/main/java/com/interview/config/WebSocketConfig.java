@@ -13,10 +13,11 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final WebSocketHandshakeInterceptor handshakeInterceptor;
+    private final VoiceWebSocketHandler voiceWebSocketHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(new TextWebSocketHandler(), "/ws")
+        registry.addHandler(voiceWebSocketHandler, "/api/ws")
                 .addInterceptors(handshakeInterceptor)
                 .setAllowedOrigins("*");
     }

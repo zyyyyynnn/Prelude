@@ -1,0 +1,137 @@
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+
+/**
+ * High-definition A4 PDF exporter that avoids page-break cutting.
+ * 
+ * @param originalElement The DOM element to export
+ * @param filename Output filename
+ */
+export async function exportToPdf(originalElement: HTMLElement, filename: string = 'interview-report.pdf'): Promise<void> {
+  // A4 dimensions in points: 595.28 x 841.89
+  const pdfWidth = 595.28
+  const pdfHeight = 841.89
+
+  // Clone original element so we can modify its layout without affecting the visible page
+  const clone = originalElement.cloneNode(true) as HTMLElement
+  
+  // Set clone dimensions and move it out of the viewport
+  clone.style.position = 'absolute'
+  clone.style.left = '-9999px'
+  clone.style.top = '0'
+  clone.style.width = originalElement.offsetWidth + 'px'
+  clone.style.height = 'auto'
+  clone.style.backgroundColor = 'var(--color-surface, #faf9f5)'
+  
+  document.body.appendChild(clone)
+
+  const elementWidth = originalElement.offsetWidth
+  // The target page height in terms of DOM element pixels
+  const pageHeight = elementWidth * (pdfHeight / pdfWidth)
+
+  // Selector for elements that must NOT be cut in the middle of a page
+  const avoidSelector = '.panel, .weakness-item, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body pre, .markdown-body blockquote'
+
+  let hasChanges = true
+  let safetyCounter = 0
+
+  // Keep recalculating offsets and inserting spacers until no avoid-split elements cross page boundaries
+  while (hasChanges && safetyCounter < 150) {
+    hasChanges = false
+    safetyCounter++
+
+    const targets = Array.from(clone.querySelectorAll(avoidSelector)) as HTMLElement[]
+    
+    for (const el of targets) {
+      // Find element position relative to clone container
+      const top = el.offsetTop
+      const height = el.offsetHeight
+
+      if (height === 0 || height >= pageHeight) {
+        // Skip hidden elements or elements that are taller than a single page
+        continue
+      }
+
+      const currentPage = Math.floor(top / pageHeight)
+      const endPage = Math.floor((top + height - 2) / pageHeight) // 2px margin to handle float precision
+
+      if (currentPage !== endPage) {
+        // This element crosses page boundaries! Insert a spacer before it
+        const spacerHeight = (currentPage + 1) * pageHeight - top
+        const spacer = document.createElement('div')
+        spacer.className = 'pdf-page-spacer'
+        spacer.style.height = spacerHeight + 'px'
+        spacer.style.width = '100%'
+        spacer.style.pointerEvents = 'none'
+
+        el.parentNode?.insertBefore(spacer, el)
+        hasChanges = true
+        break // Break the loop so we can measure elements with the updated offset tops
+      }
+    }
+  }
+
+  // Generate high resolution canvas using scale: 2
+  const canvas = await html2canvas(clone, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    allowTaint: true,
+    backgroundColor: '#faf9f5', // Visual baseline background color
+  })
+
+  // Optimize image smoothness
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
+  // Remove the cloned DOM node
+  document.body.removeChild(clone)
+
+  const canvasWidth = canvas.width
+  const canvasHeight = canvas.height
+  
+  // Calculate page height in canvas scale
+  const pageHeightInCanvasPx = Math.floor(canvasWidth * (pdfHeight / pdfWidth))
+
+  const pdf = new jsPDF('p', 'pt', 'a4')
+  let renderedHeight = 0
+  let isFirstPage = true
+
+  // Slice the canvas vertically and insert into PDF
+  while (renderedHeight < canvasHeight) {
+    const remainingHeight = canvasHeight - renderedHeight
+    const sliceHeight = Math.min(pageHeightInCanvasPx, remainingHeight)
+
+    const pageCanvas = document.createElement('canvas')
+    pageCanvas.width = canvasWidth
+    pageCanvas.height = sliceHeight
+
+    const pageCtx = pageCanvas.getContext('2d')
+    if (pageCtx) {
+      pageCtx.imageSmoothingEnabled = true
+      pageCtx.imageSmoothingQuality = 'high'
+      pageCtx.drawImage(
+        canvas,
+        0, renderedHeight, canvasWidth, sliceHeight,
+        0, 0, canvasWidth, sliceHeight
+      )
+    }
+
+    if (!isFirstPage) {
+      pdf.addPage()
+    } else {
+      isFirstPage = false
+    }
+
+    const imgData = pageCanvas.toDataURL('image/jpeg', 0.95)
+    const printHeight = (sliceHeight / canvasWidth) * pdfWidth
+    
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, printHeight)
+    renderedHeight += sliceHeight
+  }
+
+  pdf.save(filename)
+}
