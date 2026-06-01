@@ -1102,15 +1102,10 @@ a {
   display: grid;
   gap: 8px;
   max-width: 80%;
-  padding: 15px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
 }
 
 .message-bubble--user {
   margin-left: auto;
-  background: var(--color-surface-muted);
 }
 
 .message-bubble--assistant {
@@ -1120,7 +1115,6 @@ a {
 .message-bubble--system {
   max-width: 100%;
   border-style: dashed;
-  background: var(--color-surface);
 }
 
 .message-bubble__head {
