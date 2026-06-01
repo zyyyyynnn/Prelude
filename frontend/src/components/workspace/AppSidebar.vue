@@ -395,7 +395,7 @@ function logout() {
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand) 30%, transparent);
 }
 .app-sidebar__btn--primary:hover {
-  background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-text-primary));
+  background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
 }
 .app-sidebar__btn--icon:hover,
 .app-sidebar__btn--tool:hover,

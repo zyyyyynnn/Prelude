@@ -10,7 +10,6 @@
   --color-sand: #e8e6dc;
   --color-surface-hover: color-mix(in srgb, #2C2A29 4%, var(--color-surface));
   --color-surface-muted: color-mix(in srgb, #2C2A29 8%, var(--color-surface));
-  --color-brand-light: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   --bg-paper-filter:
     radial-gradient(circle at 16% 14%, rgba(255, 255, 255, 0.32) 0, rgba(255, 255, 255, 0) 26%),
     radial-gradient(circle at 80% 72%, rgba(0, 0, 0, 0.04) 0, rgba(0, 0, 0, 0) 24%),
@@ -69,6 +68,14 @@
   --el-color-warning: var(--color-coral);
   --el-color-danger: var(--color-error);
   --el-color-error: var(--color-error);
+  --el-color-primary-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--color-brand));
+  --el-color-primary-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--color-brand));
+  --el-color-primary-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--color-brand));
+  --el-color-primary-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--color-brand));
+  --el-color-primary-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--color-brand));
+  --el-button-disabled-bg-color: var(--color-surface-muted);
+  --el-button-disabled-text-color: var(--color-text-tertiary);
+  --el-button-disabled-border-color: var(--color-border);
   --el-border-radius-base: var(--radius-md);
   --el-border-radius-small: var(--radius-sm);
   --el-border-radius-round: var(--radius-2xl);
@@ -768,7 +775,7 @@ a {
 .ui-badge.el-tag {
   border: 1px solid var(--color-border-warm);
   border-radius: var(--radius-md);
-  background: var(--color-sand);
+  background: var(--color-surface-muted);
   color: var(--color-text-secondary);
   letter-spacing: 0.12px;
 }
@@ -844,7 +851,23 @@ a {
 .ui-button.is-active {
   border-color: var(--color-ring);
   background: var(--color-surface-muted);
-  box-shadow: inset 0 0 0 1px rgba(157, 123, 106, 0.12), var(--shadow-ring);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
+}
+
+.ui-button--secondary:disabled,
+.ui-button--secondary.is-disabled {
+  background: var(--color-surface);
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
+}
+
+.ui-button--danger {
+  background: var(--color-error);
+  color: var(--color-surface);
+}
+
+.ui-button--danger:hover {
+  background: color-mix(in srgb, var(--color-error) 85%, var(--color-surface));
 }
 
 /* ── Composer dropdown ── */
@@ -959,7 +982,7 @@ a {
   position: relative;
   display: block;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-border-warm) 82%, white);
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, var(--color-surface));
   background: #f5f4ed;
 }
 
@@ -1013,7 +1036,7 @@ a {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 0 18px;
-  background: var(--color-sand);
+  background: var(--color-surface-muted);
   color: var(--color-text-button);
   font: 500 15px var(--font-sans);
   box-shadow: var(--shadow-ring);
@@ -1086,7 +1109,7 @@ a {
 
 .message-bubble--user {
   margin-left: auto;
-  background: var(--color-sand);
+  background: var(--color-surface-muted);
 }
 
 .message-bubble--assistant {
@@ -1096,7 +1119,7 @@ a {
 .message-bubble--system {
   max-width: 100%;
   border-style: dashed;
-  background: color-mix(in srgb, var(--color-surface) 78%, var(--color-sand));
+  background: var(--color-surface);
 }
 
 .message-bubble__head {
@@ -1158,7 +1181,7 @@ a {
 }
 
 .stage-rail__item.is-complete {
-  background: color-mix(in srgb, var(--color-surface) 74%, var(--color-sand));
+  background: var(--color-surface-muted);
 }
 
 .stage-rail__index {
