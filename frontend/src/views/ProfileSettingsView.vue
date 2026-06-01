@@ -201,7 +201,4 @@ onMounted(() => {
   font-weight: 500;
   color: var(--color-text-primary);
 }
-.button-row {
-  margin-top: var(--spacing-md);
-}
 </style>
