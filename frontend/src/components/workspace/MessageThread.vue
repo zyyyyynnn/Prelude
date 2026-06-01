@@ -5,6 +5,7 @@ import type { InterviewMessageRecord, InterviewMessageRole } from '../../api/con
 
 const props = defineProps<{
   messages: InterviewMessageRecord[]
+  reconnectingStatus?: string
 }>()
 
 const threadRef = ref<HTMLElement | null>(null)
@@ -71,6 +72,10 @@ onMounted(() => {
           <span v-else>{{ message.content }}</span>
         </div>
       </article>
+
+      <div v-if="reconnectingStatus" class="reconnecting-status">
+        {{ reconnectingStatus }}
+      </div>
     </template>
   </div>
 </template>
@@ -135,5 +140,20 @@ onMounted(() => {
   0% { content: '.'; }
   33% { content: '..'; }
   66% { content: '...'; }
+}
+.reconnecting-status {
+  align-self: center;
+  padding: 8px 16px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  box-shadow: var(--shadow-whisper);
+  margin-top: 8px;
+}
+.reconnecting-status::after {
+  content: '';
+  animation: thinking-ellipsis 1.5s infinite;
 }
 </style>

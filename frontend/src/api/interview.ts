@@ -14,6 +14,12 @@ import { unwrapResult } from './contracts'
 
 type ChatStreamHandlers = {
   onChunk?: (chunk: string) => void
+  onEvent?: (event: ChatStreamEvent) => void
+}
+
+export type ChatStreamEvent = {
+  eventName: string
+  data: string
 }
 
 function normalizeStageName(value: unknown): InterviewStageName | undefined {
@@ -70,7 +76,7 @@ export async function finishInterview(sessionId: number) {
   return unwrapResult(response.data)
 }
 
-function parseSseEvent(rawEvent: string) {
+function parseSseEvent(rawEvent: string): ChatStreamEvent {
   const lines = rawEvent.split('\n')
   const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || 'message'
   const data = lines
@@ -81,12 +87,22 @@ function parseSseEvent(rawEvent: string) {
   return { eventName, data }
 }
 
-export async function streamInterviewChat(
+function dispatchSseEvent(event: ChatStreamEvent, handlers: ChatStreamHandlers) {
+  handlers.onEvent?.(event)
+  if (event.eventName === 'error') {
+    throw new Error(event.data || '流式返回错误')
+  }
+  if (event.eventName === 'message') {
+    handlers.onChunk?.(event.data)
+  }
+}
+
+async function performStream(
   token: string,
   sessionId: number,
   payload: InterviewChatRequest,
-  autoStart = false,
-  handlers: ChatStreamHandlers = {},
+  autoStart: boolean,
+  handlers: ChatStreamHandlers,
   signal?: AbortSignal,
 ) {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -115,34 +131,87 @@ export async function streamInterviewChat(
   const decoder = new TextDecoder()
   let buffer = ''
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) {
-      break
-    }
-
-    buffer += decoder.decode(value, { stream: true }).replace(/\r/g, '')
-
-    let boundary = buffer.indexOf('\n\n')
-    while (boundary !== -1) {
-      const rawEvent = buffer.slice(0, boundary).trim()
-      buffer = buffer.slice(boundary + 2)
-      if (rawEvent) {
-        const { eventName, data } = parseSseEvent(rawEvent)
-        if (eventName === 'error') {
-          throw new Error(data || '流式返回错误')
-        }
-        handlers.onChunk?.(data)
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
       }
-      boundary = buffer.indexOf('\n\n')
-    }
-  }
 
-  if (buffer.trim()) {
-    const { eventName, data } = parseSseEvent(buffer.trim())
-    if (eventName === 'error') {
-      throw new Error(data || '流式返回错误')
+      buffer += decoder.decode(value, { stream: true }).replace(/\r/g, '')
+
+      let boundary = buffer.indexOf('\n\n')
+      while (boundary !== -1) {
+        const rawEvent = buffer.slice(0, boundary).trim()
+        buffer = buffer.slice(boundary + 2)
+        if (rawEvent) {
+          dispatchSseEvent(parseSseEvent(rawEvent), handlers)
+        }
+        boundary = buffer.indexOf('\n\n')
+      }
     }
-    handlers.onChunk?.(data)
+
+    if (buffer.trim()) {
+      dispatchSseEvent(parseSseEvent(buffer.trim()), handlers)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+export async function streamInterviewChat(
+  token: string,
+  sessionId: number,
+  payload: InterviewChatRequest,
+  autoStart = false,
+  handlers: ChatStreamHandlers = {},
+  signal?: AbortSignal,
+) {
+  let attempt = 0
+  const maxRetries = 3
+  let delay = 1000
+
+  while (true) {
+    try {
+      await performStream(token, sessionId, payload, autoStart, handlers, signal)
+      break
+    } catch (error) {
+      if (signal?.aborted) {
+        throw error
+      }
+      if (error instanceof Error && (error as any).status === 401) {
+        throw error
+      }
+
+      // Check if we need to do silent check
+      handlers.onEvent?.({ eventName: 'status', data: 'checking' })
+
+      try {
+        const detail = await fetchInterviewMessages(sessionId)
+        const serverMsgs = detail.messages || []
+
+        // If user message exists on the server, we align state and finish
+        const userMsgExists = autoStart
+          ? serverMsgs.some((m) => m.role === 'assistant')
+          : serverMsgs.some((m) => m.role === 'user' && m.content === payload.content)
+
+        if (userMsgExists) {
+          handlers.onEvent?.({ eventName: 'sync', data: JSON.stringify(serverMsgs) })
+          break
+        }
+      } catch (checkError) {
+        console.error('Silent state check failed:', checkError)
+      }
+
+      if (attempt >= maxRetries) {
+        throw error
+      }
+
+      attempt++
+      handlers.onEvent?.({ eventName: 'status', data: `reconnecting_${attempt}` })
+
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      delay = Math.min(delay * 2, 5000)
+    }
   }
 }

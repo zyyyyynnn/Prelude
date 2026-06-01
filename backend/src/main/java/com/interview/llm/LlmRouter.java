@@ -55,7 +55,7 @@ public class LlmRouter {
         String model = normalizeModel(user.getLlmModel(), provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), model);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        return provider.chat(buildInvocation(providerConfig, model, apiKey, user, messages));
+        return provider.chat(buildInvocation(providerConfig, model, apiKey, user, messages, null));
     }
 
     public void streamCurrentUser(List<Map<String, String>> messages, Consumer<String> onDelta) {
@@ -64,25 +64,44 @@ public class LlmRouter {
         String model = normalizeModel(user.getLlmModel(), provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), model);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        provider.streamChat(buildInvocation(providerConfig, model, apiKey, user, messages), onDelta);
+        provider.streamChat(buildInvocation(providerConfig, model, apiKey, user, messages, null), onDelta);
     }
 
     public String chatWithSnapshot(String providerKey, String model, List<Map<String, String>> messages) {
+        return chatWithSnapshot(providerKey, model, messages, null);
+    }
+
+    public String chatWithSnapshot(
+        String providerKey,
+        String model,
+        List<Map<String, String>> messages,
+        Map<String, Object> extraParams
+    ) {
         User user = requireCurrentUser();
         LlmProvider provider = requireProvider(providerKey);
         String normalizedModel = normalizeModel(model, provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        return provider.chat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages));
+        return provider.chat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages, extraParams));
     }
 
     public void streamWithSnapshot(String providerKey, String model, List<Map<String, String>> messages, Consumer<String> onDelta) {
+        streamWithSnapshot(providerKey, model, messages, onDelta, null);
+    }
+
+    public void streamWithSnapshot(
+        String providerKey,
+        String model,
+        List<Map<String, String>> messages,
+        Consumer<String> onDelta,
+        Map<String, Object> extraParams
+    ) {
         User user = requireCurrentUser();
         LlmProvider provider = requireProvider(providerKey);
         String normalizedModel = normalizeModel(model, provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        provider.streamChat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages), onDelta);
+        provider.streamChat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages, extraParams), onDelta);
     }
 
     public LlmProviderConfig validateProviderSelection(String providerKey, String model) {
@@ -104,7 +123,8 @@ public class LlmRouter {
         String model,
         String apiKey,
         User user,
-        List<Map<String, String>> messages
+        List<Map<String, String>> messages,
+        Map<String, Object> callerExtraParams
     ) {
         Integer maxTokens = user.getLlmMaxTokens();
         String thinkingDepth = user.getLlmThinkingDepth();
@@ -112,6 +132,12 @@ public class LlmRouter {
         if (thinkingDepth != null && !thinkingDepth.isBlank()) {
             extraParams = new HashMap<>();
             extraParams.put("thinking_depth", thinkingDepth);
+        }
+        if (callerExtraParams != null && !callerExtraParams.isEmpty()) {
+            if (extraParams == null) {
+                extraParams = new HashMap<>();
+            }
+            extraParams.putAll(callerExtraParams);
         }
         return new LlmProvider.LlmInvocation(
             providerConfig.getBaseUrl(),

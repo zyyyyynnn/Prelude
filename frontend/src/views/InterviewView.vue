@@ -37,6 +37,7 @@ const sending = ref(false)
 const finishing = ref(false)
 const showingReport = ref(false)
 const streamTimeoutId = ref<ReturnType<typeof setTimeout> | null>(null)
+const reconnectingStatus = ref('')
 
 const resumes = ref<ResumeItem[]>([])
 const positions = ref<PositionTemplate[]>([])
@@ -178,6 +179,16 @@ function appendAssistantDelta(id: number, delta: string) {
   replay.value.messages = list
 }
 
+function clearAssistantPlaceholder(id: number) {
+  if (!replay.value) return
+  const list = [...replay.value.messages]
+  const target = list.find((message) => message.id === id)
+  if (target && target.role === 'assistant') {
+    target.content = ''
+    replay.value.messages = list
+  }
+}
+
 async function streamReply(content: string, autoStart = false) {
   if (!activeSessionId.value) {
     showNotice('请先创建或选择一场面试', 'warning')
@@ -209,6 +220,7 @@ async function streamReply(content: string, autoStart = false) {
   }, 120000)
 
   try {
+    reconnectingStatus.value = ''
     await streamInterviewChat(
       authStore.token,
       activeSessionId.value,
@@ -218,13 +230,38 @@ async function streamReply(content: string, autoStart = false) {
         onChunk(chunk) {
           appendAssistantDelta(assistantMessageId, chunk)
         },
+        onEvent(event) {
+          if (event.eventName === 'status') {
+            if (event.data === 'checking') {
+              reconnectingStatus.value = '连接异常，正在核对会话状态...'
+            } else if (event.data.startsWith('reconnecting_')) {
+              const attempt = event.data.split('_')[1]
+              reconnectingStatus.value = `连接已断开，正在尝试第 ${attempt} 次重连...`
+              clearAssistantPlaceholder(assistantMessageId)
+            }
+          } else if (event.eventName === 'sync') {
+            const serverMsgs = JSON.parse(event.data)
+            if (replay.value) {
+              replay.value.messages = serverMsgs
+            }
+            reconnectingStatus.value = ''
+          } else if (event.eventName === 'report_ready') {
+            reportMarkdown.value = event.data
+            if (replay.value) {
+              replay.value.summaryReport = event.data
+            }
+            showingReport.value = true
+          }
+        }
       },
       signal,
     )
+    reconnectingStatus.value = ''
     await refreshSessionList()
     await loadSession(activeSessionId.value, true)
     return true
   } catch (error) {
+    reconnectingStatus.value = ''
     if (error instanceof Error && error.name === 'AbortError') {
       return false
     }
@@ -374,7 +411,7 @@ onBeforeUnmount(() => {
         </div>
         
         <template v-else>
-          <MessageThread :messages="messages" />
+          <MessageThread :messages="messages" :reconnecting-status="reconnectingStatus" />
           
           <div class="workspace-composer-fixed">
             <InterviewComposer 
