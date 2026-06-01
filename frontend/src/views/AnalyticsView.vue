@@ -265,72 +265,19 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.workspace-page {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg);
-  overflow: hidden;
-  height: 100vh;
-}
-.workspace-header {
-  display: flex;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(250, 249, 245, 0.85);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  flex-shrink: 0;
-  height: 72px;
-  box-sizing: border-box;
-}
-.workspace-header__main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-.workspace-header__title-area {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.workspace-header__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-.workspace-page__content {
-  flex: 1;
-  padding: 24px 40px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.page-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
 .page-grid--dashboard {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
+  gap: var(--spacing-lg);
 }
 .weakness-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 .weakness-item {
-  padding: 16px;
+  padding: var(--spacing-sm);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -339,10 +286,10 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-sm);
 }
 .weakness-item__title {
-  margin: 0 0 4px 0;
+  margin: 0 0 var(--spacing-xs) 0;
   font-size: 15px;
   font-weight: 500;
   color: var(--color-text-primary);
@@ -359,6 +306,6 @@ onBeforeUnmount(() => {
   color: var(--color-text-tertiary);
 }
 .weakness-item__descriptions li {
-  margin-bottom: 4px;
+  margin-bottom: var(--spacing-xs);
 }
 </style>
