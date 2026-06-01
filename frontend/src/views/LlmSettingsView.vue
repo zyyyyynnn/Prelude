@@ -425,9 +425,7 @@ onMounted(() => {
   background: transparent;
 }
 .advanced-collapse :deep(.el-collapse-item__content) {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  padding-bottom: 16px;
+  padding: 16px 0 0;
 }
 .advanced-grid {
   display: grid;
