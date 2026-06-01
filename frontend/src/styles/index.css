@@ -8,8 +8,9 @@
   --color-surface-dark: #30302e;
   --color-bg-dark: #141413;
   --color-sand: #e8e6dc;
-  --color-surface-hover: color-mix(in srgb, var(--color-brand) 6%, var(--color-surface));
-  --color-surface-muted: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
+  --color-surface-hover: color-mix(in srgb, #2C2A29 4%, var(--color-surface));
+  --color-surface-muted: color-mix(in srgb, #2C2A29 8%, var(--color-surface));
+  --color-brand-light: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   --bg-paper-filter:
     radial-gradient(circle at 16% 14%, rgba(255, 255, 255, 0.32) 0, rgba(255, 255, 255, 0) 26%),
     radial-gradient(circle at 80% 72%, rgba(0, 0, 0, 0.04) 0, rgba(0, 0, 0, 0) 24%),
@@ -825,13 +826,13 @@ a {
   color: var(--color-surface);
 }
 
-.ui-button--secondary.el-button {
-  background: var(--color-sand);
+.ui-button--secondary {
+  background: var(--color-surface-muted);
   color: var(--color-text-button);
 }
 
-.ui-button--secondary.el-button:hover,
-.ui-button--secondary.el-button:focus-visible {
+.ui-button--secondary:hover,
+.ui-button--secondary:focus-visible {
   background: var(--color-surface-hover);
   color: var(--color-text-button);
 }
@@ -1807,6 +1808,7 @@ a {
   flex: 1;
   padding: var(--spacing-lg) var(--spacing-2xl);
   overflow-y: auto;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
@@ -1836,9 +1838,9 @@ a {
 }
 .detail-card {
   padding: var(--spacing-sm);
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 .detail-card__title {
   margin: 4px 0;

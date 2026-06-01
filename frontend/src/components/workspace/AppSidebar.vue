@@ -404,7 +404,7 @@ function logout() {
   color: var(--color-text-primary);
 }
 .app-sidebar__btn.is-active {
-  background-color: color-mix(in srgb, var(--color-brand) 12%, transparent);
+  background-color: var(--color-brand-light);
   color: var(--color-brand);
   font-weight: 600;
 }
@@ -487,7 +487,7 @@ function logout() {
   color: var(--color-text-primary);
 }
 .session-item-btn.is-active {
-  background-color: color-mix(in srgb, var(--color-brand) 12%, transparent);
+  background-color: var(--color-brand-light);
   color: var(--color-brand);
   font-weight: 500;
 }

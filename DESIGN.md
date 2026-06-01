@@ -59,7 +59,7 @@
 - `.panel__head` 无 `min-height`，通过 `padding: var(--spacing-md) 0` 自然撑开。
 - `.panel__title` 字号 20px，行高 1.4；`.panel__title--small` 字号 18px。
 - `.panel__lead` 字号 13px，颜色 `var(--color-text-tertiary)`。
-- 嵌套在 `.panel` 内部的 `.detail-card` 使用 `padding: var(--spacing-sm)`（8px），背景使用 `var(--color-surface-hover)`，避免双重内边距和粉色偏差。
+- 嵌套在 `.panel` 内部的 `.detail-card` 使用 `padding: var(--spacing-sm)`（8px），背景 `var(--color-surface)` + 浅灰边框，避免双重内边距和色彩污染。
 - `.form-grid` 使用 `gap: var(--spacing-sm)`（8px），表单项形成紧凑分组。
 - `.button-row` 使用 `margin-top: var(--spacing-md)`（16px），紧跟配置项。
 
@@ -136,8 +136,9 @@
 
 | Token | 定义 | 用途 |
 |-------|-----|------|
-| `--color-surface-hover` | `color-mix(brand 6%, surface)` | 极净暖灰，用于所有交互组件的 Hover 态背景 |
-| `--color-surface-muted` | `color-mix(brand 12%, surface)` | 浅卡其暖灰，用于 Active 态、选中态或次级面板底色 |
+| `--color-surface-hover` | `color-mix(#2C2A29 4%, surface)` | 深铅色派生暖灰，用于所有交互组件的 Hover 态背景，0% 粉调 |
+| `--color-surface-muted` | `color-mix(#2C2A29 8%, surface)` | 深铅色派生浅灰，用于 Active 态、次级按钮底色 |
+| `--color-brand-light` | `color-mix(brand 12%, surface)` | 主色派生，仅用于需要品牌暗示的局部高亮（侧边栏 Active 态） |
 
 ### Spacing Token
 
