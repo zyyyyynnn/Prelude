@@ -17,6 +17,7 @@ public class InterviewSession {
     private String llmProvider;
     private String llmModel;
     private String status;
+    private String summary;
     private String summaryReport;
     private LocalDateTime createdAt;
 }

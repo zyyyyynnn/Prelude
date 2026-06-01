@@ -47,8 +47,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -69,9 +67,6 @@ public class InterviewServiceImpl implements InterviewService {
             .expireAfterAccess(java.time.Duration.ofMinutes(30))
             .maximumSize(10_000)
             .build();
-    private static final Pattern TECHNICAL_SCORE_PATTERN  = Pattern.compile("\\*{0,2}技术能力\\*{0,2}\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*(?:分)?\\s*/\\s*10");
-    private static final Pattern EXPRESSION_SCORE_PATTERN = Pattern.compile("\\*{0,2}表达清晰度\\*{0,2}\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*(?:分)?\\s*/\\s*10");
-    private static final Pattern LOGIC_SCORE_PATTERN      = Pattern.compile("\\*{0,2}逻辑思维\\*{0,2}\\s*[：:]\\s*(10(?:\\.0+)?|\\d(?:\\.\\d+)?)\\s*(?:分)?\\s*/\\s*10");
     private static final Map<String, String> STAGE_PROMPTS = Map.of(
         STAGE_WARMUP, "当前处于破冰阶段，请从候选人的简历经历入手，提出一条简洁的开场问题。注意：如果你认为破冰已充分，准备进入技术问答，请在回复的最末尾严格附上 [STAGE_COMPLETE] 标识。",
         "technical", "面试已进入技术问答阶段，请围绕岗位核心技术栈、项目实现细节进行追问。注意：如果技术问答已充分，准备进入深挖阶段，请在末尾严格附上 [STAGE_COMPLETE] 标识。",
@@ -89,6 +84,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final LlmRouter llmRouter;
     private final DemoModeService demoModeService;
     private final ObjectMapper objectMapper;
+    private final InterviewReportParser interviewReportParser;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
 
@@ -311,23 +307,38 @@ public class InterviewServiceImpl implements InterviewService {
         List<InterviewMessage> messages = listMessages(sessionId);
 
         String prompt = buildFinishPrompt(session, messages);
-        String report = isDemoEnabled()
+        String reportContent = isDemoEnabled()
             ? demoModeService.resolveReport(session.getTargetPosition())
             : llmRouter.chatWithSnapshot(
                 session.getLlmProvider(),
                 session.getLlmModel(),
                 List.of(
-                    Map.of("role", "system", "content", "你是严谨的面试评估助手，请只输出 Markdown。"),
+                    Map.of("role", "system", "content", """
+                        你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
+                        JSON Schema:
+                        {
+                          "reportMarkdown": "完整 Markdown 评估报告",
+                          "scores": {
+                            "technical": 1-10 的整数,
+                            "expression": 1-10 的整数,
+                            "logic": 1-10 的整数
+                          }
+                        }
+                        三个评分必须使用 1-10 整数范围。
+                        """),
                     Map.of("role", "user", "content", prompt)
-                )
+                ),
+                Map.of("response_format", Map.of("type", "json_object"))
             );
+        InterviewReportParser.ParsedReport parsedReport = interviewReportParser.parse(reportContent);
+        String report = parsedReport.reportMarkdown();
 
         session.setStatus(STATUS_FINISHED);
         session.setSummaryReport(report);
         interviewSessionMapper.updateById(session);
         closeCurrentStage(sessionId);
 
-        persistScoreHistory(session, report);
+        persistScoreHistory(session, parsedReport);
         persistWeaknesses(session, report);
 
         SESSION_LOCKS.invalidate(sessionId.toString());
@@ -468,11 +479,11 @@ public class InterviewServiceImpl implements InterviewService {
 
     private String buildFinishPrompt(InterviewSession session, List<InterviewMessage> messages) {
         StringBuilder builder = new StringBuilder();
-        builder.append("请根据以下模拟面试记录生成 Markdown 评估报告。目标岗位：")
+        builder.append("请根据以下模拟面试记录生成结构化 JSON 评估结果。目标岗位：")
             .append(session.getTargetPosition())
             .append("""
 
-                报告必须包含以下固定字段：
+                reportMarkdown 字段中的 Markdown 报告必须包含以下固定字段：
                 技术能力：X/10
                 表达清晰度：X/10
                 逻辑思维：X/10
@@ -493,9 +504,9 @@ public class InterviewServiceImpl implements InterviewService {
         return builder.toString();
     }
 
-    private void persistScoreHistory(InterviewSession session, String report) {
+    private void persistScoreHistory(InterviewSession session, InterviewReportParser.ParsedReport report) {
         try {
-            ScoreHistory score = extractScoreHistory(session, report);
+            ScoreHistory score = buildScoreHistory(session, report);
             scoreHistoryMapper.delete(new LambdaQueryWrapper<ScoreHistory>()
                 .eq(ScoreHistory::getSessionId, session.getId()));
             scoreHistoryMapper.insert(score);
@@ -504,29 +515,14 @@ public class InterviewServiceImpl implements InterviewService {
         }
     }
 
-    private ScoreHistory extractScoreHistory(InterviewSession session, String report) {
-        Integer technical = extractScore(TECHNICAL_SCORE_PATTERN, report, "技术能力");
-        Integer expression = extractScore(EXPRESSION_SCORE_PATTERN, report, "表达清晰度");
-        Integer logic = extractScore(LOGIC_SCORE_PATTERN, report, "逻辑思维");
-
+    private ScoreHistory buildScoreHistory(InterviewSession session, InterviewReportParser.ParsedReport report) {
         ScoreHistory score = new ScoreHistory();
         score.setUserId(session.getUserId());
         score.setSessionId(session.getId());
-        score.setTechnicalScore(technical);
-        score.setExpressionScore(expression);
-        score.setLogicScore(logic);
+        score.setTechnicalScore(report.technicalScore());
+        score.setExpressionScore(report.expressionScore());
+        score.setLogicScore(report.logicScore());
         return score;
-    }
-
-    private Integer extractScore(Pattern pattern, String report, String label) {
-        Matcher matcher = pattern.matcher(report);
-        if (!matcher.find()) {
-            log.warn("Score pattern not matched for label '{}', will store null", label);
-            return null;
-        }
-        double score = Double.parseDouble(matcher.group(1));
-        score = Math.max(0, Math.min(10, score));
-        return (int) Math.round(score);
     }
 
     private void persistWeaknesses(InterviewSession session, String report) {
