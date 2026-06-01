@@ -391,11 +391,11 @@ function logout() {
 }
 .app-sidebar__btn--primary {
   background-color: var(--color-brand);
-  color: white;
-  box-shadow: 0 2px 8px rgba(158, 123, 106, 0.3);
+  color: var(--color-surface);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand) 30%, transparent);
 }
 .app-sidebar__btn--primary:hover {
-  background-color: color-mix(in srgb, var(--color-brand) 85%, black);
+  background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-text-primary));
 }
 .app-sidebar__btn--icon:hover,
 .app-sidebar__btn--tool:hover,
@@ -439,7 +439,7 @@ function logout() {
 .app-sidebar__collapsed-actions.is-visible {
   opacity: 1;
   pointer-events: auto;
-  height: auto;
+  max-height: 200px;
   margin-top: 12px;
 }
 .session-group {
@@ -637,7 +637,7 @@ function logout() {
 }
 .action-btn:hover {
   color: var(--color-text-primary);
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
 }
 .action-btn.delete-btn:hover {
   color: var(--color-error);
