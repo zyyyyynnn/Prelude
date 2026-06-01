@@ -17,7 +17,7 @@ import com.interview.service.SessionRagService;
 import com.interview.service.VoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -44,7 +44,9 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     private final InterviewStageMapper interviewStageMapper;
     private final SessionRagService sessionRagService;
     private final DemoProperties demoProperties;
-    private final AsyncTaskExecutor sseTaskExecutor;
+    
+    @Qualifier("sseTaskExecutor")
+    private final Executor sseTaskExecutor;
 
     private static final String ROLE_USER = "user";
     private static final String ROLE_ASSISTANT = "assistant";
