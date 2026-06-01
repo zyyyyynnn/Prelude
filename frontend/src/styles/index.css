@@ -862,12 +862,13 @@ a {
 }
 
 .ui-button--danger {
-  background: var(--color-error);
-  color: var(--color-surface);
+  background: var(--color-surface);
+  color: var(--color-error);
+  border: 1px solid color-mix(in srgb, var(--color-error) 30%, transparent);
 }
 
 .ui-button--danger:hover {
-  background: color-mix(in srgb, var(--color-error) 85%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-error) 10%, var(--color-surface));
 }
 
 /* ── Composer dropdown ── */
@@ -1070,7 +1071,7 @@ a {
   padding: 18px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-sand));
+  background: transparent;
 }
 
 .conversation__toolbar {

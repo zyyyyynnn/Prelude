@@ -130,11 +130,14 @@ onMounted(() => {
   box-shadow: var(--shadow-whisper);
 }
 .message-bubble--user .message-bubble__content {
-  background: color-mix(in srgb, var(--color-brand) 8%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
   border-top-right-radius: 4px;
 }
 .message-bubble--assistant .message-bubble__content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-whisper);
   border-top-left-radius: 4px;
 }
 .thinking-dots {
