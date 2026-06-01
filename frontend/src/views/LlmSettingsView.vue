@@ -8,7 +8,6 @@ import {
   ElForm,
   ElFormItem,
   ElInput,
-  ElInputNumber,
   ElOption,
   ElSelect,
   ElTag,
@@ -209,6 +208,7 @@ onMounted(() => {
                   class="ui-select"
                   popper-class="custom-select-popper"
                   placeholder="请选择 Provider"
+                  style="width: 100%;"
                 >
                   <ElOption
                     v-for="provider in providerOptions"
@@ -226,6 +226,7 @@ onMounted(() => {
                   popper-class="custom-select-popper"
                   :disabled="modelOptions.length === 0"
                   placeholder="请选择模型"
+                  style="width: 100%;"
                 >
                   <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
                 </ElSelect>
@@ -243,18 +244,22 @@ onMounted(() => {
             </ElFormItem>
 
             <ElCollapse v-model="advancedOpen" class="advanced-collapse">
-              <ElCollapseItem name="advanced" title="高级设置 (Advanced)">
-                <div class="field-grid">
+              <ElCollapseItem name="advanced" title="高级设置">
+                <div class="advanced-grid">
                   <ElFormItem label="最大回复长度 (Max Tokens)">
-                    <ElInputNumber
+                    <ElSelect
                       v-model="maxTokens"
-                      class="ui-input-number"
-                      :min="1"
-                      :max="32768"
-                      :step="256"
+                      class="ui-select"
+                      popper-class="custom-select-popper"
                       placeholder="留空使用模型默认"
-                      controls-position="right"
-                    />
+                      filterable
+                      allow-create
+                      clearable
+                      style="width: 100%;"
+                    >
+                      <ElOption label="标准输出 (8192 Tokens)" :value="8192" />
+                      <ElOption label="满载输出 (32768 Tokens)" :value="32768" />
+                    </ElSelect>
                   </ElFormItem>
                   <ElFormItem label="思考深度 (Thinking Depth)">
                     <ElSelect
@@ -394,13 +399,39 @@ onMounted(() => {
   margin-top: 32px;
 }
 .advanced-collapse {
-  margin-top: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 0 16px;
-  background: var(--color-sand);
+  margin-top: 24px;
+  border: none;
+  background: transparent;
 }
-.ui-input-number {
-  width: 100%;
+.advanced-collapse :deep(.el-collapse) {
+  border-bottom: none;
+}
+.advanced-collapse :deep(.el-collapse-item__header) {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  height: 40px;
+  line-height: 40px;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+}
+.advanced-collapse :deep(.el-collapse-item__wrap) {
+  border-bottom: none;
+  background: transparent;
+}
+.advanced-collapse :deep(.el-collapse-item__content) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 16px;
+}
+.advanced-collapse :deep(.el-select .el-select__wrapper),
+.advanced-collapse :deep(.el-select .el-input__wrapper) {
+  min-height: unset !important;
+  box-sizing: border-box;
+}
+.advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
 }
 </style>

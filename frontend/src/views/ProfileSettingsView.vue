@@ -120,7 +120,7 @@ onMounted(() => {
 
             <div class="field-grid">
               <ElFormItem label="用户名">
-                <ElInput v-model="profile.username" class="ui-input" disabled size="large" />
+                <ElInput v-model="profile.username" class="ui-input" disabled />
               </ElFormItem>
 
               <ElFormItem label="邮箱">
@@ -129,7 +129,6 @@ onMounted(() => {
                   class="ui-input"
                   autocomplete="email"
                   placeholder="请输入邮箱"
-                  size="large"
                 />
               </ElFormItem>
             </div>
@@ -149,7 +148,6 @@ onMounted(() => {
                     placeholder="留空表示不修改密码"
                     show-password
                     type="password"
-                    size="large"
                   />
                 </ElFormItem>
 
@@ -161,7 +159,6 @@ onMounted(() => {
                     placeholder="请输入新密码"
                     show-password
                     type="password"
-                    size="large"
                   />
                 </ElFormItem>
               </div>
