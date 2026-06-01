@@ -58,46 +58,14 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.workspace-header {
-  display: flex;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(250, 249, 245, 0.85);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  flex-shrink: 0;
-  height: 72px;
-  box-sizing: border-box;
-}
-.workspace-header__main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
 .workspace-header__right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 .workspace-header__stage-wrap {
   display: flex;
   align-items: center;
-}
-.workspace-header__title-area {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.workspace-header__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--color-text-primary);
 }
 .segmented-control {
   display: flex;

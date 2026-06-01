@@ -96,7 +96,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 80%;
+  max-width: min(80%, 760px);
 }
 .message-bubble--user {
   align-self: flex-end;
