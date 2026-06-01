@@ -470,11 +470,11 @@ onBeforeUnmount(() => {
   max-width: 800px;
 }
 .markdown-surface--paper {
-  background: #fffdf9;
-  border: 1px solid #e8e6dc;
+  background: var(--color-sand);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 48px 56px;
-  box-shadow: 0 12px 24px rgba(158, 123, 106, 0.08), 0 2px 6px rgba(158, 123, 106, 0.04);
+  padding: var(--spacing-2xl);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--color-brand) 8%, transparent), 0 2px 6px color-mix(in srgb, var(--color-brand) 4%, transparent);
 }
 .workspace-composer-fixed {
   position: absolute;

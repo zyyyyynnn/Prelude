@@ -59,6 +59,7 @@
   --ui-height-base: 42px;
   --ui-height-sm: 34px;
   --header-height: 72px;
+  --composer-height: 260px;
 
   --el-color-primary: #9e7b6a;
   --el-color-success: var(--color-brand);
