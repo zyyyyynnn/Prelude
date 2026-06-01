@@ -12,11 +12,13 @@ const props = defineProps<{
   hasReport: boolean
   showingReport: boolean
   isFinished: boolean
+  exporting?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'finish'): void
   (e: 'toggle-report', show: boolean): void
+  (e: 'export-pdf'): void
 }>()
 </script>
 
@@ -29,6 +31,18 @@ const emit = defineEmits<{
       </div>
       
       <div class="workspace-header__right">
+        <!-- PDF Export -->
+        <div class="workspace-header__actions" v-if="activeSessionId && hasReport && showingReport">
+          <button 
+            class="ui-button ui-button--secondary ui-button--compact"
+            :disabled="exporting"
+            @click="emit('export-pdf')"
+            type="button"
+          >
+            {{ exporting ? '导出中...' : '导出 PDF' }}
+          </button>
+        </div>
+
         <!-- Stage actions -->
         <div class="workspace-header__stage-wrap" v-if="activeSessionId && !showingReport">
           <StageBar 

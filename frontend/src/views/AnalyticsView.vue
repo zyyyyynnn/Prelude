@@ -276,11 +276,17 @@ onBeforeUnmount(() => {
   gap: var(--spacing-md);
   margin-top: var(--spacing-md);
 }
+.panel {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
 .weakness-item {
   padding: var(--spacing-sm);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 .weakness-item__head {
   display: flex;

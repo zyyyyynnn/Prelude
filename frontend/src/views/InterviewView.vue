@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchPositions } from '../api/auth'
 import type { PositionTemplate, ResumeItem, InterviewMessageRecord } from '../api/contracts'
@@ -12,6 +12,8 @@ import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
 import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
 import MessageThread from '../components/workspace/MessageThread.vue'
 import InterviewComposer from '../components/workspace/InterviewComposer.vue'
+import { exportToPdf } from '../utils/pdf'
+import VoiceVisualizer from '../components/workspace/VoiceVisualizer.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -369,6 +371,190 @@ onBeforeUnmount(() => {
   }
   abortActiveStream()
 })
+
+const reportRef = ref<HTMLElement | null>(null)
+const exportingPdf = ref(false)
+
+async function handleExportPdf() {
+  if (!reportRef.value) return
+  exportingPdf.value = true
+  try {
+    const title = targetPosition.value ? `${targetPosition.value}-面试评估报告` : '面试评估报告'
+    await exportToPdf(reportRef.value, `${title}.pdf`)
+    showNotice('PDF 导出成功', 'success')
+  } catch (error) {
+    showNotice('PDF 导出失败，请重试', 'error')
+    console.error(error)
+  } finally {
+    exportingPdf.value = false
+  }
+}
+
+// Voice-to-Voice Websocket Interactive States
+const isVoiceMode = ref(false)
+const voiceStatus = ref<'idle' | 'listening' | 'stt_processing' | 'tts_processing' | 'speaking'>('idle')
+const incomingAudioChunk = ref('')
+let voiceSocket: WebSocket | null = null
+const currentVoiceAssistantMsgId = ref<number | null>(null)
+
+function initVoiceWebSocket() {
+  if (voiceSocket) {
+    voiceSocket.close()
+    voiceSocket = null
+  }
+  if (!isVoiceMode.value || !activeSessionId.value) {
+    return
+  }
+
+  const loc = window.location
+  const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:'
+  // WebSocket endpoint maps to /api/ws and handles authentication
+  const wsUrl = `${proto}//${loc.host}/api/ws?token=${authStore.token}`
+
+  voiceSocket = new WebSocket(wsUrl)
+
+  voiceSocket.onopen = () => {
+    console.log('Voice WebSocket connection opened')
+    voiceSocket?.send(JSON.stringify({
+      type: 'start',
+      sessionId: activeSessionId.value
+    }))
+    voiceStatus.value = 'listening'
+  }
+
+  voiceSocket.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data)
+      if (msg.type === 'status') {
+        if (msg.status === 'stt_processing') {
+          voiceStatus.value = 'stt_processing'
+        } else if (msg.status === 'tts_processing') {
+          voiceStatus.value = 'tts_processing'
+        } else if (msg.status === 'speech_end') {
+          voiceStatus.value = 'listening'
+          currentVoiceAssistantMsgId.value = null
+        }
+      } else if (msg.type === 'user_text') {
+        // Optimistic append of users transcribed reply to the thread
+        appendMessage({
+          id: Date.now(),
+          role: 'user',
+          content: msg.text,
+          createdAt: new Date().toISOString()
+        })
+      } else if (msg.type === 'text') {
+        // Streaming subtitles from LLM assistant output
+        if (currentVoiceAssistantMsgId.value === null) {
+          currentVoiceAssistantMsgId.value = Date.now() + 2
+          ensureAssistantPlaceholder(currentVoiceAssistantMsgId.value)
+        }
+        appendAssistantDelta(currentVoiceAssistantMsgId.value, msg.chunk)
+      } else if (msg.type === 'audio') {
+        // Forward synthesized speech stream to playback queue
+        incomingAudioChunk.value = msg.data
+        nextTick(() => {
+          incomingAudioChunk.value = ''
+        })
+      } else if (msg.type === 'judge') {
+        // Feed live score badge
+        if (replay.value) {
+          const userMsgs = replay.value.messages.filter((m) => m.role === 'user')
+          if (userMsgs.length > 0) {
+            const last = userMsgs[userMsgs.length - 1]
+            last.score = msg.score
+            last.hint = msg.hint
+          }
+        }
+      } else if (msg.type === 'error') {
+        // Audio connection failure, fallback cleanly
+        showNotice(msg.message, 'warning')
+        isVoiceMode.value = false
+      }
+    } catch (e) {
+      console.error('Failed to parse voice socket message:', e)
+    }
+  }
+
+  voiceSocket.onclose = () => {
+    console.log('Voice WebSocket connection closed')
+    if (isVoiceMode.value) {
+      voiceStatus.value = 'idle'
+    }
+  }
+
+  voiceSocket.onerror = (err) => {
+    console.error('Voice WebSocket connection error:', err)
+    if (isVoiceMode.value) {
+      showNotice('语音交互连接异常，已自动为您切回文字模式', 'warning')
+      isVoiceMode.value = false
+    }
+  }
+}
+
+function handleAudioChunk(arrayBuffer: ArrayBuffer) {
+  if (voiceSocket && voiceSocket.readyState === WebSocket.OPEN) {
+    voiceSocket.send(new Uint8Array(arrayBuffer))
+  }
+}
+
+function handleStartRecording() {
+  if (voiceSocket && voiceSocket.readyState === WebSocket.OPEN) {
+    voiceSocket.send(JSON.stringify({ type: 'start', sessionId: activeSessionId.value }))
+    voiceStatus.value = 'listening'
+  }
+}
+
+function handleStopRecording() {
+  if (voiceSocket && voiceSocket.readyState === WebSocket.OPEN) {
+    voiceSocket.send(JSON.stringify({ type: 'stop' }))
+  }
+}
+
+function handlePlayStatus(status: 'playing' | 'idle') {
+  if (status === 'playing') {
+    voiceStatus.value = 'speaking'
+  } else {
+    if (voiceStatus.value === 'speaking') {
+      voiceStatus.value = 'listening'
+    }
+  }
+}
+
+watch(isVoiceMode, (newVal) => {
+  initVoiceWebSocket()
+  if (!newVal && voiceSocket) {
+    voiceSocket.close()
+    voiceSocket = null
+  }
+})
+
+watch(activeSessionId, (newId, oldId) => {
+  if (newId !== oldId) {
+    showingReport.value = false
+    answer.value = ''
+    isVoiceMode.value = false
+    if (voiceSocket) {
+      voiceSocket.close()
+      voiceSocket = null
+    }
+  }
+})
+
+onMounted(() => {
+  void loadDashboard()
+})
+
+onBeforeUnmount(() => {
+  if (streamTimeoutId.value !== null) {
+    clearTimeout(streamTimeoutId.value)
+    streamTimeoutId.value = null
+  }
+  abortActiveStream()
+  if (voiceSocket) {
+    voiceSocket.close()
+    voiceSocket = null
+  }
+})
 </script>
 
 <template>
@@ -408,14 +594,16 @@ onBeforeUnmount(() => {
         :has-report="hasReport"
         :showing-report="showingReport"
         :is-finished="isFinished"
+        :exporting="exportingPdf"
         @finish="handleFinish"
         @toggle-report="showingReport = $event"
+        @export-pdf="handleExportPdf"
       />
 
       <div class="workspace-active__main">
         <div v-if="showingReport" class="workspace-report scrollable">
           <div class="report-content">
-            <div class="markdown-surface markdown-surface--paper">
+            <div class="markdown-surface markdown-surface--paper" ref="reportRef">
               <div class="markdown-body" v-html="renderedReport" />
             </div>
           </div>
@@ -425,7 +613,25 @@ onBeforeUnmount(() => {
           <MessageThread :messages="messages" :reconnecting-status="reconnectingStatus" />
           
           <div class="workspace-composer-fixed">
+            <div v-if="isVoiceMode" class="voice-mode-container">
+              <VoiceVisualizer
+                :status-text="voiceStatus"
+                :incoming-audio="incomingAudioChunk"
+                @audio-chunk="handleAudioChunk"
+                @start-recording="handleStartRecording"
+                @stop-recording="handleStopRecording"
+                @play-status="handlePlayStatus"
+              />
+              <button 
+                class="ui-button ui-button--secondary ui-button--compact voice-close-btn"
+                @click="isVoiceMode = false"
+                type="button"
+              >
+                返回文字模式
+              </button>
+            </div>
             <InterviewComposer 
+              v-else
               :is-centered="false"
               :active-session-id="activeSessionId"
               :resumes="resumes"
@@ -444,6 +650,7 @@ onBeforeUnmount(() => {
               @upload="handleUpload"
               @start="createNewInterview"
               @send="handleSend"
+              @toggle-voice="isVoiceMode = true"
             />
           </div>
         </template>
@@ -543,5 +750,27 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   color: var(--color-text-tertiary);
+}
+.voice-mode-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+.voice-close-btn {
+  font-size: 13px;
+  padding: 0 var(--spacing-md);
+  height: var(--ui-height-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.voice-close-btn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
 }
 </style>

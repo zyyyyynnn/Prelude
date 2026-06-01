@@ -28,6 +28,7 @@ const emit = defineEmits<{
   (e: 'upload', file: File): void
   (e: 'start', jdText?: string): void
   (e: 'send'): void
+  (e: 'toggle-voice'): void
 }>()
 
 const router = useRouter()
@@ -146,6 +147,13 @@ function navigateToLlm() {
               <button class="toolbar-item" type="button" @click="showJdInput = !showJdInput" :class="{ 'is-active': showJdInput }">
                 <span class="toolbar-item__label">JD 匹配:</span>
                 <span class="toolbar-item__value">{{ showJdInput ? '已开启' : '未开启' }}</span>
+              </button>
+            </template>
+            <template v-else>
+              <!-- Voice Toggle -->
+              <button class="toolbar-item" type="button" @click="emit('toggle-voice')">
+                <span class="toolbar-item__label">互动:</span>
+                <span class="toolbar-item__value" style="color: var(--color-brand);">切换到语音</span>
               </button>
             </template>
 
