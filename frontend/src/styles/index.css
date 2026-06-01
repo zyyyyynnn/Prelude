@@ -8,6 +8,8 @@
   --color-surface-dark: #30302e;
   --color-bg-dark: #141413;
   --color-sand: #e8e6dc;
+  --color-surface-hover: color-mix(in srgb, var(--color-brand) 6%, var(--color-surface));
+  --color-surface-muted: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   --bg-paper-filter:
     radial-gradient(circle at 16% 14%, rgba(255, 255, 255, 0.32) 0, rgba(255, 255, 255, 0) 26%),
     radial-gradient(circle at 80% 72%, rgba(0, 0, 0, 0.04) 0, rgba(0, 0, 0, 0) 24%),
@@ -829,13 +831,13 @@ a {
 
 .ui-button--secondary.el-button:hover,
 .ui-button--secondary.el-button:focus-visible {
-  background: color-mix(in srgb, var(--color-sand) 97%, black);
+  background: var(--color-surface-hover);
   color: var(--color-text-button);
 }
 
 .ui-button.is-active {
   border-color: var(--color-ring);
-  background: color-mix(in srgb, var(--color-sand) 84%, var(--color-surface));
+  background: var(--color-surface-muted);
   box-shadow: inset 0 0 0 1px rgba(157, 123, 106, 0.12), var(--shadow-ring);
 }
 

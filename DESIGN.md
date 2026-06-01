@@ -9,6 +9,8 @@
 | 背景 | 暖灰纸感背景，禁止纯白页面背景 |
 | 主色 | `#9e7b6a` 及其低饱和暖灰派生色 |
 | 表面 | `#faf9f5` / `#f5f4ed` |
+| 表面悬停 | `--color-surface-hover`（6% 品牌色混入 surface） |
+| 表面次级 | `--color-surface-muted`（12% 品牌色混入 surface） |
 | 边框 | 低饱和暖灰线，不使用高对比黑线 |
 | 阴影 | 只允许轻阴影和 1px ring，禁止重投影 |
 | 圆角 | 卡片 16-24px，按钮和输入框不低于 8px |
@@ -176,3 +178,4 @@
 - 禁止侧边栏折叠态使用 `justify-content: center` 或 `margin: auto`（离散属性不可动画）。
 - 禁止在 Vue scoped CSS 中使用原生 `white`、`black`、`#hex` 颜色值，统一使用 `var(--color-*)` Token 或 `color-mix()`。
 - 禁止 `height: auto` 参与过渡动画（不可补间），改用 `max-height` 技巧。
+- 禁止使用 `--color-sand` 作为 hover 背景色，统一使用 `--color-surface-hover`。`--color-sand` 仅用于边框和深色占位 fallback。
