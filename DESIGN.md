@@ -1,6 +1,6 @@
 # UI 设计规范
 
-> 当前版本基线。只保留已落地且需要继续遵守的规则，删除历史方案、一次性批注和已废弃的导航/Logo 约束。
+> 当前版本基线。只保留已落地且需要继续遵守的规则。
 
 ## 1. 视觉基线
 
@@ -41,7 +41,7 @@
 - 登录页不显示全局 Header。
 - 登录/注册使用同一张卡片，切换时卡片外尺寸不变化。
 - 卡片宽度按当前实现保持 `min(100%, 1180px)`，`transform: scale(1)`。
-- 左栏只包含大号 `BrandMetaballs` Logo 和一行小字 `LLM Mock Interview System`。
+- 左栏只包含大号 `BrandMetaballs` Logo 和一行小字 `AI Mock Interview`。
 - 右栏保留 eyebrow、主标题、表单和底部按钮组；删除额外解释性提示词。
 - 登录态为注册邮箱输入预留同高空位，避免切换抽动。
 - 登录/注册切换按钮放在表单底部，与提交按钮同组。
@@ -53,6 +53,13 @@
 - 同一视觉层级的卡片必须统一内边距、标题区高度、Badge 尺寸和按钮尺寸。
 - 主工作台按上下分段组织：上段为准备与实时面试，下段为历史与报告。
 - 卡片内冗余空白优先通过重排信息密度解决，不靠强行拉高卡片。
+- `.panel .el-card__body` 使用 `gap: var(--spacing-md); padding: var(--spacing-md)`（16px），禁止使用 `--spacing-lg`。
+- `.panel__head` 无 `min-height`，通过 `padding: var(--spacing-md) 0` 自然撑开。
+- `.panel__title` 字号 20px，行高 1.4；`.panel__title--small` 字号 18px。
+- `.panel__lead` 字号 13px，颜色 `var(--color-text-tertiary)`。
+- 嵌套在 `.panel` 内部的 `.detail-card` 使用 `padding: var(--spacing-sm)`（8px），避免双重内边距。
+- `.form-grid` 使用 `gap: var(--spacing-sm)`（8px），表单项形成紧凑分组。
+- `.button-row` 使用 `margin-top: var(--spacing-md)`（16px），紧跟配置项。
 
 ## 6. 按钮与 Badge
 
@@ -68,13 +75,16 @@
 - 输入框使用浅表面背景、暖灰边框和 8px 以上圆角。
 - 文件上传使用封装上传行：左侧选择按钮，右侧文件名，禁止暴露原生 file input 大块样式。
 - 设置页只保留当前模块保存按钮，不放返回主工作台、数据看板等跨页面入口。
+- 所有 `ElSelect` 禁止使用 `size` 属性，高度由 `--ui-height-sm` Token 统一控制。
 
 ## 8. 对话、回放与报告
 
-- `system` 消息作为系统说明块，不渲染为“我”的回答。
+- `system` 消息作为系统说明块，不渲染为"我"的回答。
 - `user` 消息靠右，`assistant / 面试官` 消息靠左。
-- Demo 模拟面试内容应回答面试官问题，避免回答“系统消息”。
+- Demo 模拟面试内容应回答面试官问题，避免回答"系统消息"。
 - Markdown 报告使用卡片化阅读面板，禁止退回纯 `<pre>` 文本面板。
+- 聊天气泡 `max-width: min(80%, 760px)`，防止超宽屏下文本拉伸过大。
+- 消息列表首次挂载和会话切换时必须自动滚动到底部，使用 `nextTick` + `requestAnimationFrame` 双重保险。
 
 ## 9. 图表与数据看板
 
@@ -88,6 +98,9 @@
 - 组件间距统一为 12px（margin / gap / padding），例外：会话操作按钮（置顶/删除）内部间距保持 4px。
 - 会话列表使用 `flex + gap` 控制间距，按钮使用 `min-height / max-height / line-height: 1` 锁定高度，防止 flex 的 `min-height: auto` 撑高。
 - LLM 配置图标使用终端样式 `>_`（polyline 4 17 / 10 11 / 4 5 + 底部光标线）。
+- 折叠态按钮使用 `width: 32px; margin: 0 6px; padding: 0 6px` 数值补偿居中，禁止使用 `justify-content: center` 或 `margin: 0 auto`（离散属性不可动画，会导致图标横跳）。
+- 侧边栏滚动条继承全局 `.scrollable` 样式，禁止在 scoped CSS 中重复定义 `::-webkit-scrollbar`。
+- `WorkspaceHeader.vue` 禁止在 scoped CSS 中定义 `.workspace-header`，必须继承全局骨架样式以保证 40px 水平对齐。
 
 ## 11. 下拉弹层
 
@@ -121,11 +134,11 @@
 | Token | 值 | 用途 |
 |-------|-----|------|
 | `--spacing-xs` | 4px | 极小间距（图标与文字、badge 内边距） |
-| `--spacing-sm` | 8px | 小间距（按钮组 gap、表单 label padding） |
-| `--spacing-md` | 16px | 中间距（卡片内边距、grid gap） |
-| `--spacing-lg` | 24px | 大间距（页面 padding、section gap） |
-| `--spacing-xl` | 32px | 特大间距（按钮行 margin-top） |
-| `--spacing-2xl` | 40px | 页面内容区水平 padding |
+| `--spacing-sm` | 8px | 小间距（按钮组 gap、表单 gap、嵌套卡片 padding） |
+| `--spacing-md` | 16px | 中间距（面板 gap/padding、grid gap、按钮行 margin-top） |
+| `--spacing-lg` | 24px | 大间距（section gap、header 垂直 padding） |
+| `--spacing-xl` | 32px | 特大间距（保留） |
+| `--spacing-2xl` | 40px | 页面内容区水平 padding（Header + Content 严格对齐） |
 
 ### Height Token
 
@@ -141,6 +154,8 @@
 
 `.workspace-page`、`.workspace-header`、`.workspace-page__content`、`.page-grid`、`.detail-grid`、`.field-grid`、`.detail-card`、`.button-row` 全部定义在 `index.css`，禁止在 Vue 文件 scoped 样式中重复定义。
 
+`.workspace-header` 和 `.workspace-page__content` 的水平 padding 统一为 `var(--spacing-2xl)`（40px），保证 Header 与 Content 严格垂直对齐。
+
 ## 15. 禁止项
 
 - 禁止新增页面级跨路由按钮。
@@ -154,3 +169,6 @@
 - 禁止交互元素缺少 `focus-visible` 样式。
 - 禁止在间距和组件高度上使用硬编码 `px`，统一使用 `--spacing-*` 和 `--ui-height-*` Token。
 - 禁止在 Vue scoped 样式中重复定义全局骨架类（`.workspace-*`、`.page-grid`、`.detail-*`、`.field-grid`、`.button-row`）。
+- 禁止在侧边栏 scoped CSS 中定义 `::-webkit-scrollbar`，继承全局 `.scrollable`。
+- 禁止在 `WorkspaceHeader.vue` scoped CSS 中定义 `.workspace-header`，必须继承全局骨架。
+- 禁止侧边栏折叠态使用 `justify-content: center` 或 `margin: auto`（离散属性不可动画）。
