@@ -5,6 +5,6 @@ public record UserLlmConfigResponse(
     String model,
     String apiKeyMasked,
     Integer maxTokens,
-    Double temperature
+    Integer thinkingDepth
 ) {
 }

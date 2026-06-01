@@ -17,6 +17,6 @@ public class User {
     private String llmModel;
     private String llmApiKeyEncrypted;
     private Integer llmMaxTokens;
-    private Double llmTemperature;
+    private Integer llmThinkingDepth;
     private LocalDateTime createdAt;
 }
