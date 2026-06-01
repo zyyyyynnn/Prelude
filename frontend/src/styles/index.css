@@ -529,8 +529,8 @@ a {
 
 .panel .el-card__body {
   display: grid;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
 }
 
 .panel__head {
@@ -1818,7 +1818,7 @@ a {
 .form-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 .detail-card {
   padding: var(--spacing-md);
@@ -1840,6 +1840,6 @@ a {
 .button-row {
   display: flex;
   gap: var(--spacing-md);
-  margin-top: var(--spacing-xl);
+  margin-top: var(--spacing-md);
 }
 
