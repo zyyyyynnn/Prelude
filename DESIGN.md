@@ -112,7 +112,36 @@
 - `--color-text-tertiary` 对比度必须满足 WCAG AA 4.5:1（当前值 `#6b6a65`，在 `#faf9f5` 上约 4.6:1）。
 - 所有交互元素（按钮、列表项、下拉项）必须定义 `focus-visible` 样式：`outline: 2px solid var(--color-focus); outline-offset: -2px`。
 
-## 14. 禁止项
+## 14. Token 体系
+
+### Spacing Token
+
+所有间距必须使用以下变量，禁止硬编码 `px`：
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--spacing-xs` | 4px | 极小间距（图标与文字、badge 内边距） |
+| `--spacing-sm` | 8px | 小间距（按钮组 gap、表单 label padding） |
+| `--spacing-md` | 16px | 中间距（卡片内边距、grid gap） |
+| `--spacing-lg` | 24px | 大间距（页面 padding、section gap） |
+| `--spacing-xl` | 32px | 特大间距（按钮行 margin-top） |
+| `--spacing-2xl` | 40px | 页面内容区水平 padding |
+
+### Height Token
+
+所有组件高度必须使用以下变量，禁止硬编码 `px`：
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--ui-height-base` | 42px | 标准按钮 |
+| `--ui-height-sm` | 34px | 紧凑按钮、输入框、下拉框 wrapper |
+| `--header-height` | 72px | 工作区页头 |
+
+### 工作区骨架
+
+`.workspace-page`、`.workspace-header`、`.workspace-page__content`、`.page-grid`、`.detail-grid`、`.field-grid`、`.detail-card`、`.button-row` 全部定义在 `index.css`，禁止在 Vue 文件 scoped 样式中重复定义。
+
+## 15. 禁止项
 
 - 禁止新增页面级跨路由按钮。
 - 禁止重复解释布局设计意图的提示词。
@@ -123,3 +152,5 @@
 - 禁止 `ElDropdown` / `ElSelect` 不加 `popper-class` 使用默认弹层样式。
 - 禁止直接调用 `ElMessage`，统一走 `usePageNotice`。
 - 禁止交互元素缺少 `focus-visible` 样式。
+- 禁止在间距和组件高度上使用硬编码 `px`，统一使用 `--spacing-*` 和 `--ui-height-*` Token。
+- 禁止在 Vue scoped 样式中重复定义全局骨架类（`.workspace-*`、`.page-grid`、`.detail-*`、`.field-grid`、`.button-row`）。
