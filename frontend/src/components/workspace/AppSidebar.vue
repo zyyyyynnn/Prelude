@@ -442,16 +442,6 @@ function logout() {
   height: auto;
   margin-top: 12px;
 }
-.app-sidebar__sessions::-webkit-scrollbar {
-  width: 6px;
-}
-.app-sidebar__sessions::-webkit-scrollbar-thumb {
-  background: var(--color-ring);
-  border-radius: 3px;
-}
-.app-sidebar__sessions::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brand);
-}
 .session-group {
   margin-bottom: 12px;
   white-space: nowrap;
