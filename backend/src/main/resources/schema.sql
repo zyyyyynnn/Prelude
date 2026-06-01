@@ -183,8 +183,55 @@ CREATE TABLE IF NOT EXISTS `llm_provider_config` (
   UNIQUE KEY `uk_llm_provider_config_provider_key` (`provider_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LLM Provider 配置表';
 
--- 高频 WHERE user_id + ORDER BY created_at 查询优化
-CREATE INDEX IF NOT EXISTS idx_session_user_created ON interview_session (user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_score_user_created ON score_history (user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_weakness_user_created ON user_weakness (user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_resume_user_created ON resume (user_id, created_at);
+-- 高频 WHERE user_id + ORDER BY created_at 查询优化（information_schema 兼容写法）
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_session_user_created ON interview_session (user_id, created_at)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND INDEX_NAME = 'idx_session_user_created'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_score_user_created ON score_history (user_id, created_at)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'score_history' AND INDEX_NAME = 'idx_score_user_created'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_weakness_user_created ON user_weakness (user_id, created_at)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_weakness' AND INDEX_NAME = 'idx_weakness_user_created'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'CREATE INDEX idx_resume_user_created ON resume (user_id, created_at)',
+    'SELECT 1'
+  )
+  FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'resume' AND INDEX_NAME = 'idx_resume_user_created'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
