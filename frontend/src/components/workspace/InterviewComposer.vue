@@ -249,7 +249,7 @@ function navigateToLlm() {
   outline: none;
 }
 .toolbar-item:hover, .toolbar-item:focus-within {
-  background-color: var(--color-sand);
+  background-color: var(--color-surface-hover);
 }
 .toolbar-item__label {
   color: var(--color-text-tertiary);
@@ -278,7 +278,7 @@ function navigateToLlm() {
   font-weight: 500;
 }
 .custom-dropdown-menu .upload-action:hover {
-  background-color: var(--color-sand) !important;
+  background-color: var(--color-surface-hover) !important;
   color: var(--color-brand) !important;
 }
 </style>

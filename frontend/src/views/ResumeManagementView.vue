@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
 }
 .resume-row:hover {
   border-color: var(--color-border-warm);
-  background: var(--color-sand);
+  background: var(--color-surface-hover);
 }
 .resume-row__main {
   display: flex;
