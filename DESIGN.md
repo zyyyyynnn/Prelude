@@ -75,7 +75,7 @@
 - 输入框使用浅表面背景、暖灰边框和 8px 以上圆角。
 - 文件上传使用封装上传行：左侧选择按钮，右侧文件名，禁止暴露原生 file input 大块样式。
 - 设置页只保留当前模块保存按钮，不放返回主工作台、数据看板等跨页面入口。
-- 所有 `ElSelect` 禁止使用 `size` 属性，高度由 `--ui-height-sm` Token 统一控制。
+- 所有 `ElSelect` 和 `ElInput` 禁止使用 `size` 属性，高度由 `--ui-height-sm` Token 统一控制。
 
 ## 8. 对话、回放与报告
 
@@ -107,6 +107,7 @@
 - `ElDropdown` 和 `ElSelect` 必须通过 `popper-class` 指定自定义弹层 class，禁止使用 Element Plus 默认弹层样式。
 - `ElDropdown` 使用 `popper-class="custom-dropdown-popper"`，配套 CSS 定义在 `index.css`。
 - `ElSelect` 使用 `popper-class="custom-select-popper"`，配套 CSS 定义在 `index.css`。
+- 所有 `ElSelect` 必须同时添加 `fit-input-width` 属性，强制弹层宽度与触发器等宽。
 - 弹层宽度必须严格等于触发器宽度，通过 `usePopperMatchTrigger` composable 实现：`ResizeObserver` 测量触发器 `getBoundingClientRect()`，输出 `popperStyle` 绑定到 `:popper-style`。
 - 弹层边框禁止使用真实 `border`（会占布局空间，与触发器 `box-shadow: inset` 内嵌边框错位 1px），改用 `border: none` + `box-shadow: inset 0 0 0 1px var(--color-border-warm)` 模拟。
 - 弹层 `padding: 1px`，使内容盒精确落在内嵌边框内侧。
