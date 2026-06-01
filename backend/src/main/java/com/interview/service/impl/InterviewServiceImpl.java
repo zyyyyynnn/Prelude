@@ -87,6 +87,8 @@ public class InterviewServiceImpl implements InterviewService {
     private final InterviewReportParser interviewReportParser;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
+    private final org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+    private final com.interview.service.SessionRagService sessionRagService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -128,7 +130,14 @@ public class InterviewServiceImpl implements InterviewService {
         session.setLlmProvider(selection.providerKey());
         session.setLlmModel(selection.model());
         session.setStatus(STATUS_ONGOING);
+        session.setJdText(request.getJdText());
         interviewSessionMapper.insert(session);
+
+        String resumeText = resume.getRawText();
+        String jdText = request.getJdText();
+        sseTaskExecutor.execute(() -> {
+            sessionRagService.indexSession(session.getId(), resumeText, jdText);
+        });
 
         insertMessage(session.getId(), ROLE_SYSTEM, position.getSystemPrompt(), 0);
         ensureInitialStage(session);
@@ -176,7 +185,9 @@ public class InterviewServiceImpl implements InterviewService {
                     message.getRole(),
                     message.getContent(),
                     message.getSeqNum(),
-                    message.getCreatedAt()
+                    message.getCreatedAt(),
+                    message.getScore(),
+                    message.getHint()
                 ))
                 .toList()
         );
@@ -285,7 +296,12 @@ public class InterviewServiceImpl implements InterviewService {
                     internalAdvanceStage(session.getId());
                 }
 
-                emitter.complete();
+                if (insertedUserMsg != null) {
+                    triggerAsyncJudge(session, insertedUserMsg, emitter);
+                    triggerAsyncSummarizeIfNeeded(session);
+                } else {
+                    emitter.complete();
+                }
             } catch (Exception exception) {
                 if (insertedUserMsg != null && insertedUserMsg.getId() != null && !assistantPersisted) {
                     interviewMessageMapper.deleteById(insertedUserMsg.getId());
@@ -432,6 +448,7 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     private List<Map<String, String>> buildContextMessages(Long sessionId) {
+        InterviewSession session = interviewSessionMapper.selectById(sessionId);
         List<InterviewMessage> allMessages = listMessages(sessionId);
         List<InterviewMessage> systemMsgs = new ArrayList<>();
         List<InterviewMessage> dialogMsgs = new ArrayList<>();
@@ -444,14 +461,69 @@ public class InterviewServiceImpl implements InterviewService {
             }
         }
 
-        int maxDialogs = 12;
-        if (dialogMsgs.size() > maxDialogs) {
-            dialogMsgs = new ArrayList<>(dialogMsgs.subList(dialogMsgs.size() - maxDialogs, dialogMsgs.size()));
+        String latestUserMsg = "";
+        for (int i = allMessages.size() - 1; i >= 0; i--) {
+            InterviewMessage m = allMessages.get(i);
+            if (ROLE_USER.equals(m.getRole())) {
+                latestUserMsg = m.getContent();
+                break;
+            }
+        }
+        if (latestUserMsg.isEmpty() && session != null) {
+            latestUserMsg = session.getTargetPosition();
         }
 
-        List<InterviewMessage> finalMessages = new ArrayList<>(systemMsgs);
-        finalMessages.addAll(dialogMsgs);
-        finalMessages.sort(java.util.Comparator.comparingInt(InterviewMessage::getSeqNum));
+        List<String> ragChunks = (session != null && !latestUserMsg.isEmpty())
+            ? sessionRagService.searchTopChunks(session.getId(), latestUserMsg, 5)
+            : List.of();
+
+        String ragSystemPrompt = "";
+        if (!ragChunks.isEmpty()) {
+            StringBuilder sb = new StringBuilder("以下是与当前对话主题最相关的简历及岗位 JD 背景信息碎片，供提问和追问参考：\n");
+            for (int i = 0; i < ragChunks.size(); i++) {
+                sb.append("[").append(i + 1).append("] ").append(ragChunks.get(i)).append("\n");
+            }
+            ragSystemPrompt = sb.toString();
+        }
+
+        String summary = session != null ? session.getSummary() : null;
+        if (summary != null && !summary.isBlank()) {
+            List<Map<String, String>> messages = new ArrayList<>();
+            for (InterviewMessage sysMsg : systemMsgs) {
+                messages.add(Map.of("role", "system", "content", sysMsg.getContent()));
+            }
+            if (!ragSystemPrompt.isEmpty()) {
+                messages.add(Map.of("role", "system", "content", ragSystemPrompt));
+            }
+            messages.add(Map.of("role", "system", "content", "以下是此前面试对话的摘要总结（已对涉及手机号、邮箱、身份证等用户隐私数据做严格脱敏处理）：\n" + summary));
+            int lastCount = Math.min(dialogMsgs.size(), 8);
+            List<InterviewMessage> recentDialogs = dialogMsgs.subList(dialogMsgs.size() - lastCount, dialogMsgs.size());
+            for (InterviewMessage m : recentDialogs) {
+                messages.add(Map.of("role", m.getRole(), "content", m.getContent()));
+            }
+            return messages;
+        }
+
+        List<InterviewMessage> finalMessages = new ArrayList<>();
+        if (!systemMsgs.isEmpty()) {
+            finalMessages.add(systemMsgs.get(0));
+        }
+        if (!ragSystemPrompt.isEmpty()) {
+            InterviewMessage ragMsg = new InterviewMessage();
+            ragMsg.setRole(ROLE_SYSTEM);
+            ragMsg.setContent(ragSystemPrompt);
+            finalMessages.add(ragMsg);
+        }
+        for (int i = 1; i < systemMsgs.size(); i++) {
+            finalMessages.add(systemMsgs.get(i));
+        }
+
+        int maxDialogs = 12;
+        List<InterviewMessage> trimmedDialogs = dialogMsgs;
+        if (dialogMsgs.size() > maxDialogs) {
+            trimmedDialogs = new ArrayList<>(dialogMsgs.subList(dialogMsgs.size() - maxDialogs, dialogMsgs.size()));
+        }
+        finalMessages.addAll(trimmedDialogs);
 
         return finalMessages.stream()
             .map(message -> Map.of("role", message.getRole(), "content", message.getContent()))
@@ -763,6 +835,172 @@ public class InterviewServiceImpl implements InterviewService {
         interviewStageMapper.insert(newStage);
 
         insertMessage(sessionId, ROLE_SYSTEM, STAGE_PROMPTS.get(nextStage), nextSeqNum(sessionId));
+    }
+
+    private void triggerAsyncJudge(InterviewSession session, InterviewMessage userMsg, SseEmitter emitter) {
+        Long userId = session.getUserId();
+        sseTaskExecutor.execute(() -> {
+            UserContext.setCurrentUserId(userId);
+            String lockKey = "lock:judge:" + userId;
+            boolean lockAcquired = false;
+            try {
+                // Spin wait for lock
+                for (int retry = 0; retry < 10; retry++) {
+                    Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", java.time.Duration.ofSeconds(30));
+                    if (Boolean.TRUE.equals(acquired)) {
+                        lockAcquired = true;
+                        break;
+                    }
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+
+                if (!lockAcquired) {
+                    log.warn("Failed to acquire judge lock for user {}, skipping judge", userId);
+                    emitter.complete();
+                    return;
+                }
+
+                // Retrieve last assistant message as the question
+                List<InterviewMessage> allMessages = listMessages(session.getId());
+                String questionContent = "";
+                for (int i = allMessages.size() - 1; i >= 0; i--) {
+                    InterviewMessage m = allMessages.get(i);
+                    if (ROLE_ASSISTANT.equals(m.getRole()) && m.getSeqNum() < userMsg.getSeqNum()) {
+                        questionContent = m.getContent();
+                        break;
+                    }
+                }
+
+                String judgeResultJson;
+                if (isDemoEnabled()) {
+                    // Scripted demo mock judge
+                    String currentStage = currentStageName(session.getId());
+                    int replyIndex = assistantRepliesInCurrentStage(session.getId());
+                    judgeResultJson = demoModeService.resolveMockJudge(currentStage, replyIndex);
+                    // Stream delay to simulate thinking/processing
+                    try {
+                        Thread.sleep(1500);
+                    } catch (InterruptedException ignored) {}
+                } else {
+                    String systemPrompt = """
+                        你是严谨的面试评估官。请针对当前的技术面试问题和候选人的回答，给出 1 到 10 之间的评分（1-10 整数）和一句简短的改进建议或评价（字数控制在 50 字以内）。
+                        必须只返回如下严格 JSON，不要输出 Markdown 代码围栏：
+                        {
+                          "score": 评分数字,
+                          "hint": "改进建议或评价"
+                        }
+                        """;
+                    String userPrompt = "面试岗位：" + session.getTargetPosition() + "\n" +
+                                         "面试官提出的问题：" + questionContent + "\n" +
+                                         "候选人的回答：" + userMsg.getContent() + "\n";
+                    
+                    String judgeOutput = llmRouter.chatWithSnapshot(
+                        session.getLlmProvider(),
+                        session.getLlmModel(),
+                        List.of(
+                            Map.of("role", "system", "content", systemPrompt),
+                            Map.of("role", "user", "content", userPrompt)
+                        ),
+                        Map.of("response_format", Map.of("type", "json_object"))
+                    );
+                    
+                    String trimmed = stripJsonFence(judgeOutput);
+                    try {
+                        Map<String, Object> map = objectMapper.readValue(trimmed, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                        int score = ((Number) map.getOrDefault("score", 7)).intValue();
+                        String hint = (String) map.getOrDefault("hint", "回答已记录");
+                        judgeResultJson = String.format("{\"score\": %d, \"hint\": \"%s\"}", score, hint.replace("\"", "\\\""));
+                    } catch (Exception e) {
+                        log.warn("Failed to parse judge output: {}", judgeOutput, e);
+                        judgeResultJson = "{\"score\": 7, \"hint\": \"回答已记录，继续加油。\"}";
+                    }
+                }
+
+                // Save score and hint to database
+                try {
+                    Map<String, Object> parsedMap = objectMapper.readValue(judgeResultJson, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                    int score = ((Number) parsedMap.get("score")).intValue();
+                    String hint = (String) parsedMap.get("hint");
+                    userMsg.setScore(score);
+                    userMsg.setHint(hint);
+                    interviewMessageMapper.updateById(userMsg);
+                } catch (Exception e) {
+                    log.warn("Failed to update message with score/hint", e);
+                }
+
+                // Send event: judge via SSE
+                sendJudgeEvent(emitter, judgeResultJson);
+                emitter.complete();
+
+            } catch (Exception e) {
+                log.error("Error in async judge task", e);
+                emitter.complete();
+            } finally {
+                if (lockAcquired) {
+                    stringRedisTemplate.delete(lockKey);
+                }
+                UserContext.remove();
+            }
+        });
+    }
+
+    private void sendJudgeEvent(SseEmitter emitter, String judgeJson) {
+        try {
+            emitter.send(SseEmitter.event().name("judge").data(judgeJson));
+        } catch (IOException exception) {
+            log.warn("Failed to send judge event via SSE", exception);
+        }
+    }
+
+    private void triggerAsyncSummarizeIfNeeded(InterviewSession session) {
+        List<InterviewMessage> allMessages = listMessages(session.getId());
+        List<InterviewMessage> dialogMsgs = new ArrayList<>();
+        for (InterviewMessage m : allMessages) {
+            if (!ROLE_SYSTEM.equals(m.getRole())) {
+                dialogMsgs.add(m);
+            }
+        }
+        int rounds = dialogMsgs.size() / 2;
+        if (rounds >= 15 && (rounds - 10) % 5 == 0) {
+            int summaryRounds = rounds - 7;
+            int msgEndIndex = summaryRounds * 2;
+            List<InterviewMessage> messagesToSummarize = dialogMsgs.subList(0, msgEndIndex);
+            
+            sseTaskExecutor.execute(() -> {
+                try {
+                    StringBuilder builder = new StringBuilder();
+                    for (InterviewMessage m : messagesToSummarize) {
+                        builder.append(m.getRole()).append(": ").append(m.getContent()).append("\n");
+                    }
+                    String existingSummary = session.getSummary();
+                    String prompt = "请对以下模拟面试记录进行简明扼要的摘要总结。要求：保留候选人的核心技术栈、项目细节及表现评估，并进行严格的个人隐私数据脱敏（严禁包含手机号、邮箱、身份证等隐私信息）。以第三人称陈述，字数控制在 200 字以内。\n" +
+                                     "已有摘要历史：" + (existingSummary != null ? existingSummary : "无") + "\n" +
+                                     "新增面试记录：\n" + builder.toString();
+
+                    String newSummary = isDemoEnabled() 
+                        ? "演示模式下自动生成的模拟对话摘要。候选人对后端架构设计、MyBatis-Plus 分页与自定义 SQL 执行进行了基本的回答，表现稳定。"
+                        : llmRouter.chatWithSnapshot(
+                            session.getLlmProvider(),
+                            session.getLlmModel(),
+                            List.of(
+                                Map.of("role", "system", "content", "你是严谨的面试总结助手。请直接输出摘要，不要附带任何解释。"),
+                                Map.of("role", "user", "content", prompt)
+                            )
+                        );
+
+                    session.setSummary(newSummary);
+                    interviewSessionMapper.updateById(session);
+                    log.info("Successfully updated sliding window memory summary for session {}", session.getId());
+                } catch (Exception e) {
+                    log.error("Failed to generate sliding window memory summary for session {}", session.getId(), e);
+                }
+            });
+        }
     }
 
     private record WeaknessExtractionItem(String category, String description) {

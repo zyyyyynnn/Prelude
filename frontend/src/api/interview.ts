@@ -36,7 +36,7 @@ function normalizeMessageRole(role: unknown): InterviewMessageRole {
   return 'user'
 }
 
-export async function startInterview(payload: { resumeId: number; positionId: number }) {
+export async function startInterview(payload: { resumeId: number; positionId: number; jdText?: string }) {
   const response = await http.post<ApiResult<InterviewStartResponse>>('/interview/start', payload)
   return unwrapResult(response.data)
 }

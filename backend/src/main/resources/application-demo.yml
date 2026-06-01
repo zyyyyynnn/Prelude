@@ -7,6 +7,9 @@ spring:
   sql:
     init:
       data-locations: classpath:data.sql,classpath:data-demo.sql
+  data:
+    redis:
+      database: 1
 
 app:
   demo:

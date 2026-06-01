@@ -113,7 +113,7 @@ async function handleUpload(file: File) {
   }
 }
 
-async function createNewInterview() {
+async function createNewInterview(jdText = '') {
   if (!selectedResumeId.value || !selectedPositionId.value) {
     showNotice('请选择简历和岗位', 'warning')
     return
@@ -127,6 +127,7 @@ async function createNewInterview() {
     const result = await startInterview({
       resumeId: selectedResumeId.value,
       positionId: selectedPositionId.value,
+      jdText: jdText || undefined,
     })
     await refreshSessionList()
     await loadSession(result.sessionId, true)
@@ -251,6 +252,16 @@ async function streamReply(content: string, autoStart = false) {
               replay.value.summaryReport = event.data
             }
             showingReport.value = true
+          } else if (event.eventName === 'judge') {
+            const data = JSON.parse(event.data)
+            if (replay.value) {
+              const userMsgs = replay.value.messages.filter(m => m.role === 'user')
+              if (userMsgs.length > 0) {
+                const lastUserMsg = userMsgs[userMsgs.length - 1]
+                lastUserMsg.score = data.score
+                lastUserMsg.hint = data.hint
+              }
+            }
           }
         }
       },

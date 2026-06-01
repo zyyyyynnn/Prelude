@@ -71,6 +71,14 @@ onMounted(() => {
           <span v-if="message.role === 'assistant' && !message.content" class="thinking-dots">思考中</span>
           <span v-else>{{ message.content }}</span>
         </div>
+        <div v-if="message.role === 'user'" class="message-bubble__judge-container">
+          <transition name="fade">
+            <div v-if="message.score" class="judge-badge">
+              <span class="judge-badge__score">评分: {{ message.score }}/10</span>
+              <span v-if="message.hint" class="judge-badge__hint" :title="message.hint">{{ message.hint }}</span>
+            </div>
+          </transition>
+        </div>
       </article>
 
       <div v-if="reconnectingStatus" class="reconnecting-status">
@@ -155,5 +163,46 @@ onMounted(() => {
 .reconnecting-status::after {
   content: '';
   animation: thinking-ellipsis 1.5s infinite;
+}
+
+.message-bubble__judge-container {
+  min-height: 24px;
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+.judge-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  height: 24px;
+  line-height: 24px;
+  max-width: 100%;
+}
+.judge-badge__score {
+  font-weight: bold;
+  color: var(--color-brand);
+}
+.judge-badge__hint {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

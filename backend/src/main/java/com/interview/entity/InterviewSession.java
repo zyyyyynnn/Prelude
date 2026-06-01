@@ -19,5 +19,6 @@ public class InterviewSession {
     private String status;
     private String summary;
     private String summaryReport;
+    private String jdText;
     private LocalDateTime createdAt;
 }

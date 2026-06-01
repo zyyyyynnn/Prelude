@@ -11,4 +11,6 @@ public class InterviewStartRequest {
 
     @NotNull(message = "请选择目标岗位")
     private Long positionId;
+
+    private String jdText;
 }

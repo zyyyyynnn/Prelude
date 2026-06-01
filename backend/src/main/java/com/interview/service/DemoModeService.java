@@ -72,6 +72,22 @@ public class DemoModeService {
         return demoProperties.isEnabled();
     }
 
+    public String resolveMockJudge(String stageName, int replyIndex) {
+        assertEnabled();
+        int score = 7 + (replyIndex % 3);
+        String hint;
+        if ("warmup".equals(stageName)) {
+            hint = "开场表现自然，对过往项目描述清晰。";
+        } else if ("technical".equals(stageName)) {
+            hint = "技术概念阐述清晰，若能结合具体代码实现则更佳。";
+        } else if ("deep_dive".equals(stageName)) {
+            hint = "逻辑推导合理，但在底层机制的理解上还有提升空间。";
+        } else {
+            hint = "收尾陈述简明扼要，整体沟通顺畅。";
+        }
+        return String.format("{\"score\": %d, \"hint\": \"%s\"}", score, hint);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void reset() {
         assertEnabled();
