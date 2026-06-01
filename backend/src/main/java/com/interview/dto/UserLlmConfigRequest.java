@@ -13,6 +13,6 @@ public record UserLlmConfigRequest(
 
     Integer maxTokens,
 
-    Double temperature
+    Integer thinkingDepth
 ) {
 }

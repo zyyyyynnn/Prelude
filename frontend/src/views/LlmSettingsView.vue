@@ -30,7 +30,7 @@ const selectedModel = ref('')
 const apiKeyInput = ref('')
 const apiKeyMasked = ref('')
 const maxTokens = ref<number | undefined>(undefined)
-const temperature = ref<number | undefined>(undefined)
+const thinkingDepth = ref<number | undefined>(undefined)
 const advancedOpen = ref<string[]>([])
 
 const currentProvider = computed(
@@ -78,7 +78,7 @@ async function loadSettings() {
     applySelection(provider?.providerKey || '', config.model || provider?.models[0] || '')
     apiKeyMasked.value = config.apiKeyMasked || ''
     maxTokens.value = config.maxTokens ?? undefined
-    temperature.value = config.temperature ?? undefined
+    thinkingDepth.value = config.thinkingDepth ?? undefined
     lastTestMessage.value = '未测试'
     showNotice('配置已加载', 'success')
   } catch (error) {
@@ -102,14 +102,14 @@ async function saveSettings() {
       model: selectedModel.value,
       apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
       maxTokens: maxTokens.value ?? undefined,
-      temperature: temperature.value ?? undefined,
+      thinkingDepth: thinkingDepth.value ?? undefined,
     })
 
     selectedProviderKey.value = result.providerKey || selectedProviderKey.value
     selectedModel.value = result.model || selectedModel.value
     apiKeyMasked.value = result.apiKeyMasked || ''
     maxTokens.value = result.maxTokens ?? undefined
-    temperature.value = result.temperature ?? undefined
+    thinkingDepth.value = result.thinkingDepth ?? undefined
     lastTestMessage.value = '配置已变更，建议重新测试'
     if (apiKeyInput.value && !result.apiKeyMasked) {
       apiKeyInput.value = ''
@@ -257,18 +257,18 @@ onMounted(() => {
                       controls-position="right"
                     />
                   </ElFormItem>
-                  <ElFormItem label="随机性 (Temperature)">
+                  <ElFormItem label="思考深度 (Thinking Depth)">
                     <div class="slider-row">
                       <ElSlider
-                        v-model="temperature"
+                        v-model="thinkingDepth"
                         :min="0"
-                        :max="2"
-                        :step="0.1"
+                        :max="100"
+                        :step="5"
                         :show-input="true"
                         :show-input-controls="false"
                         class="ui-slider"
                       />
-                      <span class="slider-hint">0 = 稳定, 2 = 发散</span>
+                      <span class="slider-hint">0 = 浅层, 100 = 深度</span>
                     </div>
                   </ElFormItem>
                 </div>

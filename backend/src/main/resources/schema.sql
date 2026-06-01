@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT 'LLM 模型',
   `llm_api_key_encrypted` VARCHAR(512) DEFAULT NULL COMMENT '加密后的用户 API Key',
   `llm_max_tokens` INT DEFAULT NULL COMMENT 'LLM 最大输出 Token',
-  `llm_temperature` DOUBLE DEFAULT NULL COMMENT 'LLM 采样温度',
+  `llm_thinking_depth` INT DEFAULT NULL COMMENT 'LLM 思考深度',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_username` (`username`)
@@ -68,11 +68,11 @@ DEALLOCATE PREPARE stmt;
 SET @sql = (
   SELECT IF(
     COUNT(*) = 0,
-    'ALTER TABLE `user` ADD COLUMN `llm_temperature` DOUBLE DEFAULT NULL COMMENT ''LLM 采样温度''',
+    'ALTER TABLE `user` ADD COLUMN `llm_thinking_depth` INT DEFAULT NULL COMMENT ''LLM 思考深度''',
     'SELECT 1'
   )
   FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_temperature'
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_thinking_depth'
 );
 PREPARE stmt FROM @sql;
 EXECUTE stmt;

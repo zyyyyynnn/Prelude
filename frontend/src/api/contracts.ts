@@ -110,7 +110,7 @@ export type LlmConfigPayload = {
   model: string
   apiKey?: string
   maxTokens?: number
-  temperature?: number
+  thinkingDepth?: number
 }
 
 export type LlmConfigResponse = {
@@ -120,7 +120,7 @@ export type LlmConfigResponse = {
   providerName?: string
   displayName?: string
   maxTokens?: number
-  temperature?: number
+  thinkingDepth?: number
 }
 
 export type LlmConfigTestResponse = {

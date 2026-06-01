@@ -107,11 +107,11 @@ public class LlmRouter {
         List<Map<String, String>> messages
     ) {
         Integer maxTokens = user.getLlmMaxTokens();
-        Double temperature = user.getLlmTemperature();
+        Integer thinkingDepth = user.getLlmThinkingDepth();
         Map<String, Object> extraParams = null;
-        if (temperature != null) {
+        if (thinkingDepth != null) {
             extraParams = new HashMap<>();
-            extraParams.put("temperature", temperature);
+            extraParams.put("thinking_depth", thinkingDepth);
         }
         return new LlmProvider.LlmInvocation(
             providerConfig.getBaseUrl(),

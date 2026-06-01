@@ -39,7 +39,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
             selection.model(),
             maskApiKey(user.getLlmApiKeyEncrypted()),
             user.getLlmMaxTokens(),
-            user.getLlmTemperature()
+            user.getLlmThinkingDepth()
         );
     }
 
@@ -65,7 +65,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
                 .set(User::getLlmModel, request.model())
                 .set(User::getLlmApiKeyEncrypted, encryptedApiKey)
                 .set(User::getLlmMaxTokens, request.maxTokens())
-                .set(User::getLlmTemperature, request.temperature())
+                .set(User::getLlmThinkingDepth, request.thinkingDepth())
         );
 
         return getCurrentUserConfig();
