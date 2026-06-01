@@ -502,8 +502,7 @@ a {
   box-shadow: var(--shadow-whisper);
 }
 
-.insight-card__value,
-.detail-card__title {
+.insight-card__value {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 26px;
@@ -516,8 +515,8 @@ a {
 .panel__lead,
 .weakness-item__summary {
   margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 15px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
   line-height: 1.58;
 }
 
@@ -540,7 +539,7 @@ a {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--spacing-md);
-  min-height: 100px;
+  padding: var(--spacing-md) 0;
 }
 
 .panel__head--compact {
@@ -548,11 +547,12 @@ a {
 }
 
 .panel__title {
-  font-size: 28px;
+  font-size: 20px;
+  line-height: 1.4;
 }
 
 .panel__title--small {
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .panel__lead {
