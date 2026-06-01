@@ -14,3 +14,8 @@ app:
 
 deepseek:
   api-key: your_deepseek_key
+
+anthropic:
+  base-url: https://api.anthropic.com/v1/messages
+  model: claude-3-5-sonnet-20241022
+  api-key: your_anthropic_key

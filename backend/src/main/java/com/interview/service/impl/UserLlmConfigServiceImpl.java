@@ -47,10 +47,10 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         llmRouter.validateProviderSelection(request.providerKey(), request.model());
 
         String encryptedApiKey = user.getLlmApiKeyEncrypted();
-        if (request.apiKey() != null) {
+        if (request.apiKey() != null && !request.apiKey().isBlank()) {
             encryptedApiKey = isDemoEnabled()
                 ? demoModeService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
-                : ("__CLEAR__".equals(request.apiKey()) || request.apiKey().isBlank())
+                : "__CLEAR__".equals(request.apiKey())
                     ? null
                     : aesGcmEncryptor.encrypt(request.apiKey());
         }

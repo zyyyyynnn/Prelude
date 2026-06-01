@@ -18,6 +18,16 @@ public interface LlmProvider {
 
     void streamChat(LlmInvocation invocation, Consumer<String> onDelta);
 
-    record LlmInvocation(String baseUrl, String model, String apiKey, List<Map<String, String>> messages) {
+    record LlmInvocation(
+            String baseUrl,
+            String model,
+            String apiKey,
+            List<Map<String, String>> messages,
+            Integer maxTokens,
+            Map<String, Object> extraParams) {
+
+        public LlmInvocation(String baseUrl, String model, String apiKey, List<Map<String, String>> messages) {
+            this(baseUrl, model, apiKey, messages, null, null);
+        }
     }
 }

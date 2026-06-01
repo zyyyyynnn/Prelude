@@ -13,6 +13,7 @@ import okhttp3.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -84,11 +85,16 @@ public abstract class AbstractOpenAiCompatibleProvider implements LlmProvider {
             throw BusinessException.badRequest(providerName + " API Key 未配置");
         }
         try {
-            Map<String, Object> payload = Map.of(
-                "model", invocation.model(),
-                "stream", stream,
-                "messages", invocation.messages()
-            );
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("model", invocation.model());
+            payload.put("stream", stream);
+            payload.put("messages", invocation.messages());
+            if (invocation.maxTokens() != null) {
+                payload.put("max_tokens", invocation.maxTokens());
+            }
+            if (invocation.extraParams() != null) {
+                payload.putAll(invocation.extraParams());
+            }
             Request request = buildRequest(payload, invocation.baseUrl(), apiKey);
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
