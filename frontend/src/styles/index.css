@@ -782,7 +782,11 @@ a {
   font-size: 14px;
 }
 
-.ui-button.el-button {
+.ui-button {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
   min-height: var(--ui-height-base);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -792,36 +796,36 @@ a {
   box-shadow: var(--shadow-ring);
 }
 
-.ui-button.el-button:hover,
-.ui-button.el-button:focus-visible {
+.ui-button:hover,
+.ui-button:focus-visible {
   box-shadow: var(--shadow-ring-deep);
   transform: translateY(-1px);
 }
 
-.ui-button--block.el-button {
+.ui-button--block {
   width: 100%;
 }
 
-.ui-button--compact.el-button {
+.ui-button--compact {
   min-width: 64px;
   min-height: var(--ui-height-sm);
   padding: 0 14px;
   font-size: 14px;
 }
 
-.ui-button.el-button.is-disabled,
-.ui-button.el-button:disabled {
+.ui-button.is-disabled,
+.ui-button:disabled {
   opacity: 0.45;
   pointer-events: none;
 }
 
-.ui-button--primary.el-button {
+.ui-button--primary {
   background: var(--color-brand);
   color: var(--color-surface);
 }
 
-.ui-button--primary.el-button:hover,
-.ui-button--primary.el-button:focus-visible {
+.ui-button--primary:hover,
+.ui-button--primary:focus-visible {
   background: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
   color: var(--color-surface);
 }
@@ -1258,7 +1262,7 @@ a {
 }
 
 .session-item__side .ui-badge--compact.el-tag,
-.session-item__side .ui-button--compact.el-button {
+.session-item__side .ui-button--compact {
   width: var(--session-item-action-width);
   min-width: var(--session-item-action-width);
   padding-right: 8px;
@@ -1579,7 +1583,7 @@ a {
   .app-shell__menu-icon-line,
   .app-shell__action-menu,
   .app-shell__action-menu-item,
-  .ui-button.el-button {
+  .ui-button {
     animation: none !important;
     transition: none !important;
     transform: none !important;
