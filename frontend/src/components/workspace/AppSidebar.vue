@@ -387,6 +387,8 @@ function logout() {
   justify-content: center;
   padding: 0;
   gap: 0;
+  width: 32px;
+  margin: 0 auto;
 }
 .app-sidebar__btn--primary {
   background-color: var(--color-brand);
