@@ -199,64 +199,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.workspace-page {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg);
-  overflow: hidden;
-  height: 100vh;
-}
-.workspace-header {
-  display: flex;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(250, 249, 245, 0.85);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  flex-shrink: 0;
-  height: 72px;
-  box-sizing: border-box;
-}
-.workspace-header__main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-.workspace-header__title-area {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.workspace-header__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-.workspace-page__content {
-  flex: 1;
-  padding: 24px 40px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.page-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
 .resume-catalog {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 .resume-row {
   display: flex;
@@ -275,13 +222,13 @@ onBeforeUnmount(() => {
 .resume-row__main {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: var(--spacing-md);
   flex: 1;
 }
 .resume-row__title-wrap {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
   min-width: 200px;
 }
 .resume-item__title {
@@ -297,6 +244,6 @@ onBeforeUnmount(() => {
 }
 .resume-item__badges {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 </style>

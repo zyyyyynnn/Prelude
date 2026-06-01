@@ -190,90 +190,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.workspace-page {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg);
-  overflow: hidden;
-  height: 100vh;
-}
-.workspace-header {
-  display: flex;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(250, 249, 245, 0.85);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  flex-shrink: 0;
-  height: 72px;
-  box-sizing: border-box;
-}
-.workspace-header__main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-.workspace-header__title-area {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.workspace-header__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-.workspace-page__content {
-  flex: 1;
-  padding: 24px 40px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.page-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.detail-card {
-  padding: 16px;
-  background: var(--color-sand);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-}
-.detail-card__title {
-  margin: 4px 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-.detail-card__meta {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-text-tertiary);
-}
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-}
 .form-section {
-  margin-top: 32px;
-  padding-top: 24px;
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
   border-top: 1px dashed var(--color-border);
 }
 .form-section__title {
@@ -281,10 +200,5 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 500;
   color: var(--color-text-primary);
-}
-.button-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 32px;
 }
 </style>
