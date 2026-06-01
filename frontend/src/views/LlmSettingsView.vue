@@ -343,8 +343,8 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary);
-  height: 40px;
-  line-height: 40px;
+  height: var(--spacing-2xl);
+  line-height: var(--spacing-2xl);
   border-bottom: 1px solid var(--color-border);
   background: transparent;
 }
