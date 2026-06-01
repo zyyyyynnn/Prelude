@@ -1643,7 +1643,10 @@ a {
     font-size: clamp(30px, 8vw, 40px);
   }
 
-  .panel .el-card__body,
+  .panel .el-card__body {
+    padding: var(--spacing-lg);
+  }
+
   .login-card {
     padding: 24px;
   }
@@ -1705,7 +1708,7 @@ a {
   }
 
   .panel .el-card__body {
-    padding: 18px;
+    padding: var(--spacing-md);
   }
 
   .upload-field {
@@ -1821,7 +1824,7 @@ a {
   gap: var(--spacing-sm);
 }
 .detail-card {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   background: var(--color-sand);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);

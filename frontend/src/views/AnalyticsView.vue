@@ -301,7 +301,7 @@ onBeforeUnmount(() => {
 }
 .weakness-item__descriptions {
   margin: 0;
-  padding-left: 20px;
+  padding-left: var(--spacing-lg);
   font-size: 13px;
   color: var(--color-text-tertiary);
 }
