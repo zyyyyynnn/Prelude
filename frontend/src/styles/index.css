@@ -90,6 +90,7 @@
 
 html {
   background: var(--color-bg);
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -1752,6 +1753,13 @@ a {
   background-color: var(--color-brand);
 }
 
+@media print {
+  .panel {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
 /* ==========================================================================
    Workspace Layout System (全局工作区骨架锁死)
    ========================================================================== */
@@ -1828,7 +1836,7 @@ a {
 }
 .detail-card {
   padding: var(--spacing-sm);
-  background: var(--color-surface-muted);
+  background: var(--color-surface-hover);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
 }

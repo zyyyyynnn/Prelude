@@ -59,7 +59,7 @@
 - `.panel__head` 无 `min-height`，通过 `padding: var(--spacing-md) 0` 自然撑开。
 - `.panel__title` 字号 20px，行高 1.4；`.panel__title--small` 字号 18px。
 - `.panel__lead` 字号 13px，颜色 `var(--color-text-tertiary)`。
-- 嵌套在 `.panel` 内部的 `.detail-card` 使用 `padding: var(--spacing-sm)`（8px），避免双重内边距。
+- 嵌套在 `.panel` 内部的 `.detail-card` 使用 `padding: var(--spacing-sm)`（8px），背景使用 `var(--color-surface-hover)`，避免双重内边距和粉色偏差。
 - `.form-grid` 使用 `gap: var(--spacing-sm)`（8px），表单项形成紧凑分组。
 - `.button-row` 使用 `margin-top: var(--spacing-md)`（16px），紧跟配置项。
 
@@ -187,5 +187,6 @@
 - 禁止侧边栏折叠态使用 `justify-content: center` 或 `margin: auto`（离散属性不可动画）。
 - 禁止在 Vue scoped CSS 中使用原生 `white`、`black`、`#hex` 颜色值。统一使用 `var(--color-*)` Token 体系。
 - 绝对禁止使用 `color-mix(in srgb, ... black)` 混入纯黑来制造背景加深效果（会导致"脏灰"），加深必须基于 `--color-surface-hover/muted`。
+- 禁止在有动态展开内容的页面使用默认 `scrollbar-gutter`，必须使用 `scrollbar-gutter: stable` 防止滚动条出现时内容区抽动。
 - 禁止 `height: auto` 参与过渡动画（不可补间），改用 `max-height` 技巧。
 - 禁止使用 `--color-sand` 作为 hover 背景色，统一使用 `--color-surface-hover`。`--color-sand` 仅用于边框和深色占位 fallback。

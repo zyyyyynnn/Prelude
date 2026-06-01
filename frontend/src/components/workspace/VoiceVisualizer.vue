@@ -317,7 +317,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: var(--spacing-lg);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-text-primary) 2%, transparent);
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
@@ -383,7 +383,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   transition: all 0.2s ease;
   outline: none;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-text-primary) 3%, transparent);
 }
 .voice-btn:hover {
   background-color: var(--color-surface-hover);

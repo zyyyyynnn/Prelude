@@ -276,10 +276,6 @@ onBeforeUnmount(() => {
   gap: var(--spacing-md);
   margin-top: var(--spacing-md);
 }
-.panel {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
 .weakness-item {
   padding: var(--spacing-sm);
   border-radius: var(--radius-lg);

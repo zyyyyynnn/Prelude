@@ -439,6 +439,7 @@ function logout() {
 .app-sidebar__collapsed-actions.is-visible {
   opacity: 1;
   pointer-events: auto;
+  height: auto;
   max-height: 200px;
   margin-top: 12px;
 }
