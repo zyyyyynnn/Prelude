@@ -850,7 +850,7 @@ a {
 
 .ui-button--secondary:hover,
 .ui-button--secondary:focus-visible {
-  background: var(--color-surface-hover);
+  background: color-mix(in srgb, #2C2A29 12%, var(--color-surface));
   color: var(--color-text-button);
   border-color: transparent;
 }
