@@ -252,7 +252,23 @@ onMounted(() => {
                 autocomplete="off"
                 placeholder="留空表示清空当前用户 Key"
                 show-password
-              />
+              >
+                <template #suffix>
+                  <div
+                    v-if="apiKeyMasked"
+                    class="icon-action-btn"
+                    @click="clearApiKey"
+                    title="清除密钥"
+                    style="cursor: pointer; display: flex; align-items: center; color: var(--color-text-tertiary);"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18"></path>
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                  </div>
+                </template>
+              </ElInput>
             </ElFormItem>
 
             <ElCollapse v-model="advancedOpen" class="advanced-collapse">
@@ -306,13 +322,6 @@ onMounted(() => {
                 @click="saveSettings"
               >
                 保存设置
-              </ElButton>
-              <ElButton
-                class="ui-button ui-button--danger ui-button--compact"
-                :disabled="saving || loading || !apiKeyMasked"
-                @click="clearApiKey"
-              >
-                清除密钥
               </ElButton>
               <ElButton
                 class="ui-button ui-button--secondary ui-button--compact"
