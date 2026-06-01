@@ -29,7 +29,7 @@
 ## 3. 全局导航
 
 - 登录后业务页统一使用左侧固定侧边栏导航，不再使用顶部粘性 Header。
-- 侧边栏宽度展开时 260px，折叠后收为 52px icon rail，通过顶部折叠按钮切换。
+- 侧边栏宽度展开时 260px，折叠后收为 68px icon rail，通过顶部折叠按钮切换。
 - 顶部区域：`BrandMetaballs` Logo + 品牌名 `Prelude`，右侧放折叠/展开按钮。
 - `开始新面试` 主操作按钮固定在品牌区正下方。
 - 中段为会话列表，分「进行中」与「已完成」两组，支持置顶和删除操作。
@@ -130,6 +130,15 @@
 
 ## 14. Token 体系
 
+### Color Token (光学派生体系)
+
+全局交互反馈色必须使用以下基于主色的光学派生 Token，严禁硬编码灰色：
+
+| Token | 定义 | 用途 |
+|-------|-----|------|
+| `--color-surface-hover` | `color-mix(brand 6%, surface)` | 极净暖灰，用于所有交互组件的 Hover 态背景 |
+| `--color-surface-muted` | `color-mix(brand 12%, surface)` | 浅卡其暖灰，用于 Active 态、选中态或次级面板底色 |
+
 ### Spacing Token
 
 所有间距必须使用以下变量，禁止硬编码 `px`：
@@ -176,6 +185,7 @@
 - 禁止在侧边栏 scoped CSS 中定义 `::-webkit-scrollbar`，继承全局 `.scrollable`。
 - 禁止在 `WorkspaceHeader.vue` scoped CSS 中定义 `.workspace-header`，必须继承全局骨架。
 - 禁止侧边栏折叠态使用 `justify-content: center` 或 `margin: auto`（离散属性不可动画）。
-- 禁止在 Vue scoped CSS 中使用原生 `white`、`black`、`#hex` 颜色值，统一使用 `var(--color-*)` Token 或 `color-mix()`。
+- 禁止在 Vue scoped CSS 中使用原生 `white`、`black`、`#hex` 颜色值。统一使用 `var(--color-*)` Token 体系。
+- 绝对禁止使用 `color-mix(in srgb, ... black)` 混入纯黑来制造背景加深效果（会导致"脏灰"），加深必须基于 `--color-surface-hover/muted`。
 - 禁止 `height: auto` 参与过渡动画（不可补间），改用 `max-height` 技巧。
 - 禁止使用 `--color-sand` 作为 hover 背景色，统一使用 `--color-surface-hover`。`--color-sand` 仅用于边框和深色占位 fallback。
