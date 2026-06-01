@@ -384,11 +384,10 @@ function logout() {
   color: var(--color-text-secondary);
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
-  justify-content: center;
-  padding: 0;
+  padding: 0 6px;
+  margin: 0 6px;
   gap: 0;
   width: 32px;
-  margin: 0 auto;
 }
 .app-sidebar__btn--primary {
   background-color: var(--color-brand);
