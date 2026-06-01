@@ -208,6 +208,7 @@ onMounted(() => {
                   class="ui-select"
                   popper-class="custom-select-popper"
                   placeholder="请选择 Provider"
+                  fit-input-width
                   style="width: 100%;"
                 >
                   <ElOption
@@ -226,6 +227,7 @@ onMounted(() => {
                   popper-class="custom-select-popper"
                   :disabled="modelOptions.length === 0"
                   placeholder="请选择模型"
+                  fit-input-width
                   style="width: 100%;"
                 >
                   <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
@@ -255,6 +257,7 @@ onMounted(() => {
                       filterable
                       allow-create
                       clearable
+                      fit-input-width
                       style="width: 100%;"
                     >
                       <ElOption label="标准输出 (8192 Tokens)" :value="8192" />
@@ -268,6 +271,8 @@ onMounted(() => {
                       popper-class="custom-select-popper"
                       placeholder="默认 (Default)"
                       clearable
+                      fit-input-width
+                      style="width: 100%;"
                     >
                       <ElOption label="低 (Low)" value="low" />
                       <ElOption label="中 (Medium)" value="medium" />
@@ -423,11 +428,6 @@ onMounted(() => {
   padding-left: 0 !important;
   padding-right: 0 !important;
   padding-bottom: 16px;
-}
-.advanced-collapse :deep(.el-select .el-select__wrapper),
-.advanced-collapse :deep(.el-select .el-input__wrapper) {
-  min-height: unset !important;
-  box-sizing: border-box;
 }
 .advanced-grid {
   display: grid;
