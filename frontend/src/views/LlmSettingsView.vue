@@ -15,12 +15,18 @@ import {
 import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
 import type { LlmProviderOption } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
+import { usePopperMatchTrigger } from '../composables/usePopperMatchTrigger'
 
 const loading = ref(false)
 const saving = ref(false)
 const testing = ref(false)
 const lastTestMessage = ref('未测试')
 const { showNotice } = usePageNotice()
+
+const providerSelect = usePopperMatchTrigger()
+const modelSelect = usePopperMatchTrigger()
+const maxTokensSelect = usePopperMatchTrigger()
+const thinkingDepthSelect = usePopperMatchTrigger()
 
 const providerOptions = ref<LlmProviderOption[]>([])
 const selectedProviderKey = ref('')
@@ -210,6 +216,8 @@ onMounted(() => {
                   placeholder="请选择 Provider"
                   fit-input-width
                   style="width: 100%;"
+                  :popper-style="providerSelect.popperStyle.value"
+                  :ref="(el: any) => providerSelect.bind(el?.$el ?? null)"
                 >
                   <ElOption
                     v-for="provider in providerOptions"
@@ -229,6 +237,8 @@ onMounted(() => {
                   placeholder="请选择模型"
                   fit-input-width
                   style="width: 100%;"
+                  :popper-style="modelSelect.popperStyle.value"
+                  :ref="(el: any) => modelSelect.bind(el?.$el ?? null)"
                 >
                   <ElOption v-for="model in modelOptions" :key="model" :label="model" :value="model" />
                 </ElSelect>
@@ -259,6 +269,8 @@ onMounted(() => {
                       clearable
                       fit-input-width
                       style="width: 100%;"
+                      :popper-style="maxTokensSelect.popperStyle.value"
+                      :ref="(el: any) => maxTokensSelect.bind(el?.$el ?? null)"
                     >
                       <ElOption label="标准输出 (8192 Tokens)" :value="8192" />
                       <ElOption label="满载输出 (32768 Tokens)" :value="32768" />
@@ -273,6 +285,8 @@ onMounted(() => {
                       clearable
                       fit-input-width
                       style="width: 100%;"
+                      :popper-style="thinkingDepthSelect.popperStyle.value"
+                      :ref="(el: any) => thinkingDepthSelect.bind(el?.$el ?? null)"
                     >
                       <ElOption label="低 (Low)" value="low" />
                       <ElOption label="中 (Medium)" value="medium" />

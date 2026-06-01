@@ -94,8 +94,13 @@
 - `ElDropdown` 和 `ElSelect` 必须通过 `popper-class` 指定自定义弹层 class，禁止使用 Element Plus 默认弹层样式。
 - `ElDropdown` 使用 `popper-class="custom-dropdown-popper"`，配套 CSS 定义在 `index.css`。
 - `ElSelect` 使用 `popper-class="custom-select-popper"`，配套 CSS 定义在 `index.css`。
-- 弹层样式：`border: 1px solid var(--color-border-warm)`，`border-radius: var(--radius-md)`，`background: var(--color-surface)`，`padding: 6px`。
-- 菜单项样式：`border-radius: var(--radius-sm)`，`font-size: 14px`，hover 背景 `var(--color-sand)`。
+- 弹层宽度必须严格等于触发器宽度，通过 `usePopperMatchTrigger` composable 实现：`ResizeObserver` 测量触发器 `getBoundingClientRect()`，输出 `popperStyle` 绑定到 `:popper-style`。
+- 弹层边框禁止使用真实 `border`（会占布局空间，与触发器 `box-shadow: inset` 内嵌边框错位 1px），改用 `border: none` + `box-shadow: inset 0 0 0 1px var(--color-border-warm)` 模拟。
+- 弹层 `padding: 1px`，使内容盒精确落在内嵌边框内侧。
+- 弹层 `will-change: transform` + `backface-visibility: hidden`，强制 GPU 合成层，稳定子像素渲染。
+- 菜单项高度通过 CSS 变量 `var(--trigger-height, fallback)` 继承触发器实测高度，`line-height: 1` + `display: flex; align-items: center`。
+- 菜单项文本过长时 `white-space: nowrap; overflow: hidden; text-overflow: ellipsis` 截断。
+- 新增弹层时复用 `usePopperMatchTrigger` composable + 对应 popper-class，零成本接入。
 
 ## 12. 通知
 
