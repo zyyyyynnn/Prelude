@@ -404,7 +404,7 @@ function logout() {
   color: var(--color-text-primary);
 }
 .app-sidebar__btn.is-active {
-  background-color: var(--color-brand-light);
+  background-color: var(--color-surface-muted);
   color: var(--color-brand);
   font-weight: 600;
 }
@@ -487,7 +487,7 @@ function logout() {
   color: var(--color-text-primary);
 }
 .session-item-btn.is-active {
-  background-color: var(--color-brand-light);
+  background-color: var(--color-surface-muted);
   color: var(--color-brand);
   font-weight: 500;
 }
@@ -598,7 +598,7 @@ function logout() {
   padding-left: 12px;
 }
 .session-item-wrapper:has(.session-item-btn.is-active) .session-item-actions {
-  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--color-brand) 12%, var(--color-surface)) 25%, color-mix(in srgb, var(--color-brand) 12%, var(--color-surface)) 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--color-surface-muted) 25%, var(--color-surface-muted) 100%);
 }
 .session-item-wrapper:hover .session-item-actions {
   background: linear-gradient(90deg, transparent 0%, var(--color-surface-hover) 25%, var(--color-surface-hover) 100%);
