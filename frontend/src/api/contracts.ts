@@ -54,6 +54,8 @@ export type InterviewMessageRecord = {
   content: string
   seqNum?: number
   createdAt?: string
+  score?: number
+  hint?: string
 }
 
 export type InterviewSessionItem = {

@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS `interview_session` (
   `status` ENUM('ongoing','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
   `summary` TEXT COMMENT '上下文压缩摘要',
   `summary_report` TEXT COMMENT '评估报告',
+  `jd_text` MEDIUMTEXT COMMENT '职位描述文本',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_session_user_id` (`user_id`),
@@ -165,6 +166,8 @@ CREATE TABLE IF NOT EXISTS `interview_message` (
   `role` ENUM('system','user','assistant') NOT NULL COMMENT '消息角色',
   `content` TEXT NOT NULL COMMENT '消息内容',
   `seq_num` INT NOT NULL COMMENT '会话内消息序号',
+  `score` TINYINT DEFAULT NULL COMMENT '答题评分',
+  `hint` VARCHAR(255) DEFAULT NULL COMMENT '答题建议',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_message_session_id` (`session_id`),
@@ -273,6 +276,45 @@ SET @sql = (
   )
   FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'resume' AND INDEX_NAME = 'idx_resume_user_created'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `interview_message` ADD COLUMN `score` TINYINT DEFAULT NULL COMMENT ''答题评分''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_message' AND COLUMN_NAME = 'score'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `interview_message` ADD COLUMN `hint` VARCHAR(255) DEFAULT NULL COMMENT ''答题建议''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_message' AND COLUMN_NAME = 'hint'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `interview_session` ADD COLUMN `jd_text` MEDIUMTEXT COMMENT ''职位描述文本''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'jd_text'
 );
 PREPARE stmt FROM @sql;
 EXECUTE stmt;

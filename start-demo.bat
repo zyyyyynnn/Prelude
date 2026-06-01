@@ -44,6 +44,12 @@ if errorlevel 1 (
   exit /b 1
 )
 
+call :ensure_redis
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
+
 call :check_demo_env
 if errorlevel 1 (
   pause
@@ -140,4 +146,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "if ($values['VITE_PORT'] -ne '5174') { Write-Host '[ERROR] .env.demo must contain VITE_PORT=5174'; $ok = $false }" ^
   "if ($values['VITE_PROXY_TARGET'] -ne 'http://127.0.0.1:8081') { Write-Host '[ERROR] .env.demo must contain VITE_PROXY_TARGET=http://127.0.0.1:8081'; $ok = $false }" ^
   "if ($ok) { Write-Host '[INFO] Demo frontend env is valid.'; exit 0 } else { exit 1 }"
+exit /b %errorlevel%
+
+:ensure_redis
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$portOpen = $false;" ^
+  "try {" ^
+  "  $client = [Net.Sockets.TcpClient]::new();" ^
+  "  $task = $client.ConnectAsync('127.0.0.1', 6379);" ^
+  "  if ($task.Wait(1500) -and $client.Connected) { $portOpen = $true }" ^
+  "  $client.Dispose();" ^
+  "} catch { }" ^
+  "if ($portOpen) { Write-Host '[INFO] Redis is ready on 127.0.0.1:6379.'; exit 0 }" ^
+  "Write-Host '[ERROR] Redis is not reachable on 127.0.0.1:6379.';" ^
+  "Write-Host '[ERROR] Start Redis first, then run this script again.';" ^
+  "exit 1"
 exit /b %errorlevel%

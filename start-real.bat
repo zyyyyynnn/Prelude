@@ -44,6 +44,12 @@ if errorlevel 1 (
   exit /b 1
 )
 
+call :ensure_redis
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
+
 if not exist "%FRONTEND_DIR%\node_modules" (
   echo [INFO] Frontend dependencies missing, running npm install ...
   call npm --prefix "%FRONTEND_DIR%" install
@@ -119,5 +125,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "Write-Host '[ERROR] Start MySQL first, then run this script again.';" ^
   "Write-Host '[ERROR] Admin terminal: net start MySQL84';" ^
   "Write-Host '[ERROR] Manual foreground: E:\DevEnv\MySQL84\bin\mysqld.exe --defaults-file=E:\DevEnv\MySQL84\conf\my.ini --console';" ^
+  "exit 1"
+exit /b %errorlevel%
+
+:ensure_redis
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$portOpen = $false;" ^
+  "try {" ^
+  "  $client = [Net.Sockets.TcpClient]::new();" ^
+  "  $task = $client.ConnectAsync('127.0.0.1', 6379);" ^
+  "  if ($task.Wait(1500) -and $client.Connected) { $portOpen = $true }" ^
+  "  $client.Dispose();" ^
+  "} catch { }" ^
+  "if ($portOpen) { Write-Host '[INFO] Redis is ready on 127.0.0.1:6379.'; exit 0 }" ^
+  "Write-Host '[ERROR] Redis is not reachable on 127.0.0.1:6379.';" ^
+  "Write-Host '[ERROR] Start Redis first, then run this script again.';" ^
   "exit 1"
 exit /b %errorlevel%

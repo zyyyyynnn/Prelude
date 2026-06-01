@@ -14,5 +14,7 @@ public class InterviewMessage {
     private String role;
     private String content;
     private Integer seqNum;
+    private Integer score;
+    private String hint;
     private LocalDateTime createdAt;
 }

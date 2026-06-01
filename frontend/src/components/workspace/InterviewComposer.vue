@@ -26,12 +26,14 @@ const emit = defineEmits<{
   (e: 'update:selectedResumeId', value: number): void
   (e: 'update:selectedPositionId', value: number): void
   (e: 'upload', file: File): void
-  (e: 'start'): void
+  (e: 'start', jdText?: string): void
   (e: 'send'): void
 }>()
 
 const router = useRouter()
 const fileInput = ref<HTMLInputElement | null>(null)
+const showJdInput = ref(false)
+const jdText = ref('')
 
 const resumeDropdown = usePopperMatchTrigger()
 const positionDropdown = usePopperMatchTrigger()
@@ -86,6 +88,18 @@ function navigateToLlm() {
           @keydown.ctrl.enter="canSend && emit('send')"
           @keydown.meta.enter="canSend && emit('send')"
         />
+        <transition name="fade">
+          <div v-if="!activeSessionId && showJdInput" class="composer-jd-area">
+            <ElInput
+              v-model="jdText"
+              type="textarea"
+              :rows="4"
+              resize="none"
+              placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
+              class="jd-textarea"
+            />
+          </div>
+        </transition>
       </div>
 
       <div class="composer-actions">
@@ -127,6 +141,12 @@ function navigateToLlm() {
                   </ElDropdownMenu>
                 </template>
               </ElDropdown>
+
+              <!-- JD Toggle -->
+              <button class="toolbar-item" type="button" @click="showJdInput = !showJdInput" :class="{ 'is-active': showJdInput }">
+                <span class="toolbar-item__label">JD 匹配:</span>
+                <span class="toolbar-item__value">{{ showJdInput ? '已开启' : '未开启' }}</span>
+              </button>
             </template>
 
             <!-- Model Info -->
@@ -145,7 +165,7 @@ function navigateToLlm() {
             class="ui-button ui-button--primary ui-button--compact composer-btn"
             :disabled="!canStart"
             :loading="creating"
-            @click="emit('start')"
+            @click="emit('start', showJdInput ? jdText : undefined)"
           >
             开始面试
           </ElButton>
@@ -268,6 +288,39 @@ function navigateToLlm() {
   border-radius: var(--radius-lg);
   padding: 0 24px;
   flex-shrink: 0;
+}
+.composer-jd-area {
+  border-top: 1px dashed var(--color-border);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+.jd-textarea :deep(.el-textarea__inner) {
+  border: none;
+  background: transparent;
+  padding: 8px 4px;
+  box-shadow: none;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+.jd-textarea :deep(.el-textarea__inner:focus) {
+  box-shadow: none;
+}
+.toolbar-item.is-active {
+  background-color: var(--color-surface-hover);
+}
+.toolbar-item.is-active .toolbar-item__value {
+  color: var(--color-brand);
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
 <style>

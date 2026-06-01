@@ -7,6 +7,8 @@ public record InterviewMessageItemResponse(
     String role,
     String content,
     Integer seqNum,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    Integer score,
+    String hint
 ) {
 }

@@ -4,6 +4,18 @@ spring:
     username: root
     password: your_mysql_password   # 本地使用 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      password: your_redis_password_if_any
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
 
 jwt:
   secret: replace-with-at-least-32-bytes-jwt-secret
