@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { ElTag } from 'element-plus'
 import type { InterviewMessageRecord, InterviewMessageRole } from '../../api/contracts'
 
@@ -28,11 +28,13 @@ watch(() => props.messages, () => {
   if (scrollRafId != null) {
     cancelAnimationFrame(scrollRafId)
   }
-  scrollRafId = requestAnimationFrame(() => {
-    scrollRafId = null
-    if (threadRef.value) {
-      threadRef.value.scrollTop = threadRef.value.scrollHeight
-    }
+  nextTick(() => {
+    scrollRafId = requestAnimationFrame(() => {
+      scrollRafId = null
+      if (threadRef.value) {
+        threadRef.value.scrollTop = threadRef.value.scrollHeight
+      }
+    })
   })
 }, { deep: true })
 </script>
