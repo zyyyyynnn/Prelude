@@ -34,12 +34,12 @@ deepseek:
 
 openai:
   base-url: https://api.openai.com/v1/chat/completions
-  model: gpt-4o-mini
+  model: gpt-5.5
   api-key: ${OPENAI_API_KEY:}
 
 anthropic:
   base-url: https://api.anthropic.com/v1/messages
-  model: claude-sonnet-4-20250514
+  model: claude-4.7-opus
   api-key: ${ANTHROPIC_API_KEY:}
 
 app:

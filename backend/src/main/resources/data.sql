@@ -38,7 +38,7 @@ INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `
 SELECT 'openai',
        'OpenAI',
        'https://api.openai.com/v1/chat/completions',
-       '["gpt-4o","gpt-4o-mini"]',
+       '["gpt-5.5","gpt-5.4"]',
        1
 WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai'
@@ -48,7 +48,7 @@ INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `
 SELECT 'anthropic',
        'Anthropic',
        'https://api.anthropic.com/v1/messages',
-       '["claude-sonnet-4-20250514","claude-3-5-haiku-20241022"]',
+       '["claude-4.7-opus","claude-4.6-opus"]',
        1
 WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'anthropic'
