@@ -3,6 +3,8 @@ package com.interview.dto;
 public record UserLlmConfigResponse(
     String providerKey,
     String model,
-    String apiKeyMasked
+    String apiKeyMasked,
+    Integer maxTokens,
+    Double temperature
 ) {
 }

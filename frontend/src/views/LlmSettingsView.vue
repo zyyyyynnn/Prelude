@@ -1,6 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { ElButton, ElCard, ElForm, ElFormItem, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
+import {
+  ElButton,
+  ElCard,
+  ElCollapse,
+  ElCollapseItem,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElInputNumber,
+  ElOption,
+  ElSelect,
+  ElSlider,
+  ElTag,
+} from 'element-plus'
 import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
 import type { LlmProviderOption } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
@@ -16,6 +29,9 @@ const selectedProviderKey = ref('')
 const selectedModel = ref('')
 const apiKeyInput = ref('')
 const apiKeyMasked = ref('')
+const maxTokens = ref<number | undefined>(undefined)
+const temperature = ref<number | undefined>(undefined)
+const advancedOpen = ref<string[]>([])
 
 const currentProvider = computed(
   () => providerOptions.value.find((item) => item.providerKey === selectedProviderKey.value) ?? null,
@@ -61,6 +77,8 @@ async function loadSettings() {
     const provider = providers.find((item) => item.providerKey === providerKey) ?? providers[0] ?? null
     applySelection(provider?.providerKey || '', config.model || provider?.models[0] || '')
     apiKeyMasked.value = config.apiKeyMasked || ''
+    maxTokens.value = config.maxTokens ?? undefined
+    temperature.value = config.temperature ?? undefined
     lastTestMessage.value = '未测试'
     showNotice('配置已加载', 'success')
   } catch (error) {
@@ -83,11 +101,15 @@ async function saveSettings() {
       providerKey: selectedProviderKey.value,
       model: selectedModel.value,
       apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
+      maxTokens: maxTokens.value ?? undefined,
+      temperature: temperature.value ?? undefined,
     })
 
     selectedProviderKey.value = result.providerKey || selectedProviderKey.value
     selectedModel.value = result.model || selectedModel.value
     apiKeyMasked.value = result.apiKeyMasked || ''
+    maxTokens.value = result.maxTokens ?? undefined
+    temperature.value = result.temperature ?? undefined
     lastTestMessage.value = '配置已变更，建议重新测试'
     if (apiKeyInput.value && !result.apiKeyMasked) {
       apiKeyInput.value = ''
@@ -221,6 +243,38 @@ onMounted(() => {
               />
             </ElFormItem>
 
+            <ElCollapse v-model="advancedOpen" class="advanced-collapse">
+              <ElCollapseItem name="advanced" title="高级设置 (Advanced)">
+                <div class="field-grid">
+                  <ElFormItem label="最大回复长度 (Max Tokens)">
+                    <ElInputNumber
+                      v-model="maxTokens"
+                      class="ui-input-number"
+                      :min="1"
+                      :max="32768"
+                      :step="256"
+                      placeholder="留空使用模型默认"
+                      controls-position="right"
+                    />
+                  </ElFormItem>
+                  <ElFormItem label="随机性 (Temperature)">
+                    <div class="slider-row">
+                      <ElSlider
+                        v-model="temperature"
+                        :min="0"
+                        :max="2"
+                        :step="0.1"
+                        :show-input="true"
+                        :show-input-controls="false"
+                        class="ui-slider"
+                      />
+                      <span class="slider-hint">0 = 稳定, 2 = 发散</span>
+                    </div>
+                  </ElFormItem>
+                </div>
+              </ElCollapseItem>
+            </ElCollapse>
+
             <div class="button-row panel__footer-actions">
               <ElButton
                 class="ui-button ui-button--primary ui-button--compact"
@@ -339,5 +393,29 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   margin-top: 32px;
+}
+.advanced-collapse {
+  margin-top: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0 16px;
+  background: var(--color-sand);
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+.ui-slider {
+  flex: 1;
+}
+.slider-hint {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+.ui-input-number {
+  width: 100%;
 }
 </style>

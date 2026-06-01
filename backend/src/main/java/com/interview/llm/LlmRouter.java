@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -54,7 +55,7 @@ public class LlmRouter {
         String model = normalizeModel(user.getLlmModel(), provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), model);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        return provider.chat(new LlmProvider.LlmInvocation(providerConfig.getBaseUrl(), model, apiKey, messages));
+        return provider.chat(buildInvocation(providerConfig, model, apiKey, user, messages));
     }
 
     public void streamCurrentUser(List<Map<String, String>> messages, Consumer<String> onDelta) {
@@ -63,7 +64,7 @@ public class LlmRouter {
         String model = normalizeModel(user.getLlmModel(), provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), model);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        provider.streamChat(new LlmProvider.LlmInvocation(providerConfig.getBaseUrl(), model, apiKey, messages), onDelta);
+        provider.streamChat(buildInvocation(providerConfig, model, apiKey, user, messages), onDelta);
     }
 
     public String chatWithSnapshot(String providerKey, String model, List<Map<String, String>> messages) {
@@ -72,7 +73,7 @@ public class LlmRouter {
         String normalizedModel = normalizeModel(model, provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        return provider.chat(new LlmProvider.LlmInvocation(providerConfig.getBaseUrl(), normalizedModel, apiKey, messages));
+        return provider.chat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages));
     }
 
     public void streamWithSnapshot(String providerKey, String model, List<Map<String, String>> messages, Consumer<String> onDelta) {
@@ -81,7 +82,7 @@ public class LlmRouter {
         String normalizedModel = normalizeModel(model, provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
         String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        provider.streamChat(new LlmProvider.LlmInvocation(providerConfig.getBaseUrl(), normalizedModel, apiKey, messages), onDelta);
+        provider.streamChat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages), onDelta);
     }
 
     public LlmProviderConfig validateProviderSelection(String providerKey, String model) {
@@ -96,6 +97,30 @@ public class LlmRouter {
             }
         }
         return providerConfig;
+    }
+
+    private LlmProvider.LlmInvocation buildInvocation(
+        LlmProviderConfig providerConfig,
+        String model,
+        String apiKey,
+        User user,
+        List<Map<String, String>> messages
+    ) {
+        Integer maxTokens = user.getLlmMaxTokens();
+        Double temperature = user.getLlmTemperature();
+        Map<String, Object> extraParams = null;
+        if (temperature != null) {
+            extraParams = new HashMap<>();
+            extraParams.put("temperature", temperature);
+        }
+        return new LlmProvider.LlmInvocation(
+            providerConfig.getBaseUrl(),
+            model,
+            apiKey,
+            messages,
+            maxTokens,
+            extraParams
+        );
     }
 
     private User requireCurrentUser() {
