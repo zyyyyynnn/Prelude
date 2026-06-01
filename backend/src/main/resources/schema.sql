@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS `user` (
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT 'LLM Provider',
   `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT 'LLM 模型',
   `llm_api_key_encrypted` VARCHAR(512) DEFAULT NULL COMMENT '加密后的用户 API Key',
+  `llm_max_tokens` INT DEFAULT NULL COMMENT 'LLM 最大输出 Token',
+  `llm_temperature` DOUBLE DEFAULT NULL COMMENT 'LLM 采样温度',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_username` (`username`)
@@ -45,6 +47,32 @@ SET @sql = (
   )
   FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_api_key_encrypted'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `llm_max_tokens` INT DEFAULT NULL COMMENT ''LLM 最大输出 Token''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_max_tokens'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `llm_temperature` DOUBLE DEFAULT NULL COMMENT ''LLM 采样温度''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_temperature'
 );
 PREPARE stmt FROM @sql;
 EXECUTE stmt;

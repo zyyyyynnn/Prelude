@@ -9,6 +9,10 @@ public record UserLlmConfigRequest(
     @NotBlank(message = "model 不能为空")
     String model,
 
-    String apiKey
+    String apiKey,
+
+    Integer maxTokens,
+
+    Double temperature
 ) {
 }

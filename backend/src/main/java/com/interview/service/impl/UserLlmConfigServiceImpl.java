@@ -37,7 +37,9 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         return new UserLlmConfigResponse(
             selection.providerKey(),
             selection.model(),
-            maskApiKey(user.getLlmApiKeyEncrypted())
+            maskApiKey(user.getLlmApiKeyEncrypted()),
+            user.getLlmMaxTokens(),
+            user.getLlmTemperature()
         );
     }
 
@@ -62,6 +64,8 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
                 .set(User::getLlmProvider, request.providerKey())
                 .set(User::getLlmModel, request.model())
                 .set(User::getLlmApiKeyEncrypted, encryptedApiKey)
+                .set(User::getLlmMaxTokens, request.maxTokens())
+                .set(User::getLlmTemperature, request.temperature())
         );
 
         return getCurrentUserConfig();

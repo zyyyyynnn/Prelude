@@ -16,5 +16,7 @@ public class User {
     private String llmProvider;
     private String llmModel;
     private String llmApiKeyEncrypted;
+    private Integer llmMaxTokens;
+    private Double llmTemperature;
     private LocalDateTime createdAt;
 }
