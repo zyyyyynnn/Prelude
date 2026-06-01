@@ -421,7 +421,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-2xl);
 }
 .workspace-empty__content {
   width: 100%;
@@ -459,7 +459,7 @@ onBeforeUnmount(() => {
 .workspace-report {
   flex: 1;
   display: flex;
-  padding: 64px var(--spacing-lg);
+  padding: 64px var(--spacing-2xl);
   overflow-y: auto;
   align-items: flex-start;
   justify-content: center;
@@ -481,7 +481,7 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 16px var(--spacing-lg) 24px;
+  padding: 16px var(--spacing-2xl) 24px;
   background: transparent;
   z-index: 10;
   pointer-events: none;

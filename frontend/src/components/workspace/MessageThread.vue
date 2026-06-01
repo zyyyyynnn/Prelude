@@ -79,7 +79,7 @@ onMounted(() => {
 .message-thread {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 24px 260px 24px;
+  padding: var(--spacing-lg) var(--spacing-2xl) 260px;
   display: flex;
   flex-direction: column;
   gap: 24px;
