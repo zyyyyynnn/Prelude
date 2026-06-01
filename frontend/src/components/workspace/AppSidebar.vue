@@ -354,7 +354,7 @@ function logout() {
   flex-shrink: 0;
 }
 .app-sidebar__toggle:hover {
-  background-color: var(--color-sand);
+  background-color: var(--color-surface-hover);
 }
 .app-sidebar__main {
   flex: 1;
@@ -400,7 +400,7 @@ function logout() {
 .app-sidebar__btn--icon:hover,
 .app-sidebar__btn--tool:hover,
 .app-sidebar__btn--settings:hover {
-  background-color: var(--color-sand);
+  background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 .app-sidebar__btn.is-active {
@@ -482,7 +482,7 @@ function logout() {
   text-overflow: ellipsis;
 }
 .session-item-btn:hover {
-  background-color: var(--color-sand);
+  background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 .session-item-btn.is-active {
@@ -559,7 +559,7 @@ function logout() {
   text-align: left;
 }
 .settings-dropdown__item:hover {
-  background-color: var(--color-sand);
+  background-color: var(--color-surface-hover);
 }
 .settings-dropdown__item:focus-visible {
   outline: 2px solid var(--color-focus);
@@ -600,10 +600,10 @@ function logout() {
   background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--color-brand) 12%, var(--color-surface)) 25%, color-mix(in srgb, var(--color-brand) 12%, var(--color-surface)) 100%);
 }
 .session-item-wrapper:hover .session-item-actions {
-  background: linear-gradient(90deg, transparent 0%, var(--color-sand) 25%, var(--color-sand) 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--color-surface-hover) 25%, var(--color-surface-hover) 100%);
 }
 .session-item-wrapper:hover:has(.session-item-btn.is-active) .session-item-actions {
-  background: linear-gradient(90deg, transparent 0%, var(--color-sand) 25%, var(--color-sand) 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--color-surface-hover) 25%, var(--color-surface-hover) 100%);
 }
 .session-item-wrapper:hover .pin-indicator {
   display: none;

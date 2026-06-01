@@ -470,7 +470,7 @@ onBeforeUnmount(() => {
   max-width: 800px;
 }
 .markdown-surface--paper {
-  background: var(--color-sand);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--spacing-2xl);
