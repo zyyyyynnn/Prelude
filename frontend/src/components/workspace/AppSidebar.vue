@@ -400,6 +400,7 @@ function logout() {
   justify-content: flex-start;
 }
 .app-sidebar__btn--primary {
+  font-family: var(--font-serif);
   background-color: var(--color-brand);
   color: var(--color-surface);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand) 30%, transparent);
@@ -461,7 +462,9 @@ function logout() {
   font-size: 12px;
   color: var(--color-text-tertiary);
   margin: 0 0 var(--spacing-sm) var(--spacing-sm);
-  font-weight: 500;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 .session-list {
   list-style: none;
