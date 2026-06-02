@@ -79,6 +79,9 @@ export type InterviewSessionDetailResponse = {
   summaryReport?: string
   stages: InterviewStageRecord[]
   messages: InterviewMessageRecord[]
+  resumeId?: number
+  positionId?: number
+  jdText?: string
 }
 
 export type InterviewChatRequest = {

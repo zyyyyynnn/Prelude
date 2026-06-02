@@ -9,6 +9,9 @@ public record InterviewMessagesResponse(
     String currentStage,
     String summaryReport,
     List<InterviewStageItemResponse> stages,
-    List<InterviewMessageItemResponse> messages
+    List<InterviewMessageItemResponse> messages,
+    Long resumeId,
+    Long positionId,
+    String jdText
 ) {
 }

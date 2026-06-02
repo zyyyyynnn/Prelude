@@ -13,7 +13,6 @@ import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
 import MessageThread from '../components/workspace/MessageThread.vue'
 import InterviewComposer from '../components/workspace/InterviewComposer.vue'
 import { exportToPdf } from '../utils/pdf'
-import VoiceVisualizer from '../components/workspace/VoiceVisualizer.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -446,6 +445,13 @@ watch(activeSessionId, (newId, oldId) => {
   }
 })
 
+watch(replay, (newVal) => {
+  if (newVal) {
+    if (newVal.resumeId) selectedResumeId.value = newVal.resumeId
+    if (newVal.positionId) selectedPositionId.value = newVal.positionId
+  }
+})
+
 watch(() => replay.value?.summaryReport, (val) => {
   if (val && !reportMarkdown.value) {
     reportMarkdown.value = val
@@ -734,25 +740,7 @@ onBeforeUnmount(() => {
           <MessageThread :messages="messages" :reconnecting-status="reconnectingStatus" />
           
           <div class="workspace-composer-fixed">
-            <div v-if="isVoiceMode" class="voice-mode-container">
-              <VoiceVisualizer
-                :status-text="voiceStatus"
-                :incoming-audio="incomingAudioChunk"
-                @audio-chunk="handleAudioChunk"
-                @start-recording="handleStartRecording"
-                @stop-recording="handleStopRecording"
-                @play-status="handlePlayStatus"
-              />
-              <button 
-                class="ui-button ui-button--secondary ui-button--compact voice-close-btn"
-                @click="isVoiceMode = false"
-                type="button"
-              >
-                返回文字模式
-              </button>
-            </div>
             <InterviewComposer 
-              v-else
               :is-centered="false"
               :active-session-id="activeSessionId"
               :resumes="resumes"
@@ -761,17 +749,25 @@ onBeforeUnmount(() => {
               :selected-position-id="selectedPositionId"
               :llm-provider="llmProvider"
               :llm-model="llmModel"
+              :jd-text="replay?.jdText"
               v-model="answer"
               :uploading="uploading"
               :upload-display-name="uploadDisplayName"
               :sending="sending"
               :creating="creating"
+              :is-voice-mode="isVoiceMode"
+              :voice-status="voiceStatus"
+              :incoming-audio="incomingAudioChunk"
+              @update:is-voice-mode="v => isVoiceMode = v"
               @update:selected-resume-id="id => selectedResumeId = id"
               @update:selected-position-id="id => selectedPositionId = id"
               @upload="handleUpload"
               @start="createNewInterview"
               @send="handleSend"
-              @toggle-voice="isVoiceMode = true"
+              @voice-audio-chunk="handleAudioChunk"
+              @voice-start-recording="handleStartRecording"
+              @voice-stop-recording="handleStopRecording"
+              @voice-play-status="handlePlayStatus"
             />
           </div>
         </template>
