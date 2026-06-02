@@ -382,6 +382,7 @@ function logout() {
   padding: 0 var(--spacing-sm);
   border: none;
   border-radius: var(--radius-md);
+  font-family: var(--font-serif);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -564,6 +565,7 @@ function logout() {
   border: none;
   background: transparent;
   color: var(--color-text-primary);
+  font-family: var(--font-serif);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

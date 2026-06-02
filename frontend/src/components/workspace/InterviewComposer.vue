@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
             @keydown.ctrl.enter="canSend && emit('send')"
             @keydown.meta.enter="canSend && emit('send')"
           />
-          <transition name="fade">
+          <transition name="slide-fade">
             <div v-if="!activeSessionId && showJdInput" class="composer-jd-area">
               <ElInput
                 v-model="localJdText"
@@ -795,15 +795,21 @@ onBeforeUnmount(() => {
   color: var(--color-brand);
 }
 
-/* Fade transition */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+/* Slide-fade transition (smooth height expand/collapse) */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: opacity 0.2s ease, max-height 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
 }
-.fade-enter-from,
-.fade-leave-to {
+.slide-fade-enter-from,
+.slide-fade-leave-to {
   opacity: 0;
+  max-height: 0;
   transform: translateY(-8px);
+}
+.slide-fade-enter-to,
+.slide-fade-leave-from {
+  max-height: 200px;
 }
 
 @keyframes pulse {
