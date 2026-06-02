@@ -1,9 +1,12 @@
-﻿# 沉浸式模拟面试与简历诊断系统
+# 沉浸式模拟面试与简历诊断系统
 
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green)
 ![Vue](https://img.shields.io/badge/Vue-3-brightgreen)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-orange)
+![Redis](https://img.shields.io/badge/Redis-7.0-red)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
+![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C)
 
 > 毕业设计项目：沉浸式模拟面试与简历诊断系统
 
@@ -12,7 +15,9 @@
 ## 项目亮点
 
 - 支持 PDF 简历解析、岗位模板匹配、阶段化模拟面试和 Markdown 评估报告生成。
-- 使用 SSE 实现流式问答体验，完整保留系统提示与对话历史记录。
+- 高可用与防抖容灾：引入 Structured Output 杜绝提取幻觉，搭载 SSE 指数退避重连机制与 Resilience4j 智能熔断降级。
+- 异步削峰与全栈监控：基于 Redis MQ 实现耗时评估报告的异步解耦；基于 Docker 完成全套编排，并提供 Prometheus 可观测性看板。
+- 双向语音交互：支持 Voice-to-Voice 流式低延迟语音对话（首字节 < 3s），支持网络异常自动降级。
 - 提供 Demo Twin 演示模式，数据库、端口、前端环境与真实模式隔离。
 - 支持用户级 LLM Provider、模型和 API Key 配置，Key 使用 AES-256-GCM 加密保存。
 - 提供能力雷达图、评分趋势和薄弱点统计，形成从面试到复盘的闭环。
@@ -24,16 +29,32 @@ flowchart LR
   U["用户浏览器"] --> FE["Vue 3 + Vite 前端"]
   FE --> API["Spring Boot API"]
   API --> DB[("MySQL 8.0")]
+  API <--> Redis[("Redis (限流/MQ)")]
   API --> PDF["PDFBox 简历解析"]
-  API --> LLM["DeepSeek / OpenAI 兼容模型"]
-  API --> SSE["SSE 流式响应"]
-  SSE --> FE
+  
+  subgraph LLM_Gateway["LLM 智能网关"]
+    Router["LlmRouter (Resilience4j)"]
+    DeepSeek["DeepSeek / OpenAI"]
+    Router -->|主路 / 熔断切换| DeepSeek
+  end
+  API --> Router
+  
+  API <--> WS["SSE / WS 双向流"]
+  WS <--> FE
+  
   subgraph DemoTwin["Demo Twin"]
     DemoDB[("interview_demo")]
     DemoSeed["/api/demo/reset"]
   end
   API -.demo profile.-> DemoDB
   DemoSeed --> DemoDB
+  
+  subgraph Observability["可观测性"]
+    Prometheus["Prometheus"]
+    Grafana["Grafana"]
+    Prometheus -->|Scrape| API
+    Grafana --> Prometheus
+  end
 ```
 
 ## 界面预览
@@ -56,8 +77,9 @@ flowchart LR
 
 ## 技术栈
 
-- 后端：Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.0、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM
+- 后端：Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.0、Redis、WebSocket、Resilience4j、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM
 - 前端：Vue 3、TypeScript、Vite、Element Plus、Vue Router、Pinia、Axios、markdown-it、ECharts
+- 部署运维：Docker Compose、Prometheus & Grafana
 - 模型接口：DeepSeek API、OpenAI 兼容 Chat Completions 协议
 - 流式通信：Spring `SseEmitter` + 前端 `fetch` / `ReadableStream`
 

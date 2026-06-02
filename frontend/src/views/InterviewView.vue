@@ -532,7 +532,6 @@ function initVoiceWebSocket() {
   voiceSocket = new WebSocket(wsUrl)
 
   voiceSocket.onopen = () => {
-    console.log('Voice WebSocket connection opened')
     voiceSocket?.send(JSON.stringify({
       type: 'start',
       sessionId: activeSessionId.value
@@ -594,14 +593,12 @@ function initVoiceWebSocket() {
   }
 
   voiceSocket.onclose = () => {
-    console.log('Voice WebSocket connection closed')
     if (isVoiceMode.value) {
       voiceStatus.value = 'idle'
     }
   }
 
   voiceSocket.onerror = (err) => {
-    console.error('Voice WebSocket connection error:', err)
     if (isVoiceMode.value) {
       showNotice('语音交互连接异常，已自动为您切回文字模式', 'warning')
       isVoiceMode.value = false
