@@ -36,6 +36,7 @@ export type InterviewFinishResponse = {
   sessionId?: number
   summaryReport: string
   status?: string
+  jobId?: string
 }
 
 export type InterviewStageName = 'warmup' | 'technical' | 'deep_dive' | 'closing'

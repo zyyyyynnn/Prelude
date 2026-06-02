@@ -152,7 +152,6 @@ onMounted(() => {
                 class="ui-input"
                 autocomplete="username"
                 placeholder="请输入用户名"
-                size="large"
               />
             </ElFormItem>
 
@@ -164,7 +163,6 @@ onMounted(() => {
                 placeholder="请输入密码"
                 show-password
                 type="password"
-                size="large"
               />
             </ElFormItem>
 
@@ -179,7 +177,6 @@ onMounted(() => {
                   autocomplete="email"
                   :disabled="!isRegisterMode"
                   placeholder="请输入邮箱"
-                  size="large"
                 />
               </ElFormItem>
             </div>
@@ -189,7 +186,6 @@ onMounted(() => {
                 class="ui-button ui-button--primary ui-button--block"
                 :loading="loading"
                 native-type="submit"
-                size="large"
                 type="primary"
               >
                 {{ submitLabel }}

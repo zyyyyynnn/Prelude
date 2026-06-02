@@ -311,6 +311,6 @@ public class ReportJobWorker implements CommandLineRunner {
         return trimmed;
     }
 
-    public record ReportJob(Long sessionId, Long userId) {}
+    public record ReportJob(Long sessionId, Long userId, String jobId) {}
     private record WeaknessExtractionItem(String category, String description) {}
 }

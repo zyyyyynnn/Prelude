@@ -382,13 +382,16 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  outline: none;
   box-shadow: 0 4px 10px color-mix(in srgb, var(--color-text-primary) 3%, transparent);
 }
 .voice-btn:hover {
   background-color: var(--color-surface-hover);
   color: var(--color-brand);
   transform: translateY(-1px);
+}
+.voice-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 .voice-btn.is-active {
   background-color: var(--color-brand);

@@ -190,6 +190,11 @@ export async function streamInterviewChat(
         const detail = await fetchInterviewMessages(sessionId)
         const serverMsgs = detail.messages || []
 
+        if (detail.status === 'generating' || detail.status === 'finished') {
+          handlers.onEvent?.({ eventName: 'sync', data: JSON.stringify(serverMsgs) })
+          break
+        }
+
         // If user message exists on the server, we align state and finish
         const userMsgExists = autoStart
           ? serverMsgs.some((m) => m.role === 'assistant')

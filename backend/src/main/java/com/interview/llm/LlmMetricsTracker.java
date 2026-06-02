@@ -10,36 +10,39 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class LlmMetricsTracker {
 
-    private final Timer latencyTimer;
-    private final Counter tokenCounter;
-    private final Counter failureCounter;
+    private final MeterRegistry registry;
 
     public LlmMetricsTracker(MeterRegistry registry) {
-        this.latencyTimer = Timer.builder("llm.call.latency")
+        this.registry = registry;
+    }
+
+    public void recordLatency(String provider, long elapsedNanos) {
+        String safeProvider = provider != null ? provider : "unknown";
+        Timer.builder("llm.call.latency")
             .description("LLM call latency distribution")
+            .tag("provider", safeProvider)
             .publishPercentiles(0.5, 0.9, 0.99)
-            .register(registry);
-        
-        this.tokenCounter = Counter.builder("llm.tokens.consumed")
-            .description("Cumulative token consumption")
-            .register(registry);
-            
-        this.failureCounter = Counter.builder("llm.call.failures")
-            .description("LLM call failure count")
-            .register(registry);
+            .register(registry)
+            .record(elapsedNanos, TimeUnit.NANOSECONDS);
     }
 
-    public void recordLatency(long elapsedNanos) {
-        latencyTimer.record(elapsedNanos, TimeUnit.NANOSECONDS);
-    }
-
-    public void recordTokens(double count) {
+    public void recordTokens(String provider, double count) {
         if (count > 0) {
-            tokenCounter.increment(count);
+            String safeProvider = provider != null ? provider : "unknown";
+            Counter.builder("llm.tokens.consumed")
+                .description("Cumulative token consumption")
+                .tag("provider", safeProvider)
+                .register(registry)
+                .increment(count);
         }
     }
 
-    public void recordFailure() {
-        failureCounter.increment();
+    public void recordFailure(String provider) {
+        String safeProvider = provider != null ? provider : "unknown";
+        Counter.builder("llm.call.failures")
+            .description("LLM call failure count")
+            .tag("provider", safeProvider)
+            .register(registry)
+            .increment();
     }
 }

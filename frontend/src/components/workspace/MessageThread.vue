@@ -92,10 +92,11 @@ onMounted(() => {
 .message-thread {
   flex: 1;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: var(--spacing-lg) var(--spacing-2xl) var(--composer-height);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--spacing-lg);
   min-height: 0;
 }
 .message-thread__empty {

@@ -73,6 +73,38 @@
   --el-color-primary-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--color-brand));
   --el-color-primary-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--color-brand));
   --el-color-primary-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--color-brand));
+
+  --el-color-info: var(--color-text-secondary);
+
+  --el-color-success-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-success));
+  --el-color-success-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-success));
+  --el-color-success-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-success));
+  --el-color-success-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-success));
+  --el-color-success-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-success));
+
+  --el-color-warning-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-warning));
+  --el-color-warning-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-warning));
+  --el-color-warning-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-warning));
+  --el-color-warning-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-warning));
+  --el-color-warning-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-warning));
+
+  --el-color-danger-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-danger));
+  --el-color-danger-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-danger));
+  --el-color-danger-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-danger));
+  --el-color-danger-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-danger));
+  --el-color-danger-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-danger));
+
+  --el-color-error-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-error));
+  --el-color-error-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-error));
+  --el-color-error-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-error));
+  --el-color-error-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-error));
+  --el-color-error-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-error));
+
+  --el-color-info-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-info));
+  --el-color-info-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-info));
+  --el-color-info-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-info));
+  --el-color-info-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-info));
+  --el-color-info-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-info));
   --el-button-disabled-bg-color: var(--color-surface-muted);
   --el-button-disabled-text-color: var(--color-text-tertiary);
   --el-button-disabled-border-color: var(--color-border);
@@ -987,7 +1019,7 @@ a {
   display: block;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--color-border) 82%, var(--color-surface));
-  background: #f5f4ed;
+  background: var(--color-bg);
 }
 
 .brand-metaballs canvas {
@@ -1445,7 +1477,8 @@ a {
 
 .text-button:hover,
 .text-button:focus-visible {
-  color: color-mix(in srgb, var(--color-brand) 92%, black);
+  background-color: var(--color-surface-hover);
+  color: var(--color-brand);
 }
 
 .auth-switch {
@@ -1478,6 +1511,10 @@ a {
   background: var(--color-surface);
   color: var(--color-text-primary);
   box-shadow: var(--shadow-ring);
+}
+.auth-switch__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 
 .login-card {
@@ -1754,6 +1791,7 @@ a {
 .scrollable {
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
+  scrollbar-gutter: stable;
 }
 
 .scrollable::-webkit-scrollbar {

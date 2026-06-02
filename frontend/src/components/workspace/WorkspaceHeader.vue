@@ -84,23 +84,28 @@ const emit = defineEmits<{
 .segmented-control {
   display: flex;
   background: color-mix(in srgb, var(--color-border) 30%, var(--color-surface));
-  padding: 4px;
-  border-radius: 8px;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
 }
 .segmented-control__item {
   border: none;
   background: transparent;
-  padding: 6px 16px;
+  padding: var(--spacing-xs) var(--spacing-md);
   font-size: 13px;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
+  outline: none;
 }
 .segmented-control__item:hover {
   color: var(--color-text-primary);
+}
+.segmented-control__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 .segmented-control__item.is-active {
   background: var(--color-surface);
