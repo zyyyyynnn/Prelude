@@ -293,7 +293,7 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
+  padding: var(--spacing-sm);
   height: 60px;
 }
 .app-sidebar.is-collapsed .app-sidebar__header {
@@ -302,7 +302,7 @@ function logout() {
 .app-sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-sm);
   overflow: hidden;
   transition: opacity 0.2s ease, width 0.2s ease, gap 0.2s ease;
   width: 180px;
@@ -349,31 +349,35 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 .app-sidebar__toggle:hover {
   background-color: var(--color-surface-hover);
 }
+.app-sidebar__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
 .app-sidebar__main {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 12px;
+  padding: var(--spacing-sm);
   min-height: 0;
 }
 .app-sidebar__actions {
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-sm);
 }
 .app-sidebar__btn {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-sm);
   width: 100%;
-  height: 32px;
-  padding: 0 12px;
+  height: var(--ui-height-sm);
+  padding: 0 var(--spacing-sm);
   border: none;
   border-radius: var(--radius-md);
   font-size: 15px;
@@ -384,8 +388,8 @@ function logout() {
   color: var(--color-text-secondary);
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
-  padding: 0 6px;
-  margin: 0 6px;
+  padding: 0 var(--spacing-xs);
+  margin: 0 var(--spacing-xs);
   gap: 0;
   width: 32px;
 }
@@ -417,7 +421,7 @@ function logout() {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-sm);
   padding-right: 0;
   transition: opacity 0.2s ease;
   opacity: 1;
@@ -441,16 +445,16 @@ function logout() {
   pointer-events: auto;
   height: auto;
   max-height: 200px;
-  margin-top: 12px;
+  margin-top: var(--spacing-sm);
 }
 .session-group {
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-sm);
   white-space: nowrap;
 }
 .session-group__title {
   font-size: 12px;
   color: var(--color-text-tertiary);
-  margin: 0 0 12px 12px;
+  margin: 0 0 var(--spacing-sm) var(--spacing-sm);
   font-weight: 500;
 }
 .session-list {
@@ -459,17 +463,17 @@ function logout() {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 .session-item-btn {
   width: 100%;
   text-align: left;
   background: transparent;
   border: none;
-  padding: 0 12px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  padding: 0 var(--spacing-sm);
+  height: var(--ui-height-sm);
+  min-height: var(--ui-height-sm);
+  max-height: var(--ui-height-sm);
   display: flex;
   align-items: center;
   border-radius: var(--radius-md);
@@ -498,17 +502,17 @@ function logout() {
 .session-group__empty {
   font-size: 13px;
   color: var(--color-text-tertiary);
-  margin: 0 0 0 12px;
+  margin: 0 0 0 var(--spacing-sm);
 }
 .app-sidebar__tools {
   border-top: 1px solid var(--color-border);
-  padding-top: 12px;
+  padding-top: var(--spacing-sm);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 .app-sidebar__footer {
-  padding: 12px;
+  padding: var(--spacing-sm);
   border-top: 1px solid var(--color-border);
 }
 .settings-menu-wrapper {
@@ -523,12 +527,12 @@ function logout() {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 12px;
-  margin-left: 12px;
+  padding: var(--spacing-sm);
+  margin-left: var(--spacing-sm);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
   z-index: 200;
   opacity: 0;
   visibility: hidden;
@@ -544,10 +548,10 @@ function logout() {
 .settings-dropdown__item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-sm);
   width: 100%;
-  height: 32px;
-  padding: 0 12px;
+  height: var(--ui-height-sm);
+  padding: 0 var(--spacing-sm);
   border: none;
   background: transparent;
   color: var(--color-text-primary);
@@ -595,7 +599,7 @@ function logout() {
   opacity: 0;
   transition: opacity 0.15s ease;
   background: linear-gradient(90deg, transparent 0%, var(--color-surface) 25%, var(--color-surface) 100%);
-  padding-left: 12px;
+  padding-left: var(--spacing-sm);
 }
 .session-item-wrapper:has(.session-item-btn.is-active) .session-item-actions {
   background: linear-gradient(90deg, transparent 0%, var(--color-surface-muted) 25%, var(--color-surface-muted) 100%);
@@ -611,7 +615,7 @@ function logout() {
 }
 .pin-indicator {
   position: absolute;
-  right: 12px;
+  right: var(--spacing-sm);
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-brand);
@@ -624,7 +628,7 @@ function logout() {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
   display: flex;

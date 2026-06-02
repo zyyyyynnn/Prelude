@@ -115,14 +115,14 @@ public class AnthropicProvider implements LlmProvider {
                     String body = response.body() == null ? "" : response.body().string();
                     log.warn("Anthropic API error {}: {}", response.code(), body);
                     if (response.code() >= 500) {
-                        metricsTracker.recordFailure();
+                        metricsTracker.recordFailure(providerKey());
                         throw new LlmServerException("Anthropic 服务端错误，状态码：" + response.code());
                     } else {
                         throw BusinessException.badRequest("Anthropic 调用失败：" + response.code());
                     }
                 }
                 
-                metricsTracker.recordLatency(System.nanoTime() - startTime);
+                metricsTracker.recordLatency(providerKey(), System.nanoTime() - startTime);
 
                 if (!stream) {
                     String body = response.body() == null ? "" : response.body().string();
@@ -137,7 +137,7 @@ public class AnthropicProvider implements LlmProvider {
                         if (!outputTokens.isMissingNode() && outputTokens.isNumber()) {
                             total += outputTokens.asDouble();
                         }
-                        metricsTracker.recordTokens(total);
+                        metricsTracker.recordTokens(providerKey(), total);
                     } catch (Exception e) {
                         log.debug("Failed to parse token usage from Anthropic response", e);
                     }
@@ -153,7 +153,7 @@ public class AnthropicProvider implements LlmProvider {
         } catch (BusinessException e) {
             throw e;
         } catch (IOException e) {
-            metricsTracker.recordFailure();
+            metricsTracker.recordFailure(providerKey());
             throw new LlmTimeoutException("Anthropic 网络调用超时或异常，请检查配置");
         }
     }
@@ -172,7 +172,7 @@ public class AnthropicProvider implements LlmProvider {
                 String data = trimmed.substring("data:".length()).trim();
                 String delta = extractDeltaText(data);
                 if (!delta.isBlank()) {
-                    metricsTracker.recordTokens(delta.length() / 2.0);
+                    metricsTracker.recordTokens(providerKey(), delta.length() / 2.0);
                     onDelta.accept(delta);
                 }
             }

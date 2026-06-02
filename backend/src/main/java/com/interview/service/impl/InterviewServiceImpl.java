@@ -330,17 +330,18 @@ public class InterviewServiceImpl implements InterviewService {
         session.setStatus("generating");
         interviewSessionMapper.updateById(session);
 
+        String jobId = java.util.UUID.randomUUID().toString();
         try {
-            ReportJobWorker.ReportJob job = new ReportJobWorker.ReportJob(sessionId, userId);
+            ReportJobWorker.ReportJob job = new ReportJobWorker.ReportJob(sessionId, userId, jobId);
             stringRedisTemplate.opsForList().leftPush("queue:report:jobs", objectMapper.writeValueAsString(job));
-            log.info("Enqueued report generation job for session {}", sessionId);
+            log.info("Enqueued report generation job for session {} with jobId {}", sessionId, jobId);
         } catch (JsonProcessingException e) {
             throw BusinessException.badRequest("任务队列推送失败");
         }
 
         SESSION_LOCKS.invalidate(sessionId.toString());
 
-        return new InterviewFinishResponse(session.getId(), null, "generating");
+        return new InterviewFinishResponse(session.getId(), null, "generating", jobId);
     }
 
     @Override
@@ -839,7 +840,7 @@ public class InterviewServiceImpl implements InterviewService {
         Long userId = session.getUserId();
         sseTaskExecutor.execute(() -> {
             UserContext.setCurrentUserId(userId);
-            String lockKey = "lock:judge:" + userId;
+            String lockKey = "lock:judge:" + userId + ":" + session.getId();
             boolean lockAcquired = false;
             try {
                 // Spin wait for lock
@@ -911,8 +912,9 @@ public class InterviewServiceImpl implements InterviewService {
                     try {
                         Map<String, Object> map = objectMapper.readValue(trimmed, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
                         int score = ((Number) map.getOrDefault("score", 7)).intValue();
+                        int safeScore = Math.max(1, Math.min(10, score));
                         String hint = (String) map.getOrDefault("hint", "回答已记录");
-                        judgeResultJson = String.format("{\"score\": %d, \"hint\": \"%s\"}", score, hint.replace("\"", "\\\""));
+                        judgeResultJson = String.format("{\"score\": %d, \"hint\": \"%s\"}", safeScore, hint.replace("\"", "\\\""));
                     } catch (Exception e) {
                         log.warn("Failed to parse judge output: {}", judgeOutput, e);
                         judgeResultJson = "{\"score\": 7, \"hint\": \"回答已记录，继续加油。\"}";

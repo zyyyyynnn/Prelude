@@ -212,19 +212,19 @@ function navigateToLlm() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--color-ring);
-  padding: 16px;
+  padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 .interview-composer.is-centered .interview-composer__inner {
-  padding: 24px;
-  gap: 20px;
+  padding: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 .composer-textarea :deep(.el-textarea__inner) {
   border: none;
   background: transparent;
-  padding: 8px 4px;
+  padding: var(--spacing-sm) var(--spacing-xs);
   box-shadow: none;
   font-size: 15px;
   color: var(--color-text-primary);
@@ -250,17 +250,17 @@ function navigateToLlm() {
 .composer-actions__right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 .composer-actions__hint {
   font-size: 12px;
   color: var(--color-text-tertiary);
-  padding-left: 4px;
+  padding-left: var(--spacing-xs);
 }
 .composer-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 .toolbar-item {
   display: inline-flex;
@@ -269,7 +269,7 @@ function navigateToLlm() {
   background: transparent;
   border: none;
   font-size: 13px;
-  padding: 6px 10px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background-color 0.2s;
@@ -278,6 +278,10 @@ function navigateToLlm() {
 }
 .toolbar-item:hover, .toolbar-item:focus-within {
   background-color: var(--color-surface-hover);
+}
+.toolbar-item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 .toolbar-item__label {
   color: var(--color-text-tertiary);
@@ -294,18 +298,18 @@ function navigateToLlm() {
 }
 .composer-btn {
   border-radius: var(--radius-lg);
-  padding: 0 24px;
+  padding: 0 var(--spacing-lg);
   flex-shrink: 0;
 }
 .composer-jd-area {
   border-top: 1px dashed var(--color-border);
-  padding-top: 12px;
-  margin-top: 4px;
+  padding-top: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
 }
 .jd-textarea :deep(.el-textarea__inner) {
   border: none;
   background: transparent;
-  padding: 8px 4px;
+  padding: var(--spacing-sm) var(--spacing-xs);
   box-shadow: none;
   font-size: 14px;
   color: var(--color-text-primary);

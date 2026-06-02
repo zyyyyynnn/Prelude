@@ -805,7 +805,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40px;
+  gap: var(--spacing-2xl);
 }
 .workspace-empty__title {
   font-family: var(--font-serif);
@@ -837,6 +837,7 @@ onBeforeUnmount(() => {
   display: flex;
   padding: 64px var(--spacing-2xl);
   overflow-y: auto;
+  scrollbar-gutter: stable;
   align-items: flex-start;
   justify-content: center;
   min-height: 0;
@@ -857,7 +858,7 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 16px var(--spacing-2xl) 24px;
+  padding: var(--spacing-md) var(--spacing-2xl) var(--spacing-lg);
   background: transparent;
   z-index: 10;
   pointer-events: none;
@@ -911,7 +912,7 @@ onBeforeUnmount(() => {
   padding: var(--spacing-2xl);
   background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
   text-align: center;
 }

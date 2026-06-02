@@ -108,14 +108,14 @@ public abstract class AbstractOpenAiCompatibleProvider implements LlmProvider {
                     String body = response.body() == null ? "" : response.body().string();
                     log.warn("{} API error {}: {}", providerName, response.code(), body);
                     if (response.code() >= 500) {
-                        metricsTracker.recordFailure();
+                        metricsTracker.recordFailure(providerKey());
                         throw new LlmServerException(providerName + " 服务端错误，状态码：" + response.code());
                     } else {
                         throw BusinessException.badRequest(providerName + " 调用失败：" + response.code());
                     }
                 }
                 
-                metricsTracker.recordLatency(System.nanoTime() - startTime);
+                metricsTracker.recordLatency(providerKey(), System.nanoTime() - startTime);
 
                 if (!stream) {
                     String body = response.body() == null ? "" : response.body().string();
@@ -123,7 +123,7 @@ public abstract class AbstractOpenAiCompatibleProvider implements LlmProvider {
                         JsonNode root = objectMapper.readTree(body);
                         JsonNode usageNode = root.at("/usage/total_tokens");
                         if (!usageNode.isMissingNode() && usageNode.isNumber()) {
-                            metricsTracker.recordTokens(usageNode.asDouble());
+                            metricsTracker.recordTokens(providerKey(), usageNode.asDouble());
                         }
                     } catch (Exception e) {
                         log.debug("Failed to parse token usage from OpenAI compatible response", e);
@@ -146,7 +146,7 @@ public abstract class AbstractOpenAiCompatibleProvider implements LlmProvider {
                         }
                         String delta = extractDeltaContent(data);
                         if (!delta.isBlank()) {
-                            metricsTracker.recordTokens(delta.length() / 2.0);
+                            metricsTracker.recordTokens(providerKey(), delta.length() / 2.0);
                             onDelta.accept(delta);
                         }
                     }
@@ -156,7 +156,7 @@ public abstract class AbstractOpenAiCompatibleProvider implements LlmProvider {
         } catch (BusinessException exception) {
             throw exception;
         } catch (IOException exception) {
-            metricsTracker.recordFailure();
+            metricsTracker.recordFailure(providerKey());
             throw new LlmTimeoutException(providerName + " 网络调用超时或异常，请检查配置");
         }
     }

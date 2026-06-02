@@ -18,6 +18,7 @@ import com.interview.service.VoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -47,6 +48,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private static final String ROLE_USER = "user";
     private static final String ROLE_ASSISTANT = "assistant";
@@ -417,74 +419,103 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
 
     private void triggerVoiceJudge(InterviewSession session, InterviewMessage userMsg, WebSocketSession wsSession) {
         Long userId = session.getUserId();
-        List<InterviewMessage> allMessages = interviewMessageMapper.selectList(new LambdaQueryWrapper<InterviewMessage>()
-                .eq(InterviewMessage::getSessionId, session.getId())
-                .orderByAsc(InterviewMessage::getSeqNum));
-
-        String questionContent = "";
-        for (int i = allMessages.size() - 1; i >= 0; i--) {
-            InterviewMessage m = allMessages.get(i);
-            if ("assistant".equals(m.getRole()) && m.getSeqNum() < userMsg.getSeqNum()) {
-                questionContent = m.getContent();
-                break;
-            }
-        }
-
-        String judgeResultJson;
-        if (demoProperties.isEnabled()) {
-            int replyIndex = nextSeqNum(session.getId());
-            int score = 7 + (replyIndex % 3);
-            judgeResultJson = String.format("{\"score\": %d, \"hint\": \"语音表达流畅，内容符合技术规范要求。\"}", score);
-        } else {
-            String systemPrompt = """
-                你是严谨的面试评估官。请针对当前的技术面试问题和候选人的回答，给出 1 到 10 之间的评分（1-10 整数）和一句简短的改进建议或评价（字数控制在 50 字以内）。
-                必须只返回如下严格 JSON，不要输出 Markdown 代码围栏：
-                {
-                  "score": 评分数字,
-                  "hint": "改进建议或评价"
+        String lockKey = "lock:judge:" + userId + ":" + session.getId();
+        boolean lockAcquired = false;
+        try {
+            // Spin wait for lock
+            for (int retry = 0; retry < 10; retry++) {
+                Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", java.time.Duration.ofSeconds(30));
+                if (Boolean.TRUE.equals(acquired)) {
+                    lockAcquired = true;
+                    break;
                 }
-                """;
-            String userPrompt = "面试岗位：" + session.getTargetPosition() + "\n" +
-                                 "面试官提出的问题：" + questionContent + "\n" +
-                                 "候选人的回答：" + userMsg.getContent() + "\n";
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+
+            if (!lockAcquired) {
+                log.warn("Failed to acquire judge lock for voice user {}, skipping voice judge", userId);
+                return;
+            }
+
+            List<InterviewMessage> allMessages = interviewMessageMapper.selectList(new LambdaQueryWrapper<InterviewMessage>()
+                    .eq(InterviewMessage::getSessionId, session.getId())
+                    .orderByAsc(InterviewMessage::getSeqNum));
+
+            String questionContent = "";
+            for (int i = allMessages.size() - 1; i >= 0; i--) {
+                InterviewMessage m = allMessages.get(i);
+                if ("assistant".equals(m.getRole()) && m.getSeqNum() < userMsg.getSeqNum()) {
+                    questionContent = m.getContent();
+                    break;
+                }
+            }
+
+            String judgeResultJson;
+            if (demoProperties.isEnabled()) {
+                int replyIndex = nextSeqNum(session.getId());
+                int score = 7 + (replyIndex % 3);
+                judgeResultJson = String.format("{\"score\": %d, \"hint\": \"语音表达流畅，内容符合技术规范要求。\"}", score);
+            } else {
+                String systemPrompt = """
+                    你是严谨的面试评估官。请针对当前的技术面试问题和候选人的回答，给出 1 到 10 之间的评分（1-10 整数）和一句简短的改进建议或评价（字数控制在 50 字以内）。
+                    必须只返回如下严格 JSON，不要输出 Markdown 代码围栏：
+                    {
+                      "score": 评分数字,
+                      "hint": "改进建议或评价"
+                    }
+                    """;
+                String userPrompt = "面试岗位：" + session.getTargetPosition() + "\n" +
+                                     "面试官提出的问题：" + questionContent + "\n" +
+                                     "候选人的回答：" + userMsg.getContent() + "\n";
+
+                try {
+                    String judgeOutput = llmRouter.chatWithSnapshot(
+                        session.getLlmProvider(),
+                        session.getLlmModel(),
+                        List.of(
+                            Map.of("role", "system", "content", systemPrompt),
+                            Map.of("role", "user", "content", userPrompt)
+                        ),
+                        Map.of("response_format", Map.of("type", "json_object"))
+                    );
+
+                    String trimmed = stripJsonFence(judgeOutput);
+                    Map<String, Object> map = objectMapper.readValue(trimmed, new TypeReference<Map<String, Object>>() {});
+                    int score = ((Number) map.getOrDefault("score", 7)).intValue();
+                    int safeScore = Math.max(1, Math.min(10, score));
+                    String hint = (String) map.getOrDefault("hint", "回答已记录");
+                    judgeResultJson = String.format("{\"score\": %d, \"hint\": \"%s\"}", safeScore, hint.replace("\"", "\\\""));
+                } catch (Exception e) {
+                    log.warn("Failed to parse voice judge output: {}", e.getMessage());
+                    judgeResultJson = "{\"score\": 7, \"hint\": \"回答已记录，继续加油。\"}";
+                }
+            }
 
             try {
-                String judgeOutput = llmRouter.chatWithSnapshot(
-                    session.getLlmProvider(),
-                    session.getLlmModel(),
-                    List.of(
-                        Map.of("role", "system", "content", systemPrompt),
-                        Map.of("role", "user", "content", userPrompt)
-                    ),
-                    Map.of("response_format", Map.of("type", "json_object"))
-                );
+                Map<String, Object> parsedMap = objectMapper.readValue(judgeResultJson, new TypeReference<Map<String, Object>>() {});
+                int score = ((Number) parsedMap.get("score")).intValue();
+                String hint = (String) parsedMap.get("hint");
+                userMsg.setScore(score);
+                userMsg.setHint(hint);
+                interviewMessageMapper.updateById(userMsg);
 
-                String trimmed = stripJsonFence(judgeOutput);
-                Map<String, Object> map = objectMapper.readValue(trimmed, new TypeReference<Map<String, Object>>() {});
-                int score = ((Number) map.getOrDefault("score", 7)).intValue();
-                String hint = (String) map.getOrDefault("hint", "回答已记录");
-                judgeResultJson = String.format("{\"score\": %d, \"hint\": \"%s\"}", score, hint.replace("\"", "\\\""));
+                sendJson(wsSession, Map.of(
+                    "type", "judge",
+                    "score", score,
+                    "hint", hint
+                ));
             } catch (Exception e) {
-                log.warn("Failed to parse voice judge output: {}", e.getMessage());
-                judgeResultJson = "{\"score\": 7, \"hint\": \"回答已记录，继续加油。\"}";
+                log.warn("Failed to update and push message score/hint in voice mode", e);
             }
-        }
-
-        try {
-            Map<String, Object> parsedMap = objectMapper.readValue(judgeResultJson, new TypeReference<Map<String, Object>>() {});
-            int score = ((Number) parsedMap.get("score")).intValue();
-            String hint = (String) parsedMap.get("hint");
-            userMsg.setScore(score);
-            userMsg.setHint(hint);
-            interviewMessageMapper.updateById(userMsg);
-
-            sendJson(wsSession, Map.of(
-                "type", "judge",
-                "score", score,
-                "hint", hint
-            ));
-        } catch (Exception e) {
-            log.warn("Failed to update and push message score/hint in voice mode", e);
+        } finally {
+            if (lockAcquired) {
+                stringRedisTemplate.delete(lockKey);
+            }
         }
     }
 

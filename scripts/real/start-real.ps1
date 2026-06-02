@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
   [switch]$PrepareOnly
 )
@@ -55,6 +55,10 @@ if (-not (Ensure-MySqlReady -DatasourceConfig $datasourceConfig -MySqlLogDir $my
 
 if (-not (Try-EnsureDatabase -DatabaseName $databaseName -DatasourceConfig $datasourceConfig)) {
   Write-Warning "Failed to ensure database $databaseName. Check MySQL credentials in application-local.yml or MYSQL_* environment variables."
+}
+
+if (-not (Test-PortListening -Port 6379)) {
+  throw "Redis is not listening on port 6379. Please start Redis server before launching the application."
 }
 
 if ($PrepareOnly) {

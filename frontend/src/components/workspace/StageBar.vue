@@ -42,6 +42,6 @@ const canFinish = computed(
 }
 .stage-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-sm);
 }
 </style>
