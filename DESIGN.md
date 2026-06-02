@@ -97,12 +97,10 @@
 - 无数据时显示空态，不渲染空图。
 
 ## 10. 侧边栏
-
-- 所有组件高度统一为 32px（`app-sidebar__btn`、`session-item-btn`、`settings-dropdown__item`）。
-- 组件间距统一为 12px（margin / gap / padding），例外：会话操作按钮（置顶/删除）内部间距保持 4px。
+- 为了完美容纳 20px 宽的矢量图标与 8px 的内边距，侧边栏所有组件的高度已全面升维并统一为 `var(--ui-height-md)` (36px)（包含 `app-sidebar__btn`、`session-item-btn`、`settings-dropdown__item`）。
+- 侧边栏组件的内部和外部间距全面复用全局统一 Token `var(--spacing-sm)` (8px)，彻底消除 `12px` 特例。
+- 侧边栏折叠态的底层数学模型采用 `52px`，通过公式 `calc(var(--ui-height-md) + var(--spacing-sm) * 2)` 保证 26px 重心绝对对齐。折叠态的图标组件必须维持 `padding: 0 var(--spacing-sm); margin: 0; justify-content: flex-start;`，严禁使用 `auto` 或者 `center`，以便用物理绝对坐标完成零跳动的侧边栏切换。
 - 会话列表使用 `flex + gap` 控制间距，按钮使用 `min-height / max-height / line-height: 1` 锁定高度，防止 flex 的 `min-height: auto` 撑高。
-- LLM 配置图标使用终端样式 `>_`（polyline 4 17 / 10 11 / 4 5 + 底部光标线）。
-- 折叠态按钮使用 `width: 32px; margin: 0 6px; padding: 0 6px` 数值补偿居中，禁止使用 `justify-content: center` 或 `margin: 0 auto`（离散属性不可动画，会导致图标横跳）。
 - 侧边栏滚动条继承全局 `.scrollable` 样式，禁止在 scoped CSS 中重复定义 `::-webkit-scrollbar`。
 - `WorkspaceHeader.vue` 禁止在 scoped CSS 中定义 `.workspace-header`，必须继承全局骨架样式以保证 40px 水平对齐。
 

@@ -62,6 +62,15 @@ export function useInterviewWorkspace() {
       const detail = await fetchInterviewMessages(sessionId)
       replay.value = detail
       activeSessionId.value = sessionId
+      // 清理缓存冲突：如果新创建的 ID 命中了本地删除缓存（常见于后端数据库重置后的自增冲突），将其放行
+      if (deletedSessionIds.value.includes(sessionId)) {
+        deletedSessionIds.value = deletedSessionIds.value.filter(id => id !== sessionId)
+        localStorage.setItem('deletedSessionIds', JSON.stringify(deletedSessionIds.value))
+      }
+      // 兜底补齐：避免刚创建的会话因为后端列表同步延迟而无法显示在侧边栏
+      if (!sessions.value.find(s => s.sessionId === sessionId)) {
+        sessions.value = [detail as any, ...sessions.value]
+      }
       reportMarkdown.value = detail.summaryReport || ''
     } catch (error) {
       if (!silent) {

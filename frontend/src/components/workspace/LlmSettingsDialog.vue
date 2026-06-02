@@ -166,14 +166,16 @@ async function testSettings() {
 <template>
   <ElDialog
     v-model="visible"
-    title="LLM 配置"
-    width="min(680px, 90vw)"
+    width="min(860px, 90vw)"
     :close-on-click-modal="true"
     destroy-on-close
     class="llm-settings-dialog"
   >
+    <template #header>
+      <h2 class="panel__title">LLM 配置</h2>
+    </template>
     <ElForm class="form-grid" label-position="top" @submit.prevent>
-      <div class="detail-grid">
+      <div class="insight-strip">
         <article class="detail-card">
           <p class="panel__eyebrow">当前 Provider</p>
           <h4 class="detail-card__title">{{ currentProvider?.displayName || '未选择' }}</h4>
@@ -323,12 +325,12 @@ async function testSettings() {
 </template>
 
 <style scoped>
-.llm-settings-dialog :deep(.el-dialog) {
+:global(.el-dialog.llm-settings-dialog) {
   max-height: 70vh;
   display: flex;
   flex-direction: column;
 }
-.llm-settings-dialog :deep(.el-dialog__body) {
+:global(.el-dialog.llm-settings-dialog .el-dialog__body) {
   padding: var(--spacing-md);
   overflow-y: auto;
   flex: 1;

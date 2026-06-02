@@ -23,6 +23,7 @@ const props = defineProps<{
   voiceStatus?: string
   incomingAudio?: string
   jdText?: string
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -358,7 +359,7 @@ onBeforeUnmount(() => {
             :rows="3"
             resize="none"
             :placeholder="activeSessionId ? '输入回答...' : '请先选择简历与岗位，然后点击「开始面试」'"
-            :disabled="!activeSessionId"
+            :disabled="disabled || !activeSessionId"
             class="composer-textarea"
             @keydown.ctrl.enter="canSend && emit('send')"
             @keydown.meta.enter="canSend && emit('send')"
@@ -494,6 +495,7 @@ onBeforeUnmount(() => {
               <button
                 class="voice-press-btn"
                 :class="{ 'is-pressed': isRecording }"
+                :disabled="disabled || sending"
                 @mousedown="startRecording"
                 @mouseup="stopRecording"
                 @mouseleave="stopRecording"
@@ -521,7 +523,7 @@ onBeforeUnmount(() => {
               <ElButton
                 type="primary"
                 class="ui-button ui-button--primary ui-button--compact composer-btn"
-                :disabled="!canSend"
+                :disabled="disabled || !canSend"
                 :loading="sending"
                 @click="emit('send')"
               >
@@ -732,8 +734,15 @@ onBeforeUnmount(() => {
   user-select: none;
   outline: none;
 }
-.voice-press-btn:hover {
+.voice-press-btn:hover:not(:disabled) {
   background-color: var(--color-surface-hover);
+}
+.voice-press-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background-color: transparent;
+  color: var(--color-text-tertiary);
+  border-color: var(--color-border);
 }
 .voice-press-btn:focus-visible {
   outline: 2px solid var(--color-focus);

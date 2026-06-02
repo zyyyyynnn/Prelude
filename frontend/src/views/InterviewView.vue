@@ -744,6 +744,7 @@ onBeforeUnmount(() => {
           
           <div class="workspace-composer-fixed">
             <InterviewComposer 
+              :disabled="isFinished"
               :is-centered="false"
               :active-session-id="activeSessionId"
               :resumes="resumes"

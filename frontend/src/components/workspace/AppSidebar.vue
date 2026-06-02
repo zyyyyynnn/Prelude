@@ -288,7 +288,7 @@ function logout() {
   z-index: 100;
 }
 .app-sidebar.is-collapsed {
-  width: 68px;
+  width: calc(var(--ui-height-md) + var(--spacing-sm) * 2); /* 36 + 8*2 = 52px，使 26px 重心绝对居中 */
 }
 .app-sidebar__header {
   display: flex;
@@ -305,6 +305,7 @@ function logout() {
   align-items: center;
   gap: var(--spacing-sm);
   overflow: hidden;
+  white-space: nowrap;
   transition: opacity 0.2s ease, width 0.2s ease, gap 0.2s ease;
   width: 180px;
   opacity: 1;
@@ -377,23 +378,26 @@ function logout() {
   align-items: center;
   gap: var(--spacing-sm);
   width: 100%;
-  height: var(--ui-height-sm);
+  height: var(--ui-height-md);
   padding: 0 var(--spacing-sm);
   border: none;
   border-radius: var(--radius-md);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s;
   background: transparent;
   color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
-  padding: 0 6px;
-  margin: 0 6px;
+  padding: 0 var(--spacing-sm);
+  margin: 0;
   gap: 0;
-  width: 32px;
-  height: 32px;
+  width: var(--ui-height-md);
+  height: var(--ui-height-md);
+  justify-content: flex-start;
 }
 .app-sidebar__btn--primary {
   background-color: var(--color-brand);
@@ -445,8 +449,9 @@ function logout() {
 .app-sidebar__collapsed-actions.is-visible {
   opacity: 1;
   pointer-events: auto;
-  max-height: 200px;
+  max-height: 48px;
   margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }
 .session-group {
   margin-bottom: var(--spacing-sm);
@@ -472,9 +477,9 @@ function logout() {
   background: transparent;
   border: none;
   padding: 0 var(--spacing-sm);
-  height: var(--ui-height-sm);
-  min-height: var(--ui-height-sm);
-  max-height: var(--ui-height-sm);
+  height: var(--ui-height-md);
+  min-height: var(--ui-height-md);
+  max-height: var(--ui-height-md);
   display: flex;
   align-items: center;
   border-radius: var(--radius-md);
@@ -551,7 +556,7 @@ function logout() {
   align-items: center;
   gap: var(--spacing-sm);
   width: 100%;
-  height: var(--ui-height-sm);
+  height: var(--ui-height-md);
   padding: 0 var(--spacing-sm);
   border: none;
   background: transparent;
