@@ -927,8 +927,9 @@ onBeforeUnmount(() => {
   100% { transform: rotate(180deg); }
 }
 .generating-title {
+  font-family: var(--font-serif);
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-xs);
 }

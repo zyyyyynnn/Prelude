@@ -375,6 +375,7 @@ a {
   color: var(--color-text-tertiary);
   font-size: 12px;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
   text-align: center;
 }
 
@@ -1282,6 +1283,7 @@ a {
 .weakness-item__title,
 .stage-timeline__title {
   margin: 0;
+  font-family: var(--font-serif);
   font-size: 18px;
   font-weight: 500;
   line-height: 1.35;
@@ -1426,6 +1428,7 @@ a {
 
 .form-section__title {
   margin: 6px 0 0;
+  font-family: var(--font-serif);
   font-size: 18px;
   font-weight: 500;
   line-height: 1.35;
@@ -1908,6 +1911,7 @@ a {
 }
 .detail-card__title {
   margin: 4px 0;
+  font-family: var(--font-serif);
   font-size: 16px;
   font-weight: 500;
   color: var(--color-text-primary);
