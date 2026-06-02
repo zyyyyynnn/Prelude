@@ -191,7 +191,10 @@ public class InterviewServiceImpl implements InterviewService {
                     message.getScore(),
                     message.getHint()
                 ))
-                .toList()
+                .toList(),
+            session.getResumeId(),
+            session.getPositionId(),
+            session.getJdText()
         );
     }
 

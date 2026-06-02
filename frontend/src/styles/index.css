@@ -60,6 +60,7 @@
 
   --ui-height-base: 42px;
   --ui-height-sm: 34px;
+  --ui-height-md: 36px;
   --header-height: 72px;
   --composer-height: 260px;
 
@@ -130,7 +131,7 @@
 
 html {
   background: var(--color-bg);
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 
 body {
@@ -411,7 +412,7 @@ a {
   border-color: var(--color-ring);
   background: var(--color-surface-muted);
   color: var(--color-text-primary);
-  box-shadow: inset 0 0 0 1px rgba(157, 123, 106, 0.12), var(--shadow-ring);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
 }
 
 .app-shell__action-menu-item:disabled {
@@ -1791,7 +1792,7 @@ a {
 .scrollable {
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 
 .scrollable::-webkit-scrollbar {
@@ -1866,7 +1867,7 @@ a {
   flex: 1;
   padding: var(--spacing-lg) var(--spacing-2xl);
   overflow-y: auto;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
@@ -1936,7 +1937,7 @@ a {
 .icon-action-btn:focus-visible {
   color: var(--color-error) !important;
   background: var(--color-surface-hover);
-  box-shadow: 0 0 0 2px var(--color-focus, #9e7b6a);
+  box-shadow: 0 0 0 2px var(--color-focus);
   outline: none;
 }
 
