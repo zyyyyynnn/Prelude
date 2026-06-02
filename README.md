@@ -25,36 +25,46 @@
 ## 系统架构
 
 ```mermaid
-flowchart LR
-  U["用户浏览器"] --> FE["Vue 3 + Vite 前端"]
-  FE --> API["Spring Boot API"]
-  API --> DB[("MySQL 8.0")]
-  API <--> Redis[("Redis (限流/MQ)")]
-  API --> PDF["PDFBox 简历解析"]
-  
-  subgraph LLM_Gateway["LLM 智能网关"]
+flowchart TB
+  subgraph Client ["前端层"]
+    U["用户终端"] --> FE["Vue 3 + Vite"]
+  end
+
+  subgraph Server ["服务层"]
+    API["Spring Boot API"]
+    WS["SSE / WS 双向流"]
+  end
+
+  subgraph Data ["数据与解析层"]
+    DB[("MySQL 8.0")]
+    Redis[("Redis (限流/MQ)")]
+    PDF["PDFBox"]
+  end
+
+  subgraph Gateway ["LLM 网关层"]
     Router["LlmRouter (Resilience4j)"]
-    DeepSeek["DeepSeek / OpenAI"]
-    Router -->|主路 / 熔断切换| DeepSeek
+    LLM["DeepSeek / OpenAI"]
+    Router -->|灾备切换| LLM
   end
-  API --> Router
-  
-  API <--> WS["SSE / WS 双向流"]
-  WS <--> FE
-  
-  subgraph DemoTwin["Demo Twin"]
-    DemoDB[("interview_demo")]
-    DemoSeed["/api/demo/reset"]
-  end
-  API -.demo profile.-> DemoDB
-  DemoSeed --> DemoDB
-  
-  subgraph Observability["可观测性"]
+
+  subgraph Ops ["沙箱与监控"]
+    DemoDB[("Demo Twin 隔离库")]
     Prometheus["Prometheus"]
     Grafana["Grafana"]
-    Prometheus -->|Scrape| API
-    Grafana --> Prometheus
+    Prometheus --> Grafana
   end
+
+  FE -->|REST| API
+  FE <-->|流通信| WS
+  WS <--> API
+  
+  API --> DB
+  API <--> Redis
+  API --> PDF
+  API --> Router
+  
+  API -.-> DemoDB
+  API -.-> Prometheus
 ```
 
 ## 界面预览
