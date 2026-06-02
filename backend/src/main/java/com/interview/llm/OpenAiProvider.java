@@ -10,8 +10,9 @@ public class OpenAiProvider extends AbstractOpenAiCompatibleProvider {
     public OpenAiProvider(
         ObjectMapper objectMapper,
         @Value("${openai.model}") String defaultModel,
-        @Value("${openai.api-key:}") String systemApiKey
+        @Value("${openai.api-key:}") String systemApiKey,
+        LlmMetricsTracker metricsTracker
     ) {
-        super(objectMapper, "openai", "OpenAI", defaultModel, systemApiKey);
+        super(objectMapper, "openai", "OpenAI", defaultModel, systemApiKey, metricsTracker);
     }
 }

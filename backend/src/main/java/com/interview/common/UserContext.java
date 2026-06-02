@@ -3,6 +3,7 @@ package com.interview.common;
 public final class UserContext {
 
     private static final ThreadLocal<Long> CURRENT_USER = new ThreadLocal<>();
+    private static final ThreadLocal<Long> CURRENT_SESSION = new ThreadLocal<>();
 
     private UserContext() {
     }
@@ -15,7 +16,16 @@ public final class UserContext {
         return CURRENT_USER.get();
     }
 
+    public static void setCurrentSessionId(Long sessionId) {
+        CURRENT_SESSION.set(sessionId);
+    }
+
+    public static Long getCurrentSessionId() {
+        return CURRENT_SESSION.get();
+    }
+
     public static void remove() {
         CURRENT_USER.remove();
+        CURRENT_SESSION.remove();
     }
 }

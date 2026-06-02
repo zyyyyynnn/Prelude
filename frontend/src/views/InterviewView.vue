@@ -55,6 +55,7 @@ const targetPosition = computed(() => activeSession.value?.targetPosition || act
 const llmProvider = computed(() => activeSession.value?.llmProvider || 'deepseek')
 const llmModel = computed(() => activeSession.value?.llmModel || 'default')
 const isFinished = computed(() => activeSession.value?.status === 'finished' || replay.value?.status === 'finished')
+const isGenerating = computed(() => activeSession.value?.status === 'generating' || replay.value?.status === 'generating')
 
 const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
 const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || replay.value?.summaryReport || ''))
@@ -314,6 +315,106 @@ async function handleSend() {
 
 
 
+const listenController = ref<AbortController | null>(null)
+
+function stopListening() {
+  if (listenController.value) {
+    listenController.value.abort()
+    listenController.value = null
+  }
+}
+
+function parseSseEvent(rawEvent: string) {
+  const lines = rawEvent.split('\n')
+  const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || 'message'
+  const data = lines
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice(5).trimStart())
+    .join('\n')
+
+  return { eventName, data }
+}
+
+async function startListeningReport(sessionId: number) {
+  stopListening()
+  const controller = new AbortController()
+  listenController.value = controller
+  
+  const token = authStore.token
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+  
+  try {
+    const response = await fetch(`${apiBaseUrl}/interview/${sessionId}/listen`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      signal: controller.signal,
+    })
+    
+    if (!response.ok || !response.body) {
+      throw new Error('监听接口连接失败')
+    }
+    
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      buffer += decoder.decode(value, { stream: true }).replace(/\r/g, '')
+      let boundary = buffer.indexOf('\n\n')
+      while (boundary !== -1) {
+        const rawEvent = buffer.slice(0, boundary).trim()
+        buffer = buffer.slice(boundary + 2)
+        if (rawEvent) {
+          const parsed = parseSseEvent(rawEvent)
+          if (parsed.eventName === 'report_ready') {
+            reportMarkdown.value = parsed.data
+            if (replay.value) {
+              replay.value.summaryReport = parsed.data
+              replay.value.status = 'finished'
+            }
+            const sIdx = sessions.value.findIndex(s => s.sessionId === sessionId)
+            if (sIdx !== -1) {
+              sessions.value[sIdx].summaryReport = parsed.data
+              sessions.value[sIdx].status = 'finished'
+            }
+            showingReport.value = true
+            showNotice('评估报告已生成并就绪', 'success')
+            stopListening()
+            await loadSession(sessionId, true)
+          } else if (parsed.eventName === 'fallback') {
+            showNotice(parsed.data || '已为您自动切换至备用通道', 'warning')
+          } else if (parsed.eventName === 'error') {
+            showNotice(parsed.data || '报告生成失败', 'error')
+            if (replay.value) {
+              replay.value.status = 'ongoing'
+            }
+            const sIdx = sessions.value.findIndex(s => s.sessionId === sessionId)
+            if (sIdx !== -1) {
+              sessions.value[sIdx].status = 'ongoing'
+            }
+            stopListening()
+          }
+        }
+        boundary = buffer.indexOf('\n\n')
+      }
+    }
+  } catch (error: any) {
+    if (error.name === 'AbortError') return
+    console.error('Listen stream error:', error)
+    if (activeSessionId.value === sessionId && isGenerating.value) {
+      setTimeout(() => {
+        if (activeSessionId.value === sessionId && isGenerating.value) {
+          void startListeningReport(sessionId)
+        }
+      }, 3000)
+    }
+  }
+}
+
 async function handleFinish() {
   if (!activeSessionId.value) return
   if (currentStage.value !== 'closing' || isFinished.value) {
@@ -323,20 +424,14 @@ async function handleFinish() {
   finishing.value = true
   try {
     const result = await finishInterview(activeSessionId.value)
-    reportMarkdown.value = result.summaryReport || ''
-    await refreshSessionList()
     const target = sessions.value.find((item) => item.sessionId === activeSessionId.value)
     if (target) {
-      target.summaryReport = result.summaryReport
-      target.status = result.status || 'finished'
+      target.status = result.status || 'generating'
     }
     if (replay.value) {
-      replay.value.summaryReport = result.summaryReport || ''
+      replay.value.status = result.status || 'generating'
     }
-    if (activeSessionId.value) {
-      await loadSession(activeSessionId.value, true)
-    }
-    showNotice('报告已生成', 'success')
+    showNotice('已开始生成报告，请稍候', 'success')
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
   } finally {
@@ -357,6 +452,21 @@ watch(() => replay.value?.summaryReport, (val) => {
   }
   if (val) {
     showingReport.value = true
+  }
+})
+
+watch(isGenerating, (generating) => {
+  if (generating && activeSessionId.value) {
+    void startListeningReport(activeSessionId.value)
+  } else {
+    stopListening()
+  }
+}, { immediate: true })
+
+watch(activeSessionId, (newId) => {
+  stopListening()
+  if (isGenerating.value && newId) {
+    void startListeningReport(newId)
   }
 })
 
@@ -601,7 +711,18 @@ onBeforeUnmount(() => {
       />
 
       <div class="workspace-active__main">
-        <div v-if="showingReport" class="workspace-report scrollable">
+        <div v-if="isGenerating" class="workspace-generating scrollable">
+          <div class="generating-card">
+            <div class="sandglass-icon">⏳</div>
+            <h3 class="generating-title">AI 评估报告生成中...</h3>
+            <p class="generating-subtitle">我们正在整理您的答题表现，并调用 LLM-as-Judge 进行深度诊断，请稍候（约需 10-15 秒）</p>
+            <div class="generating-progress">
+              <div class="progress-bar-ind"></div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="showingReport" class="workspace-report scrollable">
           <div class="report-content">
             <div class="markdown-surface markdown-surface--paper" ref="reportRef">
               <div class="markdown-body" v-html="renderedReport" />
@@ -772,5 +893,70 @@ onBeforeUnmount(() => {
 .voice-close-btn:hover {
   background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
+}
+
+.workspace-generating {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  background: var(--color-surface);
+}
+.generating-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 480px;
+  padding: var(--spacing-2xl);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+.sandglass-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-lg);
+  animation: flip-sandglass 2s infinite ease-in-out;
+}
+@keyframes flip-sandglass {
+  0% { transform: rotate(0deg); }
+  45% { transform: rotate(0deg); }
+  55% { transform: rotate(180deg); }
+  100% { transform: rotate(180deg); }
+}
+.generating-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+.generating-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.6;
+}
+.generating-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-bar-ind {
+  width: 50%;
+  height: 100%;
+  background: var(--color-brand);
+  border-radius: 2px;
+  position: absolute;
+  left: -50%;
+  animation: progress-ind-anim 1.5s infinite linear;
+}
+@keyframes progress-ind-anim {
+  0% { left: -50%; }
+  100% { left: 100%; }
 }
 </style>

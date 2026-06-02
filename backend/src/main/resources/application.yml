@@ -63,3 +63,12 @@ logging:
   level:
     root: info
     com.interview: info
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health
+  metrics:
+    tags:
+      application: ${spring.application.name}

@@ -66,4 +66,9 @@ public class InterviewController {
     public Result<InterviewFinishResponse> finish(@PathVariable Long sessionId) {
         return Result.success(interviewService.finish(sessionId));
     }
+
+    @GetMapping(value = "/{sessionId}/listen", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter listen(@PathVariable Long sessionId) {
+        return interviewService.listen(sessionId);
+    }
 }

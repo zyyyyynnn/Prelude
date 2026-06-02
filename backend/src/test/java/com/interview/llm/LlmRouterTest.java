@@ -8,6 +8,7 @@ import com.interview.entity.User;
 import com.interview.mapper.LlmProviderConfigMapper;
 import com.interview.mapper.UserMapper;
 import com.interview.security.AesGcmEncryptor;
+import com.interview.config.SseEmitterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,13 +26,15 @@ class LlmRouterTest {
     private final UserMapper userMapper = mock(UserMapper.class);
     private final LlmProviderConfigMapper llmProviderConfigMapper = mock(LlmProviderConfigMapper.class);
     private final AesGcmEncryptor aesGcmEncryptor = mock(AesGcmEncryptor.class);
+    private final SseEmitterRegistry sseEmitterRegistry = mock(SseEmitterRegistry.class);
     private final CapturingProvider provider = new CapturingProvider();
     private final LlmRouter router = new LlmRouter(
         userMapper,
         llmProviderConfigMapper,
         aesGcmEncryptor,
         new ObjectMapper(),
-        List.of(provider)
+        List.of(provider),
+        sseEmitterRegistry
     );
 
     @AfterEach

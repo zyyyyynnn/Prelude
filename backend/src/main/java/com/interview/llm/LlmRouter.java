@@ -12,10 +12,18 @@ import com.interview.entity.User;
 import com.interview.mapper.LlmProviderConfigMapper;
 import com.interview.mapper.UserMapper;
 import com.interview.security.AesGcmEncryptor;
-import lombok.RequiredArgsConstructor;
+import com.interview.config.SseEmitterRegistry;
+import com.interview.common.LlmServerException;
+import com.interview.common.LlmTimeoutException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +31,6 @@ import java.util.function.Consumer;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class LlmRouter {
 
     private final UserMapper userMapper;
@@ -31,6 +38,34 @@ public class LlmRouter {
     private final AesGcmEncryptor aesGcmEncryptor;
     private final ObjectMapper objectMapper;
     private final List<LlmProvider> providers;
+    private final SseEmitterRegistry sseEmitterRegistry;
+    private final CircuitBreakerRegistry circuitBreakerRegistry;
+
+    public LlmRouter(
+        UserMapper userMapper,
+        LlmProviderConfigMapper llmProviderConfigMapper,
+        AesGcmEncryptor aesGcmEncryptor,
+        ObjectMapper objectMapper,
+        List<LlmProvider> providers,
+        SseEmitterRegistry sseEmitterRegistry
+    ) {
+        this.userMapper = userMapper;
+        this.llmProviderConfigMapper = llmProviderConfigMapper;
+        this.aesGcmEncryptor = aesGcmEncryptor;
+        this.objectMapper = objectMapper;
+        this.providers = providers;
+        this.sseEmitterRegistry = sseEmitterRegistry;
+
+        CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+            .failureRateThreshold(50) // 50% failure rate
+            .slidingWindowSize(10)
+            .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
+            .minimumNumberOfCalls(5)
+            .waitDurationInOpenState(Duration.ofSeconds(30))
+            .recordExceptions(IOException.class, LlmServerException.class, LlmTimeoutException.class)
+            .build();
+        this.circuitBreakerRegistry = CircuitBreakerRegistry.of(circuitBreakerConfig);
+    }
 
     public List<LlmProviderResponse> listEnabledProviders() {
         return llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
@@ -77,12 +112,23 @@ public class LlmRouter {
         List<Map<String, String>> messages,
         Map<String, Object> extraParams
     ) {
-        User user = requireCurrentUser();
-        LlmProvider provider = requireProvider(providerKey);
-        String normalizedModel = normalizeModel(model, provider.defaultModel());
-        LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
-        String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        return provider.chat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages, extraParams));
+        CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(providerKey);
+        try {
+            return cb.executeSupplier(() -> {
+                User user = requireCurrentUser();
+                LlmProvider provider = requireProvider(providerKey);
+                String normalizedModel = normalizeModel(model, provider.defaultModel());
+                LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
+                String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+                return provider.chat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages, extraParams));
+            });
+        } catch (Exception e) {
+            log.warn("Call to LLM provider {} failed, attempting fallback routing", providerKey, e);
+            if (e instanceof BusinessException && !(e instanceof LlmServerException || e instanceof LlmTimeoutException)) {
+                throw (BusinessException) e;
+            }
+            return executeFallbackChat(providerKey, model, messages, extraParams);
+        }
     }
 
     public void streamWithSnapshot(String providerKey, String model, List<Map<String, String>> messages, Consumer<String> onDelta) {
@@ -96,12 +142,82 @@ public class LlmRouter {
         Consumer<String> onDelta,
         Map<String, Object> extraParams
     ) {
-        User user = requireCurrentUser();
-        LlmProvider provider = requireProvider(providerKey);
-        String normalizedModel = normalizeModel(model, provider.defaultModel());
-        LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
-        String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        provider.streamChat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages, extraParams), onDelta);
+        CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(providerKey);
+        try {
+            cb.executeRunnable(() -> {
+                User user = requireCurrentUser();
+                LlmProvider provider = requireProvider(providerKey);
+                String normalizedModel = normalizeModel(model, provider.defaultModel());
+                LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
+                String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+                provider.streamChat(buildInvocation(providerConfig, normalizedModel, apiKey, user, messages, extraParams), onDelta);
+            });
+        } catch (Exception e) {
+            log.warn("Stream call to LLM provider {} failed, attempting fallback routing", providerKey, e);
+            if (e instanceof BusinessException && !(e instanceof LlmServerException || e instanceof LlmTimeoutException)) {
+                throw (BusinessException) e;
+            }
+            executeFallbackStream(providerKey, model, messages, onDelta, extraParams);
+        }
+    }
+
+    private String executeFallbackChat(String failedProviderKey, String model, List<Map<String, String>> messages, Map<String, Object> extraParams) {
+        List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
+            .eq(LlmProviderConfig::getEnabled, 1)
+            .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
+            .orderByAsc(LlmProviderConfig::getId));
+
+        if (configs.isEmpty()) {
+            throw BusinessException.badRequest("主大模型不可用且无配置的可用备用通道");
+        }
+
+        LlmProviderConfig fallbackConfig = configs.get(0);
+        String fallbackProviderKey = fallbackConfig.getProviderKey();
+        log.info("Fallback routing triggered: {} -> {}", failedProviderKey, fallbackProviderKey);
+        
+        broadcastFallbackNotification(fallbackConfig.getDisplayName());
+
+        CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(fallbackProviderKey);
+        return cb.executeSupplier(() -> {
+            User user = requireCurrentUser();
+            LlmProvider provider = requireProvider(fallbackProviderKey);
+            String fallbackModel = provider.defaultModel();
+            String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+            return provider.chat(buildInvocation(fallbackConfig, fallbackModel, apiKey, user, messages, extraParams));
+        });
+    }
+
+    private void executeFallbackStream(String failedProviderKey, String model, List<Map<String, String>> messages, Consumer<String> onDelta, Map<String, Object> extraParams) {
+        List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
+            .eq(LlmProviderConfig::getEnabled, 1)
+            .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
+            .orderByAsc(LlmProviderConfig::getId));
+
+        if (configs.isEmpty()) {
+            throw BusinessException.badRequest("主大模型不可用且无配置的可用备用通道");
+        }
+
+        LlmProviderConfig fallbackConfig = configs.get(0);
+        String fallbackProviderKey = fallbackConfig.getProviderKey();
+        log.info("Fallback routing triggered (stream): {} -> {}", failedProviderKey, fallbackProviderKey);
+        
+        broadcastFallbackNotification(fallbackConfig.getDisplayName());
+
+        CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(fallbackProviderKey);
+        cb.executeRunnable(() -> {
+            User user = requireCurrentUser();
+            LlmProvider provider = requireProvider(fallbackProviderKey);
+            String fallbackModel = provider.defaultModel();
+            String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+            provider.streamChat(buildInvocation(fallbackConfig, fallbackModel, apiKey, user, messages, extraParams), onDelta);
+        });
+    }
+
+    private void broadcastFallbackNotification(String displayName) {
+        Long sessionId = UserContext.getCurrentSessionId();
+        if (sessionId != null) {
+            sseEmitterRegistry.broadcast(sessionId, "fallback", "已为您自动切换至备用通道: " + displayName);
+        }
     }
 
     public LlmProviderConfig validateProviderSelection(String providerKey, String model) {

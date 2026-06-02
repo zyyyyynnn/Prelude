@@ -25,4 +25,6 @@ public interface InterviewService {
     SseEmitter chat(Long sessionId, InterviewChatRequest request, boolean autoStart);
 
     InterviewFinishResponse finish(Long sessionId);
+
+    SseEmitter listen(Long sessionId);
 }

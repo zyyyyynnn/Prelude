@@ -14,7 +14,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Result<Void>> handleBusinessException(BusinessException exception) {
-        HttpStatus status = exception.getCode() == 401 ? HttpStatus.UNAUTHORIZED : HttpStatus.BAD_REQUEST;
+        HttpStatus status;
+        if (exception.getCode() == 401) {
+            status = HttpStatus.UNAUTHORIZED;
+        } else if (exception.getCode() == 429) {
+            status = HttpStatus.TOO_MANY_REQUESTS;
+        } else {
+            status = HttpStatus.BAD_REQUEST;
+        }
         return ResponseEntity.status(status).body(Result.error(exception.getCode(), exception.getMessage()));
     }
 

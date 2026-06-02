@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import com.interview.config.SseEmitterRegistry;
 
 @Slf4j
 @Service
@@ -89,6 +90,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final Executor sseTaskExecutor;
     private final org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
     private final com.interview.service.SessionRagService sessionRagService;
+    private final SseEmitterRegistry sseEmitterRegistry;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -247,9 +249,13 @@ public class InterviewServiceImpl implements InterviewService {
 
         emitter.onTimeout(() -> completeWithError(emitter, "连接超时，请重试"));
         emitter.onError(error -> emitter.complete());
+        
+        // Register emitter to receive notifications (e.g. fallback)
+        sseEmitterRegistry.register(sessionId, emitter);
 
         sseTaskExecutor.execute(() -> {
             UserContext.setCurrentUserId(userId);
+            UserContext.setCurrentSessionId(sessionId);
             StringBuilder assistantReply = new StringBuilder();
             InterviewMessage insertedUserMsg = null;
             boolean assistantPersisted = false;
@@ -320,46 +326,38 @@ public class InterviewServiceImpl implements InterviewService {
     public InterviewFinishResponse finish(Long sessionId) {
         Long userId = currentUserId();
         InterviewSession session = requireOngoingSession(sessionId, userId);
-        List<InterviewMessage> messages = listMessages(sessionId);
 
-        String prompt = buildFinishPrompt(session, messages);
-        String reportContent = isDemoEnabled()
-            ? demoModeService.resolveReport(session.getTargetPosition())
-            : llmRouter.chatWithSnapshot(
-                session.getLlmProvider(),
-                session.getLlmModel(),
-                List.of(
-                    Map.of("role", "system", "content", """
-                        你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
-                        JSON Schema:
-                        {
-                          "reportMarkdown": "完整 Markdown 评估报告",
-                          "scores": {
-                            "technical": 1-10 的整数,
-                            "expression": 1-10 的整数,
-                            "logic": 1-10 的整数
-                          }
-                        }
-                        三个评分必须使用 1-10 整数范围。
-                        """),
-                    Map.of("role", "user", "content", prompt)
-                ),
-                Map.of("response_format", Map.of("type", "json_object"))
-            );
-        InterviewReportParser.ParsedReport parsedReport = interviewReportParser.parse(reportContent);
-        String report = parsedReport.reportMarkdown();
-
-        session.setStatus(STATUS_FINISHED);
-        session.setSummaryReport(report);
+        session.setStatus("generating");
         interviewSessionMapper.updateById(session);
-        closeCurrentStage(sessionId);
 
-        persistScoreHistory(session, parsedReport);
-        persistWeaknesses(session, report);
+        try {
+            ReportJobWorker.ReportJob job = new ReportJobWorker.ReportJob(sessionId, userId);
+            stringRedisTemplate.opsForList().leftPush("queue:report:jobs", objectMapper.writeValueAsString(job));
+            log.info("Enqueued report generation job for session {}", sessionId);
+        } catch (JsonProcessingException e) {
+            throw BusinessException.badRequest("任务队列推送失败");
+        }
 
         SESSION_LOCKS.invalidate(sessionId.toString());
 
-        return new InterviewFinishResponse(session.getId(), report, STATUS_FINISHED);
+        return new InterviewFinishResponse(session.getId(), null, "generating");
+    }
+
+    @Override
+    public SseEmitter listen(Long sessionId) {
+        Long userId = currentUserId();
+        requireOwnedSession(sessionId, userId);
+
+        SseEmitter emitter = new SseEmitter(180000L); // 3 minutes timeout
+        sseEmitterRegistry.register(sessionId, emitter);
+
+        try {
+            emitter.send(SseEmitter.event().name("ping").data("connected"));
+        } catch (IOException e) {
+            emitter.complete();
+        }
+
+        return emitter;
     }
 
     private InterviewSession requireOwnedSession(Long sessionId, Long userId) {
