@@ -855,13 +855,14 @@ a {
 
 .ui-button.is-disabled,
 .ui-button:disabled {
-  opacity: 1 !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
   background: var(--color-surface-muted) !important;
   color: var(--color-text-tertiary) !important;
   box-shadow: none !important;
   border-color: transparent !important;
   transform: none !important;
-  pointer-events: none;
+  pointer-events: auto !important;
 }
 
 .ui-button--primary {
@@ -1795,22 +1796,26 @@ a {
   scrollbar-gutter: auto;
 }
 
-.scrollable::-webkit-scrollbar {
+.scrollable::-webkit-scrollbar,
+.llm-settings-dialog .el-dialog__body::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-.scrollable::-webkit-scrollbar-track {
+.scrollable::-webkit-scrollbar-track,
+.llm-settings-dialog .el-dialog__body::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.scrollable::-webkit-scrollbar-thumb {
+.scrollable::-webkit-scrollbar-thumb,
+.llm-settings-dialog .el-dialog__body::-webkit-scrollbar-thumb {
   background-color: var(--color-ring);
-  border-radius: 3px;
+  border-radius: 10px;
 }
 
-.scrollable::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-brand);
+.scrollable::-webkit-scrollbar-thumb:hover,
+.llm-settings-dialog .el-dialog__body::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ring-deep);
 }
 
 @media print {
