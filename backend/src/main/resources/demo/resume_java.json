@@ -1,0 +1,14 @@
+{
+  "skills": ["Java", "Spring Cloud", "MySQL", "Redis", "RocketMQ", "Kubernetes"],
+  "projects": [
+    {
+      "name": "高并发电商秒杀系统",
+      "description": "基于 Spring Cloud 搭建微服务架构。采用 Redis 预扣减库存与 RocketMQ 异步削峰，抗住 10 万 QPS 并发。使用 Lua 脚本保证库存扣减原子性，基于 Redisson 实现分布式锁防止超卖。"
+    },
+    {
+      "name": "全局分布式账本网关",
+      "description": "基于 Resilience4j 实现网关层熔断与限流，优化慢 SQL 查询，将 P99 延迟从 800ms 降至 150ms。基于分库分表（ShardingSphere）解决单表亿级数据存储瓶颈。"
+    }
+  ],
+  "rawText": "张高级\nJava 资深架构师方向\n技能：Java, Spring Cloud, MySQL, Redis, RocketMQ, Kubernetes\n项目一：高并发电商秒杀系统，负责核心链路架构，Redis 预扣减、RocketMQ 异步落库、Redisson 分布式锁解决超卖，抗住10万并发。\n项目二：全局分布式账本网关，负责熔断限流配置与慢查询调优，引入 ShardingSphere 实现分库分表。"
+}

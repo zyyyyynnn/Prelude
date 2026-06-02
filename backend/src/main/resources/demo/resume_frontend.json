@@ -1,0 +1,14 @@
+{
+  "skills": ["Vue 3", "TypeScript", "Vite", "Pinia", "Node.js", "WebRTC"],
+  "projects": [
+    {
+      "name": "自研微前端中后台框架",
+      "description": "基于 Vue 3 + TypeScript 构建，通过 qiankun 实现子应用隔离。重构海量数据 Table 组件的虚拟列表，解决 10万级 数据渲染卡顿问题。"
+    },
+    {
+      "name": "实时在线视频面试系统",
+      "description": "基于 WebRTC 与 WebSocket 实现低延迟音视频通话与实时协同白板。深度优化 Web Audio API 处理音频切片，解决网络抖动带来的杂音与丢包问题。"
+    }
+  ],
+  "rawText": "李资深\n大前端架构师方向\n技能：Vue 3, TypeScript, Vite, Pinia, Node.js, WebRTC\n项目一：自研微前端中后台框架，基于 qiankun 隔离子应用，落地虚拟列表解决10万条数据渲染瓶颈。\n项目二：实时在线视频面试系统，基于 WebRTC 与 WebSocket 搭建流式双向通信，通过重排音频流切片解决丢包杂音。"
+}
