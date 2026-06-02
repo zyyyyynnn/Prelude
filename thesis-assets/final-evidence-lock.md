@@ -18,6 +18,7 @@
 | 测试数据 | `thesis-assets/evidence/test-data/mimo-2026-05-27.json` | 2026-05-27 | MIMO 真实公网全链路测试 | 否 | 否 | 否 | 全链路结构化测试指标与数据记录 |
 | 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-04-24.md` | 2026-04-24 | 当前代码结构 | 是 | 否 | 否 | 已同步到第四章实现证据来源 |
 | 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-05-31.md` | 2026-05-31 | 安全加固与性能优化后代码 | 否 | 否 | 否 | 含 LLM 柔性降级、PDF 安全防线、JWT 防抖、API Key 生命周期、N+1 消除与复合索引；可补充到第四章或答辩 |
+| 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-06-02.md` | 2026-06-02 | Roadmap架构高可用与体验升级全面落地代码 | 否 | 否 | 否 | 含结构化输出、SSE重连、Redis、语音流、熔断与监控；可补充到第四章或答辩 |
 | Bug 记录 | `thesis-assets/evidence/bug-evidence/package-2026-04-24.md` | 2026-04-24 | 当前开发过程记录 | 是 | 否 | 是 | 已选 Bug 1 与 Bug 2 作为论文/答辩主讲候选 |
 | 文献证据 | `thesis-assets/literature/quality-review.md` | 2026-04-26 | 本轮文献增强 | 是 | 否 | 否 | 记录候选文献筛选依据和采用状态 |
 | 文献证据 | `thesis-assets/literature/evidence-map.md` | 2026-04-26 | 本轮文献增强 | 是 | 否 | 否 | 记录文献与论文章节的落位关系 |
