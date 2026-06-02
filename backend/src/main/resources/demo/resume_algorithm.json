@@ -1,0 +1,14 @@
+{
+  "skills": ["Python", "PyTorch", "TensorFlow", "Spark", "Faiss", "LLM Fine-tuning"],
+  "projects": [
+    {
+      "name": "百亿级跨域推荐系统",
+      "description": "主导推荐链路召回与排序模型（DeepFM/DIN）迭代。使用 Spark 处理百亿级日志提取特征，通过 Faiss 搭建向量检索系统，提升点击率 12%。"
+    },
+    {
+      "name": "垂直领域大语言模型微调",
+      "description": "基于 Llama-3 进行指令微调（LoRA）。构建高质量垂直域指令集，优化 RLHF 对齐策略，降低模型在专业知识问答上的幻觉率约 30%。"
+    }
+  ],
+  "rawText": "王专家\n推荐算法与大模型方向\n技能：Python, PyTorch, TensorFlow, Spark, Faiss, LLM Fine-tuning\n项目一：百亿级跨域推荐系统，主导召回与排序迭代，优化 DeepFM 网络结构，基于 Faiss 实现毫秒级特征检索。\n项目二：垂直领域大语言模型微调，采用 LoRA 路线微调 Llama-3，通过高质量语料与对齐策略显著降低幻觉并提升专业评估准确度。"
+}

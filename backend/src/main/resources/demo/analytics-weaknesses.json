@@ -1,9 +1,44 @@
 [
   {
-    "category": "JVM 与并发",
+    "category": "千亿级并发架构瓶颈",
     "count": 1,
     "descriptions": [
-      "对线程调度、锁竞争和 JVM 运行细节的回答还不够深入。"
+      "对于跨数据中心的强一致性容灾方案及底层 Paxos 选主细节掌握不够纯熟。"
+    ]
+  },
+  {
+    "category": "WebRTC 底层信令协商",
+    "count": 1,
+    "descriptions": [
+      "能应用 WebRTC，但在穿透 NAT/Firewall (STUN/TURN) 时的 ICE 候选收集原理上解释含糊。"
+    ]
+  },
+  {
+    "category": "复杂状态抽象",
+    "count": 1,
+    "descriptions": [
+      "面对多实例子应用的 Pinia 状态隔离机制没有给出完美的防污染方案。"
+    ]
+  },
+  {
+    "category": "分布式训练通信瓶颈",
+    "count": 1,
+    "descriptions": [
+      "未经历过真实的多机多卡环境，对 Ring AllReduce 机制和显存梯度累积原理完全陌生。"
+    ]
+  },
+  {
+    "category": "线上问题排查",
+    "count": 1,
+    "descriptions": [
+      "特征漂移和线上指标断崖式下跌时的降级排查策略过于理论化，缺乏生产实操经验。"
+    ]
+  },
+  {
+    "category": "评估指标局限",
+    "count": 1,
+    "descriptions": [
+      "过分迷信 AUC 等离线指标，对在线 A/B 实验的置信度检验和流量正交不了解。"
     ]
   }
 ]

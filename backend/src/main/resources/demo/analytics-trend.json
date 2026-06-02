@@ -1,9 +1,23 @@
 [
   {
     "sessionId": 1,
-    "createdAt": "2026-04-22T10:00:00",
+    "createdAt": "2026-04-18T15:30:00",
+    "technical": 5,
+    "expression": 6,
+    "logic": 6
+  },
+  {
+    "sessionId": 2,
+    "createdAt": "2026-04-20T16:10:00",
     "technical": 7,
-    "expression": 8,
+    "expression": 7,
     "logic": 7
+  },
+  {
+    "sessionId": 3,
+    "createdAt": "2026-04-22T10:00:00",
+    "technical": 8,
+    "expression": 9,
+    "logic": 8
   }
 ]

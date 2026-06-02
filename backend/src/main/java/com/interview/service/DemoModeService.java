@@ -130,8 +130,13 @@ public class DemoModeService {
     public ResumeUploadResponse createDemoResume(Long userId, String fileName) {
         assertEnabled();
         Resume resume = insertResume(userId, fileName, LocalDateTime.now());
-        DemoResumeFixture fixture = readJson("demo/resume-template.json", new TypeReference<>() {
-        });
+        String jsonPath = "demo/resume_java.json"; // 默认兜底
+        if (fileName != null) {
+            if (fileName.contains("Java")) jsonPath = "demo/resume_java.json";
+            else if (fileName.contains("前端")) jsonPath = "demo/resume_frontend.json";
+            else if (fileName.contains("算法")) jsonPath = "demo/resume_algorithm.json";
+        }
+        DemoResumeFixture fixture = readJson(jsonPath, new TypeReference<>() {});
         return new ResumeUploadResponse(resume.getId(), fixture.skills(), fixture.projects());
     }
 
@@ -266,42 +271,33 @@ public class DemoModeService {
         PositionTemplate javaPosition = requireDemoPosition(DEMO_JAVA_POSITION_NAME);
         PositionTemplate frontendPosition = requireDemoPosition(DEMO_FRONTEND_POSITION_NAME);
         PositionTemplate algorithmPosition = requireDemoPosition(DEMO_ALGORITHM_POSITION_NAME);
-        Resume resume = insertResume(user.getId(), "demo-resume.pdf", LocalDateTime.of(2026, 4, 22, 16, 40));
-
-        createOngoingSession(user.getId(), resume, javaPosition);
+        
+        Resume javaResume = insertResume(user.getId(), "Java高级架构.pdf", LocalDateTime.of(2026, 4, 22, 16, 40));
+        Resume frontendResume = insertResume(user.getId(), "大前端资深开发.pdf", LocalDateTime.of(2026, 4, 20, 16, 10));
+        Resume algoResume = insertResume(user.getId(), "推荐算法工程师.pdf", LocalDateTime.of(2026, 4, 18, 15, 30));
+        createOngoingSession(user.getId(), javaResume, javaPosition);
         createFinishedSession(
-            user.getId(),
-            resume,
-            javaPosition,
-            LocalDateTime.of(2026, 4, 22, 10, 0),
-            new ScoreSeed(7, 8, 7),
-            List.of(
-                new WeaknessSeed("JVM 与并发", "对线程调度、锁竞争和 JVM 运行细节的回答还不够深入。"),
-                new WeaknessSeed("数据库优化", "能够提出方向，但缺少执行计划、索引命中和慢查询定位的具体说明。")
-            ),
+            user.getId(), javaResume, javaPosition, LocalDateTime.of(2026, 4, 22, 10, 0),
+            new ScoreSeed(8, 9, 8),
+            List.of(new WeaknessSeed("千亿级并发架构瓶颈", "对于跨数据中心的强一致性容灾方案及底层 Paxos 选主细节掌握不够纯熟。")),
             javaScript()
         );
         createFinishedSession(
-            user.getId(),
-            resume,
-            frontendPosition,
-            LocalDateTime.of(2026, 4, 20, 16, 10),
-            new ScoreSeed(8, 7, 7),
+            user.getId(), frontendResume, frontendPosition, LocalDateTime.of(2026, 4, 20, 16, 10),
+            new ScoreSeed(7, 7, 7),
             List.of(
-                new WeaknessSeed("浏览器性能", "能说明首屏优化方向，但对指标拆解和定位链路还可以更具体。"),
-                new WeaknessSeed("组件边界", "知道拆分组件，但对状态归属和复用边界的说明还不够凝练。")
+                new WeaknessSeed("WebRTC 底层信令协商", "能应用 WebRTC，但在穿透 NAT/Firewall (STUN/TURN) 时的 ICE 候选收集原理上解释含糊。"),
+                new WeaknessSeed("复杂状态抽象", "面对多实例子应用的 Pinia 状态隔离机制没有给出完美的防污染方案。")
             ),
             frontendScript()
         );
         createFinishedSession(
-            user.getId(),
-            resume,
-            algorithmPosition,
-            LocalDateTime.of(2026, 4, 18, 15, 30),
-            new ScoreSeed(7, 6, 8),
+            user.getId(), algoResume, algorithmPosition, LocalDateTime.of(2026, 4, 18, 15, 30),
+            new ScoreSeed(5, 6, 6),
             List.of(
-                new WeaknessSeed("复杂度分析", "能够给出解题方向，但对边界规模和时间复杂度的量化不够稳定。"),
-                new WeaknessSeed("模型评估", "知道使用验证集和指标，但对误差分析、特征贡献的表达还可以加强。")
+                new WeaknessSeed("分布式训练通信瓶颈", "未经历过真实的多机多卡环境，对 Ring AllReduce 机制和显存梯度累积原理完全陌生。"),
+                new WeaknessSeed("线上问题排查", "特征漂移和线上指标断崖式下跌时的降级排查策略过于理论化，缺乏生产实操经验。"),
+                new WeaknessSeed("评估指标局限", "过分迷信 AUC 等离线指标，对在线 A/B 实验的置信度检验和流量正交不了解。")
             ),
             algorithmScript()
         );
@@ -329,28 +325,28 @@ public class DemoModeService {
 
     private SessionScript javaScript() {
         return new SessionScript(
-            "一开始我也想过直接写在一个服务里，但很快发现会越来越乱。后来拆成简历解析、会话记录和报告生成三块，是为了让每块职责清楚一点。比如 Demo 模式可以复用会话和报告流程，只把模型调用替换成脚本数据。",
-            "我会先确认慢在哪里，而不是直接加缓存。比如先看接口耗时、SQL 执行时间和返回数据量。如果是列表查询扫表，我会先补索引和分页；如果读多写少、结果变化不频繁，再考虑加一层缓存。",
-            "我会把它当成两个问题处理：一是连接断了以后，emitter 的 completion、timeout、error 回调里要释放资源；二是消息不能靠内存状态判断是否写过，最终还是要用数据库里的会话和消息记录来兜底，避免重复写或漏写。",
-            "如果继续做，我会先补评分解释。现在报告能给分，但用户更关心为什么扣分、下一次该怎么改。把每个分数和具体回答片段关联起来，会比单纯多做几个页面更有价值。"
+            "我对微服务架构和高并发场景比较有经验。在之前的秒杀系统中，我主导了核心链路的改造，采用 Redis 预扣减库存和 RocketMQ 异步落库的方式，抗住了 10 万并发。",
+            "在 RocketMQ 异步扣减这里，我们会利用事务消息（Half Message）来保证上下游数据一致。如果下游的库存服务执行失败，我们会通过本地消息表加上定时任务的重试机制来保证最终一致性。遇到长时间失败，会自动转入死信队列并报警拦截。",
+            "针对缓存击穿，我们并没有简单粗暴地设一个不过期的 Key。对于热点商品，我们利用 Redisson 分布式锁控制并发，只让第一个请求穿透去 DB 加载，其余请求都在外层等待并获取 Redis 返回。同时通过随机过期时间打散，避免大规模缓存雪崩。",
+            "其实 ShardingSphere 的分库分表也带来了全表路由和分布式事务的隐患。在需要强一致的资金结算节点，我们最终还是用了 Seata 的 AT 模式，虽然牺牲了一定吞吐量，但保证了金融级准确性。"
         );
     }
 
     private SessionScript frontendScript() {
         return new SessionScript(
-            "我主要负责前端工作台和回放页面，把简历选择、阶段问答、报告预览放在同一条使用路径里。后面又把 Demo 截图模式单独整理出来，保证展示页面稳定。",
-            "我会先看首屏资源、接口耗时和组件渲染次数，再判断是请求慢、包体大还是页面重复渲染。如果是列表区域，我会优先控制数据量和渲染边界，而不是直接上复杂缓存。",
-            "我会把状态分成服务端真实状态、页面临时输入和展示派生状态。比如当前阶段和消息记录以接口返回为准，输入框和加载态只留在组件本地，避免刷新或切路由后状态混乱。",
-            "如果继续做，我会先补交互细节和无障碍状态，比如按钮禁用原因、键盘焦点和移动端布局。这样比单纯多做页面更能提升真实使用质量。"
+            "我在前端工程化和框架底层研究比较深，目前主力在用 Vue 3，之前带头用 qiankun 重构过微前端项目，也在处理海量数据渲染和实时音视频通讯方面有不少实战经验。",
+            "关于虚拟列表（Virtual List），当数据达到 10 万级别时，如果滚动过快会出现短暂白屏。这是因为浏览器把大量计算放在主线程，导致渲染帧来不及被绘制（Frame Drop）。我们的解法是利用 requestAnimationFrame 将预渲染元素分割并在合适时机放入可见视口，并在外部加了防抖的 Scroll 监听。",
+            "对于布局闪烁问题，我们确实发现 ResizeObserver 回调中的操作如果引发重排（Reflow），会导致阻塞。所以我们将高度的更新推迟到了 nextTick 里，并只对边界元素采用缓存机制计算高度。",
+            "在视频面试项目中，Web Audio API 的 ScriptProcessorNode 已经被废弃，所以我们改用了 AudioWorklet。通过在独立的线程跑一个 worklet processor 去拼接从 WebSocket 收到的 PCM 分片，彻底避免了由于主线程卡顿而引起的破音或丢包杂音。"
         );
     }
 
     private SessionScript algorithmScript() {
         return new SessionScript(
-            "我会先把问题拆成数据输入、特征处理、基线方案和评估指标四部分。毕业设计里虽然不是完整算法平台，但评分和薄弱点分析也需要稳定的输入输出边界。",
-            "我不会只看一次跑分，而会先确定样本规模、标签质量和指标口径。比如分类问题要看准确率以外的召回、混淆矩阵，排序问题则要看 TopK 命中和误差集中在哪些样本。",
-            "如果线上表现和离线评估差很多，我会先排查数据分布是否变化，再看特征是否泄露、样本是否偏斜。必要时会拆分人群或场景，避免一个平均指标掩盖主要问题。",
-            "下一步我会先补可复现实验记录，包括数据版本、参数、指标和失败样本。这样后续调参或替换模型时，才能判断到底是模型改进还是数据偶然波动。"
+            "我对搜索推荐和 CV / NLP 模型微调都有实际的项目经历。在推荐算法方面，我主推了 DeepFM 和 DIN 的迭代。在语言模型上，我负责过基于 LoRA 路线微调 Llama-3 解决垂直领域的领域知识幻觉。",
+            "传统双塔结构在召回阶段最大的痛点是它的交互仅限于最终 Embedding 的内积，缺乏细粒度的特征交叉（User 与 Item 的底层特征交互不足）。这也是为什么后续我们在粗排阶段必须补上像 SENet 或类似网络做轻量特征交叉的原因。",
+            "线上出现点击率突然下跌，我会第一时间去排查特征漂移和数据分布。有时可能是由于日志采集丢字段造成的默认值填充，也可能是当天活动带来的分布突变。但我一般通过看监控面板判断，不太接触底层的 flink 实时指标流排查。",
+            "我觉得 AUC 这种离线排序能力其实不能完全等同于线上收益，因为存在 Position Bias 和曝光偏差。但真要到线上做 A/B 实验和分流，我们这边一般是交由工程组来做正交实验，我主要是给算法模型包。"
         );
     }
 
@@ -447,7 +443,13 @@ public class DemoModeService {
     }
 
     private Resume insertResume(Long userId, String fileName, LocalDateTime createdAt) {
-        DemoResumeFixture fixture = readJson("demo/resume-template.json", new TypeReference<>() {
+        String jsonPath = "demo/resume_java.json"; // 默认兜底
+        if (fileName != null) {
+            if (fileName.contains("Java")) jsonPath = "demo/resume_java.json";
+            else if (fileName.contains("前端")) jsonPath = "demo/resume_frontend.json";
+            else if (fileName.contains("算法")) jsonPath = "demo/resume_algorithm.json";
+        }
+        DemoResumeFixture fixture = readJson(jsonPath, new TypeReference<>() {
         });
 
         Resume resume = new Resume();
