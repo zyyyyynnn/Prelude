@@ -10,11 +10,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final JwtInterceptor jwtInterceptor;
+    private final LlmRateLimitInterceptor llmRateLimitInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtInterceptor)
             .addPathPatterns("/api/**")
             .excludePathPatterns("/api/auth/**", "/api/health", "/api/llm/providers", "/api/demo/reset");
+
+        registry.addInterceptor(llmRateLimitInterceptor)
+            .addPathPatterns("/api/interview/*/chat", "/api/interview/*/finish");
     }
 }

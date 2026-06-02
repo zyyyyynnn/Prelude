@@ -10,8 +10,9 @@ public class DeepSeekProvider extends AbstractOpenAiCompatibleProvider {
     public DeepSeekProvider(
         ObjectMapper objectMapper,
         @Value("${deepseek.model}") String defaultModel,
-        @Value("${deepseek.api-key:}") String systemApiKey
+        @Value("${deepseek.api-key:}") String systemApiKey,
+        LlmMetricsTracker metricsTracker
     ) {
-        super(objectMapper, "deepseek", "DeepSeek", defaultModel, systemApiKey);
+        super(objectMapper, "deepseek", "DeepSeek", defaultModel, systemApiKey, metricsTracker);
     }
 }

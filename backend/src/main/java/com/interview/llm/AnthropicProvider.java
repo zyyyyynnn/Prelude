@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.interview.common.LlmServerException;
+import com.interview.common.LlmTimeoutException;
+
 @Slf4j
 @Component
 public class AnthropicProvider implements LlmProvider {
@@ -33,15 +36,18 @@ public class AnthropicProvider implements LlmProvider {
     private final String defaultModel;
     private final String systemApiKey;
     private final OkHttpClient client;
+    private final LlmMetricsTracker metricsTracker;
 
     public AnthropicProvider(
         ObjectMapper objectMapper,
         @Value("${anthropic.model}") String defaultModel,
-        @Value("${anthropic.api-key:}") String systemApiKey
+        @Value("${anthropic.api-key:}") String systemApiKey,
+        LlmMetricsTracker metricsTracker
     ) {
         this.objectMapper = objectMapper;
         this.defaultModel = defaultModel;
         this.systemApiKey = systemApiKey;
+        this.metricsTracker = metricsTracker;
         this.client = new OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(15))
             .readTimeout(Duration.ofSeconds(120))
@@ -92,6 +98,7 @@ public class AnthropicProvider implements LlmProvider {
             payload.putAll(invocation.extraParams());
         }
 
+        long startTime = System.nanoTime();
         try {
             if (invocation.baseUrl() == null || invocation.baseUrl().isBlank()) {
                 throw BusinessException.badRequest("Anthropic API 端点未配置");
@@ -107,10 +114,33 @@ public class AnthropicProvider implements LlmProvider {
                 if (!response.isSuccessful()) {
                     String body = response.body() == null ? "" : response.body().string();
                     log.warn("Anthropic API error {}: {}", response.code(), body);
-                    throw BusinessException.badRequest("Anthropic 调用失败：" + response.code());
+                    if (response.code() >= 500) {
+                        metricsTracker.recordFailure();
+                        throw new LlmServerException("Anthropic 服务端错误，状态码：" + response.code());
+                    } else {
+                        throw BusinessException.badRequest("Anthropic 调用失败：" + response.code());
+                    }
                 }
+                
+                metricsTracker.recordLatency(System.nanoTime() - startTime);
+
                 if (!stream) {
                     String body = response.body() == null ? "" : response.body().string();
+                    try {
+                        JsonNode root = objectMapper.readTree(body);
+                        JsonNode inputTokens = root.at("/usage/input_tokens");
+                        JsonNode outputTokens = root.at("/usage/output_tokens");
+                        double total = 0;
+                        if (!inputTokens.isMissingNode() && inputTokens.isNumber()) {
+                            total += inputTokens.asDouble();
+                        }
+                        if (!outputTokens.isMissingNode() && outputTokens.isNumber()) {
+                            total += outputTokens.asDouble();
+                        }
+                        metricsTracker.recordTokens(total);
+                    } catch (Exception e) {
+                        log.debug("Failed to parse token usage from Anthropic response", e);
+                    }
                     return extractContent(body);
                 }
                 if (response.body() == null) {
@@ -123,7 +153,8 @@ public class AnthropicProvider implements LlmProvider {
         } catch (BusinessException e) {
             throw e;
         } catch (IOException e) {
-            throw BusinessException.badRequest("Anthropic 调用异常，请稍后重试");
+            metricsTracker.recordFailure();
+            throw new LlmTimeoutException("Anthropic 网络调用超时或异常，请检查配置");
         }
     }
 
@@ -141,6 +172,7 @@ public class AnthropicProvider implements LlmProvider {
                 String data = trimmed.substring("data:".length()).trim();
                 String delta = extractDeltaText(data);
                 if (!delta.isBlank()) {
+                    metricsTracker.recordTokens(delta.length() / 2.0);
                     onDelta.accept(delta);
                 }
             }
