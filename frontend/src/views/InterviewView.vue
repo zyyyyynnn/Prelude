@@ -598,7 +598,7 @@ function initVoiceWebSocket() {
     }
   }
 
-  voiceSocket.onerror = (err) => {
+  voiceSocket.onerror = () => {
     if (isVoiceMode.value) {
       showNotice('语音交互连接异常，已自动为您切回文字模式', 'warning')
       isVoiceMode.value = false
