@@ -323,8 +323,16 @@ async function testSettings() {
 </template>
 
 <style scoped>
+.llm-settings-dialog :deep(.el-dialog) {
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
 .llm-settings-dialog :deep(.el-dialog__body) {
   padding: var(--spacing-md);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 .advanced-collapse {
   margin-top: var(--spacing-lg);

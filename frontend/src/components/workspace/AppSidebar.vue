@@ -389,12 +389,11 @@ function logout() {
   color: var(--color-text-secondary);
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
-  padding: 0;
-  margin: 0 10px;
+  padding: 0 6px;
+  margin: 0 6px;
   gap: 0;
   width: 32px;
   height: 32px;
-  justify-content: center;
 }
 .app-sidebar__btn--primary {
   background-color: var(--color-brand);

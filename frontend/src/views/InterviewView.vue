@@ -8,6 +8,7 @@ import { usePageNotice } from '../composables/usePageNotice'
 import { fetchResumes, uploadResume } from '../api/resume'
 import { useAuthStore } from '../stores/auth'
 import { renderMarkdown } from '../utils/markdown'
+import LlmSettingsDialog from '../components/workspace/LlmSettingsDialog.vue'
 import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
 import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
 import MessageThread from '../components/workspace/MessageThread.vue'
@@ -39,6 +40,7 @@ const finishing = ref(false)
 const showingReport = ref(false)
 const streamTimeoutId = ref<ReturnType<typeof setTimeout> | null>(null)
 const reconnectingStatus = ref('')
+const showLlmSettings = ref(false)
 
 const resumes = ref<ResumeItem[]>([])
 const positions = ref<PositionTemplate[]>([])
@@ -695,6 +697,7 @@ onBeforeUnmount(() => {
           @upload="handleUpload"
           @start="createNewInterview"
           @send="handleSend"
+          @open-llm-settings="showLlmSettings = true"
         />
       </div>
     </div>
@@ -768,6 +771,7 @@ onBeforeUnmount(() => {
               @voice-start-recording="handleStartRecording"
               @voice-stop-recording="handleStopRecording"
               @voice-play-status="handlePlayStatus"
+              @open-llm-settings="showLlmSettings = true"
             />
           </div>
         </template>
@@ -778,6 +782,7 @@ onBeforeUnmount(() => {
       加载中...
     </div>
   </div>
+  <LlmSettingsDialog v-model:visible="showLlmSettings" />
 </template>
 
 <style scoped>

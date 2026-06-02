@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ElDropdown, ElDropdownMenu, ElDropdownItem, ElInput, ElButton } from 'element-plus'
-import { useRouter } from 'vue-router'
 import type { ResumeItem, PositionTemplate } from '../../api/contracts'
 import { usePopperMatchTrigger } from '../../composables/usePopperMatchTrigger'
 
@@ -39,9 +38,9 @@ const emit = defineEmits<{
   (e: 'voice-start-recording'): void
   (e: 'voice-stop-recording'): void
   (e: 'voice-play-status', status: 'playing' | 'idle'): void
+  (e: 'open-llm-settings'): void
 }>()
 
-const router = useRouter()
 const fileInput = ref<HTMLInputElement | null>(null)
 const showJdInput = ref(false)
 const localJdText = ref('')
@@ -78,7 +77,7 @@ function triggerUpload() {
 }
 
 function navigateToLlm() {
-  router.push('/settings/llm')
+  emit('open-llm-settings')
 }
 
 // ==================== VOICE & CANVAS INTEGRATION ====================
@@ -735,7 +734,6 @@ onBeforeUnmount(() => {
 }
 .voice-press-btn:hover {
   background-color: var(--color-surface-hover);
-  border-color: var(--color-brand);
 }
 .voice-press-btn:focus-visible {
   outline: 2px solid var(--color-focus);
