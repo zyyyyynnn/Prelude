@@ -37,11 +37,7 @@ const router = createRouter({
     },
     {
       path: '/settings/llm',
-      name: 'llm-settings',
-      component: () => import('../views/LlmSettingsView.vue'),
-      meta: {
-        requiresAuth: true,
-      },
+      redirect: '/',
     },
     {
       path: '/settings/profile',

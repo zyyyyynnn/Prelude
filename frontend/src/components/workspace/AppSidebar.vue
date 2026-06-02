@@ -13,6 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:collapsed', value: boolean): void
+  (e: 'open-llm-settings'): void
 }>()
 
 const route = useRoute()
@@ -254,10 +255,10 @@ function logout() {
           <span class="sidebar-label">设置</span>
         </button>
         <div class="settings-dropdown">
-          <RouterLink to="/settings/llm" class="settings-dropdown__item">
+          <button class="settings-dropdown__item" @click="emit('open-llm-settings')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
             LLM 配置
-          </RouterLink>
+          </button>
           <RouterLink to="/settings/profile" class="settings-dropdown__item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             用户设置
@@ -383,7 +384,7 @@ function logout() {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   background: transparent;
   color: var(--color-text-secondary);
 }
@@ -435,17 +436,16 @@ function logout() {
   pointer-events: none;
 }
 .app-sidebar__collapsed-actions {
-  transition: opacity 0.2s ease, height 0.2s ease, margin 0.2s ease;
+  transition: opacity 0.2s ease, max-height 0.2s ease, margin 0.2s ease;
   opacity: 0;
   pointer-events: none;
-  height: 0;
+  max-height: 0;
   overflow: hidden;
   margin: 0;
 }
 .app-sidebar__collapsed-actions.is-visible {
   opacity: 1;
   pointer-events: auto;
-  height: auto;
   max-height: 200px;
   margin-top: var(--spacing-sm);
 }
