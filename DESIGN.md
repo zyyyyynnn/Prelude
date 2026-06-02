@@ -62,6 +62,7 @@
 - 嵌套在 `.panel` 内部的 `.detail-card` 使用 `padding: var(--spacing-sm)`（8px），背景 `var(--color-surface)` + 浅灰边框，避免双重内边距和色彩污染。
 - `.form-grid` 使用 `gap: var(--spacing-sm)`（8px），表单项形成紧凑分组。
 - `.button-row` 使用 `margin-top: var(--spacing-md)`（16px），紧跟配置项。
+- 全局弹窗（`<ElDialog>`）必须设置 `max-height: 70vh` + `overflow-y: auto; flex: 1; min-height: 0`，防止内容撑破视口引发滚动条挤压底层页面。
 
 ## 6. 按钮与 Badge
 
@@ -71,6 +72,7 @@
 - Badge 使用浅沙底、暖灰文字、小圆角胶囊，不使用高饱和状态色。
 - 所有按钮禁止使用 Element Plus 的 `size` 属性（`large` / `small`），统一使用 `ui-button--compact` class 控制尺寸。
 - 同一页面的主操作按钮与次操作按钮必须使用相同的 `ui-button--compact` 尺寸。
+- 按钮 Hover 态只允许加深 `background-color`（如 `var(--color-surface-hover)`）。严禁改变 `border-color`（产生视觉噪音）或增加 `box-shadow` 作为伪边框。
 
 ## 7. 表单与输入
 
