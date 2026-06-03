@@ -23,6 +23,7 @@
   --color-text-button: #4d4c48;
 
   --color-brand: #9e7b6a;
+  --color-brand-light: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   --color-coral: #b08878;
   --color-error: #b53333;
   --color-focus: #3898ec;

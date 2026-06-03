@@ -67,4 +67,12 @@
 | `codegraph_files` | 获取索引的文件结构 |
 | `codegraph_status` | 检查索引健康状态和统计 |
 
-- **维护更新**：当发生大幅代码修改（如编写了新函数、删除了旧文件）后，只需在 PowerShell 中执行 `codegraph index`，数据库将进行极速的增量更新。
+- **维护更新**：
+  - 日常代码修改后，执行增量同步（仅处理变更文件，秒级完成）：
+    ```powershell
+    codegraph sync
+    ```
+  - 首次初始化或索引损坏时，执行全量重建：
+    ```powershell
+    codegraph index
+    ```

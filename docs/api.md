@@ -61,6 +61,8 @@
 
 获取启用的 Provider 与模型列表。
 
+- 当前支持的 Provider：`deepseek`、`openai`、`anthropic`。
+
 ### `GET /api/user/llm-config`
 
 获取当前用户的 Provider、模型和脱敏 API Key。
@@ -81,7 +83,7 @@
 
 说明：
 
-- `apiKey` 为空字符串时清空当前用户 Key。
+- `apiKey` 留空（不传或空字符串）表示不修改现有 Key。主动清空需传 `"__CLEAR__"`。
 - 真实模式下 Key 使用后端加密后保存。
 - Demo 模式下不会保存真实 Key，只保存演示占位值。
 
