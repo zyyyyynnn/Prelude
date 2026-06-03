@@ -1,12 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
 import { login as loginRequest, register as registerRequest } from '../api/auth'
 import BrandMetaballs from '../components/BrandMetaballs.vue'
 import { usePageNotice } from '../composables/usePageNotice'
 import { useAuthStore } from '../stores/auth'
 import { getErrorMessage } from '../utils/errors'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import { loginSchema, registerSchema } from '../schemas/auth'
 
 type AuthMode = 'login' | 'register'
 
@@ -17,11 +29,7 @@ const { showNotice } = usePageNotice()
 
 const authMode = ref<AuthMode>('login')
 const loading = ref(false)
-const form = reactive({
-  username: '',
-  password: '',
-  email: '',
-})
+const showPassword = ref(false)
 
 const redirectTarget = computed(() => {
   return typeof route.query.redirect === 'string' && route.query.redirect
@@ -35,46 +43,38 @@ const authEyebrow = computed(() => (isRegisterMode.value ? '注册' : '登录'))
 const authTitle = computed(() => (isRegisterMode.value ? '创建工作台账号' : '进入面试工作台'))
 const submitLabel = computed(() => (isRegisterMode.value ? '完成注册' : '登录'))
 
+const currentSchema = computed(() => isRegisterMode.value ? toTypedSchema(registerSchema) : toTypedSchema(loginSchema))
+
+const { handleSubmit, setValues, resetForm } = useForm({
+  validationSchema: currentSchema,
+})
+
 function switchMode(mode: AuthMode) {
   authMode.value = mode
+  resetForm()
 }
 
-async function handleLogin() {
+const submitAuth = handleSubmit(async (values) => {
   loading.value = true
 
   try {
-    const response = await loginRequest(form.username.trim(), form.password)
-    authStore.setToken(response.token)
-    await router.replace(redirectTarget.value)
+    if (isRegisterMode.value) {
+      const v = values as any;
+      await registerRequest(v.username.trim(), v.password, v.email?.trim() || undefined)
+      showNotice('注册成功，请继续登录。', 'success')
+      authMode.value = 'login'
+      setValues({ username: v.username })
+    } else {
+      const response = await loginRequest(values.username.trim(), values.password)
+      authStore.setToken(response.token)
+      await router.replace(redirectTarget.value)
+    }
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
   } finally {
     loading.value = false
   }
-}
-
-async function handleRegister() {
-  loading.value = true
-
-  try {
-    await registerRequest(form.username.trim(), form.password, form.email.trim() || undefined)
-    showNotice('注册成功，请继续登录。', 'success')
-    authMode.value = 'login'
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    loading.value = false
-  }
-}
-
-async function submitAuth() {
-  if (isRegisterMode.value) {
-    await handleRegister()
-    return
-  }
-
-  await handleLogin()
-}
+})
 
 onMounted(() => {
   if (expiredNotice.value) {
@@ -139,53 +139,78 @@ onMounted(() => {
             </button>
           </div>
 
-          <ElForm class="form-grid auth-form" label-position="top" @submit.prevent="submitAuth">
-            <ElFormItem label="用户名">
-              <ElInput
-                v-model="form.username"
-                class="ui-input"
-                autocomplete="username"
-                placeholder="请输入用户名"
-              />
-            </ElFormItem>
+          <form class="flex flex-col gap-6 w-full" @submit.prevent="submitAuth">
+            <FormField name="username" v-slot="{ componentField }">
+              <FormItem class="flex flex-col gap-2">
+                <FormLabel>用户名</FormLabel>
+                <FormControl>
+                  <Input
+                    v-bind="componentField"
+                    autocomplete="username"
+                    placeholder="请输入用户名"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            </FormField>
 
-            <ElFormItem label="密码">
-              <ElInput
-                v-model="form.password"
-                class="ui-input"
-                autocomplete="current-password"
-                placeholder="请输入密码"
-                show-password
-                type="password"
-              />
-            </ElFormItem>
+            <FormField name="password" v-slot="{ componentField }">
+              <FormItem class="flex flex-col gap-2 relative">
+                <FormLabel>密码</FormLabel>
+                <FormControl>
+                  <div class="relative w-full">
+                    <Input
+                      v-bind="componentField"
+                      autocomplete="current-password"
+                      placeholder="请输入密码"
+                      :type="showPassword ? 'text' : 'password'"
+                      class="pr-10"
+                    />
+                    <button
+                      type="button"
+                      class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center"
+                      @click="showPassword = !showPassword"
+                    >
+                      <Eye v-if="showPassword" class="h-4 w-4" />
+                      <EyeOff v-else class="h-4 w-4" />
+                    </button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            </FormField>
 
             <div
-              :class="['auth-form__optional-field', { 'is-hidden': !isRegisterMode }]"
+              :class="['transition-all duration-300', { 'hidden': !isRegisterMode }]"
               :aria-hidden="!isRegisterMode"
             >
-              <ElFormItem label="邮箱">
-                <ElInput
-                  v-model="form.email"
-                  class="ui-input"
-                  autocomplete="email"
-                  :disabled="!isRegisterMode"
-                  placeholder="请输入邮箱"
-                />
-              </ElFormItem>
+              <FormField name="email" v-slot="{ componentField }">
+                <FormItem class="flex flex-col gap-2">
+                  <FormLabel>邮箱</FormLabel>
+                  <FormControl>
+                    <Input
+                      v-bind="componentField"
+                      autocomplete="email"
+                      :disabled="!isRegisterMode"
+                      placeholder="请输入邮箱"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              </FormField>
             </div>
 
-            <div class="button-row login-card__actions">
-              <ElButton
-                class="ui-button ui-button--primary ui-button--block"
-                :loading="loading"
-                native-type="submit"
-                type="primary"
+            <div class="pt-2">
+              <Button
+                type="submit"
+                class="w-full"
+                :disabled="loading"
               >
+                <Loader2 v-if="loading" class="w-4 h-4 mr-2 animate-spin" />
                 {{ submitLabel }}
-              </ElButton>
+              </Button>
             </div>
-          </ElForm>
+          </form>
         </div>
       </div>
     </div>

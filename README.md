@@ -101,7 +101,7 @@ flowchart TB
 ## 技术栈
 
 - **后端**：`Java 21` `Spring Boot 3.2` `MyBatis-Plus` `MySQL 8.4` `Redis` `WebSocket` `Resilience4j` `PDFBox` `OkHttp` `JWT` `BCrypt` `AES-256-GCM`
-- **前端**：`Vue 3` `TypeScript` `Vite` `Element Plus` `Vue Router` `Pinia` `Axios` `markdown-it` `ECharts`
+- **前端**：`Vue 3` `TypeScript` `Vite` `shadcn-vue` `Tailwind CSS` `Vue Router` `Pinia` `Axios` `markdown-it` `ECharts`
 - **模型**：`DeepSeek API` `OpenAI 兼容协议` `Anthropic Claude API`
 - **流式**：`Spring SseEmitter` `前端 fetch / ReadableStream`
 - **运维**：`Docker Compose` `Prometheus & Grafana`

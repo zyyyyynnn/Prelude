@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { ElTag } from 'element-plus'
+import { Badge } from '@/components/ui/badge'
 import type { InterviewMessageRecord, InterviewMessageRole } from '../../api/contracts'
 
 const props = defineProps<{
@@ -63,9 +63,9 @@ onMounted(() => {
         :class="['message-bubble', `message-bubble--${message.role as InterviewMessageRole}`]"
       >
         <div class="message-bubble__head">
-          <ElTag class="ui-badge" effect="light">
+          <Badge variant="secondary">
             {{ message.role === 'assistant' ? '面试官' : '我' }}
-          </ElTag>
+          </Badge>
         </div>
         <div class="message-bubble__content">
           <span v-if="message.role === 'assistant' && !message.content" class="thinking-dots">思考中</span>

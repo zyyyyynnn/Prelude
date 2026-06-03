@@ -4,11 +4,13 @@ import { GridComponent, RadarComponent, TooltipComponent } from 'echarts/compone
 import { init, use, type ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ElCard, ElEmpty, ElTag } from 'element-plus'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
 import { getErrorMessage } from '../utils/errors'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint, AnalyticsWeaknessItem } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import EmptyState from '@/components/ui/empty-state/EmptyState.vue'
 
 const { showNotice } = usePageNotice()
 
@@ -189,7 +191,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <div class="workspace-page__content scrollable">
+    <div class="workspace-page__content scrollable flex flex-col gap-6">
       <template v-if="radar && radar.sessionCount > 0">
         <div class="insight-strip insight-strip--compact">
           <article v-for="item in scoreCards" :key="item.label" class="insight-card">
@@ -200,39 +202,39 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="page-grid page-grid--dashboard">
-          <ElCard class="ui-card panel">
-            <div class="panel__head">
+          <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+            <div class="flex justify-between items-start mb-4">
               <div>
-                <p class="panel__eyebrow">结构</p>
-                <h3 class="panel__title">能力雷达</h3>
-                <p class="panel__lead">展示最近面试在三项核心维度上的平均水平。</p>
+                <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">结构</p>
+                <h3 class="text-lg font-medium font-serif">能力雷达</h3>
+                <p class="text-sm text-muted-foreground">展示最近面试在三项核心维度上的平均水平。</p>
               </div>
-              <ElTag class="ui-badge" effect="light">{{ radar.sessionCount }} 场</ElTag>
+              <Badge variant="secondary">{{ radar.sessionCount }} 场</Badge>
             </div>
-            <div ref="radarRef" class="chart-surface chart-surface--tall" />
-          </ElCard>
+            <div ref="radarRef" class="chart-surface chart-surface--tall h-64" />
+          </Card>
 
-          <ElCard class="ui-card panel">
-            <div class="panel__head">
+          <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+            <div class="flex justify-between items-start mb-4">
               <div>
-                <p class="panel__eyebrow">走势</p>
-                <h3 class="panel__title">分数趋势</h3>
-                <p class="panel__lead">按时间查看技术、表达与逻辑评分变化。</p>
+                <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">走势</p>
+                <h3 class="text-lg font-medium font-serif">分数趋势</h3>
+                <p class="text-sm text-muted-foreground">按时间查看技术、表达与逻辑评分变化。</p>
               </div>
             </div>
-            <div ref="trendRef" class="chart-surface chart-surface--tall" />
-          </ElCard>
+            <div ref="trendRef" class="chart-surface chart-surface--tall h-64" />
+          </Card>
         </div>
 
         <div class="page-grid page-grid--single">
-          <ElCard class="ui-card panel">
-            <div class="panel__head">
+          <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+            <div class="flex justify-between items-start mb-4">
               <div>
-                <p class="panel__eyebrow">聚合</p>
-                <h3 class="panel__title">薄弱点列表</h3>
-                <p class="panel__lead">按出现频率汇总薄弱点。</p>
+                <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">聚合</p>
+                <h3 class="text-lg font-medium font-serif">薄弱点列表</h3>
+                <p class="text-sm text-muted-foreground">按出现频率汇总薄弱点。</p>
               </div>
-              <ElTag class="ui-badge" effect="light">{{ weaknesses.length }} 类问题</ElTag>
+              <Badge variant="secondary">{{ weaknesses.length }} 类问题</Badge>
             </div>
 
             <div v-if="weaknesses.length" class="weakness-list">
@@ -242,21 +244,21 @@ onBeforeUnmount(() => {
                     <h4 class="weakness-item__title">{{ item.category }}</h4>
                     <p class="weakness-item__summary">{{ item.descriptions[0] || '待补充说明' }}</p>
                   </div>
-                  <ElTag class="ui-badge" effect="light">{{ item.count }} 次</ElTag>
+                  <Badge variant="secondary">{{ item.count }} 次</Badge>
                 </div>
                 <ul v-if="weaknessDetails(item).length" class="weakness-item__descriptions">
                   <li v-for="description in weaknessDetails(item)" :key="description">{{ description }}</li>
                 </ul>
               </article>
             </div>
-            <ElEmpty v-else description="还没有可聚合的薄弱点。" />
-          </ElCard>
+            <EmptyState v-else description="还没有可聚合的薄弱点。" />
+          </Card>
         </div>
       </template>
 
-      <ElCard v-else class="ui-card panel">
-        <ElEmpty description="暂无历史面试数据，完成至少一场面试后再回来查看。" />
-      </ElCard>
+      <Card v-else class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+        <EmptyState description="暂无历史面试数据，完成至少一场面试后再回来查看。" />
+      </Card>
     </div>
   </section>
 </template>

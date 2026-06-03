@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useInterviewWorkspace } from '../../composables/useInterviewWorkspace'
 import BrandMetaballs from '../BrandMetaballs.vue'
-import { ElMessageBox } from 'element-plus'
 import { usePageNotice } from '../../composables/usePageNotice'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const props = defineProps<{
   collapsed: boolean
@@ -18,6 +18,7 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const { showNotice } = usePageNotice()
+const confirmDialog = useConfirmDialog()
 const {
   activeSessionId,
   primarySessionList,
@@ -35,20 +36,17 @@ function togglePin(sessionId: number) {
 }
 
 async function confirmDelete(sessionId: number, targetPosition?: string) {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除与“${targetPosition || '未命名岗位'}”的面试会话吗？`,
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    )
+  const confirmed = await confirmDialog.confirm({
+    title: '提示',
+    message: `确定要删除与“${targetPosition || '未命名岗位'}”的面试会话吗？`,
+    confirmText: '确定',
+    cancelText: '取消',
+    variant: 'destructive',
+  })
+  
+  if (confirmed) {
     deleteSessionLocal(sessionId)
     showNotice('会话已删除', 'success')
-  } catch (error) {
-    // cancelled
   }
 }
 

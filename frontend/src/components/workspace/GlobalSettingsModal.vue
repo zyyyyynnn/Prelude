@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ElDialog } from 'element-plus'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { useAuthStore } from '../../stores/auth'
 import UserProfilePanel from './UserProfilePanel.vue'
 import LlmSettingsPanel from './LlmSettingsPanel.vue'
@@ -19,66 +19,50 @@ function handleLogout() {
 </script>
 
 <template>
-  <ElDialog
-    v-model="visible"
-    width="min(960px, 90vw)"
-    :show-close="false"
-    class="global-settings-modal"
-  >
-    <div class="settings-layout">
-      <aside class="settings-sidebar">
-        <div class="sidebar-menu">
-          <button :class="['menu-item', { 'is-active': activeTab === 'profile' }]" @click="activeTab = 'profile'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            账号资料
-          </button>
-          <button :class="['menu-item', { 'is-active': activeTab === 'llm' }]" @click="activeTab = 'llm'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-            LLM 配置
-          </button>
-        </div>
-        <div class="sidebar-footer">
-          <button class="menu-item menu-item--danger" @click="handleLogout">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            退出登录
-          </button>
-        </div>
-      </aside>
+  <Dialog v-model:open="visible">
+    <DialogContent
+      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] flex flex-col overflow-hidden bg-transparent border-none"
+    >
+      <DialogHeader class="hidden">
+        <DialogTitle>全局设置</DialogTitle>
+        <DialogDescription>全局设置面板</DialogDescription>
+      </DialogHeader>
+      <div class="settings-layout">
+        <aside class="settings-sidebar">
+          <div class="sidebar-menu">
+            <button :class="['menu-item', { 'is-active': activeTab === 'profile' }]" @click="activeTab = 'profile'">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              账号资料
+            </button>
+            <button :class="['menu-item', { 'is-active': activeTab === 'llm' }]" @click="activeTab = 'llm'">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+              LLM 配置
+            </button>
+          </div>
+          <div class="sidebar-footer">
+            <button class="menu-item menu-item--danger" @click="handleLogout">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              退出登录
+            </button>
+          </div>
+        </aside>
 
-      <main class="settings-main">
-        <header class="settings-header">
-          <h3>{{ activeTab === 'profile' ? '账号资料' : 'LLM 配置' }}</h3>
-          <button class="close-btn" @click="visible = false">×</button>
-        </header>
-        <div class="settings-content scrollable">
-          <UserProfilePanel v-if="activeTab === 'profile'" />
-          <LlmSettingsPanel v-else-if="activeTab === 'llm'" />
-        </div>
-      </main>
-    </div>
-  </ElDialog>
+        <main class="settings-main">
+          <header class="settings-header">
+            <h3>{{ activeTab === 'profile' ? '账号资料' : 'LLM 配置' }}</h3>
+            <button class="close-btn" @click="visible = false">×</button>
+          </header>
+          <div class="settings-content scrollable">
+            <UserProfilePanel v-if="activeTab === 'profile'" />
+            <LlmSettingsPanel v-else-if="activeTab === 'llm'" />
+          </div>
+        </main>
+      </div>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <style scoped>
-/* 核心布局约束 */
-:global(.el-dialog.global-settings-modal) {
-  height: 60vh;
-  min-height: 500px;
-  padding: 0;
-  display: flex;
-  overflow: hidden;
-  background: transparent; /* 去除原生底色，由内部接管 */
-}
-:global(.el-dialog.global-settings-modal .el-dialog__header) {
-  display: none; /* 隐藏原生 Header */
-}
-:global(.el-dialog.global-settings-modal .el-dialog__body) {
-  padding: 0;
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-
 /* 双栏布局 */
 .settings-layout {
   display: flex;
