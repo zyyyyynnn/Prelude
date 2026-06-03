@@ -1,4 +1,6 @@
-# 沉浸式模拟面试与简历诊断系统
+# Prelude
+
+> 一款支持简历诊断与流式语音交互的沉浸式模拟面试平台
 
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green)
@@ -7,20 +9,17 @@
 ![Redis](https://img.shields.io/badge/Redis-7.0-red)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C)
+![Resilience4j](https://img.shields.io/badge/Resilience4j-Circuit%20Breaker-darkred)
+![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-black)
 
-> 毕业设计项目：沉浸式模拟面试与简历诊断系统
+## 核心能力
 
-基于大语言模型的模拟面试平台，覆盖简历解析、岗位匹配、模拟面试对话、报告生成和能力分析。项目同时提供真实运行模式与 Demo Twin 演示模式，便于本地开发、答辩演示和截图验收。
-
-## 项目亮点
-
-- 支持 PDF 简历解析、岗位模板匹配、阶段化模拟面试和 Markdown 评估报告生成。
-- 高可用与防抖容灾：引入 Structured Output 杜绝提取幻觉，搭载 SSE 指数退避重连机制与 Resilience4j 智能熔断降级。
-- 异步削峰与全栈监控：基于 Redis MQ 实现耗时评估报告的异步解耦；基于 Docker 完成全套编排，并提供 Prometheus 可观测性看板。
-- 双向语音交互：支持 Voice-to-Voice 流式低延迟语音对话（首字节 < 3s），支持网络异常自动降级。
-- 提供 Demo Twin 演示模式，数据库、端口、前端环境与真实模式隔离。
-- 支持用户级 LLM Provider、模型和 API Key 配置，Key 使用 AES-256-GCM 加密保存。
-- 提供能力雷达图、评分趋势和薄弱点统计，形成从面试到复盘的闭环。
+- PDF 简历解析、岗位模板匹配、阶段化模拟面试与 Markdown 评估报告
+- SSE 指数退避重连 + Resilience4j 熔断降级，保障 LLM 调用高可用
+- Voice-to-Voice 流式低延迟语音对话（首字节 < 3s）
+- 用户级 LLM Provider 配置（DeepSeek / OpenAI / Anthropic Claude），API Key AES-256-GCM 加密
+- 能力雷达图、评分趋势和薄弱点统计，面试到复盘闭环
+- Demo Twin 演示模式：数据库、端口、前端环境与真实模式完全隔离
 
 ## 系统架构
 
@@ -43,7 +42,7 @@ flowchart TB
 
   subgraph Gateway ["LLM 网关层"]
     Router["LlmRouter (Resilience4j)"]
-    LLM["DeepSeek / OpenAI"]
+    LLM["DeepSeek / OpenAI / Anthropic"]
     Router -->|灾备切换| LLM
   end
 
@@ -67,258 +66,89 @@ flowchart TB
   API -.-> Prometheus
 ```
 
-## 界面预览
+## 快速开始
 
-### 登录
+### 环境要求
 
-![登录](docs/images/login.png)
+| 组件 | 版本 | 备注 |
+|------|------|------|
+| Windows | 11 | PowerShell 7+ 推荐 |
+| Java | 21 | |
+| Maven | 3.9+ | |
+| Node.js | 24 | npm 11.6.0 |
+| MySQL | 8.0 | 需手动启动 |
+| Redis | 7.0 | 需手动启动 |
 
-### 主工作台（未开始面试的空状态）
+### 启动真实版
 
-![主工作台（未开始面试的空状态）](docs/images/interview-empty.png)
+1. 复制后端配置：`Copy-Item .\backend\src\main\resources\application-local.example.yml .\backend\src\main\resources\application-local.yml`
+2. 编辑 `application-local.yml`，填写 MySQL 密码、JWT secret、AES secret 和模型 Key（最小 4 个字段）
+3. 建库：`mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_system DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"`
+4. 启动：`.\start-real.bat`
+5. 访问：前端 `http://127.0.0.1:5173`，后端 `http://127.0.0.1:8080`，健康检查 `/api/health`
 
-### 主工作台（报告预览）
+> 完整配置模板与字段说明见 [docs/setup.md](docs/setup.md)。
 
-![主工作台（报告预览）](docs/images/interview-workbench.png)
+### 启动 Demo Twin
 
-### 数据看板
+1. 建库：`mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_demo DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"`
+2. 启动：`.\start-demo.bat`
+3. 登录：`demo / 123456`
 
-![数据看板](docs/images/analytics.png)
+> Demo 截图脚本、重置命令与输出路径见 [docs/demo.md](docs/demo.md)。
 
 ## 技术栈
 
-- 后端：Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.0、Redis、WebSocket、Resilience4j、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM
-- 前端：Vue 3、TypeScript、Vite、Element Plus、Vue Router、Pinia、Axios、markdown-it、ECharts
-- 部署运维：Docker Compose、Prometheus & Grafana
-- 模型接口：DeepSeek API、OpenAI 兼容 Chat Completions 协议
-- 流式通信：Spring `SseEmitter` + 前端 `fetch` / `ReadableStream`
+| 层 | 技术 |
+|----|------|
+| 后端 | Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.0、Redis、WebSocket、Resilience4j、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM |
+| 前端 | Vue 3、TypeScript、Vite、Element Plus、Vue Router、Pinia、Axios、markdown-it、ECharts |
+| 模型 | DeepSeek API、OpenAI 兼容协议、Anthropic Claude API |
+| 流式 | Spring SseEmitter + 前端 fetch / ReadableStream |
+| 运维 | Docker Compose、Prometheus & Grafana |
 
-## 目录结构
+## 项目结构
 
 ```text
 E:\Prelude
 ├── README.md
-├── docs                       # 公开文档、接口说明与 README 展示截图
-├── backend                    # Spring Boot 后端
-├── frontend                   # Vue 前端
-├── scripts                    # 启动、重置和截图脚本
-│   ├── demo
-│   └── real
-├── output                     # 运行产物、批量截图与可复现输出记录
-├── thesis-assets              # 论文材料、当前交付物、证据、文献与答辩资产
-├── thesis-handbook            # 毕设流程手册、协作提示词与阶段方法说明
-├── start-real.bat             # 真实版双击启动入口
-└── start-demo.bat             # Demo Twin 双击启动入口
+├── docs/                      # 公开文档、接口说明与截图
+├── backend/                   # Spring Boot 后端
+├── frontend/                  # Vue 前端
+├── scripts/                   # 启动、重置和截图脚本
+├── thesis-assets/             # 论文材料、交付物与答辩资产
+├── thesis-handbook/           # 毕设流程手册与协作提示词
+├── start-real.bat             # 真实版启动入口
+└── start-demo.bat             # Demo Twin 启动入口
 ```
 
-## 环境要求
+## 页面与路由
 
-- Windows 11
-- Windows PowerShell 5.1+ 或 PowerShell 7+
-- Java 21
-- Maven 3.9+
-- Node.js 24 与 npm 11.6.0
-- MySQL 8.0
+| 路径 | 说明 |
+|------|------|
+| `/login` | 登录 / 注册 |
+| `/interview` | 主工作台（面试对话、报告预览） |
+| `/resumes` | 简历管理 |
+| `/analytics` | 数据看板（能力雷达、评分趋势） |
 
-推荐使用 PowerShell 7+ 执行手动命令；双击启动脚本内部会使用系统自带 Windows PowerShell 做兼容校验。
+LLM 配置与用户设置已整合至全局设置弹窗（齿轮图标触发）。
 
-启动脚本不会启动 Redis。脚本会尝试连接或拉起本机 MySQL；如果本机服务不可用，需要先手动启动 MySQL。
+### 界面预览
 
-## 配置
+![主工作台（空状态）](docs/images/interview-empty.png)
+![主工作台（报告预览）](docs/images/interview-workbench.png)
 
-### 后端本地配置
-
-复制后端配置模板：
-
-```powershell
-Copy-Item .\backend\src\main\resources\application-local.example.yml `
-  .\backend\src\main\resources\application-local.yml
-```
-
-修改 `application-local.yml`：
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: your_mysql_password
-
-jwt:
-  secret: replace-with-at-least-32-bytes-jwt-secret
-
-app:
-  crypto:
-    aes-secret: replace-with-at-least-32-bytes-aes-secret
-
-deepseek:
-  api-key: your_deepseek_key
-```
-
-`application-local.yml` 已被 `.gitignore` 忽略，不要提交真实数据库密码、JWT secret、AES secret 或模型 Key。
-
-### 前端本地配置
-
-复制前端配置模板：
-
-```powershell
-Copy-Item .\frontend\.env.example .\frontend\.env.local
-```
-
-默认真实版配置：
-
-```env
-VITE_PORT=5173
-VITE_PROXY_TARGET=http://127.0.0.1:8080
-VITE_HOST=127.0.0.1
-```
-
-Demo 前端固定使用 `frontend/.env.demo`：
-
-```env
-VITE_PORT=5174
-VITE_PROXY_TARGET=http://127.0.0.1:8081
-```
-
-### 数据库
-
-真实版数据库：
-
-```powershell
-mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_system DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-Demo 数据库：
-
-```powershell
-mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_demo DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-真实模式默认只初始化岗位模板和 LLM Provider 基础数据。Demo 模式额外加载 `data-demo.sql`，并由 `/api/demo/reset` 重建完整演示闭环。
-
-## 本地启动
-
-真实版：
-
-```powershell
-.\start-real.bat
-```
-
-- 后端：`http://127.0.0.1:8080`
-- 前端：`http://127.0.0.1:5173`
-- 健康检查：`http://127.0.0.1:8080/api/health`
-
-Demo Twin：
-
-```powershell
-.\start-demo.bat
-```
-
-- 后端：`http://127.0.0.1:8081`
-- 前端：`http://127.0.0.1:5174`
-- 健康检查：`http://127.0.0.1:8081/api/health`
-
-真实版和 Demo 版的端口、数据库、前端环境与登录态相互隔离。
-
-## Demo 数据
-
-重置演示数据：
-
-```powershell
-pwsh -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
-```
-
-`/api/demo/reset` 会重建演示账号、默认 LLM 配置、演示简历、进行中会话、已完成会话、报告、评分历史和薄弱点数据。默认会话包含 1 场 `Java 后端工程师` 进行中会话，以及 `Java 后端工程师`、`前端工程师`、`算法工程师` 各 1 场已完成会话，避免演示清单只出现单一岗位。
-
-默认演示账号：
-
-```text
-demo / 123456
-```
-
-生成 Demo 截图：
-
-```powershell
-pwsh -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
-```
-
-截图输出目录：
-
-```text
-output\demo\screenshots
-```
-
-README 使用的精选截图同步存放在：
-
-```text
-docs\images
-```
-
-截图清单输出到：
-
-```text
-output\demo\manifest.md
-```
-
-## 主要页面
-
-- `/login`：登录 / 注册
-- `/interview`：主工作台
-- `/resumes`：简历管理
-- `/analytics`：数据看板
-- `/settings/llm`：LLM 配置
-- `/settings/profile`：用户设置
-
-## 核心接口
+## API
 
 完整接口说明见 [docs/api.md](docs/api.md)。
 
-## 答辩演示流程
-
-1. 启动 Demo Twin：`.\start-demo.bat`
-2. 登录演示账号：`demo / 123456`
-3. 进入 `/interview` 查看进行中面试和多岗位历史会话
-4. 进行对话并生成报告
-5. 查看 `/analytics` 能力分析
-
-## 验证命令
-
-后端编译：
-
-```powershell
-cd .\backend
-mvn -q -DskipTests compile
-```
-
-前端构建：
-
-```powershell
-cd .\frontend
-npm run build
-```
-
-Demo 链路验收：
-
-```powershell
-.\start-demo.bat
-pwsh -ExecutionPolicy Bypass -File .\scripts\demo\reset-demo.ps1
-pwsh -ExecutionPolicy Bypass -File .\scripts\demo\capture-demo.ps1
-```
-
 ## CI
 
-仓库包含 GitHub Actions 工作流 `.github/workflows/ci.yml`：
+仓库包含 GitHub Actions 工作流（`.github/workflows/ci.yml`），在 Windows runner 上执行后端编译/测试与前端构建。
 
-- Windows runner
-- Java 21
-- Node.js 24
-- 后端执行 `mvn -q -DskipTests compile`
-- 后端执行 `mvn -q test`
-- 前端执行 `npm ci` 与 `npm run build`
-
-## 注意事项
+## 常见问题
 
 - 真实版不会自动插入 `demo / 123456` 用户；Demo 用户只在 Demo profile 下加载。
 - JWT secret 和 AES secret 必须通过本地配置或环境变量提供，避免误用默认密钥。
-- CORS 允许源由 `app.cors.allowed-origins` 配置驱动，部署到其他地址时只需调整配置。
-- 双击启动脚本更接近手动启动方式：分别打开后端和前端命令窗口，停止服务时关闭窗口或按 `Ctrl+C`。
+- 启动脚本不会自动启动 MySQL 和 Redis，需手动启动。
+- CORS 允许源由 `app.cors.allowed-origins` 配置驱动，部署到其他地址时调整配置即可。
