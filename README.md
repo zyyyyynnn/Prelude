@@ -3,11 +3,12 @@
 
 # Prelude
 
-*一款支持简历诊断与流式语音交互的沉浸式模拟面试平台*
+_一款支持简历诊断与流式语音交互的沉浸式模拟面试平台_
 
 ![Java](https://img.shields.io/badge/Java-21-blue) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green) ![Vue](https://img.shields.io/badge/Vue-3-brightgreen) ![MySQL](https://img.shields.io/badge/MySQL-8.4-orange) ![Redis](https://img.shields.io/badge/Redis-7.0-red)
 <br>
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED) ![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C) ![Resilience4j](https://img.shields.io/badge/Resilience4j-Circuit%20Breaker-darkred) ![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-black)
+
 </div>
 
 ---
@@ -56,12 +57,12 @@ flowchart TB
   FE -->|REST| API
   FE <-->|流通信| WS
   WS <--> API
-  
+
   API --> DB
   API <--> Redis
   API --> PDF
   API --> Router
-  
+
   API -.-> DemoDB
   API -.-> Prometheus
 ```
@@ -70,14 +71,14 @@ flowchart TB
 
 ### 环境要求
 
-| 组件 | 版本 | 备注 |
-|------|------|------|
-| Windows | 11 | PowerShell 7+ 推荐 |
-| Java | 21 | |
-| Maven | 3.9+ | |
-| Node.js | 24 | npm 11.6.0 |
-| MySQL | 8.4 | 需手动启动 |
-| Redis | 7.0 | 需手动启动 |
+| 组件    | 版本 | 备注               |
+| ------- | ---- | ------------------ |
+| Windows | 11   | PowerShell 7+ 推荐 |
+| Java    | 21   |                    |
+| Maven   | 3.9+ |                    |
+| Node.js | 24   | npm 11.6.0         |
+| MySQL   | 8.4  | 需手动启动         |
+| Redis   | 7.0  | 需手动启动         |
 
 ### 启动真实版
 
@@ -99,13 +100,13 @@ flowchart TB
 
 ## 技术栈
 
-| 层 | 技术 |
-|----|------|
+| 层   | 技术                                                                                                                        |
+| ---- | --------------------------------------------------------------------------------------------------------------------------- |
 | 后端 | Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.4、Redis、WebSocket、Resilience4j、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM |
-| 前端 | Vue 3、TypeScript、Vite、Element Plus、Vue Router、Pinia、Axios、markdown-it、ECharts |
-| 模型 | DeepSeek API、OpenAI 兼容协议、Anthropic Claude API |
-| 流式 | Spring SseEmitter + 前端 fetch / ReadableStream |
-| 运维 | Docker Compose、Prometheus & Grafana |
+| 前端 | Vue 3、TypeScript、Vite、Element Plus、Vue Router、Pinia、Axios、markdown-it、ECharts                                       |
+| 模型 | DeepSeek API、OpenAI 兼容协议、Anthropic Claude API                                                                         |
+| 流式 | Spring SseEmitter + 前端 fetch / ReadableStream                                                                             |
+| 运维 | Docker Compose、Prometheus & Grafana                                                                                        |
 
 ## 项目结构
 
@@ -124,11 +125,11 @@ E:\Prelude
 
 ## 页面与路由
 
-| 路径 | 说明 |
-|------|------|
-| `/login` | 登录 / 注册 |
+| 路径         | 说明                           |
+| ------------ | ------------------------------ |
+| `/login`     | 登录 / 注册                    |
 | `/interview` | 主工作台（面试对话、报告预览） |
-| `/resumes` | 简历管理 |
+| `/resumes`   | 简历管理                       |
 | `/analytics` | 数据看板（能力雷达、评分趋势） |
 
 LLM 配置与用户设置已整合至全局设置弹窗（齿轮图标触发）。
