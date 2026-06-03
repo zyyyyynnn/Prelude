@@ -1,0 +1,186 @@
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { ElDialog } from 'element-plus'
+import { useAuthStore } from '../../stores/auth'
+import UserProfilePanel from './UserProfilePanel.vue'
+import LlmSettingsPanel from './LlmSettingsPanel.vue'
+
+const visible = defineModel<boolean>('visible', { default: false })
+const activeTab = defineModel<'profile' | 'llm'>('activeTab', { default: 'profile' })
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+function handleLogout() {
+  authStore.clearSession()
+  visible.value = false
+  void router.replace('/login')
+}
+</script>
+
+<template>
+  <ElDialog
+    v-model="visible"
+    width="min(960px, 90vw)"
+    :show-close="false"
+    class="global-settings-modal"
+  >
+    <div class="settings-layout">
+      <aside class="settings-sidebar">
+        <div class="sidebar-menu">
+          <button :class="['menu-item', { 'is-active': activeTab === 'profile' }]" @click="activeTab = 'profile'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            账号资料
+          </button>
+          <button :class="['menu-item', { 'is-active': activeTab === 'llm' }]" @click="activeTab = 'llm'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            LLM 配置
+          </button>
+        </div>
+        <div class="sidebar-footer">
+          <button class="menu-item menu-item--danger" @click="handleLogout">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            退出登录
+          </button>
+        </div>
+      </aside>
+
+      <main class="settings-main">
+        <header class="settings-header">
+          <h3>{{ activeTab === 'profile' ? '账号资料' : 'LLM 配置' }}</h3>
+          <button class="close-btn" @click="visible = false">×</button>
+        </header>
+        <div class="settings-content scrollable">
+          <UserProfilePanel v-if="activeTab === 'profile'" />
+          <LlmSettingsPanel v-else-if="activeTab === 'llm'" />
+        </div>
+      </main>
+    </div>
+  </ElDialog>
+</template>
+
+<style scoped>
+/* 核心布局约束 */
+:global(.el-dialog.global-settings-modal) {
+  height: 60vh;
+  min-height: 500px;
+  padding: 0;
+  display: flex;
+  overflow: hidden;
+  background: transparent; /* 去除原生底色，由内部接管 */
+}
+:global(.el-dialog.global-settings-modal .el-dialog__header) {
+  display: none; /* 隐藏原生 Header */
+}
+:global(.el-dialog.global-settings-modal .el-dialog__body) {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* 双栏布局 */
+.settings-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-modal);
+}
+.settings-sidebar {
+  width: 220px;
+  background: var(--color-surface-muted);
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md) 0;
+  border-right: 1px solid var(--color-border);
+}
+.sidebar-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--spacing-sm);
+}
+.sidebar-footer {
+  padding: 0 var(--spacing-sm);
+  margin-top: auto;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-serif);
+  color: var(--color-text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.menu-item:hover {
+  background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  color: var(--color-text-primary);
+}
+.menu-item.is-active {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.menu-item--danger {
+  color: var(--color-error);
+}
+.menu-item--danger:hover {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+.settings-main {
+  flex: 1;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+.settings-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font-serif);
+  color: var(--color-text-primary);
+}
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: color 0.2s;
+}
+.close-btn:hover {
+  color: var(--color-text-primary);
+}
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+}
+.placeholder {
+  color: var(--color-text-tertiary);
+  text-align: center;
+  padding: 40px;
+}
+</style>

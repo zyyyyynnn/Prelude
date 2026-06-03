@@ -6,6 +6,7 @@ import { login as loginRequest, register as registerRequest } from '../api/auth'
 import BrandMetaballs from '../components/BrandMetaballs.vue'
 import { usePageNotice } from '../composables/usePageNotice'
 import { useAuthStore } from '../stores/auth'
+import { getErrorMessage } from '../utils/errors'
 
 type AuthMode = 'login' | 'register'
 
@@ -33,13 +34,6 @@ const isRegisterMode = computed(() => authMode.value === 'register')
 const authEyebrow = computed(() => (isRegisterMode.value ? '注册' : '登录'))
 const authTitle = computed(() => (isRegisterMode.value ? '创建工作台账号' : '进入面试工作台'))
 const submitLabel = computed(() => (isRegisterMode.value ? '完成注册' : '登录'))
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message
-  }
-  return '请求失败'
-}
 
 function switchMode(mode: AuthMode) {
   authMode.value = mode

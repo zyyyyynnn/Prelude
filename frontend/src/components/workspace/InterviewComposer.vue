@@ -39,7 +39,7 @@ const emit = defineEmits<{
   (e: 'voice-start-recording'): void
   (e: 'voice-stop-recording'): void
   (e: 'voice-play-status', status: 'playing' | 'idle'): void
-  (e: 'open-llm-settings'): void
+  (e: 'open-global-settings', tab: 'profile' | 'llm'): void
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -78,7 +78,7 @@ function triggerUpload() {
 }
 
 function navigateToLlm() {
-  emit('open-llm-settings')
+  emit('open-global-settings', 'llm')
 }
 
 // ==================== VOICE & CANVAS INTEGRATION ====================
