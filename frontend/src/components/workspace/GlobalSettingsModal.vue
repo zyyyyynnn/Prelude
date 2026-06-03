@@ -176,7 +176,7 @@ function handleLogout() {
 .settings-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 .placeholder {
   color: var(--color-text-tertiary);
