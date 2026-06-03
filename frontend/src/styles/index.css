@@ -1,3 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* 色彩 — 直接引用现有 :root 变量 */
+  --color-brand: var(--color-brand);
+  --color-brand-light: var(--color-brand-light);
+  --color-surface: var(--color-surface);
+  --color-surface-hover: var(--color-surface-hover);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-bg: var(--color-bg);
+  --color-sand: var(--color-sand);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-tertiary: var(--color-text-tertiary);
+  --color-text-button: var(--color-text-button);
+  --color-border: var(--color-border);
+  --color-border-warm: var(--color-border-warm);
+  --color-ring: var(--color-ring);
+  --color-ring-deep: var(--color-ring-deep);
+  --color-error: var(--color-error);
+  --color-focus: var(--color-focus);
+  --color-coral: var(--color-coral);
+  --color-line-decor: var(--color-line-decor);
+  --color-line-decor-light: var(--color-line-decor-light);
+
+  /* 间距 */
+  --spacing-xs: var(--spacing-xs);
+  --spacing-sm: var(--spacing-sm);
+  --spacing-md: var(--spacing-md);
+  --spacing-lg: var(--spacing-lg);
+  --spacing-xl: var(--spacing-xl);
+  --spacing-2xl: var(--spacing-2xl);
+
+  /* 圆角 */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  /* 字体 */
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
 :root {
   --font-serif: 'Lora', 'Noto Serif SC', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
