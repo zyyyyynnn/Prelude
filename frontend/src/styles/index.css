@@ -42,6 +42,9 @@
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+
+  /* 阴影 */
+  --shadow-modal: var(--shadow-modal);
 }
 
 :root {
@@ -90,6 +93,7 @@
   --shadow-ring-deep: 0 0 0 1px var(--color-ring-deep);
   --shadow-whisper: 0 4px 24px rgba(0, 0, 0, 0.05);
   --shadow-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
 
   /* ── UI System Tokens ── */
   --spacing-xs: 4px;

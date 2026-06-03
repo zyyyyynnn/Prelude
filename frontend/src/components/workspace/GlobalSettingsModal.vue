@@ -21,7 +21,7 @@ function handleLogout() {
 <template>
   <Dialog v-model:open="visible">
     <DialogContent
-      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] flex flex-col overflow-hidden bg-transparent border-none"
+      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-transparent border-none"
     >
       <DialogHeader class="hidden">
         <DialogTitle>全局设置</DialogTitle>
