@@ -72,11 +72,11 @@ flowchart TB
 ### 环境要求
 
 | 组件    | 版本 | 备注               |
-| ------- | ---- | ------------------ |
-| Windows | 11   | PowerShell 7+ 推荐 |
-| Java    | 21   |                    |
+| :------ | :--: | :----------------- |
+| Windows |  11  | PowerShell 7+ 推荐 |
+| Java    |  21  |                    |
 | Maven   | 3.9+ |                    |
-| Node.js | 24   | npm 11.6.0         |
+| Node.js |  24  | npm 11.6.0         |
 | MySQL   | 8.4  | 需手动启动         |
 | Redis   | 7.0  | 需手动启动         |
 
@@ -100,13 +100,11 @@ flowchart TB
 
 ## 技术栈
 
-| 层   | 技术                                                                                                                        |
-| ---- | --------------------------------------------------------------------------------------------------------------------------- |
-| 后端 | Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.4、Redis、WebSocket、Resilience4j、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM |
-| 前端 | Vue 3、TypeScript、Vite、Element Plus、Vue Router、Pinia、Axios、markdown-it、ECharts                                       |
-| 模型 | DeepSeek API、OpenAI 兼容协议、Anthropic Claude API                                                                         |
-| 流式 | Spring SseEmitter + 前端 fetch / ReadableStream                                                                             |
-| 运维 | Docker Compose、Prometheus & Grafana                                                                                        |
+- **后端**：`Java 21` `Spring Boot 3.2` `MyBatis-Plus` `MySQL 8.4` `Redis` `WebSocket` `Resilience4j` `PDFBox` `OkHttp` `JWT` `BCrypt` `AES-256-GCM`
+- **前端**：`Vue 3` `TypeScript` `Vite` `Element Plus` `Vue Router` `Pinia` `Axios` `markdown-it` `ECharts`
+- **模型**：`DeepSeek API` `OpenAI 兼容协议` `Anthropic Claude API`
+- **流式**：`Spring SseEmitter` `前端 fetch / ReadableStream`
+- **运维**：`Docker Compose` `Prometheus & Grafana`
 
 ## 项目结构
 
@@ -125,12 +123,12 @@ E:\Prelude
 
 ## 页面与路由
 
-| 路径         | 说明                           |
-| ------------ | ------------------------------ |
-| `/login`     | 登录 / 注册                    |
-| `/interview` | 主工作台（面试对话、报告预览） |
-| `/resumes`   | 简历管理                       |
-| `/analytics` | 数据看板（能力雷达、评分趋势） |
+| 路径                   | 说明                           |
+| :--------------------- | :----------------------------- |
+| <kbd>/login</kbd>      | 登录 / 注册                    |
+| <kbd>/interview</kbd>  | 主工作台（面试对话、报告预览） |
+| <kbd>/resumes</kbd>    | 简历管理                       |
+| <kbd>/analytics</kbd>  | 数据看板（能力雷达、评分趋势） |
 
 LLM 配置与用户设置已整合至全局设置弹窗（齿轮图标触发）。
 
