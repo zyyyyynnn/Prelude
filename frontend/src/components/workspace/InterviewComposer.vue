@@ -571,6 +571,15 @@ onBeforeUnmount(() => {
   padding: var(--spacing-lg);
   gap: var(--spacing-md);
 }
+.composer-input-area {
+  min-height: calc(3 * 1.5 * var(--el-font-size-base, 16px) + var(--spacing-sm) * 2);
+  display: flex;
+  align-items: flex-start;
+}
+.composer-mode-text,
+.composer-mode-voice {
+  width: 100%;
+}
 .composer-textarea :deep(.el-textarea__inner) {
   border: none;
   background: transparent;
