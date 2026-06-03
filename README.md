@@ -5,7 +5,7 @@
 
 *一款支持简历诊断与流式语音交互的沉浸式模拟面试平台*
 
-![Java](https://img.shields.io/badge/Java-21-blue) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green) ![Vue](https://img.shields.io/badge/Vue-3-brightgreen) ![MySQL](https://img.shields.io/badge/MySQL-8.0-orange) ![Redis](https://img.shields.io/badge/Redis-7.0-red)
+![Java](https://img.shields.io/badge/Java-21-blue) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green) ![Vue](https://img.shields.io/badge/Vue-3-brightgreen) ![MySQL](https://img.shields.io/badge/MySQL-8.4-orange) ![Redis](https://img.shields.io/badge/Redis-7.0-red)
 <br>
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED) ![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C) ![Resilience4j](https://img.shields.io/badge/Resilience4j-Circuit%20Breaker-darkred) ![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-black)
 </div>
@@ -35,7 +35,7 @@ flowchart TB
   end
 
   subgraph Data ["数据与解析层"]
-    DB[("MySQL 8.0")]
+    DB[("MySQL 8.4")]
     Redis[("Redis (限流/MQ)")]
     PDF["PDFBox"]
   end
@@ -76,7 +76,7 @@ flowchart TB
 | Java | 21 | |
 | Maven | 3.9+ | |
 | Node.js | 24 | npm 11.6.0 |
-| MySQL | 8.0 | 需手动启动 |
+| MySQL | 8.4 | 需手动启动 |
 | Redis | 7.0 | 需手动启动 |
 
 ### 启动真实版
@@ -101,7 +101,7 @@ flowchart TB
 
 | 层 | 技术 |
 |----|------|
-| 后端 | Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.0、Redis、WebSocket、Resilience4j、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM |
+| 后端 | Java 21、Spring Boot 3.2、MyBatis-Plus、MySQL 8.4、Redis、WebSocket、Resilience4j、PDFBox、OkHttp、JWT、BCrypt、AES-256-GCM |
 | 前端 | Vue 3、TypeScript、Vite、Element Plus、Vue Router、Pinia、Axios、markdown-it、ECharts |
 | 模型 | DeepSeek API、OpenAI 兼容协议、Anthropic Claude API |
 | 流式 | Spring SseEmitter + 前端 fetch / ReadableStream |
