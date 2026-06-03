@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import { ElButton, ElCard, ElEmpty, ElMessageBox, ElTag } from 'element-plus'
 import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
 import { getErrorMessage } from '../utils/errors'
 import axios from 'axios'
 import type { ResumeItem } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import EmptyState from '@/components/ui/empty-state/EmptyState.vue'
+import { Loader2 } from 'lucide-vue-next'
 
 const { showNotice } = usePageNotice()
+const confirmDialog = useConfirmDialog()
 
 const loading = ref(false)
 const uploading = ref(false)
@@ -71,18 +77,23 @@ async function removeResume(item: ResumeItem) {
     return
   }
 
-  try {
-    await ElMessageBox.confirm(`确认删除简历《${item.fileName}》吗？`, '删除简历', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
-    await deleteResume(item.id)
-    items.value = items.value.filter((resume) => resume.id !== item.id)
-    showNotice('简历已删除', 'success')
-  } catch (error) {
-    if (error instanceof Error && error.message !== 'cancel') {
-      showNotice(getErrorMessage(error), 'error')
+  const confirmed = await confirmDialog.confirm({
+    title: '删除简历',
+    message: `确认删除简历《${item.fileName}》吗？`,
+    confirmText: '删除',
+    cancelText: '取消',
+    variant: 'destructive',
+  })
+
+  if (confirmed) {
+    try {
+      await deleteResume(item.id)
+      items.value = items.value.filter((resume) => resume.id !== item.id)
+      showNotice('简历已删除', 'success')
+    } catch (error) {
+      if (error instanceof Error && error.message !== 'cancel') {
+        showNotice(getErrorMessage(error), 'error')
+      }
     }
   }
 }
@@ -104,13 +115,13 @@ onBeforeUnmount(() => {
           <h2 class="workspace-header__title">简历管理</h2>
         </div>
         <div class="workspace-header__actions">
-          <ElButton
-            class="ui-button ui-button--primary ui-button--compact"
-            :loading="uploading"
+          <Button
+            :disabled="uploading"
             @click="openUpload"
           >
+            <Loader2 v-if="uploading" class="w-4 h-4 mr-2 animate-spin" />
             上传新简历
-          </ElButton>
+          </Button>
         </div>
       </div>
     </header>
@@ -135,16 +146,16 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="page-grid page-grid--single">
-        <ElCard class="ui-card panel">
-          <div class="panel__head">
+        <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+          <div class="flex justify-between items-start mb-4">
             <div>
-              <p class="panel__eyebrow">列表</p>
-              <h3 class="panel__title">上传与清理</h3>
-              <p class="panel__lead">查看文件信息、使用次数和可执行操作。</p>
+              <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">列表</p>
+              <h3 class="text-lg font-medium font-serif">上传与清理</h3>
+              <p class="text-sm text-muted-foreground">查看文件信息、使用次数和可执行操作。</p>
             </div>
-            <div class="panel__actions">
-              <ElTag class="ui-badge" effect="light">{{ items.length }} 份</ElTag>
-              <ElTag class="ui-badge" effect="light">{{ inUseCount }} 份占用</ElTag>
+            <div class="flex gap-2">
+              <Badge variant="secondary">{{ items.length }} 份</Badge>
+              <Badge variant="secondary">{{ inUseCount }} 份占用</Badge>
             </div>
           </div>
 
@@ -167,29 +178,30 @@ onBeforeUnmount(() => {
                   </p>
                 </div>
                 <div class="resume-item__badges">
-                  <ElTag class="ui-badge" effect="light">
+                  <Badge variant="secondary">
                     {{ item.sessionCount || 0 }} 场使用
-                  </ElTag>
-                  <ElTag class="ui-badge" effect="light">
+                  </Badge>
+                  <Badge variant="secondary">
                     {{ item.inUse ? '已占用' : '可删除' }}
-                  </ElTag>
+                  </Badge>
                 </div>
               </div>
 
               <div class="resume-row__actions">
-                <ElButton
-                  class="ui-button ui-button--secondary ui-button--compact"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   :disabled="Boolean(item.inUse)"
                   @click="removeResume(item)"
                 >
                   删除
-                </ElButton>
+                </Button>
               </div>
             </article>
           </div>
 
-          <ElEmpty v-else :description="loading ? '正在加载简历列表…' : '暂时还没有上传简历。'" />
-        </ElCard>
+          <EmptyState v-else :description="loading ? '正在加载简历列表…' : '暂时还没有上传简历。'" />
+        </Card>
       </div>
     </div>
   </section>

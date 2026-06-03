@@ -21,20 +21,17 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (/[\\/]node_modules[\\/]zrender[\\/]/.test(id)) {
-              return 'vendor-zrender'
-            }
-            if (/[\\/]node_modules[\\/]echarts[\\/]/.test(id)) {
-              return 'vendor-echarts'
-            }
-            if (/[\\/]node_modules[\\/]element-plus[\\/]/.test(id)) {
-              return 'vendor-element-plus'
-            }
-            if (/[\\/]node_modules[\\/](@paper-design|react|react-dom)[\\/]/.test(id)) {
-              return 'vendor-brand'
-            }
-            if (/[\\/]node_modules[\\/]markdown-it[\\/]/.test(id)) {
-              return 'vendor-markdown-it'
+            if (id.includes('node_modules')) {
+              if (id.includes('echarts') || id.includes('zrender')) {
+                return 'vendor-echarts'
+              }
+              if (id.includes('markdown-it') || id.includes('highlight.js')) {
+                return 'vendor-markdown-it'
+              }
+              if (id.includes('vue') || id.includes('vue-router') || id.includes('pinia')) {
+                return 'vendor-brand'
+              }
+              return 'vendor'
             }
           },
         },

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ElButton } from 'element-plus'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-vue-next'
 import type { InterviewStageName } from '../../api/contracts'
 
 const props = defineProps<{
@@ -23,14 +24,15 @@ const canFinish = computed(
 <template>
   <div class="stage-bar">
     <div class="stage-actions" v-if="activeSessionId">
-      <ElButton
-        class="ui-button ui-button--secondary ui-button--compact"
+      <Button
+        variant="secondary"
+        size="sm"
         :disabled="!canFinish"
-        :loading="finishing"
         @click="emit('finish')"
       >
+        <Loader2 v-if="finishing" class="w-4 h-4 mr-2 animate-spin" />
         生成报告
-      </ElButton>
+      </Button>
     </div>
   </div>
 </template>

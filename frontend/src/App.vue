@@ -4,6 +4,8 @@ import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import AppSidebar from './components/workspace/AppSidebar.vue'
 import GlobalSettingsModal from './components/workspace/GlobalSettingsModal.vue'
+import GlobalConfirmDialog from './components/GlobalConfirmDialog.vue'
+import { Toaster } from '@/components/ui/sonner'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -33,6 +35,8 @@ const showSidebar = computed(() => route.path !== '/login' && authStore.isLogged
       v-model:visible="showGlobalSettings" 
       v-model:activeTab="activeSettingsTab" 
     />
+    <GlobalConfirmDialog />
+    <Toaster position="top-center" rich-colors />
   </div>
 </template>
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ElTag } from 'element-plus'
 import StageBar from './StageBar.vue'
 import type { InterviewStageName } from '../../api/contracts'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 const props = defineProps<{
   activeSessionId?: number | null
@@ -27,20 +28,20 @@ const emit = defineEmits<{
     <div class="workspace-header__main">
       <div class="workspace-header__title-area">
         <h2 class="workspace-header__title">{{ targetPosition || '新面试会话' }}</h2>
-        <ElTag v-if="activeSessionId" class="ui-badge" effect="light">#{{ activeSessionId }}</ElTag>
+        <Badge v-if="activeSessionId" variant="secondary">#{{ activeSessionId }}</Badge>
       </div>
       
       <div class="workspace-header__right">
         <!-- PDF Export -->
         <div class="workspace-header__actions" v-if="activeSessionId && hasReport && showingReport">
-          <button 
-            class="ui-button ui-button--secondary ui-button--compact"
+          <Button 
+            variant="secondary"
+            size="sm"
             :disabled="exporting"
             @click="emit('export-pdf')"
-            type="button"
           >
             {{ exporting ? '导出中...' : '导出 PDF' }}
-          </button>
+          </Button>
         </div>
 
         <!-- Stage actions -->

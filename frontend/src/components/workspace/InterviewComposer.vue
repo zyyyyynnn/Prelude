@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { ElDropdown, ElDropdownMenu, ElDropdownItem, ElInput, ElButton } from 'element-plus'
 import type { ResumeItem, PositionTemplate } from '../../api/contracts'
-import { usePopperMatchTrigger } from '../../composables/usePopperMatchTrigger'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { Loader2 } from 'lucide-vue-next'
 
 const props = defineProps<{
   isCentered: boolean
@@ -45,9 +53,6 @@ const emit = defineEmits<{
 const fileInput = ref<HTMLInputElement | null>(null)
 const showJdInput = ref(false)
 const localJdText = ref('')
-
-const resumeDropdown = usePopperMatchTrigger()
-const positionDropdown = usePopperMatchTrigger()
 
 const canStart = computed(() => !!props.selectedResumeId && !!props.selectedPositionId && !props.creating)
 const canSend = computed(() => !!props.modelValue.trim() && !props.sending)
@@ -353,15 +358,13 @@ onBeforeUnmount(() => {
       <div class="composer-input-area">
         <transition name="mode-switch" mode="out-in">
           <div class="composer-mode-text" v-if="!isVoiceMode">
-            <ElInput
+            <Textarea
               :model-value="modelValue"
-              @update:model-value="(v) => emit('update:modelValue', v)"
-              type="textarea"
+              @update:model-value="(v: string | number) => emit('update:modelValue', String(v))"
               :rows="3"
-              resize="none"
+              class="composer-textarea min-h-[80px]"
               :placeholder="activeSessionId ? '输入回答...' : '请先选择简历与岗位，然后点击「开始面试」'"
               :disabled="disabled || !activeSessionId"
-              class="composer-textarea"
               @keydown.ctrl.enter="canSend && emit('send')"
               @keydown.meta.enter="canSend && emit('send')"
             />
@@ -369,13 +372,11 @@ onBeforeUnmount(() => {
               <div v-if="!activeSessionId && showJdInput" class="composer-jd-grid">
                 <div class="composer-jd-inner">
                   <div class="composer-jd-area">
-                    <ElInput
+                    <Textarea
                       v-model="localJdText"
-                      type="textarea"
                       :rows="4"
-                      resize="none"
+                      class="jd-textarea min-h-[100px]"
                       placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
-                      class="jd-textarea"
                     />
                   </div>
                 </div>
@@ -402,18 +403,27 @@ onBeforeUnmount(() => {
           <div class="composer-toolbar">
             <template v-if="!activeSessionId">
               <!-- Resume Picker -->
-              <ElDropdown popper-class="custom-dropdown-popper" :popper-style="resumeDropdown.popperStyle.value" :ref="(el: any) => resumeDropdown.bind(el?.$el?.querySelector?.('.toolbar-item') ?? el?.$el ?? null)" @command="(v: number | string) => { if (v === 'upload') { triggerUpload() } else { emit('update:selectedResumeId', v as number) } }" trigger="click">
-                <button class="toolbar-item" type="button">
-                  <span class="toolbar-item__label">简历:</span>
-                  <span class="toolbar-item__value">{{ selectedResumeName }}</span>
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu class="custom-dropdown-menu">
-                    <ElDropdownItem v-for="r in resumes" :key="r.id" :command="r.id">{{ r.fileName }}</ElDropdownItem>
-                    <ElDropdownItem divided command="upload" class="upload-action">{{ uploading ? '上传中...' : '+ 上传 PDF' }}</ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <button class="toolbar-item" type="button">
+                    <span class="toolbar-item__label">简历:</span>
+                    <span class="toolbar-item__value">{{ selectedResumeName }}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent class="w-56" align="start">
+                  <DropdownMenuItem 
+                    v-for="r in resumes" 
+                    :key="r.id" 
+                    @click="emit('update:selectedResumeId', r.id)"
+                  >
+                    {{ r.fileName }}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem @click="triggerUpload" class="text-primary font-medium justify-center">
+                    {{ uploading ? '上传中...' : '+ 上传 PDF' }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
               <!-- Hidden File Input for Resume -->
               <input
@@ -425,17 +435,23 @@ onBeforeUnmount(() => {
               />
 
               <!-- Position Picker -->
-              <ElDropdown popper-class="custom-dropdown-popper" :popper-style="positionDropdown.popperStyle.value" :ref="(el: any) => positionDropdown.bind(el?.$el?.querySelector?.('.toolbar-item') ?? el?.$el ?? null)" @command="(v: number) => emit('update:selectedPositionId', v)" trigger="click">
-                <button class="toolbar-item" type="button">
-                  <span class="toolbar-item__label">岗位:</span>
-                  <span class="toolbar-item__value">{{ selectedPositionName }}</span>
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu class="custom-dropdown-menu">
-                    <ElDropdownItem v-for="p in positions" :key="p.id" :command="p.id">{{ p.name }}</ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <button class="toolbar-item" type="button">
+                    <span class="toolbar-item__label">岗位:</span>
+                    <span class="toolbar-item__value">{{ selectedPositionName }}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent class="w-56" align="start">
+                  <DropdownMenuItem 
+                    v-for="p in positions" 
+                    :key="p.id" 
+                    @click="emit('update:selectedPositionId', p.id)"
+                  >
+                    {{ p.name }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <!-- JD Toggle -->
               <button class="toolbar-item" type="button" @click="showJdInput = !showJdInput" :class="{ 'is-active': showJdInput }">
@@ -467,16 +483,15 @@ onBeforeUnmount(() => {
         </div>
         
         <div class="composer-actions__right">
-          <ElButton
+          <Button
             v-if="!activeSessionId"
-            type="primary"
-            class="ui-button ui-button--primary ui-button--compact composer-btn"
+            class="composer-btn"
             :disabled="!canStart"
-            :loading="creating"
             @click="emit('start', showJdInput ? localJdText : undefined)"
           >
+            <Loader2 v-if="creating" class="w-4 h-4 mr-2 animate-spin" />
             开始面试
-          </ElButton>
+          </Button>
           <template v-else>
             <template v-if="isVoiceMode">
               <button 
@@ -526,15 +541,14 @@ onBeforeUnmount(() => {
                   <line x1="8" y1="23" x2="16" y2="23"/>
                 </svg>
               </button>
-              <ElButton
-                type="primary"
-                class="ui-button ui-button--primary ui-button--compact composer-btn"
+              <Button
+                class="composer-btn"
                 :disabled="disabled || !canSend"
-                :loading="sending"
                 @click="emit('send')"
               >
+                <Loader2 v-if="sending" class="w-4 h-4 mr-2 animate-spin" />
                 发送
-              </ElButton>
+              </Button>
             </template>
           </template>
         </div>

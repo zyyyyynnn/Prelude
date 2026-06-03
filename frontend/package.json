@@ -27,21 +27,28 @@
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.76",
     "@tailwindcss/vite": "^4.3.0",
+    "@vee-validate/zod": "^4.15.1",
+    "@vueuse/core": "^14.3.0",
     "axios": "^1.12.2",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "echarts": "^6.0.0",
-    "element-plus": "^2.13.7",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-vue-next": "^1.0.0",
     "markdown-it": "^14.1.1",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.5.0",
+    "radix-vue": "^1.9.17",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "reka-ui": "^2.9.9",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
+    "vee-validate": "^4.15.1",
     "vue": "^3.5.32",
-    "vue-router": "^4.6.1"
+    "vue-router": "^4.6.1",
+    "vue-sonner": "^2.0.9",
+    "zod": "^3.25.76"
   }
 }
