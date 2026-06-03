@@ -4,11 +4,11 @@ import { useRouter } from 'vue-router'
 import { fetchPositions } from '../api/auth'
 import type { PositionTemplate, ResumeItem, InterviewMessageRecord } from '../api/contracts'
 import { startInterview, streamInterviewChat, finishInterview } from '../api/interview'
+import { getErrorMessage } from '../utils/errors'
 import { usePageNotice } from '../composables/usePageNotice'
 import { fetchResumes, uploadResume } from '../api/resume'
 import { useAuthStore } from '../stores/auth'
 import { renderMarkdown } from '../utils/markdown'
-import LlmSettingsDialog from '../components/workspace/LlmSettingsDialog.vue'
 import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
 import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
 import MessageThread from '../components/workspace/MessageThread.vue'
@@ -18,6 +18,11 @@ import { exportToPdf } from '../utils/pdf'
 const router = useRouter()
 const authStore = useAuthStore()
 const { showNotice } = usePageNotice()
+
+const emit = defineEmits<{ 
+  // 该事件会向上冒泡，最终由 App.vue 的 handleOpenSettings 接管处理
+  (e: 'open-global-settings', tab?: 'profile' | 'llm'): void 
+}>()
 
 const {
   sessions,
@@ -40,7 +45,6 @@ const finishing = ref(false)
 const showingReport = ref(false)
 const streamTimeoutId = ref<ReturnType<typeof setTimeout> | null>(null)
 const reconnectingStatus = ref('')
-const showLlmSettings = ref(false)
 
 const resumes = ref<ResumeItem[]>([])
 const positions = ref<PositionTemplate[]>([])
@@ -62,10 +66,6 @@ const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summa
 const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || replay.value?.summaryReport || ''))
 
 
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : '请求失败'
-}
 
 function setResumeDefaults(items: ResumeItem[]) {
   if (!selectedResumeId.value || !items.some((item) => item.id === selectedResumeId.value)) {
@@ -694,7 +694,7 @@ onBeforeUnmount(() => {
           @upload="handleUpload"
           @start="createNewInterview"
           @send="handleSend"
-          @open-llm-settings="showLlmSettings = true"
+          @open-global-settings="(tab) => emit('open-global-settings', tab)"
         />
       </div>
     </div>
@@ -769,7 +769,7 @@ onBeforeUnmount(() => {
               @voice-start-recording="handleStartRecording"
               @voice-stop-recording="handleStopRecording"
               @voice-play-status="handlePlayStatus"
-              @open-llm-settings="showLlmSettings = true"
+              @open-global-settings="(tab) => emit('open-global-settings', tab)"
             />
           </div>
         </template>
@@ -780,7 +780,6 @@ onBeforeUnmount(() => {
       加载中...
     </div>
   </div>
-  <LlmSettingsDialog v-model:visible="showLlmSettings" />
 </template>
 
 <style scoped>

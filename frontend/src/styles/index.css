@@ -530,10 +530,6 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.field-grid,
-.detail-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 
 .insight-card,
 .detail-card {
@@ -708,19 +704,16 @@ a {
   min-height: 108px;
 }
 
-.form-grid,
-.field-stack {
-  display: grid;
-  gap: 18px;
-}
 
 .form-grid .el-form-item {
   margin-bottom: 0;
 }
 
-.form-grid .el-form-item__label {
+.form-grid.el-form .el-form-item__label {
   padding-bottom: 8px;
-  color: var(--color-text-secondary);
+  font-family: var(--font-serif) !important;
+  font-weight: 500 !important;
+  color: var(--color-text-primary) !important;
   font-size: 15px;
   line-height: 1.4;
 }
@@ -1901,7 +1894,7 @@ a {
 .form-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 .detail-card {
   padding: var(--spacing-sm);

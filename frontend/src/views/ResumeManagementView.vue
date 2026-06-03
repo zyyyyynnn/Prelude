@@ -2,6 +2,7 @@
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { ElButton, ElCard, ElEmpty, ElMessageBox, ElTag } from 'element-plus'
 import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
+import { getErrorMessage } from '../utils/errors'
 import axios from 'axios'
 import type { ResumeItem } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
@@ -15,10 +16,6 @@ const items = ref<ResumeItem[]>([])
 const uploadAbortController = ref<AbortController | null>(null)
 
 const inUseCount = computed(() => items.value.filter((item) => item.inUse).length)
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : '请求失败'
-}
 
 async function loadResumes() {
   loading.value = true

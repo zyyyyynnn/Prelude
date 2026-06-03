@@ -6,6 +6,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElCard, ElEmpty, ElTag } from 'element-plus'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
+import { getErrorMessage } from '../utils/errors'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint, AnalyticsWeaknessItem } from '../api/contracts'
 import { usePageNotice } from '../composables/usePageNotice'
 
@@ -47,10 +48,6 @@ function hexToRgba(color: string, alpha: number) {
   const green = Number.parseInt(normalized.slice(2, 4), 16)
   const blue = Number.parseInt(normalized.slice(4, 6), 16)
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`
-}
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : '请求失败'
 }
 
 function weaknessDetails(item: AnalyticsWeaknessItem) {

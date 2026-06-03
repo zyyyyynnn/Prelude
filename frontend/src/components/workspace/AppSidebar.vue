@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
 import { useInterviewWorkspace } from '../../composables/useInterviewWorkspace'
 import BrandMetaballs from '../BrandMetaballs.vue'
 import { ElMessageBox } from 'element-plus'
@@ -13,12 +12,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:collapsed', value: boolean): void
-  (e: 'open-llm-settings'): void
+  (e: 'open-global-settings'): void
 }>()
 
 const route = useRoute()
 const router = useRouter()
-const authStore = useAuthStore()
 const { showNotice } = usePageNotice()
 const {
   activeSessionId,
@@ -57,7 +55,6 @@ async function confirmDelete(sessionId: number, targetPosition?: string) {
 const interviewMenuActive = computed(() => route.path === '/interview')
 const resumesMenuActive = computed(() => route.path === '/resumes')
 const analyticsMenuActive = computed(() => route.path === '/analytics')
-const settingsMenuActive = computed(() => route.path.startsWith('/settings'))
 
 function toggleCollapse() {
   emit('update:collapsed', !props.collapsed)
@@ -83,10 +80,6 @@ function navigateTo(path: string) {
   }
 }
 
-function logout() {
-  authStore.clearSession()
-  void router.replace('/login')
-}
 </script>
 
 <template>
@@ -242,33 +235,18 @@ function logout() {
     </div>
 
     <div class="app-sidebar__footer">
-      <div class="settings-menu-wrapper">
-        <button
-          :class="['app-sidebar__btn app-sidebar__btn--settings', { 'is-active': settingsMenuActive }]"
-          aria-label="设置"
-          title="设置"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
-            <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          <span class="sidebar-label">设置</span>
-        </button>
-        <div class="settings-dropdown">
-          <button class="settings-dropdown__item" @click="emit('open-llm-settings')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-            LLM 配置
-          </button>
-          <RouterLink to="/settings/profile" class="settings-dropdown__item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            用户设置
-          </RouterLink>
-          <button @click="logout" class="settings-dropdown__item settings-dropdown__item--danger">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            退出登录
-          </button>
-        </div>
-      </div>
+      <button
+        class="app-sidebar__btn app-sidebar__btn--settings"
+        @click="emit('open-global-settings')"
+        aria-label="设置"
+        title="设置"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
+          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="sidebar-label">设置</span>
+      </button>
     </div>
   </aside>
 </template>
@@ -524,73 +502,6 @@ function logout() {
 .app-sidebar__footer {
   padding: var(--spacing-sm);
   border-top: 1px solid var(--color-border);
-}
-.settings-menu-wrapper {
-  position: relative;
-}
-.settings-dropdown {
-  position: absolute;
-  bottom: 0;
-  left: 100%;
-  width: auto;
-  min-width: 180px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm);
-  margin-left: var(--spacing-sm);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  z-index: 200;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateX(-10px);
-  transition: all 0.2s;
-}
-.settings-menu-wrapper:hover .settings-dropdown,
-.settings-menu-wrapper:focus-within .settings-dropdown {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(0);
-}
-.settings-dropdown__item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  width: 100%;
-  height: var(--ui-height-md);
-  padding: 0 var(--spacing-sm);
-  border: none;
-  background: transparent;
-  color: var(--color-text-primary);
-  font-family: var(--font-serif);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background-color 0.2s;
-  text-decoration: none;
-  text-align: left;
-}
-.settings-dropdown__item:hover {
-  background-color: var(--color-surface-hover);
-}
-.settings-dropdown__item:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
-}
-.settings-dropdown__divider {
-  height: 1px;
-  background-color: var(--color-border);
-  margin: 4px 0;
-}
-.settings-dropdown__item--danger {
-  color: var(--color-error);
-}
-.settings-dropdown__item--danger:hover {
-  background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
 }
 
 .session-item-wrapper {

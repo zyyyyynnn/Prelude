@@ -35,18 +35,7 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
-    {
-      path: '/settings/llm',
-      redirect: '/',
-    },
-    {
-      path: '/settings/profile',
-      name: 'profile-settings',
-      component: () => import('../views/ProfileSettingsView.vue'),
-      meta: {
-        requiresAuth: true,
-      },
-    },
+
     {
       path: '/analytics',
       name: 'analytics',
