@@ -351,43 +351,49 @@ onBeforeUnmount(() => {
     <div class="interview-composer__inner">
       <!-- Input Area / Voice Wave Area -->
       <div class="composer-input-area">
-        <template v-if="!isVoiceMode">
-          <ElInput
-            :model-value="modelValue"
-            @update:model-value="(v) => emit('update:modelValue', v)"
-            type="textarea"
-            :rows="3"
-            resize="none"
-            :placeholder="activeSessionId ? '输入回答...' : '请先选择简历与岗位，然后点击「开始面试」'"
-            :disabled="disabled || !activeSessionId"
-            class="composer-textarea"
-            @keydown.ctrl.enter="canSend && emit('send')"
-            @keydown.meta.enter="canSend && emit('send')"
-          />
-          <transition name="slide-fade">
-            <div v-if="!activeSessionId && showJdInput" class="composer-jd-area">
-              <ElInput
-                v-model="localJdText"
-                type="textarea"
-                :rows="4"
-                resize="none"
-                placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
-                class="jd-textarea"
-              />
-            </div>
-          </transition>
-        </template>
-        <template v-else>
-          <div class="composer-voice-area">
-            <div class="voice-status-container">
-              <span class="status-indicator" :class="voiceStatus" />
-              <span class="status-text">{{ displayStatus }}</span>
-            </div>
-            <div class="voice-wave-container">
-              <canvas ref="canvasRef" width="300" height="60" class="voice-canvas" />
+        <transition name="mode-switch" mode="out-in">
+          <div class="composer-mode-text" v-if="!isVoiceMode">
+            <ElInput
+              :model-value="modelValue"
+              @update:model-value="(v) => emit('update:modelValue', v)"
+              type="textarea"
+              :rows="3"
+              resize="none"
+              :placeholder="activeSessionId ? '输入回答...' : '请先选择简历与岗位，然后点击「开始面试」'"
+              :disabled="disabled || !activeSessionId"
+              class="composer-textarea"
+              @keydown.ctrl.enter="canSend && emit('send')"
+              @keydown.meta.enter="canSend && emit('send')"
+            />
+            <transition name="jd-expand">
+              <div v-if="!activeSessionId && showJdInput" class="composer-jd-grid">
+                <div class="composer-jd-inner">
+                  <div class="composer-jd-area">
+                    <ElInput
+                      v-model="localJdText"
+                      type="textarea"
+                      :rows="4"
+                      resize="none"
+                      placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
+                      class="jd-textarea"
+                    />
+                  </div>
+                </div>
+              </div>
+            </transition>
+          </div>
+          <div class="composer-mode-voice" v-else>
+            <div class="composer-voice-area">
+              <div class="voice-status-container">
+                <span class="status-indicator" :class="voiceStatus" />
+                <span class="status-text">{{ displayStatus }}</span>
+              </div>
+              <div class="voice-wave-container">
+                <canvas ref="canvasRef" width="300" height="60" class="voice-canvas" />
+              </div>
             </div>
           </div>
-        </template>
+        </transition>
       </div>
 
       <!-- Actions Toolbar -->
@@ -795,21 +801,34 @@ onBeforeUnmount(() => {
   color: var(--color-brand);
 }
 
-/* Slide-fade transition (smooth height expand/collapse) */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: opacity 0.2s ease, max-height 0.2s ease, transform 0.2s ease;
-  overflow: hidden;
+/* JD Grid expand/collapse transition */
+.composer-jd-grid {
+  display: grid;
+  grid-template-rows: 1fr;
 }
-.slide-fade-enter-from,
-.slide-fade-leave-to {
+.jd-expand-enter-active,
+.jd-expand-leave-active {
+  transition: grid-template-rows 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+.jd-expand-enter-from,
+.jd-expand-leave-to {
+  grid-template-rows: 0fr;
   opacity: 0;
-  max-height: 0;
   transform: translateY(-8px);
 }
-.slide-fade-enter-to,
-.slide-fade-leave-from {
-  max-height: 200px;
+.composer-jd-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Mode switch transition (Text <-> Voice) */
+.mode-switch-enter-active,
+.mode-switch-leave-active {
+  transition: opacity 0.15s ease;
+}
+.mode-switch-enter-from,
+.mode-switch-leave-to {
+  opacity: 0;
 }
 
 @keyframes pulse {
