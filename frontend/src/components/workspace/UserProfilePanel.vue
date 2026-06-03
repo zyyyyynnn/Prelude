@@ -87,7 +87,7 @@ onMounted(() => {
 
 <template>
   <div class="panel-content-wrapper">
-    <form class="flex flex-col gap-6" @submit.prevent>
+    <form class="flex flex-col gap-lg" @submit.prevent>
       <div class="field-grid">
         <div class="flex flex-col gap-2">
           <Label>用户名</Label>

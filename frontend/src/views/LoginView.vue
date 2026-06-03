@@ -139,7 +139,7 @@ onMounted(() => {
             </button>
           </div>
 
-          <form class="flex flex-col gap-6 w-full" @submit.prevent="submitAuth">
+          <form class="flex flex-col gap-lg w-full" @submit.prevent="submitAuth">
             <FormField name="username" v-slot="{ componentField }">
               <FormItem class="flex flex-col gap-2">
                 <FormLabel>用户名</FormLabel>

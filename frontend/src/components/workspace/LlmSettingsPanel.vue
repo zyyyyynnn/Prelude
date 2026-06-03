@@ -57,7 +57,7 @@ onMounted(() => {
 
 <template>
   <div class="panel-content-wrapper">
-    <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
+    <form class="flex flex-col gap-lg" @submit.prevent="onSubmit">
 
       <div class="field-grid">
         <FormField name="providerKey" v-slot="{ componentField }">
