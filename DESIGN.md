@@ -24,12 +24,18 @@
 | `--color-surface` | `#faf9f5` | 标准表面 |
 | `--color-surface-hover` | `color-mix(#2C2A29 4%, surface)` | Hover 态背景 |
 | `--color-surface-muted` | `color-mix(#2C2A29 8%, surface)` | Active 态、次级按钮底色 |
+| `--color-sand` | `#e8e6dc` | 弱底色填充（如 Badge） |
 | `--color-border` | `#f0eee6` | 标准边框色 |
 | `--color-border-warm` | `#e8e6dc` | 暖灰次级边框色 |
 | `--color-ring` | `#d1cfc5` | 焦点/选中环 |
 | `--color-ring-deep` | `#c2c0b6` | 深环色 |
+| `--color-line-decor` | `#c8c6be` | 装饰线（如登录卡片外框）|
 | `--color-error` | `#b53333` | 错误/告警 |
-| `--color-focus` | `#3898ec` | 键盘焦点环 |
+| `--color-focus` | `#b39b8d` | 键盘/输入框焦点环（暖色） |
+| `--color-bg` | `#f5f4ed` | 页面全局背景（纸感暖灰） |
+| `--color-text-button` | `#4d4c48` | 按钮默认文字色 |
+| `--color-coral` | `#b08878` | 暖色警告/强调（映射 Element Plus warning） |
+| `--color-line-decor-light` | `#dddbd3` | 浅装饰线（如 SVG 描边） |
 
 ### 2.2 Spacing Token
 
