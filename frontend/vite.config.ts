@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -8,7 +10,12 @@ export default defineConfig(({ mode }) => {
   const host = env.VITE_HOST || '127.0.0.1'
 
   return {
-    plugins: [vue()],
+    plugins: [vue(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url))
+      }
+    },
     build: {
       chunkSizeWarningLimit: 520,
       rollupOptions: {
