@@ -1,14 +1,20 @@
 # UI 设计规范
 
 > 当前版本基线。只保留已落地且需要继续遵守的规则。
+>
+> 最后更新：2026-06-04 · 技术栈：Vue 3 + shadcn-vue + Tailwind CSS v4 + reka-ui
+
+---
 
 ## 1. 设计原则
 
-- 暖色调纸感：背景 `#f5f4ed` / 表面 `#faf9f5`，禁止纯白页面背景
-- 主色体系：`#9e7b6a` 及其低饱和暖灰派生色，禁止冷色 SaaS 风和高饱和强调色
-- 轻量动效：只保留 opacity / transform / background-color 过渡，禁止夸张缩放和弹簧动效
-- Token 驱动：间距、高度、颜色全部使用 CSS 变量，禁止硬编码 px / hex / white / black
-- 组件一致性：同一视觉层级的卡片必须统一内边距、标题区高度、Badge 尺寸和按钮尺寸
+- **暖色调纸感**：背景 `#f5f4ed` / 表面 `#faf9f5`，禁止纯白页面背景
+- **主色体系**：`#9e7b6a` 及其低饱和暖灰派生色，禁止冷色 SaaS 风和高饱和强调色
+- **GPU 动效**：只允许过渡 `opacity` 和 `transform`，禁止对 Layout 属性（`height`、`width`、`max-height`、`grid-template-rows`）执行动画
+- **Token 驱动**：间距、高度、颜色全部使用 CSS 变量，禁止硬编码 `px` / `hex` / `white` / `black`
+- **组件一致性**：同一视觉层级的卡片必须统一内边距、标题区高度、Badge 尺寸和按钮尺寸
+
+---
 
 ## 2. 色彩与 Token 体系
 
@@ -29,12 +35,12 @@
 | `--color-border-warm` | `#e8e6dc` | 暖灰次级边框色 |
 | `--color-ring` | `#d1cfc5` | 焦点/选中环 |
 | `--color-ring-deep` | `#c2c0b6` | 深环色 |
-| `--color-line-decor` | `#c8c6be` | 装饰线（如登录卡片外框）|
+| `--color-line-decor` | `#c8c6be` | 装饰线（如登录卡片外框） |
 | `--color-error` | `#b53333` | 错误/告警 |
 | `--color-focus` | `#b39b8d` | 键盘/输入框焦点环（暖色） |
 | `--color-bg` | `#f5f4ed` | 页面全局背景（纸感暖灰） |
 | `--color-text-button` | `#4d4c48` | 按钮默认文字色 |
-| `--color-coral` | `#b08878` | 暖色警告/强调（映射 Element Plus warning） |
+| `--color-coral` | `#b08878` | 暖色警告/强调 |
 | `--color-line-decor-light` | `#dddbd3` | 浅装饰线（如 SVG 描边） |
 
 ### 2.2 Spacing Token
@@ -52,26 +58,62 @@
 
 ### 2.3 Height Token
 
-所有组件高度必须使用以下变量，禁止硬编码 `px`：
+所有组件高度必须使用以下变量或 Tailwind 等价值，禁止硬编码 `px`：
 
 | Token | 值 | 用途 |
 |-------|-----|------|
-| `--ui-height-base` | 42px | 标准按钮 |
-| `--ui-height-md` | 36px | 侧边栏按钮/会话项/菜单项统一高度 |
-| `--ui-height-sm` | 34px | 紧凑按钮、输入框、下拉框 wrapper |
+| `--ui-height-base` | 34px | shadcn 标准交互组件（Button/Input/SelectTrigger/SelectItem/DropdownMenuItem） |
+| `--ui-height-md` | 34px | 侧边栏按钮/会话项/菜单项统一高度 |
+| `--ui-height-sm` | 34px | 紧凑场景（与 base 统一） |
 | `--header-height` | 72px | 工作区页头 |
 | `--composer-height` | 260px | 底部输入框占位高度 |
-| `h-10` | 40px | 新增基准声明，作为所有核心交互组件（Button/Input/SelectTrigger/MenuItem）的不可动摇的统一高度 |
+
+> **shadcn 按钮尺寸变体**（`buttonVariants`）全部锚定 `h-[34px]`：`default`、`sm`、`icon`、`icon-sm` 均为 34px。`lg` 为 `h-11`(44px)，`icon-lg` 为 `size-11`(44px)，仅用于特殊大号场景。
+
+### 2.4 Z-Index 分层
+
+| 层级 | z-index | 用途 |
+|------|---------|------|
+| Dialog Overlay + Content | `z-[101]` | 模态弹窗本体 |
+| Dropdown / Select / Popover | `z-[105]` | 浮动层，必须高于 Dialog |
+| Tooltip | `z-[110]` | 最顶层提示气泡 |
+
+> shadcn 基础组件默认 `z-50` 不够。业务层通过 class 覆盖为上述标准值。
+
+### 2.5 圆角 Token
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--radius-sm` | 6px | 小圆角（Badge、内部元素） |
+| `--radius-md` | 8px | 标准圆角（Button、Input、Select） |
+| `--radius-lg` | 12px | 大圆角（卡片内部区块） |
+| `--radius-xl` | 16px | 卡片圆角 |
+| `--radius-2xl` | 24px | 特大圆角 |
+
+### 2.6 阴影 Token
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--shadow-ring` | `0 0 0 1px var(--color-ring)` | 轻量轮廓阴影 |
+| `--shadow-ring-deep` | `0 0 0 1px var(--color-ring-deep)` | 深轮廓阴影 |
+| `--shadow-whisper` | `0 4px 24px rgba(0,0,0,0.05)` | 微弱悬浮阴影 |
+| `--shadow-inset` | `inset 0 0 0 1px rgba(0,0,0,0.15)` | 内凹轮廓 |
+| `--shadow-modal` | `0 8px 32px rgba(0,0,0,0.12)` | 弹窗阴影 |
+| `--mask-overlay` | `rgba(20, 19, 19, 0.38)` | 遮罩层背景 |
+
+---
 
 ## 3. 字体层级
 
 | 角色 | 字体 | 约束 |
-| --- | --- | --- |
-| 页面标题 / 卡片标题 / 表单 Label | `--font-serif` | 字重不超过 500 |
-| 正文 / 按钮 / 菜单 | `--font-sans` | 保持 15-20px，行高不低于 1.4 |
-| 代码 / 技术片段 | `--font-mono` | 仅用于代码或接口片段 |
+|------|------|------|
+| 页面标题 / 卡片标题 / 表单 Label | `--font-serif`（Lora） | 字重不超过 500 |
+| 正文 / 按钮 / 菜单 | `--font-sans`（Inter） | 保持 14-15px，行高不低于 1.4 |
+| 代码 / 技术片段 | `--font-mono`（JetBrains Mono） | 仅用于代码或接口片段 |
 
-禁止在输入框、Badge 中使用 serif 字体。品牌主操作按钮（如"开始新面试"）可使用 serif 以强化品牌调性，字重不超过 500。
+**全局字体重置**：`index.css` 中 `body, button, input, select, textarea` 统一设 `font-family: var(--font-sans)`。品牌主操作按钮（如"开始新面试"）可使用 `!font-serif` 强制覆盖以强化品牌调性。
+
+---
 
 ## 4. 布局与导航
 
@@ -83,8 +125,8 @@
 
 ### 4.2 侧边栏
 
-- 展开宽度 260px，折叠态 52px（`calc(var(--ui-height-md) + var(--spacing-sm) * 2)`）
-- 所有组件高度统一 `var(--ui-height-md)` (36px)
+- 展开宽度 260px，折叠态 50px（`calc(var(--ui-height-md) + var(--spacing-sm) * 2)` = `34 + 8*2`）
+- 所有组件高度统一 `var(--ui-height-md)` (34px)
 - 间距全面复用 `var(--spacing-sm)` (8px)
 - 折叠态数学模型：`padding: 0 var(--spacing-sm); margin: 0; justify-content: flex-start;`，严禁 `auto` 或 `center`
 - 滚动条继承全局 `.scrollable`，禁止在 scoped CSS 中重复定义 `::-webkit-scrollbar`
@@ -99,87 +141,148 @@
 - `.workspace-page`、`.workspace-header`、`.workspace-page__content`、`.page-grid`、`.detail-grid`、`.field-grid`、`.detail-card`、`.button-row` 全部定义在 `index.css`，禁止在 Vue scoped 样式中重复定义
 - `.workspace-header` 和 `.workspace-page__content` 水平 padding 统一 `var(--spacing-2xl)` (40px)
 
+---
+
 ## 5. 组件规范
 
 ### 5.1 卡片与面板
 
 - 页面级说明只保留一条必要说明；卡片内不重复解释页面结构
-- `.panel .el-card__body` 使用 `gap: var(--spacing-md); padding: var(--spacing-md)`，禁止 `--spacing-lg`
-- `.panel__head` 无 `min-height`，通过 `padding: var(--spacing-md) 0` 自然撑开
-- `.panel__title` 字号 20px，行高 1.4；`.panel__title--small` 字号 18px
-- `.panel__lead` 字号 13px，颜色 `var(--color-text-tertiary)`
-- 嵌套 `.detail-card` 使用 `padding: var(--spacing-sm)` (8px)
-- `.form-grid` 使用 `gap: var(--spacing-sm)` (8px)
-- `.button-row` 使用 `margin-top: var(--spacing-md)` (16px)
+- 面板使用 `gap: var(--spacing-md); padding: var(--spacing-md)`
+- 面板标题字号 20px，行高 1.4；小标题字号 18px
+- 辅助文字字号 13px，颜色 `var(--color-text-tertiary)`
+- 嵌套卡片使用 `padding: var(--spacing-sm)` (8px)
+- 表单网格使用 `gap: var(--spacing-sm)` (8px)
+- 按钮行使用 `margin-top: var(--spacing-md)` (16px)
 
 ### 5.2 按钮与 Badge
 
 - 主操作只放在所属模块内，禁止跨模块按钮散落
 - Badge 使用浅沙底、暖灰文字、小圆角胶囊
-- 所有按钮禁止使用 Element Plus `size` 属性，统一 `.ui-button--compact`
+- shadcn `<Button>` 尺寸变体：`default`(34px)、`sm`(34px)、`icon`(34px)、`icon-sm`(34px)、`lg`(44px)、`icon-lg`(44px)
 - 按钮 Hover 态只允许加深 `background-color`，严禁改变 `border-color` 或增加 `box-shadow`
 
 ### 5.3 表单与输入
 
-- 输入框使用浅表面背景、暖灰边框和 8px 以上圆角
-- 所有 `ElSelect` 和 `ElInput` 禁止使用 `size` 属性，高度由 `--ui-height-sm` 控制
+- `<Input>`、`<SelectTrigger>` 标准高度 `h-[34px]`，padding `px-3 py-1.5`
+- `<SelectItem>` 标准高度 `h-[34px]`，padding `pl-8 pr-2`
+- `<DropdownMenuItem>` 标准高度 `h-[34px]`，padding `px-2`
 - 文件上传使用封装上传行，禁止暴露原生 file input
 
-### 5.4 下拉弹层重写
+### 5.4 下拉弹层（shadcn-vue）
 
-- Content Z-index 必须为 `z-[105]`（碾压 Dialog 的 101）。
-- Content 禁止裸写 `border`，必须配对 `border-border` 防止 currentColor 纯黑回退。
-- Content 取消 `p-1` 内边距，使用 Viewport 变量实现 100% 宽度等比对齐。
-- Menu Items 必须强制加上 `h-10` 和 `rounded-md`，严禁悬浮时出现贴边直角。
+- Content z-index 必须为 `z-[105]`（碾压 Dialog 的 `z-[101]`）
+- Content 禁止裸写 `border`，必须配对 `border-border` 防止 Tailwind v4 `currentColor` 纯黑回退
+- Content 取消 `p-1` 内边距，使用 Viewport 变量实现宽度等比对齐
+- Menu Items 必须强制加上 `h-[34px]` 和 `rounded-md`，严禁悬浮时出现贴边直角
 - 菜单项文本过长时 ellipsis 截断
 
-### 5.5 通知
+### 5.5 Tooltip
+
+- 禁止使用 HTML 原生 `title` 属性，统一使用 shadcn `<Tooltip>` 组件
+- `<TooltipContent>` z-index 必须为 `z-[110]`
+- `<TooltipContent>` 必须配对 `border-border`（同 5.4 规则）
+- 侧边栏 Tooltip 使用 `side="right"` + `:side-offset="8"`，仅在折叠态通过 `v-if="collapsed"` 启用
+- 底栏 Tooltip 使用 `side="top"` + `:side-offset="8"`
+
+### 5.6 通知
 
 - 所有页面级通知统一使用 `usePageNotice`
-- 禁止直接调用 `ElMessage`，避免样式不统一
+- 禁止直接调用 ElMessage，避免样式不统一
 
-## 6. 交互规范
+---
 
-### 6.1 动效与过渡
+## 6. 动效规范（黄金法则）
 
-- 过渡时长统一 0.14s - 0.2s ease，仅用于 `opacity`、`transform`、`background-color`
-- 禁止为了视觉刺激滥用缩放或弹簧物理动效
-- 禁止 `height: auto` 参与过渡动画（不可补间），改用 `max-height` 技巧
+### 6.1 核心动效基准
 
-### 6.2 滚动策略
+| 维度 | 标准值 | 说明 |
+|------|--------|------|
+| 时长 | `300ms`（`duration-300`） | 全局统一，禁止 150ms/200ms/500ms |
+| 曲线 | `ease-in-out` | 全局统一，禁止 `ease`/`ease-out`/`ease-in`/`ease-linear` |
+| 允许过渡的属性 | 仅 `opacity` 和 `transform` | 绝对封杀 `height`/`max-height`/`width`/`grid-template-rows` 等 Layout 属性 |
+| 入场隐喻 | `opacity: 0→1` + `translateY(4px→0)` | 从下方 4px 柔和浮入 |
+| 离场隐喻 | `opacity: 1→0` + `translateY(0→-4px)` | 向上方 4px 柔和淡出 |
 
-- 在有动态展开内容的页面，默认维持 `scrollbar-gutter: stable` 占位
+### 6.2 mode-switch 标准（唯一锚点）
 
-### 6.3 对话与报告
+所有动画必须与此对齐：
 
-- `system` 消息作为系统说明块，`user` 靠右，`assistant` 靠左
-- Markdown 报告使用卡片化阅读面板，禁止纯 `<pre>`
-- 聊天气泡 `max-width: min(80%, 760px)`
-- 消息列表首次挂载和会话切换时自动滚动到底部
+```css
+/* 语音/文字切换 — 全站动效唯一锚点 */
+.mode-switch-enter-active,
+.mode-switch-leave-active {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+.mode-switch-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.mode-switch-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+```
 
-### 6.4 图表
+### 6.3 各组件动效参数
 
-- 图表必须放在标准卡片内
-- 图表色彩读取现有暖灰/品牌 token，不新增高饱和彩色主题
-- 无数据时显示空态，不渲染空图
+| 组件 | 时长 | 曲线 | 过渡属性 | GPU 安全 |
+|------|------|------|----------|----------|
+| 侧边栏宽度 | 300ms | ease-in-out | `width`（Layout 属性，已有 `will-change: width` + `translateZ(0)` 优化） | 🟡 已优化 |
+| 侧边栏标签淡入淡出 | 300ms | ease-in-out | `opacity` | ✅ |
+| 侧边栏折叠态图标 | 300ms | ease-in-out | `opacity, max-height`（`max-height` 为 Layout 属性） | 🟡 待优化 |
+| JD 面板 | 300ms | ease-in-out | `opacity, transform` | ✅ |
+| 语音/文字切换 | 300ms | ease-in-out | `opacity, transform` | ✅ |
+| 语音按钮按下 | 150ms | ease-out | `transform`（快速响应） | ✅ 特例 |
+| 语音按钮释放 | 300ms | ease-in-out | `transform` | ✅ |
+| Dialog Overlay | 300ms | ease-in-out | `opacity`（keyframes） | ✅ |
+| Dialog Content | 300ms | ease-in-out | `opacity, transform`（keyframes，`translateY(4px)` 微浮动） | ✅ |
+| Tooltip | 300ms | ease-in-out | `opacity, transform` | ✅ |
+| Dropdown/Select | 300ms | ease-in-out | `opacity, transform` | ✅ |
+
+### 6.4 动效禁区
+
+- 禁止 `transition: all` — 必须精确声明过渡属性（如 `transition: background-color 0.3s ease-in-out`）
+- 禁止对 `height`、`max-height`、`width`、`grid-template-rows` 执行过渡动画（除侧边栏宽度外）
+- 禁止 `zoom-in-95` / `zoom-out-95` 等缩放形变
+- 禁止 `slide-in-from-top-[48%]` 等大幅位移
+- 禁止 `height: auto` 参与过渡动画（不可补间）
+
+---
 
 ## 7. 可访问性
 
 - `--color-text-tertiary` 对比度必须满足 WCAG AA 4.5:1
 - 所有交互元素必须定义 `focus-visible` 样式
+- 所有 `<button>` 必须有 `aria-label`（无可见文字时）
+
+---
 
 ## 8. 禁止项
 
-- 禁止新增页面级跨路由按钮
-- 禁止冷色 SaaS 风、深色终端风和高饱和强调色
-- 禁止为一次性页面效果增加新设计体系
-- 禁止交互元素缺少 `focus-visible` 样式
+### 8.1 色彩与边框
+
 - 禁止在 Vue scoped CSS 中使用原生 `white`、`black`、`#hex` 颜色值
 - 禁止使用 `color-mix(in srgb, ... black)` 混入纯黑制造背景加深
+- 🔴 禁止裸写 `border` 而不指定颜色 — Tailwind v4 的 `border` 不设 `border-color`，会回退 `currentColor`（纯黑）。必须配对 `border-border` 或 `border-transparent`
 - 禁止使用 `--color-sand` 作为 hover 背景色，统一使用 `--color-surface-hover`
+
+### 8.2 动效
+
+- 禁止 `transition: all` — 必须精确声明属性
+- 🔴 禁止 `shadow-none` 与 `focus:ring-*` 共存 — `shadow-none` 清零整个 `box-shadow`，导致焦点环失效
+- 🔴 禁止写全局的 `[data-state="open"] { outline: none !important }` 粗暴覆盖
+- 禁止为了视觉刺激滥用缩放或弹簧物理动效
+
+### 8.3 布局
+
 - 禁止侧边栏折叠态使用 `justify-content: center` 或 `margin: auto`
 - 禁止在侧边栏 scoped CSS 中定义 `::-webkit-scrollbar`
-- 🔴 禁止裸写 border 而不指定颜色（防黑框）。
-- 🔴 禁止在 Focus 环清理时滥用 shadow-none 导致原生 outline 逃逸。
-- 🔴 禁止写全局的 [data-state="open"] 粗暴覆盖。
-- 🔴 禁止在文档流中使用弹层导致父容器抖动，必须使用 absolute inset-0 z-10 进行 Z 轴覆盖。
+- 🔴 禁止在文档流中使用弹层导致父容器抖动 — 覆盖层必须使用 `absolute` + `z-10` 进行 Z 轴覆盖
+- 禁止交互元素缺少 `focus-visible` 样式
+
+### 8.4 组件选型
+
+- 禁止使用原生 `title` 属性替代 Tooltip
+- 禁止使用 `<DropdownMenu>` 作为表单值选择器 — 表单场景统一用 `<Select>`
+- 禁止使用 Element Plus 的 `size` 属性控制按钮/输入框尺寸

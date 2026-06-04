@@ -259,6 +259,7 @@ function navigateTo(path: string) {
   height: 100vh;
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
+  overflow-x: hidden;
   transition: width 0.3s ease-in-out;
   will-change: width;
   transform: translateZ(0); /* 强制开启 GPU 加速，消除卡顿 */
@@ -411,7 +412,7 @@ function navigateTo(path: string) {
 .app-sidebar__sessions {
   flex: 1;
   min-height: 0;
-  width: 260px;
+  width: calc(260px - var(--spacing-sm) * 2); /* 244px */
   flex-shrink: 0;
   contain: strict; /* 绝对封锁：告诉浏览器内部元素完全独立，不再参与外层 Layout 挤压计算 */
   transform: translateZ(0); /* 提升渲染层 */
@@ -476,7 +477,7 @@ function navigateTo(path: string) {
   color: var(--color-text-primary);
 }
 .session-item-btn.is-active {
-  background-color: var(--color-surface-hover);
+  background-color: var(--color-surface-muted);
   color: var(--color-brand);
   font-weight: 500;
 }
