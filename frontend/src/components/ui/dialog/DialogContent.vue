@@ -95,4 +95,8 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     transform: translate(-50%, calc(-50% - 4px));
   }
 }
+/* 允许调用方通过 .dialog-no-close 隐藏默认关闭按钮 */
+.dialog-no-close > button.absolute.right-4.top-4 {
+  display: none;
+}
 </style>

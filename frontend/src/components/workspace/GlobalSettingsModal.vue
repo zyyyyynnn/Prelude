@@ -26,7 +26,7 @@ function handleLogout() {
 <template>
   <Dialog v-model:open="visible">
     <DialogContent
-      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-surface border-none"
+      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-surface border-none dialog-no-close"
     >
       <DialogHeader class="hidden">
         <DialogTitle>全局设置</DialogTitle>
@@ -101,10 +101,6 @@ function handleLogout() {
 </template>
 
 <style scoped>
-/* 隐藏 DialogContent 默认的 ✕ 关闭按钮 */
-:deep(button.absolute.right-4.top-4) {
-  display: none;
-}
 /* 双栏布局 */
 .settings-layout {
   display: flex;
