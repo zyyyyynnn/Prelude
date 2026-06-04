@@ -259,7 +259,7 @@ function navigateTo(path: string) {
   height: 100vh;
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s ease-in-out;
   will-change: width;
   transform: translateZ(0); /* 强制开启 GPU 加速，消除卡顿 */
   backface-visibility: hidden; /* 消除某些浏览器在动画期间的字体模糊闪烁 */
@@ -317,7 +317,7 @@ function navigateTo(path: string) {
 .sidebar-label {
   white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.25s ease-in-out, width 0.25s ease-in-out;
+  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
   display: inline-block;
   overflow: hidden;
   transform: translateZ(0);
@@ -370,7 +370,7 @@ function navigateTo(path: string) {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease-in-out;
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -568,7 +568,7 @@ function navigateTo(path: string) {
 /* 侧边栏折叠过度 */
 .sidebar-fade-enter-active,
 .sidebar-fade-leave-active {
-  transition: opacity 0.25s ease-in-out;
+  transition: opacity 0.3s ease-in-out;
 }
 .sidebar-fade-enter-from,
 .sidebar-fade-leave-to {
