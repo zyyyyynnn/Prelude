@@ -74,7 +74,6 @@
 }
 
 
-
 :root {
   --font-serif: 'Lora', 'Noto Serif SC', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
@@ -159,65 +158,7 @@
   --header-height: 72px;
   --composer-height: 260px;
 
-  --el-color-primary: #9e7b6a;
-  --el-color-success: var(--color-brand);
-  --el-color-warning: var(--color-coral);
-  --el-color-danger: var(--color-error);
-  --el-color-error: var(--color-error);
-  --el-color-primary-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--color-brand));
-  --el-color-primary-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--color-brand));
-  --el-color-primary-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--color-brand));
-  --el-color-primary-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--color-brand));
-  --el-color-primary-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--color-brand));
 
-  --el-color-info: var(--color-text-secondary);
-
-  --el-color-success-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-success));
-  --el-color-success-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-success));
-  --el-color-success-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-success));
-  --el-color-success-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-success));
-  --el-color-success-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-success));
-
-  --el-color-warning-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-warning));
-  --el-color-warning-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-warning));
-  --el-color-warning-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-warning));
-  --el-color-warning-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-warning));
-  --el-color-warning-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-warning));
-
-  --el-color-danger-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-danger));
-  --el-color-danger-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-danger));
-  --el-color-danger-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-danger));
-  --el-color-danger-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-danger));
-  --el-color-danger-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-danger));
-
-  --el-color-error-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-error));
-  --el-color-error-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-error));
-  --el-color-error-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-error));
-  --el-color-error-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-error));
-  --el-color-error-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-error));
-
-  --el-color-info-light-3: color-mix(in srgb, var(--color-surface) 30%, var(--el-color-info));
-  --el-color-info-light-5: color-mix(in srgb, var(--color-surface) 50%, var(--el-color-info));
-  --el-color-info-light-7: color-mix(in srgb, var(--color-surface) 70%, var(--el-color-info));
-  --el-color-info-light-8: color-mix(in srgb, var(--color-surface) 80%, var(--el-color-info));
-  --el-color-info-light-9: color-mix(in srgb, var(--color-surface) 90%, var(--el-color-info));
-  --el-button-disabled-bg-color: var(--color-surface-muted);
-  --el-button-disabled-text-color: var(--color-text-tertiary);
-  --el-button-disabled-border-color: var(--color-border);
-  --el-border-radius-base: var(--radius-md);
-  --el-border-radius-small: var(--radius-sm);
-  --el-border-radius-round: var(--radius-2xl);
-  --el-font-size-base: 16px;
-  --el-bg-color: var(--color-surface);
-  --el-bg-color-page: var(--color-bg);
-  --el-text-color-primary: var(--color-text-primary);
-  --el-text-color-regular: var(--color-text-secondary);
-  --el-text-color-secondary: var(--color-text-tertiary);
-  --el-border-color: var(--color-border);
-  --el-border-color-light: var(--color-border-warm);
-  --el-fill-color-blank: var(--color-surface);
-  --el-fill-color-light: var(--color-sand);
-  --el-mask-color: rgba(20, 19, 19, 0.38);
 }
 
 * {
@@ -664,12 +605,6 @@ a {
   box-shadow: var(--shadow-whisper);
 }
 
-.panel .el-card__body {
-  display: grid;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-}
-
 .panel__head {
   display: flex;
   align-items: flex-start;
@@ -701,12 +636,6 @@ a {
   margin-top: var(--spacing-xs);
 }
 
-.panel--workspace .el-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
 .panel--workspace .panel__head > :first-child {
   display: grid;
   align-content: start;
@@ -716,11 +645,6 @@ a {
 .panel--workspace .panel__lead {
   margin-top: 0;
   max-width: 44ch;
-}
-
-.workflow-grid > .panel--workspace .el-card__body,
-.history-grid > .panel--workspace .el-card__body {
-  height: 100%;
 }
 
 .prep-layout {
@@ -782,10 +706,6 @@ a {
   min-height: 60px;
 }
 
-.conversation-answer .el-textarea__inner {
-  min-height: 112px;
-}
-
 .history-panel .session-list {
   align-content: start;
 }
@@ -826,84 +746,6 @@ label,
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-}
-
-.status-banner.el-alert {
-  --el-alert-padding: 12px 14px;
-  --el-alert-bg-color: color-mix(in srgb, var(--color-surface) 94%, var(--color-sand));
-  --el-alert-border-color: var(--color-border-warm);
-}
-
-.el-message.page-notice {
-  position: fixed;
-  justify-content: center;
-  top: 18px !important;
-  right: auto !important;
-  left: 50vw !important;
-  margin: 0 !important;
-  transform: translateX(-50%) !important;
-  width: min(304px, calc(100vw - 32px));
-  min-width: 0;
-  max-width: min(304px, calc(100vw - 32px));
-  border: 1px solid var(--color-border-warm);
-  border-radius: var(--radius-md);
-  padding: 11px 16px;
-  background: rgba(250, 249, 245, 0.94);
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.08),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.el-message.page-notice .el-message__content {
-  font-size: 15px;
-  line-height: 1.45;
-  text-align: center;
-}
-
-.el-message.page-notice .el-icon {
-  margin-right: 10px;
-}
-
-.el-message.page-notice.page-notice--success {
-  border-color: color-mix(in srgb, var(--color-brand) 22%, var(--color-border-warm));
-}
-
-.el-message.page-notice.page-notice--warning {
-  border-color: color-mix(in srgb, var(--color-coral) 28%, var(--color-border-warm));
-}
-
-.el-message.page-notice.page-notice--error {
-  border-color: color-mix(in srgb, var(--color-error) 34%, var(--color-border-warm));
-}
-
-.el-message.page-notice.page-notice--info {
-  border-color: color-mix(in srgb, var(--color-ring) 70%, var(--color-border-warm));
-}
-
-.ui-card.el-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-whisper);
-}
-
-.ui-badge.el-tag {
-  border: 1px solid var(--color-border-warm);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
-  letter-spacing: 0.12px;
-}
-
-.ui-badge--compact.el-tag {
-  display: inline-flex;
-  justify-content: center;
-  min-width: 64px;
-  min-height: 34px;
-  padding: 0 12px;
-  font-size: 14px;
 }
 
 .ui-button {
@@ -993,111 +835,10 @@ label,
 }
 
 /* ── Composer dropdown ── */
-.custom-dropdown-popper.el-dropdown__popper {
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.07),
-    inset 0 0 0 1px var(--color-border-warm),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  padding: 1px;
-  width: 100%;
-  will-change: transform;
-  backface-visibility: hidden;
-}
-.custom-dropdown-popper .el-dropdown-menu {
-  background: transparent;
-  border: none;
-  padding: 0;
-  box-shadow: none;
-}
-.custom-dropdown-popper .el-dropdown-menu__item {
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--color-text-primary);
-  padding: 0 10px;
-  min-height: var(--trigger-height, 28.5px);
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.custom-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):hover,
-.custom-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):focus {
-  background-color: var(--color-surface-hover);
-  color: var(--color-text-primary);
-}
-.custom-dropdown-popper .el-dropdown-menu__item--divided {
-  margin-top: 4px;
-  border-top-color: var(--color-border);
-}
-
 /* ── Settings select dropdown ── */
-.custom-select-popper.el-select__popper {
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.07),
-    inset 0 0 0 1px var(--color-border-warm),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  padding: 1px;
-  width: 100%;
-  will-change: transform;
-  backface-visibility: hidden;
-}
-.custom-select-popper .el-select-dropdown {
-  background: transparent;
-  border: none;
-  padding: 0;
-  box-shadow: none;
-}
-.custom-select-popper .el-select-dropdown__list {
-  padding: 0;
-  margin: 0;
-}
-.custom-select-popper .el-select-dropdown__item {
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  color: var(--color-text-primary);
-  padding: 0 12px;
-  min-height: var(--trigger-height, 34px);
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.custom-select-popper .el-select-dropdown__item.is-hovering {
-  background-color: var(--color-surface-hover);
-  color: var(--color-text-primary);
-}
-.custom-select-popper .el-select-dropdown__item.is-selected {
-  font-weight: 600;
-  color: var(--color-brand);
-}
-
 .ui-input,
 .ui-select,
 .ui-textarea {
-  --el-input-bg-color: var(--color-surface);
-  --el-input-border-color: var(--color-border-warm);
-  --el-input-hover-border-color: var(--color-ring);
-  --el-input-focus-border-color: var(--color-focus);
-  --el-select-input-focus-border-color: var(--color-focus);
-}
-
-.ui-input .el-input__wrapper,
-.ui-select .el-select__wrapper,
-.ui-textarea .el-textarea__inner {
-  min-height: var(--ui-height-sm);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: inset 0 0 0 1px var(--color-border-warm);
 }
 
 .brand-metaballs {
@@ -1113,24 +854,6 @@ label,
   width: 100% !important;
   height: 100% !important;
   border-radius: inherit;
-}
-
-.ui-input .el-input__wrapper:hover,
-.ui-select .el-select__wrapper:hover,
-.ui-textarea .el-textarea__inner:hover {
-  box-shadow: inset 0 0 0 1px var(--color-ring);
-}
-
-.ui-input.is-focus .el-input__wrapper,
-.ui-select.is-focused .el-select__wrapper,
-.ui-textarea .el-textarea__inner:focus {
-  box-shadow: inset 0 0 0 1px var(--color-focus), 0 0 0 1px var(--color-focus);
-}
-
-.ui-textarea .el-textarea__inner {
-  min-height: 140px;
-  padding: 13px 14px;
-  resize: vertical;
 }
 
 .upload-field {
@@ -1396,7 +1119,6 @@ label,
   gap: 8px;
 }
 
-.session-item__side .ui-badge--compact.el-tag,
 .session-item__side .ui-button--compact {
   width: var(--session-item-action-width);
   min-width: var(--session-item-action-width);
@@ -1789,10 +1511,6 @@ label,
     font-size: clamp(30px, 8vw, 40px);
   }
 
-  .panel .el-card__body {
-    padding: var(--spacing-lg);
-  }
-
   .login-card {
     padding: 24px;
   }
@@ -1853,10 +1571,6 @@ label,
     font-size: 22px;
   }
 
-  .panel .el-card__body {
-    padding: var(--spacing-md);
-  }
-
   .upload-field {
     grid-template-columns: minmax(0, 1fr);
     justify-items: start;
@@ -1879,27 +1593,9 @@ label,
 }
 
 .scrollable::-webkit-scrollbar,
-.llm-settings-dialog .el-dialog__body::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
 .scrollable::-webkit-scrollbar-track,
-.llm-settings-dialog .el-dialog__body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 .scrollable::-webkit-scrollbar-thumb,
-.llm-settings-dialog .el-dialog__body::-webkit-scrollbar-thumb {
-  background-color: var(--color-ring);
-  border-radius: 10px;
-}
-
 .scrollable::-webkit-scrollbar-thumb:hover,
-.llm-settings-dialog .el-dialog__body::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-ring-deep);
-}
-
 @media print {
   .panel {
     page-break-inside: avoid;
