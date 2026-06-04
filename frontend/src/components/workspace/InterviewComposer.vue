@@ -10,7 +10,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { Loader2 } from 'lucide-vue-next'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Loader2, FileText, Briefcase, FileSearch, Terminal } from 'lucide-vue-next'
 
 const props = defineProps<{
   isCentered: boolean
@@ -362,20 +368,20 @@ onBeforeUnmount(() => {
               :model-value="modelValue"
               @update:model-value="(v: string | number) => emit('update:modelValue', String(v))"
               :rows="3"
-              class="composer-textarea min-h-[80px]"
+              class="composer-textarea min-h-[80px] max-h-[160px] resize-none border-0 bg-transparent shadow-none p-2 text-[15px] focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50 disabled:cursor-default"
               :placeholder="activeSessionId ? '输入回答...' : '请先选择简历与岗位，然后点击「开始面试」'"
               :disabled="disabled || !activeSessionId"
               @keydown.ctrl.enter="canSend && emit('send')"
               @keydown.meta.enter="canSend && emit('send')"
             />
             <transition name="jd-expand">
-              <div v-if="!activeSessionId && showJdInput" class="composer-jd-grid">
+              <div v-if="!activeSessionId && showJdInput" class="composer-jd-grid absolute bottom-0 left-0 z-10 bg-surface w-full">
                 <div class="composer-jd-inner">
                   <div class="composer-jd-area">
                     <Textarea
                       v-model="localJdText"
                       :rows="4"
-                      class="jd-textarea min-h-[100px]"
+                      class="jd-textarea min-h-[100px] max-h-[160px] resize-none border-0 bg-transparent shadow-none p-2 text-[15px] focus-visible:ring-0 focus-visible:ring-offset-0"
                       placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
                     />
                   </div>
@@ -400,26 +406,38 @@ onBeforeUnmount(() => {
       <!-- Actions Toolbar -->
       <div class="composer-actions">
         <div class="composer-actions__left">
+          <TooltipProvider>
           <div class="composer-toolbar">
             <template v-if="!activeSessionId">
               <!-- Resume Picker -->
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <button class="toolbar-item" type="button">
-                    <span class="toolbar-item__label">简历:</span>
-                    <span class="toolbar-item__value">{{ selectedResumeName }}</span>
+                  <button class="flex h-[30px] w-36 items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent px-2 py-1 text-[13px] hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer !font-serif">
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <div class="flex h-full w-full items-center gap-1.5 overflow-hidden">
+                          <FileText class="w-3.5 h-3.5 shrink-0 opacity-70" />
+                          <span class="font-medium truncate text-foreground">{{ selectedResumeName }}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                        {{ selectedResumeName }}
+                      </TooltipContent>
+                    </Tooltip>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="w-56" align="start">
+                <DropdownMenuContent class="z-[105] w-36 border border-black/5 shadow-lg rounded-xl p-0" align="start">
                   <DropdownMenuItem 
                     v-for="r in resumes" 
                     :key="r.id" 
                     @click="emit('update:selectedResumeId', r.id)"
+                    class="flex h-[30px] items-center justify-between px-3 text-[13px] !font-serif rounded-md cursor-pointer"
                   >
                     {{ r.fileName }}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem @click="triggerUpload" class="text-primary font-medium justify-center">
+                  <DropdownMenuItem @click="triggerUpload" class="flex h-[30px] items-center justify-between px-3 text-[13px] !font-serif rounded-md cursor-pointer text-primary font-medium justify-center">
                     {{ uploading ? '上传中...' : '+ 上传 PDF' }}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -437,16 +455,27 @@ onBeforeUnmount(() => {
               <!-- Position Picker -->
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <button class="toolbar-item" type="button">
-                    <span class="toolbar-item__label">岗位:</span>
-                    <span class="toolbar-item__value">{{ selectedPositionName }}</span>
+                  <button class="flex h-[30px] w-36 items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent px-2 py-1 text-[13px] hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer !font-serif">
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <div class="flex h-full w-full items-center gap-1.5 overflow-hidden">
+                          <Briefcase class="w-3.5 h-3.5 shrink-0 opacity-70" />
+                          <span class="font-medium truncate text-foreground">{{ selectedPositionName }}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                        {{ selectedPositionName }}
+                      </TooltipContent>
+                    </Tooltip>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="w-56" align="start">
+                <DropdownMenuContent class="z-[105] w-36 border border-black/5 shadow-lg rounded-xl p-0" align="start">
                   <DropdownMenuItem 
                     v-for="p in positions" 
                     :key="p.id" 
                     @click="emit('update:selectedPositionId', p.id)"
+                    class="flex h-[30px] items-center justify-between px-3 text-[13px] !font-serif rounded-md cursor-pointer"
                   >
                     {{ p.name }}
                   </DropdownMenuItem>
@@ -454,38 +483,76 @@ onBeforeUnmount(() => {
               </DropdownMenu>
 
               <!-- JD Toggle -->
-              <button class="toolbar-item" type="button" @click="showJdInput = !showJdInput" :class="{ 'is-active': showJdInput }">
-                <span class="toolbar-item__label">JD 匹配:</span>
-                <span class="toolbar-item__value">{{ showJdInput ? '已开启' : '未开启' }}</span>
-              </button>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button variant="ghost" size="sm" class="h-[30px] px-2 text-[13px] gap-1.5 max-w-[180px] min-w-[100px] overflow-hidden !font-serif" type="button" @click="showJdInput = !showJdInput" :class="{ 'bg-accent text-accent-foreground': showJdInput }">
+                    <FileSearch class="w-3.5 h-3.5 shrink-0 opacity-70" />
+                    <span class="font-medium truncate">{{ showJdInput ? '已开启' : '未开启' }}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                  {{ showJdInput ? '已开启' : '未开启' }}
+                </TooltipContent>
+              </Tooltip>
             </template>
             <template v-else>
-              <div class="toolbar-item is-readonly">
-                <span class="toolbar-item__label">简历:</span>
-                <span class="toolbar-item__value">{{ selectedResumeName }}</span>
-              </div>
-              <div class="toolbar-item is-readonly">
-                <span class="toolbar-item__label">岗位:</span>
-                <span class="toolbar-item__value">{{ selectedPositionName }}</span>
-              </div>
-              <div v-if="jdText" class="toolbar-item is-readonly is-active">
-                <span class="toolbar-item__label">JD 匹配:</span>
-                <span class="toolbar-item__value">已开启</span>
-              </div>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <div class="inline-flex h-[30px] max-w-[180px] min-w-[100px] overflow-hidden items-center gap-1.5 rounded-md px-2 text-[13px] !font-serif pointer-events-none opacity-65">
+                    <FileText class="w-3.5 h-3.5 shrink-0 opacity-70" />
+                    <span class="font-medium truncate text-foreground">{{ selectedResumeName }}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                  {{ selectedResumeName }}
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <div class="inline-flex h-[30px] max-w-[180px] min-w-[100px] overflow-hidden items-center gap-1.5 rounded-md px-2 text-[13px] !font-serif pointer-events-none opacity-65">
+                    <Briefcase class="w-3.5 h-3.5 shrink-0 opacity-70" />
+                    <span class="font-medium truncate text-foreground">{{ selectedPositionName }}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                  {{ selectedPositionName }}
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip v-if="jdText">
+                <TooltipTrigger as-child>
+                  <div class="inline-flex h-[30px] max-w-[180px] min-w-[100px] overflow-hidden items-center gap-1.5 rounded-md px-2 text-[13px] !font-serif pointer-events-none opacity-65">
+                    <FileSearch class="w-3.5 h-3.5 shrink-0 opacity-70" />
+                    <span class="font-medium truncate text-foreground">已开启</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                  已开启
+                </TooltipContent>
+              </Tooltip>
             </template>
 
             <!-- Model Info -->
-            <button class="toolbar-item" @click="navigateToLlm" title="前往 LLM 配置" type="button">
-              <span class="toolbar-item__label">模型:</span>
-              <span class="toolbar-item__value">{{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}</span>
-            </button>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="ghost" size="sm" class="h-[30px] px-2 text-[13px] gap-1.5 max-w-[180px] min-w-[100px] overflow-hidden !font-serif" @click="navigateToLlm" type="button">
+                  <Terminal class="w-3.5 h-3.5 shrink-0 opacity-70" />
+                  <span class="font-medium truncate">{{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                {{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}
+              </TooltipContent>
+            </Tooltip>
           </div>
+          </TooltipProvider>
         </div>
         
         <div class="composer-actions__right">
           <Button
             v-if="!activeSessionId"
-            class="composer-btn"
+            class="rounded-md px-6 flex-shrink-0 !font-serif"
             :disabled="!canStart"
             @click="emit('start', showJdInput ? localJdText : undefined)"
           >
@@ -493,63 +560,67 @@ onBeforeUnmount(() => {
             开始面试
           </Button>
           <template v-else>
-            <template v-if="isVoiceMode">
-              <button 
-                class="icon-btn voice-toggle-action-btn"
-                @click="emit('update:isVoiceMode', false)"
-                title="切换到文字"
-                type="button"
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-                  <line x1="6" y1="8" x2="6.01" y2="8" />
-                  <line x1="10" y1="8" x2="10.01" y2="8" />
-                  <line x1="14" y1="8" x2="14.01" y2="8" />
-                  <line x1="18" y1="8" x2="18.01" y2="8" />
-                  <line x1="6" y1="12" x2="6.01" y2="12" />
-                  <line x1="18" y1="12" x2="18.01" y2="12" />
-                  <line x1="7" y1="16" x2="17" y2="16" />
-                  <line x1="10" y1="12" x2="10.01" y2="12" />
-                  <line x1="14" y1="12" x2="14.01" y2="12" />
-                </svg>
-              </button>
-              <button
-                class="voice-press-btn"
-                :class="{ 'is-pressed': isRecording }"
-                :disabled="disabled || sending"
-                @mousedown="startRecording"
-                @mouseup="stopRecording"
-                @mouseleave="stopRecording"
-                @touchstart.prevent="startRecording"
-                @touchend.prevent="stopRecording"
-                type="button"
-              >
-                {{ isRecording ? '松开发送' : '按住说话' }}
-              </button>
-            </template>
-            <template v-else>
-              <button 
-                class="icon-btn voice-toggle-action-btn"
-                @click="emit('update:isVoiceMode', true)"
-                title="切换到语音"
-                type="button"
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-              </button>
-              <Button
-                class="composer-btn"
-                :disabled="disabled || !canSend"
-                @click="emit('send')"
-              >
-                <Loader2 v-if="sending" class="w-4 h-4 mr-2 animate-spin" />
-                发送
-              </Button>
-            </template>
+            <transition name="mode-switch" mode="out-in">
+              <template v-if="isVoiceMode">
+                <div key="voice" class="flex items-center gap-2">
+                  <Button 
+                    variant="outline" size="icon-sm" class="rounded-md"
+                    @click="emit('update:isVoiceMode', false)"
+                    type="button"
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                      <line x1="6" y1="8" x2="6.01" y2="8" />
+                      <line x1="10" y1="8" x2="10.01" y2="8" />
+                      <line x1="14" y1="8" x2="14.01" y2="8" />
+                      <line x1="18" y1="8" x2="18.01" y2="8" />
+                      <line x1="6" y1="12" x2="6.01" y2="12" />
+                      <line x1="18" y1="12" x2="18.01" y2="12" />
+                      <line x1="7" y1="16" x2="17" y2="16" />
+                      <line x1="10" y1="12" x2="10.01" y2="12" />
+                      <line x1="14" y1="12" x2="14.01" y2="12" />
+                    </svg>
+                  </Button>
+                  <button
+                    class="voice-press-btn"
+                    :class="{ 'is-pressed': isRecording }"
+                    :disabled="disabled || sending"
+                    @mousedown="startRecording"
+                    @mouseup="stopRecording"
+                    @mouseleave="stopRecording"
+                    @touchstart.prevent="startRecording"
+                    @touchend.prevent="stopRecording"
+                    type="button"
+                  >
+                    {{ isRecording ? '松开发送' : '按住说话' }}
+                  </button>
+                </div>
+              </template>
+              <template v-else>
+                <div key="text" class="flex items-center gap-2">
+                  <Button 
+                    variant="outline" size="icon-sm" class="rounded-md"
+                    @click="emit('update:isVoiceMode', true)"
+                    type="button"
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                      <line x1="12" y1="19" x2="12" y2="23"/>
+                      <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                  </Button>
+                  <Button
+                    class="rounded-md px-6 flex-shrink-0 !font-serif"
+                    :disabled="disabled || !canSend"
+                    @click="emit('send')"
+                  >
+                    <Loader2 v-if="sending" class="w-4 h-4 mr-2 animate-spin" />
+                    发送
+                  </Button>
+                </div>
+              </template>
+            </transition>
           </template>
         </div>
       </div>
@@ -567,7 +638,7 @@ onBeforeUnmount(() => {
   margin: 0 auto;
 }
 .interview-composer.is-bottom {
-  max-width: 720px;
+  max-width: 800px;
   margin: 0 auto;
   position: relative;
 }
@@ -580,45 +651,35 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  overflow: hidden;
 }
 .interview-composer.is-centered .interview-composer__inner {
   padding: var(--spacing-lg);
   gap: var(--spacing-md);
 }
 .composer-input-area {
-  min-height: calc(3 * 1.5 * var(--el-font-size-base, 16px) + var(--spacing-sm) * 2);
+  min-height: calc(3 * 1.5 * 16px + var(--spacing-sm) * 2);
   display: flex;
   align-items: flex-start;
+  position: relative;
 }
 .composer-mode-text,
 .composer-mode-voice {
   width: 100%;
 }
-.composer-textarea :deep(.el-textarea__inner) {
-  border: none;
-  background: transparent;
-  padding: var(--spacing-sm) var(--spacing-xs);
-  box-shadow: none;
-  font-size: 15px;
-  color: var(--color-text-primary);
-}
-.composer-textarea :deep(.el-textarea__inner:focus) {
-  box-shadow: none;
-}
-.composer-textarea :deep(.el-textarea__inner:disabled) {
-  background: transparent;
-  cursor: default;
-  color: var(--color-text-tertiary);
-  -webkit-text-fill-color: var(--color-text-tertiary);
-}
+
 .composer-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 40px;
+  margin-top: auto;
+  min-width: 0;
 }
 .composer-actions__left {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 .composer-actions__right {
   display: flex;
@@ -634,67 +695,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-}
-.toolbar-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  font-size: 13px;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color 0.2s;
-  text-decoration: none;
-  outline: none;
-}
-.toolbar-item:hover, .toolbar-item:focus-within {
-  background-color: var(--color-surface-hover);
-}
-.toolbar-item:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
-}
-.toolbar-item__label {
-  color: var(--color-text-tertiary);
-  white-space: nowrap;
-  pointer-events: none;
-}
-.toolbar-item__value {
-  color: var(--color-text-primary);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
-}
-.composer-btn {
-  border-radius: var(--radius-lg);
-  padding: 0 var(--spacing-lg);
-  flex-shrink: 0;
-}
-.composer-jd-area {
-  border-top: 1px dashed var(--color-border);
-  padding-top: var(--spacing-sm);
-  margin-top: var(--spacing-xs);
-}
-.jd-textarea :deep(.el-textarea__inner) {
-  border: none;
-  background: transparent;
-  padding: var(--spacing-sm) var(--spacing-xs);
-  box-shadow: none;
-  font-size: 14px;
-  color: var(--color-text-primary);
-}
-.jd-textarea :deep(.el-textarea__inner:focus) {
-  box-shadow: none;
-}
-.toolbar-item.is-active {
-  background-color: var(--color-surface-hover);
-}
-.toolbar-item.is-active .toolbar-item__value {
-  color: var(--color-brand);
+  min-width: 0;
 }
 
 /* Voice Integration Styles */
@@ -750,28 +751,32 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 .voice-press-btn {
-  height: var(--ui-height-md, 36px);
+  height: var(--ui-height-base);
   padding: 0 var(--spacing-lg);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
+  font-family: var(--font-serif) !important;
   cursor: pointer;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  color: var(--color-text-primary);
-  transition: all 0.2s ease;
+  border: 1px solid var(--color-brand);
+  background-color: var(--color-brand);
+  color: var(--color-surface);
+  transition: all 0.15s ease-out; /* 快速响应按下 */
+}
+.voice-press-btn:not(:active) {
+  transition: all 0.3s ease-in-out; /* 从容释放 */
+}
+.voice-press-btn {
   user-select: none;
   outline: none;
 }
 .voice-press-btn:hover:not(:disabled) {
-  background-color: var(--color-surface-hover);
+  background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
 }
 .voice-press-btn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-  background-color: transparent;
-  color: var(--color-text-tertiary);
-  border-color: var(--color-border);
+  pointer-events: none;
 }
 .voice-press-btn:focus-visible {
   outline: 2px solid var(--color-focus);
@@ -784,45 +789,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 12px var(--color-brand);
   transform: scale(0.98);
 }
-.icon-btn.voice-toggle-action-btn {
-  width: var(--ui-height-md, 36px);
-  height: var(--ui-height-md, 36px);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  outline: none;
-}
-.icon-btn.voice-toggle-action-btn:hover {
-  background-color: var(--color-surface-hover);
-  color: var(--color-brand);
-}
-.icon-btn.voice-toggle-action-btn:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
 
-/* Readonly Toolbar Items */
-.toolbar-item.is-readonly {
-  pointer-events: none;
-  background-color: transparent;
-  border: none;
-  cursor: default;
-}
-.toolbar-item.is-readonly .toolbar-item__value {
-  color: color-mix(in srgb, var(--color-text-primary) 65%, transparent);
-}
-.toolbar-item.is-readonly.is-active {
-  background-color: var(--color-surface-hover);
-}
-.toolbar-item.is-readonly.is-active .toolbar-item__value {
-  color: var(--color-brand);
-}
 
 /* JD Grid expand/collapse transition */
 .composer-jd-grid {
@@ -831,13 +798,21 @@ onBeforeUnmount(() => {
 }
 .jd-expand-enter-active,
 .jd-expand-leave-active {
-  transition: grid-template-rows 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out;
+  overflow: hidden;
+}
+.jd-expand-leave-active {
+  pointer-events: none;
 }
 .jd-expand-enter-from,
 .jd-expand-leave-to {
-  grid-template-rows: 0fr;
+  max-height: 0;
   opacity: 0;
-  transform: translateY(-8px);
+}
+.jd-expand-enter-to,
+.jd-expand-leave-from {
+  max-height: 200px; /* 足够容纳 Textarea max-h-160px + padding */
+  opacity: 1;
 }
 .composer-jd-inner {
   min-height: 0;
@@ -847,11 +822,15 @@ onBeforeUnmount(() => {
 /* Mode switch transition (Text <-> Voice) */
 .mode-switch-enter-active,
 .mode-switch-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
 }
-.mode-switch-enter-from,
+.mode-switch-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
 .mode-switch-leave-to {
   opacity: 0;
+  transform: translateY(-4px);
 }
 
 @keyframes pulse {
@@ -867,17 +846,5 @@ onBeforeUnmount(() => {
     transform: scale(0.9);
     opacity: 0.6;
   }
-}
-</style>
-<style>
-.custom-dropdown-menu .upload-action {
-  color: var(--color-brand);
-  text-align: center;
-  justify-content: center;
-  font-weight: 500;
-}
-.custom-dropdown-menu .upload-action:hover {
-  background-color: var(--color-surface-hover) !important;
-  color: var(--color-brand) !important;
 }
 </style>

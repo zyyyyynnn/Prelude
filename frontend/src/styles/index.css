@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "../components";
+@source "../views";
 
 @theme {
   /* 色彩 — 直接引用现有 :root 变量 */
@@ -45,7 +47,33 @@
 
   /* 阴影 */
   --shadow-modal: var(--shadow-modal);
+
+  /* shadcn-vue 核心语义色彩桥接 */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text-primary);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--color-brand);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--color-surface-muted);
+  --color-muted-foreground: var(--color-text-tertiary);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: var(--color-surface);
+  --color-input: var(--color-border-warm);
+
+  /* shadcn-vue 基础圆角依赖 */
+  --radius: var(--radius-md);
+
+  --color-mask-overlay: var(--mask-overlay);
 }
+
+
 
 :root {
   --font-serif: 'Lora', 'Noto Serif SC', Georgia, serif;
@@ -82,6 +110,27 @@
   --color-line-decor: #c8c6be;
   --color-line-decor-light: #dddbd3;
 
+  /* ── shadcn-vue 语义 Token（映射到项目暖色调体系） ── */
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-surface-muted);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-surface-muted);
+  --muted-foreground: var(--color-text-tertiary);
+  --accent: var(--color-surface-hover);
+  --accent-foreground: var(--color-text-primary);
+  --destructive: var(--color-error);
+  --destructive-foreground: var(--color-surface);
+  --border: var(--color-border);
+  --input: var(--color-border-warm);
+  --ring: var(--color-focus);
+
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -94,6 +143,7 @@
   --shadow-whisper: 0 4px 24px rgba(0, 0, 0, 0.05);
   --shadow-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --mask-overlay: rgba(20, 19, 19, 0.38);
 
   /* ── UI System Tokens ── */
   --spacing-xs: 4px;
@@ -103,9 +153,9 @@
   --spacing-xl: 32px;
   --spacing-2xl: 40px;
 
-  --ui-height-base: 42px;
+  --ui-height-base: 34px;
   --ui-height-sm: 34px;
-  --ui-height-md: 36px;
+  --ui-height-md: 34px;
   --header-height: 72px;
   --composer-height: 260px;
 
@@ -749,18 +799,13 @@ a {
   min-height: 108px;
 }
 
-
-.form-grid .el-form-item {
-  margin-bottom: 0;
-}
-
-.form-grid.el-form .el-form-item__label {
-  padding-bottom: 8px;
+/* shadcn Label / FormLabel 品牌衬线体 */
+label,
+[data-slot="label"] {
   font-family: var(--font-serif) !important;
   font-weight: 500 !important;
-  color: var(--color-text-primary) !important;
   font-size: 15px;
-  line-height: 1.4;
+  color: var(--color-text-primary);
 }
 
 .field {
@@ -1640,10 +1685,6 @@ a {
 .login-card__header {
   display: grid;
   gap: 8px;
-}
-
-.login-card .el-form-item {
-  margin-bottom: 0;
 }
 
 .auth-form {

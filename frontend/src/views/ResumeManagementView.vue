@@ -117,6 +117,7 @@ onBeforeUnmount(() => {
         <div class="workspace-header__actions">
           <Button
             :disabled="uploading"
+            class="!font-serif"
             @click="openUpload"
           >
             <Loader2 v-if="uploading" class="w-4 h-4 mr-2 animate-spin" />

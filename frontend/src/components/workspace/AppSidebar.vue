@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useInterviewWorkspace } from '../../composables/useInterviewWorkspace'
 import BrandMetaballs from '../BrandMetaballs.vue'
 import { usePageNotice } from '../../composables/usePageNotice'
+import { Separator } from '@/components/ui/separator'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const props = defineProps<{
@@ -88,9 +89,8 @@ function navigateTo(path: string) {
           <span class="sidebar-label app-sidebar__title">Prelude</span>
       </div>
       <button class="app-sidebar__toggle" @click="toggleCollapse" aria-label="Toggle Sidebar">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-          <path v-if="collapsed" d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" />
-          <path v-else d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round" />
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" :class="['transition-transform duration-300 ease-in-out', { 'rotate-180': collapsed }]">
+          <path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
     </div>
@@ -101,7 +101,6 @@ function navigateTo(path: string) {
           class="app-sidebar__btn app-sidebar__btn--primary"
           @click="handleStartNew"
           aria-label="开始新面试"
-          title="开始新面试"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
             <path d="M12 5v14M5 12h14" stroke-linecap="round" stroke-linejoin="round" />
@@ -110,16 +109,19 @@ function navigateTo(path: string) {
         </button>
       </div>
 
-      <div class="app-sidebar__sessions scrollable" :class="{ 'is-hidden': collapsed }">
+      <Separator class="mx-2 my-2 bg-border/50" />
+
+      <Transition name="sidebar-fade">
+        <div v-show="!collapsed" class="app-sidebar__sessions scrollable">
         <div class="session-group">
-          <p class="session-group__title">进行中</p>
+          <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">进行中</div>
           <ul v-if="primarySessionList.length" class="session-list">
             <li v-for="session in primarySessionList" :key="session.sessionId" class="session-item-wrapper">
               <button
                 :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
                 @click="handleSessionClick(session.sessionId)"
               >
-                <span class="session-item__name">{{ session.targetPosition || '未命名岗位' }}</span>
+                <span class="session-item__name truncate">{{ session.targetPosition || '未命名岗位' }}</span>
               </button>
               
               <!-- Pin indicator when not hovered -->
@@ -131,7 +133,7 @@ function navigateTo(path: string) {
 
               <!-- Quick actions on hover -->
               <div class="session-item-actions">
-                <button class="action-btn" @click.stop="togglePin(session.sessionId)" :title="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶'">
+                <button class="action-btn" @click.stop="togglePin(session.sessionId)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" v-if="isSessionPinned(session.sessionId)">
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                   </svg>
@@ -139,7 +141,7 @@ function navigateTo(path: string) {
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" @click.stop="confirmDelete(session.sessionId, session.targetPosition)" title="删除">
+                <button class="action-btn delete-btn" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6" stroke-linecap="round" stroke-linejoin="round"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -150,15 +152,18 @@ function navigateTo(path: string) {
           </ul>
           <p v-else class="session-group__empty">暂无</p>
         </div>
+
+        <Separator class="mx-2 my-2 bg-border/50" />
+
         <div class="session-group">
-          <p class="session-group__title">已完成</p>
+          <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">已完成</div>
           <ul v-if="finishedSessionList.length" class="session-list">
             <li v-for="session in finishedSessionList" :key="session.sessionId" class="session-item-wrapper">
               <button
                 :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
                 @click="handleSessionClick(session.sessionId)"
               >
-                <span class="session-item__name">{{ session.targetPosition || '未命名岗位' }}</span>
+                <span class="session-item__name truncate">{{ session.targetPosition || '未命名岗位' }}</span>
               </button>
 
               <!-- Pin indicator when not hovered -->
@@ -170,7 +175,7 @@ function navigateTo(path: string) {
 
               <!-- Quick actions on hover -->
               <div class="session-item-actions">
-                <button class="action-btn" @click.stop="togglePin(session.sessionId)" :title="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶'">
+                <button class="action-btn" @click.stop="togglePin(session.sessionId)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" v-if="isSessionPinned(session.sessionId)">
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                   </svg>
@@ -178,7 +183,7 @@ function navigateTo(path: string) {
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" @click.stop="confirmDelete(session.sessionId, session.targetPosition)" title="删除">
+                <button class="action-btn delete-btn" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6" stroke-linecap="round" stroke-linejoin="round"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -190,13 +195,12 @@ function navigateTo(path: string) {
           <p v-else class="session-group__empty">暂无</p>
         </div>
       </div>
-      
-      <div class="app-sidebar__collapsed-actions" :class="{ 'is-visible': collapsed }">
+      </Transition>
+            <div class="app-sidebar__collapsed-actions" :class="{ 'is-visible': collapsed }">
         <button
           :class="['app-sidebar__btn app-sidebar__btn--icon', { 'is-active': interviewMenuActive }]"
           @click="navigateTo('/interview')"
           aria-label="工作区"
-          title="工作区"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -210,7 +214,6 @@ function navigateTo(path: string) {
           :class="['app-sidebar__btn app-sidebar__btn--tool', { 'is-active': resumesMenuActive }]"
           @click="navigateTo('/resumes')"
           aria-label="简历管理"
-          title="简历管理"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round" />
@@ -222,7 +225,6 @@ function navigateTo(path: string) {
           :class="['app-sidebar__btn app-sidebar__btn--tool', { 'is-active': analyticsMenuActive }]"
           @click="navigateTo('/analytics')"
           aria-label="数据看板"
-          title="数据看板"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
             <path d="M18 20V10M12 20V4M6 20v-6" stroke-linecap="round" stroke-linejoin="round" />
@@ -233,11 +235,11 @@ function navigateTo(path: string) {
     </div>
 
     <div class="app-sidebar__footer">
+      <Separator class="mx-2 my-0 bg-border/50" />
       <button
         class="app-sidebar__btn app-sidebar__btn--settings"
         @click="emit('open-global-settings')"
         aria-label="设置"
-        title="设置"
       >
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
           <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" />
@@ -257,11 +259,15 @@ function navigateTo(path: string) {
   height: 100vh;
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
-  transition: width 0.2s ease;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+  transform: translateZ(0); /* 强制开启 GPU 加速，消除卡顿 */
+  backface-visibility: hidden; /* 消除某些浏览器在动画期间的字体模糊闪烁 */
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  font-family: var(--font-serif);
 }
 .app-sidebar.is-collapsed {
   width: calc(var(--ui-height-md) + var(--spacing-sm) * 2); /* 36 + 8*2 = 52px，使 26px 重心绝对居中 */
@@ -282,9 +288,11 @@ function navigateTo(path: string) {
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition: opacity 0.2s ease, width 0.2s ease, gap 0.2s ease;
+  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out, gap 0.3s ease-in-out;
   width: 180px;
   opacity: 1;
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
 }
 .app-sidebar.is-collapsed .app-sidebar__brand {
   width: 0;
@@ -309,9 +317,11 @@ function navigateTo(path: string) {
 .sidebar-label {
   white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.2s ease, width 0.2s ease;
+  transition: opacity 0.25s ease-in-out, width 0.25s ease-in-out;
   display: inline-block;
   overflow: hidden;
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
 }
 .app-sidebar.is-collapsed .sidebar-label {
   opacity: 0;
@@ -321,7 +331,6 @@ function navigateTo(path: string) {
 }
 .app-sidebar__toggle {
   background: transparent;
-  border: none;
   cursor: pointer;
   color: var(--color-text-secondary);
   display: flex;
@@ -347,7 +356,7 @@ function navigateTo(path: string) {
   min-height: 0;
 }
 .app-sidebar__actions {
-  margin-bottom: var(--spacing-sm);
+  /* margin-bottom handled by divider */
 }
 .app-sidebar__btn {
   display: flex;
@@ -356,13 +365,12 @@ function navigateTo(path: string) {
   width: 100%;
   height: var(--ui-height-md);
   padding: 0 var(--spacing-sm);
-  border: none;
   border-radius: var(--radius-md);
   font-family: var(--font-serif);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease-in-out;
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -374,7 +382,7 @@ function navigateTo(path: string) {
   gap: 0;
   width: var(--ui-height-md);
   height: var(--ui-height-md);
-  justify-content: flex-start;
+  justify-content: center;
 }
 .app-sidebar__btn--primary {
   font-family: var(--font-serif);
@@ -403,21 +411,20 @@ function navigateTo(path: string) {
 .app-sidebar__sessions {
   flex: 1;
   min-height: 0;
+  width: 260px;
+  flex-shrink: 0;
+  contain: strict; /* 绝对封锁：告诉浏览器内部元素完全独立，不再参与外层 Layout 挤压计算 */
+  transform: translateZ(0); /* 提升渲染层 */
   overflow-y: auto;
   overflow-x: hidden;
-  margin-bottom: var(--spacing-sm);
+  /* margin-bottom handled by divider */
   padding-right: 0;
-  transition: opacity 0.2s ease;
   opacity: 1;
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
 }
-.app-sidebar__sessions.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-}
 .app-sidebar__collapsed-actions {
-  transition: opacity 0.2s ease, max-height 0.2s ease, margin 0.2s ease;
+  transition: all 0.3s ease-in-out;
   opacity: 0;
   pointer-events: none;
   max-height: 0;
@@ -428,20 +435,12 @@ function navigateTo(path: string) {
   opacity: 1;
   pointer-events: auto;
   max-height: 48px;
-  margin-top: var(--spacing-sm);
+  margin-top: auto;
   margin-bottom: var(--spacing-sm);
 }
 .session-group {
   margin-bottom: var(--spacing-sm);
   white-space: nowrap;
-}
-.session-group__title {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  margin: 0 0 var(--spacing-sm) var(--spacing-sm);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 .session-list {
   list-style: none;
@@ -455,7 +454,6 @@ function navigateTo(path: string) {
   width: 100%;
   text-align: left;
   background: transparent;
-  border: none;
   padding: 0 var(--spacing-sm);
   height: var(--ui-height-md);
   min-height: var(--ui-height-md);
@@ -466,8 +464,9 @@ function navigateTo(path: string) {
   cursor: pointer;
   color: var(--color-text-secondary);
   font-size: 14px;
+  font-family: var(--font-serif) !important;
   line-height: 1;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -477,7 +476,7 @@ function navigateTo(path: string) {
   color: var(--color-text-primary);
 }
 .session-item-btn.is-active {
-  background-color: var(--color-surface-muted);
+  background-color: var(--color-surface-hover);
   color: var(--color-brand);
   font-weight: 500;
 }
@@ -491,15 +490,13 @@ function navigateTo(path: string) {
   margin: 0 0 0 var(--spacing-sm);
 }
 .app-sidebar__tools {
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--spacing-sm);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
 }
 .app-sidebar__footer {
-  padding: var(--spacing-sm);
-  border-top: 1px solid var(--color-border);
+  padding: 0 var(--spacing-sm);
+  padding-bottom: var(--spacing-sm); /* 保留最底部的 8px 留白 */
 }
 
 .session-item-wrapper {
@@ -546,7 +543,6 @@ function navigateTo(path: string) {
 }
 .action-btn {
   background: transparent;
-  border: none;
   cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
@@ -567,5 +563,15 @@ function navigateTo(path: string) {
 .action-btn.delete-btn:hover {
   color: var(--color-error);
   background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+/* 侧边栏折叠过度 */
+.sidebar-fade-enter-active,
+.sidebar-fade-leave-active {
+  transition: opacity 0.25s ease-in-out;
+}
+.sidebar-fade-enter-from,
+.sidebar-fade-leave-to {
+  opacity: 0;
 }
 </style>

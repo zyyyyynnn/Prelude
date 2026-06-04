@@ -27,6 +27,7 @@ const canFinish = computed(
       <Button
         variant="secondary"
         size="sm"
+        class="!font-serif"
         :disabled="!canFinish"
         @click="emit('finish')"
       >

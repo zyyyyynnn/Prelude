@@ -37,6 +37,7 @@ const emit = defineEmits<{
           <Button 
             variant="secondary"
             size="sm"
+            class="!font-serif"
             :disabled="exporting"
             @click="emit('export-pdf')"
           >

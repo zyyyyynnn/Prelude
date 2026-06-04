@@ -21,7 +21,7 @@ function handleLogout() {
 <template>
   <Dialog v-model:open="visible">
     <DialogContent
-      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-transparent border-none"
+      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-surface border-none"
     >
       <DialogHeader class="hidden">
         <DialogTitle>全局设置</DialogTitle>
@@ -50,7 +50,6 @@ function handleLogout() {
         <main class="settings-main">
           <header class="settings-header">
             <h3>{{ activeTab === 'profile' ? '账号资料' : 'LLM 配置' }}</h3>
-            <button class="close-btn" @click="visible = false">×</button>
           </header>
           <div class="settings-content scrollable">
             <UserProfilePanel v-if="activeTab === 'profile'" />
@@ -98,7 +97,8 @@ function handleLogout() {
   gap: var(--spacing-sm);
   width: 100%;
   text-align: left;
-  padding: 10px 14px;
+  padding: 0 14px;
+  height: var(--ui-height-md);
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 500;
@@ -144,17 +144,6 @@ function handleLogout() {
   font-size: 16px;
   font-weight: 500;
   font-family: var(--font-serif);
-  color: var(--color-text-primary);
-}
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: var(--color-text-tertiary);
-  transition: color 0.2s;
-}
-.close-btn:hover {
   color: var(--color-text-primary);
 }
 .settings-content {

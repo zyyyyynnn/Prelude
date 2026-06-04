@@ -57,13 +57,13 @@ onMounted(() => {
 
 <template>
   <div class="panel-content-wrapper">
-    <form class="flex flex-col gap-lg" @submit.prevent="onSubmit">
+    <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
 
       <div class="field-grid">
         <FormField name="providerKey" v-slot="{ componentField }">
           <FormItem class="flex flex-col gap-2">
             <FormLabel>Provider</FormLabel>
-            <Select v-model="selectedProviderKey" v-bind="componentField">
+            <Select v-bind="componentField" v-model="selectedProviderKey">
               <SelectTrigger>
                 <SelectValue placeholder="请选择 Provider" />
               </SelectTrigger>
@@ -84,7 +84,7 @@ onMounted(() => {
         <FormField name="model" v-slot="{ componentField }">
           <FormItem class="flex flex-col gap-2">
             <FormLabel>模型</FormLabel>
-            <Select v-model="selectedModel" :disabled="modelOptions.length === 0" v-bind="componentField">
+            <Select :disabled="modelOptions.length === 0" v-bind="componentField" v-model="selectedModel">
               <SelectTrigger>
                 <SelectValue placeholder="请选择模型" />
               </SelectTrigger>
@@ -123,7 +123,6 @@ onMounted(() => {
                 type="button"
                 class="px-2 py-2 hover:bg-transparent text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"
                 @click="clearApiKey"
-                title="清除密钥"
               >
                 <Trash2 class="h-4 w-4" />
               </button>
@@ -148,12 +147,17 @@ onMounted(() => {
             <FormItem class="flex flex-col gap-2">
               <FormLabel>最大回复长度 (Max Tokens)</FormLabel>
               <FormControl>
-                <Input
-                  v-model="maxTokens"
-                  v-bind="componentField"
-                  type="number"
-                  placeholder="留空使用模型默认 (如 8192 或 32768)"
-                />
+                <Select v-bind="componentField" :model-value="maxTokens ? String(maxTokens) : 'auto'" @update:model-value="v => maxTokens = v === 'auto' ? undefined : Number(v)">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="模型默认 (Auto)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">模型默认 (Auto)</SelectItem>
+                    <SelectItem value="4096">常规 (4096)</SelectItem>
+                    <SelectItem value="8192">长回复 (8192)</SelectItem>
+                    <SelectItem value="32768">深度分析 (32768)</SelectItem>
+                  </SelectContent>
+                </Select>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -162,7 +166,7 @@ onMounted(() => {
           <FormField name="thinkingDepth" v-slot="{ componentField }">
             <FormItem class="flex flex-col gap-2">
               <FormLabel>思考深度 (Thinking Depth)</FormLabel>
-              <Select v-model="thinkingDepth" v-bind="componentField">
+              <Select v-bind="componentField">
                 <SelectTrigger>
                   <SelectValue placeholder="默认 (Default)" />
                 </SelectTrigger>
@@ -179,22 +183,24 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="button-row flex gap-3 mt-4">
-        <Button
-          type="submit"
-          :disabled="saving"
-        >
-          <Loader2 v-if="saving" class="w-4 h-4 mr-2 animate-spin" />
-          保存设置
-        </Button>
+      <div class="button-row flex gap-3 mt-4 justify-end">
         <Button
           type="button"
           variant="secondary"
+          class="!font-serif"
           :disabled="saving || loading || testing"
           @click="testSettings"
         >
           <Loader2 v-if="testing" class="w-4 h-4 mr-2 animate-spin" />
           测试连接
+        </Button>
+        <Button
+          type="submit"
+          class="!font-serif"
+          :disabled="saving"
+        >
+          <Loader2 v-if="saving" class="w-4 h-4 mr-2 animate-spin" />
+          保存设置
         </Button>
       </div>
     </form>
