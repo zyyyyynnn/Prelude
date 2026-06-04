@@ -374,18 +374,14 @@ onBeforeUnmount(() => {
               @keydown.ctrl.enter="canSend && emit('send')"
               @keydown.meta.enter="canSend && emit('send')"
             />
-            <transition name="jd-expand">
-              <div v-if="!activeSessionId && showJdInput" class="composer-jd-grid absolute bottom-0 left-0 z-10 bg-surface w-full">
-                <div class="composer-jd-inner">
-                  <div class="composer-jd-area">
-                    <Textarea
-                      v-model="localJdText"
-                      :rows="4"
-                      class="jd-textarea min-h-[100px] max-h-[160px] resize-none border-0 bg-transparent shadow-none p-2 text-[15px] focus-visible:ring-0 focus-visible:ring-offset-0"
-                      placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
-                    />
-                  </div>
-                </div>
+            <transition name="jd-fade-float">
+              <div v-if="!activeSessionId && showJdInput" class="absolute inset-0 z-10 bg-surface">
+                <Textarea
+                  v-model="localJdText"
+                  :rows="3"
+                  class="composer-textarea h-full w-full min-h-[80px] max-h-[160px] resize-none border-0 bg-transparent shadow-none p-2 text-[15px] focus-visible:ring-0 focus-visible:ring-offset-0"
+                  placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
+                />
               </div>
             </transition>
           </div>
@@ -791,33 +787,22 @@ onBeforeUnmount(() => {
 }
 
 
-/* JD Grid expand/collapse transition */
-.composer-jd-grid {
-  display: grid;
-  grid-template-rows: 1fr;
+.jd-fade-float-enter-active,
+.jd-fade-float-leave-active {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
 }
-.jd-expand-enter-active,
-.jd-expand-leave-active {
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out;
-  overflow: hidden;
-}
-.jd-expand-leave-active {
-  pointer-events: none;
-}
-.jd-expand-enter-from,
-.jd-expand-leave-to {
-  max-height: 0;
+.jd-fade-float-enter-from {
   opacity: 0;
+  transform: translateY(4px); /* 自下而上柔和 4px 浮入 */
 }
-.jd-expand-enter-to,
-.jd-expand-leave-from {
-  max-height: 200px; /* 足够容纳 Textarea max-h-160px + padding */
-  opacity: 1;
+.jd-fade-float-leave-to {
+  opacity: 0;
+  transform: translateY(-4px); /* 向上方 4px 飘散淡出 */
 }
-.composer-jd-inner {
-  min-height: 0;
-  overflow: hidden;
+.jd-fade-float-leave-active {
+  pointer-events: none; /* 绝对保留：离场防遮挡 */
 }
+
 
 /* Mode switch transition (Text <-> Voice) */
 .mode-switch-enter-active,

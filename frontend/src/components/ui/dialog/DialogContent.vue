@@ -23,14 +23,14 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 <template>
   <DialogPortal>
     <DialogOverlay
-      class="fixed inset-0 z-[101] duration-300 ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[101] dialog-overlay"
       style="background-color: var(--mask-overlay, rgba(20, 19, 19, 0.38))"
     />
     <DialogContent
       v-bind="forwarded"
       :class="
         cn(
-          'fixed left-1/2 top-1/2 z-[101] grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border bg-background p-6 shadow-lg duration-300 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-[0.97] data-[state=open]:zoom-in-[0.97] data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-bottom-2 sm:rounded-lg',
+          'fixed left-1/2 top-1/2 z-[101] grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg sm:rounded-lg dialog-content',
           props.class,
         )"
     >
@@ -45,3 +45,54 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     </DialogContent>
   </DialogPortal>
 </template>
+
+<style>
+/* Overlay Animations */
+.dialog-overlay[data-state="open"] {
+  animation: dialog-overlay-fade-in 0.3s ease-in-out;
+}
+.dialog-overlay[data-state="closed"] {
+  animation: dialog-overlay-fade-out 0.3s ease-in-out;
+}
+
+@keyframes dialog-overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialog-overlay-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Content Animations (Floating in/out 4px matching Voice/Text switch) */
+.dialog-content {
+  transform: translate(-50%, -50%);
+}
+.dialog-content[data-state="open"] {
+  animation: dialog-content-enter 0.3s ease-in-out;
+}
+.dialog-content[data-state="closed"] {
+  animation: dialog-content-leave 0.3s ease-in-out;
+}
+
+@keyframes dialog-content-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+@keyframes dialog-content-leave {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 4px));
+  }
+}
+</style>
