@@ -282,9 +282,6 @@ function navigateTo(path: string) {
   padding: var(--spacing-sm);
   height: 60px;
 }
-.app-sidebar.is-collapsed .app-sidebar__header {
-  justify-content: center;
-}
 .app-sidebar__brand {
   display: flex;
   align-items: center;
@@ -335,7 +332,8 @@ function navigateTo(path: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xs);
+  width: var(--ui-height-md);
+  height: var(--ui-height-md);
   border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
