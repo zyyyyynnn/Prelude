@@ -26,10 +26,10 @@
 | `--color-text-secondary` | `#5e5d59` | 次级文本色 |
 | `--color-text-tertiary` | `#6b6a65` | 第三级辅助文本色（WCAG AA 4.5:1） |
 | `--color-brand` | `#9e7b6a` | 品牌主色 |
-| `--color-brand-light` | `color-mix(brand 12%, surface)` | 品牌暗示高亮（侧边栏 Active 态） |
+| `--color-brand-light` | `color-mix(in srgb, var(--color-brand) 12%, var(--color-surface))` | 品牌暗示高亮（侧边栏 Active 态） |
 | `--color-surface` | `#faf9f5` | 标准表面 |
-| `--color-surface-hover` | `color-mix(#2C2A29 4%, surface)` | Hover 态背景 |
-| `--color-surface-muted` | `color-mix(#2C2A29 8%, surface)` | Active 态、次级按钮底色 |
+| `--color-surface-hover` | `color-mix(in srgb, #2C2A29 4%, var(--color-surface))` | Hover 态背景 |
+| `--color-surface-muted` | `color-mix(in srgb, #2C2A29 8%, var(--color-surface))` | Active 态、次级按钮底色 |
 | `--color-sand` | `#e8e6dc` | 弱底色填充（如 Badge） |
 | `--color-border` | `#f0eee6` | 标准边框色 |
 | `--color-border-warm` | `#e8e6dc` | 暖灰次级边框色 |
@@ -42,6 +42,7 @@
 | `--color-text-button` | `#4d4c48` | 按钮默认文字色 |
 | `--color-coral` | `#b08878` | 暖色警告/强调 |
 | `--color-line-decor-light` | `#dddbd3` | 浅装饰线（如 SVG 描边） |
+| `--mask-overlay` | `rgba(20, 19, 19, 0.38)` | 遮罩层背景色 |
 
 ### 2.2 Spacing Token
 
@@ -62,9 +63,9 @@
 
 | Token | 值 | 用途 |
 |-------|-----|------|
-| `--ui-height-base` | 34px | shadcn 标准交互组件（Button/Input/SelectTrigger/SelectItem/DropdownMenuItem） |
-| `--ui-height-md` | 34px | 侧边栏按钮/会话项/菜单项统一高度 |
-| `--ui-height-sm` | 34px | 紧凑场景（与 base 统一） |
+| `--ui-height-base` | 34px | shadcn 标准交互组件（Button/Input/SelectTrigger/SelectItem/DropdownMenuItem）。当前全局统一高度 |
+| `--ui-height-md` | 34px | 侧边栏按钮/会话项/菜单项（当前与 base 等值，保留语义区分以便未来独立调整） |
+| `--ui-height-sm` | 34px | 紧凑场景别名（当前与 base 等值） |
 | `--header-height` | 72px | 工作区页头 |
 | `--composer-height` | 260px | 底部输入框占位高度 |
 
@@ -75,7 +76,7 @@
 | 层级 | z-index | 用途 |
 |------|---------|------|
 | `.app-shell__header` | `z-40` | 全局顶栏 |
-| `.workspace-header` / `.app-sidebar` | `z-100` | 工作区页头 / 侧边栏 |
+| `.workspace-header` / `.app-sidebar` | `z-[100]` | 工作区页头 / 侧边栏 |
 | Dialog Overlay + Content | `z-[101]` | 模态弹窗本体 |
 | Dropdown / Select / Popover | `z-[105]` | 浮动层，必须高于 Dialog |
 | Tooltip | `z-[110]` | 最顶层提示气泡 |
@@ -102,7 +103,6 @@
 | `--shadow-whisper` | `0 4px 24px rgba(0,0,0,0.05)` | 微弱悬浮阴影 |
 | `--shadow-inset` | `inset 0 0 0 1px rgba(0,0,0,0.15)` | 内凹轮廓 |
 | `--shadow-modal` | `0 8px 32px rgba(0,0,0,0.12)` | 弹窗阴影 |
-| `--mask-overlay` | `rgba(20, 19, 19, 0.38)` | 遮罩层背景 |
 
 ---
 
@@ -133,12 +133,12 @@
 - 所有组件高度统一 `var(--ui-height-md)` (34px)
 - 间距全面复用 `var(--spacing-sm)` (8px)
 - 折叠态数学模型：`padding: 0 var(--spacing-sm); margin: 0; justify-content: flex-start;`，严禁 `auto` 或 `center`
-- 滚动条继承全局 `.scrollable`，禁止在 scoped CSS 中重复定义 `::-webkit-scrollbar`
+- 滚动条继承全局 `.scrollable`（禁止项见 §8.3）
 - `WorkspaceHeader.vue` 禁止在 scoped CSS 中定义 `.workspace-header`
 
 ### 4.3 弹窗
 
-- 全局弹窗必须设置 `max-height: 70vh` + `overflow-y: auto; flex: 1; min-height: 0`
+- 全局弹窗的 `<DialogContent>` 设置 `max-height: 70vh`，内部滚动区域设置 `overflow-y: auto; flex: 1; min-height: 0`
 
 ### 4.4 工作区骨架
 
@@ -176,8 +176,8 @@
 ### 5.4 下拉弹层（shadcn-vue）
 
 - Content z-index 必须为 `z-[105]`（碾压 Dialog 的 `z-[101]`）
-- Content 禁止裸写 `border`，必须配对 `border-border` 防止 Tailwind v4 `currentColor` 纯黑回退
-- Content 取消 `p-1` 内边距，使用 Viewport 变量实现宽度等比对齐
+- Content 必须配对 `border-border`（禁止裸写 `border`，见 §8.1）
+- Content 取消 `p-1` 内边距，通过 `min-w-[--reka-select-trigger-width]` 继承触发器宽度实现等比对齐
 - Menu Items 必须强制加上 `h-[34px]` 和 `rounded-md`，严禁悬浮时出现贴边直角
 - 菜单项文本过长时 ellipsis 截断
 
@@ -202,7 +202,7 @@
 
 | 维度 | 标准值 | 说明 |
 |------|--------|------|
-| 时长 | `300ms`（`duration-300`） | 全局统一，禁止 150ms/200ms/500ms |
+| 时长 | `300ms`（`duration-300`） | 全局统一。唯一批准的特例：语音按钮按下态 `150ms`（见 §6.3） |
 | 曲线 | `ease-in-out` | 全局统一，禁止 `ease`/`ease-out`/`ease-in`/`ease-linear`（语音按钮按下态为唯一批准的 150ms ease-out 特例，见 §6.3） |
 | 允许过渡的属性 | 优先 `opacity` 和 `transform` | Layout 属性原则上禁止（`height`/`max-height`/`width`/`grid-template-rows`），仅限 §6.3 批准的例外 |
 | 入场隐喻 | `opacity: 0→1` + `translateY(4px→0)` | 从下方 4px 柔和浮入 |
@@ -234,7 +234,7 @@
 |------|------|------|----------|----------|
 | 侧边栏宽度 | 300ms | ease-in-out | `width`（Layout 属性，已有 `will-change: width` + `translateZ(0)` 优化） | 🟡 已优化 |
 | 侧边栏标签淡入淡出 | 300ms | ease-in-out | `opacity` | ✅ |
-| 侧边栏折叠态图标 | 300ms | ease-in-out | `opacity, max-height`（`max-height` 为 Layout 属性） | 🟡 待优化 |
+| 侧边栏折叠态图标 | 300ms | ease-in-out | `opacity, max-height`（`max-height` 为 Layout 属性） | 🟡 技术债：目标方案为改用 `opacity` + `pointer-events: none` 替代 `max-height` |
 | JD 面板 | 300ms | ease-in-out | `opacity, transform` | ✅ |
 | 语音/文字切换 | 300ms | ease-in-out | `opacity, transform` | ✅ |
 | 语音按钮按下 | 150ms | ease-out | `transform`（快速响应） | ✅ 特例 |
@@ -273,10 +273,11 @@
 
 ### 8.2 动效
 
-- 禁止 `transition: all` — 必须精确声明属性
-- 🔴 禁止 `shadow-none` 与 `focus:ring-*` 共存 — `shadow-none` 清零整个 `box-shadow`，导致焦点环失效
+- 禁止 `transition: all`、禁止缩放形变、禁止 Layout 属性动画 — 详见 §6.4
 - 🔴 禁止写全局的 `[data-state="open"] { outline: none !important }` 粗暴覆盖
 - 禁止为了视觉刺激滥用缩放或弹簧物理动效
+
+> **开发注意事项**：`shadow-none` 与 `focus:ring-*` 共存时，`shadow-none` 会清零 `box-shadow` 导致焦点环失效。代码审查时需关注此模式，但不属于设计规范原则。
 
 ### 8.3 布局
 
