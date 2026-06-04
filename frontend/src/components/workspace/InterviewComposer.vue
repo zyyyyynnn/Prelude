@@ -757,7 +757,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-brand);
   background-color: var(--color-brand);
   color: var(--color-surface);
-  transition: transform 0.15s ease-out, background-color 0.15s ease-out, box-shadow 0.15s ease-out; /* 快速响应按下 */
+  transition: transform 0.3s ease-out, background-color 0.3s ease-out, box-shadow 0.3s ease-out; /* 快速响应按下 */
 }
 .voice-press-btn:not(:active) {
   transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* 从容释放 */

@@ -451,7 +451,7 @@ a {
   white-space: nowrap;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  animation: app-shell-menu-enter 0.14s ease-out both;
+  animation: app-shell-menu-enter 0.3s ease-out both;
 }
 
 .app-shell__action-menu-section {

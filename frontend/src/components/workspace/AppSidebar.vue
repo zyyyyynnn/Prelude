@@ -196,7 +196,7 @@ function navigateTo(path: string) {
         </div>
       </div>
       </Transition>
-            <Transition name="sidebar-fade-float">
+            <Transition name="sidebar-fade">
         <div v-show="collapsed" class="app-sidebar__collapsed-actions">
           <button
             :class="['app-sidebar__btn app-sidebar__btn--icon', { 'is-active': interviewMenuActive }]"
@@ -291,18 +291,15 @@ function navigateTo(path: string) {
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out, gap 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out;
   width: 180px;
   opacity: 1;
   transform: translateZ(0);
   -webkit-font-smoothing: antialiased;
 }
 .app-sidebar.is-collapsed .app-sidebar__brand {
-  width: 0;
   opacity: 0;
-  margin: 0;
-  padding: 0;
-  gap: 0;
+  pointer-events: none;
 }
 .app-sidebar__logo {
   width: 32px;
@@ -320,17 +317,16 @@ function navigateTo(path: string) {
 .sidebar-label {
   white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out;
   display: inline-block;
   overflow: hidden;
   transform: translateZ(0);
   -webkit-font-smoothing: antialiased;
+  flex-shrink: 0;
 }
 .app-sidebar.is-collapsed .sidebar-label {
   opacity: 0;
-  width: 0;
-  margin: 0;
-  padding: 0;
+  pointer-events: none;
 }
 .app-sidebar__toggle {
   background: transparent;
@@ -373,19 +369,11 @@ function navigateTo(path: string) {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out, padding 0.3s ease-in-out, gap 0.3s ease-in-out;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
-}
-.app-sidebar.is-collapsed .app-sidebar__btn {
-  padding: 0 var(--spacing-sm);
-  margin: 0;
-  gap: 0;
-  width: var(--ui-height-md);
-  height: var(--ui-height-md);
-  justify-content: center;
 }
 .app-sidebar__btn--primary {
   font-family: var(--font-serif);
@@ -430,21 +418,7 @@ function navigateTo(path: string) {
   margin-top: auto;
   margin-bottom: var(--spacing-sm);
 }
-.sidebar-fade-float-enter-active,
-.sidebar-fade-float-leave-active {
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-}
-.sidebar-fade-float-enter-from {
-  opacity: 0;
-  transform: translateY(4px);
-}
-.sidebar-fade-float-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-.sidebar-fade-float-leave-active {
-  pointer-events: none;
-}
+
 .session-group {
   margin-bottom: var(--spacing-sm);
   white-space: nowrap;
@@ -473,7 +447,7 @@ function navigateTo(path: string) {
   font-size: 14px;
   font-family: var(--font-serif) !important;
   line-height: 1;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -557,7 +531,7 @@ function navigateTo(path: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 .action-btn:focus-visible {
   outline: 2px solid var(--color-focus);
