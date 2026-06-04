@@ -4,6 +4,7 @@ import { bindHttpInterceptors } from './api/http'
 import router from './router'
 import pinia from './stores'
 import './styles/index.css'
+import 'vue-sonner/style.css'
 
 const app = createApp(App)
 

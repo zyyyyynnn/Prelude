@@ -87,7 +87,7 @@ onMounted(() => {
 
 <template>
   <div class="panel-content-wrapper">
-    <form class="flex flex-col gap-lg" @submit.prevent>
+    <form class="flex flex-col gap-6" @submit.prevent>
       <div class="field-grid">
         <div class="flex flex-col gap-2">
           <Label>用户名</Label>
@@ -151,9 +151,10 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="button-row flex gap-3 mt-4">
+      <div class="button-row flex gap-3 mt-4 justify-end">
         <Button
           type="submit"
+          class="!font-serif"
           :disabled="saving || loading"
           @click="saveProfile"
         >
@@ -163,6 +164,7 @@ onMounted(() => {
         <Button
           v-if="hasPasswordChange"
           variant="secondary"
+          class="!font-serif"
           :disabled="saving"
           @click="profile.oldPassword = ''; profile.newPassword = ''"
         >

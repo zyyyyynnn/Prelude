@@ -36,7 +36,7 @@ const showSidebar = computed(() => route.path !== '/login' && authStore.isLogged
       v-model:activeTab="activeSettingsTab" 
     />
     <GlobalConfirmDialog />
-    <Toaster position="top-center" rich-colors />
+    <Toaster position="top-center" />
   </div>
 </template>
 

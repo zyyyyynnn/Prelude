@@ -61,6 +61,7 @@
 | `--ui-height-sm` | 34px | 紧凑按钮、输入框、下拉框 wrapper |
 | `--header-height` | 72px | 工作区页头 |
 | `--composer-height` | 260px | 底部输入框占位高度 |
+| `h-10` | 40px | 新增基准声明，作为所有核心交互组件（Button/Input/SelectTrigger/MenuItem）的不可动摇的统一高度 |
 
 ## 3. 字体层级
 
@@ -124,12 +125,12 @@
 - 所有 `ElSelect` 和 `ElInput` 禁止使用 `size` 属性，高度由 `--ui-height-sm` 控制
 - 文件上传使用封装上传行，禁止暴露原生 file input
 
-### 5.4 下拉弹层
+### 5.4 下拉弹层重写
 
-- `ElDropdown` / `ElSelect` 必须通过 `popper-class` 指定自定义弹层 class
-- 所有 `ElSelect` 必须添加 `fit-input-width`
-- 弹层边框禁止使用真实 `border`，改用 `box-shadow: inset 0 0 0 1px var(--color-border-warm)` 模拟
-- 弹层 `padding: 1px`、`will-change: transform`、`backface-visibility: hidden`
+- Content Z-index 必须为 `z-[105]`（碾压 Dialog 的 101）。
+- Content 禁止裸写 `border`，必须配对 `border-border` 防止 currentColor 纯黑回退。
+- Content 取消 `p-1` 内边距，使用 Viewport 变量实现 100% 宽度等比对齐。
+- Menu Items 必须强制加上 `h-10` 和 `rounded-md`，严禁悬浮时出现贴边直角。
 - 菜单项文本过长时 ellipsis 截断
 
 ### 5.5 通知
@@ -172,12 +173,13 @@
 - 禁止新增页面级跨路由按钮
 - 禁止冷色 SaaS 风、深色终端风和高饱和强调色
 - 禁止为一次性页面效果增加新设计体系
-- 禁止使用 Element Plus 的 `size` 属性控制按钮/输入框尺寸
-- 禁止 `ElDropdown` / `ElSelect` 不加 `popper-class`
-- 禁止直接调用 `ElMessage`，统一走 `usePageNotice`
 - 禁止交互元素缺少 `focus-visible` 样式
 - 禁止在 Vue scoped CSS 中使用原生 `white`、`black`、`#hex` 颜色值
 - 禁止使用 `color-mix(in srgb, ... black)` 混入纯黑制造背景加深
 - 禁止使用 `--color-sand` 作为 hover 背景色，统一使用 `--color-surface-hover`
 - 禁止侧边栏折叠态使用 `justify-content: center` 或 `margin: auto`
 - 禁止在侧边栏 scoped CSS 中定义 `::-webkit-scrollbar`
+- 🔴 禁止裸写 border 而不指定颜色（防黑框）。
+- 🔴 禁止在 Focus 环清理时滥用 shadow-none 导致原生 outline 逃逸。
+- 🔴 禁止写全局的 [data-state="open"] 粗暴覆盖。
+- 🔴 禁止在文档流中使用弹层导致父容器抖动，必须使用 absolute inset-0 z-10 进行 Z 轴覆盖。

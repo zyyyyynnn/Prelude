@@ -5,15 +5,16 @@ import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon
 import { Toaster as Sonner } from "vue-sonner"
 
 const props = defineProps<ToasterProps>()
-const delegatedProps = reactiveOmit(props, "toastOptions")
+const delegatedProps = reactiveOmit(props, "toastOptions", "theme")
 </script>
 
 <template>
   <Sonner
+    theme="light"
     class="toaster group"
     :toast-options="{
       classes: {
-        toast: 'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
+        toast: 'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg font-serif rounded-lg px-4 py-3 text-[15px]',
         description: 'group-[.toast]:text-muted-foreground',
         actionButton:
           'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
