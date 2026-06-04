@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useLlmSettings } from '../../composables/useLlmSettings'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -10,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Eye, EyeOff, Loader2, Trash2 } from 'lucide-vue-next'
+import { Eye, EyeOff, Trash2 } from 'lucide-vue-next'
 import {
   FormControl,
   FormField,
@@ -53,6 +52,8 @@ const onSubmit = handleSubmit(async () => {
 onMounted(() => {
   void loadSettings()
 })
+
+defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 </script>
 
 <template>
@@ -183,26 +184,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="button-row flex gap-3 mt-4 justify-end">
-        <Button
-          type="button"
-          variant="secondary"
-          class="!font-serif"
-          :disabled="saving || loading || testing"
-          @click="testSettings"
-        >
-          <Loader2 v-if="testing" class="w-4 h-4 mr-2 animate-spin" />
-          测试连接
-        </Button>
-        <Button
-          type="submit"
-          class="!font-serif"
-          :disabled="saving"
-        >
-          <Loader2 v-if="saving" class="w-4 h-4 mr-2 animate-spin" />
-          保存设置
-        </Button>
-      </div>
+
     </form>
   </div>
 </template>

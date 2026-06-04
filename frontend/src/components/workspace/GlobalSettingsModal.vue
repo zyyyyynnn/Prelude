@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { useAuthStore } from '../../stores/auth'
 import UserProfilePanel from './UserProfilePanel.vue'
 import LlmSettingsPanel from './LlmSettingsPanel.vue'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-vue-next'
 
 const visible = defineModel<boolean>('visible', { default: false })
 const activeTab = defineModel<'profile' | 'llm'>('activeTab', { default: 'profile' })
 
 const router = useRouter()
 const authStore = useAuthStore()
+const profilePanel = ref<InstanceType<typeof UserProfilePanel> | null>(null)
+const llmPanel = ref<InstanceType<typeof LlmSettingsPanel> | null>(null)
 
 function handleLogout() {
   authStore.clearSession()
@@ -49,11 +54,45 @@ function handleLogout() {
 
         <main class="settings-main">
           <header class="settings-header">
-            <h3>{{ activeTab === 'profile' ? '账号资料' : 'LLM 配置' }}</h3>
+            <h3 class="settings-header__title">{{ activeTab === 'profile' ? '账号资料' : 'LLM 配置' }}</h3>
+            <div class="settings-header__actions">
+              <template v-if="activeTab === 'llm'">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  class="!font-serif"
+                  :disabled="llmPanel?.saving || llmPanel?.loading || llmPanel?.testing"
+                  @click="llmPanel?.test()"
+                >
+                  <Loader2 v-if="llmPanel?.testing" class="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  测试连接
+                </Button>
+                <Button
+                  size="sm"
+                  class="!font-serif"
+                  :disabled="llmPanel?.saving"
+                  @click="llmPanel?.submit()"
+                >
+                  <Loader2 v-if="llmPanel?.saving" class="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  保存设置
+                </Button>
+              </template>
+              <template v-else-if="activeTab === 'profile'">
+                <Button
+                  size="sm"
+                  class="!font-serif"
+                  :disabled="profilePanel?.saving || profilePanel?.loading"
+                  @click="profilePanel?.submit()"
+                >
+                  <Loader2 v-if="profilePanel?.saving || profilePanel?.loading" class="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  保存设置
+                </Button>
+              </template>
+            </div>
           </header>
           <div class="settings-content scrollable">
-            <UserProfilePanel v-if="activeTab === 'profile'" />
-            <LlmSettingsPanel v-else-if="activeTab === 'llm'" />
+            <UserProfilePanel v-if="activeTab === 'profile'" ref="profilePanel" />
+            <LlmSettingsPanel v-else-if="activeTab === 'llm'" ref="llmPanel" />
           </div>
         </main>
       </div>
@@ -62,6 +101,10 @@ function handleLogout() {
 </template>
 
 <style scoped>
+/* 隐藏 DialogContent 默认的 ✕ 关闭按钮 */
+:deep(button.absolute.right-4.top-4) {
+  display: none;
+}
 /* 双栏布局 */
 .settings-layout {
   display: flex;
@@ -139,12 +182,17 @@ function handleLogout() {
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
 }
-.settings-header h3 {
+.settings-header__title {
   margin: 0;
   font-size: 16px;
   font-weight: 500;
   font-family: var(--font-serif);
   color: var(--color-text-primary);
+}
+.settings-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 .settings-content {
   flex: 1;

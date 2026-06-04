@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { usePageNotice } from '../../composables/usePageNotice'
 import { fetchUserProfile, updateUserProfile } from '../../api/user'
 import { getErrorMessage } from '../../utils/errors'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import { Eye, EyeOff } from 'lucide-vue-next'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -22,7 +21,7 @@ const profile = reactive({
 const showOldPassword = ref(false)
 const showNewPassword = ref(false)
 
-const hasPasswordChange = computed(() => Boolean(profile.oldPassword.trim() || profile.newPassword.trim()))
+
 
 async function loadProfile() {
   loading.value = true
@@ -83,6 +82,8 @@ async function saveProfile() {
 onMounted(() => {
   void loadProfile()
 })
+
+defineExpose({ submit: saveProfile, saving, loading })
 </script>
 
 <template>
@@ -151,26 +152,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="button-row flex gap-3 mt-4 justify-end">
-        <Button
-          type="submit"
-          class="!font-serif"
-          :disabled="saving || loading"
-          @click="saveProfile"
-        >
-          <Loader2 v-if="saving || loading" class="w-4 h-4 mr-2 animate-spin" />
-          保存设置
-        </Button>
-        <Button
-          v-if="hasPasswordChange"
-          variant="secondary"
-          class="!font-serif"
-          :disabled="saving"
-          @click="profile.oldPassword = ''; profile.newPassword = ''"
-        >
-          清空密码输入
-        </Button>
-      </div>
+
     </form>
   </div>
 </template>
