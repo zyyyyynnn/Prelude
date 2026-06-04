@@ -626,7 +626,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .interview-composer {
-  transition: max-width 0.3s ease, margin 0.3s ease, transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: max-width 0.3s ease-in-out, margin 0.3s ease-in-out, transform 0.3s ease-in-out, border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
   width: 100%;
 }
 .interview-composer.is-centered {
@@ -757,7 +757,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-brand);
   background-color: var(--color-brand);
   color: var(--color-surface);
-  transition: transform 0.3s ease-out, background-color 0.3s ease-out, box-shadow 0.3s ease-out; /* 快速响应按下 */
+  transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* 快速响应按下 */
 }
 .voice-press-btn:not(:active) {
   transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* 从容释放 */

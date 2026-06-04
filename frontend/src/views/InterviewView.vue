@@ -887,7 +887,7 @@ onBeforeUnmount(() => {
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 .voice-close-btn:hover {
   background-color: var(--color-surface-hover);
