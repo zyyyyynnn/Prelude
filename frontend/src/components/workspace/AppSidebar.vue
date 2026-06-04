@@ -203,7 +203,7 @@ function navigateTo(path: string) {
             @click="navigateTo('/interview')"
             aria-label="工作区"
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
               <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M3 9h18M9 21V9" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
@@ -273,7 +273,7 @@ function navigateTo(path: string) {
   font-family: var(--font-serif);
 }
 .app-sidebar.is-collapsed {
-  width: calc(var(--ui-height-md) + var(--spacing-sm) * 2); /* 36 + 8*2 = 52px，使 26px 重心绝对居中 */
+  width: calc(var(--ui-height-md) + var(--spacing-sm) * 2 + 1px); /* 34 + 16 + 1 = 51px. 内部可用 34px 形成绝对正方形 */
 }
 .app-sidebar__header {
   display: flex;
@@ -288,13 +288,14 @@ function navigateTo(path: string) {
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
   width: 180px;
   opacity: 1;
   transform: translateZ(0);
   -webkit-font-smoothing: antialiased;
 }
 .app-sidebar.is-collapsed .app-sidebar__brand {
+  width: 0;
   opacity: 0;
   pointer-events: none;
 }
@@ -314,7 +315,7 @@ function navigateTo(path: string) {
 .sidebar-label {
   white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
   display: inline-block;
   overflow: hidden;
   transform: translateZ(0);
@@ -322,6 +323,7 @@ function navigateTo(path: string) {
   flex-shrink: 0;
 }
 .app-sidebar.is-collapsed .sidebar-label {
+  width: 0;
   opacity: 0;
   pointer-events: none;
 }
@@ -367,7 +369,7 @@ function navigateTo(path: string) {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, padding 0.3s ease-in-out, gap 0.3s ease-in-out;
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -396,6 +398,10 @@ function navigateTo(path: string) {
 .app-sidebar__btn:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
+}
+.app-sidebar.is-collapsed .app-sidebar__btn {
+  padding: 0 7px; /* (34 - 20) / 2 = 7px，精准居中 20px 图标 */
+  gap: 0;
 }
 .app-sidebar__sessions {
   flex: 1;
