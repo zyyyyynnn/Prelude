@@ -91,8 +91,6 @@ async function loadDashboard() {
 
     if (activeSessionId.value && sessions.value.some((item) => item.sessionId === activeSessionId.value)) {
       await loadSession(activeSessionId.value, true)
-    } else if (primarySessionList.value[0]) {
-      await loadSession(primarySessionList.value[0].sessionId, true)
     }
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
