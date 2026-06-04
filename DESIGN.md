@@ -10,7 +10,7 @@
 
 - **暖色调纸感**：背景 `#f5f4ed` / 表面 `#faf9f5`，禁止纯白页面背景
 - **主色体系**：`#9e7b6a` 及其低饱和暖灰派生色，禁止冷色 SaaS 风和高饱和强调色
-- **GPU 动效**：只允许过渡 `opacity` 和 `transform`，禁止对 Layout 属性（`height`、`width`、`max-height`、`grid-template-rows`）执行动画
+- **GPU 动效**：优先过渡 `opacity` 和 `transform`。Layout 属性（`height`、`width`、`max-height`、`grid-template-rows`）原则上禁止参与动画，仅限已批准的例外（见 §6.3）
 - **Token 驱动**：间距、高度、颜色全部使用 CSS 变量，禁止硬编码 `px` / `hex` / `white` / `black`
 - **组件一致性**：同一视觉层级的卡片必须统一内边距、标题区高度、Badge 尺寸和按钮尺寸
 
@@ -74,6 +74,8 @@
 
 | 层级 | z-index | 用途 |
 |------|---------|------|
+| `.app-shell__header` | `z-40` | 全局顶栏 |
+| `.workspace-header` / `.app-sidebar` | `z-100` | 工作区页头 / 侧边栏 |
 | Dialog Overlay + Content | `z-[101]` | 模态弹窗本体 |
 | Dropdown / Select / Popover | `z-[105]` | 浮动层，必须高于 Dialog |
 | Tooltip | `z-[110]` | 最顶层提示气泡 |
@@ -89,6 +91,7 @@
 | `--radius-lg` | 12px | 大圆角（卡片内部区块） |
 | `--radius-xl` | 16px | 卡片圆角 |
 | `--radius-2xl` | 24px | 特大圆角 |
+| `--radius-3xl` | 32px | 超大圆角 |
 
 ### 2.6 阴影 Token
 
@@ -161,7 +164,7 @@
 - 主操作只放在所属模块内，禁止跨模块按钮散落
 - Badge 使用浅沙底、暖灰文字、小圆角胶囊
 - shadcn `<Button>` 尺寸变体：`default`(34px)、`sm`(34px)、`icon`(34px)、`icon-sm`(34px)、`lg`(44px)、`icon-lg`(44px)
-- 按钮 Hover 态只允许加深 `background-color`，严禁改变 `border-color` 或增加 `box-shadow`
+- 按钮 Hover 态允许加深 `background-color` 和 `transform: translateY(-1px)` 微位移，严禁改变 `border-color` 或增加 `box-shadow`
 
 ### 5.3 表单与输入
 
@@ -189,7 +192,7 @@
 ### 5.6 通知
 
 - 所有页面级通知统一使用 `usePageNotice`
-- 禁止直接调用 ElMessage，避免样式不统一
+- 禁止直接调用全局消息方法（如 `ElMessage`），统一走 `usePageNotice`
 
 ---
 
@@ -200,8 +203,8 @@
 | 维度 | 标准值 | 说明 |
 |------|--------|------|
 | 时长 | `300ms`（`duration-300`） | 全局统一，禁止 150ms/200ms/500ms |
-| 曲线 | `ease-in-out` | 全局统一，禁止 `ease`/`ease-out`/`ease-in`/`ease-linear` |
-| 允许过渡的属性 | 仅 `opacity` 和 `transform` | 绝对封杀 `height`/`max-height`/`width`/`grid-template-rows` 等 Layout 属性 |
+| 曲线 | `ease-in-out` | 全局统一，禁止 `ease`/`ease-out`/`ease-in`/`ease-linear`（语音按钮按下态为唯一批准的 150ms ease-out 特例，见 §6.3） |
+| 允许过渡的属性 | 优先 `opacity` 和 `transform` | Layout 属性原则上禁止（`height`/`max-height`/`width`/`grid-template-rows`），仅限 §6.3 批准的例外 |
 | 入场隐喻 | `opacity: 0→1` + `translateY(4px→0)` | 从下方 4px 柔和浮入 |
 | 离场隐喻 | `opacity: 1→0` + `translateY(0→-4px)` | 向上方 4px 柔和淡出 |
 
@@ -286,4 +289,4 @@
 
 - 禁止使用原生 `title` 属性替代 Tooltip
 - 禁止使用 `<DropdownMenu>` 作为表单值选择器 — 表单场景统一用 `<Select>`
-- 禁止使用 Element Plus 的 `size` 属性控制按钮/输入框尺寸
+- 禁止使用第三方 UI 库的 `size` 属性覆盖组件尺寸，统一使用 shadcn 变体
