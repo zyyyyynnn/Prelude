@@ -110,8 +110,9 @@
 | 页面标题 / 卡片标题 / 表单 Label | `--font-serif`（Lora） | 字重不超过 500 |
 | 正文 / 按钮 / 菜单 | `--font-sans`（Inter） | 保持 14-15px，行高不低于 1.4 |
 | 代码 / 技术片段 | `--font-mono`（JetBrains Mono） | 仅用于代码或接口片段 |
+| 小标签 / Badge（如"面试官"、"2场使用"、"进行中"） | `--font-serif`（Lora） | 允许使用品牌衬线；字重 600（semibold）；字号 12px（text-xs）；字距 `letter-spacing: 0.05em`（tracking-wider），以防止小号衬线粘连 |
 
-**全局字体重置**：`index.css` 中 `body, button, input, select, textarea` 统一设 `font-family: var(--font-sans)`。品牌主操作按钮（如"开始新面试"）可使用 `!font-serif` 强制覆盖以强化品牌调性。
+**全局字体重置**：`index.css` 中 `body, button, input, select, textarea` 统一设 `font-family: var(--font-sans)`。品牌主操作按钮（如"开始新面试"）可使用 `!font-serif` 强制覆盖以强化品牌调性。小标签 `<Badge>` 组件统一采用品牌衬线，通过字距（tracking-wider）保持精致呼吸感。
 
 ---
 
