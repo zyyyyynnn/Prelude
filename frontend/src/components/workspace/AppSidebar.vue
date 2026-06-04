@@ -196,18 +196,20 @@ function navigateTo(path: string) {
         </div>
       </div>
       </Transition>
-            <div class="app-sidebar__collapsed-actions" :class="{ 'is-visible': collapsed }">
-        <button
-          :class="['app-sidebar__btn app-sidebar__btn--icon', { 'is-active': interviewMenuActive }]"
-          @click="navigateTo('/interview')"
-          aria-label="工作区"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M3 9h18M9 21V9" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-      </div>
+            <Transition name="sidebar-fade-float">
+        <div v-show="collapsed" class="app-sidebar__collapsed-actions">
+          <button
+            :class="['app-sidebar__btn app-sidebar__btn--icon', { 'is-active': interviewMenuActive }]"
+            @click="navigateTo('/interview')"
+            aria-label="工作区"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3 9h18M9 21V9" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </Transition>
 
       <div class="app-sidebar__tools">
         <button
@@ -425,17 +427,23 @@ function navigateTo(path: string) {
   scrollbar-color: var(--color-ring) transparent;
 }
 .app-sidebar__collapsed-actions {
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-  opacity: 0;
-  pointer-events: none;
-  overflow: hidden;
-  margin: 0;
-}
-.app-sidebar__collapsed-actions.is-visible {
-  opacity: 1;
-  pointer-events: auto;
   margin-top: auto;
   margin-bottom: var(--spacing-sm);
+}
+.sidebar-fade-float-enter-active,
+.sidebar-fade-float-leave-active {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+.sidebar-fade-float-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.sidebar-fade-float-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.sidebar-fade-float-leave-active {
+  pointer-events: none;
 }
 .session-group {
   margin-bottom: var(--spacing-sm);
