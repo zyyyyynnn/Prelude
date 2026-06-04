@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   box-shadow: 0 4px 10px color-mix(in srgb, var(--color-text-primary) 3%, transparent);
 }
 .voice-btn:hover {

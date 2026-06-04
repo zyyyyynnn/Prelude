@@ -371,7 +371,7 @@ function navigateTo(path: string) {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease-in-out;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out, padding 0.3s ease-in-out, gap 0.3s ease-in-out;
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -425,17 +425,15 @@ function navigateTo(path: string) {
   scrollbar-color: var(--color-ring) transparent;
 }
 .app-sidebar__collapsed-actions {
-  transition: all 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
   opacity: 0;
   pointer-events: none;
-  max-height: 0;
   overflow: hidden;
   margin: 0;
 }
 .app-sidebar__collapsed-actions.is-visible {
   opacity: 1;
   pointer-events: auto;
-  max-height: 48px;
   margin-top: auto;
   margin-bottom: var(--spacing-sm);
 }
@@ -467,7 +465,7 @@ function navigateTo(path: string) {
   font-size: 14px;
   font-family: var(--font-serif) !important;
   line-height: 1;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -551,7 +549,7 @@ function navigateTo(path: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .action-btn:focus-visible {
   outline: 2px solid var(--color-focus);
