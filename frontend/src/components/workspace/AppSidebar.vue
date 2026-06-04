@@ -451,7 +451,7 @@ function navigateTo(path: string) {
   font-size: 14px;
   font-family: var(--font-serif) !important;
   line-height: 1;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -499,7 +499,7 @@ function navigateTo(path: string) {
   align-items: center;
   gap: 4px;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.3s ease-in-out;
   background: linear-gradient(90deg, transparent 0%, var(--color-surface) 25%, var(--color-surface) 100%);
   padding-left: var(--spacing-sm);
 }
@@ -535,7 +535,7 @@ function navigateTo(path: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 .action-btn:focus-visible {
   outline: 2px solid var(--color-focus);

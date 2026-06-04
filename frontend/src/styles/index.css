@@ -373,10 +373,10 @@ a {
   box-shadow: var(--shadow-ring);
   cursor: pointer;
   transition:
-    border-color 0.14s ease,
-    box-shadow 0.14s ease,
-    background-color 0.14s ease,
-    transform 0.14s ease;
+    border-color 0.14s ease-in-out,
+    box-shadow 0.14s ease-in-out,
+    background-color 0.14s ease-in-out,
+    transform 0.14s ease-in-out;
 }
 
 .app-shell__menu-trigger:hover,
@@ -406,8 +406,8 @@ a {
 
 .app-shell__menu-icon-line {
   transition:
-    transform 0.14s ease,
-    opacity 0.14s ease;
+    transform 0.14s ease-in-out,
+    opacity 0.14s ease-in-out;
   transform-origin: center;
 }
 
@@ -451,7 +451,7 @@ a {
   white-space: nowrap;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  animation: app-shell-menu-enter 0.3s ease-out both;
+  animation: app-shell-menu-enter 0.3s ease-in-out both;
 }
 
 .app-shell__action-menu-section {
@@ -491,10 +491,10 @@ a {
   text-align: center;
   box-shadow: var(--shadow-ring);
   transition:
-    border-color 0.14s ease,
-    background-color 0.14s ease,
-    box-shadow 0.14s ease,
-    color 0.14s ease;
+    border-color 0.14s ease-in-out,
+    background-color 0.14s ease-in-out,
+    box-shadow 0.14s ease-in-out,
+    color 0.14s ease-in-out;
 }
 
 .app-shell__action-menu-item:hover,
@@ -1589,9 +1589,9 @@ label,
   font: 500 15px var(--font-sans);
   cursor: pointer;
   transition:
-    border-color 0.14s ease,
-    background-color 0.14s ease,
-    color 0.14s ease;
+    border-color 0.14s ease-in-out,
+    background-color 0.14s ease-in-out,
+    color 0.14s ease-in-out;
 }
 
 .auth-switch__item.is-active {
@@ -2008,7 +2008,7 @@ label,
 
 /* ── Icon Action Button ── */
 .icon-action-btn {
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
   border-radius: var(--radius-sm);
   padding: 4px;
   margin: -4px;
