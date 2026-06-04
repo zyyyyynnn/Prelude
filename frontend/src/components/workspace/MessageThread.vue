@@ -189,9 +189,11 @@ onMounted(() => {
   height: 24px;
   line-height: 24px;
   max-width: 100%;
+  font-family: var(--font-serif);
+  letter-spacing: 0.05em; /* tracking-wider equivalent */
 }
 .judge-badge__score {
-  font-weight: bold;
+  font-weight: 600; /* semibold */
   color: var(--color-brand);
 }
 .judge-badge__hint {
