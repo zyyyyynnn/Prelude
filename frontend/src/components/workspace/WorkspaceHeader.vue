@@ -99,7 +99,7 @@ const emit = defineEmits<{
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   outline: none;
 }
 .segmented-control__item:hover {

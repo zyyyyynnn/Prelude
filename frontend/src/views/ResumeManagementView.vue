@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  transition: all 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 .resume-row:hover {
   border-color: var(--color-border-warm);

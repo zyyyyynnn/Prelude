@@ -107,7 +107,7 @@ function handleLogout() {
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 .menu-item:hover {
   background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
