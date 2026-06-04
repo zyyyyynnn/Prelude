@@ -30,7 +30,6 @@ const {
   replay,
   reportMarkdown,
   sessionLoading,
-  primarySessionList,
   refreshSessionList,
   loadSession,
   getNewAbortSignal,
