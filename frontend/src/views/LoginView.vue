@@ -181,7 +181,7 @@ onMounted(() => {
             </FormField>
 
             <div
-              :class="['transition-all duration-300', { 'hidden': !isRegisterMode }]"
+              :class="['transition-opacity transition-transform duration-300', { 'hidden': !isRegisterMode }]"
               :aria-hidden="!isRegisterMode"
             >
               <FormField name="email" v-slot="{ componentField }">
