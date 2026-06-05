@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { usePageNotice } from '../../composables/usePageNotice'
 import { fetchUserProfile, updateUserProfile } from '../../api/user'
@@ -6,7 +6,7 @@ import { getErrorMessage } from '../../utils/errors'
 import { withMinDelay } from '../../lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Eye, EyeOff } from 'lucide-vue-next'
+import { Eye, EyeOff } from '@lucide/vue'
 
 const loading = ref(false)
 const saving = ref(false)

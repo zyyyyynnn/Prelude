@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useLlmSettings } from '../../composables/useLlmSettings'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Eye, EyeOff, Trash2 } from 'lucide-vue-next'
+import { Eye, EyeOff, Trash2 } from '@lucide/vue'
 import {
   FormControl,
   FormField,
