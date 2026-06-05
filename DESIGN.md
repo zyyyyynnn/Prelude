@@ -252,6 +252,13 @@
 - 禁止 `slide-in-from-top-[48%]` 等大幅位移
 - 禁止 `height: auto` 参与过渡动画（不可补间）
 
+### 6.5 按钮加载与防抽搐规范 (Button Loading & Anti-Flicker)
+
+- **无损宽度与交叉溶解**：按钮加载时，严禁使用 `v-if` 物理挤入 Icon 导致按钮宽度抽搐。必须通过 `absolute inset-0` 居中 Loader，并与文字层执行对称的 300ms `ease-in-out` 透明度交叉溶解（Cross-Fade）。
+- **300ms 黄金延迟拦截**：所有高频写操作（如登录、保存配置、上传等）调用 API 时，外层必须包裹 `withMinDelay(apiCall, 300)`，确保加载动画最少从容播放 300ms，杜绝极速网络下的 UI 闪烁。
+- **读写状态严格解耦**：页面级“拉取数据 (loading)”与按钮级“提交保存 (saving)”必须使用独立的 Ref 状态，严禁混绑引发跨场景的错误 Loading。
+- **流式特权豁免**：流式读取操作（如 SSE 聊天、WebSocket 推送）绝对禁止包裹 `withMinDelay`，以保证大模型首字响应（TTFT）的零延迟机制。
+
 ---
 
 ## 7. 可访问性
