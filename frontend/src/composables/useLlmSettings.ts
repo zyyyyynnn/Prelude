@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
+import { withMinDelay } from '../lib/utils'
 import type { LlmProviderOption } from '../api/contracts'
 import { usePageNotice } from './usePageNotice'
 import { getErrorMessage } from '../utils/errors'
@@ -74,13 +75,13 @@ export function useLlmSettings() {
     saving.value = true
 
     try {
-      const result = await saveUserLlmConfig({
+      const result = await withMinDelay(saveUserLlmConfig({
         providerKey: selectedProviderKey.value,
         model: selectedModel.value,
         apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
         maxTokens: maxTokens.value ?? undefined,
         thinkingDepth: thinkingDepth.value ?? undefined,
-      })
+      }))
 
       selectedProviderKey.value = result.providerKey || selectedProviderKey.value
       selectedModel.value = result.model || selectedModel.value
@@ -105,11 +106,11 @@ export function useLlmSettings() {
   async function clearApiKey() {
     saving.value = true
     try {
-      const result = await saveUserLlmConfig({
+      const result = await withMinDelay(saveUserLlmConfig({
         providerKey: selectedProviderKey.value,
         model: selectedModel.value,
         apiKey: '__CLEAR__',
-      })
+      }))
       apiKeyMasked.value = result.apiKeyMasked || ''
       apiKeyInput.value = ''
       showNotice('API Key 已清除', 'success')
@@ -123,7 +124,7 @@ export function useLlmSettings() {
   async function testSettings() {
     testing.value = true
     try {
-      const result = await testUserLlmConfig()
+      const result = await withMinDelay(testUserLlmConfig())
       lastTestMessage.value = result.message || '模型配置测试通过'
       showNotice(lastTestMessage.value, result.ok ? 'success' : 'warning')
     } catch (error) {

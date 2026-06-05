@@ -6,7 +6,6 @@ import { useAuthStore } from '../../stores/auth'
 import UserProfilePanel from './UserProfilePanel.vue'
 import LlmSettingsPanel from './LlmSettingsPanel.vue'
 import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-vue-next'
 
 const visible = defineModel<boolean>('visible', { default: false })
 const activeTab = defineModel<'profile' | 'llm'>('activeTab', { default: 'profile' })
@@ -62,18 +61,18 @@ function handleLogout() {
                   size="sm"
                   class="!font-serif"
                   :disabled="llmPanel?.saving || llmPanel?.loading || llmPanel?.testing"
+                  :loading="llmPanel?.testing"
                   @click="llmPanel?.test()"
                 >
-                  <Loader2 v-if="llmPanel?.testing" class="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   测试连接
                 </Button>
                 <Button
                   size="sm"
                   class="!font-serif"
                   :disabled="llmPanel?.saving"
+                  :loading="llmPanel?.saving"
                   @click="llmPanel?.submit()"
                 >
-                  <Loader2 v-if="llmPanel?.saving" class="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   保存设置
                 </Button>
               </template>
@@ -82,9 +81,9 @@ function handleLogout() {
                   size="sm"
                   class="!font-serif"
                   :disabled="profilePanel?.saving || profilePanel?.loading"
+                  :loading="profilePanel?.saving"
                   @click="profilePanel?.submit()"
                 >
-                  <Loader2 v-if="profilePanel?.saving || profilePanel?.loading" class="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   保存设置
                 </Button>
               </template>
@@ -123,7 +122,7 @@ function handleLogout() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-sm);
   padding: 0 var(--spacing-sm);
 }
 .sidebar-footer {

@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Loader2, FileText, Briefcase, FileSearch, Terminal } from 'lucide-vue-next'
+import { FileText, Briefcase, FileSearch, Terminal } from 'lucide-vue-next'
 
 const props = defineProps<{
   isCentered: boolean
@@ -550,9 +550,9 @@ onBeforeUnmount(() => {
             v-if="!activeSessionId"
             class="rounded-md px-6 flex-shrink-0 !font-serif"
             :disabled="!canStart"
+            :loading="creating"
             @click="emit('start', showJdInput ? localJdText : undefined)"
           >
-            <Loader2 v-if="creating" class="w-4 h-4 mr-2 animate-spin" />
             开始面试
           </Button>
           <template v-else>
@@ -609,9 +609,9 @@ onBeforeUnmount(() => {
                   <Button
                     class="rounded-md px-6 flex-shrink-0 !font-serif"
                     :disabled="disabled || !canSend"
+                    :loading="sending"
                     @click="emit('send')"
                   >
-                    <Loader2 v-if="sending" class="w-4 h-4 mr-2 animate-spin" />
                     发送
                   </Button>
                 </div>

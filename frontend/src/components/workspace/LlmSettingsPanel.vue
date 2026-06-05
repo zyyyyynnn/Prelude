@@ -62,7 +62,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 
       <div class="field-grid">
         <FormField name="providerKey" v-slot="{ componentField }">
-          <FormItem class="flex flex-col gap-2">
+          <FormItem>
             <FormLabel>Provider</FormLabel>
             <Select v-bind="componentField" v-model="selectedProviderKey">
               <SelectTrigger>
@@ -83,7 +83,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         </FormField>
 
         <FormField name="model" v-slot="{ componentField }">
-          <FormItem class="flex flex-col gap-2">
+          <FormItem>
             <FormLabel>模型</FormLabel>
             <Select :disabled="modelOptions.length === 0" v-bind="componentField" v-model="selectedModel">
               <SelectTrigger>
@@ -105,7 +105,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
       </div>
 
       <FormField name="apiKey" v-slot="{ componentField }">
-        <FormItem class="flex flex-col gap-2 relative">
+        <FormItem class="relative">
           <FormLabel>新 API Key / 清空</FormLabel>
           <div class="relative w-full flex items-center">
             <FormControl>
@@ -145,7 +145,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         <div class="form-section__title">高级设置</div>
         <div class="advanced-grid">
           <FormField name="maxTokens" v-slot="{ componentField }">
-            <FormItem class="flex flex-col gap-2">
+            <FormItem>
               <FormLabel>最大回复长度 (Max Tokens)</FormLabel>
               <FormControl>
                 <Select v-bind="componentField" :model-value="maxTokens ? String(maxTokens) : 'auto'" @update:model-value="v => maxTokens = v === 'auto' ? undefined : Number(v)">
@@ -165,7 +165,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
           </FormField>
 
           <FormField name="thinkingDepth" v-slot="{ componentField }">
-            <FormItem class="flex flex-col gap-2">
+            <FormItem>
               <FormLabel>思考深度 (Thinking Depth)</FormLabel>
               <Select v-bind="componentField">
                 <SelectTrigger>

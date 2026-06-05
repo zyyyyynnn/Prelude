@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-vue-next'
 import type { InterviewStageName } from '../../api/contracts'
 
 const props = defineProps<{
@@ -29,9 +28,9 @@ const canFinish = computed(
         size="sm"
         class="!font-serif"
         :disabled="!canFinish"
+        :loading="finishing"
         @click="emit('finish')"
       >
-        <Loader2 v-if="finishing" class="w-4 h-4 mr-2 animate-spin" />
         生成报告
       </Button>
     </div>

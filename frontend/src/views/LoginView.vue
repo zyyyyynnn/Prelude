@@ -6,9 +6,10 @@ import BrandMetaballs from '../components/BrandMetaballs.vue'
 import { usePageNotice } from '../composables/usePageNotice'
 import { useAuthStore } from '../stores/auth'
 import { getErrorMessage } from '../utils/errors'
+import { withMinDelay } from '../lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import { Eye, EyeOff } from 'lucide-vue-next'
 import {
   FormControl,
   FormField,
@@ -60,12 +61,12 @@ const submitAuth = handleSubmit(async (values) => {
   try {
     if (isRegisterMode.value) {
       const v = values as any;
-      await registerRequest(v.username.trim(), v.password, v.email?.trim() || undefined)
+      await withMinDelay(registerRequest(v.username.trim(), v.password, v.email?.trim() || undefined))
       showNotice('注册成功，请继续登录。', 'success')
       authMode.value = 'login'
       setValues({ username: v.username })
     } else {
-      const response = await loginRequest(values.username.trim(), values.password)
+      const response = await withMinDelay(loginRequest(values.username.trim(), values.password))
       authStore.setToken(response.token)
       await router.replace(redirectTarget.value)
     }
@@ -141,7 +142,7 @@ onMounted(() => {
 
           <form class="flex flex-col gap-lg w-full" @submit.prevent="submitAuth">
             <FormField name="username" v-slot="{ componentField }">
-              <FormItem class="flex flex-col gap-2">
+              <FormItem>
                 <FormLabel>用户名</FormLabel>
                 <FormControl>
                   <Input
@@ -155,7 +156,7 @@ onMounted(() => {
             </FormField>
 
             <FormField name="password" v-slot="{ componentField }">
-              <FormItem class="flex flex-col gap-2 relative">
+              <FormItem class="relative">
                 <FormLabel>密码</FormLabel>
                 <FormControl>
                   <div class="relative w-full">
@@ -185,7 +186,7 @@ onMounted(() => {
               :aria-hidden="!isRegisterMode"
             >
               <FormField name="email" v-slot="{ componentField }">
-                <FormItem class="flex flex-col gap-2">
+                <FormItem>
                   <FormLabel>邮箱</FormLabel>
                   <FormControl>
                     <Input
@@ -205,8 +206,8 @@ onMounted(() => {
                 type="submit"
                 class="w-full"
                 :disabled="loading"
+                :loading="loading"
               >
-                <Loader2 v-if="loading" class="w-4 h-4 mr-2 animate-spin" />
                 {{ submitLabel }}
               </Button>
             </div>
