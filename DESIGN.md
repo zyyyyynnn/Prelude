@@ -145,6 +145,13 @@
 - `.workspace-page`、`.workspace-header`、`.workspace-page__content`、`.page-grid`、`.detail-grid`、`.field-grid`、`.detail-card`、`.button-row` 全部定义在 `index.css`，禁止在 Vue scoped 样式中重复定义
 - `.workspace-header` 和 `.workspace-page__content` 水平 padding 统一 `var(--spacing-2xl)` (40px)
 
+### 4.5 空间架构与隔离 (Spatial Anchoring)
+Header（控制区）与 Content（内容区）之间必须存在视觉断层，严禁两者背景色完全相同导致“粘连违和”。
+**强制隔离手段（至少具备其一）：**
+- **物理底线**：使用 `border-bottom: 1px solid var(--color-border)` 提供结构支撑。
+- **色彩微差**：Header 背景必须比 Content 高一个色阶（如 Header 用 `var(--color-surface)`，Content 用 `var(--color-background)`）。
+- **半透明模糊**（仅限主界面 Sticky 场景）：使用 `color-mix(in srgb, var(--color-surface) 85%, transparent)` 配合 `backdrop-filter: blur(12px)`。
+
 ---
 
 ## 5. 组件规范
@@ -277,6 +284,8 @@
 - 禁止使用 `color-mix(in srgb, ... black)` 混入纯黑制造背景加深
 - 🔴 禁止裸写 `border` 而不指定颜色 — Tailwind v4 的 `border` 不设 `border-color`，会回退 `currentColor`（纯黑）。必须配对 `border-border` 或 `border-transparent`
 - 禁止使用 `--color-sand` 作为 hover 背景色，统一使用 `--color-surface-hover`
+- **透明度 Token 化**：严禁在 CSS 中硬编码带透明度的 `rgba(r,g,b,a)` 或 `#hex+alpha`。必须使用现代 CSS 函数 `color-mix(in srgb, var(--color-xxx) X%, transparent)`，以确保暗黑模式下的无损颜色漂移。
+  *(唯一豁免：`box-shadow` 内的纯黑/纯白透明度阴影色，因其通常不参与主题色相切换)*
 
 ### 8.2 动效
 
