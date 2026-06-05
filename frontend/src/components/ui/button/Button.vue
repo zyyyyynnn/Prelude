@@ -24,17 +24,20 @@ const props = withDefaults(defineProps<Props>(), {
   <Primitive
     :as="as"
     :as-child="asChild"
-    :class="cn(buttonVariants({ variant, size }), 'relative overflow-hidden transition-all duration-300', props.class)"
+    :class="cn(buttonVariants({ variant, size }), 'relative overflow-hidden transition duration-300 ease-in-out', props.class)"
     :disabled="loading || disabled"
   >
-    <span :class="cn('inline-flex items-center justify-center transition-opacity duration-300', loading ? 'opacity-0' : 'opacity-100')">
+    <span 
+      :class="cn('flex w-full h-full min-w-0 items-center transition-opacity duration-300 ease-in-out', loading ? 'opacity-0' : 'opacity-100')"
+      style="gap: inherit; justify-content: inherit; align-items: inherit; flex-direction: inherit;"
+    >
       <slot />
     </span>
     <Transition
-      enter-active-class="transition duration-300"
+      enter-active-class="transition-opacity duration-300 ease-in-out"
       enter-from-class="opacity-0"
       enter-to-class="opacity-100"
-      leave-active-class="transition duration-300"
+      leave-active-class="transition-opacity duration-300 ease-in-out"
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
