@@ -307,4 +307,3 @@ Header（控制区）与 Content（内容区）之间必须存在视觉断层，
 - 禁止使用原生 `title` 属性替代 Tooltip
 - 禁止使用 `<DropdownMenu>` 作为表单值选择器 — 表单场景统一用 `<Select>`
 - 禁止使用第三方 UI 库的 `size` 属性覆盖组件尺寸，统一使用 shadcn 变体
-- 🔴 禁止使用已被官方废弃的 `lucide-vue-next`，全局图标引用必须统一使用 `@lucide/vue`
