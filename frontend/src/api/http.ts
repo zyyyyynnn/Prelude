@@ -37,8 +37,9 @@ export function bindHttpInterceptors(router: Router) {
     const authStore = useAuthStore()
 
     if (authStore.token) {
-      config.headers = config.headers ?? {}
-      config.headers.Authorization = `Bearer ${authStore.token}`
+      if (config.headers) {
+        config.headers.Authorization = `Bearer ${authStore.token}`
+      }
     }
 
     return config
