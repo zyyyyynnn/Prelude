@@ -14,6 +14,7 @@ import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
 import MessageThread from '../components/workspace/MessageThread.vue'
 import InterviewComposer from '../components/workspace/InterviewComposer.vue'
 import { exportToPdf } from '../utils/pdf'
+import { withMinDelay } from '../lib/utils'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -101,7 +102,7 @@ async function loadDashboard() {
 async function handleUpload(file: File) {
   uploading.value = true
   try {
-    const result = await uploadResume(file)
+    const result = await withMinDelay(uploadResume(file))
     const updated = await fetchResumes()
     resumes.value = updated
     selectedResumeId.value = result.resumeId
@@ -125,11 +126,11 @@ async function createNewInterview(jdText = '') {
 
   creating.value = true
   try {
-    const result = await startInterview({
+    const result = await withMinDelay(startInterview({
       resumeId: selectedResumeId.value,
       positionId: selectedPositionId.value,
       jdText: jdText || undefined,
-    })
+    }))
     await refreshSessionList()
     await loadSession(result.sessionId, true)
     answer.value = ''
@@ -421,7 +422,7 @@ async function handleFinish() {
   }
   finishing.value = true
   try {
-    const result = await finishInterview(activeSessionId.value)
+    const result = await withMinDelay(finishInterview(activeSessionId.value))
     const target = sessions.value.find((item) => item.sessionId === activeSessionId.value)
     if (target) {
       target.status = result.status || 'generating'

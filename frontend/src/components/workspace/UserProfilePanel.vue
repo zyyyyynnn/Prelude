@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { usePageNotice } from '../../composables/usePageNotice'
 import { fetchUserProfile, updateUserProfile } from '../../api/user'
 import { getErrorMessage } from '../../utils/errors'
+import { withMinDelay } from '../../lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Eye, EyeOff } from 'lucide-vue-next'
@@ -26,7 +27,7 @@ const showNewPassword = ref(false)
 async function loadProfile() {
   loading.value = true
   try {
-    const result = await fetchUserProfile()
+    const result = await withMinDelay(fetchUserProfile())
     profile.username = result.username || ''
     profile.email = result.email || ''
     initialEmail.value = profile.email
@@ -61,11 +62,11 @@ async function saveProfile() {
 
   saving.value = true
   try {
-    const result = await updateUserProfile({
+    const result = await withMinDelay(updateUserProfile({
       email: email || undefined,
       oldPassword: oldPassword || undefined,
       newPassword: newPassword || undefined,
-    })
+    }))
     profile.username = result.username || profile.username
     profile.email = result.email || profile.email
     initialEmail.value = profile.email

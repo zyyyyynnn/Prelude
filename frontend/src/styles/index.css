@@ -314,10 +314,10 @@ a {
   box-shadow: var(--shadow-ring);
   cursor: pointer;
   transition:
-    border-color 0.3s ease-in-out,
-    box-shadow 0.3s ease-in-out,
-    background-color 0.3s ease-in-out,
-    transform 0.3s ease-in-out;
+    border-color 0.14s ease-in-out,
+    box-shadow 0.14s ease-in-out,
+    background-color 0.14s ease-in-out,
+    transform 0.14s ease-in-out;
 }
 
 .app-shell__menu-trigger:hover,
@@ -347,8 +347,8 @@ a {
 
 .app-shell__menu-icon-line {
   transition:
-    transform 0.3s ease-in-out,
-    opacity 0.3s ease-in-out;
+    transform 0.14s ease-in-out,
+    opacity 0.14s ease-in-out;
   transform-origin: center;
 }
 
@@ -432,10 +432,10 @@ a {
   text-align: center;
   box-shadow: var(--shadow-ring);
   transition:
-    border-color 0.3s ease-in-out,
-    background-color 0.3s ease-in-out,
-    box-shadow 0.3s ease-in-out,
-    color 0.3s ease-in-out;
+    border-color 0.14s ease-in-out,
+    background-color 0.14s ease-in-out,
+    box-shadow 0.14s ease-in-out,
+    color 0.14s ease-in-out;
 }
 
 .app-shell__action-menu-item:hover,
@@ -1595,7 +1595,8 @@ label,
 .scrollable::-webkit-scrollbar,
 .scrollable::-webkit-scrollbar-track,
 .scrollable::-webkit-scrollbar-thumb,
-.scrollable::-webkit-scrollbar-thumb:hover,
+.scrollable::-webkit-scrollbar-thumb:hover {}
+
 @media print {
   .panel {
     page-break-inside: avoid;
@@ -1725,3 +1726,27 @@ label,
   outline: none;
 }
 
+
+/* 彻底消除 Chrome Autofill 亮黄背景污染 (针对纯白输入框) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 彻底隐藏 Edge/Chrome 原生的密码查看眼睛图标，防止与业务 Icon 冲突 */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+}
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+}

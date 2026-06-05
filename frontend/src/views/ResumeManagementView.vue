@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import EmptyState from '@/components/ui/empty-state/EmptyState.vue'
-import { Loader2 } from 'lucide-vue-next'
+import { withMinDelay } from '@/lib/utils'
 
 const { showNotice } = usePageNotice()
 const confirmDialog = useConfirmDialog()
@@ -52,7 +52,7 @@ async function handleUpload(event: Event) {
 
   uploading.value = true
   try {
-    await uploadResume(file, controller.signal)
+    await withMinDelay(uploadResume(file, controller.signal))
     await loadResumes()
     showNotice('简历已上传', 'success')
   } catch (error) {
@@ -117,10 +117,10 @@ onBeforeUnmount(() => {
         <div class="workspace-header__actions">
           <Button
             :disabled="uploading"
+            :loading="uploading"
             class="!font-serif"
             @click="openUpload"
           >
-            <Loader2 v-if="uploading" class="w-4 h-4 mr-2 animate-spin" />
             上传新简历
           </Button>
         </div>
