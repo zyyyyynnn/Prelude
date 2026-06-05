@@ -93,13 +93,16 @@ function navigateToLlm() {
 }
 
 // ==================== VOICE & CANVAS INTEGRATION ====================
-// Recorder state
-const isRecording = ref(false)
-let mediaRecorder: MediaRecorder | null = null
-let audioCtx: AudioContext | null = null
-let analyser: AnalyserNode | null = null
-let micStream: MediaStream | null = null
-let animFrameId: number | null = null
+import { useVoiceMedia } from '../../composables/useVoiceMedia'
+
+const { isRecording, startRecording: mediaStart, stopRecording: mediaStop } = useVoiceMedia({
+  onAudioChunk(chunk) {
+    emit('voice-audio-chunk', chunk)
+  },
+  onWaveform(a) {
+    drawWaveLoop(a)
+  },
+})
 
 // Canvas for wave visualization
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -129,6 +132,15 @@ function getThemeColors() {
 }
 
 // Visual wave renderer
+let analyser: AnalyserNode | null = null
+let animFrameId: number | null = null
+
+function drawWaveLoop(a: AnalyserNode) {
+  if (!canvasRef.value) return
+  analyser = a
+  drawWave()
+}
+
 function drawWave() {
   if (!canvasRef.value || !analyser) return
   const canvas = canvasRef.value
@@ -193,62 +205,20 @@ function drawFlatLine() {
 // Start capturing mic & record
 async function startRecording() {
   if (isRecording.value) return
-  isRecording.value = true
   emit('voice-start-recording')
 
   // Stop any active playbacks
   stopPlayback()
 
-  try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    
-    // Setup visualizer AudioContext
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    analyser = audioCtx.createAnalyser()
-    analyser.fftSize = 64
-    const source = audioCtx.createMediaStreamSource(micStream)
-    source.connect(analyser)
-
-    drawWave()
-
-    // Setup recorder
-    mediaRecorder = new MediaRecorder(micStream, { mimeType: 'audio/webm' })
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) {
-        event.data.arrayBuffer().then((buffer) => {
-          emit('voice-audio-chunk', buffer)
-        })
-      }
-    }
-    
-    // Slice recorder output every 250ms to feed stream
-    mediaRecorder.start(250)
-  } catch (err) {
-    console.error('Failed to start microphone recording:', err)
-    isRecording.value = false
-    emit('voice-stop-recording')
-  }
+  await mediaStart()
 }
 
 // Stop recording and close mic
 function stopRecording() {
   if (!isRecording.value) return
-  isRecording.value = false
   emit('voice-stop-recording')
 
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop()
-  }
-
-  if (micStream) {
-    micStream.getTracks().forEach((track) => track.stop())
-    micStream = null
-  }
-
-  if (audioCtx) {
-    audioCtx.close()
-    audioCtx = null
-  }
+  mediaStop()
 
   if (animFrameId) {
     cancelAnimationFrame(animFrameId)

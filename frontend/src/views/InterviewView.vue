@@ -163,23 +163,46 @@ function ensureAssistantPlaceholder(id: number) {
   })
 }
 
-function appendAssistantDelta(id: number, delta: string) {
-  if (!replay.value) return
+// === Chunk Buffer (非响应式，避免高频触发 Vue 重渲染) ===
+let chunkBuffer = ''
+let chunkTargetId: number | null = null
+let chunkRafId: number | null = null
+
+function flushChunkBuffer() {
+  if (!chunkBuffer || !chunkTargetId || !replay.value) {
+    chunkBuffer = ''
+    chunkTargetId = null
+    chunkRafId = null
+    return
+  }
+
   const list = [...replay.value.messages]
-  const target = list.find((message) => message.id === id)
+  const target = list.find((m) => m.id === chunkTargetId)
 
   if (!target || target.role !== 'assistant') {
     list.push({
-      id,
+      id: chunkTargetId,
       role: 'assistant',
-      content: delta,
+      content: chunkBuffer,
       createdAt: new Date().toISOString(),
     })
   } else {
-    target.content += delta
+    target.content += chunkBuffer
   }
 
   replay.value.messages = list
+  chunkBuffer = ''
+  chunkRafId = null
+}
+
+function appendAssistantDelta(id: number, delta: string) {
+  // 将 chunk 追加到非响应式 buffer
+  chunkBuffer += delta
+  chunkTargetId = id
+  // 通过 rAF 节流：每个渲染帧最多刷新一次
+  if (chunkRafId === null) {
+    chunkRafId = requestAnimationFrame(flushChunkBuffer)
+  }
 }
 
 function clearAssistantPlaceholder(id: number) {
@@ -219,7 +242,7 @@ async function streamReply(content: string, autoStart = false) {
   streamTimeoutId.value = setTimeout(() => {
     abortActiveStream()
     showNotice('网络或模型响应超时，已强制断开，请重试', 'error')
-    sending.value = false
+    // sending 由 finally 块统一清理，不在 watchdog 中重复设置
   }, 120000)
 
   try {
@@ -289,6 +312,11 @@ async function streamReply(content: string, autoStart = false) {
     showNotice(message, 'error')
     return false
   } finally {
+    // 流结束时强制 flush 残留 chunk buffer
+    if (chunkRafId !== null) {
+      cancelAnimationFrame(chunkRafId)
+      flushChunkBuffer()
+    }
     if (streamTimeoutId.value !== null) {
       clearTimeout(streamTimeoutId.value)
       streamTimeoutId.value = null
@@ -308,6 +336,7 @@ async function handleSend() {
       answer.value = ''
     }
   } finally {
+    // 统一清理：无论成功/失败/中止，sending 仅在此处清除
     sending.value = false
   }
 }
@@ -420,6 +449,17 @@ async function handleFinish() {
     showNotice('仅在处于收尾阶段且会话未结束时，才能生成报告', 'warning')
     return
   }
+  // 1. 强制中止正在进行的 chat SSE 流，消除并发竞争
+  abortActiveStream()
+  // 2. 清除 watchdog 定时器，防止残留 timeout 干扰
+  if (streamTimeoutId.value !== null) {
+    clearTimeout(streamTimeoutId.value)
+    streamTimeoutId.value = null
+  }
+  // 3. 重置 sending 状态（流已被中止，发送标记失效）
+  sending.value = false
+  reconnectingStatus.value = ''
+
   finishing.value = true
   try {
     const result = await withMinDelay(finishInterview(activeSessionId.value))
