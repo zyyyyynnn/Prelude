@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { ResumeItem, PositionTemplate } from '../../api/contracts'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { FileText, Briefcase, FileSearch, Terminal } from 'lucide-vue-next'
+import { FileText, Briefcase, FileSearch, Terminal } from '@lucide/vue'
 
 const props = defineProps<{
   isCentered: boolean

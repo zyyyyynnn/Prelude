@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login as loginRequest, register as registerRequest } from '../api/auth'
@@ -9,7 +9,7 @@ import { getErrorMessage } from '../utils/errors'
 import { withMinDelay } from '../lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff } from 'lucide-vue-next'
+import { Eye, EyeOff } from '@lucide/vue'
 import {
   FormControl,
   FormField,
