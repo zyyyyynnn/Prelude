@@ -112,7 +112,7 @@ function handleLogout() {
 }
 .settings-sidebar {
   width: 220px;
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   display: flex;
   flex-direction: column;
   padding: var(--spacing-md) 0;
@@ -148,12 +148,12 @@ function handleLogout() {
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 .menu-item:hover {
-  background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 .menu-item.is-active {
-  background: var(--color-background);
-  color: var(--color-text-primary);
+  background: var(--color-surface-muted);
+  color: var(--color-brand);
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .menu-item--danger {
