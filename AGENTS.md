@@ -107,4 +107,4 @@
 - **人工收尾隔离**：在 Agent 成功渲染完 `thesis-final.docx` 后，必须明确提醒用户接管“最后的 5%”（手工贴图、粘贴附录/参考文献、更新目录域与底端页码），严禁 Agent 尝试自动化实现这些行为。
 - **答辩材料独立**：答辩 PPT 逻辑映射、演讲稿及 Q&A 演练完全独立于论文正文生成管线，此类任务请直接查阅并操作 `thesis-assets/defense/` 目录。
 
-> 详细流程参见：`thesis-assets/paperspine-execution-plan.md`
+> 详细流程参见：`thesis-assets/paperspine-workflow.md`
