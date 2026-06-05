@@ -76,3 +76,29 @@
     ```powershell
     codegraph index
     ```
+
+## 8. 论文自动化编排与渲染管线 (PaperSpine + Pandoc)
+本项目已全量剥离“手工写论文”的原始模式，Agent 在处理论文需求时必须严格恪守以下自动化工作流：
+
+### 8.1 绝对的“单一真相源”纪律
+- **禁止在 Word 中修改**：任何对论文正文的增、删、改、逻辑重组，**只能**且必须在 `thesis-assets/chapters/*.md` 对应的分章文件中进行。
+- 最终产物 `thesis-assets/current/thesis-final.docx` 为单向渲染输出，绝不允许对其进行任何自动化代码的回写与破坏。
+
+### 8.2 大修与逻辑降维 (PaperSpine 引擎)
+- 当面临代码更新引发的论文逻辑大修时，切勿使用原生对话模型直接生成长篇大论。
+- 必须遵循工业级管线：将真实证据（日志、代码片段、新图表等）存入 `thesis-assets/evidence/` -> 修改 `thesis-assets/paperspine-execution-plan.md` -> 启动 PaperSpine 引擎执行 `rewrite_existing`。
+
+### 8.3 物理渲染流 (Pandoc 一键合版)
+- 在 `chapters/*.md` 确认无误后，必须通过 PowerShell 执行以下指令生成终稿：
+  ```powershell
+  # 在 thesis-assets 目录下执行组合与渲染
+  $chapters = @("chapters\abstract-keywords.md", "chapters\chapter-01-introduction.md", "chapters\chapter-02-related-tech.md", "chapters\chapter-03-analysis-design.md", "chapters\chapter-04-implementation.md", "chapters\chapter-05-testing.md", "chapters\chapter-06-conclusion.md")
+  Clear-Content thesis-full.md -ErrorAction SilentlyContinue
+  foreach ($file in $chapters) { Get-Content $file -Encoding utf8 -Raw | Add-Content thesis-full.md -Encoding utf8 -NoNewline; Add-Content thesis-full.md "`n`n" -Encoding utf8 }
+  
+  pandoc thesis-full.md -o current\thesis-final.docx --reference-doc=meta\school-template.docx
+  ```
+
+### 8.4 边界防线 (Last 5 Miles 与独立答辩)
+- **人工收尾隔离**：在 Agent 成功渲染完 `thesis-final.docx` 后，务必冷酷地提醒用户接管“最后的 5%”（手工贴图、粘贴附录/参考文献、更新目录域与底端页码），严禁 Agent 尝试自动化实现这些行为。
+- **答辩材料独立**：答辩 PPT 逻辑映射、演讲稿及 Q&A 演练完全独立于论文正文生成管线，此类任务请直接查阅并操作 `thesis-assets/defense/` 目录。

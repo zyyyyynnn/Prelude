@@ -91,6 +91,32 @@ async function loadDashboard() {
 
     if (activeSessionId.value && sessions.value.some((item) => item.sessionId === activeSessionId.value)) {
       await loadSession(activeSessionId.value, true)
+
+      const snapshot = sessionStorage.getItem('interview-stream-snapshot')
+      if (snapshot) {
+        try {
+          const parsed = JSON.parse(snapshot)
+          if (parsed.sessionId === activeSessionId.value) {
+            const doResume = window.confirm('检测到上次未完成的 AI 回复，是否恢复？')
+            if (doResume && replay.value) {
+              const target = replay.value.messages.find(m => m.id === parsed.messageId)
+              if (target) {
+                target.content = parsed.content
+              } else {
+                replay.value.messages.push({
+                  id: parsed.messageId,
+                  role: 'assistant',
+                  content: parsed.content,
+                  createdAt: new Date(parsed.timestamp).toISOString()
+                })
+              }
+            }
+            sessionStorage.removeItem('interview-stream-snapshot')
+          }
+        } catch (e) {
+          sessionStorage.removeItem('interview-stream-snapshot')
+        }
+      }
     }
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
@@ -162,6 +188,36 @@ function ensureAssistantPlaceholder(id: number) {
     createdAt: new Date().toISOString(),
   })
 }
+
+// === Phase 3: Token Window & Offline Snapshot ===
+const MAX_CONTEXT_MESSAGES = 20
+
+function trimContextMessages(messages: InterviewMessageRecord[]) {
+  if (!messages) return []
+  if (messages.length <= MAX_CONTEXT_MESSAGES) return messages
+  const systemMsg = messages.find((m) => m.role === 'system')
+  const restMsgs = messages.filter((m) => m.role !== 'system')
+  const trimmed = restMsgs.slice(-MAX_CONTEXT_MESSAGES)
+  if (systemMsg) {
+    return [systemMsg, ...trimmed]
+  }
+  return trimmed
+}
+
+function createThrottle(fn: Function, delay: number) {
+  let lastTime = 0
+  return function (...args: any[]) {
+    const now = Date.now()
+    if (now - lastTime >= delay) {
+      fn(...args)
+      lastTime = now
+    }
+  }
+}
+
+const saveStreamSnapshot = createThrottle((sessionId: number, messageId: number, content: string) => {
+  sessionStorage.setItem('interview-stream-snapshot', JSON.stringify({ sessionId, messageId, content, timestamp: Date.now() }))
+}, 3000)
 
 // === Chunk Buffer (非响应式，避免高频触发 Vue 重渲染) ===
 let chunkBuffer = ''
@@ -250,11 +306,15 @@ async function streamReply(content: string, autoStart = false) {
     await streamInterviewChat(
       authStore.token,
       activeSessionId.value,
-      { content },
+      { content, messages: trimContextMessages(replay.value?.messages || []) },
       autoStart,
       {
         onChunk(chunk) {
           appendAssistantDelta(assistantMessageId, chunk)
+          const target = replay.value?.messages.find((m) => m.id === assistantMessageId)
+          if (target) {
+            saveStreamSnapshot(activeSessionId.value, assistantMessageId, target.content + chunkBuffer)
+          }
         },
         onEvent(event) {
           if (event.eventName === 'status') {
@@ -312,6 +372,7 @@ async function streamReply(content: string, autoStart = false) {
     showNotice(message, 'error')
     return false
   } finally {
+    sessionStorage.removeItem('interview-stream-snapshot')
     // 流结束时强制 flush 残留 chunk buffer
     if (chunkRafId !== null) {
       cancelAnimationFrame(chunkRafId)

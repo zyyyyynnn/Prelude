@@ -14,6 +14,11 @@ export function useVoiceMedia(options: UseVoiceMediaOptions = {}) {
   let animFrameId: number | null = null
 
   async function startRecording() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      console.warn('MediaDevices API not available')
+      return
+    }
+
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
       audioCtx = new AudioContext()

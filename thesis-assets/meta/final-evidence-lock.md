@@ -27,5 +27,5 @@
 | 答辩模板 | `thesis-assets/defense/贵州大学答辩PPT模板.pptx` | 2026-04-26 | 学校答辩 PPT 模板 | 否 | 否 | 否 | 当前未入库；需人工重新提供或从历史提交恢复 |
 | 历史整合文档 | `thesis-assets/毕业论文资料整合.docx` | 2026-04-25 | 历史论文资料快照 | 否 | 否 | 否 | 历史中已删除，当前不恢复，不作为当前状态依据 |
 | 原始主稿 / 格式母版 | `thesis-assets/毕业论文正式版（草稿）.docx` | 2026-04-26 | 原始论文草稿结构 | 是 | 否 | 否 | 保留不覆盖；封面和诚信责任书已并入，签名、日期、指导教师和目录页码仍需人工终审 |
-| 当前 Word 工作稿 | `thesis-assets/current/毕业论文正式版（润色回填）.docx` | 2026-05-03 | 已完成 Markdown 润色基准稿真实回填的 Word 工作稿 | 是 | 否 | 否 | 后续进入 Word 目录域更新、页码、页眉页脚、图题表题和参考文献格式终审 |
-| Markdown 润色基准稿 | `thesis-assets/current/thesis-polished.md` | 2026-05-03 | Markdown 润色基准稿 | 是 | 否 | 否 | 当前内容定版后的 Markdown 基准稿 |
+| 当前 Word 工作稿 | `thesis-assets/meta/school-template.docx` | 2026-06-05 | 已迁移为 school-template.docx 作为排版样式基准模板 | 是 | 否 | 否 | 后续进入 Word 目录域更新、页码、页眉页脚、图题表题和参考文献格式终审 |
+| Markdown 润色基准稿 | `thesis-assets/thesis-full.md` | 2026-06-05 | PaperSpine 全章节强力重构合并版基准稿 | 是 | 否 | 否 | 物理合并内容定版后的 Markdown 基准稿 |

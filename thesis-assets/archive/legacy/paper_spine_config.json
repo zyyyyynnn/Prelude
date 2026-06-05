@@ -1,0 +1,23 @@
+{
+  "workflow": "rewrite_existing",
+  "scene": "report_review",
+  "tier": "pro",
+  "output_language": "zh",
+  "target_name": "基于大语言模型的沉浸式模拟面试与简历诊断系统",
+  "materials_dir": "evidence",
+  "draft_path": "chapters/chapter-01-introduction.md",
+  "user_motivation": "",
+  "official_urls": [],
+  "special_requirements": [
+    "保持毕业论文的章节编号格式（X.1, X.2, ...）",
+    "保留所有现有引用标记 [N]，不删除",
+    "不压缩篇幅，保留详细论述",
+    "保留所有系统实现细节和代码引用",
+    "输出中文"
+  ],
+  "word_output": "none",
+  "translation_package": "none",
+  "reference_mode": "local_first",
+  "reference_paths": ["literature"],
+  "citation_target_count": 21
+}

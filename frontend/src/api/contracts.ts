@@ -86,6 +86,7 @@ export type InterviewSessionDetailResponse = {
 
 export type InterviewChatRequest = {
   content: string
+  messages?: InterviewMessageRecord[]
 }
 
 export type LlmProviderModel = string | {
