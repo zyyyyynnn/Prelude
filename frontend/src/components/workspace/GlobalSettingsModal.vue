@@ -25,7 +25,7 @@ function handleLogout() {
 <template>
   <Dialog v-model:open="visible">
     <DialogContent
-      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-surface border-none dialog-no-close"
+      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-background border-none dialog-no-close"
     >
       <DialogHeader class="hidden">
         <DialogTitle>全局设置</DialogTitle>
@@ -152,7 +152,7 @@ function handleLogout() {
   color: var(--color-text-primary);
 }
 .menu-item.is-active {
-  background: var(--color-surface);
+  background: var(--color-background);
   color: var(--color-text-primary);
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
@@ -165,7 +165,7 @@ function handleLogout() {
 
 .settings-main {
   flex: 1;
-  background: var(--color-surface);
+  background: var(--color-background);
   display: flex;
   flex-direction: column;
   min-width: 0;
