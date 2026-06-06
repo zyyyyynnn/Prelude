@@ -86,6 +86,8 @@
 | `--header-height` | 72px | 工作区页头 |
 | `--composer-height` | 260px | 底部输入框占位高度 |
 
+> **shadcn 按钮尺寸变体**（`buttonVariants`）全部锚定 `h-[34px]`：`default`、`sm`、`icon`、`icon-sm` 均为 34px。`lg` 为 `h-11`(44px)，`icon-lg` 为 `size-11`(44px)，仅用于特殊大号场景。
+
 ### 2.5 圆角 Token
 
 | Token | 值 | 用途 |
@@ -97,7 +99,17 @@
 | `--radius-2xl` | 24px | 特大圆角 |
 | `--radius-3xl` | 32px | 超大圆角 |
 
-### 2.6 Z-Index 分层碾压法则
+### 2.6 阴影 Token
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--shadow-ring` | `0 0 0 1px var(--color-ring)` | 轻量轮廓阴影 |
+| `--shadow-ring-deep` | `0 0 0 1px var(--color-ring-deep)` | 深轮廓阴影 |
+| `--shadow-whisper` | `0 4px 24px rgba(0,0,0,0.05)` | 微弱悬浮阴影 |
+| `--shadow-inset` | `inset 0 0 0 1px rgba(0,0,0,0.15)` | 内凹轮廓 |
+| `--shadow-modal` | `0 8px 32px rgba(0,0,0,0.12)` | 弹窗阴影 |
+
+### 2.7 Z-Index 分层碾压法则
 
 层级变量必须严格遵守以下顺序，绝对禁止同层打架或滥用极大值。
 
@@ -130,6 +142,8 @@
 | `text-2xl` | 24px | 侧边栏品牌名、特定大数字或强调标题。 |
 | `text-3xl` | 32px | 页面 Hero Title（可根据屏幕使用 `clamp`）。 |
 
+**全局字体重置**：`index.css` 的 `body, button, input, select, textarea` 统一为 `font-family: var(--font-sans)`。品牌主操作按钮（如"开始新面试"）可使用 `!font-serif` 强制覆盖以强化品牌调性。小标签 `<Badge>` 组件统一采用品牌衬线，通过字距（tracking-wider）保持精致呼吸感。
+
 ---
 
 ## 4. 空间架构与隔离 (Spatial Anchoring)
@@ -153,6 +167,10 @@
 - 展开宽度 260px，折叠态 50px（内部组件留存 `34px` 的绝对正方形）。
 - 高度统一使用 `var(--ui-height-base)` (34px)，内部间距完全复用 `var(--spacing-sm)`。
 - 折叠态排列必须为 `justify-content: flex-start`，**严禁使用 `center` 或 `auto` 导致位移**。
+
+### 4.4 组件 CSS 骨架重用
+
+- 常见骨架（如 `.workspace-page`、`.workspace-header`、`.page-grid`、`.detail-grid`、`.button-row` 等）已统一定义在 `index.css`，**禁止在 Vue scoped 样式中重复定义基础布局**。
 
 ---
 
