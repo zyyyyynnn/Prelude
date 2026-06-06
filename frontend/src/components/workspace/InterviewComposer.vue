@@ -722,7 +722,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
-  font-family: var(--font-serif) !important;
+  font-family: var(--font-serif);
   cursor: pointer;
   border: 1px solid var(--color-brand);
   background-color: var(--color-brand);

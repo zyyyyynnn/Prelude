@@ -449,7 +449,7 @@ function navigateTo(path: string) {
   cursor: pointer;
   color: var(--color-text-secondary);
   font-size: 14px;
-  font-family: var(--font-serif) !important;
+  font-family: var(--font-serif);
   line-height: 1;
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
   white-space: nowrap;

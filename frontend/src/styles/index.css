@@ -724,8 +724,8 @@ a {
 /* shadcn Label / FormLabel 品牌衬线体 */
 label,
 [data-slot="label"] {
-  font-family: var(--font-serif) !important;
-  font-weight: 500 !important;
+  font-family: var(--font-serif);
+  font-weight: 500;
   font-size: 15px;
   color: var(--color-text-primary);
 }
