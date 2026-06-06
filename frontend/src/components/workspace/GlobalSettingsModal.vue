@@ -154,7 +154,7 @@ function handleLogout() {
 .menu-item.is-active {
   background: var(--color-surface-muted);
   color: var(--color-brand);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
 }
 .menu-item--danger {
   color: var(--color-error);
