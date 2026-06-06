@@ -241,7 +241,7 @@ Header（控制区）与 Content（内容区）之间必须存在视觉断层，
 |------|------|------|----------|----------|
 | 侧边栏宽度 | 300ms | ease-in-out | `width`（Layout 属性，已有 `will-change: width` + `translateZ(0)` 优化） | 🟡 已优化 |
 | 侧边栏标签淡入淡出 | 300ms | ease-in-out | `opacity` | ✅ |
-| 侧边栏折叠态图标 | 300ms | ease-in-out | `opacity, max-height`（`max-height` 为 Layout 属性） | 🟡 技术债：目标方案为改用 `opacity` + `pointer-events: none` 替代 `max-height` |
+| 侧边栏折叠态图标 | 300ms | ease-in-out | `opacity` | ✅ 已优化（使用 Vue Transition + v-show 纯透明度切换，零 Layout 重排） |
 | JD 面板 | 300ms | ease-in-out | `opacity, transform` | ✅ |
 | 语音/文字切换 | 300ms | ease-in-out | `opacity, transform` | ✅ |
 | 语音按钮按下 | 150ms | ease-out | `transform`（快速响应） | ✅ 特例 |
