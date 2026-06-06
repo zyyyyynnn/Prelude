@@ -41,9 +41,9 @@
   --radius-2xl: var(--radius-2xl);
 
   /* 字体 */
-  --font-serif: 'Lora', 'Noto Serif SC', Georgia, serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 
   /* 阴影 */
   --shadow-modal: var(--shadow-modal);
@@ -184,12 +184,14 @@ body {
   font: 400 16px/1.6 var(--font-sans);
 }
 
-body,
-button,
-input,
-select,
-textarea {
-  font-family: var(--font-sans);
+@layer base {
+  body,
+  button,
+  input,
+  select,
+  textarea {
+    font-family: var(--font-sans);
+  }
 }
 
 button,
