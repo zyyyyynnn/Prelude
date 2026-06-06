@@ -54,7 +54,7 @@ const activeIndex = computed(() => {
   width: calc((100% - 4px) / v-bind('items.length'));
   background-color: var(--color-surface);
   border-radius: calc(var(--radius-lg) - 2px);
-  box-shadow: 0 1px 3px color-mix(in srgb, #000 12%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   transition: transform 300ms ease-in-out;
   z-index: 1;
 }
