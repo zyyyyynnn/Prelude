@@ -343,7 +343,7 @@ function navigateTo(path: string) {
   background-color: var(--color-surface-hover);
 }
 .app-sidebar__toggle:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--color-brand);
   outline-offset: -2px;
 }
 .app-sidebar__main {
@@ -396,7 +396,7 @@ function navigateTo(path: string) {
   font-weight: 600;
 }
 .app-sidebar__btn:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--color-brand);
   outline-offset: -2px;
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
@@ -466,7 +466,7 @@ function navigateTo(path: string) {
   font-weight: 500;
 }
 .session-item-btn:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--color-brand);
   outline-offset: -2px;
 }
 .session-group__empty {
@@ -538,7 +538,7 @@ function navigateTo(path: string) {
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 .action-btn:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--color-brand);
   outline-offset: -2px;
 }
 .action-btn:hover {

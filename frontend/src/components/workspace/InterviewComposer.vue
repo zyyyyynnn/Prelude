@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { ResumeItem, PositionTemplate } from '../../api/contracts'
 import { Textarea } from '@/components/ui/textarea'
@@ -745,7 +745,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 .voice-press-btn:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 .voice-press-btn.is-pressed {

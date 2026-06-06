@@ -86,7 +86,18 @@
 | `--header-height` | 72px | 工作区页头 |
 | `--composer-height` | 260px | 底部输入框占位高度 |
 
-### 2.5 Z-Index 分层碾压法则
+### 2.5 圆角 Token
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--radius-sm` | 6px | 小圆角（Badge、内部元素） |
+| `--radius-md` | 8px | 标准圆角（Button、Input、Select） |
+| `--radius-lg` | 12px | 大圆角（卡片内部区块） |
+| `--radius-xl` | 16px | 卡片圆角 |
+| `--radius-2xl` | 24px | 特大圆角 |
+| `--radius-3xl` | 32px | 超大圆角 |
+
+### 2.6 Z-Index 分层碾压法则
 
 层级变量必须严格遵守以下顺序，绝对禁止同层打架或滥用极大值。
 
@@ -207,6 +218,9 @@
   transform: translateY(-4px);
 }
 ```
+
+> `brand-awaken`：登录页 Logo 苏醒动效，1.5s ease-out，
+> 仅限 `.login-card__logo`，首次加载单次触发。
 
 ---
 

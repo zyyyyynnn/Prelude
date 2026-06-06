@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login as loginRequest, register as registerRequest } from '../api/auth'
@@ -7,6 +7,7 @@ import { usePageNotice } from '../composables/usePageNotice'
 import { useAuthStore } from '../stores/auth'
 import { getErrorMessage } from '../utils/errors'
 import { withMinDelay } from '../lib/utils'
+import SegmentedControl from '../components/ui/segmented-control/SegmentedControl.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff } from '@lucide/vue'
@@ -87,26 +88,6 @@ onMounted(() => {
 <template>
   <section class="page page--center page--auth">
     <div class="login-card">
-      <svg
-        class="login-card-border"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <rect
-          class="login-card-border__inner"
-          x="0.5"
-          y="0.5"
-          width="100%"
-          height="100%"
-          rx="8"
-          ry="8"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="0.75"
-          stroke-dasharray="4 4"
-        />
-      </svg>
-
       <div class="login-card__content">
         <aside class="login-card__brand-panel">
           <BrandMetaballs class="login-card__logo" />
@@ -119,25 +100,12 @@ onMounted(() => {
             <h2 class="page__title">{{ authTitle }}</h2>
           </div>
 
-          <div class="auth-switch" role="tablist" aria-label="认证模式">
-            <button
-              :class="['auth-switch__item', { 'is-active': !isRegisterMode }]"
-              type="button"
-              role="tab"
-              :aria-selected="!isRegisterMode"
-              @click="switchMode('login')"
-            >
-              登录
-            </button>
-            <button
-              :class="['auth-switch__item', { 'is-active': isRegisterMode }]"
-              type="button"
-              role="tab"
-              :aria-selected="isRegisterMode"
-              @click="switchMode('register')"
-            >
-              注册
-            </button>
+          <div class="mb-6">
+            <SegmentedControl
+              :items="['登录', '注册']"
+              :model-value="isRegisterMode ? '注册' : '登录'"
+              @update:model-value="(val) => switchMode(val === '注册' ? 'register' : 'login')"
+            />
           </div>
 
           <form class="flex flex-col gap-lg w-full" @submit.prevent="submitAuth">
@@ -182,7 +150,7 @@ onMounted(() => {
             </FormField>
 
             <div
-              :class="['transition-opacity transition-transform duration-300 ease-in-out', { 'hidden': !isRegisterMode }]"
+              :class="['transition-opacity duration-300 ease-in-out', isRegisterMode ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none']"
               :aria-hidden="!isRegisterMode"
             >
               <FormField name="email" v-slot="{ componentField }">
@@ -204,7 +172,7 @@ onMounted(() => {
             <div class="pt-2">
               <Button
                 type="submit"
-                class="w-full"
+                class="w-full font-serif"
                 :disabled="loading"
                 :loading="loading"
               >
