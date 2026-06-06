@@ -612,7 +612,7 @@ onBeforeUnmount(() => {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--color-ring);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-text-primary) 4%, transparent), 0 0 0 1px var(--color-ring);
   padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
