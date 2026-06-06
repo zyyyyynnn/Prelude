@@ -1010,7 +1010,7 @@ onBeforeUnmount(() => {
   background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
   text-align: center;
 }
 .sandglass-icon {

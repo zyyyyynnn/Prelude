@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { DialogContentEmits, DialogContentProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
 import { reactiveOmit } from "@vueuse/core"
@@ -24,7 +24,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
   <DialogPortal>
     <DialogOverlay
       class="fixed inset-0 z-[101] dialog-overlay"
-      style="background-color: var(--mask-overlay, rgba(20, 19, 19, 0.38))"
+      style="background-color: var(--mask-overlay)"
     />
     <DialogContent
       v-bind="forwarded"
