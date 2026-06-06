@@ -39,10 +39,10 @@ const activeIndex = computed(() => {
   position: relative;
   display: flex;
   height: 32px;
-  background-color: color-mix(in srgb, var(--color-border) 30%, var(--color-surface));
-  border-radius: var(--radius-xl);
-  padding: 2px;
   min-width: 160px;
+  background-color: color-mix(in srgb, var(--color-border) 30%, var(--color-surface));
+  border-radius: var(--radius-lg);
+  padding: 2px;
 }
 
 .segmented-control__pill {
@@ -53,7 +53,7 @@ const activeIndex = computed(() => {
   /* Calculate width based on number of items */
   width: calc((100% - 4px) / v-bind('items.length'));
   background-color: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border-radius: calc(var(--radius-lg) - 2px);
   box-shadow: 0 1px 3px color-mix(in srgb, #000 12%, transparent);
   transition: transform 300ms ease-in-out;
   z-index: 1;
@@ -71,7 +71,7 @@ const activeIndex = computed(() => {
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text-secondary);
-  border-radius: var(--radius-md);
+  border-radius: calc(var(--radius-lg) - 2px);
   transition: color 300ms ease-in-out;
   z-index: 2;
   cursor: pointer;
