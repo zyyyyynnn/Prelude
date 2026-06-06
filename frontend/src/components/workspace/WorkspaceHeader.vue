@@ -3,6 +3,7 @@ import StageBar from './StageBar.vue'
 import type { InterviewStageName } from '../../api/contracts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import SegmentedControl from '../ui/segmented-control/SegmentedControl.vue'
 
 const props = defineProps<{
   activeSessionId?: number | null
@@ -58,15 +59,12 @@ const emit = defineEmits<{
         </div>
 
         <!-- Segmented control (面试 / 报告) -->
-        <div class="workspace-header__actions segmented-control" v-if="activeSessionId && hasReport">
-          <button 
-            :class="['segmented-control__item', { 'is-active': !showingReport }]"
-            @click="emit('toggle-report', false)"
-          >面试</button>
-          <button 
-            :class="['segmented-control__item', { 'is-active': showingReport }]"
-            @click="emit('toggle-report', true)"
-          >报告</button>
+        <div class="workspace-header__actions" v-if="activeSessionId && hasReport">
+          <SegmentedControl
+            :items="['面试', '报告']"
+            :model-value="showingReport ? '报告' : '面试'"
+            @update:model-value="(val) => emit('toggle-report', val === '报告')"
+          />
         </div>
       </div>
     </div>
@@ -79,39 +77,12 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--spacing-lg);
 }
-.workspace-header__stage-wrap {
+.workspace-header__actions {
   display: flex;
   align-items: center;
 }
-.segmented-control {
+.workspace-header__stage-wrap {
   display: flex;
-  background: color-mix(in srgb, var(--color-border) 30%, var(--color-surface));
-  padding: var(--spacing-xs);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
-.segmented-control__item {
-  border: none;
-  background: transparent;
-  padding: var(--spacing-xs) var(--spacing-md);
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-  outline: none;
-}
-.segmented-control__item:hover {
-  color: var(--color-text-primary);
-}
-.segmented-control__item:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
-}
-.segmented-control__item.is-active {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  align-items: center;
 }
 </style>
