@@ -139,9 +139,9 @@
 
   --shadow-ring: 0 0 0 1px var(--color-ring);
   --shadow-ring-deep: 0 0 0 1px var(--color-ring-deep);
-  --shadow-whisper: 0 4px 24px rgba(0, 0, 0, 0.05);
-  --shadow-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
-  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-whisper: 0 4px 24px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  --shadow-inset: inset 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+  --shadow-modal: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   /* ── UI System Tokens ── */
@@ -232,9 +232,9 @@ a {
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 42%, transparent), color-mix(in srgb, var(--color-surface) 12%, transparent)),
     color-mix(in srgb, var(--color-surface) 54%, transparent);
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.035),
-    0 1px 0 rgba(255, 255, 255, 0.26) inset,
-    inset 0 -1px 0 rgba(255, 255, 255, 0.14);
+    0 10px 30px color-mix(in srgb, var(--color-text-primary) 3.5%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-surface) 26%, transparent) inset,
+    inset 0 -1px 0 color-mix(in srgb, var(--color-surface) 14%, transparent);
   backdrop-filter: blur(20px) saturate(108%);
   -webkit-backdrop-filter: blur(20px) saturate(108%);
 }
@@ -282,7 +282,7 @@ a {
   height: 46px;
   flex: 0 0 auto;
   border-radius: 50%;
-  box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
 }
 
 .app-shell__actions {
@@ -389,8 +389,8 @@ a {
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-surface) 96%, transparent);
   box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+    0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
   white-space: nowrap;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
