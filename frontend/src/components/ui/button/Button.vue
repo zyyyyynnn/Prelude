@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { PrimitiveProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
 import type { ButtonVariants } from "."
@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<Props>(), {
   <Primitive
     :as="as"
     :as-child="asChild"
-    :class="cn(buttonVariants({ variant, size }), 'relative overflow-hidden transition duration-300 ease-in-out', props.class)"
+    :class="cn(buttonVariants({ variant, size }), 'relative overflow-hidden transition-colors duration-300 ease-in-out', props.class)"
     :disabled="loading || disabled"
   >
     <span 

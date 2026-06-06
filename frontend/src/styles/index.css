@@ -56,7 +56,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--color-brand);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--color-surface);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--color-surface-muted);
@@ -82,11 +82,11 @@
   --color-bg: #f5f4ed;
   --color-surface: #faf9f5;
   --color-sand: #e8e6dc;
-  --color-surface-hover: color-mix(in srgb, #2C2A29 4%, var(--color-surface));
-  --color-surface-muted: color-mix(in srgb, #2C2A29 8%, var(--color-surface));
+  --color-surface-hover: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-surface));
+  --color-surface-muted: color-mix(in srgb, var(--color-text-primary) 8%, var(--color-surface));
   --bg-paper-filter:
-    radial-gradient(circle at 16% 14%, rgba(255, 255, 255, 0.32) 0, rgba(255, 255, 255, 0) 26%),
-    radial-gradient(circle at 80% 72%, rgba(0, 0, 0, 0.04) 0, rgba(0, 0, 0, 0) 24%),
+    radial-gradient(circle at 16% 14%, color-mix(in srgb, var(--color-surface) 32%, transparent) 0, transparent 26%),
+    radial-gradient(circle at 80% 72%, color-mix(in srgb, var(--color-text-primary) 4%, transparent) 0, transparent 24%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.12'/%3E%3Cg fill='none' stroke='%23beb7a8' stroke-opacity='0.2' stroke-width='1'%3E%3Cpath d='M18 42c24 11 51 -5 79 7 20 9 42 12 67 -1'/%3E%3Cpath d='M214 34c17 8 31 3 45 9 15 6 27 5 43 -3'/%3E%3Cpath d='M42 120c17 -7 35 6 57 0 18 -5 36 -3 51 5'/%3E%3Cpath d='M176 138c19 5 35 -7 60 -2 15 3 29 4 46 -5'/%3E%3Cpath d='M26 210c22 7 46 -8 72 4 18 8 33 11 56 1'/%3E%3Cpath d='M182 228c17 -6 36 6 60 1 16 -3 32 -1 51 7'/%3E%3Cpath d='M74 286c18 -8 38 4 57 -1 17 -5 31 -3 48 6'/%3E%3Cpath d='M208 284c13 4 29 -6 47 -2 14 3 28 2 40 -5'/%3E%3C/g%3E%3C/svg%3E");
 
   --color-text-primary: #141413;
@@ -117,7 +117,7 @@
   --popover: var(--color-surface);
   --popover-foreground: var(--color-text-primary);
   --primary: var(--color-brand);
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--color-surface);
   --secondary: var(--color-surface-muted);
   --secondary-foreground: var(--color-text-primary);
   --muted: var(--color-surface-muted);
@@ -142,7 +142,7 @@
   --shadow-whisper: 0 4px 24px rgba(0, 0, 0, 0.05);
   --shadow-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --mask-overlay: rgba(20, 19, 19, 0.38);
+  --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   /* ── UI System Tokens ── */
   --spacing-xs: 4px;
@@ -223,12 +223,12 @@ a {
   z-index: 40;
   width: 100%;
   margin: 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.52);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 52%, transparent);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: 16px 24px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12)),
-    rgba(250, 249, 245, 0.54);
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 42%, transparent), color-mix(in srgb, var(--color-surface) 12%, transparent)),
+    color-mix(in srgb, var(--color-surface) 54%, transparent);
   box-shadow:
     0 10px 30px rgba(0, 0, 0, 0.035),
     0 1px 0 rgba(255, 255, 255, 0.26) inset,
@@ -314,10 +314,10 @@ a {
   box-shadow: var(--shadow-ring);
   cursor: pointer;
   transition:
-    border-color 0.14s ease-in-out,
-    box-shadow 0.14s ease-in-out,
-    background-color 0.14s ease-in-out,
-    transform 0.14s ease-in-out;
+    border-color 0.3s ease-in-out,
+    box-shadow 0.3s ease-in-out,
+    background-color 0.3s ease-in-out,
+    transform 0.3s ease-in-out;
 }
 
 .app-shell__menu-trigger:hover,
@@ -347,8 +347,8 @@ a {
 
 .app-shell__menu-icon-line {
   transition:
-    transform 0.14s ease-in-out,
-    opacity 0.14s ease-in-out;
+    transform 0.3s ease-in-out,
+    opacity 0.3s ease-in-out;
   transform-origin: center;
 }
 
@@ -385,7 +385,7 @@ a {
   padding: 8px;
   border: 1px solid var(--color-border-warm);
   border-radius: var(--radius-md);
-  background: rgba(250, 249, 245, 0.96);
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
   box-shadow:
     0 14px 34px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.38);
@@ -432,10 +432,10 @@ a {
   text-align: center;
   box-shadow: var(--shadow-ring);
   transition:
-    border-color 0.14s ease-in-out,
-    background-color 0.14s ease-in-out,
-    box-shadow 0.14s ease-in-out,
-    color 0.14s ease-in-out;
+    border-color 0.3s ease-in-out,
+    background-color 0.3s ease-in-out,
+    box-shadow 0.3s ease-in-out,
+    color 0.3s ease-in-out;
 }
 
 .app-shell__action-menu-item:hover,
@@ -575,7 +575,7 @@ a {
   border-radius: var(--radius-md);
   padding: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0)),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 32%, transparent), transparent),
     var(--color-surface);
   box-shadow: var(--shadow-whisper);
 }
@@ -672,7 +672,7 @@ a {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0)),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 32%, transparent), transparent),
     var(--color-surface);
   box-shadow: var(--shadow-whisper);
   overflow: hidden;
