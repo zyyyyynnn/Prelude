@@ -76,27 +76,9 @@ Copy-Item paper_rewriting_output\integrity_audit.md archive\matrices\audit-chapX
 
 ## 第二阶段：终稿物理构建 (Pandoc 渲染流)
 
-### 2.1 物理拼接组装
+### 2.1 文件组装
 
-在 `thesis-assets/` 目录下执行，将更新后的所有章节无缝拼接为 `thesis-full.md`：
-
-```powershell
-$chapters = @(
-    "chapters\abstract-keywords.md",
-    "chapters\chapter-01-introduction.md",
-    "chapters\chapter-02-related-tech.md",
-    "chapters\chapter-03-analysis-design.md",
-    "chapters\chapter-04-implementation.md",
-    "chapters\chapter-05-testing.md",
-    "chapters\chapter-06-conclusion.md"
-)
-
-Clear-Content thesis-full.md -ErrorAction SilentlyContinue
-foreach ($file in $chapters) {
-    Get-Content $file -Encoding utf8 -Raw | Add-Content thesis-full.md -Encoding utf8 -NoNewline
-    Add-Content thesis-full.md "`n`n" -Encoding utf8
-}
-```
+`build-docx.ps1` 内部会完成该步骤，自动将所有分章无缝拼接为 `thesis-full.md`。用户不应再手工执行拼接脚本。
 
 ### 2.2 Pandoc 导出 Word (含目录域)
 
