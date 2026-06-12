@@ -1,4 +1,4 @@
-# Agent 工作协议与操作规范
+﻿# Agent 工作协议与操作规范
 
 ## 1. 默认基准与交互原则
 - **环境基准**：Windows 11、PowerShell 7+、UTF-8。
@@ -100,7 +100,7 @@
 
 ### 8.2 大修与逻辑降维 (PaperSpine 引擎)
 - 当面临代码更新引发的论文逻辑大修时，切勿使用原生对话模型直接生成长篇大论。
-- 必须遵循工业级管线：将真实证据（日志、代码片段、新图表等）存入 `thesis-assets/evidence/` -> 启动 PaperSpine 引擎执行 `rewrite_existing`（当前论文流程入口为 `thesis-assets/paperspine-workflow.md`。若未来需要动态调度文件，可另建 `paperspine-execution-plan.md`；当前仓库不依赖该文件）。
+- 必须遵循工业级管线：将真实证据（日志、代码片段、新图表等）存入 `thesis-assets/evidence/` -> 启动 PaperSpine 引擎执行 `rewrite_existing`（当前论文流程入口为 `thesis-assets/meta/workflow-governance.md`。若未来需要动态调度文件，可另建 `paperspine-execution-plan.md`；当前仓库不依赖该文件）。
 - **单章执行纪律**：每次只对一个 `chapters/*.md` 文件执行 `rewrite_existing`，严禁将全书合并后一次性送入 PaperSpine，否则会触发上下文截断崩溃。
 
 ### 8.3 物理渲染流 (Pandoc 一键合版)
@@ -114,4 +114,4 @@
 - **人工收尾隔离**：在 Agent 成功渲染完 `thesis-final.docx` 后，必须明确提醒用户接管“最后的 5%”（手工贴图、粘贴附录/参考文献、更新目录域与底端页码），严禁 Agent 尝试自动化实现这些行为。
 - **答辩材料独立**：答辩 PPT 逻辑映射、演讲稿及 Q&A 演练完全独立于论文正文生成管线，此类任务请直接查阅并操作 `thesis-assets/defense/` 目录。
 
-> 详细流程参见：`thesis-assets/paperspine-workflow.md`
+> 详细流程参见：`thesis-assets/meta/workflow-governance.md`

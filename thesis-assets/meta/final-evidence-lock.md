@@ -1,34 +1,47 @@
-# 最终证据锁版记录
+﻿# 当前论文证据锁定索引
 
-> 本文件只登记已采集、已确认、可追溯的论文与答辩证据。若与 dated 阶段记录冲突，以本文件和 `thesis-control.md` 为准。
+## 1. 文件定位
 
-| 素材类型 | 素材名称 | 采集日期 | 对应代码版本标识 | 是否已同步到论文 | 是否已同步到 PPT | 是否已同步到答辩讲解 | 备注 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 截图 | `docs/images/login.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 登录页展示图；不等同于学校终稿正文已选用 |
-| 截图 | `docs/images/interview-empty.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 主工作台（未开始面试的空状态）展示图；不等同于学校终稿正文已选用 |
-| 截图 | `docs/images/interview-workbench.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 主工作台（报告预览）展示图；已覆盖多岗位 Demo 会话；不等同于学校终稿正文已选用 |
-| 截图 | `docs/images/analytics.png` | 2026-04-28 | 本机 Demo Twin 截图重跑结果 | README 已同步；正式草稿版 DOCX 由人工侧自行处理 | 否 | 否 | 数据看板展示图；不等同于学校终稿正文已选用 |
-| 图表 | 图3.1 系统核心用例图 | 2026-04-28 | `thesis-assets/evidence/diagrams/fig-3.1-core-use-case.png` | 是 | 否 | 否 | 由 `fig-3.1-core-use-case.mmd` 渲染生成 |
-| 图表 | 图3.2 数据库 E-R 图 | 2026-04-28 | `thesis-assets/evidence/diagrams/fig-3.2-database-er.png` | 是 | 否 | 否 | 由 `fig-3.2-database-er.mmd` 渲染生成 |
-| 图表 | 图3.3 系统整体架构图 | 2026-04-28 | `thesis-assets/evidence/diagrams/fig-3.3-system-architecture.png` | 是 | 否 | 否 | 由 `fig-3.3-system-architecture.mmd` 渲染生成 |
-| 测试数据 | `thesis-assets/evidence/test-data/env-2026-04-24.md` | 2026-04-24 | 本机验证结果 | 否 | 否 | 否 | 历史基线；仍可作为历史对照 |
-| 测试数据 | `thesis-assets/evidence/test-data/demo-2026-04-25.md` | 2026-04-25 | Demo Twin 本机业务测试 | 否 | 否 | 否 | 历史基线；仍可作为历史对照 |
-| 测试数据 | `thesis-assets/evidence/test-data/demo-2026-04-25.json` | 2026-04-25 | Demo Twin 本机业务测试 | 否 | 否 | 否 | 历史基线；与 `.md` 同源 |
-| 测试数据 | `thesis-assets/evidence/test-data/mimo-2026-05-27.md` | 2026-05-27 | MIMO 真实公网全链路测试 | 否 | 暂缓 | 是 | 暂不纳入第五章正文；保留作为补充证据纳入答辩对照使用 |
-| 测试数据 | `thesis-assets/evidence/test-data/mimo-2026-05-27.json` | 2026-05-27 | MIMO 真实公网全链路测试 | 否 | 暂缓 | 是 | 全链路结构化测试指标与数据记录 |
-| 测试数据 | `thesis-assets/evidence/test-data/env-2026-06.md` | 2026-06-12 | 本机验证与全栈联调结果 | 否 / 待阶段 3 同步 | 否 | 否 | 2026-06 最新构建记录，已替代旧环境表 |
-| 测试数据 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 2026-06-12 | Demo Twin 联调功能用例 | 否 / 待阶段 3 同步 | 否 | 否 | 2026-06 最新功能用例，替代旧 draft |
-| 测试数据 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 2026-06-12 | Demo Twin 测试与性能记录 | 否 / 待阶段 3 同步 | 否 | 否 | 2026-06 性能采集表；部分高并发指标因本机限制记为未实测 |
-| 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-04-24.md` | 2026-04-24 | 当前代码结构 | 是 | 否 | 否 | 已同步到第四章实现证据来源 |
-| 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-05-31.md` | 2026-05-31 | 安全加固与性能优化后代码 | 否 | 否 | 否 | 含 LLM 柔性降级、PDF 安全防线、JWT 防抖、API Key 生命周期、N+1 消除与复合索引；可补充到第四章或答辩 |
-| 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-06-02.md` | 2026-06-02 | Roadmap架构高可用与体验升级全面落地代码 | 否 | 否 | 否 | 含结构化输出、SSE重连、Redis、语音流、熔断与监控；可补充到第四章或答辩 |
-| Bug 记录 | `thesis-assets/evidence/bug-evidence/package-2026-04-24.md` | 2026-04-24 | 当前开发过程记录 | 是 | 否 | 是 | 已选 Bug 1 与 Bug 2 作为论文/答辩主讲候选 |
-| 文献证据 | `thesis-assets/literature/quality-review.md` | 2026-04-26 | 本轮文献增强 | 是 | 否 | 否 | 记录候选文献筛选依据和采用状态 |
-| 文献证据 | `thesis-assets/literature/evidence-map.md` | 2026-04-26 | 本轮文献增强 | 是 | 否 | 否 | 记录文献与论文章节的落位关系 |
-| 答辩材料 | `thesis-assets/defense/slide-map.md` | 2026-04-25 | 当前答辩资料结构 | 正式草稿版 DOCX 不纳入正文，仅作为答辩材料来源 | 是 | 是 | PPT 页级映射表 |
-| 答辩材料 | `thesis-assets/defense/script.md` | 2026-04-25 | 当前答辩资料结构 | 正式草稿版 DOCX 不纳入正文，仅作为答辩材料来源 | 否 | 是 | 5-8 分钟正式讲稿 |
-| 答辩模板 | `thesis-assets/defense/贵州大学答辩PPT模板.pptx` | 2026-04-26 | 学校答辩 PPT 模板 | 否 | 否 | 否 | 当前未入库；需人工重新提供或从历史提交恢复 |
-| 历史整合文档 | `thesis-assets/毕业论文资料整合.docx` | 2026-04-25 | 历史论文资料快照 | 否 | 否 | 否 | 历史中已删除，当前不恢复，不作为当前状态依据 |
-| 原始主稿 / 格式母版 | `thesis-assets/毕业论文正式版（草稿）.docx` | 2026-04-26 | 原始论文草稿结构 | 是 | 否 | 否 | 保留不覆盖；封面和诚信责任书已并入，签名、日期、指导教师和目录页码仍需人工终审 |
-| 当前 Word 工作稿 | `thesis-assets/meta/school-template.docx` | 2026-06-05 | 已迁移为 school-template.docx 作为排版样式基准模板 | 是 | 否 | 否 | 后续进入 Word 目录域更新、页码、页眉页脚、图题表题和参考文献格式终审 |
-| Markdown 润色基准稿 | `thesis-assets/thesis-full.md` | 2026-06-05 | PaperSpine 全章节强力重构合并版基准稿 | 是 | 否 | 否 | 物理合并内容定版后的 Markdown 基准稿 |
+说明：
+
+* 本文件只登记当前仍有效、可追溯、可进入后续阶段审查的论文证据资产。
+* 本文件不登记旧 DOCX、旧草稿、旧 PaperSpine 输出、旧过程报告。
+* 若与其他资产说明冲突，以 workflow-governance.md 为准。
+
+## 2. 当前有效证据资产
+
+| 证据类型 | 当前路径 | 用途 | 当前状态 | 限制说明 |
+| --- | --- | --- | --- | --- |
+| 参考文献主库 | thesis-assets/literature/references.bib | 最终参考文献列表基础 | 锁定 | Zotero 可导入 |
+| 文献质量复核表 | thesis-assets/literature/quality-review.md | 文献收口依据 | 锁定 | 阶段 2.9E 收口完成 |
+| 文献证据映射表 | thesis-assets/literature/evidence-map.md | 正文挂载逻辑指导 | 锁定 | 阶段 2.9E 收口完成 |
+| 图表登记表 | thesis-assets/evidence/figure-table-register.md | 图表资产索引 | 待更新 | - |
+| 绘图与模型 | thesis-assets/evidence/diagrams/ | 论文绘图源文件 | 可用 | - |
+| 测试数据与报告 | thesis-assets/evidence/test-data/ | 系统测试依据 | 可用 | - |
+| 代码片段截图 | thesis-assets/evidence/code-snippets/ | 核心代码展示 | 可用 | - |
+| Bug与修复证据 | thesis-assets/evidence/bug-evidence/ | 问题修复追溯 | 可用 | - |
+| 答辩材料 | thesis-assets/defense/ | PPT与讲稿 | 可用 | - |
+
+## 3. 禁止回流资产
+
+说明以下类型已删除或不再作为当前依据：
+
+1. reference-refresh-plan.md
+2. reference-refresh-2026-06.md
+3. candidates/
+4. research-notes/
+5. references-draft.bib
+6. zotero-import-final-candidates.bib
+7. paperspine-workflow.md
+8. thesis-full.md
+9. current/
+10. drafts/
+11. archive/
+
+## 4. 阶段状态
+
+* 文献资产已收口到 references.bib / quality-review.md / evidence-map.md。
+* 阶段 3 仍未开始。
+* 正文未修改。
+* 引用编号未冻结。
+* DOCX/PDF 未生成。

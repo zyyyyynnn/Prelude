@@ -1,4 +1,4 @@
-# docs 项目文档目录
+﻿# docs 项目文档目录
 
 本目录用于存放项目对外展示和开发说明类文档。这里的文件应尽量保持稳定，避免放入运行缓存、临时截图或一次性审查材料。
 
@@ -24,7 +24,7 @@
 
 - `docs/images/` 只放 README 中长期使用的精选截图。
 - 临时截图、批量截图和 Playwright 输出优先放入 `output/`。
-- 如果某张截图被论文或答辩正式采用，应在 `thesis-assets/final-evidence-lock.md` 中登记。
+- 如果某张截图被论文或答辩正式采用，应在 `thesis-assets/meta/final-evidence-lock.md` 中登记。
 - 不把论文过程报告、润色稿、格式检查报告或 `output/` 批量截图放入 `docs/`；除非根 README 正式引用，截图仍优先留在原来源目录。
 
 ## API 文档维护规则
