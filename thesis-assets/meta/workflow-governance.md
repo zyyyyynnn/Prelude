@@ -1,222 +1,246 @@
-# Prelude 论文工作流治理规范
+﻿# Prelude 璁烘枃宸ヤ綔娴佹不鐞嗚鑼?
+## 1. 鏂囦欢瀹氫綅涓庤鑼冧紭鍏堢骇
 
-## 1. 文件定位与规范优先级
-
-本文件是 Prelude 论文资产治理的最高规范。
-任何 Agent 在修改论文资产前，必须先读取本文件。
-若本文件与其他论文流程文件冲突，以本文件为准。
-
-规范优先级：
+鏈枃浠舵槸 Prelude 璁烘枃璧勪骇娌荤悊鐨勬渶楂樿鑼冦€?浠讳綍 Agent 鍦ㄤ慨鏀硅鏂囪祫浜у墠锛屽繀椤诲厛璇诲彇鏈枃浠躲€?鑻ユ湰鏂囦欢涓庡叾浠栬鏂囨祦绋嬫枃浠跺啿绐侊紝浠ユ湰鏂囦欢涓哄噯銆?
+瑙勮寖浼樺厛绾э細
 workflow-governance.md > AGENTS.md > thesis-assets/README.md > thesis-assets/paperspine-workflow.md > thesis-assets/build-docx.ps1
 
-职责边界：
-1. workflow-governance.md 负责完整论文生命周期治理。
-2. paperspine-workflow.md 只负责 PaperSpine 单章执行 SOP。
-3. build-docx.ps1 只负责 DOCX 工作稿物理构建。
-4. AGENTS.md 只负责全局 Agent 操作纪律。
-5. thesis-assets/README.md 只负责论文资产索引和入口说明。
+鑱岃矗杈圭晫锛?1. workflow-governance.md 璐熻矗瀹屾暣璁烘枃鐢熷懡鍛ㄦ湡娌荤悊銆?2. paperspine-workflow.md 鍙礋璐?PaperSpine 鍗曠珷鎵ц SOP銆?3. build-docx.ps1 鍙礋璐?DOCX 宸ヤ綔绋跨墿鐞嗘瀯寤恒€?4. AGENTS.md 鍙礋璐ｅ叏灞€ Agent 鎿嶄綔绾緥銆?5. thesis-assets/README.md 鍙礋璐ｈ鏂囪祫浜х储寮曞拰鍏ュ彛璇存槑銆?
+## 2. 鍐崇瓥鏉冨綊灞?
+1. 鏈湴 Agent 鏃犳潈鑷鍒ゅ畾闃舵閫氳繃銆?2. 鏈湴 Agent 鏃犳潈鑷鎺ㄨ繘涓嬩竴闃舵銆?3. 鏈湴 Agent 鍙兘鎵ц鐢ㄦ埛鏄庣‘鎸囧畾鐨勫綋鍓嶉樁娈典换鍔°€?4. 姣忎竴闃舵瀹屾垚鍚庯紝蹇呴』杈撳嚭鎶ュ憡涓?git diff锛岀敱鐢ㄦ埛鍜屽鏌ュ畼澶嶆牳銆?5. 鏈粡鐢ㄦ埛鍜屽鏌ュ畼澶嶆牳纭锛屼笉寰楄繘鍏ヤ笅涓€闃舵銆?6. 鏈湴 Agent 鐨勨€滈€氳繃鈥濆彧鑳借涓鸿嚜妫€缁撴灉锛屼笉绛夊悓浜庨」鐩獙鏀剁粨璁恒€?
+## 3. 鏍稿績绾㈢嚎
 
-## 2. 决策权归属
-
-1. 本地 Agent 无权自行判定阶段通过。
-2. 本地 Agent 无权自行推进下一阶段。
-3. 本地 Agent 只能执行用户明确指定的当前阶段任务。
-4. 每一阶段完成后，必须输出报告与 git diff，由用户和审查官复核。
-5. 未经用户和审查官复核确认，不得进入下一阶段。
-6. 本地 Agent 的“通过”只能视为自检结果，不等同于项目验收结论。
-
-## 3. 核心红线
-
-1. chapters/*.md 是论文正文唯一真相源。
-2. thesis-full.md 是自动拼接中间产物，不得手工维护。
-3. current/thesis-final.docx 是自动构建工作稿，不是提交版。
-4. 提交版 DOCX/PDF 只能在 Word/WPS 人工终审后产生。
-5. 证据未锁定，不允许调起 paper-spine-rewrite。
-6. 外部研究未进入 literature/ 或 evidence/ 的研究缓冲区，不允许进入正文。
-7. 图表未登记，不允许在正文中引用。
-8. PaperSpine 只能单章执行。
-9. 严禁全文一次性送入 PaperSpine。
-10. Deep Research / NotebookLM 输出不得直接覆盖 chapters/*.md。
-11. nature-figure 不得脱离真实代码、DDL、接口时序、测试数据自行想象图表。
-12. 禁止使用“查重反制”“规避检测”等目标或表述。
-
-## 4. 四个冻结点
-
-| 冻结点 | 含义 | 冻结前禁止 | 冻结后允许 |
+1. chapters/*.md 鏄鏂囨鏂囧敮涓€鐪熺浉婧愩€?2. thesis-full.md 鏄嚜鍔ㄦ嫾鎺ヤ腑闂翠骇鐗╋紝涓嶅緱鎵嬪伐缁存姢銆?3. current/thesis-final.docx 鏄嚜鍔ㄦ瀯寤哄伐浣滅锛屼笉鏄彁浜ょ増銆?4. 鎻愪氦鐗?DOCX/PDF 鍙兘鍦?Word/WPS 浜哄伐缁堝鍚庝骇鐢熴€?5. 璇佹嵁鏈攣瀹氾紝涓嶅厑璁歌皟璧?paper-spine-rewrite銆?6. 澶栭儴鐮旂┒鏈繘鍏?literature/ 鎴?evidence/ 鐨勭爺绌剁紦鍐插尯锛屼笉鍏佽杩涘叆姝ｆ枃銆?7. 鍥捐〃鏈櫥璁帮紝涓嶅厑璁稿湪姝ｆ枃涓紩鐢ㄣ€?8. PaperSpine 鍙兘鍗曠珷鎵ц銆?9. 涓ョ鍏ㄦ枃涓€娆℃€ч€佸叆 PaperSpine銆?10. Deep Research / NotebookLM 杈撳嚭涓嶅緱鐩存帴瑕嗙洊 chapters/*.md銆?11. nature-figure 涓嶅緱鑴辩鐪熷疄浠ｇ爜銆丏DL銆佹帴鍙ｆ椂搴忋€佹祴璇曟暟鎹嚜琛屾兂璞″浘琛ㄣ€?12. 绂佹浣跨敤鈥滄煡閲嶅弽鍒垛€濃€滆閬挎娴嬧€濈瓑鐩爣鎴栬〃杩般€?
+## 4. 鍥涗釜鍐荤粨鐐?
+| 鍐荤粨鐐?| 鍚箟 | 鍐荤粨鍓嶇姝?| 鍐荤粨鍚庡厑璁?|
 | --- | --- | --- | --- |
-| 证据锁定 | evidence/、图表登记、测试数据、代码片段已确认。 | 禁止 PaperSpine rewrite。 | 允许单章改写或降噪。 |
-| 内容冻结 | chapters/*.md 正文不再大改。 | 禁止生成提交版 DOCX/PDF。 | 允许生成 DOCX 工作稿。 |
-| 引用冻结 | 文献编号、参考文献列表、引用位置已对齐。 | 禁止最终排版。 | 允许人工 Word 终审。 |
-| 提交冻结 | Word/PDF 人工检查完成。 | 禁止继续自动化修改。 | 允许归档、tag、提交。 |
+| 璇佹嵁閿佸畾 | evidence/銆佸浘琛ㄧ櫥璁般€佹祴璇曟暟鎹€佷唬鐮佺墖娈靛凡纭銆?| 绂佹 PaperSpine rewrite銆?| 鍏佽鍗曠珷鏀瑰啓鎴栭檷鍣€?|
+| 鍐呭鍐荤粨 | chapters/*.md 姝ｆ枃涓嶅啀澶ф敼銆?| 绂佹鐢熸垚鎻愪氦鐗?DOCX/PDF銆?| 鍏佽鐢熸垚 DOCX 宸ヤ綔绋裤€?|
+| 寮曠敤鍐荤粨 | 鏂囩尞缂栧彿銆佸弬鑰冩枃鐚垪琛ㄣ€佸紩鐢ㄤ綅缃凡瀵归綈銆?| 绂佹鏈€缁堟帓鐗堛€?| 鍏佽浜哄伐 Word 缁堝銆?|
+| 鎻愪氦鍐荤粨 | Word/PDF 浜哄伐妫€鏌ュ畬鎴愩€?| 绂佹缁х画鑷姩鍖栦慨鏀广€?| 鍏佽褰掓。銆乼ag銆佹彁浜ゃ€?|
 
-## 5. 阶段准入、退出、熔断规则
-
-| 阶段 | Entry Criteria | Exit Criteria | Stop Conditions |
+## 5. 闃舵鍑嗗叆銆侀€€鍑恒€佺啍鏂鍒?
+| 闃舵 | Entry Criteria | Exit Criteria | Stop Conditions |
 | --- | --- | --- | --- |
-| 阶段 1.6：治理规范落盘 | 用户指派阶段 1.6 任务 | 规范文件与入口修正完成 | 发现破坏章节/图表 |
-| 阶段 2：图表和证据同步 | 阶段 1.6 审核通过 | evidence/ 证据已锁定登记 | 证据无法溯源到代码 |
-| 阶段 3：正文单章学术降噪 | 证据已锁定 | 单章无异常修辞、事实不漂移 | 单章上下文截断 |
-| 阶段 4：引用体系治理 | 内容已冻结 | 正文编号与列表对应 | 编号跳跃缺失 |
-| 阶段 5：DOCX 工作稿构建 | 引用已冻结 | 生成 thesis-final.docx 工作稿 | Pandoc 报错中断 |
-| 阶段 6：Word/PDF 人工终审 | DOCX 工作稿已生成 | 人工导出提交版 PDF 并锁定 | 发现排版乱码 |
+| 闃舵 1.6锛氭不鐞嗚鑼冭惤鐩?| 鐢ㄦ埛鎸囨淳闃舵 1.6 浠诲姟 | 瑙勮寖鏂囦欢涓庡叆鍙ｄ慨姝ｅ畬鎴?| 鍙戠幇鐮村潖绔犺妭/鍥捐〃 |
+| 闃舵 2锛氬浘琛ㄥ拰璇佹嵁鍚屾 | 闃舵 1.6 瀹℃牳閫氳繃 | evidence/ 璇佹嵁宸查攣瀹氱櫥璁?| 璇佹嵁鏃犳硶婧簮鍒颁唬鐮?|
+| 闃舵 3锛氭鏂囧崟绔犲鏈檷鍣?| 璇佹嵁宸查攣瀹?| 鍗曠珷鏃犲紓甯镐慨杈炪€佷簨瀹炰笉婕傜Щ | 鍗曠珷涓婁笅鏂囨埅鏂?|
+| 闃舵 4锛氬紩鐢ㄤ綋绯绘不鐞?| 鍐呭宸插喕缁?| 姝ｆ枃缂栧彿涓庡垪琛ㄥ搴?| 缂栧彿璺宠穬缂哄け |
+| 闃舵 5锛欴OCX 宸ヤ綔绋挎瀯寤?| 寮曠敤宸插喕缁?| 鐢熸垚 thesis-final.docx 宸ヤ綔绋?| Pandoc 鎶ラ敊涓柇 |
+| 闃舵 6锛歐ord/PDF 浜哄伐缁堝 | DOCX 宸ヤ綔绋垮凡鐢熸垚 | 浜哄伐瀵煎嚭鎻愪氦鐗?PDF 骞堕攣瀹?| 鍙戠幇鎺掔増涔辩爜 |
 
-任何阶段一旦发现 P0，立即停止进入下一阶段。
-任何阶段完成后，必须等待用户和审查官复核。
-
-## 6. 项目更新与论文同步规则
-
-| 变更类型 | 是否必须同步论文 | 影响章节 | 需要更新的资产 | 是否需要更新图表 | 是否需要重跑测试 |
+浠讳綍闃舵涓€鏃﹀彂鐜?P0锛岀珛鍗冲仠姝㈣繘鍏ヤ笅涓€闃舵銆?浠讳綍闃舵瀹屾垚鍚庯紝蹇呴』绛夊緟鐢ㄦ埛鍜屽鏌ュ畼澶嶆牳銆?
+## 6. 椤圭洰鏇存柊涓庤鏂囧悓姝ヨ鍒?
+| 鍙樻洿绫诲瀷 | 鏄惁蹇呴』鍚屾璁烘枃 | 褰卞搷绔犺妭 | 闇€瑕佹洿鏂扮殑璧勪骇 | 鏄惁闇€瑕佹洿鏂板浘琛?| 鏄惁闇€瑕侀噸璺戞祴璇?|
 | --- | --- | --- | --- | --- | --- |
-| 后端架构变化 | 是 | 第三章、第四章 | 代码片段 | 是（架构图） | 视性能影响决定 |
-| 数据库结构变化 | 是 | 第三章 | 无 | 是（E-R 图） | 否 |
-| 核心 API 语义变化 | 是 | 第三/四/五章 | 代码片段 | 否 | 视测试覆盖决定 |
-| LLM Provider / SSE / WebSocket / Redis / 熔断 / 监控变化 | 是 | 第四章和第五章 | 代码片段 | 否 | 必要时重跑测试 |
-| Demo Twin 机制变化 | 是 | 第四章、第五章、答辩材料 | 测试数据 | 否 | 必要时重采 Demo 数据 |
-| README 宣称能力变化 | 必须核对 | 若涉及能力变更 | 对应证据 | 否 | 否 |
-| 前端页面/路由变化 | 视引用情况 | 第四章（若引用截图） | 运行截图 | 否 | 否 |
-| 依赖版本变化 | 视影响决定 | 第五章 | 描述或测试环境说明 | 否 | 否 |
-| 样式微调 | 否（仅记录） | 无 | 无 | 否 | 否 |
-| 答辩演示路径变化 | 是 | 答辩材料、或可能正文 | 答辩文件 | 否 | 否 |
+| 鍚庣鏋舵瀯鍙樺寲 | 鏄?| 绗笁绔犮€佺鍥涚珷 | 浠ｇ爜鐗囨 | 鏄紙鏋舵瀯鍥撅級 | 瑙嗘€ц兘褰卞搷鍐冲畾 |
+| 鏁版嵁搴撶粨鏋勫彉鍖?| 鏄?| 绗笁绔?| 鏃?| 鏄紙E-R 鍥撅級 | 鍚?|
+| 鏍稿績 API 璇箟鍙樺寲 | 鏄?| 绗笁/鍥?浜旂珷 | 浠ｇ爜鐗囨 | 鍚?| 瑙嗘祴璇曡鐩栧喅瀹?|
+| LLM Provider / SSE / WebSocket / Redis / 鐔旀柇 / 鐩戞帶鍙樺寲 | 鏄?| 绗洓绔犲拰绗簲绔?| 浠ｇ爜鐗囨 | 鍚?| 蹇呰鏃堕噸璺戞祴璇?|
+| Demo Twin 鏈哄埗鍙樺寲 | 鏄?| 绗洓绔犮€佺浜旂珷銆佺瓟杈╂潗鏂?| 娴嬭瘯鏁版嵁 | 鍚?| 蹇呰鏃堕噸閲?Demo 鏁版嵁 |
+| README 瀹ｇО鑳藉姏鍙樺寲 | 蹇呴』鏍稿 | 鑻ユ秹鍙婅兘鍔涘彉鏇?| 瀵瑰簲璇佹嵁 | 鍚?| 鍚?|
+| 鍓嶇椤甸潰/璺敱鍙樺寲 | 瑙嗗紩鐢ㄦ儏鍐?| 绗洓绔狅紙鑻ュ紩鐢ㄦ埅鍥撅級 | 杩愯鎴浘 | 鍚?| 鍚?|
+| 渚濊禆鐗堟湰鍙樺寲 | 瑙嗗奖鍝嶅喅瀹?| 绗簲绔?| 鎻忚堪鎴栨祴璇曠幆澧冭鏄?| 鍚?| 鍚?|
+| 鏍峰紡寰皟 | 鍚︼紙浠呰褰曪級 | 鏃?| 鏃?| 鍚?| 鍚?|
+| 绛旇京婕旂ず璺緞鍙樺寲 | 鏄?| 绛旇京鏉愭枡銆佹垨鍙兘姝ｆ枃 | 绛旇京鏂囦欢 | 鍚?| 鍚?|
 
-补充说明：
-1. 后端架构变化：必须同步；影响第三章、第四章；可能需要架构图；视性能影响决定是否重跑测试。
-2. 数据库结构变化：必须同步；影响第三章；必须更新 E-R 图。
-3. 核心 API 语义变化：必须同步；影响第三/四/五章；视测试覆盖决定是否重跑测试。
-4. LLM Provider / SSE / WebSocket / Redis / 熔断 / 监控变化：必须同步；影响第四章和第五章；必要时重跑测试。
-5. Demo Twin 机制变化：必须同步；影响第四章、第五章、答辩材料；必要时重采 Demo 数据。
-6. README 宣称能力变化：必须同步核对；如果论文已引用该能力，必须更新正文或降级 README 表述。
-7. 前端页面/路由变化：如果论文正文、截图、图表、答辩演示路径引用该页面，则必须同步；否则只记录。
-8. 依赖版本变化：如果影响第五章环境、构建性能、测试结论或论文中版本表述，则必须同步；否则只记录。
-9. 样式微调：一般只记录，不触发论文重写。
-10. 答辩演示路径变化：必须同步 defense/，如论文正文引用演示流程，也必须同步论文。
-
-## 7. evidence/ 证据层职责
-
-evidence/ 是正文之前的证据缓冲区。
-证据未落盘，不允许正文重写。
-证据未登记，不允许进入正文。
-证据必须能回溯到代码、命令、截图、测试报告或文献来源。
-
-| evidence 类型 | 存放位置 | 来源 | 进入正文条件 | 验收方式 |
+琛ュ厖璇存槑锛?1. 鍚庣鏋舵瀯鍙樺寲锛氬繀椤诲悓姝ワ紱褰卞搷绗笁绔犮€佺鍥涚珷锛涘彲鑳介渶瑕佹灦鏋勫浘锛涜鎬ц兘褰卞搷鍐冲畾鏄惁閲嶈窇娴嬭瘯銆?2. 鏁版嵁搴撶粨鏋勫彉鍖栵細蹇呴』鍚屾锛涘奖鍝嶇涓夌珷锛涘繀椤绘洿鏂?E-R 鍥俱€?3. 鏍稿績 API 璇箟鍙樺寲锛氬繀椤诲悓姝ワ紱褰卞搷绗笁/鍥?浜旂珷锛涜娴嬭瘯瑕嗙洊鍐冲畾鏄惁閲嶈窇娴嬭瘯銆?4. LLM Provider / SSE / WebSocket / Redis / 鐔旀柇 / 鐩戞帶鍙樺寲锛氬繀椤诲悓姝ワ紱褰卞搷绗洓绔犲拰绗簲绔狅紱蹇呰鏃堕噸璺戞祴璇曘€?5. Demo Twin 鏈哄埗鍙樺寲锛氬繀椤诲悓姝ワ紱褰卞搷绗洓绔犮€佺浜旂珷銆佺瓟杈╂潗鏂欙紱蹇呰鏃堕噸閲?Demo 鏁版嵁銆?6. README 瀹ｇО鑳藉姏鍙樺寲锛氬繀椤诲悓姝ユ牳瀵癸紱濡傛灉璁烘枃宸插紩鐢ㄨ鑳藉姏锛屽繀椤绘洿鏂版鏂囨垨闄嶇骇 README 琛ㄨ堪銆?7. 鍓嶇椤甸潰/璺敱鍙樺寲锛氬鏋滆鏂囨鏂囥€佹埅鍥俱€佸浘琛ㄣ€佺瓟杈╂紨绀鸿矾寰勫紩鐢ㄨ椤甸潰锛屽垯蹇呴』鍚屾锛涘惁鍒欏彧璁板綍銆?8. 渚濊禆鐗堟湰鍙樺寲锛氬鏋滃奖鍝嶇浜旂珷鐜銆佹瀯寤烘€ц兘銆佹祴璇曠粨璁烘垨璁烘枃涓増鏈〃杩帮紝鍒欏繀椤诲悓姝ワ紱鍚﹀垯鍙褰曘€?9. 鏍峰紡寰皟锛氫竴鑸彧璁板綍锛屼笉瑙﹀彂璁烘枃閲嶅啓銆?10. 绛旇京婕旂ず璺緞鍙樺寲锛氬繀椤诲悓姝?defense/锛屽璁烘枃姝ｆ枃寮曠敤婕旂ず娴佺▼锛屼篃蹇呴』鍚屾璁烘枃銆?
+## 7. evidence/ 璇佹嵁灞傝亴璐?
+evidence/ 鏄鏂囦箣鍓嶇殑璇佹嵁缂撳啿鍖恒€?璇佹嵁鏈惤鐩橈紝涓嶅厑璁告鏂囬噸鍐欍€?璇佹嵁鏈櫥璁帮紝涓嶅厑璁歌繘鍏ユ鏂囥€?璇佹嵁蹇呴』鑳藉洖婧埌浠ｇ爜銆佸懡浠ゃ€佹埅鍥俱€佹祴璇曟姤鍛婃垨鏂囩尞鏉ユ簮銆?
+| evidence 绫诲瀷 | 瀛樻斁浣嶇疆 | 鏉ユ簮 | 杩涘叆姝ｆ枃鏉′欢 | 楠屾敹鏂瑰紡 |
 | --- | --- | --- | --- | --- |
-| 代码片段 | evidence/code-snippets/ | 项目源码提取 | 剥离业务仅留核心说明 | 源码一致性核对 |
-| 运行截图 | evidence/screenshots/ 或 docs/images/ | 项目真实运行页面 | 与正文 UI 描述匹配 | 人工视检 |
-| 测试日志 | evidence/test-data/ | 控制台或中间件日志 | 测试场景与结论吻合 | 数据戳真实性核对 |
-| 性能数据 | evidence/test-data/ | 压测工具、监控面板 | 必须体现明确环境与工具 | 指标合理性与来源复核 |
-| 架构图源文件 | evidence/diagrams/ | nature-figure 或白板设计 | 反映当前后端结构 | 拓扑正确性确认 |
-| E-R 图源文件 | evidence/diagrams/ | nature-figure 配合 DDL | 包含核心表与主外键 | 数据库模式对齐 |
-| 外部研究摘要 | literature/research-notes/ 或 evidence/research-notes/ | GPT/Gemini Deep Research | 存在明确引用出处 | 查阅源出处避免幻觉 |
-| 图表登记 | evidence/figure-table-register.md | 手工维护或流程脚本 | 图表物理存在 | 注册表比对 |
+| 浠ｇ爜鐗囨 | evidence/code-snippets/ | 椤圭洰婧愮爜鎻愬彇 | 鍓ョ涓氬姟浠呯暀鏍稿績璇存槑 | 婧愮爜涓€鑷存€ф牳瀵?|
+| 杩愯鎴浘 | evidence/screenshots/ 鎴?docs/images/ | 椤圭洰鐪熷疄杩愯椤甸潰 | 涓庢鏂?UI 鎻忚堪鍖归厤 | 浜哄伐瑙嗘 |
+| 娴嬭瘯鏃ュ織 | evidence/test-data/ | 鎺у埗鍙版垨涓棿浠舵棩蹇?| 娴嬭瘯鍦烘櫙涓庣粨璁哄惢鍚?| 鏁版嵁鎴崇湡瀹炴€ф牳瀵?|
+| 鎬ц兘鏁版嵁 | evidence/test-data/ | 鍘嬫祴宸ュ叿銆佺洃鎺ч潰鏉?| 蹇呴』浣撶幇鏄庣‘鐜涓庡伐鍏?| 鎸囨爣鍚堢悊鎬т笌鏉ユ簮澶嶆牳 |
+| 鏋舵瀯鍥炬簮鏂囦欢 | evidence/diagrams/ | nature-figure 鎴栫櫧鏉胯璁?| 鍙嶆槧褰撳墠鍚庣缁撴瀯 | 鎷撴墤姝ｇ‘鎬х‘璁?|
+| E-R 鍥炬簮鏂囦欢 | evidence/diagrams/ | nature-figure 閰嶅悎 DDL | 鍖呭惈鏍稿績琛ㄤ笌涓诲閿?| 鏁版嵁搴撴ā寮忓榻?|
+| 澶栭儴鐮旂┒鎽樿 | literature/research-notes/ 鎴?evidence/research-notes/ | GPT/Gemini Deep Research | 瀛樺湪鏄庣‘寮曠敤鍑哄 | 鏌ラ槄婧愬嚭澶勯伩鍏嶅够瑙?|
+| 鍥捐〃鐧昏 | evidence/figure-table-register.md | 鎵嬪伐缁存姢鎴栨祦绋嬭剼鏈?| 鍥捐〃鐗╃悊瀛樺湪 | 娉ㄥ唽琛ㄦ瘮瀵?|
 
-## 8. PaperSpine 职责边界
+## 8. PaperSpine 鑱岃矗杈圭晫
 
-| Skill | 当前安装状态 | 项目中职责 | 触发条件 | 输入 | 输出 | 禁止事项 | 是否纳入当前流程 |
+| Skill | 褰撳墠瀹夎鐘舵€?| 椤圭洰涓亴璐?| 瑙﹀彂鏉′欢 | 杈撳叆 | 杈撳嚭 | 绂佹浜嬮」 | 鏄惁绾冲叆褰撳墠娴佺▼ |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| paper-spine | 已安装 | 流程中控编排 | 大修重写需调度 | 任务意图 | 子模块调度 | 全局直接复写 | 是 |
-| paper-spine-intake | 已安装 | 配置注入 | 起步阶段 | 用户需求 | config | 无 | 是 |
-| paper-spine-research | 已安装 | 背景文献挖掘 | 需求阶段 | 方向参数 | 调研材料 | 替代事实 | 是 |
-| paper-spine-citation | 已安装 | 引用支撑建立 | 补充引源 | 源文献 | 格式化记录 | 直接改写正文编号 | 是 |
-| paper-spine-rewrite | 已安装 | 单章脱水或大修 | 证据已锁定 | 证据与原章 | 新 Markdown | 批量覆盖多章 | 是 |
-| paper-spine-build | 已安装 | 骨架生成 | (已废弃) | (已废弃) | 目录 | 替代现有唯一真相源 | 否 |
-| paper-spine-latex | 已安装 | LaTeX 配置 | (已废弃) | (已废弃) | tex 产物 | 本项目不走 LaTeX | 否 |
-| paper-spine-audit | 已安装 | 事后逻辑校验 | 单章改写后 | diff 与要求 | 审计报告 | 直接修改源文件 | 是 |
-| paper-spine-ui | 已安装 | 交互界面配置 | 流程设定 | UI 交互 | 配置文件 | 绕过 governance 规范 | 是 |
+| paper-spine | 宸插畨瑁?| 娴佺▼涓帶缂栨帓 | 澶т慨閲嶅啓闇€璋冨害 | 浠诲姟鎰忓浘 | 瀛愭ā鍧楄皟搴?| 鍏ㄥ眬鐩存帴澶嶅啓 | 鏄?|
+| paper-spine-intake | 宸插畨瑁?| 閰嶇疆娉ㄥ叆 | 璧锋闃舵 | 鐢ㄦ埛闇€姹?| config | 鏃?| 鏄?|
+| paper-spine-research | 宸插畨瑁?| 鑳屾櫙鏂囩尞鎸栨帢 | 闇€姹傞樁娈?| 鏂瑰悜鍙傛暟 | 璋冪爺鏉愭枡 | 鏇夸唬浜嬪疄 | 鏄?|
+| paper-spine-citation | 宸插畨瑁?| 寮曠敤鏀拺寤虹珛 | 琛ュ厖寮曟簮 | 婧愭枃鐚?| 鏍煎紡鍖栬褰?| 鐩存帴鏀瑰啓姝ｆ枃缂栧彿 | 鏄?|
+| paper-spine-rewrite | 宸插畨瑁?| 鍗曠珷鑴辨按鎴栧ぇ淇?| 璇佹嵁宸查攣瀹?| 璇佹嵁涓庡師绔?| 鏂?Markdown | 鎵归噺瑕嗙洊澶氱珷 | 鏄?|
+| paper-spine-build | 宸插畨瑁?| 楠ㄦ灦鐢熸垚 | (宸插簾寮? | (宸插簾寮? | 鐩綍 | 鏇夸唬鐜版湁鍞竴鐪熺浉婧?| 鍚?|
+| paper-spine-latex | 宸插畨瑁?| LaTeX 閰嶇疆 | (宸插簾寮? | (宸插簾寮? | tex 浜х墿 | 鏈」鐩笉璧?LaTeX | 鍚?|
+| paper-spine-audit | 宸插畨瑁?| 浜嬪悗閫昏緫鏍￠獙 | 鍗曠珷鏀瑰啓鍚?| diff 涓庤姹?| 瀹¤鎶ュ憡 | 鐩存帴淇敼婧愭枃浠?| 鏄?|
+| paper-spine-ui | 宸插畨瑁?| 浜や簰鐣岄潰閰嶇疆 | 娴佺▼璁惧畾 | UI 浜や簰 | 閰嶇疆鏂囦欢 | 缁曡繃 governance 瑙勮寖 | 鏄?|
 
-注意：
-1. paper-spine-rewrite 只能单章执行。
-2. paper-spine-rewrite 启动前必须完成证据锁定。
-3. paper-spine-audit 只能审计，不得直接修改源文件。
-4. paper-spine-citation 输出只能进入 literature/，不能直接改正文编号。
-5. paper-spine-build 当前禁用，因为本论文已有正文。
-6. paper-spine-latex 当前禁用，因为本项目不走 LaTeX/PDF 自动链路。
-7. paper-spine-ui 仅作为配置入口，不得绕过 workflow-governance.md。
-8. PaperSpine 不能替代用户和审查官的验收判断。
-9. paper-spine-humanize、paper-spine-translate、paper-spine-update 上游存在但当前未锁定安装，不纳入当前流程。
+娉ㄦ剰锛?1. paper-spine-rewrite 鍙兘鍗曠珷鎵ц銆?2. paper-spine-rewrite 鍚姩鍓嶅繀椤诲畬鎴愯瘉鎹攣瀹氥€?3. paper-spine-audit 鍙兘瀹¤锛屼笉寰楃洿鎺ヤ慨鏀规簮鏂囦欢銆?4. paper-spine-citation 杈撳嚭鍙兘杩涘叆 literature/锛屼笉鑳界洿鎺ユ敼姝ｆ枃缂栧彿銆?5. paper-spine-build 褰撳墠绂佺敤锛屽洜涓烘湰璁烘枃宸叉湁姝ｆ枃銆?6. paper-spine-latex 褰撳墠绂佺敤锛屽洜涓烘湰椤圭洰涓嶈蛋 LaTeX/PDF 鑷姩閾捐矾銆?7. paper-spine-ui 浠呬綔涓洪厤缃叆鍙ｏ紝涓嶅緱缁曡繃 workflow-governance.md銆?8. PaperSpine 涓嶈兘鏇夸唬鐢ㄦ埛鍜屽鏌ュ畼鐨勯獙鏀跺垽鏂€?9. paper-spine-humanize銆乸aper-spine-translate銆乸aper-spine-update 涓婃父瀛樺湪浣嗗綋鍓嶆湭閿佸畾瀹夎锛屼笉绾冲叆褰撳墠娴佺▼銆?
+## 9. nature-skills 鑱岃矗杈圭晫
 
-## 9. nature-skills 职责边界
-
-| Skill | 当前安装状态 | 项目中职责 | 触发条件 | 输入 | 输出 | 禁止事项 | 是否纳入当前流程 |
+| Skill | 褰撳墠瀹夎鐘舵€?| 椤圭洰涓亴璐?| 瑙﹀彂鏉′欢 | 杈撳叆 | 杈撳嚭 | 绂佹浜嬮」 | 鏄惁绾冲叆褰撳墠娴佺▼ |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| nature-figure | 已安装 | 视觉严谨的工程/科研图表生成 | 架构或数据层变动 | 真实代码、DDL或测试数据 | 图表文件 | 绘制营销风格图表 | 是 |
+| nature-figure | 宸插畨瑁?| 瑙嗚涓ヨ皑鐨勫伐绋?绉戠爺鍥捐〃鐢熸垚 | 鏋舵瀯鎴栨暟鎹眰鍙樺姩 | 鐪熷疄浠ｇ爜銆丏DL鎴栨祴璇曟暟鎹?| 鍥捐〃鏂囦欢 | 缁樺埗钀ラ攢椋庢牸鍥捐〃 | 鏄?|
 
-注意：
-1. 当前只确认安装 nature-figure。
-2. nature-figure 可用于严肃工程/科研图表视觉重绘。
-3. 架构事实仍由代码、DDL、接口时序、Mermaid/draw.io、人审决定。
-4. 架构图、E-R 图优先 Mermaid / draw.io / 手工审查。
-5. nature-figure 仅作为可选美化、多面板科研图或导出工具。
-6. nature-figure 不得绘制营销图。
-7. nature-figure 不得脱离代码事实自行想象架构。
-8. nature-polishing、nature-citation、nature-academic-search、nature-data 当前未锁定安装，不纳入当前流程。
-9. 即使未来安装，nature-polishing 也不能作为中文本科工程论文默认润色器。
-10. 即使未来安装，nature-citation / nature-academic-search 输出也必须先进入 literature/。
+娉ㄦ剰锛?1. 褰撳墠鍙‘璁ゅ畨瑁?nature-figure銆?2. nature-figure 鍙敤浜庝弗鑲冨伐绋?绉戠爺鍥捐〃瑙嗚閲嶇粯銆?3. 鏋舵瀯浜嬪疄浠嶇敱浠ｇ爜銆丏DL銆佹帴鍙ｆ椂搴忋€丮ermaid/draw.io銆佷汉瀹″喅瀹氥€?4. 鏋舵瀯鍥俱€丒-R 鍥句紭鍏?Mermaid / draw.io / 鎵嬪伐瀹℃煡銆?5. nature-figure 浠呬綔涓哄彲閫夌編鍖栥€佸闈㈡澘绉戠爺鍥炬垨瀵煎嚭宸ュ叿銆?6. nature-figure 涓嶅緱缁樺埗钀ラ攢鍥俱€?7. nature-figure 涓嶅緱鑴辩浠ｇ爜浜嬪疄鑷鎯宠薄鏋舵瀯銆?8. nature-polishing銆乶ature-citation銆乶ature-academic-search銆乶ature-data 褰撳墠鏈攣瀹氬畨瑁咃紝涓嶇撼鍏ュ綋鍓嶆祦绋嬨€?9. 鍗充娇鏈潵瀹夎锛宯ature-polishing 涔熶笉鑳戒綔涓轰腑鏂囨湰绉戝伐绋嬭鏂囬粯璁ゆ鼎鑹插櫒銆?10. 鍗充娇鏈潵瀹夎锛宯ature-citation / nature-academic-search 杈撳嚭涔熷繀椤诲厛杩涘叆 literature/銆?
+## 10. GPT / Gemini / NotebookLM 鑱岃矗杈圭晫
 
-## 10. GPT / Gemini / NotebookLM 职责边界
-
-| 工具 | 适合用途 | 不适合用途 | 输入材料 | 输出去向 | 进入正文前置条件 |
+| 宸ュ叿 | 閫傚悎鐢ㄩ€?| 涓嶉€傚悎鐢ㄩ€?| 杈撳叆鏉愭枡 | 杈撳嚭鍘诲悜 | 杩涘叆姝ｆ枃鍓嶇疆鏉′欢 |
 | --- | --- | --- | --- | --- | --- |
-| GPT Deep Research | 外部文献综述、官方文档核验、竞品调研、AI/教育补充研究 | 挖掘或替代本地私有代码实现 | 研究 Prompt | literature/research-notes/ | 人工查证、确认无幻觉 |
-| Gemini Deep Research | 交叉验证、不同检索生态补充 | 替代事实逻辑 | 研究 Prompt | literature/research-notes/ | 同上 |
-| NotebookLM | 本地材料源内问答、矛盾检测、证据回溯 | 直接作为正文生成器或终版输出 | 本地代码与文档全集包 | 终端对话支撑决策 | 仅作参考不进入正文 |
+| GPT Deep Research | 澶栭儴鏂囩尞缁艰堪銆佸畼鏂规枃妗ｆ牳楠屻€佺珵鍝佽皟鐮斻€丄I/鏁欒偛琛ュ厖鐮旂┒ | 鎸栨帢鎴栨浛浠ｆ湰鍦扮鏈変唬鐮佸疄鐜?| 鐮旂┒ Prompt | literature/research-notes/ | 浜哄伐鏌ヨ瘉銆佺‘璁ゆ棤骞昏 |
+| Gemini Deep Research | 浜ゅ弶楠岃瘉銆佷笉鍚屾绱㈢敓鎬佽ˉ鍏?| 鏇夸唬浜嬪疄閫昏緫 | 鐮旂┒ Prompt | literature/research-notes/ | 鍚屼笂 |
+| NotebookLM | 鏈湴鏉愭枡婧愬唴闂瓟銆佺煕鐩炬娴嬨€佽瘉鎹洖婧?| 鐩存帴浣滀负姝ｆ枃鐢熸垚鍣ㄦ垨缁堢増杈撳嚭 | 鏈湴浠ｇ爜涓庢枃妗ｅ叏闆嗗寘 | 缁堢瀵硅瘽鏀拺鍐崇瓥 | 浠呬綔鍙傝€冧笉杩涘叆姝ｆ枃 |
 
-注意：
-1. GPT Deep Research 适合外部文献综述、官方文档核验、竞品/相似系统调研、LLM/教育/AI 面试相关研究补充。
-2. Gemini Deep Research 适合交叉验证和不同检索生态补充。
-3. NotebookLM 适合上传本地材料后做源内问答、矛盾检测、证据回溯。
-4. 三者都不能直接覆盖 chapters/*.md。
-5. 研究报告必须先进入 literature/research-notes/ 或 evidence/research-notes/。
-6. 研究结论进入正文前必须具备来源、用途、适配章节和人工确认。
-7. 深度研究不能替代代码事实。
-8. NotebookLM 输出只能作为人类决策支撑，不能作为最终正文来源。
+娉ㄦ剰锛?1. GPT Deep Research 閫傚悎澶栭儴鏂囩尞缁艰堪銆佸畼鏂规枃妗ｆ牳楠屻€佺珵鍝?鐩镐技绯荤粺璋冪爺銆丩LM/鏁欒偛/AI 闈㈣瘯鐩稿叧鐮旂┒琛ュ厖銆?2. Gemini Deep Research 閫傚悎浜ゅ弶楠岃瘉鍜屼笉鍚屾绱㈢敓鎬佽ˉ鍏呫€?3. NotebookLM 閫傚悎涓婁紶鏈湴鏉愭枡鍚庡仛婧愬唴闂瓟銆佺煕鐩炬娴嬨€佽瘉鎹洖婧€?4. 涓夎€呴兘涓嶈兘鐩存帴瑕嗙洊 chapters/*.md銆?5. 鐮旂┒鎶ュ憡蹇呴』鍏堣繘鍏?literature/research-notes/ 鎴?evidence/research-notes/銆?6. 鐮旂┒缁撹杩涘叆姝ｆ枃鍓嶅繀椤诲叿澶囨潵婧愩€佺敤閫斻€侀€傞厤绔犺妭鍜屼汉宸ョ‘璁ゃ€?7. 娣卞害鐮旂┒涓嶈兘鏇夸唬浠ｇ爜浜嬪疄銆?8. NotebookLM 杈撳嚭鍙兘浣滀负浜虹被鍐崇瓥鏀拺锛屼笉鑳戒綔涓烘渶缁堟鏂囨潵婧愩€?
+## 11. 寮曠敤浣撶郴娌荤悊
 
-## 11. 引用体系治理
+1. 褰撳墠浠嶄娇鐢ㄨ８ [1]銆乕1-2]銆乕3,5-7] 缂栧彿銆?2. 姝ｆ枃鏈喕缁撳墠锛屼笉棰戠箒璋冩暣鍙傝€冩枃鐚紪鍙枫€?3. BibTeX + CSL + citeproc 濡傞渶杩佺Щ锛屽繀椤讳綔涓虹嫭绔嬮樁娈点€?4. paper-spine-citation銆乶ature-citation銆乶ature-academic-search銆丟PT/Gemini Deep Research 鐨勮緭鍑轰笉鑳界洿鎺ヨ繘鍏ユ鏂囩紪鍙枫€?5. 鎵€鏈夊弬鑰冩枃鐚繀椤诲厛杩涘叆 literature/ 瀹℃牳銆?6. 瀹樻柟鎶€鏈枃妗ｅ師鍒欎笂鐢ㄤ簬绗笁/鍥涚珷鎶€鏈疄鐜版敮鎾戯紝涓嶅簲鎸ゅ崰绗竴/浜岀珷鐞嗚鐮旂┒涓绘枃鐚綅缃€?7. 鍐呭鍐荤粨鍚庯紝鎵嶈兘闆嗕腑鏍稿姝ｆ枃缂栧彿銆佸弬鑰冩枃鐚垪琛ㄣ€乪vidence-map.md銆乺eferences-draft.bib銆?
+## 12. DOCX / PDF / Word 浜哄伐缁堝杈圭晫
 
-1. 当前仍使用裸 [1]、[1-2]、[3,5-7] 编号。
-2. 正文未冻结前，不频繁调整参考文献编号。
-3. BibTeX + CSL + citeproc 如需迁移，必须作为独立阶段。
-4. paper-spine-citation、nature-citation、nature-academic-search、GPT/Gemini Deep Research 的输出不能直接进入正文编号。
-5. 所有参考文献必须先进入 literature/ 审核。
-6. 官方技术文档原则上用于第三/四章技术实现支撑，不应挤占第一/二章理论研究主文献位置。
-7. 内容冻结后，才能集中核对正文编号、参考文献列表、evidence-map.md、references-draft.bib。
-
-## 12. DOCX / PDF / Word 人工终审边界
-
-1. build-docx.ps1 只生成 DOCX 工作稿。
-2. current/thesis-final.docx 是工作稿，不是提交版。
-3. DOCX 工作稿不能直接提交。
-4. 提交版 DOCX 只能由人工在 Word/WPS 中完成目录、页码、页眉页脚、封面、签名、图题、表题、参考文献格式后产生。
-5. PDF 由人工终审后的 DOCX 导出。
-6. 未内容冻结前，不得生成最终提交版。
-
-| 阶段 | 产物 | 是否自动化 | 是否可作为提交版 | 验收人 |
+1. build-docx.ps1 鍙敓鎴?DOCX 宸ヤ綔绋裤€?2. current/thesis-final.docx 鏄伐浣滅锛屼笉鏄彁浜ょ増銆?3. DOCX 宸ヤ綔绋夸笉鑳界洿鎺ユ彁浜ゃ€?4. 鎻愪氦鐗?DOCX 鍙兘鐢变汉宸ュ湪 Word/WPS 涓畬鎴愮洰褰曘€侀〉鐮併€侀〉鐪夐〉鑴氥€佸皝闈€佺鍚嶃€佸浘棰樸€佽〃棰樸€佸弬鑰冩枃鐚牸寮忓悗浜х敓銆?5. PDF 鐢变汉宸ョ粓瀹″悗鐨?DOCX 瀵煎嚭銆?6. 鏈唴瀹瑰喕缁撳墠锛屼笉寰楃敓鎴愭渶缁堟彁浜ょ増銆?
+| 闃舵 | 浜х墿 | 鏄惁鑷姩鍖?| 鏄惁鍙綔涓烘彁浜ょ増 | 楠屾敹浜?|
 | --- | --- | --- | --- | --- |
-| DOCX 工作稿构建 | current/thesis-final.docx | 是 (build-docx.ps1) | 否 | 开发者自测 |
-| Word 人工终审 | Final-Submitted.docx | 否 (手工) | 是 | 导师 / 作者 |
-| PDF 导出 | Final-Submitted.pdf | 否 (手工) | 是 | 盲审 / 答辩组 |
-| 最终冻结归档 | Git tag / 打包版本 | 否 (手工 Git 提交) | 最终存档版 | 所有人 |
+| DOCX 宸ヤ綔绋挎瀯寤?| current/thesis-final.docx | 鏄?(build-docx.ps1) | 鍚?| 寮€鍙戣€呰嚜娴?|
+| Word 浜哄伐缁堝 | Final-Submitted.docx | 鍚?(鎵嬪伐) | 鏄?| 瀵煎笀 / 浣滆€?|
+| PDF 瀵煎嚭 | Final-Submitted.pdf | 鍚?(鎵嬪伐) | 鏄?| 鐩插 / 绛旇京缁?|
+| 鏈€缁堝喕缁撳綊妗?| Git tag / 鎵撳寘鐗堟湰 | 鍚?(鎵嬪伐 Git 鎻愪氦) | 鏈€缁堝瓨妗ｇ増 | 鎵€鏈変汉 |
 
-## 13. 文件命名与归档规则
+## 13. 鏂囦欢鍛藉悕涓庡綊妗ｈ鍒?
+1. current/thesis-final.docx锛氳嚜鍔ㄦ瀯寤哄伐浣滅銆?2. Final-Submitted.docx锛氭湰鍦颁汉宸ョ粓瀹″悗鐨勬彁浜ょ増 DOCX锛屼笉鐢?Agent 鑷姩鐢熸垚銆?3. Final-Submitted.pdf锛氱敱浜哄伐缁堝 DOCX 瀵煎嚭鐨勬彁浜ょ増 PDF銆?4. thesis-full.md锛氳嚜鍔ㄦ嫾鎺ヤ腑闂存枃浠讹紝涓嶅緱鎵嬪伐缁存姢銆?5. 鏈€缁堟彁浜ゅ悗锛屽簲璁板綍 commit SHA 鎴?Git tag銆?6. 浠讳綍鎻愪氦鐗堟枃浠跺闇€鍏ュ簱锛屽繀椤荤敱鐢ㄦ埛鏄庣‘鎺堟潈銆?
+## 14. 瀹屾暣璁烘枃鐢熷懡鍛ㄦ湡
 
-1. current/thesis-final.docx：自动构建工作稿。
-2. Final-Submitted.docx：本地人工终审后的提交版 DOCX，不由 Agent 自动生成。
-3. Final-Submitted.pdf：由人工终审 DOCX 导出的提交版 PDF。
-4. thesis-full.md：自动拼接中间文件，不得手工维护。
-5. 最终提交后，应记录 commit SHA 或 Git tag。
-6. 任何提交版文件如需入库，必须由用户明确授权。
-
-## 14. 完整论文生命周期
-
-| 阶段 | 触发条件 | 输入 | 允许工具 | 禁止工具 | 输出 | 验收标准 | 是否需要用户与审查官复核 |
+| 闃舵 | 瑙﹀彂鏉′欢 | 杈撳叆 | 鍏佽宸ュ叿 | 绂佹宸ュ叿 | 杈撳嚭 | 楠屾敹鏍囧噯 | 鏄惁闇€瑕佺敤鎴蜂笌瀹℃煡瀹樺鏍?|
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A. 项目变更感知 | 主干分支代码、配置、框架版本等发生变动 | Git log、源码 diff | NotebookLM | 修改正文的任何 Agent | 变更评估清单 | 明确论文是否需随动 | 是 |
-| B. 证据采集与登记 | 评估结论为需修改 | 系统运行日志、代码、截图 | 截屏工具、终端日志抓取 | paper-spine | 补充的 evidence/ | 数据真实可靠不造假 | 是 |
-| C. 图表/测试数据同步判断 | 数据库表更新、架构颠覆 | 最新代码与设计模式 | nature-figure、Mermaid | - | 对应图件文件 | 拓扑或关系一致无误 | 是 |
-| D. 外部研究补充判断 | 相关文献空缺或需要外部理论背景支撑 | literature/ | GPT/Gemini Deep Research | 直接修改 chapters/ 的 Agent | 调研报告存放缓冲区 | 无幻觉文献来源追溯通过 | 是 |
-| E. 正文单章修订或降噪 | 证据确认锁定 | evidence/、单章节 Markdown | paper-spine-rewrite/audit | paper-spine-build、一次性全局改写 | 更新后的单章节 MD | 无异常营销修辞与逻辑事实错乱 | 是 |
-| F. 引用与参考文献整理 | 章节脱水导致引用号错位 | evidence-map.md | 手工文本编辑 | citeproc 自动排版（当前阶段暂缓） | 连续引用的正确编号 | 编号对应事实匹配 | 是 |
-| G. DOCX 工作稿构建 | 全部章节及引用内容确认冻结 | chapters/ 下文件集 | build-docx.ps1 | LaTeX | thesis-final.docx | 脚本无退出错误返回 | 是 |
-| H. Word 人工终审 | 工作稿已构建生成 | DOCX 工作稿 | Word/WPS | 任何自动化工具操作最终排版 | Final-Submitted.docx | 手工核对排版正确格式无残缺 | 是 |
-| I. PDF 导出与最终验收 | Word 排版结束无误 | 终审的 DOCX | Word/WPS 导出 PDF 功能 | Pandoc | Final-Submitted.pdf | PDF 完美无乱码 | 是 |
-| J. 冻结归档 | PDF 及 DOCX 均验收合格 | Final-Submitted.* 产物 | Git | - | Tag 或 Commit 号归档 | 文档归档提交不可更改 | 是 |
+| A. 椤圭洰鍙樻洿鎰熺煡 | 涓诲共鍒嗘敮浠ｇ爜銆侀厤缃€佹鏋剁増鏈瓑鍙戠敓鍙樺姩 | Git log銆佹簮鐮?diff | NotebookLM | 淇敼姝ｆ枃鐨勪换浣?Agent | 鍙樻洿璇勪及娓呭崟 | 鏄庣‘璁烘枃鏄惁闇€闅忓姩 | 鏄?|
+| B. 璇佹嵁閲囬泦涓庣櫥璁?| 璇勪及缁撹涓洪渶淇敼 | 绯荤粺杩愯鏃ュ織銆佷唬鐮併€佹埅鍥?| 鎴睆宸ュ叿銆佺粓绔棩蹇楁姄鍙?| paper-spine | 琛ュ厖鐨?evidence/ | 鏁版嵁鐪熷疄鍙潬涓嶉€犲亣 | 鏄?|
+| C. 鍥捐〃/娴嬭瘯鏁版嵁鍚屾鍒ゆ柇 | 鏁版嵁搴撹〃鏇存柊銆佹灦鏋勯瑕?| 鏈€鏂颁唬鐮佷笌璁捐妯″紡 | nature-figure銆丮ermaid | - | 瀵瑰簲鍥句欢鏂囦欢 | 鎷撴墤鎴栧叧绯讳竴鑷存棤璇?| 鏄?|
+| D. 澶栭儴鐮旂┒琛ュ厖鍒ゆ柇 | 鐩稿叧鏂囩尞绌虹己鎴栭渶瑕佸閮ㄧ悊璁鸿儗鏅敮鎾?| literature/ | GPT/Gemini Deep Research | 鐩存帴淇敼 chapters/ 鐨?Agent | 璋冪爺鎶ュ憡瀛樻斁缂撳啿鍖?| 鏃犲够瑙夋枃鐚潵婧愯拷婧€氳繃 | 鏄?|
+| E. 姝ｆ枃鍗曠珷淇鎴栭檷鍣?| 璇佹嵁纭閿佸畾 | evidence/銆佸崟绔犺妭 Markdown | paper-spine-rewrite/audit | paper-spine-build銆佷竴娆℃€у叏灞€鏀瑰啓 | 鏇存柊鍚庣殑鍗曠珷鑺?MD | 鏃犲紓甯歌惀閿€淇緸涓庨€昏緫浜嬪疄閿欎贡 | 鏄?|
+| F. 寮曠敤涓庡弬鑰冩枃鐚暣鐞?| 绔犺妭鑴辨按瀵艰嚧寮曠敤鍙烽敊浣?| evidence-map.md | 鎵嬪伐鏂囨湰缂栬緫 | citeproc 鑷姩鎺掔増锛堝綋鍓嶉樁娈垫殏缂擄級 | 杩炵画寮曠敤鐨勬纭紪鍙?| 缂栧彿瀵瑰簲浜嬪疄鍖归厤 | 鏄?|
+| G. DOCX 宸ヤ綔绋挎瀯寤?| 鍏ㄩ儴绔犺妭鍙婂紩鐢ㄥ唴瀹圭‘璁ゅ喕缁?| chapters/ 涓嬫枃浠堕泦 | build-docx.ps1 | LaTeX | thesis-final.docx | 鑴氭湰鏃犻€€鍑洪敊璇繑鍥?| 鏄?|
+| H. Word 浜哄伐缁堝 | 宸ヤ綔绋垮凡鏋勫缓鐢熸垚 | DOCX 宸ヤ綔绋?| Word/WPS | 浠讳綍鑷姩鍖栧伐鍏锋搷浣滄渶缁堟帓鐗?| Final-Submitted.docx | 鎵嬪伐鏍稿鎺掔増姝ｇ‘鏍煎紡鏃犳畫缂?| 鏄?|
+| I. PDF 瀵煎嚭涓庢渶缁堥獙鏀?| Word 鎺掔増缁撴潫鏃犺 | 缁堝鐨?DOCX | Word/WPS 瀵煎嚭 PDF 鍔熻兘 | Pandoc | Final-Submitted.pdf | PDF 瀹岀編鏃犱贡鐮?| 鏄?|
+| J. 鍐荤粨褰掓。 | PDF 鍙?DOCX 鍧囬獙鏀跺悎鏍?| Final-Submitted.* 浜х墿 | Git | - | Tag 鎴?Commit 鍙峰綊妗?| 鏂囨。褰掓。鎻愪氦涓嶅彲鏇存敼 | 鏄?|
 
-注意：每个阶段完成后，是否需要用户与审查官复核：是。
+娉ㄦ剰锛氭瘡涓樁娈靛畬鎴愬悗锛屾槸鍚﹂渶瑕佺敤鎴蜂笌瀹℃煡瀹樺鏍革細鏄€?
+## 项目漂移闸门
+
+后续项目仍会持续开发，可能引入新的技术栈、配置、中间件、服务链路、UI 路由、测试方式或部署模式。
+
+当项目本体发生实质变化时，禁止直接修改论文正文。必须先执行项目漂移审查，判断项目本体是否已经领先论文资产。
+
+任何以下变化都必须触发漂移审查：
+1. 后端架构变化。
+2. 新增或删除中间件。
+3. 新增 Redis / RabbitMQ / WebSocket / SSE / Resilience4j / Prometheus / Grafana 等链路。
+4. LLM Provider、模型配置、API Key 管理、降级策略变化。
+5. Demo Twin、demo profile、reset-demo、演示端口或隔离数据库变化。
+6. 数据库表结构、实体类、DDL、Mapper 或迁移脚本变化。
+7. 前端页面、路由、状态管理、图表组件、语音组件变化。
+8. README 宣称能力变化。
+9. 测试环境、构建工具、依赖版本、测试数据变化。
+10. 答辩演示路径变化。
+
+如果项目本体领先论文资产较多，必须暂停正文改写，先补齐：
+- evidence/
+- figure-table-register.md
+- 图表需求说明
+- 测试数据
+- final-evidence-lock.md
+- reference-refresh 影响判断
+
+| 漂移类型 | 是否触发审查 | 影响资产 | 禁止直接操作 |
+| --- | --- | --- | --- |
+| 架构与链路 | 是 | evidence/、架构图 | 直接修改正文 |
+| 数据库表 | 是 | evidence/、E-R图 | 直接修改正文 |
+| 业务逻辑 | 是 | evidence/、用例图 | 直接修改正文 |
+| 测试与演示 | 是 | evidence/、测试记录 | 直接修改正文 |
+
+## 双 Deep Research 报告规则
+
+本论文后续必须形成两份本地研究报告资产：
+
+1. GPT Deep Research 报告：
+   thesis-assets/literature/research-notes/gpt-deep-research-2026-06.md
+
+2. Gemini Deep Research 报告：
+   thesis-assets/literature/research-notes/gemini-deep-research-2026-06.md
+
+两份报告均要求：
+- 中文为主；
+- 保留英文文献原题；
+- 保留 DOI、arXiv ID、出版社页、期刊页或官方链接；
+- 不直接进入 chapters/*.md；
+- 不直接改正文引用编号；
+- 不直接覆盖 quality-review.md；
+- 必须先进入 reference-refresh-plan.md 所定义的文献翻新流程；
+- 必须经过人工核验后，才允许进入正式参考文献候选池。
+
+GPT Deep Research：
+LLM 驱动的模拟面试、简历诊断、教育训练系统研究综述。
+
+Gemini Deep Research：
+AI interview training、resume-job matching、LLM education assistant 的交叉验证报告。
+
+## 参考文献翻新规则
+
+参考文献必须执行一轮独立翻新，不允许直接沿用旧文献表进入最终论文。
+
+翻新目标：
+- 正式参考文献总数：25±5 条；
+- 中文文献：10-14 条；
+- 英文文献：10-14 条；
+- 官方技术文档：4-6 条；
+- 官方技术文档只进入第二章、第三章、第四章等技术依据位置，不得挤占第一章/第二章研究现状核心文献位置。
+
+质量规则：
+- A / A- / B+ 优先进入正式参考文献；
+- B- 仅在高度贴题且无更好替代时保留；
+- C 类不得进入正式参考文献；
+- 元数据不完整、无法核验 DOI/期刊页/出版社页/作者年份的文献不得进入正式参考文献；
+- 大模型生成的文献条目必须人工核验，未核验不得引用。
+
+阶段 2.9：文献检索、质量筛选与参考文献翻新
+
+阶段 2.9 不允许直接修改正文，只能产出：
+thesis-assets/literature/reference-refresh-2026-06.md
+thesis-assets/literature/candidates/
+thesis-assets/literature/research-notes/
+更新后的 quality-review.md 草案
+更新后的 evidence-map.md 草案
+
+## 论文 skills 主动参与规则
+
+论文相关 skills 必须在可控边界内主动参与论文资产生产，不得长期闲置。
+
+PaperSpine 使用边界：
+- paper-spine-research：参与文献候选整理，但不得替代 GPT/Gemini 两份 Deep Research 报告。
+- paper-spine-citation：参与引用格式、引用质量、元数据完整性审查，但不得直接改正文编号。
+- paper-spine-rewrite：只在证据、图表、文献候选冻结后，按单章执行。
+- paper-spine-audit：每章 rewrite 后必须执行。
+- paper-spine-build：当前禁用，因为本论文已有正文唯一真相源。
+- paper-spine-latex：当前禁用，因为本项目不走 LaTeX/PDF 自动链路。
+
+nature-skills 使用边界：
+- 当前已确认 nature-figure 可用。
+- nature-figure 必须用于合适的数据图表、科研图表、可视化资产增强。
+- 系统架构事实仍由代码、DDL、接口时序、Mermaid/draw.io、人审决定。
+- nature-figure 可在事实图源锁定后参与视觉规范化或数据图表生成。
+- nature-figure 不得绘制营销图、概念海报、脱离事实的架构图。
+- nature-citation / nature-academic-search 后续允许安装和评估，但不得直接进入正文链路。
+- nature-polishing 即使安装，也不能作为中文本科工程论文默认润色器。
+
+## school-template.docx 定位规则
+
+school-template.docx 只作为学校格式、样式、页边距、标题层级、目录、页眉页脚等格式参考。
+
+即使 school-template.docx 当前包含全量论文叙述，也不得作为正文事实来源。
+
+论文正文事实来源只能是：
+1. chapters/*.md；
+2. evidence/；
+3. literature/；
+4. 已核验的 research-notes/；
+5. 已审核的 reference-refresh 结果。
+
+任何论文文字叙述改写，只允许修改 chapters/*.md。
+不得从 school-template.docx 反向同步正文。
+不得以 current/thesis-final.docx 或 school-template.docx 作为正文修改源。
+
