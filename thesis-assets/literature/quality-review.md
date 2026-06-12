@@ -34,7 +34,7 @@
 | EN-04 | Graph Neural Networks for Candidate-Job Matching | Springer 期刊 | 2025 | DOI: 10.1007/s41019-025-00293-y | A | 第二、四章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
 | EN-05 | Automated Video Interview Personality Assessments | Wiley 期刊 | 2022 | DOI: 10.1037/apl0000925 | A | 第一、二、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
 | BIB-04 | Beyond Single-Turn | arXiv | 2025 | arXiv | B+ | 第二、六章 | 纳入复核 | 预印本 / arXiv，不作为最终核心文献，待出版核验 |
-| BIB-05 | ContextCache | PVLDB | 2025 | 待核验 | A | 第二、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-05 | ContextCache | PVLDB | 2025 | DOI: 10.14778/3750601.3750679 | A | 第二、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
 | BIB-06 | AI-enhanced interview simulation in the metaverse | Computers and Education | 2025 | DOI: 10.1016/j.caeai.2024.100347 | A | 第一、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
 | BIB-07 | AI-driven mock interview assessment | Int J Mach Learn Cybern | 2025 | DOI: 10.1007/s13042-025-02529-9 | B+ | 第一、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
 | BIB-08 | Zero-Shot Resume-Job Matching | Electronics | 2025 | DOI: 10.3390/electronics14244960 | B+ | 第一、三章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
