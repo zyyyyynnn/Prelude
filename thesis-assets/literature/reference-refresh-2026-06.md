@@ -22,7 +22,7 @@
 | --- | --- | --- | --- |
 | high-priority-cn.md | 4 | 中文核心与 CSSCI 期刊理论背书 | 否，需质量复核 |
 | high-priority-en.md | 5 | 英文高水平会议与期刊支撑 | 否，需质量复核 |
-| official-tech-docs.md | 1 | 工程技术支持 | 否，仅作引用注脚 |
+| official-tech-docs.md | 5 | 工程技术支持 | 否，仅作引用注脚 |
 | verification-needed.md | 6 | 待进一步明确出版信息 | 否，需人工核实出版页面 |
 | reject-or-caution.md | 13 | 归档低质与幻觉文献 | 否，绝对禁止引用 |
 
@@ -36,7 +36,7 @@
 
 ## 6. 官方技术文档摘要
 
-收录了 MDN 提供的 Server-Sent Events API 文档，仅用于支持底层系统的流式工程实现，不充当研究现状的主文献。
+收录 MDN、Spring、PDFBox、DeepSeek、Resilience4j 等官方文档。
 
 ## 7. 待核验条目摘要
 
@@ -53,3 +53,4 @@
 ## 10. 后续建议
 
 阶段 2.9D：quality-review.md 与 evidence-map.md 草案更新
+
