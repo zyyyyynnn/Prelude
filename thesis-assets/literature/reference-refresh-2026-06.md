@@ -36,7 +36,7 @@
 
 ## 6. 官方技术文档摘要
 
-收录 MDN、Spring、PDFBox、DeepSeek、Resilience4j 等官方文档。
+收录 MDN、Spring、PDFBox、DeepSeek、Resilience4j 等官方文档。此类资料仅用于第三、四章工程实现依据，不作为第一、二章研究现状核心文献。
 
 ## 7. 待核验条目摘要
 
@@ -53,4 +53,5 @@
 ## 10. 后续建议
 
 阶段 2.9D：quality-review.md 与 evidence-map.md 草案更新
+
 
