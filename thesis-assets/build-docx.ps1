@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
@@ -11,7 +11,7 @@ if (!(Get-Command pandoc -ErrorAction SilentlyContinue)) {
 }
 
 $RequiredFiles = @(
-    "meta\school-template.docx",
+    "meta\gzu-thesis-template.docx",
     "chapters\abstract-keywords.md",
     "chapters\chapter-01-introduction.md",
     "chapters\chapter-02-related-tech.md",
@@ -34,8 +34,8 @@ if (!(Test-Path $CurrentDir)) {
     New-Item -ItemType Directory -Force -Path $CurrentDir | Out-Null
 }
 
-$ThesisFull = Join-Path $ThesisRoot "thesis-full.md"
-$ThesisFinal = Join-Path $CurrentDir "thesis-final.docx"
+$ThesisFull = Join-Path $CurrentDir "thesis-assembled.md"
+$ThesisFinal = Join-Path $CurrentDir "thesis-working-draft.docx"
 
 Write-Host "Assembling Markdown..."
 Clear-Content -Path $ThesisFull -ErrorAction SilentlyContinue
@@ -67,7 +67,7 @@ if (Test-Path $DocsImages) {
 }
 $ResourcePathString = $ResourcePath -join ";"
 
-$TemplatePath = Join-Path $ThesisRoot "meta\school-template.docx"
+$TemplatePath = Join-Path $ThesisRoot "meta\gzu-thesis-template.docx"
 
 Write-Host "Running Pandoc..."
 pandoc $ThesisFull -o $ThesisFinal `
@@ -82,5 +82,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Build successful!"
-Write-Host "thesis-full.md: $ThesisFull"
-Write-Host "thesis-final.docx: $ThesisFinal"
+Write-Host "thesis-assembled.md: $ThesisFull"
+Write-Host "thesis-working-draft.docx: $ThesisFinal"
+
