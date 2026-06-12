@@ -89,8 +89,8 @@
 
 **【重要前置纪律】**
 - 论文资产修改前必须先读取 `thesis-assets/meta/workflow-governance.md`。
-- 若 `workflow-governance.md` 与 `paperspine-workflow.md` 冲突，以 `workflow-governance.md` 为准。
-- `paperspine-workflow.md` 只负责 PaperSpine 单章执行 SOP，不负责完整论文生命周期治理。
+- 论文资产治理以 thesis-assets/meta/workflow-governance.md 为准。
+- 旧 PaperSpine SOP 文件已删除；如需单章重写，必须先按 workflow-governance.md 完成证据锁定、边界确认和人工复核。
 - 本地 Agent 无权自行判定阶段通过，也无权自行推进下一阶段。
 - 每一阶段完成后，必须输出报告与 diff，由用户和审查官复核。
 
@@ -115,3 +115,6 @@
 - **答辩材料独立**：答辩 PPT 逻辑映射、演讲稿及 Q&A 演练完全独立于论文正文生成管线，此类任务请直接查阅并操作 `thesis-assets/defense/` 目录。
 
 > 详细流程参见：`thesis-assets/meta/workflow-governance.md`
+
+
+
