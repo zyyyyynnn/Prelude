@@ -1,9 +1,9 @@
 ﻿# 高优先级英文文献候选
 
-| 中文备注名 | 英文原题 | 作者 | 年份 | 来源类型 | DOI/链接 | 质量 | 适合章节 | 适合论点 | 核验状态 | 处理建议 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 模拟面试反思学习 | Conversate: Supporting Reflective Learning in Interview Practice... | T. Daryanto et al. | 2025 | 英文前沿文献 | arXiv:2410.05570 | A- | 第一、二章 | 对话式反思性学习机制 | UNKNOWN_NEEDS_VERIFICATION | 仅确认 arXiv 页面，保留为候选，不得写成正式定稿文献 |
-| 多模态 AI 面试实证 | Virtual Interviewers, Real Results: Exploring AI-Driven Mock... | N. Gomez et al. | 2025 | 英文前沿文献 | arXiv:2506.16542 | A- | 第一章 | 缓解面试压力效果 | UNKNOWN_NEEDS_VERIFICATION | 仅确认 arXiv 页面，保留为候选，不得写成正式定稿文献 |
-| LinkedIn 检索匹配 | Learning to Retrieve for Job Matching | J. Shen et al. | 2024 | ACM KDD 候选 | 缺DOI | UNKNOWN_NEEDS_VERIFICATION | 第二章 | 检索学习替代传统匹配 | 需补充DOI | 核实正式页面，待定级 |
-| 简历-岗位双层嵌入 | Embedding-based Recommender System for Job to Candidate... | J. Zhao et al. | 2021 | ACM KDD 候选 | 缺DOI | UNKNOWN_NEEDS_VERIFICATION | 第二章 | 两阶段架构 | 需补充DOI | 核实正式页面，待定级 |
-| AI 招聘偏见与公平性 | Fairness in AI-Driven Recruitment: Challenges, Metrics... | D. F. Mujtaba et al. | 2024 | 英文前沿文献 | arXiv:2405.19699 | A- | 第六章 | 算法偏见危机 | UNKNOWN_NEEDS_VERIFICATION | 仅确认 arXiv 页面，保留为候选，不得写成正式定稿文献 |
+| 题名 | 作者 | 年份 | 来源 | DOI / arXiv / 稳定链接 | 质量 | 适合章节 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Conversate: Supporting Reflective Learning in Interview Practice Through Interactive Simulation and Dialogic Feedback | T. Daryanto et al. | 2025 | PACM HCI (GROUP) | doi:10.1145/3701188 | A | 第一、二章 |
+| A Systematic Literature Review of Empirical Research on Applying Generative Artificial Intelligence in Education | Zhang et al. | 2024 | Springer 期刊 | DOI: 10.1007/s44366-024-0028-5 | A | 第一、二章 |
+| Interacting with educational chatbots: A systematic review | Kuhail et al. | 2023 | Springer 期刊 | DOI: 10.1007/s10639-022-11177-3 | A | 第二、四章 |
+| Graph Neural Networks for Candidate-Job Matching | Frazzetto et al. | 2025 | Springer 期刊 | DOI: 10.1007/s41019-025-00293-y | A | 第二、四章 |
+| Automated Video Interview Personality Assessments: Reliability, Validity, and Generalizability Investigations | Hickman et al. | 2022 | Wiley 期刊 | DOI: 10.1037/apl0000925 | A | 第一、二、六章 |
