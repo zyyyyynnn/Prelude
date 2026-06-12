@@ -55,3 +55,12 @@
 阶段 2.9D：quality-review.md 与 evidence-map.md 草案更新
 
 
+
+## 阶段 2.9E 收口结果
+- 已对齐 references-draft.bib 与质量复核表；
+- 已补回 references-draft.bib 中仍有价值的重要文献；
+- C/D、RJ 禁用条目不再在 quality-review.md 主表展开；
+- reject-or-caution.md 继续作为隔离黑名单保留；
+- verification-needed.md 继续作为待核验池保留；
+- 官方技术文档仍仅支撑第三、四章工程实现；
+- 阶段 3 仍未开始。

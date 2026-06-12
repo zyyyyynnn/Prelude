@@ -1,45 +1,73 @@
-﻿# 候选文献质量复核草案
+﻿# 文献质量复核收口表
 
-| 编号 | 条目 | 来源文件 | 来源类型 | 可核验状态 | 主题相关度 | 当前质量等级 | 可用范围 | 限制说明 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| CN-01 | 组织选拔情境中AI招聘的公平威胁及其提升策略 | high-priority-cn.md | 期刊论文 | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| CN-02 | 大语言模型的幻觉问题研究综述 | high-priority-cn.md | 软件学报综述 | 待核验 DOI | 高 | A- | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| CN-03 | 人工智能教育应用的偏见风险分析与治理 | high-priority-cn.md | 电化教育研究 (CSSCI) | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| CN-04 | 生成式人工智能与未来教育形态重塑：技术框架、能力特征及应用趋势 | high-priority-cn.md | 电化教育研究 (CSSCI) | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| EN-01 | Conversate: Supporting Reflective Learning in Interview Practice... | high-priority-en.md | PACM HCI | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| EN-02 | A Systematic Literature Review of Empirical Research on Applying... | high-priority-en.md | Springer 期刊 | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| EN-03 | Interacting with educational chatbots: A systematic review | high-priority-en.md | Springer 期刊 | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| EN-04 | Graph Neural Networks for Candidate-Job Matching | high-priority-en.md | Springer 期刊 | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| EN-05 | Automated Video Interview Personality Assessments... | high-priority-en.md | Wiley 期刊 | 已核验 | 高 | A | 全文适用 | 需后续人工复核后才能进入最终参考文献 |
-| DOC-01 | Server-Sent Events API | official-tech-docs.md | OFFICIAL_TECH_DOC | 已核验 | 高 | B+ | 仅第三、四章 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
-| DOC-02 | Spring Framework Asynchronous Requests / SseEmitter | official-tech-docs.md | OFFICIAL_TECH_DOC | 已核验 | 高 | B+ | 仅第三、四章 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
-| DOC-03 | Apache PDFBox PDFTextStripper | official-tech-docs.md | OFFICIAL_TECH_DOC | 已核验 | 高 | B+ | 仅第三、四章 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
-| DOC-04 | DeepSeek API Docs | official-tech-docs.md | OFFICIAL_TECH_DOC | 已核验 | 高 | B+ | 仅第三、四章 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
-| DOC-05 | Resilience4j core guide | official-tech-docs.md | OFFICIAL_TECH_DOC | 已核验 | 高 | B+ | 仅第三、四章 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
-| VN-01 | Virtual Interviewers, Real Results... | verification-needed.md | 待核验预印本 | 未核验 | 高 | B+ | 暂不进入正文 | 不得进入正文；不得作为正式参考文献；需补齐 DOI、出版页、卷期页码或正式收录信息。 |
-| VN-02 | Fairness in AI-Driven Recruitment... | verification-needed.md | 待核验预印本 | 未核验 | 高 | B+ | 暂不进入正文 | 不得进入正文；不得作为正式参考文献；需补齐 DOI、出版页、卷期页码或正式收录信息。 |
-| VN-03 | Learning to Retrieve for Job Matching | verification-needed.md | 待核验会议记录 | 未核验 | 高 | B+ | 暂不进入正文 | 不得进入正文；不得作为正式参考文献；需补齐 DOI、出版页、卷期页码或正式收录信息。 |
-| VN-04 | Embedding-based Recommender System... | verification-needed.md | 待核验会议记录 | 未核验 | 高 | B+ | 暂不进入正文 | 不得进入正文；不得作为正式参考文献；需补齐 DOI、出版页、卷期页码或正式收录信息。 |
-| VN-05 | 智慧教育中的大语言模型综述 | verification-needed.md | 待核验期刊 | 未核验 | 高 | A- | 暂不进入正文 | 不得进入正文；不得作为正式参考文献；需补齐 DOI、出版页、卷期页码或正式收录信息。 |
-| VN-06 | 什么是教育智能体及其核心技术逻辑 | verification-needed.md | 待核验网页 | 未核验 | 高 | B+ | 暂不进入正文 | 不得进入正文；不得作为正式参考文献；需补齐 DOI、出版页、卷期页码或正式收录信息。 |
-| RJ-01 | 生成式人工智能赋能教育评价（张三等） | reject-or-caution.md | 幻觉伪造 | 无法核验 | 无 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-02 | 大语言模型在高校智能辅导系统中的应用（李四等） | reject-or-caution.md | 幻觉伪造 | 无法核验 | 无 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-03 | 面向人岗匹配的深度学习...（王五等） | reject-or-caution.md | 幻觉伪造 | 无法核验 | 无 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-04 | 人工智能招聘中的算法偏见...（赵六等） | reject-or-caution.md | 幻觉伪造 | 无法核验 | 无 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-05 | 大语言模型驱动的交互式模拟...（钱七等） | reject-or-caution.md | 幻觉伪造 | 无法核验 | 无 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-06 | 数据驱动视角下的大学生...（孙八等） | reject-or-caution.md | 幻觉伪造 | 无法核验 | 无 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-07 | 生成式AI隐私安全与伦理治理（周九等） | reject-or-caution.md | 幻觉伪造 | 无法核验 | 无 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-08 | TealHQ / ResumeSDK 产品介绍 | reject-or-caution.md | 营销页 | 已核验 | 低 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-09 | AI 模拟面试系统的反馈与挑战 | reject-or-caution.md | 新闻报道 | 已核验 | 低 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-10 | 震惊！AI面试通过率高达90%... | reject-or-caution.md | 微信公众号 | 已核验 | 低 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-11 | 某大厂推出全新 AI 招聘解决方案 | reject-or-caution.md | 新闻报道 | 已核验 | 低 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-12 | 推荐算法分类：协同过滤推荐... | reject-or-caution.md | 博客文章 | 已核验 | 低 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-| RJ-13 | 传统的基于规则的简历解析与匹配系统研究 | reject-or-caution.md | 传统文献 | 已核验 | 低 | C | 禁用 | 剔除 / 禁用依据，不得补救，不得再使用。 |
-
-## 阶段状态
-- 本文件为阶段 2.9D 草案资产。
-- 本文件不冻结正文引用编号。
-- 本文件不等同于最终参考文献列表。
+## 0. 收口原则
+- 本文件用于阶段 2.9E 文献最终收口；
+- 不冻结正文引用编号；
+- 不等同于最终参考文献列表；
+- 仅保留 A、A-、B+、必要 B 级候选；
+- C/D 级不在主表展示；
+- 官方技术文档仅用于第三、四章工程实现；
 - 待核验条目不得进入正文。
-- 官方技术文档仅支撑第三、四章工程实现。
-- 阶段 3 仍未开始。
+
+## 1. 高可信中文学术候选
+
+| 编号 | 条目 | 来源 | 年份 | DOI / 稳定信息 | 质量等级 | 适合章节 | 收口处理 | 限制说明 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| CN-01 | 组织选拔情境中AI招聘的公平威胁及其提升策略 | 期刊论文 | 2025 | DOI: 10.16471/j.cnki.11-2822/c.2025.9.001 | A | 第六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| CN-02 | 大语言模型的幻觉问题研究综述 | 软件学报综述 | 2025 | DOI:10.13328/j.cnki.jos.007242 | A- | 第二、三、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| CN-03 | 人工智能教育应用的偏见风险分析与治理 | 电化教育研究 (CSSCI) | 2021 | DOI: 10.13811/j.cnki.eer.2021.08.002 | A | 第六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| CN-04 | 生成式人工智能与未来教育形态重塑... | 电化教育研究 (CSSCI) | 2024 | 《电化教育研究》45(01):13-20 | A | 第一、二章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-01 | 中文简历解析及招聘需求匹配算法研究 | 硕士学位论文 | 2021 | 待核验 | B+ | 第三章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-02 | “GEMINI+互感评估”工作流设计 | 普通期刊 | 2025 | 待核验 | B- | 第一章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-03 | 人机交互多轮对话情境下大语言模型的“迷失现象” | 现代情报网络首发稿 | 2026 | 待核验 | A- | 第二、六章 | 纳入复核 | 需最终出版信息复核 |
+| BIB-09 | 大语言模型安全性综述 | 智能系统学报 | N/A | 待核验 | A- | 第三、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-10 | 融合知识图谱的大语言模型研究综述 | 计算机应用研究 | N/A | 待核验 | A- | 第六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-11 | 针对大语言模型的偏见性研究综述 | 计算机应用研究 | N/A | 待核验 | B+ | 第二、三、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-12 | 智慧教育中的大语言模型综述 | 智能系统学报 | N/A | 待核验 | B+ | 第二章 | 纳入复核 | 由待核验转为可复核候选 |
+
+## 2. 高可信英文 / 国际学术候选
+
+| 编号 | 条目 | 来源 | 年份 | DOI / 稳定信息 | 质量等级 | 适合章节 | 收口处理 | 限制说明 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EN-01 | Conversate: Supporting Reflective Learning... | PACM HCI | 2025 | doi:10.1145/3701188 | A | 第一、二章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| EN-02 | A Systematic Literature Review of Empirical... | Springer 期刊 | 2024 | DOI: 10.1007/s44366-024-0028-5 | A | 第一、二章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| EN-03 | Interacting with educational chatbots... | Springer 期刊 | 2023 | DOI: 10.1007/s10639-022-11177-3 | A | 第二、四章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| EN-04 | Graph Neural Networks for Candidate-Job Matching | Springer 期刊 | 2025 | DOI: 10.1007/s41019-025-00293-y | A | 第二、四章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| EN-05 | Automated Video Interview Personality Assessments | Wiley 期刊 | 2022 | DOI: 10.1037/apl0000925 | A | 第一、二、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-04 | Beyond Single-Turn | arXiv | 2025 | arXiv | B+ | 第二、六章 | 纳入复核 | 预印本 / arXiv，不作为最终核心文献，待出版核验 |
+| BIB-05 | ContextCache | PVLDB | 2025 | 待核验 | A | 第二、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-06 | AI-enhanced interview simulation in the metaverse | Computers and Education | N/A | 待核验 | A | 第一、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-07 | AI-driven mock interview assessment | Int J Mach Learn Cybern | N/A | 待核验 | B+ | 第一、六章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+| BIB-08 | Zero-Shot Resume-Job Matching | Electronics | N/A | 待核验 | B+ | 第一、三章 | 纳入复核 | 需后续人工复核后才能进入最终参考文献 |
+
+## 3. 工程官方技术文档
+
+| 编号 | 条目 | 来源 | 年份 | DOI / 稳定信息 | 质量等级 | 适合章节 | 收口处理 | 限制说明 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DOC-01 | Server-Sent Events API | OFFICIAL_TECH_DOC | 2026 | MDN URL 稳定链接 | B+ | 第三、四章 | 纳入工程储备 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
+| DOC-02 | Spring Framework Asynchronous Requests / SseEmitter | OFFICIAL_TECH_DOC | 2026 | 官方 URL | B+ | 第三、四章 | 纳入工程储备 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
+| DOC-03 | Apache PDFBox PDFTextStripper | OFFICIAL_TECH_DOC | 2026 | 官方 URL | B+ | 第三、四章 | 纳入工程储备 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
+| DOC-04 | DeepSeek API Docs | OFFICIAL_TECH_DOC | 2026 | 官方 URL | B+ | 第三、四章 | 纳入工程储备 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
+| DOC-05 | Resilience4j core guide | OFFICIAL_TECH_DOC | 2026 | 官方 URL | B+ | 第三、四章 | 纳入工程储备 | 只作为第三、四章工程实现依据，不作为第一、二章研究现状核心文献 |
+
+## 4. 待核验但暂不进入正文条目
+
+摘要记录：收录若干篇来自 arXiv 的预印本或缺失确切 DOI、出版页码的会议/期刊文章（VN-*）。该部分条目全部保留在 candidates/verification-needed.md。
+- **不得进入正文。**
+- **不得进入正式参考文献。**
+- **待补齐出版信息后再转入高可信候选。**
+
+## 5. 禁用与剔除条目
+
+摘要记录：低质、幻觉、营销页、新闻报道及其他禁用条目（RJ-*）已隔离至 candidates/reject-or-caution.md，不在本质量复核主表中展开。
+- **永久禁用。**
+- **不得补救。**
+- **不得进入正文。**
+- **不得进入正式参考文献。**
+
+## 6. 阶段状态
+- 本文件为阶段 2.9E 文献收口资产；
+- 本文件不冻结正文引用编号；
+- 本文件不等同于最终参考文献列表；
+- 阶段 3 仍未开始；
+- 后续进入阶段 3 前，必须人工确认最终候选清单。
