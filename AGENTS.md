@@ -90,17 +90,17 @@
 **【重要前置纪律】**
 - 论文资产修改前必须先读取 `thesis-assets/meta/workflow-governance.md`。
 - 论文资产治理以 thesis-assets/meta/workflow-governance.md 为准。
-- 旧 PaperSpine SOP 文件已删除；如需单章重写，必须先按 workflow-governance.md 完成证据锁定、边界确认和人工复核。
+- 需要单章重写时，必须先完成证据锁定、边界确认和人工复核。
 - 本地 Agent 无权自行判定阶段通过，也无权自行推进下一阶段。
 - 每一阶段完成后，必须输出报告与 diff，由用户和审查官复核。
 
 ### 8.1 绝对的“单一真相源”纪律
 - **禁止在 Word 中修改**：任何对论文正文的增、删、改、逻辑重组，**只能**且必须在 `thesis-assets/chapters/*.md` 对应的分章文件中进行。
-- 最终产物 `thesis-assets/current/thesis-final.docx` 为单向渲染输出，绝不允许对其进行任何自动化代码的回写与破坏。
+- 自动构建产物只允许作为临时输出，绝不允许对其进行任何自动化代码的回写与破坏。
 
 ### 8.2 大修与逻辑降维 (PaperSpine 引擎)
 - 当面临代码更新引发的论文逻辑大修时，切勿使用原生对话模型直接生成长篇大论。
-- 必须遵循工业级管线：将真实证据（日志、代码片段、新图表等）存入 `thesis-assets/evidence/` -> 启动 PaperSpine 引擎执行 `rewrite_existing`（当前论文流程入口为 `thesis-assets/meta/workflow-governance.md`。若未来需要动态调度文件，可另建 `paperspine-execution-plan.md`；当前仓库不依赖该文件）。
+- 必须遵循工业级管线：将真实证据（日志、代码片段、新图表等）存入 `thesis-assets/evidence/` -> 启动 PaperSpine 引擎执行 `rewrite_existing`（当前论文流程入口为 `thesis-assets/meta/workflow-governance.md`）。
 - **单章执行纪律**：每次只对一个 `chapters/*.md` 文件执行 `rewrite_existing`，严禁将全书合并后一次性送入 PaperSpine，否则会触发上下文截断崩溃。
 
 ### 8.3 物理渲染流 (Pandoc 一键合版)
@@ -115,6 +115,8 @@
 - **答辩材料独立**：答辩 PPT 逻辑映射、演讲稿及 Q&A 演练完全独立于论文正文生成管线，此类任务请直接查阅并操作 `thesis-assets/defense/` 目录。
 
 > 详细流程参见：`thesis-assets/meta/workflow-governance.md`
+
+
 
 
 
