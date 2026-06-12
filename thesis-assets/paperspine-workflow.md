@@ -103,11 +103,9 @@ foreach ($file in $chapters) {
 执行以下命令直接生成带完整目录与排版样式的 `thesis-final.docx`：
 
 ```powershell
-pandoc thesis-full.md -o current\thesis-final.docx `
-  --reference-doc=meta\school-template.docx `
-  --toc --toc-depth=3 `
-  -f markdown -t docx
+pwsh -ExecutionPolicy Bypass -File .\build-docx.ps1
 ```
+*(注：手工 Pandoc 命令仅用于排查，不作为推荐入口。正式入口以 build-docx.ps1 为准。)*
 
 ### 2.3 “最后 5%”的人工收尾清单
 
