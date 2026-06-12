@@ -87,6 +87,13 @@
 ## 8. 论文自动化编排与渲染管线 (PaperSpine + Pandoc)
 本项目已全量剥离“手工写论文”的原始模式，Agent 在处理论文需求时必须严格恪守以下自动化工作流：
 
+**【重要前置纪律】**
+- 论文资产修改前必须先读取 `thesis-assets/meta/workflow-governance.md`。
+- 若 `workflow-governance.md` 与 `paperspine-workflow.md` 冲突，以 `workflow-governance.md` 为准。
+- `paperspine-workflow.md` 只负责 PaperSpine 单章执行 SOP，不负责完整论文生命周期治理。
+- 本地 Agent 无权自行判定阶段通过，也无权自行推进下一阶段。
+- 每一阶段完成后，必须输出报告与 diff，由用户和审查官复核。
+
 ### 8.1 绝对的“单一真相源”纪律
 - **禁止在 Word 中修改**：任何对论文正文的增、删、改、逻辑重组，**只能**且必须在 `thesis-assets/chapters/*.md` 对应的分章文件中进行。
 - 最终产物 `thesis-assets/current/thesis-final.docx` 为单向渲染输出，绝不允许对其进行任何自动化代码的回写与破坏。

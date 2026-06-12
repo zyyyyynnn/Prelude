@@ -15,6 +15,7 @@ thesis-assets/
 ├── literature/                  ← 文献管理：文献包与引用锚点
 ├── defense/                     ← 答辩材料：独立的答辩演练、PPT 映射与演讲稿归档
 ├── meta/                        ← 管理文件与排版模板：包含极其重要的 school-template.docx
+│   └── workflow-governance.md   ← 论文生命周期与工具职责治理规范
 ├── current/
 │   └── thesis-final.docx        ← Pandoc 终稿产物：由 thesis-full.md 与母版结合生成的最终交付物
 └── archive/                     ← 历史归档（仅供只读回溯，绝不参与当前生成流）
@@ -25,6 +26,9 @@ thesis-assets/
     │   └── thesis-handbook/     ← 曾经的手工作坊式 Prompt 教程（14 个文件已全部陪葬）
     └── matrices/                ← 历次重写矩阵（Rationale Matrices）
 ```
+
+修改任何论文资产前，必须先阅读 meta/workflow-governance.md。
+workflow-governance.md 是论文资产治理最高规范。
 
 ## 交付与渲染管线指南
 

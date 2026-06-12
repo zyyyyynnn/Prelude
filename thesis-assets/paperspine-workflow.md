@@ -1,7 +1,9 @@
 # PaperSpine × thesis-assets 标准自动化流水线 (SOP)
 
-> 最后更新：2026-06-06
-> 状态：生产环境标准流程
+> 最后更新：2026-06-12
+> 状态：PaperSpine 单章执行 SOP
+
+> **🔴 治理声明**：本文件只负责 PaperSpine 单章执行 SOP，不再承担完整论文生命周期职责。完整生命周期与工具治理边界以 `meta/workflow-governance.md` 为准。
 
 ---
 
@@ -74,24 +76,22 @@ Copy-Item paper_rewriting_output\integrity_audit.md archive\matrices\audit-chapX
 
 ---
 
-## 第二阶段：终稿物理构建 (Pandoc 渲染流)
+## 物理构建与人工终审 (流程移交)
 
-### 2.1 文件组装
+### 终稿自动构建
 
 `build-docx.ps1` 内部会完成该步骤，自动将所有分章无缝拼接为 `thesis-full.md`。用户不应再手工执行拼接脚本。
 
-### 2.2 Pandoc 导出 Word (含目录域)
-
-执行以下命令直接生成带完整目录与排版样式的 `thesis-final.docx`：
+执行以下命令直接生成带完整目录与排版样式的 `thesis-final.docx` 工作稿：
 
 ```powershell
 pwsh -ExecutionPolicy Bypass -File .\build-docx.ps1
 ```
 *(注：手工 Pandoc 命令仅用于排查，不作为推荐入口。正式入口以 build-docx.ps1 为准。)*
 
-### 2.3 “最后 5%”的人工收尾清单
+### 最终人工收尾清单
 
-Pandoc 输出后，需手工在 Word 中完成以下收尾动作：
+Pandoc 输出工作稿后，需手工在 Word 中完成以下收尾动作以生成最终提交版：
 - [ ] 封面页信息（导师姓名、签名、日期）
 - [ ] 诚信责任书亲笔签名
 - [ ] 目录域更新刷新（`Ctrl+A` 全选 -> 按 `F9` 键）
