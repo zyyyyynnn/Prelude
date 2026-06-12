@@ -17,7 +17,7 @@ thesis-assets/
 ├── meta/                        ← 管理文件与排版模板：包含极其重要的 school-template.docx
 │   └── workflow-governance.md   ← 论文生命周期与工具职责治理规范
 ├── current/
-│   └── thesis-final.docx        ← Pandoc 终稿产物：由 thesis-full.md 与母版结合生成的最终交付物
+│   └── thesis-final.docx        ← DOCX 自动构建工作稿：由 thesis-full.md 与母版结合生成，不能直接提交
 └── archive/                     ← 历史归档（仅供只读回溯，绝不参与当前生成流）
     ├── legacy/                  ← 淘汰的老旧体系
     │   ├── drafts-original/
@@ -38,10 +38,11 @@ workflow-governance.md 是论文资产治理最高规范。
 **2. 引入证据大修**
 若进行了代码重大升级，将代码片段放入 `evidence/`，随后在确认证据无误后，启动 Agent 自动执行 `rewrite_existing`（当前论文流程入口为 `paperspine-workflow.md`。若未来需要动态调度文件，可另建 `paperspine-execution-plan.md`；当前仓库不依赖该文件）。
 
-**3. 生成最终 Word**
+**3. 生成 DOCX 工作稿**
 ```powershell
 pwsh -ExecutionPolicy Bypass -File .\thesis-assets\build-docx.ps1
 ```
+该命令只生成 current/thesis-final.docx 工作稿。提交版 DOCX/PDF 必须在内容冻结、引用冻结后由人工在 Word/WPS 中终审产生。
 *(注：手工 Pandoc 命令仅用于排查，不作为推荐入口。正式入口以 build-docx.ps1 为准。)*
 
 **4. 终极人工检查（Last 5 Miles）**

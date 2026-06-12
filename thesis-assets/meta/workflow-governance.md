@@ -206,17 +206,17 @@ evidence/ 是正文之前的证据缓冲区。
 
 ## 14. 完整论文生命周期
 
-| 阶段 | 触发条件 | 输入 | 允许工具 | 禁止工具 | 输出 | 验收标准 |
-| --- | --- | --- | --- | --- | --- | --- |
-| A. 项目变更感知 | 主干分支代码、配置、框架版本等发生变动 | Git log、源码 diff | NotebookLM | 修改正文的任何 Agent | 变更评估清单 | 明确论文是否需随动 |
-| B. 证据采集与登记 | 评估结论为需修改 | 系统运行日志、代码、截图 | 截屏工具、终端日志抓取 | paper-spine | 补充的 evidence/ | 数据真实可靠不造假 |
-| C. 图表/测试数据同步判断 | 数据库表更新、架构颠覆 | 最新代码与设计模式 | nature-figure、Mermaid | - | 对应图件文件 | 拓扑或关系一致无误 |
-| D. 外部研究补充判断 | 相关文献空缺或需要外部理论背景支撑 | literature/ | GPT/Gemini Deep Research | 直接修改 chapters/ 的 Agent | 调研报告存放缓冲区 | 无幻觉文献来源追溯通过 |
-| E. 正文单章修订或降噪 | 证据确认锁定 | evidence/、单章节 Markdown | paper-spine-rewrite/audit | paper-spine-build、一次性全局改写 | 更新后的单章节 MD | 无异常营销修辞与逻辑事实错乱 |
-| F. 引用与参考文献整理 | 章节脱水导致引用号错位 | evidence-map.md | 手工文本编辑 | citeproc 自动排版（当前阶段暂缓） | 连续引用的正确编号 | 编号对应事实匹配 |
-| G. DOCX 工作稿构建 | 全部章节及引用内容确认冻结 | chapters/ 下文件集 | build-docx.ps1 | LaTeX | thesis-final.docx | 脚本无退出错误返回 |
-| H. Word 人工终审 | 工作稿已构建生成 | DOCX 工作稿 | Word/WPS | 任何自动化工具操作最终排版 | Final-Submitted.docx | 手工核对排版正确格式无残缺 |
-| I. PDF 导出与最终验收 | Word 排版结束无误 | 终审的 DOCX | Word/WPS 导出 PDF 功能 | Pandoc | Final-Submitted.pdf | PDF 完美无乱码 |
-| J. 冻结归档 | PDF 及 DOCX 均验收合格 | Final-Submitted.* 产物 | Git | - | Tag 或 Commit 号归档 | 文档归档提交不可更改 |
+| 阶段 | 触发条件 | 输入 | 允许工具 | 禁止工具 | 输出 | 验收标准 | 是否需要用户与审查官复核 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| A. 项目变更感知 | 主干分支代码、配置、框架版本等发生变动 | Git log、源码 diff | NotebookLM | 修改正文的任何 Agent | 变更评估清单 | 明确论文是否需随动 | 是 |
+| B. 证据采集与登记 | 评估结论为需修改 | 系统运行日志、代码、截图 | 截屏工具、终端日志抓取 | paper-spine | 补充的 evidence/ | 数据真实可靠不造假 | 是 |
+| C. 图表/测试数据同步判断 | 数据库表更新、架构颠覆 | 最新代码与设计模式 | nature-figure、Mermaid | - | 对应图件文件 | 拓扑或关系一致无误 | 是 |
+| D. 外部研究补充判断 | 相关文献空缺或需要外部理论背景支撑 | literature/ | GPT/Gemini Deep Research | 直接修改 chapters/ 的 Agent | 调研报告存放缓冲区 | 无幻觉文献来源追溯通过 | 是 |
+| E. 正文单章修订或降噪 | 证据确认锁定 | evidence/、单章节 Markdown | paper-spine-rewrite/audit | paper-spine-build、一次性全局改写 | 更新后的单章节 MD | 无异常营销修辞与逻辑事实错乱 | 是 |
+| F. 引用与参考文献整理 | 章节脱水导致引用号错位 | evidence-map.md | 手工文本编辑 | citeproc 自动排版（当前阶段暂缓） | 连续引用的正确编号 | 编号对应事实匹配 | 是 |
+| G. DOCX 工作稿构建 | 全部章节及引用内容确认冻结 | chapters/ 下文件集 | build-docx.ps1 | LaTeX | thesis-final.docx | 脚本无退出错误返回 | 是 |
+| H. Word 人工终审 | 工作稿已构建生成 | DOCX 工作稿 | Word/WPS | 任何自动化工具操作最终排版 | Final-Submitted.docx | 手工核对排版正确格式无残缺 | 是 |
+| I. PDF 导出与最终验收 | Word 排版结束无误 | 终审的 DOCX | Word/WPS 导出 PDF 功能 | Pandoc | Final-Submitted.pdf | PDF 完美无乱码 | 是 |
+| J. 冻结归档 | PDF 及 DOCX 均验收合格 | Final-Submitted.* 产物 | Git | - | Tag 或 Commit 号归档 | 文档归档提交不可更改 | 是 |
 
 注意：每个阶段完成后，是否需要用户与审查官复核：是。
