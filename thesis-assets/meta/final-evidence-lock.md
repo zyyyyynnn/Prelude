@@ -16,9 +16,9 @@
 | 测试数据 | `thesis-assets/evidence/test-data/demo-2026-04-25.json` | 2026-04-25 | Demo Twin 本机业务测试 | 否 | 否 | 否 | 历史基线；与 `.md` 同源 |
 | 测试数据 | `thesis-assets/evidence/test-data/mimo-2026-05-27.md` | 2026-05-27 | MIMO 真实公网全链路测试 | 否 | 暂缓 | 是 | 暂不纳入第五章正文；保留作为补充证据纳入答辩对照使用 |
 | 测试数据 | `thesis-assets/evidence/test-data/mimo-2026-05-27.json` | 2026-05-27 | MIMO 真实公网全链路测试 | 否 | 暂缓 | 是 | 全链路结构化测试指标与数据记录 |
-| 测试数据 | `thesis-assets/evidence/test-data/env-2026-06.md` | 2026-06-12 | 本机验证与全栈联调结果 | 是 | 否 | 否 | 2026-06 最新构建记录，已替代旧环境表 |
-| 测试数据 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 2026-06-12 | Demo Twin 联调功能用例 | 是 | 否 | 否 | 2026-06 最新功能用例，替代旧 draft |
-| 测试数据 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 2026-06-12 | Demo Twin 测试与性能记录 | 是 | 否 | 否 | 2026-06 性能采集表；部分高并发指标因本机限制记为未实测 |
+| 测试数据 | `thesis-assets/evidence/test-data/env-2026-06.md` | 2026-06-12 | 本机验证与全栈联调结果 | 否 / 待阶段 3 同步 | 否 | 否 | 2026-06 最新构建记录，已替代旧环境表 |
+| 测试数据 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 2026-06-12 | Demo Twin 联调功能用例 | 否 / 待阶段 3 同步 | 否 | 否 | 2026-06 最新功能用例，替代旧 draft |
+| 测试数据 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 2026-06-12 | Demo Twin 测试与性能记录 | 否 / 待阶段 3 同步 | 否 | 否 | 2026-06 性能采集表；部分高并发指标因本机限制记为未实测 |
 | 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-04-24.md` | 2026-04-24 | 当前代码结构 | 是 | 否 | 否 | 已同步到第四章实现证据来源 |
 | 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-05-31.md` | 2026-05-31 | 安全加固与性能优化后代码 | 否 | 否 | 否 | 含 LLM 柔性降级、PDF 安全防线、JWT 防抖、API Key 生命周期、N+1 消除与复合索引；可补充到第四章或答辩 |
 | 实现证据 | `thesis-assets/evidence/code-snippets/impl-2026-06-02.md` | 2026-06-02 | Roadmap架构高可用与体验升级全面落地代码 | 否 | 否 | 否 | 含结构化输出、SSE重连、Redis、语音流、熔断与监控；可补充到第四章或答辩 |

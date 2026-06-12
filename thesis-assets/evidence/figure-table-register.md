@@ -8,4 +8,4 @@
 | 表 | 表5.1 | 测试环境表 | 第五章 | `thesis-assets/evidence/test-data/env-2026-06.md` | 待阶段2核对 | 已更新最新环境与依赖版本 |
 | 表 | 表5.2 | 功能测试用例表 | 第五章 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 待阶段2核对 | 指向最新功能用例 |
 | 表 | 表5.3 | 构建与自动化验证记录表 | 第五章 | `thesis-assets/evidence/test-data/env-2026-06.md` | 待阶段2核对 | 后端测试与前端构建已通过 |
-| 表 | 表5.4 | 业务性能采集记录表 | 第五章 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 待阶段2核对 | 包含 Demo 业务耗时，MIMO数据作为补充说明 |
+| 表 | 表5.4 | 业务性能采集记录表 | 第五章 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 待阶段2核对 | Demo Twin 隔离验证已完成；PDF/SSE/LLM/限流/熔断等性能指标部分未实测。 |
