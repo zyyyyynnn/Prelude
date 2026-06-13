@@ -30,6 +30,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -162,5 +163,29 @@ class ReportJobWorkerTest {
 
         verify(interviewSessionMapper, never()).updateById(any(InterviewSession.class));
         verify(sseEmitterRegistry, never()).broadcast(anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void handleReportJobSkipsWhenSessionAlreadyFinished() {
+        ReportJobMessage job = new ReportJobMessage(7L, 42L, "job-4");
+
+        InterviewSession finishedSession = new InterviewSession();
+        finishedSession.setId(7L);
+        finishedSession.setUserId(42L);
+        finishedSession.setStatus("finished");
+        finishedSession.setTargetPosition("Backend Engineer");
+
+        when(interviewSessionMapper.selectById(7L)).thenReturn(finishedSession);
+
+        worker.handleReportJob(job);
+
+        verify(interviewMessageMapper, never()).selectList(any(LambdaQueryWrapper.class));
+        verify(llmRouter, never()).chatWithSnapshot(anyString(), anyString(), anyList());
+        verify(interviewReportParser, never()).parse(anyString());
+        verify(interviewSessionMapper, never()).updateById(any(InterviewSession.class));
+        verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("report_ready"), anyString());
+        verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("error"), anyString());
+        verify(demoModeService, never()).isEnabled();
+        verify(demoModeService, never()).resolveReport(anyString());
     }
 }
