@@ -2,7 +2,6 @@
 title: 图3.3 系统整体架构图
 config:
   theme: base
-  layout: elk
   themeVariables:
     background: "#FAF8F2"
     primaryColor: "#EFE6DD"
@@ -14,44 +13,112 @@ config:
     fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
     fontSize: "16px"
 ---
-flowchart LR
-  subgraph access["访问层"]
-    direction TB
-    user["用户浏览器"]
+flowchart TB
+  subgraph frontend["前端用户层 (Vue 3 + Vite)"]
+    ui["浏览器 UI 视图层 (rAF 节流缓冲渲染)"]
+    fe_stream["SSE / Stream 流接收 (fetch / ReadableStream)"]
+    fe_voice["语音捕获 (useVoiceMedia Hook / WS 规划中)"]
+    ui --> fe_stream
+    ui --> fe_voice
   end
 
-  subgraph frontend["前端层"]
-    direction TB
-    ui["Vue 3 前端<br/>页面交互 / SSE 接收"]
+  subgraph interceptors["网关与拦截层 (Spring WebMVC)"]
+    cors["CORS 跨域配置"]
+    jwt_auth["JWT 登录验证拦截 (JwtInterceptor)"]
+    rate_limiter["滑动窗口限流拦截 (LlmRateLimitInterceptor)"]
+    cors --> jwt_auth --> rate_limiter
   end
 
-  subgraph backend["后端层"]
-    direction TB
-    api["Spring Boot API<br/>认证 / 会话 / 简历解析<br/>面试编排 / 报告生成"]
+  subgraph controllers["控制表现层 (Controllers)"]
+    auth_ctrl["AuthController"]
+    resume_ctrl["ResumeController"]
+    position_ctrl["PositionController"]
+    interview_ctrl["InterviewController"]
+    analytics_ctrl["AnalyticsController"]
+    llm_ctrl["LlmController"]
   end
 
-  subgraph services["数据与外部服务层"]
-    direction TB
-    mysql[("MySQL 数据库")]
-    pdf["PDFBox 解析"]
-    llm["LLM Provider"]
-    demo["Demo Twin"]
+  subgraph services["业务逻辑层 (Services)"]
+    auth_svc["AuthServiceImpl (密码 BCrypt)"]
+    resume_svc["ResumeServiceImpl (Apache PDFBox)"]
+    session_rag["SessionRagServiceImpl (RAG 向量索引)"]
+    interview_svc["InterviewServiceImpl (面试状态机 / SseEmitter)"]
+    llm_router["LlmRouter (抽象网关路由 / Resilience4j 熔断)"]
+    report_parser["InterviewReportParser (Structured Output 评分解析)"]
+    voice_svc["VoiceServiceImpl (音频 WS 数据处理 / ASR 规划中)"]
   end
 
-  user --> ui
-  ui --> api
-  api --> mysql
-  api --> pdf
-  api --> llm
-  api --> demo
-  demo --> mysql
-  api -. "SSE 流式返回" .-> ui
+  subgraph data_storage["持久化与中间件"]
+    mysql_db[("MySQL 8.4 关系库<br/>(user, session, message...)")]
+    redis_store[("Redis 缓存/消息<br/>(限流计数器 / 状态对齐)")]
+    rabbitmq_mq[("RabbitMQ 异步组件")]
+  end
+
+  subgraph external["外部模型服务层"]
+    deepseek["DeepSeek API"]
+    openai["OpenAI API"]
+    anthropic["Anthropic API"]
+  end
+
+  subgraph sandbox["本地沙盒演示 (Demo Twin 模式)"]
+    demo_svc["DemoModeService (演示数据加载与 Reset)"]
+    demo_db[("MySQL interview_demo 隔离库")]
+    demo_svc --> demo_db
+  end
+
+  %% 客户端发起与普通路由
+  fe_stream --> cors
+  fe_voice -.->|音频 WebSocket| voice_svc
+  
+  jwt_auth --> auth_ctrl
+  jwt_auth --> resume_ctrl
+  jwt_auth --> position_ctrl
+  jwt_auth --> interview_ctrl
+  jwt_auth --> analytics_ctrl
+  jwt_auth --> llm_ctrl
+
+  %% 业务调用
+  auth_ctrl --> auth_svc
+  resume_ctrl --> resume_svc
+  interview_ctrl --> interview_svc
+  analytics_ctrl --> session_rag
+  llm_ctrl --> llm_router
+
+  resume_svc --> session_rag
+  interview_svc --> llm_router
+  interview_svc --> report_parser
+
+  %% 数据存储与中间件
+  auth_svc --> mysql_db
+  resume_svc --> mysql_db
+  interview_svc --> mysql_db
+  interview_svc --> redis_store
+  rate_limiter --> redis_store
+  
+  %% RAG 与 消息队列
+  session_rag --> mysql_db
+  interview_svc -.->|异步报告任务| rabbitmq_mq
+
+  %% 模型路由
+  llm_router --> deepseek
+  llm_router --> openai
+  llm_router --> anthropic
+
+  %% SSE 流式响应链路
+  deepseek -->|模型流式输出| llm_router
+  llm_router -->|流数据回传| interview_svc
+  interview_svc -->|SseEmitter 增量推送| fe_stream
+  fe_stream -->|rAF 降频刷新 60fps| ui
 
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
   classDef main fill:#EFE6DD,stroke:#B79A8B,color:#252525
   classDef node fill:#F6F0E8,stroke:#C8B7AA,color:#252525
   classDef store fill:#EEE7DC,stroke:#A89183,color:#252525
-  class access,frontend,backend,services layer
-  class api main
-  class user,ui,pdf,llm,demo node
-  class mysql store
+  classDef ext fill:#F9F9F6,stroke:#CCCCCC,color:#555555
+  classDef sse stroke:#2A7AE2,stroke-width:2px
+
+  class frontend,interceptors,controllers,services,data_storage,sandbox,external layer
+  class interview_svc,llm_router main
+  class ui,fe_stream,fe_voice,cors,jwt_auth,rate_limiter,auth_ctrl,resume_ctrl,position_ctrl,interview_ctrl,analytics_ctrl,llm_ctrl,auth_svc,resume_svc,session_rag,report_parser,voice_svc,demo_svc node
+  class mysql_db,redis_store,rabbitmq_mq,demo_db store
+  class deepseek,openai,anthropic ext

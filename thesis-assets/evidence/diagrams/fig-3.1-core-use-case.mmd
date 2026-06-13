@@ -15,49 +15,69 @@ config:
     fontSize: "16px"
 ---
 flowchart LR
-  user(("系统用户"))
-  entry["使用系统功能"]
+  user(("求求职者 (用户)"))
+  llm_service(("LLM 服务 (外部角色)"))
 
-  subgraph account["账号与简历"]
-    direction TB
-    login["注册 / 登录"]
-    resume["上传并解析简历"]
-    login --> resume
+  subgraph system_boundary["模拟面试与简历诊断系统"]
+    subgraph account["账号与配置"]
+      direction TB
+      login["注册 / 登录"]
+      profile["设置个人信息 & 加密 LLM 配置"]
+    end
+
+    subgraph resume["简历解析"]
+      direction TB
+      upload["上传 PDF 简历"]
+      parse["文本抽取与结构化提取"]
+      upload --> parse
+    end
+
+    subgraph interview["面试交互"]
+      direction TB
+      select_job["匹配岗位并创建会话"]
+      chat_text["流式面试问答 (SSE/文本)"]
+      chat_voice["实时语音交互 (规划/待实测)"]
+      stage_advance["推进/结束面试阶段"]
+      select_job --> chat_text
+      select_job --> chat_voice
+      chat_text --> stage_advance
+      chat_voice --> stage_advance
+    end
+
+    subgraph evaluation["评估与分析"]
+      direction TB
+      report["生成三维评估报告"]
+      radar["查看能力雷达与薄弱点"]
+      replay["回放历史消息"]
+      report --> radar
+      report --> replay
+    end
+
+    subgraph demo_sub["演示沙盒"]
+      demo_reset["启动/重置 Demo Twin 隔离环境"]
+    end
   end
 
-  subgraph interview["面试流程"]
-    direction TB
-    start["创建面试会话"]
-    chat["阶段化模拟面试"]
-    start --> chat
-  end
+  user --> login
+  user --> profile
+  user --> upload
+  user --> select_job
+  user --> chat_text
+  user --> chat_voice
+  user --> stage_advance
+  user --> radar
+  user --> replay
+  user --> demo_reset
 
-  subgraph review["评估与回溯"]
-    direction TB
-    report["生成评估报告"]
-    replay["查看回放历史"]
-    analytics["查看能力分析"]
-    report --> replay
-    report --> analytics
-  end
-
-  subgraph config["系统配置"]
-    direction TB
-    settings["维护系统配置"]
-  end
-
-  user --> entry
-  entry --> login
-  entry --> start
-  entry --> report
-  entry --> settings
-  chat --> report
+  parse -.-> llm_service
+  chat_text -.-> llm_service
+  report -.-> llm_service
 
   classDef actor fill:#EFE6DD,stroke:#B79A8B,color:#252525
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
   classDef node fill:#F6F0E8,stroke:#C8B7AA,color:#252525
-  classDef key fill:#EFE6DD,stroke:#A89183,color:#252525
-  class user,entry actor
-  class account,interview,review,config layer
-  class login,resume,start,report,replay,analytics,settings node
-  class chat key
+  classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 5 5,color:#555555
+  class user,llm_service actor
+  class system_boundary,account,resume,interview,evaluation,demo_sub layer
+  class login,profile,upload,parse,select_job,chat_text,stage_advance,report,radar,replay,demo_reset node
+  class chat_voice plan

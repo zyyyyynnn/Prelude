@@ -14,75 +14,105 @@ config:
     fontSize: "16px"
 ---
 erDiagram
-  direction TB
-  用户 ||--o{ 简历 : owns
-  用户 ||--o{ 面试会话 : starts
-  简历 ||--o{ 面试会话 : used_by
-  岗位模板 ||--o{ 面试会话 : configures
-  面试会话 ||--o{ 面试消息 : contains
-  面试会话 ||--o{ 面试阶段 : tracks
-  面试会话 ||--o| 评分历史 : produces
-  面试会话 ||--o{ 薄弱点 : produces
+  user ||--o{ resume : owns
+  user ||--o{ interview_session : starts
+  user ||--o{ score_history : owns
+  user ||--o{ user_weakness : owns
+  resume ||--o{ interview_session : associated
+  position_template ||--o{ interview_session : matching
+  interview_session ||--o{ interview_message : contains
+  interview_session ||--o{ interview_stage : tracks
+  interview_session ||--o| score_history : produces
+  interview_session ||--o{ user_weakness : produces
 
-  用户 {
-    bigint id PK
-    varchar username UK
-    varchar password
-    varchar email
-    varchar llm_provider
-    varchar llm_model
+  user {
+    bigint id PK "主键ID"
+    varchar username UK "用户名"
+    varchar password "BCrypt密码"
+    varchar email "邮箱"
+    varchar llm_provider "LLM Provider"
+    varchar llm_model "LLM 模型"
+    varchar llm_api_key_encrypted "加密 API Key"
+    int llm_max_tokens "最大输出 Token"
+    varchar llm_thinking_depth "思考深度"
+    datetime created_at "创建时间"
   }
 
-  简历 {
-    bigint id PK
-    bigint user_id FK
-    varchar file_name
-    text parsed_result
-    mediumtext raw_text
+  resume {
+    bigint id PK "主键ID"
+    bigint user_id FK "用户ID"
+    varchar file_name "文件名"
+    text parsed_skills "解析出的技能"
+    text parsed_projects "解析出的项目"
+    mediumtext raw_text "PDF原始文本"
+    datetime created_at "创建时间"
   }
 
-  岗位模板 {
-    bigint id PK
-    varchar name UK
-    text system_prompt
+  position_template {
+    bigint id PK "主键ID"
+    varchar name UK "岗位名称"
+    text system_prompt "系统提示词"
   }
 
-  面试会话 {
-    bigint id PK
-    bigint user_id FK
-    bigint resume_id FK
-    bigint position_id FK
-    enum status
-    text summary_report
+  interview_session {
+    bigint id PK "主键ID"
+    bigint user_id FK "用户ID"
+    bigint resume_id FK "简历ID"
+    bigint position_id FK "岗位模板ID"
+    varchar target_position "目标岗位"
+    varchar llm_provider "使用的 Provider 快照"
+    varchar llm_model "使用的模型快照"
+    enum status "会话状态(ongoing/finished)"
+    text summary "上下文压缩摘要"
+    text summary_report "评估报告"
+    mediumtext jd_text "JD文本"
+    datetime created_at "创建时间"
   }
 
-  面试消息 {
-    bigint id PK
-    bigint session_id FK
-    enum role
-    text content
-    int seq_num
+  interview_message {
+    bigint id PK "主键ID"
+    bigint session_id FK "会话ID"
+    enum role "消息角色(system/user/assistant)"
+    text content "消息内容"
+    int seq_num "消息序号"
+    tinyint score "答题评分"
+    varchar hint "答题建议"
+    datetime created_at "创建时间"
   }
 
-  面试阶段 {
-    bigint id PK
-    bigint session_id FK
-    enum stage_name
-    datetime started_at
-    datetime ended_at
+  interview_stage {
+    bigint id PK "主键ID"
+    bigint session_id FK "会话ID"
+    enum stage_name "阶段名(warmup/technical/deep_dive/closing)"
+    datetime started_at "开始时间"
+    datetime ended_at "结束时间"
   }
 
-  评分历史 {
-    bigint id PK
-    bigint session_id FK
-    tinyint technical_score
-    tinyint expression_score
-    tinyint logic_score
+  score_history {
+    bigint id PK "主键ID"
+    bigint user_id FK "用户ID"
+    bigint session_id FK "面试会话ID"
+    tinyint technical_score "技术能力分"
+    tinyint expression_score "表达清晰度分"
+    tinyint logic_score "逻辑思维分"
+    datetime created_at "创建时间"
   }
 
-  薄弱点 {
-    bigint id PK
-    bigint session_id FK
-    varchar category
-    text description
+  user_weakness {
+    bigint id PK "主键ID"
+    bigint user_id FK "用户ID"
+    bigint session_id FK "来源会话ID"
+    varchar category "薄弱点分类"
+    text description "薄弱点描述"
+    datetime created_at "创建时间"
+  }
+
+  llm_provider_config {
+    bigint id PK "主键ID"
+    varchar provider_key UK "Provider标识"
+    varchar display_name "展示名称"
+    varchar base_url "API端点"
+    text available_models "可选模型JSON"
+    tinyint enabled "是否启用"
+    datetime created_at "创建时间"
   }
