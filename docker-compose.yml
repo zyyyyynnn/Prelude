@@ -69,7 +69,7 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      APP_DEMO_ENABLED: "true"
+      APP_DEMO_ENABLED: ${APP_DEMO_ENABLED:-true}
       SPRING_PROFILES_ACTIVE: prod
       JWT_SECRET: replace-with-at-least-32-bytes-jwt-secret
       APP_CRYPTO_AES_SECRET: replace-with-at-least-32-bytes-aes-secret

@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS `interview_session` (
   `target_position` VARCHAR(100) NOT NULL COMMENT '目标岗位',
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT '会话使用的 Provider 快照',
   `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-chat' COMMENT '会话使用的模型快照',
-  `status` ENUM('ongoing','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
+  `status` ENUM('ongoing','generating','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
   `summary` TEXT COMMENT '上下文压缩摘要',
   `summary_report` TEXT COMMENT '评估报告',
   `jd_text` MEDIUMTEXT COMMENT '职位描述文本',
@@ -120,6 +120,24 @@ CREATE TABLE IF NOT EXISTS `interview_session` (
   CONSTRAINT `fk_session_resume` FOREIGN KEY (`resume_id`) REFERENCES `resume` (`id`),
   CONSTRAINT `fk_session_position` FOREIGN KEY (`position_id`) REFERENCES `position_template` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试会话表';
+
+-- 幂等扩展 status 枚举：补上 `generating`（RabbitMQ 异步报告任务已发布但尚未完成消费的中间态）
+-- 仅在旧枚举状态下执行 MODIFY COLUMN；已是目标枚举则跳过，保证重复执行 schema.sql 不破坏数据。
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 1
+    AND MAX(COLUMN_TYPE) <> 'enum(''ongoing'',''generating'',''finished'')',
+    'ALTER TABLE `interview_session` MODIFY COLUMN `status` ENUM(''ongoing'',''generating'',''finished'') NOT NULL DEFAULT ''ongoing'' COMMENT ''会话状态''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'interview_session'
+    AND COLUMN_NAME = 'status'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 SET @sql = (
   SELECT IF(
