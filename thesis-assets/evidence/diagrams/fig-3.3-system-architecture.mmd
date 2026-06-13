@@ -2,48 +2,49 @@
 title: 图3.3 系统整体架构图
 ---
 %%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'background': '#FAF8F2',
-    'primaryColor': '#EFE6DD',
-    'primaryBorderColor': '#B79A8B',
-    'primaryTextColor': '#252525',
-    'lineColor': '#A89A90',
-    'secondaryColor': '#F6F0E8',
-    'tertiaryColor': '#FBFAF6',
-    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
-    'fontSize': '14px'
+  "theme": "base",
+  "themeVariables": {
+    "background": "#FAF8F2",
+    "primaryColor": "#EFE6DD",
+    "primaryBorderColor": "#B79A8B",
+    "primaryTextColor": "#252525",
+    "lineColor": "#A89A90",
+    "secondaryColor": "#F6F0E8",
+    "tertiaryColor": "#FBFAF6",
+    "fontFamily": "system-ui, -apple-system, \"Microsoft YaHei\", sans-serif",
+    "fontSize": "14px",
+    "nodePadding": "15px"
   },
-  'flowchart': {
-    'nodeSpacing': 85,
-    'rankSpacing': 55
+  "flowchart": {
+    "nodeSpacing": 85,
+    "rankSpacing": 55
   }
 }}%%
 flowchart TB
-  subgraph Layer1["前端层"]
-    fe_web["Vue 3 主界面"]
-    fe_charts["ECharts 数据画布"]
+  subgraph Layer1[" &nbsp; 前端层 &nbsp; "]
+    fe_web[" &nbsp; Vue 3 主界面 &nbsp; "]
+    fe_charts[" &nbsp; ECharts 数据画布 &nbsp; "]
   end
 
-  subgraph Layer2["网关层"]
-    gate_sec["安全过滤<br/>CORS / JWT"]
-    gate_limit["Redis 限流"]
+  subgraph Layer2[" &nbsp; 网关层 &nbsp; "]
+    gate_sec[" &nbsp; 安全过滤 &nbsp; <br/>CORS / JWT "]
+    gate_limit[" &nbsp; Redis 限流 &nbsp; "]
   end
 
-  subgraph Layer3["应用层"]
-    app_ctrl["控制器与路由拦截"]
-    app_orche["服务层与业务编排"]
+  subgraph Layer3[" &nbsp; 应用层 &nbsp; "]
+    app_ctrl[" &nbsp; 控制器与路由拦截 &nbsp; "]
+    app_orche[" &nbsp; 服务层与业务编排 &nbsp; "]
   end
 
-  subgraph Layer4["业务与模型"]
-    core["核心业务<br/>简历/岗位/面试/报告"]
-    llm["外部模型服务<br/>(LLM Provider)"]
+  subgraph Layer4[" &nbsp; 业务与模型 &nbsp; "]
+    core[" &nbsp; 核心业务 &nbsp; <br/>简历/岗位/面试/报告 "]
+    llm[" &nbsp; 外部模型服务 &nbsp; <br/>(LLM Provider) "]
   end
 
-  subgraph Layer5["数据与扩展"]
-    data["数据与中间件<br/>MySQL / Redis / RabbitMQ"]
-    demo["Demo Twin 隔离演示"]
-    voice["语音扩展<br/>(规划/待测)"]
+  subgraph Layer5[" &nbsp; 数据与扩展 &nbsp; "]
+    data[" &nbsp; 数据与中间件 &nbsp; <br/>MySQL / Redis / RabbitMQ "]
+    demo[" &nbsp; Demo Twin 隔离演示 &nbsp; "]
+    voice[" &nbsp; 语音扩展 &nbsp; <br/>(规划/待测) "]
   end
 
   fe_web --> gate_sec

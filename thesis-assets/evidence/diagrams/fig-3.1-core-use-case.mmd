@@ -2,37 +2,38 @@
 title: 图3.1 系统核心用例图
 ---
 %%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'background': '#FAF8F2',
-    'primaryColor': '#EFE6DD',
-    'primaryBorderColor': '#B79A8B',
-    'primaryTextColor': '#252525',
-    'lineColor': '#A89A90',
-    'secondaryColor': '#F6F0E8',
-    'tertiaryColor': '#FBFAF6',
-    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
-    'fontSize': '16px'
+  "theme": "base",
+  "themeVariables": {
+    "background": "#FAF8F2",
+    "primaryColor": "#EFE6DD",
+    "primaryBorderColor": "#B79A8B",
+    "primaryTextColor": "#252525",
+    "lineColor": "#A89A90",
+    "secondaryColor": "#F6F0E8",
+    "tertiaryColor": "#FBFAF6",
+    "fontFamily": "system-ui, -apple-system, \"Microsoft YaHei\", sans-serif",
+    "fontSize": "16px",
+    "nodePadding": "15px"
   },
-  'flowchart': {
-    'nodeSpacing': 95,
-    'rankSpacing': 40
+  "flowchart": {
+    "nodeSpacing": 110,
+    "rankSpacing": 35
   }
 }}%%
 flowchart LR
-  user(("求职者 (用户)"))
-  llm_service(("LLM 服务 (外部角色)"))
+  user((" &nbsp; 求职者 (用户) &nbsp; "))
+  llm_service((" &nbsp; LLM 服务 (外部角色) &nbsp; "))
 
-  subgraph system_boundary["模拟面试与简历诊断系统"]
-    login_profile["账号配置"]
-    resume_parse["简历解析"]
-    job_match["岗位匹配"]
-    mock_interview["模拟面试"]
-    report_feedback["报告反馈"]
-    analytics_history["分析回放"]
+  subgraph system_boundary[" &nbsp; 模拟面试与简历诊断系统 &nbsp; "]
+    login_profile[" &nbsp; 账号配置 &nbsp; "]
+    resume_parse[" &nbsp; 简历解析 &nbsp; "]
+    job_match[" &nbsp; 岗位匹配 &nbsp; "]
+    mock_interview[" &nbsp; 模拟面试 &nbsp; "]
+    report_feedback[" &nbsp; 报告反馈 &nbsp; "]
+    analytics_history[" &nbsp; 分析回放 &nbsp; "]
     
-    demo_twin["Demo Twin"]
-    voice_extension["语音扩展<br/>(规划/待测)"]
+    demo_twin[" &nbsp; Demo Twin &nbsp; "]
+    voice_extension[" &nbsp; 语音扩展 &nbsp; <br/>(规划/待测) "]
 
     login_profile --> resume_parse --> job_match --> mock_interview --> report_feedback --> analytics_history
   end

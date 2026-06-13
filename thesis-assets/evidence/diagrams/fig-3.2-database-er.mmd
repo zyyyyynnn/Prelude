@@ -2,36 +2,37 @@
 title: 图3.2 数据库核心实体关系图
 ---
 %%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'background': '#FAF8F2',
-    'primaryColor': '#EFE6DD',
-    'primaryBorderColor': '#B79A8B',
-    'primaryTextColor': '#252525',
-    'lineColor': '#A89A90',
-    'secondaryColor': '#F6F0E8',
-    'tertiaryColor': '#FBFAF6',
-    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
-    'fontSize': '14px'
+  "theme": "base",
+  "themeVariables": {
+    "background": "#FAF8F2",
+    "primaryColor": "#EFE6DD",
+    "primaryBorderColor": "#B79A8B",
+    "primaryTextColor": "#252525",
+    "lineColor": "#A89A90",
+    "secondaryColor": "#F6F0E8",
+    "tertiaryColor": "#FBFAF6",
+    "fontFamily": "system-ui, -apple-system, \"Microsoft YaHei\", sans-serif",
+    "fontSize": "14px",
+    "nodePadding": "15px"
   },
-  'flowchart': {
-    'nodeSpacing': 50,
-    'rankSpacing': 60
+  "flowchart": {
+    "nodeSpacing": 50,
+    "rankSpacing": 60
   }
 }}%%
 flowchart TB
-  user["user<br/>• id (PK)<br/>• username"]
-  resume["resume<br/>• id (PK)<br/>• user_id (FK)"]
-  position_template["position_template<br/>• id (PK)<br/>• name"]
+  user[" &nbsp; user &nbsp; <br/>• id (PK)<br/>• username "]
+  resume[" &nbsp; resume &nbsp; <br/>• id (PK)<br/>• user_id (FK) "]
+  position_template[" &nbsp; position_template &nbsp; <br/>• id (PK)<br/>• name "]
   
-  interview_session["interview_session<br/>• id (PK)<br/>• user_id (FK)<br/>• resume_id (FK)<br/>• position_id (FK)<br/>• status"]
+  interview_session[" &nbsp; interview_session &nbsp; <br/>• id (PK)<br/>• user_id (FK)<br/>• resume_id (FK)<br/>• position_id (FK)<br/>• status "]
   
-  interview_message["interview_message<br/>• id (PK)<br/>• session_id (FK)<br/>• role<br/>• seq_num"]
-  interview_stage["interview_stage<br/>• id (PK)<br/>• session_id (FK)<br/>• stage_name"]
-  score_history["score_history<br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK)"]
-  user_weakness["user_weakness<br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK)"]
+  interview_message[" &nbsp; interview_message &nbsp; <br/>• id (PK)<br/>• session_id (FK)<br/>• role<br/>• seq_num "]
+  interview_stage[" &nbsp; interview_stage &nbsp; <br/>• id (PK)<br/>• session_id (FK)<br/>• stage_name "]
+  score_history[" &nbsp; score_history &nbsp; <br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK) "]
+  user_weakness[" &nbsp; user_weakness &nbsp; <br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK) "]
   
-  llm_provider_config["llm_provider_config<br/>模型提供商配置<br/>• id (PK)<br/>• provider_key"]
+  llm_provider_config[" &nbsp; llm_provider_config &nbsp; <br/>模型提供商配置<br/>• id (PK)<br/>• provider_key "]
 
   user -->|1:N| resume
   user -->|1:N| interview_session

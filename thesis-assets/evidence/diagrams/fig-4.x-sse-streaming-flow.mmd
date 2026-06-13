@@ -2,37 +2,38 @@
 title: 图4.x SSE 流式问答处理流程图
 ---
 %%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'background': '#FAF8F2',
-    'primaryColor': '#EFE6DD',
-    'primaryBorderColor': '#B79A8B',
-    'primaryTextColor': '#252525',
-    'lineColor': '#A89A90',
-    'secondaryColor': '#F6F0E8',
-    'tertiaryColor': '#FBFAF6',
-    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
-    'fontSize': '14px'
+  "theme": "base",
+  "themeVariables": {
+    "background": "#FAF8F2",
+    "primaryColor": "#EFE6DD",
+    "primaryBorderColor": "#B79A8B",
+    "primaryTextColor": "#252525",
+    "lineColor": "#A89A90",
+    "secondaryColor": "#F6F0E8",
+    "tertiaryColor": "#FBFAF6",
+    "fontFamily": "system-ui, -apple-system, \"Microsoft YaHei\", sans-serif",
+    "fontSize": "14px",
+    "nodePadding": "15px"
   },
-  'flowchart': {
-    'nodeSpacing': 70,
-    'rankSpacing': 45
+  "flowchart": {
+    "nodeSpacing": 160,
+    "rankSpacing": 30
   }
 }}%%
 flowchart TB
-  fe_send["前端：发送 /chat 请求"]
+  fe_send[" &nbsp; 前端：发送 /chat 请求 &nbsp; "]
   
-  be_emitter["后端：建立 SseEmitter"]
-  be_context["后端：组装上下文"]
+  be_emitter[" &nbsp; 后端：建立 SseEmitter &nbsp; "]
+  be_context[" &nbsp; 后端：组装上下文 &nbsp; "]
   
-  llm_stream["模型：流式输出"]
-  be_push["后端：增量推送"]
-  fe_render["前端：缓冲渲染"]
+  llm_stream[" &nbsp; 模型：流式输出 &nbsp; "]
+  be_push[" &nbsp; 后端：增量推送 &nbsp; "]
+  fe_render[" &nbsp; 前端：缓冲渲染 &nbsp; "]
   
-  check_done{"是否输出完毕？"}
+  check_done{" &nbsp; 是否输出完毕？ &nbsp; "}
   
-  db_save["数据：异步保存"]
-  fe_finish["前端：解锁并展示回复"]
+  db_save[" &nbsp; 数据：异步保存 &nbsp; "]
+  fe_finish[" &nbsp; 前端：解锁并展示回复 &nbsp; "]
 
   fe_send --> be_emitter --> be_context
   
