@@ -32,3 +32,9 @@ output/*.txt
 # Local review bundles and one-off backups
 thesis_literature_enhancement_package.zip
 thesis-assets/*.before-literature.*
+
+# Eclipse project metadata
+backend/.classpath
+backend/.factorypath
+backend/.project
+backend/.settings/
