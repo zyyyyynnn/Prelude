@@ -3,18 +3,23 @@ title: 图3.1 系统核心用例图
 config:
   theme: base
   layout: elk
+  flowchart:
+    curve: basis
+    nodeSpacing: 48
+    rankSpacing: 58
+    wrappingWidth: 150
   themeVariables:
     background: "#FAF8F2"
     primaryColor: "#EFE6DD"
     primaryBorderColor: "#B79A8B"
     primaryTextColor: "#252525"
-    lineColor: "#8F8178"
+    lineColor: "#A89A90"
     secondaryColor: "#F6F0E8"
     tertiaryColor: "#FBFAF6"
     fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
     fontSize: "16px"
 ---
-flowchart LR
+flowchart TB
   user(("求职者 (用户)"))
   llm_service(("LLM 服务 (外部角色)"))
 
@@ -23,20 +28,17 @@ flowchart LR
     resume_parse["简历上传与解析"]
     job_match["岗位选择与匹配"]
     mock_interview["模拟面试问答"]
-    voice_extension["语音交互扩展<br/>(规划 / 待实测)"]
     report_feedback["生成评估报告与反馈"]
     analytics_history["查看能力分析与回放"]
-    demo_twin["启动/重置隔离演示环境"]
+    demo_twin["隔离演示环境"]
+    voice_extension["语音交互扩展<br/>(规划 / 待实测)"]
+
+    login_profile --> resume_parse --> job_match --> mock_interview --> report_feedback --> analytics_history
   end
 
   user --> login_profile
-  user --> resume_parse
-  user --> job_match
-  user --> mock_interview
-  user --> voice_extension
-  user --> report_feedback
-  user --> analytics_history
-  user --> demo_twin
+  user -.-> demo_twin
+  user -.-> voice_extension
 
   resume_parse -.-> llm_service
   mock_interview -.-> llm_service
@@ -50,3 +52,4 @@ flowchart LR
   class system_boundary layer
   class login_profile,resume_parse,job_match,mock_interview,report_feedback,analytics_history,demo_twin node
   class voice_extension plan
+  linkStyle default stroke:#A89A90,stroke-width:1.2px

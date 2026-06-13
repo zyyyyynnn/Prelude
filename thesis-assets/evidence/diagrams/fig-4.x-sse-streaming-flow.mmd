@@ -3,32 +3,60 @@ title: 图4.x SSE 流式问答处理流程图
 config:
   theme: base
   layout: elk
+  flowchart:
+    curve: basis
+    nodeSpacing: 42
+    rankSpacing: 56
+    wrappingWidth: 150
   themeVariables:
     background: "#FAF8F2"
     primaryColor: "#EFE6DD"
     primaryBorderColor: "#B79A8B"
     primaryTextColor: "#252525"
-    lineColor: "#8F8178"
+    lineColor: "#A89A90"
     secondaryColor: "#F6F0E8"
     tertiaryColor: "#FBFAF6"
     fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
     fontSize: "16px"
 ---
-flowchart TD
-  start["1. 前端触发回答发送 /chat"] --> sse_connect["2. 后端控制器建立 SseEmitter 连通通道"]
-  sse_connect --> context_rag["3. 注入 RAG 简历向量及会话历史上下文"]
-  context_rag --> router_call["4. 模型路由网关发起流式 API 请求 (OkHttp)"]
-  router_call --> provider_stream["5. 外部模型提供商逐步吐出 Text Chunk"]
-  provider_stream --> router_recv["6. 网关层增量解析内容并识别结束标记 [DONE]"]
-  router_recv --> sse_push["7. 核心服务通过 SseEmitter.send 推送数据"]
-  sse_push --> fe_stream["8. 前端 fetch / ReadableStream 流式迭代读取"]
-  fe_stream --> raf_throttle["9. requestAnimationFrame 帧率节流缓冲渲染 (60fps)"]
-  raf_throttle --> check_done{"10. 检查是否收到 [DONE]"}
-  check_done -- 否 --> provider_stream
-  check_done -- 是 --> db_save["11. 后端线程异步将完整大模型回复保存至 MySQL"]
-  db_save --> finish["12. 解锁前端输入框，单轮对话交互闭环"]
+flowchart LR
+  subgraph frontend["前端"]
+    start["发送 /chat 请求"]
+    fe_stream["接收流式数据"]
+    raf["rAF 缓冲渲染"]
+    finish["解锁输入并展示回复"]
+    start --> fe_stream --> raf --> finish
+  end
 
-  classDef main fill:#EFE6DD,stroke:#B79A8B,color:#252525
-  classDef node fill:#F6F0E8,stroke:#C8B7AA,color:#252525
-  class start,finish,check_done node
-  class sse_connect,context_rag,router_call,provider_stream,router_recv,sse_push,fe_stream,raf_throttle,db_save main
+  subgraph backend["后端"]
+    emitter["建立 SseEmitter"]
+    context["组装简历与会话上下文"]
+    router["LlmRouter 调用模型"]
+    push["SseEmitter.send 增量推送"]
+    save["异步保存完整回复"]
+    emitter --> context --> router --> push --> save
+  end
+
+  subgraph provider["外部模型"]
+    stream["流式输出 Text Chunk"]
+    done{"收到 [DONE]"}
+    stream --> done
+  end
+
+  start --> emitter
+  router --> stream
+  done -- 否 --> stream
+  done -- 是 --> push
+  push --> fe_stream
+  save --> finish
+
+  classDef lane fill:#FBFAF6,stroke:#DED8CD,color:#252525
+  classDef main fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.3px,color:#252525
+  classDef node fill:#F6F0E8,stroke:#C8B7AA,stroke-width:1.2px,color:#252525
+  classDef decision fill:#EEE7DC,stroke:#A89183,color:#252525
+
+  class frontend,backend,provider lane
+  class emitter,context,router,push,save,stream main
+  class start,fe_stream,raf,finish node
+  class done decision
+  linkStyle default stroke:#A89A90,stroke-width:1.2px

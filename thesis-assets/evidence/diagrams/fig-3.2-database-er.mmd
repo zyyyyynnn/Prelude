@@ -16,8 +16,6 @@ config:
 erDiagram
   user ||--o{ resume : owns
   user ||--o{ interview_session : starts
-  user ||--o{ score_history : owns
-  user ||--o{ user_weakness : owns
   resume ||--o{ interview_session : associated
   position_template ||--o{ interview_session : matching
   interview_session ||--o{ interview_message : contains

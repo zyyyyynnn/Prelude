@@ -2,85 +2,47 @@
 title: 图3.3 系统整体架构图
 config:
   theme: base
+  layout: elk
+  flowchart:
+    curve: basis
+    nodeSpacing: 44
+    rankSpacing: 64
+    wrappingWidth: 150
   themeVariables:
     background: "#FAF8F2"
     primaryColor: "#EFE6DD"
     primaryBorderColor: "#B79A8B"
     primaryTextColor: "#252525"
-    lineColor: "#8F8178"
+    lineColor: "#A89A90"
     secondaryColor: "#F6F0E8"
     tertiaryColor: "#FBFAF6"
     fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
     fontSize: "16px"
 ---
-flowchart TB
-  subgraph frontend["前端展现层"]
-    fe_ui["页面视图层 (Vue 3 / ECharts)"]
-    fe_api["API 交互与流接收 (Axios)"]
-    fe_ui --> fe_api
-  end
+flowchart LR
+  fe["前端展现层<br/>Vue 3 / ECharts"]
+  gate["安全与控制网关<br/>CORS / JWT / 限流"]
+  app["Spring Boot 应用层<br/>路由控制与业务编排"]
+  core["核心业务模块<br/>简历 / 岗位 / 面试 / 报告"]
+  data["数据与中间件<br/>MySQL / Redis / RabbitMQ"]
+  llm["外部模型服务<br/>LLM Provider"]
+  demo["Demo Twin<br/>隔离演示环境"]
+  voice["语音交互扩展<br/>(规划 / 待实测)"]
 
-  subgraph security_gate["安全与控制网关"]
-    gate_cors["CORS 跨域配置"]
-    gate_jwt["JWT 会话验证拦截器"]
-    gate_rate["Redis 限流拦截器"]
-    gate_cors --> gate_jwt --> gate_rate
-  end
-
-  subgraph backend["后端应用层 (Spring Boot)"]
-    mvc_ctrl["路由控制层 (Controllers)"]
-    biz_service["业务服务层 (Services)"]
-    pdfbox["PDFBox 文本抽取库"]
-    rag_service["RAG 向量索引服务"]
-    report_parser["评估报告结构化解析器"]
-    llm_router["多模型路由网关 (Resilience4j)"]
-
-    mvc_ctrl --> biz_service
-    biz_service --> pdfbox
-    biz_service --> rag_service
-    biz_service --> report_parser
-    biz_service --> llm_router
-  end
-
-  subgraph middleware["数据存储与中间件"]
-    db_mysql[("MySQL 8.4 数据库")]
-    db_redis[("Redis 缓存/计数器")]
-    mq_rabbitmq[("RabbitMQ 异步队列")]
-  end
-
-  subgraph external["外部模型层"]
-    llm_external["LLM API (可配置提供商)"]
-  end
-
-  subgraph sandbox["隔离演示沙盒"]
-    demo_sandbox["Demo Twin 演示环境"]
-  end
-
-  subgraph planned["未来能力扩展"]
-    voice_plan["语音交互通道 (规划/待实测)"]
-  end
-
-  fe_api --> gate_cors
-  gate_rate --> mvc_ctrl
-
-  biz_service --> db_mysql
-  biz_service --> db_redis
-  biz_service -.->|异步报告任务| mq_rabbitmq
-
-  llm_router --> llm_external
-  biz_service -.-> demo_sandbox
-  fe_ui -.->|WebSocket| voice_plan
+  fe --> gate --> app --> core
+  core --> data
+  core --> llm
+  core -.-> demo
+  fe -.-> voice
 
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
-  classDef main fill:#EFE6DD,stroke:#B79A8B,color:#252525
-  classDef node fill:#F6F0E8,stroke:#C8B7AA,color:#252525
-  classDef store fill:#EEE7DC,stroke:#A89183,color:#252525
-  classDef ext fill:#F9F9F6,stroke:#CCCCCC,color:#555555
-  classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 5 5,color:#555555
+  classDef main fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.4px,color:#252525
+  classDef store fill:#EEE7DC,stroke:#A89183,stroke-width:1.2px,color:#252525
+  classDef ext fill:#F9F9F6,stroke:#CCCCCC,stroke-width:1.2px,color:#555555
+  classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 4 4,color:#555555
 
-  class frontend,security_gate,backend,middleware,external,sandbox layer
-  class biz_service,llm_router main
-  class fe_ui,fe_api,gate_cors,gate_jwt,gate_rate,mvc_ctrl,pdfbox,rag_service,report_parser,demo_sandbox node
-  class db_mysql,db_redis,mq_rabbitmq store
-  class llm_external ext
-  class voice_plan plan
+  class fe,gate,app,core main
+  class data store
+  class llm ext
+  class demo,voice plan
+  linkStyle default stroke:#A89A90,stroke-width:1.3px
