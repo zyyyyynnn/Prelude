@@ -1,39 +1,61 @@
----
-title: 图3.3 系统整体架构图
-config:
-  theme: base
-  layout: elk
-  flowchart:
-    curve: basis
-    nodeSpacing: 44
-    rankSpacing: 64
-    wrappingWidth: 150
-  themeVariables:
-    background: "#FAF8F2"
-    primaryColor: "#EFE6DD"
-    primaryBorderColor: "#B79A8B"
-    primaryTextColor: "#252525"
-    lineColor: "#A89A90"
-    secondaryColor: "#F6F0E8"
-    tertiaryColor: "#FBFAF6"
-    fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
-    fontSize: "16px"
----
-flowchart LR
-  fe["前端展现层<br/>Vue 3 / ECharts"]
-  gate["安全与控制网关<br/>CORS / JWT / 限流"]
-  app["Spring Boot 应用层<br/>路由控制与业务编排"]
-  core["核心业务模块<br/>简历 / 岗位 / 面试 / 报告"]
-  data["数据与中间件<br/>MySQL / Redis / RabbitMQ"]
-  llm["外部模型服务<br/>LLM Provider"]
-  demo["Demo Twin<br/>隔离演示环境"]
-  voice["语音交互扩展<br/>(规划 / 待实测)"]
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'background': '#FAF8F2',
+    'primaryColor': '#EFE6DD',
+    'primaryBorderColor': '#B79A8B',
+    'primaryTextColor': '#252525',
+    'lineColor': '#A89A90',
+    'secondaryColor': '#F6F0E8',
+    'tertiaryColor': '#FBFAF6',
+    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
+    'fontSize': '14px'
+  },
+  'flowchart': {
+    'nodeSpacing': 80,
+    'rankSpacing': 45
+  }
+}}%%
+flowchart TB
+  subgraph Layer1["第一层：前端展现层"]
+    fe_web["Vue 3 主界面"]
+    fe_charts["ECharts 数据画布"]
+  end
 
-  fe --> gate --> app --> core
-  core --> data
+  subgraph Layer2["第二层：安全与控制网关"]
+    gate_sec["安全过滤 (CORS / JWT)"]
+    gate_limit["流控机制 (Redis 限流)"]
+  end
+
+  subgraph Layer3["第三层：Spring Boot 应用层"]
+    app_ctrl["控制器与路由拦截"]
+    app_orche["服务层与业务编排"]
+  end
+
+  subgraph Layer4["第四层：核心业务与模型服务"]
+    core["核心业务模块<br/>(简历/岗位/面试/报告)"]
+    llm["外部模型服务<br/>(LLM Provider)"]
+  end
+
+  subgraph Layer5["第五层：数据存储与规划扩展"]
+    data["数据库与中间件<br/>(MySQL/Redis/RabbitMQ)"]
+    demo["Demo Twin 隔离演示"]
+    voice["语音交互扩展<br/>(规划/待实测)"]
+  end
+
+  fe_web --> gate_sec
+  fe_charts --> gate_limit
+  
+  gate_sec --> app_ctrl
+  gate_limit --> app_orche
+  
+  app_ctrl --> core
+  app_orche --> core
+  
   core --> llm
+  core --> data
   core -.-> demo
-  fe -.-> voice
+  fe_web -.-> voice
 
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
   classDef main fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.4px,color:#252525
@@ -41,7 +63,8 @@ flowchart LR
   classDef ext fill:#F9F9F6,stroke:#CCCCCC,stroke-width:1.2px,color:#555555
   classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 4 4,color:#555555
 
-  class fe,gate,app,core main
+  class Layer1,Layer2,Layer3,Layer4,Layer5 layer
+  class fe_web,fe_charts,gate_sec,gate_limit,app_ctrl,app_orche,core main
   class data store
   class llm ext
   class demo,voice plan

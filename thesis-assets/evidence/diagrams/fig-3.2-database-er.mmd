@@ -1,77 +1,52 @@
----
-title: 图3.2 数据库 E-R 图
-config:
-  theme: base
-  themeVariables:
-    background: "#FAF8F2"
-    primaryColor: "#EFE6DD"
-    primaryBorderColor: "#B79A8B"
-    primaryTextColor: "#252525"
-    lineColor: "#8F8178"
-    secondaryColor: "#F6F0E8"
-    tertiaryColor: "#FBFAF6"
-    fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
-    fontSize: "16px"
----
-erDiagram
-  user ||--o{ resume : owns
-  user ||--o{ interview_session : starts
-  resume ||--o{ interview_session : associated
-  position_template ||--o{ interview_session : matching
-  interview_session ||--o{ interview_message : contains
-  interview_session ||--o{ interview_stage : tracks
-  interview_session ||--o| score_history : produces
-  interview_session ||--o{ user_weakness : produces
-
-  user {
-    bigint id PK
-    varchar username UK
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'background': '#FAF8F2',
+    'primaryColor': '#EFE6DD',
+    'primaryBorderColor': '#B79A8B',
+    'primaryTextColor': '#252525',
+    'lineColor': '#A89A90',
+    'secondaryColor': '#F6F0E8',
+    'tertiaryColor': '#FBFAF6',
+    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
+    'fontSize': '14px'
+  },
+  'flowchart': {
+    'nodeSpacing': 50,
+    'rankSpacing': 60
   }
+}}%%
+flowchart TB
+  user["user<br/>• id (PK)<br/>• username"]
+  resume["resume<br/>• id (PK)<br/>• user_id (FK)"]
+  position_template["position_template<br/>• id (PK)<br/>• name"]
+  
+  interview_session["interview_session<br/>• id (PK)<br/>• user_id (FK)<br/>• resume_id (FK)<br/>• position_id (FK)<br/>• status"]
+  
+  interview_message["interview_message<br/>• id (PK)<br/>• session_id (FK)<br/>• role<br/>• seq_num"]
+  interview_stage["interview_stage<br/>• id (PK)<br/>• session_id (FK)<br/>• stage_name"]
+  score_history["score_history<br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK)"]
+  user_weakness["user_weakness<br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK)"]
+  
+  llm_provider_config["llm_provider_config<br/>• id (PK)<br/>• provider_key"]
 
-  resume {
-    bigint id PK
-    bigint user_id FK
-  }
+  user -->|1:N| resume
+  user -->|1:N| interview_session
+  resume -->|1:N| interview_session
+  position_template -->|1:N| interview_session
+  
+  interview_session -->|1:N| interview_message
+  interview_session -->|1:N| interview_stage
+  interview_session -->|1:1| score_history
+  interview_session -->|1:N| user_weakness
+  
+  llm_provider_config -.->|全局配置| interview_session
 
-  position_template {
-    bigint id PK
-    varchar name UK
-  }
-
-  interview_session {
-    bigint id PK
-    bigint user_id FK
-    bigint resume_id FK
-    bigint position_id FK
-    varchar status
-  }
-
-  interview_message {
-    bigint id PK
-    bigint session_id FK
-    varchar role
-    int seq_num
-  }
-
-  interview_stage {
-    bigint id PK
-    bigint session_id FK
-    varchar stage_name
-  }
-
-  score_history {
-    bigint id PK
-    bigint user_id FK
-    bigint session_id FK
-  }
-
-  user_weakness {
-    bigint id PK
-    bigint user_id FK
-    bigint session_id FK
-  }
-
-  llm_provider_config {
-    bigint id PK
-    varchar provider_key UK
-  }
+  classDef entity fill:#F6F0E8,stroke:#C8B7AA,color:#252525
+  classDef centerEntity fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.5px,color:#252525
+  classDef configEntity fill:#FBFAF6,stroke:#DED8CD,stroke-dasharray: 4 4,color:#555555
+  
+  class interview_session centerEntity
+  class llm_provider_config configEntity
+  class user,resume,position_template,interview_message,interview_stage,score_history,user_weakness entity
+  linkStyle default stroke:#A89A90,stroke-width:1.2px

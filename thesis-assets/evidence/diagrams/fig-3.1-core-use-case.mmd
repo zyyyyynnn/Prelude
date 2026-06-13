@@ -1,36 +1,34 @@
----
-title: 图3.1 系统核心用例图
-config:
-  theme: base
-  layout: elk
-  flowchart:
-    curve: basis
-    nodeSpacing: 48
-    rankSpacing: 58
-    wrappingWidth: 150
-  themeVariables:
-    background: "#FAF8F2"
-    primaryColor: "#EFE6DD"
-    primaryBorderColor: "#B79A8B"
-    primaryTextColor: "#252525"
-    lineColor: "#A89A90"
-    secondaryColor: "#F6F0E8"
-    tertiaryColor: "#FBFAF6"
-    fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
-    fontSize: "16px"
----
-flowchart TB
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'background': '#FAF8F2',
+    'primaryColor': '#EFE6DD',
+    'primaryBorderColor': '#B79A8B',
+    'primaryTextColor': '#252525',
+    'lineColor': '#A89A90',
+    'secondaryColor': '#F6F0E8',
+    'tertiaryColor': '#FBFAF6',
+    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
+    'fontSize': '16px'
+  },
+  'flowchart': {
+    'nodeSpacing': 110,
+    'rankSpacing': 40
+  }
+}}%%
+flowchart LR
   user(("求职者 (用户)"))
   llm_service(("LLM 服务 (外部角色)"))
 
   subgraph system_boundary["模拟面试与简历诊断系统"]
-    login_profile["账号配置与管理"]
-    resume_parse["简历上传与解析"]
-    job_match["岗位选择与匹配"]
-    mock_interview["模拟面试问答"]
-    report_feedback["生成评估报告与反馈"]
-    analytics_history["查看能力分析与回放"]
-    demo_twin["隔离演示环境"]
+    login_profile["账号配置"]
+    resume_parse["简历解析"]
+    job_match["岗位匹配"]
+    mock_interview["模拟面试"]
+    report_feedback["报告反馈"]
+    analytics_history["分析回放"]
+    
+    demo_twin["Demo Twin"]
     voice_extension["语音交互扩展<br/>(规划 / 待实测)"]
 
     login_profile --> resume_parse --> job_match --> mock_interview --> report_feedback --> analytics_history

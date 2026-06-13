@@ -1,62 +1,55 @@
----
-title: 图4.x SSE 流式问答处理流程图
-config:
-  theme: base
-  layout: elk
-  flowchart:
-    curve: basis
-    nodeSpacing: 42
-    rankSpacing: 56
-    wrappingWidth: 150
-  themeVariables:
-    background: "#FAF8F2"
-    primaryColor: "#EFE6DD"
-    primaryBorderColor: "#B79A8B"
-    primaryTextColor: "#252525"
-    lineColor: "#A89A90"
-    secondaryColor: "#F6F0E8"
-    tertiaryColor: "#FBFAF6"
-    fontFamily: "Microsoft YaHei, SimHei, Arial, sans-serif"
-    fontSize: "16px"
----
-flowchart LR
-  subgraph frontend["前端"]
-    start["发送 /chat 请求"]
-    fe_stream["接收流式数据"]
-    raf["rAF 缓冲渲染"]
-    finish["解锁输入并展示回复"]
-    start --> fe_stream --> raf --> finish
-  end
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'background': '#FAF8F2',
+    'primaryColor': '#EFE6DD',
+    'primaryBorderColor': '#B79A8B',
+    'primaryTextColor': '#252525',
+    'lineColor': '#A89A90',
+    'secondaryColor': '#F6F0E8',
+    'tertiaryColor': '#FBFAF6',
+    'fontFamily': 'Microsoft YaHei, SimHei, Arial, sans-serif',
+    'fontSize': '14px'
+  },
+  'flowchart': {
+    'nodeSpacing': 70,
+    'rankSpacing': 45
+  }
+}}%%
+flowchart TB
+  fe_send["前端：发送 /chat 请求"]
+  
+  be_emitter["后端：建立 SseEmitter"]
+  be_context["后端：组装上下文"]
+  
+  llm_stream["模型：流式输出"]
+  be_push["后端：增量推送"]
+  fe_render["前端：缓冲渲染"]
+  
+  check_done{"是否输出完毕？"}
+  
+  db_save["数据：异步保存"]
+  fe_finish["前端：解锁并展示回复"]
 
-  subgraph backend["后端"]
-    emitter["建立 SseEmitter"]
-    context["组装简历与会话上下文"]
-    router["LlmRouter 调用模型"]
-    push["SseEmitter.send 增量推送"]
-    save["异步保存完整回复"]
-    emitter --> context --> router --> push --> save
-  end
+  fe_send --> be_emitter
+  fe_send --> be_context
+  
+  be_context --> llm_stream
+  be_emitter --> be_push
+  
+  llm_stream --> be_push
+  be_push --> fe_render
+  fe_render --> check_done
+  
+  check_done -- "否" --> llm_stream
+  check_done -- "是" --> db_save
+  check_done -- "是" --> fe_finish
 
-  subgraph provider["外部模型"]
-    stream["流式输出 Text Chunk"]
-    done{"收到 [DONE]"}
-    stream --> done
-  end
-
-  start --> emitter
-  router --> stream
-  done -- 否 --> stream
-  done -- 是 --> push
-  push --> fe_stream
-  save --> finish
-
-  classDef lane fill:#FBFAF6,stroke:#DED8CD,color:#252525
   classDef main fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.3px,color:#252525
   classDef node fill:#F6F0E8,stroke:#C8B7AA,stroke-width:1.2px,color:#252525
   classDef decision fill:#EEE7DC,stroke:#A89183,color:#252525
 
-  class frontend,backend,provider lane
-  class emitter,context,router,push,save,stream main
-  class start,fe_stream,raf,finish node
-  class done decision
+  class be_emitter,be_context,llm_stream,be_push,db_save main
+  class fe_send,fe_render,fe_finish node
+  class check_done decision
   linkStyle default stroke:#A89A90,stroke-width:1.2px
