@@ -1,38 +1,39 @@
 package com.interview.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.interview.config.RabbitMqConfig;
+import com.interview.config.SseEmitterRegistry;
 import com.interview.common.UserContext;
 import com.interview.entity.InterviewMessage;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.InterviewStage;
 import com.interview.entity.ScoreHistory;
 import com.interview.entity.UserWeakness;
+import com.interview.llm.LlmRouter;
 import com.interview.mapper.InterviewMessageMapper;
 import com.interview.mapper.InterviewSessionMapper;
 import com.interview.mapper.InterviewStageMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserWeaknessMapper;
+import com.interview.messaging.ReportJobMessage;
 import com.interview.service.DemoModeService;
-import com.interview.llm.LlmRouter;
-import com.interview.config.SseEmitterRegistry;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Slf4j
-@Component
-public class ReportJobWorker implements CommandLineRunner {
+@Service
+@RequiredArgsConstructor
+public class ReportJobWorker {
 
-    private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
     private final InterviewSessionMapper interviewSessionMapper;
     private final InterviewMessageMapper interviewMessageMapper;
@@ -43,64 +44,14 @@ public class ReportJobWorker implements CommandLineRunner {
     private final DemoModeService demoModeService;
     private final InterviewReportParser interviewReportParser;
     private final SseEmitterRegistry sseEmitterRegistry;
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r, "report-job-worker");
-        thread.setDaemon(true);
-        return thread;
-    });
 
-    public ReportJobWorker(
-        StringRedisTemplate stringRedisTemplate,
-        ObjectMapper objectMapper,
-        InterviewSessionMapper interviewSessionMapper,
-        InterviewMessageMapper interviewMessageMapper,
-        InterviewStageMapper interviewStageMapper,
-        ScoreHistoryMapper scoreHistoryMapper,
-        UserWeaknessMapper userWeaknessMapper,
-        LlmRouter llmRouter,
-        DemoModeService demoModeService,
-        InterviewReportParser interviewReportParser,
-        SseEmitterRegistry sseEmitterRegistry
-    ) {
-        this.stringRedisTemplate = stringRedisTemplate;
-        this.objectMapper = objectMapper;
-        this.interviewSessionMapper = interviewSessionMapper;
-        this.interviewMessageMapper = interviewMessageMapper;
-        this.interviewStageMapper = interviewStageMapper;
-        this.scoreHistoryMapper = scoreHistoryMapper;
-        this.userWeaknessMapper = userWeaknessMapper;
-        this.llmRouter = llmRouter;
-        this.demoModeService = demoModeService;
-        this.interviewReportParser = interviewReportParser;
-        this.sseEmitterRegistry = sseEmitterRegistry;
+    @RabbitListener(queues = RabbitMqConfig.REPORT_QUEUE)
+    public void handleReportJob(ReportJobMessage job) {
+        log.info("Received RabbitMQ report job: {}", job);
+        processJob(job);
     }
 
-    @Override
-    public void run(String... args) {
-        executorService.submit(this::consumeJobs);
-    }
-
-    private void consumeJobs() {
-        log.info("ReportJobWorker started consuming jobs from Redis queue:report:jobs");
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
-                String jobJson = stringRedisTemplate.opsForList().rightPop("queue:report:jobs", Duration.ofSeconds(5));
-                if (jobJson == null) {
-                    continue;
-                }
-                log.info("ReportJobWorker popped a job: {}", jobJson);
-                ReportJob job = objectMapper.readValue(jobJson, ReportJob.class);
-                processJob(job);
-            } catch (Exception e) {
-                if (Thread.currentThread().isInterrupted()) {
-                    break;
-                }
-                log.error("Error processing report job in consumer loop", e);
-            }
-        }
-    }
-
-    private void processJob(ReportJob job) {
+    private void processJob(ReportJobMessage job) {
         Long sessionId = job.sessionId();
         Long userId = job.userId();
 
@@ -274,8 +225,8 @@ public class ReportJobWorker implements CommandLineRunner {
             )
         );
         String json = stripJsonFence(content);
-        List<WeaknessExtractionItem> items = objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<>() {});
-        java.util.ArrayList<UserWeakness> weaknesses = new java.util.ArrayList<>();
+        List<WeaknessExtractionItem> items = objectMapper.readValue(json, new TypeReference<>() {});
+        ArrayList<UserWeakness> weaknesses = new ArrayList<>();
         for (WeaknessExtractionItem item : items) {
             if (item.category() == null || item.category().isBlank() || item.description() == null || item.description().isBlank()) {
                 continue;
@@ -311,6 +262,5 @@ public class ReportJobWorker implements CommandLineRunner {
         return trimmed;
     }
 
-    public record ReportJob(Long sessionId, Long userId, String jobId) {}
     private record WeaknessExtractionItem(String category, String description) {}
 }
