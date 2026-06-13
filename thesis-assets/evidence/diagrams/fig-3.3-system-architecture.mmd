@@ -14,111 +14,73 @@ config:
     fontSize: "16px"
 ---
 flowchart TB
-  subgraph frontend["前端用户层 (Vue 3 + Vite)"]
-    ui["浏览器 UI 视图层 (rAF 节流缓冲渲染)"]
-    fe_stream["SSE / Stream 流接收 (fetch / ReadableStream)"]
-    fe_voice["语音捕获 (useVoiceMedia Hook / WS 规划中)"]
-    ui --> fe_stream
-    ui --> fe_voice
+  subgraph frontend["前端展现层"]
+    fe_ui["页面视图层 (Vue 3 / ECharts)"]
+    fe_api["API 交互与流接收 (Axios)"]
+    fe_ui --> fe_api
   end
 
-  subgraph interceptors["网关与拦截层 (Spring WebMVC)"]
-    cors["CORS 跨域配置"]
-    jwt_auth["JWT 登录验证拦截 (JwtInterceptor)"]
-    rate_limiter["滑动窗口限流拦截 (LlmRateLimitInterceptor)"]
-    cors --> jwt_auth --> rate_limiter
+  subgraph security_gate["安全与控制网关"]
+    gate_cors["CORS 跨域配置"]
+    gate_jwt["JWT 会话验证拦截器"]
+    gate_rate["Redis 限流拦截器"]
+    gate_cors --> gate_jwt --> gate_rate
   end
 
-  subgraph controllers["控制表现层 (Controllers)"]
-    auth_ctrl["AuthController"]
-    resume_ctrl["ResumeController"]
-    position_ctrl["PositionController"]
-    interview_ctrl["InterviewController"]
-    analytics_ctrl["AnalyticsController"]
-    llm_ctrl["LlmController"]
+  subgraph backend["后端应用层 (Spring Boot)"]
+    mvc_ctrl["路由控制层 (Controllers)"]
+    biz_service["业务服务层 (Services)"]
+    pdfbox["PDFBox 文本抽取库"]
+    rag_service["RAG 向量索引服务"]
+    report_parser["评估报告结构化解析器"]
+    llm_router["多模型路由网关 (Resilience4j)"]
+
+    mvc_ctrl --> biz_service
+    biz_service --> pdfbox
+    biz_service --> rag_service
+    biz_service --> report_parser
+    biz_service --> llm_router
   end
 
-  subgraph services["业务逻辑层 (Services)"]
-    auth_svc["AuthServiceImpl (密码 BCrypt)"]
-    resume_svc["ResumeServiceImpl (Apache PDFBox)"]
-    session_rag["SessionRagServiceImpl (RAG 向量索引)"]
-    interview_svc["InterviewServiceImpl (面试状态机 / SseEmitter)"]
-    llm_router["LlmRouter (抽象网关路由 / Resilience4j 熔断)"]
-    report_parser["InterviewReportParser (Structured Output 评分解析)"]
-    voice_svc["VoiceServiceImpl (音频 WS 数据处理 / ASR 规划中)"]
+  subgraph middleware["数据存储与中间件"]
+    db_mysql[("MySQL 8.4 数据库")]
+    db_redis[("Redis 缓存/计数器")]
+    mq_rabbitmq[("RabbitMQ 异步队列")]
   end
 
-  subgraph data_storage["持久化与中间件"]
-    mysql_db[("MySQL 8.4 关系库<br/>(user, session, message...)")]
-    redis_store[("Redis 缓存/消息<br/>(限流计数器 / 状态对齐)")]
-    rabbitmq_mq[("RabbitMQ 异步组件")]
+  subgraph external["外部模型层"]
+    llm_external["LLM API (可配置提供商)"]
   end
 
-  subgraph external["外部模型服务层"]
-    deepseek["DeepSeek API"]
-    openai["OpenAI API"]
-    anthropic["Anthropic API"]
+  subgraph sandbox["隔离演示沙盒"]
+    demo_sandbox["Demo Twin 演示环境"]
   end
 
-  subgraph sandbox["本地沙盒演示 (Demo Twin 模式)"]
-    demo_svc["DemoModeService (演示数据加载与 Reset)"]
-    demo_db[("MySQL interview_demo 隔离库")]
-    demo_svc --> demo_db
+  subgraph planned["未来能力扩展"]
+    voice_plan["语音交互通道 (规划/待实测)"]
   end
 
-  %% 客户端发起与普通路由
-  fe_stream --> cors
-  fe_voice -.->|音频 WebSocket| voice_svc
-  
-  jwt_auth --> auth_ctrl
-  jwt_auth --> resume_ctrl
-  jwt_auth --> position_ctrl
-  jwt_auth --> interview_ctrl
-  jwt_auth --> analytics_ctrl
-  jwt_auth --> llm_ctrl
+  fe_api --> gate_cors
+  gate_rate --> mvc_ctrl
 
-  %% 业务调用
-  auth_ctrl --> auth_svc
-  resume_ctrl --> resume_svc
-  interview_ctrl --> interview_svc
-  analytics_ctrl --> session_rag
-  llm_ctrl --> llm_router
+  biz_service --> db_mysql
+  biz_service --> db_redis
+  biz_service -.->|异步报告任务| mq_rabbitmq
 
-  resume_svc --> session_rag
-  interview_svc --> llm_router
-  interview_svc --> report_parser
-
-  %% 数据存储与中间件
-  auth_svc --> mysql_db
-  resume_svc --> mysql_db
-  interview_svc --> mysql_db
-  interview_svc --> redis_store
-  rate_limiter --> redis_store
-  
-  %% RAG 与 消息队列
-  session_rag --> mysql_db
-  interview_svc -.->|异步报告任务| rabbitmq_mq
-
-  %% 模型路由
-  llm_router --> deepseek
-  llm_router --> openai
-  llm_router --> anthropic
-
-  %% SSE 流式响应链路
-  deepseek -->|模型流式输出| llm_router
-  llm_router -->|流数据回传| interview_svc
-  interview_svc -->|SseEmitter 增量推送| fe_stream
-  fe_stream -->|rAF 降频刷新 60fps| ui
+  llm_router --> llm_external
+  biz_service -.-> demo_sandbox
+  fe_ui -.->|WebSocket| voice_plan
 
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
   classDef main fill:#EFE6DD,stroke:#B79A8B,color:#252525
   classDef node fill:#F6F0E8,stroke:#C8B7AA,color:#252525
   classDef store fill:#EEE7DC,stroke:#A89183,color:#252525
   classDef ext fill:#F9F9F6,stroke:#CCCCCC,color:#555555
-  classDef sse stroke:#2A7AE2,stroke-width:2px
+  classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 5 5,color:#555555
 
-  class frontend,interceptors,controllers,services,data_storage,sandbox,external layer
-  class interview_svc,llm_router main
-  class ui,fe_stream,fe_voice,cors,jwt_auth,rate_limiter,auth_ctrl,resume_ctrl,position_ctrl,interview_ctrl,analytics_ctrl,llm_ctrl,auth_svc,resume_svc,session_rag,report_parser,voice_svc,demo_svc node
-  class mysql_db,redis_store,rabbitmq_mq,demo_db store
-  class deepseek,openai,anthropic ext
+  class frontend,security_gate,backend,middleware,external,sandbox layer
+  class biz_service,llm_router main
+  class fe_ui,fe_api,gate_cors,gate_jwt,gate_rate,mvc_ctrl,pdfbox,rag_service,report_parser,demo_sandbox node
+  class db_mysql,db_redis,mq_rabbitmq store
+  class llm_external ext
+  class voice_plan plan
