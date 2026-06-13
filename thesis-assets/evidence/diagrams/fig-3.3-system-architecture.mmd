@@ -27,7 +27,7 @@ flowchart TB
   end
 
   subgraph Layer2[" &nbsp; 网关层 &nbsp; "]
-    gate_sec[" &nbsp; 安全过滤 &nbsp; <br/>CORS / JWT "]
+    gate_sec[" &nbsp; 安全过滤 &nbsp; <br/> &nbsp; CORS / JWT &nbsp; "]
     gate_limit[" &nbsp; Redis 限流 &nbsp; "]
   end
 
@@ -37,14 +37,14 @@ flowchart TB
   end
 
   subgraph Layer4[" &nbsp; 业务与模型 &nbsp; "]
-    core[" &nbsp; 核心业务 &nbsp; <br/>简历/岗位/面试/报告 "]
-    llm[" &nbsp; 外部模型服务 &nbsp; <br/>(LLM Provider) "]
+    core[" &nbsp; 核心业务 &nbsp; <br/> &nbsp; 简历/岗位/面试/报告 &nbsp; "]
+    llm[" &nbsp; 外部模型服务 &nbsp; <br/> &nbsp; (LLM Provider) &nbsp; "]
   end
 
   subgraph Layer5[" &nbsp; 数据与扩展 &nbsp; "]
-    data[" &nbsp; 数据与中间件 &nbsp; <br/>MySQL / Redis / RabbitMQ "]
+    data[" &nbsp; 数据与中间件 &nbsp; <br/> &nbsp; MySQL / Redis / RabbitMQ &nbsp; "]
     demo[" &nbsp; Demo Twin 隔离演示 &nbsp; "]
-    voice[" &nbsp; 语音扩展 &nbsp; <br/>(规划/待测) "]
+    voice[" &nbsp; 语音扩展 &nbsp; <br/> &nbsp; (规划/待测) &nbsp; "]
   end
 
   fe_web --> gate_sec

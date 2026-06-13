@@ -21,18 +21,18 @@ title: 图3.2 数据库核心实体关系图
   }
 }}%%
 flowchart TB
-  user[" &nbsp; user &nbsp; <br/>• id (PK)<br/>• username "]
-  resume[" &nbsp; resume &nbsp; <br/>• id (PK)<br/>• user_id (FK) "]
-  position_template[" &nbsp; position_template &nbsp; <br/>• id (PK)<br/>• name "]
+  user[" &nbsp; user &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • username &nbsp; "]
+  resume[" &nbsp; resume &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; "]
+  position_template[" &nbsp; position_template &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • name &nbsp; "]
   
-  interview_session[" &nbsp; interview_session &nbsp; <br/>• id (PK)<br/>• user_id (FK)<br/>• resume_id (FK)<br/>• position_id (FK)<br/>• status "]
+  interview_session[" &nbsp; interview_session &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; <br/> &nbsp; • resume_id (FK) &nbsp; <br/> &nbsp; • position_id (FK) &nbsp; <br/> &nbsp; • status &nbsp; "]
   
-  interview_message[" &nbsp; interview_message &nbsp; <br/>• id (PK)<br/>• session_id (FK)<br/>• role<br/>• seq_num "]
-  interview_stage[" &nbsp; interview_stage &nbsp; <br/>• id (PK)<br/>• session_id (FK)<br/>• stage_name "]
-  score_history[" &nbsp; score_history &nbsp; <br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK) "]
-  user_weakness[" &nbsp; user_weakness &nbsp; <br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK) "]
+  interview_message[" &nbsp; interview_message &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • session_id (FK) &nbsp; <br/> &nbsp; • role &nbsp; <br/> &nbsp; • seq_num &nbsp; "]
+  interview_stage[" &nbsp; interview_stage &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • session_id (FK) &nbsp; <br/> &nbsp; • stage_name &nbsp; "]
+  score_history[" &nbsp; score_history &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; <br/> &nbsp; • session_id (FK) &nbsp; "]
+  user_weakness[" &nbsp; user_weakness &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; <br/> &nbsp; • session_id (FK) &nbsp; "]
   
-  llm_provider_config[" &nbsp; llm_provider_config &nbsp; <br/>模型提供商配置<br/>• id (PK)<br/>• provider_key "]
+  llm_provider_config[" &nbsp; llm_provider_config &nbsp; <br/> &nbsp; 模型提供商配置 &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • provider_key &nbsp; "]
 
   user -->|1:N| resume
   user -->|1:N| interview_session
