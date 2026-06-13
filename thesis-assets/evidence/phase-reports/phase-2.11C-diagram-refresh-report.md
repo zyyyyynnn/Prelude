@@ -1,6 +1,7 @@
 # 阶段 2.11C 核心工程图事实刷新报告
 
-> **口径说明（2026-06 补记）**：本报告中涉及的 RabbitMQ 异步队列描述，反映的是 2026-05 阶段的架构规划意图。当前系统实际使用 Redis List 作为轻量任务队列，未引入 `spring-boot-starter-amqp`，未在 `docker-compose.yml` 中添加 RabbitMQ 服务。RabbitMQ 不得作为已实现系统能力进入论文正文。
+> **[后续口径说明]**
+> 后续已确认将引入 RabbitMQ 替换 Redis List 报告任务队列。本文保留历史阶段审查语境，不代表 RabbitMQ 当前已经实现。当前代码层面仍采用 Redis List 实现报告生成任务的轻量级异步入队与消费，后续将以 RabbitMQ 替换。
 
 ## 1. 阶段边界
 

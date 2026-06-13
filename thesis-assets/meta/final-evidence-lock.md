@@ -39,6 +39,7 @@
 
 ## 5. RabbitMQ / MQ 口径限制
 
-* 当前证据索引不得将 RabbitMQ / MQ 削峰解耦写成已实现系统能力。
-* 当前系统使用 Redis List 作为轻量任务队列实现异步报告生成，未引入 RabbitMQ。
-* 若后续需要纳入 RabbitMQ，必须先补齐后端 AMQP 依赖、docker-compose 服务、生产者/消费者代码、任务状态与测试证据。
+* 项目已确认将引入 RabbitMQ 作为报告生成异步任务队列的后续升级方向。
+* 当前代码层面仍采用 Redis List 实现报告生成任务的轻量级异步入队与消费（`ReportJobWorker`），后续将以 RabbitMQ 替换该 Redis List 队列，使 Redis 回归限流、缓存和状态辅助职责。
+* RabbitMQ 功能在补齐 AMQP 依赖、Docker Compose 服务、生产者/消费者代码、测试记录和证据资产之前，不得写成已实现能力，也不得写成已通过高并发削峰压测。
+* Redis List 当前仍是报告生成异步任务队列的已实现方案；RabbitMQ 补齐后，Redis 将回归限流、缓存和状态辅助职责。
