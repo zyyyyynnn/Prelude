@@ -19,6 +19,7 @@ frontend/.env.local
 # Runtime outputs
 output/runtime/
 output/demo/.artifacts/
+output/demo/
 output/playwright/
 output/*.txt
 
