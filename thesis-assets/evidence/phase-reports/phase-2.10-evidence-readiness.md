@@ -28,10 +28,10 @@
 * thesis-assets/evidence/figure-table-register.md
 * thesis-assets/evidence/review-notes/fig-3.3-redraw-requirements.md
 * thesis-assets/evidence/review-notes/stage-2-evidence-sync.md
-* thesis-assets/evidence/test-data/demo-2026-04-25.json
-* thesis-assets/evidence/test-data/demo-2026-04-25.md
+* thesis-assets/evidence/test-data/archive/demo-2026-04-25.json
+* thesis-assets/evidence/test-data/archive/demo-2026-04-25.md
 * thesis-assets/evidence/test-data/demo-2026-06.md
-* thesis-assets/evidence/test-data/env-2026-04-24.md
+* thesis-assets/evidence/test-data/archive/env-2026-04-24.md
 * thesis-assets/evidence/test-data/env-2026-06.md
 * thesis-assets/evidence/test-data/functional-cases-2026-06.md
 * thesis-assets/evidence/test-data/mimo-2026-05-27.json

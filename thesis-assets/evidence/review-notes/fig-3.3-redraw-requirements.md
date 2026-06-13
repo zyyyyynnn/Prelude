@@ -1,5 +1,11 @@
 # 图 3.3 系统架构图重绘需求说明
 
+> **[SUPERSEDED / PARTIALLY COMPLETED]**
+> 本需求已由 `thesis-assets/evidence/phase-reports/phase-2.11C-diagram-refresh-report.md` 与
+> `thesis-assets/evidence/phase-reports/phase-2.11C-fix-diagram-readability-review.md` 部分承接。
+> 图 3.3 已完成业务架构精简与可读性重构；高可用、监控、限流熔断等细节不得混入业务架构图。
+> RabbitMQ 当前不得作为已实现 MQ 能力进入论文正文，除非后续补齐依赖、配置、生产者/消费者和测试证据。
+
 ## 0. 结论
 
 结论：拆分

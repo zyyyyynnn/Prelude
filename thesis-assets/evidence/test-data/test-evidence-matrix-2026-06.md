@@ -12,10 +12,10 @@
 
 | 文件路径 | 证据类型 | 内容摘要 | 对应模块 | 可支撑章节 | 当前状态 | 风险说明 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| [demo-2026-04-25.json](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-04-25.json) | JSON 原始测试数据 | 记录 2026 年 4 月本机回环 Demo 模式运行的原始 JSON 交互结果 | Demo 模式 / 模拟数据 | 第五章 | 历史存档 | 仅限本地隔离验证，不能代表真实网络环境 |
-| [demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-04-25.md) | 测试记录 Markdown | 包含 4 月 25 日 TC-01 ~ TC-09 本地测试步骤与响应时延指标 | Demo 模式 / 前后端联调 | 第五章 | 历史存档 | 数据属于旧版本，仅作对比参考 |
+| [demo-2026-04-25.json](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.json) | JSON 原始测试数据 | 记录 2026 年 4 月本机回环 Demo 模式运行的原始 JSON 交互结果 | Demo 模式 / 模拟数据 | 第五章 | 历史存档 | 仅限本地隔离验证，不能代表真实网络环境 |
+| [demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) | 测试记录 Markdown | 包含 4 月 25 日 TC-01 ~ TC-09 本地测试步骤与响应时延指标 | Demo 模式 / 前后端联调 | 第五章 | 历史存档 | 数据属于旧版本，仅作对比参考 |
 | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md) | 测试记录 Markdown | 记录 6 月最新本机 Windows 全栈环境测试结论与 MIMO 数据集成对比 | Demo / Real 模式 | 第五章 | 活跃资产 | 明确标示了大部分高并发与 SSE 并发为“未实测” |
-| [env-2026-04-24.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-04-24.md) | 环境配置 Markdown | 记录 4 月份的操作系统、基础依赖和 Maven/Vite 验证命令 | 测试环境 | 第五章 | 历史存档 | 仅记录历史状态 |
+| [env-2026-04-24.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/env-2026-04-24.md) | 环境配置 Markdown | 记录 4 月份的操作系统、基础依赖和 Maven/Vite 验证命令 | 测试环境 | 第五章 | 历史存档 | 仅记录历史状态 |
 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) | 环境配置 Markdown | 记录 6 月最新 Node.js、JDK21、MySQL 等版本，以及最新的 Maven 测试和 Vite 构建通过日志 | 测试环境 / 构建记录 | 第五章 | 活跃资产 | 仅代表单机开发环境，不代表分布式部署环境 |
 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 功能测试用例 | 列出 TC-01 到 TC-09 的测试项、预期结果与实际测试结论（含“待实测”项） | 核心业务模块 | 第五章 | 活跃资产 | 部分高可用及语音多模态为“待实测”状态，不可夸大 |
 | [mimo-2026-05-27.json](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.json) | JSON 原始测试数据 | MIMO 真实公网全链路交互提取的原始 JSON 数据 | 公网模型接口 / Real 模式 | 第五章 | 补充历史对照 | 数据产生于 5 月底，不可直接作为最新 June 版本的主体数据 |
@@ -52,7 +52,7 @@
 | 测试项 | 当前证据 | 是否真实实测 | 可写程度 | 风险级别 | 阶段 3 写作边界 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **构建验证** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md): `mvn -q test` 成功；`npm run build` 打包耗时约 14.73s。 | 是 | 充分可写 | 无风险 | 可列为第五章的“系统构建与编译验证”，作为工程合格性指标。 |
-| **Demo 响应链路** | [demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-04-25.md): PDF 上传解析接口耗时 36ms，SSE TTFB 59ms，总时延 198ms。 | 是 (仅限本机回环隔离环境) | 限制性可写 | 中等 (若未说明 Demo Twin 模式，则属夸大) | 必须明确指出是 **Demo Twin 本机数据隔离与模拟数据环境** 下的时延，以此说明当前系统在隔离演示态的前后端响应时延。 |
+| **Demo 响应链路** | [demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md): PDF 上传解析接口耗时 36ms，SSE TTFB 59ms，总时延 198ms。 | 是 (仅限本机回环隔离环境) | 限制性可写 | 中等 (若未说明 Demo Twin 模式，则属夸大) | 必须明确指出是 **Demo Twin 本机数据隔离与模拟数据环境** 下的时延，以此说明当前系统在隔离演示态的前后端响应时延。 |
 | **SSE 流式响应** | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md): 首轮面试官开场词流式耗时 1.84s (从首个 chunk 到流结束)。 | 是 | 限制性可写 | 极低 | 可以在第五章描述单人真实测试状态下的 SSE 通道开启速度及提问流式响应，作为流畅性体验的依据。 |
 | **PDF 解析耗时** | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md): 简历文本提取耗时 54ms。 | 是 | 限制性可写 | 极低 | 明确该时延**仅包含 PDFBox 文本提取**的消耗，不含大模型进行结构化分析的延迟。 |
 | **LLM 响应延迟** | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md): 外部模型连通性时延 3.20s；多维评估报告生成时延 118.35s。 | 是 | 限制性可写 | 极低 | 必须在第五章作为“真实公网调用性能”展示，客观记录大模型长对话总结需要百秒级的处理时延，体现真实测试诚实底线。 |

@@ -15,7 +15,7 @@
 报告编写过程中读取并复核了以下文件与目录资产：
 1. 治理规范：[workflow-governance.md](file:///E:/Prelude/thesis-assets/meta/workflow-governance.md)
 2. 证据锁定状态：[final-evidence-lock.md](file:///E:/Prelude/thesis-assets/meta/final-evidence-lock.md)
-3. 2.10阶段审查：[phase-2.10-evidence-readiness.md](file:///E:/Prelude/thesis-assets/evidence/phase-2.10-evidence-readiness.md)
+3. 2.10阶段审查：[phase-2.10-evidence-readiness.md](file:///E:/Prelude/thesis-assets/evidence/phase-reports/phase-2.10-evidence-readiness.md)
 4. 图表规划：[figure-assets-plan.md](file:///E:/Prelude/thesis-assets/evidence/figure-assets-plan.md)
 5. 图表登记：[figure-table-register.md](file:///E:/Prelude/thesis-assets/evidence/figure-table-register.md)
 6. 测试数据目录下的所有 Markdown 与 JSON 证据文件：[thesis-assets/evidence/test-data/](file:///E:/Prelude/thesis-assets/evidence/test-data/)
@@ -29,7 +29,7 @@
 | 证据类别 | 当前资产 | 可支撑章节 | 当前状态 | 风险说明 |
 | :--- | :--- | :--- | :--- | :--- |
 | **功能测试** | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 第五章 | 活跃资产 | 部分高可用防护及语音多模态标记为“待实测”，需作限制性描述 |
-| **Demo 验证** | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md)、[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-04-25.md) | 第五章 | 活跃资产/历史对比 | 仅限本机回环隔离环境，不得引申为生产公网表现 |
+| **Demo 验证** | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md)、[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) | 第五章 | 活跃资产/历史对比 | 仅限本机回环隔离环境，不得引申为生产公网表现 |
 | **构建验证** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 2.1 与 2.2 小节 | 第五章 | 活跃资产 | 仅能证明编译、类型检查和打包顺利完成 |
 | **环境配置** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 1.0 小节 | 第五章 | 活跃资产 | 代表本机全栈测试环境，不能声称云端分布式部署 |
 | **Bug 修复证据** | [01-demo-proxy.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/01-demo-proxy.md)、[02-mysql-preflight.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/02-mysql-preflight.md) | 第四/五章 | 活跃资产 | 仅用于排查和健壮性展示，不可夸大为高可用性能 |
@@ -57,7 +57,7 @@
 
 | 能力 | 代码或配置证据 | 测试结果证据 | 阶段 3 写法 | 风险 |
 | :--- | :--- | :--- | :--- | :--- |
-| **SSE / 流式响应** | `InterviewServiceImpl.java` 建立 `SseEmitter` | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md) (流式耗时 1.84s)<br>[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-04-25.md) (TTFB 59ms) | SSE 交互链路通畅，首字符下发时延正常；流式渲染能有效降频物理帧率。 | 无压测数据，仅限单用户功能流畅验证。 |
+| **SSE / 流式响应** | `InterviewServiceImpl.java` 建立 `SseEmitter` | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md) (流式耗时 1.84s)<br>[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) (TTFB 59ms) | SSE 交互链路通畅，首字符下发时延正常；流式渲染能有效降频物理帧率。 | 无压测数据，仅限单用户功能流畅验证。 |
 | **限流** | `LlmRateLimitInterceptor.java` | 无 (无高并发限流触发日志) | 仅描述系统集成了 Redis 滑动窗口高频限流算法，限缩在机制说明中。 | 夸大为“在高并发下对限流进行了压力实测”。 |
 | **熔断** | `application-local.yml` 中 Resilience4j 熔断参数 | 无 (未在生产网络模拟接口雪崩熔断) | 仅能描述网关具有 Resilience4j 熔断灾备机制与切换模型提供商的能力。 | 宣称为“通过了系统雪崩与熔断抗灾测试”。 |
 | **重试** | 前端 `InterviewView.vue` 静默核对与指数退避重试 | 无 | 描述流式链接闪断时，系统具有客户端状态对齐、分流幂等核对与自愈逻辑。 | 缺乏大样本闪断重连的数据统计。 |

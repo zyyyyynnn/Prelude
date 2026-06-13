@@ -16,8 +16,8 @@
 在重写图表准入计划和核对工作中，调阅并审查了以下文件资产：
 1. 治理规范：[workflow-governance.md](file:///E:/Prelude/thesis-assets/meta/workflow-governance.md)
 2. 证据锁定状态：[final-evidence-lock.md](file:///E:/Prelude/thesis-assets/meta/final-evidence-lock.md)
-3. 2.10阶段审查：[phase-2.10-evidence-readiness.md](file:///E:/Prelude/thesis-assets/evidence/phase-2.10-evidence-readiness.md)
-4. 2.11A阶段测试复核：[phase-2.11A-test-evidence-review.md](file:///E:/Prelude/thesis-assets/evidence/phase-2.11A-test-evidence-review.md)
+3. 2.10阶段审查：[phase-2.10-evidence-readiness.md](file:///E:/Prelude/thesis-assets/evidence/phase-reports/phase-2.10-evidence-readiness.md)
+4. 2.11A阶段测试复核：[phase-2.11A-test-evidence-review.md](file:///E:/Prelude/thesis-assets/evidence/phase-reports/phase-2.11A-test-evidence-review.md)
 5. 6月测试证据矩阵：[test-evidence-matrix-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md)
 6. 待重写的旧图表规划：[figure-assets-plan.md](file:///E:/Prelude/thesis-assets/evidence/figure-assets-plan.md)
 7. 图表登记状态：[figure-table-register.md](file:///E:/Prelude/thesis-assets/evidence/figure-table-register.md)

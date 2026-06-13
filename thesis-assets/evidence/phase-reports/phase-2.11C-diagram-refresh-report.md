@@ -1,5 +1,7 @@
 # 阶段 2.11C 核心工程图事实刷新报告
 
+> **口径说明（2026-06 补记）**：本报告中涉及的 RabbitMQ 异步队列描述，反映的是 2026-05 阶段的架构规划意图。当前系统实际使用 Redis List 作为轻量任务队列，未引入 `spring-boot-starter-amqp`，未在 `docker-compose.yml` 中添加 RabbitMQ 服务。RabbitMQ 不得作为已实现系统能力进入论文正文。
+
 ## 1. 阶段边界
 
 * 本阶段不是阶段 3；
@@ -125,5 +127,5 @@
 
 * **重构背景**：在 3ee48b7 的事实核对完成后，发现图3.2与图3.3的 PNG 缩放后字体过密、在 A4 正文宽度下严重不可读。为此，本阶段执行了 2.11C-Fix 优化重构。
 * **重构方案**：简化图源以降低信息密度；以外部 `database-table-dictionary-2026-06.md` 形式保存字段描述以简化 E-R 图；从架构图中移出 SSE 流式底层细节并拆分为第四章流式响应候选流程图；导出 SVG 作为主图件，高分辨率 PNG 作为备份。
-* **准入依据**：以 2.11C-Fix 报告（phase-2.11C-fix-diagram-readability-review.md）为图件可读性准入的最新评估依据，原 2.11C 事实核对结论仍保留效力。
+* **准入依据**：以 2.11C-Fix 报告（phase-reports/phase-2.11C-fix-diagram-readability-review.md）为图件可读性准入的最新评估依据，原 2.11C 事实核对结论仍保留效力。
 
