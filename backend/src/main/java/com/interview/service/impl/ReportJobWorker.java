@@ -34,6 +34,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ReportJobWorker {
 
+    private static final String STATUS_GENERATING = "generating";
+    private static final String STATUS_ONGOING = "ongoing";
+    private static final String STATUS_FINISHED = "finished";
+
     private final ObjectMapper objectMapper;
     private final InterviewSessionMapper interviewSessionMapper;
     private final InterviewMessageMapper interviewMessageMapper;
@@ -65,6 +69,11 @@ public class ReportJobWorker {
                 log.warn("Session {} not found, skipping", sessionId);
                 return;
             }
+            if (!STATUS_GENERATING.equals(session.getStatus())) {
+                log.info("Session {} status is '{}', expected '{}' — skipping duplicate or stale job",
+                    sessionId, session.getStatus(), STATUS_GENERATING);
+                return;
+            }
 
             List<InterviewMessage> messages = interviewMessageMapper.selectList(new LambdaQueryWrapper<InterviewMessage>()
                 .eq(InterviewMessage::getSessionId, sessionId)
@@ -78,7 +87,10 @@ public class ReportJobWorker {
                 reportContent = demoModeService.resolveReport(session.getTargetPosition());
                 try {
                     Thread.sleep(1500); // Simulate processing delay
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Report generation interrupted", e);
+                }
             } else {
                 reportContent = llmRouter.chatWithSnapshot(
                     session.getLlmProvider(),
@@ -106,7 +118,7 @@ public class ReportJobWorker {
             InterviewReportParser.ParsedReport parsedReport = interviewReportParser.parse(reportContent);
             String report = parsedReport.reportMarkdown();
 
-            session.setStatus("finished");
+            session.setStatus(STATUS_FINISHED);
             session.setSummaryReport(report);
             interviewSessionMapper.updateById(session);
 
@@ -124,8 +136,8 @@ public class ReportJobWorker {
             // Restore status to ongoing if failed
             try {
                 InterviewSession session = interviewSessionMapper.selectById(sessionId);
-                if (session != null && "generating".equals(session.getStatus())) {
-                    session.setStatus("ongoing");
+                if (session != null && STATUS_GENERATING.equals(session.getStatus())) {
+                    session.setStatus(STATUS_ONGOING);
                     interviewSessionMapper.updateById(session);
                 }
             } catch (Exception ex) {
