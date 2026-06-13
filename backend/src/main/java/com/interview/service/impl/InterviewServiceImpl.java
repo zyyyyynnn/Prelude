@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.BusinessException;
 import com.interview.common.UserContext;
+import com.interview.config.RabbitMqConfig;
 import com.interview.dto.InterviewChatRequest;
 import com.interview.dto.InterviewFinishResponse;
 import com.interview.dto.InterviewMessageItemResponse;
@@ -32,10 +33,12 @@ import com.interview.mapper.PositionTemplateMapper;
 import com.interview.mapper.ResumeMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserWeaknessMapper;
+import com.interview.messaging.ReportJobMessage;
 import com.interview.service.DemoModeService;
 import com.interview.service.InterviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,6 +94,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
     private final com.interview.service.SessionRagService sessionRagService;
     private final SseEmitterRegistry sseEmitterRegistry;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -325,7 +329,6 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public InterviewFinishResponse finish(Long sessionId) {
         Long userId = currentUserId();
         InterviewSession session = requireOngoingSession(sessionId, userId);
@@ -335,11 +338,26 @@ public class InterviewServiceImpl implements InterviewService {
 
         String jobId = java.util.UUID.randomUUID().toString();
         try {
-            ReportJobWorker.ReportJob job = new ReportJobWorker.ReportJob(sessionId, userId, jobId);
-            stringRedisTemplate.opsForList().leftPush("queue:report:jobs", objectMapper.writeValueAsString(job));
-            log.info("Enqueued report generation job for session {} with jobId {}", sessionId, jobId);
-        } catch (JsonProcessingException e) {
-            throw BusinessException.badRequest("任务队列推送失败");
+            ReportJobMessage job = new ReportJobMessage(sessionId, userId, jobId);
+            rabbitTemplate.convertAndSend(
+                RabbitMqConfig.REPORT_EXCHANGE,
+                RabbitMqConfig.REPORT_ROUTING_KEY,
+                job
+            );
+            log.info("Published report generation job to RabbitMQ for session {} with jobId {}", sessionId, jobId);
+        } catch (Exception e) {
+            log.error("Failed to publish report generation job to RabbitMQ for session {}", sessionId, e);
+            try {
+                InterviewSession restoreSession = interviewSessionMapper.selectById(sessionId);
+                if (restoreSession != null && "generating".equals(restoreSession.getStatus())) {
+                    restoreSession.setStatus(STATUS_ONGOING);
+                    interviewSessionMapper.updateById(restoreSession);
+                    log.info("Restored session {} status to ongoing after publish failure", sessionId);
+                }
+            } catch (Exception restoreEx) {
+                log.error("Failed to restore session {} status to ongoing", sessionId, restoreEx);
+            }
+            throw BusinessException.badRequest("报告生成任务发布失败");
         }
 
         SESSION_LOCKS.invalidate(sessionId.toString());
