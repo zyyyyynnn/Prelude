@@ -1,4 +1,4 @@
-﻿# Agent 工作协议与操作规范
+# Agent 工作协议与操作规范
 
 ## 1. 默认基准与交互原则
 - **环境基准**：Windows 11、PowerShell 7+、UTF-8。
@@ -84,39 +84,17 @@
     codegraph index
     ```
 
-## 8. 论文自动化编排与渲染管线 (PaperSpine + Pandoc)
-本项目已将论文资产维护纳入受控工作流。Agent 在处理论文需求时必须严格遵守治理规范、证据锁定、单章执行与人工复核边界：
+## 8. 论文资产治理与工作流红线
 
-**【重要前置纪律】**
-- 论文资产修改前必须先读取 `thesis-assets/meta/workflow-governance.md`。
-- 论文资产治理以 thesis-assets/meta/workflow-governance.md 为准。
-- 需要单章重写时，必须先完成证据锁定、边界确认和人工复核。
-- 本地 Agent 无权自行判定阶段通过，也无权自行推进下一阶段。
-- 每一阶段完成后，必须输出报告与 diff，由用户和审查官复核。
+本项目包含受控的论文工作流。**严禁直接修改论文正文，任何论文相关操作必须先走治理流程。**
 
-### 8.1 绝对的“单一真相源”纪律
-- **禁止在 Word 中修改**：任何对论文正文的增、删、改、逻辑重组，**只能**且必须在 `thesis-assets/chapters/*.md` 对应的分章文件中进行。
-- 自动构建产物只允许作为临时输出，绝不允许对其进行任何自动化代码的回写与破坏。
+**【最高规范入口】**
+任何涉及论文、正文、证据、图表、参考文献或答辩材料的指令，在采取任何动作前，必须先读取并严格遵守：
+- `thesis-assets/meta/workflow-governance.md`
 
-### 8.2 大修与逻辑降维 (PaperSpine 引擎)
-- 当面临代码更新引发的论文逻辑大修时，切勿使用原生对话模型直接生成长篇大论。
-- 必须遵循工业级管线：将真实证据（日志、代码片段、新图表等）存入 `thesis-assets/evidence/` -> 启动 PaperSpine 引擎执行 `rewrite_existing`（当前论文流程入口为 `thesis-assets/meta/workflow-governance.md`）。
-- **单章执行纪律**：每次只对一个 `chapters/*.md` 文件执行 `rewrite_existing`，严禁将全书合并后一次性送入 PaperSpine，否则会触发上下文截断崩溃。
+**【三大不可越界的红线】**
+1. **单一真相源**：正文唯一真相源是 `thesis-assets/chapters/*.md`。严禁通过任何方式在 Word/PDF 中修改或反向同步正文。
+2. **证据先验**：代码/架构发生变动后，必须先更新并锁定 `evidence/`（代码片段、日志、截图、图表）。**证据未锁定，严禁重写正文。**
+3. **安全操作边界**：调用 PaperSpine 重写必须严格**单章执行**；阶段推进必须输出报告由用户/审查官人工复核，本地 Agent 无权自行判定通过。
 
-### 8.3 物理渲染流 (Pandoc 一键合版)
-- 在 `chapters/*.md` 确认无误后，必须通过 PowerShell 执行以下指令生成终稿：
-  ```powershell
-  pwsh -ExecutionPolicy Bypass -File .\thesis-assets\build-docx.ps1
-  ```
-  *(注：手工 Pandoc 命令仅用于排查，不作为推荐入口。正式入口以 build-docx.ps1 为准。)*
-
-### 8.4 边界防线 (Last 5 Miles 与独立答辩)
-- **人工收尾隔离**：在 Agent 成功渲染完 `thesis-final.docx` 后，必须明确提醒用户接管“最后的 5%”（手工贴图、粘贴附录/参考文献、更新目录域与底端页码），严禁 Agent 尝试自动化实现这些行为。
-- **答辩材料独立**：答辩 PPT 逻辑映射、演讲稿及 Q&A 演练完全独立于论文正文生成管线，此类任务请直接查阅并操作 `thesis-assets/defense/` 目录。
-
-> 详细流程参见：`thesis-assets/meta/workflow-governance.md`
-
-
-
-
-
+关于项目漂移审查、阶段冻结点、引用治理及具体工具（PaperSpine/nature-figure）的权责边界，详见 `workflow-governance.md`，本文件不再赘述。
