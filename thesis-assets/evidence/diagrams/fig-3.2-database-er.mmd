@@ -1,3 +1,6 @@
+---
+title: 图3.2 数据库核心实体关系图
+---
 %%{init: {
   'theme': 'base',
   'themeVariables': {
@@ -28,7 +31,7 @@ flowchart TB
   score_history["score_history<br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK)"]
   user_weakness["user_weakness<br/>• id (PK)<br/>• user_id (FK)<br/>• session_id (FK)"]
   
-  llm_provider_config["llm_provider_config<br/>• id (PK)<br/>• provider_key"]
+  llm_provider_config["llm_provider_config<br/>模型提供商配置<br/>• id (PK)<br/>• provider_key"]
 
   user -->|1:N| resume
   user -->|1:N| interview_session
@@ -39,8 +42,6 @@ flowchart TB
   interview_session -->|1:N| interview_stage
   interview_session -->|1:1| score_history
   interview_session -->|1:N| user_weakness
-  
-  llm_provider_config -.->|全局配置| interview_session
 
   classDef entity fill:#F6F0E8,stroke:#C8B7AA,color:#252525
   classDef centerEntity fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.5px,color:#252525

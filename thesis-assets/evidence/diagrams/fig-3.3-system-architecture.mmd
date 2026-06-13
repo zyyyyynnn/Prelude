@@ -1,3 +1,6 @@
+---
+title: 图3.3 系统整体架构图
+---
 %%{init: {
   'theme': 'base',
   'themeVariables': {
@@ -12,35 +15,35 @@
     'fontSize': '14px'
   },
   'flowchart': {
-    'nodeSpacing': 80,
-    'rankSpacing': 45
+    'nodeSpacing': 85,
+    'rankSpacing': 55
   }
 }}%%
 flowchart TB
-  subgraph Layer1["第一层：前端展现层"]
+  subgraph Layer1["前端层"]
     fe_web["Vue 3 主界面"]
     fe_charts["ECharts 数据画布"]
   end
 
-  subgraph Layer2["第二层：安全与控制网关"]
-    gate_sec["安全过滤 (CORS / JWT)"]
-    gate_limit["流控机制 (Redis 限流)"]
+  subgraph Layer2["网关层"]
+    gate_sec["安全过滤<br/>CORS / JWT"]
+    gate_limit["Redis 限流"]
   end
 
-  subgraph Layer3["第三层：Spring Boot 应用层"]
+  subgraph Layer3["应用层"]
     app_ctrl["控制器与路由拦截"]
     app_orche["服务层与业务编排"]
   end
 
-  subgraph Layer4["第四层：核心业务与模型服务"]
-    core["核心业务模块<br/>(简历/岗位/面试/报告)"]
+  subgraph Layer4["业务与模型"]
+    core["核心业务<br/>简历/岗位/面试/报告"]
     llm["外部模型服务<br/>(LLM Provider)"]
   end
 
-  subgraph Layer5["第五层：数据存储与规划扩展"]
-    data["数据库与中间件<br/>(MySQL/Redis/RabbitMQ)"]
+  subgraph Layer5["数据与扩展"]
+    data["数据与中间件<br/>MySQL / Redis / RabbitMQ"]
     demo["Demo Twin 隔离演示"]
-    voice["语音交互扩展<br/>(规划/待实测)"]
+    voice["语音扩展<br/>(规划/待测)"]
   end
 
   fe_web --> gate_sec

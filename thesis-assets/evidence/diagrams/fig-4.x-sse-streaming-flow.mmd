@@ -1,3 +1,6 @@
+---
+title: 图4.x SSE 流式问答处理流程图
+---
 %%{init: {
   'theme': 'base',
   'themeVariables': {
@@ -31,8 +34,7 @@ flowchart TB
   db_save["数据：异步保存"]
   fe_finish["前端：解锁并展示回复"]
 
-  fe_send --> be_emitter
-  fe_send --> be_context
+  fe_send --> be_emitter --> be_context
   
   be_context --> llm_stream
   be_emitter --> be_push
