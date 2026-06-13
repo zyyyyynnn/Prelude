@@ -27,6 +27,7 @@
 | [impl-2026-05-31.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-05-31.md) | 代码实现证据 | 正则提取评分的柔性降级和 JSON 块剔除逻辑（已被 Structured Output 替代） | 数据解析 | 第四章 | 已弃用 | 旧版正则已被 Structured Output 重构替代，仅能做背景描述 |
 | [impl-2026-06-02.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-02.md) | 代码实现证据 | Structured Output 替换正则、客户端静默核对、Redis 滑动窗口限流代码片段 | 高可用 / 容灾 / 缓存 | 第四章 | 活跃资产 | 代码设计精妙，但缺乏大规模并发压测数据支撑，仅可作架构宣称 |
 | [impl-2026-06-05.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-05.md) | 代码实现证据 | 前端 rAF 刷新节流、AbortController 互斥锁、useVoiceMedia 音频 Composable 剥离代码 | 前端优化 | 第四章 | 活跃资产 | 缺乏高频多端压测的实测数据，仅能从帧率对齐与机制上进行论证 |
+| [impl-2026-06-13-rabbitmq.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-13-rabbitmq.md) | 代码实现证据 | RabbitMQ 报告任务队列集成（Producer / Consumer / Config / 幂等保护） | 报告异步任务队列 | 第四章 | 活跃资产 | 仅本地 Docker Compose 基础链路联调通过，不等同公网高并发或生产级可靠投递 |
 | [package-2026-04-25.md](file:///E:/Prelude/thesis-assets/defense/package-2026-04-25.md) | 答辩材料说明 | 答辩材料包的内容大纲与定位 | 答辩相关 | 独立答辩 | 活跃资产 | 独立于正文构建，仅作为辅助对齐 |
 | [script.md](file:///E:/Prelude/thesis-assets/defense/script.md) | 答辩讲稿 | 5-8分钟答辩汇报口径与演讲稿，包含 Demo 性能阐述与 Bug 排查 | 答辩相关 | 独立答辩 | 活跃资产 | 口径需随着测试矩阵的最终审查结论进行严格收缩，严禁夸大 |
 | [slide-map.md](file:///E:/Prelude/thesis-assets/defense/slide-map.md) | PPT 映射表 | 12页 PPT 大纲，建立幻灯片与论文章节、代码及测试数据映射 | 答辩相关 | 独立答辩 | 活跃资产 | 需在此处对齐最新 June 数据 |
@@ -45,6 +46,7 @@
 | **LLM 调用** | 多模型 Provider 适配与 AES 密钥加密保存 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) (TC-08)<br>[mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md) (TC-03, TC-04) | 灾备切换的自动检测反应时间 | 可写入正文 | 支持在用户侧单独配置 API Key 并加密持久化，调用时通过统一抽象网关适配多模型提供商。 | 系统在公网高并发拥堵时能进行零时延无感智能多路模型秒级切换。 |
 | **PDF / 文件解析** | PDFBox 文本提取 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) (TC-01)<br>[mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md) (TC-05) | 大文件、扫描件和图文混排的提取率 | 可写入正文 | 使用 PDFBox 进行本地文本流读取和清洗，对标准排版 PDF 实现了高速抽取。 | 系统具有强大的版面分析能力，可完美解析各类扫描版与异常加密的 PDF。 |
 | **限流、熔断、重试** | Resilience4j 熔断、Redis 滑动窗口限流机制 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) (TC-08)<br>[impl-2026-06-02.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-02.md) | **高并发触发熔断限流的压力测试结果与数据文件** | 仅可描述实现机制，不可写成测试通过 | 与限流熔断相关的逻辑，应限缩在架构设计与防护机制的描述中。 | 系统在网关层集成了基于 Redis 的拦截限流机制和基于 Resilience4j 的熔断容灾保护逻辑。 | 经实测，系统限流和熔断器能在极端高流量涌入时自动响应并有效拦截流量。 |
+| **异步报告任务队列** | `/finish` → RabbitMQ → `@RabbitListener` → `report_ready` | [impl-2026-06-13-rabbitmq.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-13-rabbitmq.md) | **公网高并发 / 大规模压测数据** | 限制性可写（仅可写本地基础链路联调通过） | 中等 | 已通过代码与 Docker Compose 基础链路联调的方式记录了 `/finish → RabbitMQ → report_ready` 的端到端流程；Redis 仍承担限流、缓存与状态辅助职责。 | 系统已具备生产级可靠的消息队列能力，能在高并发场景下保证报告任务的零丢失。 |
 | **系统构建与部署验证** | 后端测试与前端打包 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) (2.1, 2.2) | 容器环境的集成构建测试 | 可写入正文 | 经由本地 Maven 虚拟线程运行通过全部单元测试，Vite 前端顺利完成生产级打包，环境校验闭环。 | 项目已在生产服务器进行了完整的大规模集成部署验证并稳定运行。 |
 
 ## 4. 性能与边界测试矩阵
@@ -60,7 +62,7 @@
 | **限流熔断极端场景** | [impl-2026-06-02.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-02.md) 拦截器与熔断配置代码。 | 否 (仅有代码，无压测数据) | 仅可描述实现机制，不可写成测试通过 | 高 | 第四章只能用于分析熔断与限流的架构方案及防刷机制；第五章中不得声称已对其进行了极端压测。 |
 | **长连接断线重连** | [impl-2026-06-02.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-02.md) 客户端指数退避与静默核对设计。 | 否 (仅有机制，无闪断丢包率压测) | 仅可描述实现机制，不可写成测试通过 | 中等 | 第四/五章可以描述在发生长连接瞬时闪断时，系统具备指数退避及客户端静默核对的自愈机制。 |
 | **数据库连接稳定性** | [02-mysql-preflight.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/02-mysql-preflight.md) 启动前置连接性核查。 | 是 (仅验证脚本层前置核验生效) | 限制性可写 | 极低 | 第四/五章中将 Hikari 报错与启动脚本的前置校验作为部署稳定性证据，不得引申为高并发数据库稳定性。 |
-| **中间件服务状态** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 记录了 Redis 在本地环境中正常运行（当前承担限流、缓存、报告任务队列）。RabbitMQ 本机环境可用但属后续功能待接入。 | 是 (仅限本地集成开发环境) | 限制性可写 | 极低 | 说明 Redis 作为限流拦截与报告任务队列的运行依赖在本地测试通过，不得断言其作为高负载集群的高可用指标。RabbitMQ 已确认纳入后续升级，但当前不得写成已实现能力。 |
+| **中间件服务状态** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 记录了 Redis 与 RabbitMQ 在 Docker Compose 环境中均已运行：Redis 承担限流、缓存与状态辅助职责；RabbitMQ 已接入报告生成异步任务队列。 | 是 (仅限本地 Docker Compose 集成开发环境) | 限制性可写 | 极低 | 说明中间件在本地集成开发环境中已通过 `/finish → RabbitMQ → @RabbitListener → report_ready` 的端到端基础链路联调验证；不得断言其作为高负载集群的高可用指标。 |
 
 ## 5. 第五章可写结论边界
 

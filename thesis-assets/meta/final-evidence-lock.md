@@ -39,7 +39,9 @@
 
 ## 5. RabbitMQ / MQ 口径限制
 
-* 项目已确认将引入 RabbitMQ 作为报告生成异步任务队列的后续升级方向。
-* 当前代码层面仍采用 Redis List 实现报告生成任务的轻量级异步入队与消费（`ReportJobWorker`），后续将以 RabbitMQ 替换该 Redis List 队列，使 Redis 回归限流、缓存和状态辅助职责。
-* RabbitMQ 功能在补齐 AMQP 依赖、Docker Compose 服务、生产者/消费者代码、测试记录和证据资产之前，不得写成已实现能力，也不得写成已通过高并发削峰压测。
-* Redis List 当前仍是报告生成异步任务队列的已实现方案；RabbitMQ 补齐后，Redis 将回归限流、缓存和状态辅助职责。
+* 代码层面，报告生成异步任务队列已由 RabbitMQ 承担；`/finish` 接口将 `session.status` 置为 `generating` 并通过 `RabbitTemplate.convertAndSend(REPORT_EXCHANGE, REPORT_ROUTING_KEY, ReportJobMessage)` 发布任务；`ReportJobWorker` 通过 `@RabbitListener(queues = REPORT_QUEUE)` 消费并在完成后通过 SSE 推送 `report_ready` 事件。
+* 本地 Docker Compose 环境下已通过 `mvn -q test`（22/22）+ `docker compose config --quiet` + `prelude-rabbitmq` 健康检查 + `/finish` → RabbitMQ → `report_ready` 端到端基础链路联调。
+* Redis 回归限流、缓存和状态辅助职责；本轮仍保留 `spring-boot-starter-data-redis`。
+* 严格限制：本次验证为本地 Docker Compose 基础链路联调，**不等同于公网高并发压测**，**不证明生产级可靠投递**，**不证明消息绝不丢失**。
+* 当前实现未引入 DLQ、outbox、publisher confirm、消费并发调优。
+* 答辩材料与正文如要使用“已引入 RabbitMQ”作为可写能力宣称，必须同时保留上述严格限制段。
