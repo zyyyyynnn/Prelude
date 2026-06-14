@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useLlmSettings } from '../../composables/useLlmSettings'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -9,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Eye, EyeOff, Trash2 } from '@lucide/vue'
+import { Eye, EyeOff, LoaderCircle, Trash2 } from '@lucide/vue'
 import {
   FormControl,
   FormField,
@@ -22,11 +23,11 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { llmSettingsSchema } from '../../schemas/llm'
 
 const {
-  loading, saving, testing,
+  loading, saving, testing, discovering,
   providerOptions, selectedProviderKey, selectedModel,
-  apiKeyInput, apiKeyMasked, maxTokens, thinkingDepth,
-  modelOptions,
-  loadSettings, saveSettings, clearApiKey, testSettings,
+  baseUrlInput, apiKeyInput, apiKeyMasked, maxTokens, thinkingDepth,
+  modelOptions, isOpenAiCompatible,
+  loadSettings, saveSettings, clearApiKey, testSettings, discoverModels,
 } = useLlmSettings()
 
 const showApiKey = ref(false)
@@ -35,9 +36,10 @@ const { handleSubmit, setValues } = useForm({
   validationSchema: toTypedSchema(llmSettingsSchema),
 })
 
-watch([selectedProviderKey, selectedModel, apiKeyInput, maxTokens, thinkingDepth], () => {
+watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth], () => {
   setValues({
     providerKey: selectedProviderKey.value,
+    baseUrl: baseUrlInput.value,
     model: selectedModel.value,
     apiKey: apiKeyInput.value,
     maxTokens: maxTokens.value,
@@ -104,6 +106,35 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         </FormField>
       </div>
 
+      <FormField v-if="isOpenAiCompatible" name="baseUrl" v-slot="{ componentField }">
+        <FormItem>
+          <FormLabel>OpenAI-compatible endpoint</FormLabel>
+          <div class="endpoint-row">
+            <FormControl>
+              <Input
+                v-model="baseUrlInput"
+                v-bind="componentField"
+                autocomplete="off"
+                placeholder="https://example.com/v1"
+              />
+            </FormControl>
+            <Button
+              type="button"
+              variant="secondary"
+              class="endpoint-row__button"
+              :disabled="discovering"
+              @click="discoverModels"
+            >
+              <span :class="{ 'opacity-0': discovering }">自动检测模型</span>
+              <span v-if="discovering" class="endpoint-row__spinner">
+                <LoaderCircle class="h-4 w-4 animate-spin" />
+              </span>
+            </Button>
+          </div>
+          <FormMessage />
+        </FormItem>
+      </FormField>
+
       <FormField name="apiKey" v-slot="{ componentField }">
         <FormItem class="relative">
           <FormLabel>新 API Key / 清空</FormLabel>
@@ -113,7 +144,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 v-model="apiKeyInput"
                 v-bind="componentField"
                 autocomplete="off"
-                placeholder="留空表示清空当前用户 Key"
+                placeholder="留空表示不修改当前用户 Key"
                 :type="showApiKey ? 'text' : 'password'"
                 class="pr-20"
               />
@@ -211,5 +242,21 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--spacing-md);
+}
+.endpoint-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--spacing-sm);
+}
+.endpoint-row__button {
+  position: relative;
+  min-width: calc(var(--ui-height-base) * 4);
+}
+.endpoint-row__spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
