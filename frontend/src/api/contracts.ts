@@ -114,6 +114,7 @@ export type LlmProviderOption = {
 
 export type LlmConfigPayload = {
   providerKey: string
+  baseUrl?: string
   model: string
   apiKey?: string
   maxTokens?: number
@@ -122,12 +123,25 @@ export type LlmConfigPayload = {
 
 export type LlmConfigResponse = {
   providerKey?: string
+  baseUrl?: string
   model?: string
+  hasApiKey?: boolean
   apiKeyMasked?: string
   providerName?: string
   displayName?: string
   maxTokens?: number
   thinkingDepth?: string
+}
+
+export type LlmModelDiscoveryPayload = {
+  baseUrl: string
+  apiKey: string
+}
+
+export type LlmModelDiscoveryResponse = {
+  providerKey: string
+  baseUrl: string
+  models: string[]
 }
 
 export type LlmConfigTestResponse = {
