@@ -71,22 +71,73 @@ class LlmRouterTest {
             .containsKey("response_format");
     }
 
+    @Test
+    void openAiCompatibleProviderUsesUserBaseUrlForChatCompletions() {
+        CapturingProvider customProvider = new CapturingProvider("openai-compatible", "OpenAI-compatible", "");
+        LlmRouter customRouter = new LlmRouter(
+            userMapper,
+            llmProviderConfigMapper,
+            aesGcmEncryptor,
+            new ObjectMapper(),
+            List.of(customProvider),
+            sseEmitterRegistry
+        );
+
+        User user = new User();
+        user.setId(9L);
+        user.setLlmBaseUrl("https://example.com/v1/");
+
+        LlmProviderConfig config = new LlmProviderConfig();
+        config.setProviderKey("openai-compatible");
+        config.setBaseUrl("");
+        config.setAvailableModels("[]");
+        config.setEnabled(1);
+
+        when(userMapper.selectById(9L)).thenReturn(user);
+        when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
+
+        UserContext.setCurrentUserId(9L);
+        String result = customRouter.chatWithSnapshot(
+            "openai-compatible",
+            "model-a",
+            List.of(Map.of("role", "user", "content", "hello"))
+        );
+
+        assertThat(result).isEqualTo("ok");
+        assertThat(customProvider.lastInvocation.baseUrl())
+            .isEqualTo("https://example.com/v1/chat/completions");
+        assertThat(customProvider.lastInvocation.model()).isEqualTo("model-a");
+    }
+
     private static final class CapturingProvider implements LlmProvider {
+        private final String providerKey;
+        private final String providerName;
+        private final String defaultModel;
         private LlmInvocation lastInvocation;
+
+        private CapturingProvider() {
+            this("test", "Test", "model-a");
+        }
+
+        private CapturingProvider(String providerKey, String providerName, String defaultModel) {
+            this.providerKey = providerKey;
+            this.providerName = providerName;
+            this.defaultModel = defaultModel;
+        }
 
         @Override
         public String providerKey() {
-            return "test";
+            return providerKey;
         }
 
         @Override
         public String providerName() {
-            return "Test";
+            return providerName;
         }
 
         @Override
         public String defaultModel() {
-            return "model-a";
+            return defaultModel;
         }
 
         @Override

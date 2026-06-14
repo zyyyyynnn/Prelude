@@ -6,6 +6,8 @@ public record UserLlmConfigRequest(
     @NotBlank(message = "providerKey 不能为空")
     String providerKey,
 
+    String baseUrl,
+
     @NotBlank(message = "model 不能为空")
     String model,
 
