@@ -44,8 +44,8 @@ deepseek:
   api-key: ${DEEPSEEK_API_KEY:}
 
 openai:
-  base-url: https://api.openai.com/v1/chat/completions
-  model: gpt-5.5
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1/chat/completions}
+  model: ${OPENAI_MODEL:}
   api-key: ${OPENAI_API_KEY:}
 
 anthropic:
