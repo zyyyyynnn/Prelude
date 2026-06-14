@@ -1,7 +1,7 @@
-# 第四章补充实现证据 2026-06-02
+# Structured Output 与稳定性机制证据 2026-06-02
 
 > 本文件记录 Roadmap 全阶段（Phase 1 至 Phase 4）工程化落地的核心实现证据，支撑第四章的稳定性设计与第六章的限制性总结。
-> 其中“报告任务队列”相关口径已被 `impl-2026-06-13-rabbitmq.md` 取代；当前报告生成队列以 RabbitMQ 证据为准。
+> 其中“报告任务队列”相关口径已被 `rabbitmq-report-queue-2026-06-13.md` 取代；当前报告生成队列以 RabbitMQ 证据为准。
 
 ---
 
@@ -56,7 +56,7 @@ LlmRateLimitInterceptor.preHandle(...) (第 57 行)
 
 ## 证据 12：Redis 限流、Resilience4j 熔断与容器化可观测性
 
-> **口径说明**：本证据保留 Redis 限流、Resilience4j 熔断与容器化可观测性内容；其中早期 Redis List 报告任务队列口径已废止。当前报告生成异步任务队列以 `impl-2026-06-13-rabbitmq.md`、`final-evidence-lock.md` 为准：RabbitMQ 承担报告任务队列，Redis 回归限流、缓存和状态辅助职责。
+> **口径说明**：本证据保留 Redis 限流、Resilience4j 熔断与容器化可观测性内容；其中早期 Redis List 报告任务队列口径已废止。当前报告生成异步任务队列以 `rabbitmq-report-queue-2026-06-13.md`、`final-evidence-lock.md` 为准：RabbitMQ 承担报告任务队列，Redis 回归限流、缓存和状态辅助职责。
 
 来源文件：
 - `backend/src/main/java/com/interview/llm/LlmRouter.java`

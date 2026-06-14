@@ -1,4 +1,4 @@
-﻿# 阶段 2.10 证据 / 图表 / 测试资产准入审查
+# 阶段 2.10 证据 / 图表 / 测试资产准入审查
 
 ## 1. 审查边界
 
@@ -13,11 +13,11 @@
 ### evidence/
 * thesis-assets/evidence/bug-evidence/01-demo-proxy.md
 * thesis-assets/evidence/bug-evidence/02-mysql-preflight.md
-* thesis-assets/evidence/bug-evidence/package-2026-04-24.md
-* thesis-assets/evidence/code-snippets/impl-2026-04-24.md
-* thesis-assets/evidence/code-snippets/impl-2026-05-31.md
-* thesis-assets/evidence/code-snippets/impl-2026-06-02.md
-* thesis-assets/evidence/code-snippets/impl-2026-06-05.md
+* thesis-assets/evidence/bug-evidence/bug-fix-cases-2026-04-24.md
+* thesis-assets/evidence/code-snippets/interview-sse-resume-context-2026-04-24.md
+* thesis-assets/evidence/code-snippets/security-performance-hardening-2026-05-31.md
+* thesis-assets/evidence/code-snippets/structured-output-resilience-2026-06-02.md
+* thesis-assets/evidence/code-snippets/frontend-streaming-stability-2026-06-05.md
 * thesis-assets/evidence/diagrams/fig-3.1-core-use-case.mmd
 * thesis-assets/evidence/diagrams/fig-3.1-core-use-case.png
 * thesis-assets/evidence/diagrams/fig-3.2-database-er.mmd
@@ -38,7 +38,7 @@
 * thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.md
 
 ### defense/
-* thesis-assets/defense/package-2026-04-25.md
+* thesis-assets/defense/defense-demo-runbook-2026-04-25.md
 * thesis-assets/defense/script.md
 * thesis-assets/defense/slide-map.md
 
@@ -82,7 +82,7 @@
 | `thesis-assets/evidence/test-data/env-2026-06.md` | 测试环境 | 第五章 | 测试所使用的环境及配置 | 可用 | 无 |
 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 测试用例 | 第五章 | 系统各模块的功能测试情况 | 可用 | 无 |
 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 测试报告 | 第五章 | Demo 隔离验证等实际性能指标 | 可用 | 部分指标未测，勿过度拔高 |
-| `thesis-assets/evidence/bug-evidence/package-2026-04-24.md` | Bug 修复 | 第四/五章 | Vite 代理与 MySQL 错误排查 | 可用 | 避免夸大为系统能力证明 |
+| `thesis-assets/evidence/bug-evidence/bug-fix-cases-2026-04-24.md` | Bug 修复 | 第四/五章 | Vite 代理与 MySQL 错误排查 | 可用 | 避免夸大为系统能力证明 |
 | `thesis-assets/evidence/code-snippets/impl-*.md` | 代码实现 | 第三/四章 | 后端 SSE、前台交互的代码事实 | 可用 | 需与当前代码一致 |
 
 ## 6. 文献证据一致性
@@ -98,7 +98,7 @@
 
 | 文件路径 | 类型 | 用途 | 当前状态 | 风险说明 |
 | --- | --- | --- | --- | --- |
-| `thesis-assets/defense/package-2026-04-25.md` | 答辩物料 | 答辩路线及截图备份 | 可用 | 独立于正文管线，需同步最新口径 |
+| `thesis-assets/defense/defense-demo-runbook-2026-04-25.md` | 答辩物料 | 答辩路线及截图备份 | 可用 | 独立于正文管线，需同步最新口径 |
 | `thesis-assets/defense/script.md` | 讲稿 | 答辩讲解 | 可用 | 需与最终定稿的系统能力对齐 |
 | `thesis-assets/defense/slide-map.md` | 幻灯片大纲 | PPT和报告结构的映射 | 可用 | 未引用旧文献，相对独立 |
 

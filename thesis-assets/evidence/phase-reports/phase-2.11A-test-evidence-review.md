@@ -1,7 +1,7 @@
 # 阶段 2.11A 测试数据与论证证据核对报告
 
 > **[后续口径说明]**
-> 本文保留历史阶段审查语境。2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。
+> 本文保留历史阶段审查语境。2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `rabbitmq-report-queue-2026-06-13.md` 与 `final-evidence-lock.md` 为准。
 
 ## 1. 阶段边界
 
@@ -36,7 +36,7 @@
 | **构建验证** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 2.1 与 2.2 小节 | 第五章 | 活跃资产 | 仅能证明编译、类型检查和打包顺利完成 |
 | **环境配置** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 1.0 小节 | 第五章 | 活跃资产 | 代表本机全栈测试环境，不能声称云端分布式部署 |
 | **Bug 修复证据** | [01-demo-proxy.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/01-demo-proxy.md)、[02-mysql-preflight.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/02-mysql-preflight.md) | 第四/五章 | 活跃资产 | 仅用于排查和健壮性展示，不可夸大为高可用性能 |
-| **代码实现证据** | [impl-2026-06-02.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-02.md)、[impl-2026-06-05.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/impl-2026-06-05.md) | 第四章 | 活跃资产 | 仅能作为代码逻辑设计和机制的说明，不能替代测试报告 |
+| **代码实现证据** | [structured-output-resilience-2026-06-02.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/structured-output-resilience-2026-06-02.md)、[frontend-streaming-stability-2026-06-05.md](file:///E:/Prelude/thesis-assets/evidence/code-snippets/frontend-streaming-stability-2026-06-05.md) | 第四章 | 活跃资产 | 仅能作为代码逻辑设计和机制的说明，不能替代测试报告 |
 | **性能 / 压测证据** | 无 | 第五章 | 缺口 | 缺失真实并发流量压测数据，第五章必须缩减宣称口径 |
 | **答辩辅助证据** | [script.md](file:///E:/Prelude/thesis-assets/defense/script.md)、[slide-map.md](file:///E:/Prelude/thesis-assets/defense/slide-map.md) | 独立答辩 | 活跃资产 | 需严格与论文最终确认的测试口径对齐，严禁夸大 |
 
@@ -50,7 +50,7 @@
 | **模拟面试对话** | 充分 | 破冰、技术、深挖、收尾的四阶段状态机转换及上下文控制。 | 状态机完全消除模型幻觉，完美处理用户任意异常非结构化输入。 | 在第三、四章对阶段化面试策略及历史消息窗口截断进行重点描述。 |
 | **面试报告 / 反馈** | 充分 | 提取结构化评分，通过正则与 Structured Output 配合解析，以及 ECharts 渲染雷达图。 | AI 评分绝对公平无偏、招聘转化率数据。 | 可引用 TC-06 通过作为闭环证据。 |
 | **语音或多模态能力** | 不充分 | WebSocket 语音包定义、 AS 转换机制构想与前端 Composable 结构。 | 真实公网低延迟智能实时语音合成和高精度 ASR 识别。 | **在正文中降调为“架构层设计规划与本地 demo 逻辑，暂未连通公网实测”。** |
-| **流式响应 / SSE** | 充分 | 采用 SseEmitter 进行增量推送，前端通过 ReadableStream 进行逐字流式渲染。 | SSE 链路的高并发承载能力和极端丢包率。 | 结合 `impl-2026-04-24.md` 代码说明 SSE 的实现机制，TC-04 通道畅通。 |
+| **流式响应 / SSE** | 充分 | 采用 SseEmitter 进行增量推送，前端通过 ReadableStream 进行逐字流式渲染。 | SSE 链路的高并发承载能力和极端丢包率。 | 结合 `interview-sse-resume-context-2026-04-24.md` 代码说明 SSE 的实现机制，TC-04 通道畅通。 |
 | **LLM 调用** | 充分 | 支持用户自定义 API Key 并使用 AES-256-GCM 加密，OkHttp 抽象层请求，网关多提供商适配。 | 模型网关层实现无感并发智能灾备切换时延数据。 | 结合配置代码说明 LLM 路由实现。 |
 | **PDF / 文件解析** | 充分 | 本地利用 Apache PDFBox 进行标准 PDF 文本流清洗与抽取。 | 任意扫描件或混排图表的高精版面还原。 | TC-01 功能正常，提取耗时 36ms / 54ms。 |
 | **限流、熔断、重试** | 不充分 | 熔断配置类（Resilience4j）、限流拦截器（Redis Lua）的代码实现机制。 | 极端高并发压力下的熔断触发记录、限流拦截触发率与系统抗压曲线。 | **严格限缩在“高可用优化架构机制描述”，不可写成测试通过。** |

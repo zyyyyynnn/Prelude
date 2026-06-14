@@ -4,7 +4,7 @@
 > 本需求已由 `thesis-assets/evidence/phase-reports/phase-2.11C-diagram-refresh-report.md` 与
 > `thesis-assets/evidence/phase-reports/phase-2.11C-fix-diagram-readability-review.md` 部分承接。
 > 图 3.3 已完成业务架构精简与可读性重构；高可用、监控、限流熔断等细节不得混入业务架构图。
-> 2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。图 3.3 是否加入 RabbitMQ 仍需由用户和审查官统一决定。
+> 2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `rabbitmq-report-queue-2026-06-13.md` 与 `final-evidence-lock.md` 为准。图 3.3 是否加入 RabbitMQ 仍需由用户和审查官统一决定。
 
 ## 0. 结论
 
@@ -22,7 +22,7 @@
 | 后端节点 | 仅展示 "Spring Boot API" | 同上 |
 | 通信链路 | 仅展示单向 HTTP 与 SSE | 同上 |
 | 数据/外部节点 | 仅展示 MySQL、PDFBox、LLM、Demo | 同上 |
-| 缺失项 | 缺失 Redis、监控、熔断、WebSocket、双生隔离机制等 | 对比 `impl-2026-06-02.md` 与工程源码 |
+| 缺失项 | 缺失 Redis、监控、熔断、WebSocket、双生隔离机制等 | 对比 `structured-output-resilience-2026-06-02.md` 与工程源码 |
 
 ## 2. 必须进入图 3.3 的节点
 
@@ -30,7 +30,7 @@
 | --- | --- | --- | --- | --- |
 | 前端层 | Vue 3, Vite, Pinia, ECharts | 是 | 核心工程基础，承载雷达图报告与状态管理 | `frontend/package.json` |
 | 通信层 | REST API, SSE, WebSocket | 是 | 核心通信矩阵，不可或缺 | `functional-cases-2026-06.md` |
-| 后端层 | Spring Boot API, 面试编排, 报告解析 | 是 | 业务调度中心，增加解析模块 | `impl-2026-06-02.md` |
+| 后端层 | Spring Boot API, 面试编排, 报告解析 | 是 | 业务调度中心，增加解析模块 | `structured-output-resilience-2026-06-02.md` |
 | LLM Provider层 | 多供应商模型池 (DeepSeek/OpenAI/Claude) | 是 | 核心心智计算，且支持多厂商切换 | README.md / 项目能力描述 |
 | 数据处理层 | MySQL, PDFBox, Redis | 是 | Redis 在图 3.3 中可作为“会话状态 / 缓存 / Demo 状态隔离”节点 | `docker-compose.yml`, `pom.xml` |
 | 隔离演练层 | Demo Twin 影子沙盒 | 是 | 本系统核心卖点，需明确隔离边界 | `docs/demo.md`, `start-demo.bat` |
@@ -40,8 +40,8 @@
 | 链路 | 是否入图 | 原因 | 证据文件 |
 | --- | --- | --- | --- |
 | 前端 -> 后端 WebSocket (拾音) | 是 | 支持 Voice 实时传输 | `functional-cases-2026-06.md` |
-| 后端 -> 前端 SSE (流式合成) | 是 | 支持低延迟字幕与发音下发，包含重连退避 | `impl-2026-06-02.md` |
-| 后端 -> LLM Provider | 是 | 大模型调用交互，支持降级 | `impl-2026-05-31.md` |
+| 后端 -> 前端 SSE (流式合成) | 是 | 支持低延迟字幕与发音下发，包含重连退避 | `structured-output-resilience-2026-06-02.md` |
+| 后端 -> LLM Provider | 是 | 大模型调用交互，支持降级 | `security-performance-hardening-2026-05-31.md` |
 
 ## 4. 不应进入图 3.3 的内容
 

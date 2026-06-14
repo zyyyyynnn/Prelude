@@ -13,7 +13,7 @@
 ## 3. 论文资产噪音整理
 
 - 修复答辩讲稿中“Redis 用于限流和异步任务队列”的旧口径。
-- 删除旧 RabbitMQ 实施计划，当前事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。
+- 删除旧 RabbitMQ 实施计划，当前事实以 `rabbitmq-report-queue-2026-06-13.md` 与 `final-evidence-lock.md` 为准。
 - 清理证据层中过强的“彻底”“企业级”“生产级可靠”等非证据化措辞。
 
 ## 4. Docker Compose 真实 API Key 功能链路

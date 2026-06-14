@@ -1,6 +1,6 @@
 # 阶段 2：证据与资产同步审查笔记
 
-> **口径说明（2026-06-14 补记）**：本笔记中提到的 RabbitMQ 作为"缺失组件"，反映的是当时的审查判断。2026-06-13 后 RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。图 3.3 是否加入 RabbitMQ 仍需后续单独决策。
+> **口径说明（2026-06-14 补记）**：本笔记中提到的 RabbitMQ 作为"缺失组件"，反映的是当时的审查判断。2026-06-13 后 RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `rabbitmq-report-queue-2026-06-13.md` 与 `final-evidence-lock.md` 为准。图 3.3 是否加入 RabbitMQ 仍需后续单独决策。
 
 ## 图 3.3 系统架构图影响核对
 

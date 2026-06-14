@@ -1,7 +1,7 @@
 # 阶段 2.11C 核心工程图事实刷新报告
 
 > **[后续口径说明]**
-> 本文保留历史阶段审查语境。2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。
+> 本文保留历史阶段审查语境。2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `rabbitmq-report-queue-2026-06-13.md` 与 `final-evidence-lock.md` 为准。
 
 ## 1. 阶段边界
 
