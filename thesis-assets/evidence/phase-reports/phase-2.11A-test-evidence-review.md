@@ -1,7 +1,7 @@
 # 阶段 2.11A 测试数据与论证证据核对报告
 
 > **[后续口径说明]**
-> 后续已确认将引入 RabbitMQ 替换 Redis List 报告任务队列。本文保留历史阶段审查语境，不代表 RabbitMQ 当前已经实现。
+> 本文保留历史阶段审查语境。2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。
 
 ## 1. 阶段边界
 

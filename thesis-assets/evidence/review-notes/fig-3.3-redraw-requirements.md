@@ -4,7 +4,7 @@
 > 本需求已由 `thesis-assets/evidence/phase-reports/phase-2.11C-diagram-refresh-report.md` 与
 > `thesis-assets/evidence/phase-reports/phase-2.11C-fix-diagram-readability-review.md` 部分承接。
 > 图 3.3 已完成业务架构精简与可读性重构；高可用、监控、限流熔断等细节不得混入业务架构图。
-> 项目已确认将引入 RabbitMQ 作为报告生成异步任务队列的后续升级方向。当前代码层面仍采用 Redis List 实现报告生成任务的轻量级异步入队与消费，后续将以 RabbitMQ 替换该 Redis List 队列。RabbitMQ 在补齐 AMQP 依赖、Docker Compose 服务、生产者/消费者代码、测试记录和证据资产之前，不得写成已实现能力。
+> 2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。图 3.3 是否加入 RabbitMQ 仍需由用户和审查官统一决定。
 
 ## 0. 结论
 
@@ -47,7 +47,7 @@
 
 | 内容 | 不入图原因 | 后续处理 |
 | --- | --- | --- |
-| RabbitMQ | 已确认作为后续升级方向，当前未引入 AMQP 依赖、无 docker-compose 服务、无代码链路。 | 待后续功能补齐后入图。 |
+| RabbitMQ | 已接入代码层，但当前图 3.3 暂未加入 RabbitMQ 节点。 | 待第四章正文小节稳定后，再由用户和审查官决定是否入图。 |
 | Prometheus & Grafana | 属于外挂监控设施，若混入业务图会造成结构失衡。 | 建议转移至候选高可用与监控链路图。 |
 | Resilience4j 熔断与 Lua 限流 | 属于防御性非功能链路。 | Redis/Lua 限流应放在候选高可用与监控链路图中，不与业务缓存角色混写。 |
 | JWT 与 AES 加密 | 属于代码内部细节级拦截策略，非高层宏观节点。 | 在第四章正文中文字叙述，不强行入架构大图。 |
