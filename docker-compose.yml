@@ -7,7 +7,7 @@ services:
       MYSQL_DATABASE: interview_system
       MYSQL_ROOT_PASSWORD: root_password
     ports:
-      - "3306:3306"
+      - "${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
@@ -23,7 +23,7 @@ services:
     container_name: prelude-redis
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
 
@@ -32,8 +32,8 @@ services:
     container_name: prelude-rabbitmq
     restart: always
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_HOST_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_HOST_PORT:-15672}:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -69,6 +69,8 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1/chat/completions}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
       APP_DEMO_ENABLED: ${APP_DEMO_ENABLED:-true}
       SPRING_PROFILES_ACTIVE: prod
       JWT_SECRET: replace-with-at-least-32-bytes-jwt-secret
