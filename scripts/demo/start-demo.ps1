@@ -95,6 +95,8 @@ if (-not (Test-PortListening -Port 6379)) {
   throw "Redis is not listening on port 6379. Please start Redis server before launching the application."
 }
 
+Assert-RabbitMqReady
+
 if ($PrepareOnly) {
   Write-Host 'Demo runtime preparation complete.'
   return

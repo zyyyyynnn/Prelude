@@ -387,3 +387,13 @@ function Try-EnsureDatabase {
     $ErrorActionPreference = $previousErrorActionPreference
   }
 }
+
+function Assert-RabbitMqReady {
+  if (Test-PortListening -Port 5672) {
+    return
+  }
+
+  $service = Get-Service -Name 'RabbitMQ' -ErrorAction SilentlyContinue
+  $status = if ($service) { " Current RabbitMQ service status: $($service.Status)." } else { '' }
+  throw "RabbitMQ is not listening on port 5672.$status Start RabbitMQ before launching the backend."
+}

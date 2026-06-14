@@ -50,6 +50,12 @@ if errorlevel 1 (
   exit /b 1
 )
 
+call :ensure_rabbitmq
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
+
 if not exist "%FRONTEND_DIR%\node_modules" (
   echo [INFO] Frontend dependencies missing, running npm install ...
   call npm --prefix "%FRONTEND_DIR%" install
@@ -140,5 +146,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "if ($portOpen) { Write-Host '[INFO] Redis is ready on 127.0.0.1:6379.'; exit 0 }" ^
   "Write-Host '[ERROR] Redis is not reachable on 127.0.0.1:6379.';" ^
   "Write-Host '[ERROR] Start Redis first, then run this script again.';" ^
+  "exit 1"
+exit /b %errorlevel%
+
+:ensure_rabbitmq
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$portOpen = $false;" ^
+  "try {" ^
+  "  $client = [Net.Sockets.TcpClient]::new();" ^
+  "  $task = $client.ConnectAsync('127.0.0.1', 5672);" ^
+  "  if ($task.Wait(1500) -and $client.Connected) { $portOpen = $true }" ^
+  "  $client.Dispose();" ^
+  "} catch { }" ^
+  "if ($portOpen) { Write-Host '[INFO] RabbitMQ is ready on 127.0.0.1:5672.'; exit 0 }" ^
+  "$svc = Get-Service -Name 'RabbitMQ' -ErrorAction SilentlyContinue;" ^
+  "Write-Host '[ERROR] RabbitMQ is not reachable on 127.0.0.1:5672.';" ^
+  "if ($svc) { Write-Host ('[ERROR] RabbitMQ service status: ' + $svc.Status) }" ^
+  "Write-Host '[ERROR] Start RabbitMQ first, then run this script again.';" ^
+  "Write-Host '[ERROR] Service command: net start RabbitMQ';" ^
   "exit 1"
 exit /b %errorlevel%
