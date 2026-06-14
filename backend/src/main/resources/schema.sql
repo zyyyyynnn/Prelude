@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `email` VARCHAR(128) DEFAULT NULL COMMENT '邮箱',
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT 'LLM Provider',
   `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT 'LLM 模型',
+  `llm_base_url` VARCHAR(255) DEFAULT NULL COMMENT '用户自定义 OpenAI-compatible API 根地址',
   `llm_api_key_encrypted` VARCHAR(512) DEFAULT NULL COMMENT '加密后的用户 API Key',
   `llm_max_tokens` INT DEFAULT NULL COMMENT 'LLM 最大输出 Token',
   `llm_thinking_depth` VARCHAR(20) DEFAULT NULL COMMENT 'LLM 思考深度',
@@ -34,6 +35,19 @@ SET @sql = (
   )
   FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_model'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `llm_base_url` VARCHAR(255) DEFAULT NULL COMMENT ''用户自定义 OpenAI-compatible API 根地址''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_base_url'
 );
 PREPARE stmt FROM @sql;
 EXECUTE stmt;

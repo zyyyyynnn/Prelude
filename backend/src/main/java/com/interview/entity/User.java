@@ -15,6 +15,7 @@ public class User {
     private String email;
     private String llmProvider;
     private String llmModel;
+    private String llmBaseUrl;
     private String llmApiKeyEncrypted;
     private Integer llmMaxTokens;
     private String llmThinkingDepth;

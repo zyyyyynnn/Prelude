@@ -225,11 +225,14 @@ public class LlmRouter {
         LlmProvider provider = requireProvider(providerKey);
         String normalizedModel = normalizeModel(model, provider.defaultModel());
         String availableModels = providerConfig.getAvailableModels();
-        if (availableModels != null && !availableModels.isBlank()) {
+        if (!OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerKey) && availableModels != null && !availableModels.isBlank()) {
             List<String> models = parseModels(availableModels);
             if (!models.isEmpty() && !models.contains(normalizedModel)) {
                 throw BusinessException.badRequest("所选模型不在可用列表中");
             }
+        }
+        if (normalizedModel == null || normalizedModel.isBlank()) {
+            throw BusinessException.badRequest("模型不能为空");
         }
         return providerConfig;
     }
@@ -255,8 +258,12 @@ public class LlmRouter {
             }
             extraParams.putAll(callerExtraParams);
         }
+        String baseUrl = providerConfig.getBaseUrl();
+        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerConfig.getProviderKey())) {
+            baseUrl = OpenAiCompatibleUrl.toChatCompletionsUrl(user.getLlmBaseUrl());
+        }
         return new LlmProvider.LlmInvocation(
-            providerConfig.getBaseUrl(),
+            baseUrl,
             model,
             apiKey,
             messages,

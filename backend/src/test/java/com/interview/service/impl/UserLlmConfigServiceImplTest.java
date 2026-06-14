@@ -1,6 +1,7 @@
 package com.interview.service.impl;
 
 import com.interview.dto.UserLlmConfigResponse;
+import com.interview.dto.UserLlmConfigRequest;
 import com.interview.entity.User;
 import com.interview.llm.LlmRouter;
 import com.interview.llm.LlmSelection;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -43,6 +45,7 @@ class UserLlmConfigServiceImplTest {
         user.setId(7L);
         user.setLlmProvider("openai");
         user.setLlmModel("gpt-4o");
+        user.setLlmBaseUrl("https://example.com/v1");
         user.setLlmApiKeyEncrypted("cipher-text");
 
         when(userMapper.selectById(7L)).thenReturn(user);
@@ -54,7 +57,53 @@ class UserLlmConfigServiceImplTest {
 
         assertThat(response.providerKey()).isEqualTo("openai");
         assertThat(response.model()).isEqualTo("gpt-4o");
+        assertThat(response.baseUrl()).isEqualTo("https://example.com/v1");
+        assertThat(response.hasApiKey()).isTrue();
         assertThat(response.apiKeyMasked()).isEqualTo("****1234");
         verify(aesGcmEncryptor).mask("cipher-text");
+    }
+
+    @Test
+    void openAiCompatibleRequiresBaseUrlWhenSaving() {
+        User user = new User();
+        user.setId(7L);
+
+        when(userMapper.selectById(7L)).thenReturn(user);
+
+        com.interview.common.UserContext.setCurrentUserId(7L);
+
+        assertThatThrownBy(() -> service.updateCurrentUserConfig(new UserLlmConfigRequest(
+            "openai-compatible",
+            "",
+            "model-a",
+            "sk-test",
+            null,
+            null
+        )))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("endpoint");
+    }
+
+    @Test
+    void openAiCompatibleEncryptsKeyAndSavesNormalizedBaseUrl() {
+        User user = new User();
+        user.setId(7L);
+
+        when(userMapper.selectById(7L)).thenReturn(user);
+        when(aesGcmEncryptor.encrypt("sk-test")).thenReturn("cipher-text");
+        when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
+
+        com.interview.common.UserContext.setCurrentUserId(7L);
+        service.updateCurrentUserConfig(new UserLlmConfigRequest(
+            "openai-compatible",
+            "https://example.com/v1/chat/completions",
+            "model-a",
+            "sk-test",
+            null,
+            null
+        ));
+
+        verify(aesGcmEncryptor).encrypt("sk-test");
+        verify(userMapper).updateById(user);
     }
 }

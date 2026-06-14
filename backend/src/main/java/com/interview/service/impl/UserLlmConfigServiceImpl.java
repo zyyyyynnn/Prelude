@@ -1,17 +1,21 @@
 package com.interview.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.interview.common.BusinessException;
 import com.interview.common.UserContext;
 import com.interview.dto.LlmConfigTestResponse;
+import com.interview.dto.LlmModelDiscoveryRequest;
+import com.interview.dto.LlmModelDiscoveryResponse;
 import com.interview.dto.UserLlmConfigRequest;
 import com.interview.dto.UserLlmConfigResponse;
 import com.interview.entity.User;
 import com.interview.llm.LlmRouter;
 import com.interview.llm.LlmSelection;
+import com.interview.llm.OpenAiCompatibleProvider;
+import com.interview.llm.OpenAiCompatibleUrl;
 import com.interview.mapper.UserMapper;
 import com.interview.security.AesGcmEncryptor;
 import com.interview.service.DemoModeService;
+import com.interview.service.LlmModelDiscoveryService;
 import com.interview.service.UserLlmConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +33,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     private final LlmRouter llmRouter;
     private final AesGcmEncryptor aesGcmEncryptor;
     private final DemoModeService demoModeService;
+    private final LlmModelDiscoveryService llmModelDiscoveryService;
 
     @Override
     public UserLlmConfigResponse getCurrentUserConfig() {
@@ -36,7 +41,9 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         LlmSelection selection = llmRouter.resolveCurrentUserSelection();
         return new UserLlmConfigResponse(
             selection.providerKey(),
+            user.getLlmBaseUrl(),
             selection.model(),
+            user.getLlmApiKeyEncrypted() != null && !user.getLlmApiKeyEncrypted().isBlank(),
             maskApiKey(user.getLlmApiKeyEncrypted()),
             user.getLlmMaxTokens(),
             user.getLlmThinkingDepth()
@@ -46,7 +53,12 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     @Override
     public UserLlmConfigResponse updateCurrentUserConfig(UserLlmConfigRequest request) {
         User user = requireCurrentUser();
-        llmRouter.validateProviderSelection(request.providerKey(), request.model());
+        String providerKey = request.providerKey();
+        String baseUrl = null;
+        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerKey)) {
+            baseUrl = OpenAiCompatibleUrl.normalizeRoot(request.baseUrl());
+        }
+        llmRouter.validateProviderSelection(providerKey, request.model());
 
         String encryptedApiKey = user.getLlmApiKeyEncrypted();
         if (request.apiKey() != null && !request.apiKey().isBlank()) {
@@ -57,18 +69,20 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
                     : aesGcmEncryptor.encrypt(request.apiKey());
         }
 
-        userMapper.update(
-            null,
-            new LambdaUpdateWrapper<User>()
-                .eq(User::getId, user.getId())
-                .set(User::getLlmProvider, request.providerKey())
-                .set(User::getLlmModel, request.model())
-                .set(User::getLlmApiKeyEncrypted, encryptedApiKey)
-                .set(User::getLlmMaxTokens, request.maxTokens())
-                .set(User::getLlmThinkingDepth, request.thinkingDepth())
-        );
+        user.setLlmProvider(providerKey);
+        user.setLlmBaseUrl(baseUrl);
+        user.setLlmModel(request.model());
+        user.setLlmApiKeyEncrypted(encryptedApiKey);
+        user.setLlmMaxTokens(request.maxTokens());
+        user.setLlmThinkingDepth(request.thinkingDepth());
+        userMapper.updateById(user);
 
         return getCurrentUserConfig();
+    }
+
+    @Override
+    public LlmModelDiscoveryResponse discoverModels(LlmModelDiscoveryRequest request) {
+        return llmModelDiscoveryService.discoverModels(request);
     }
 
     @Override
