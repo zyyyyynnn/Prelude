@@ -59,24 +59,60 @@
 
 ### `GET /api/llm/providers`
 
-获取启用的 Provider 与模型列表。
+获取启用的 Provider 与内置模型列表。
 
-- 当前支持的 Provider：`deepseek`、`openai`、`anthropic`。
+- 当前支持内置 Provider 和 `openai-compatible` 自定义兼容接口。自定义兼容接口的模型列表通过用户 endpoint 自动检测，不依赖固定推荐模型。
 
 ### `GET /api/user/llm-config`
 
-获取当前用户的 Provider、模型和脱敏 API Key。
+获取当前用户的 Provider、endpoint、模型和脱敏 API Key 状态。
 
-### `PUT /api/user/llm-config`
+响应字段包括：
 
-保存当前用户的 Provider、模型和 API Key。
+```json
+{
+  "providerKey": "openai-compatible",
+  "baseUrl": "https://example.com/v1",
+  "model": "model-id",
+  "hasApiKey": true,
+  "apiKeyMasked": "sk-***"
+}
+```
+
+### `POST /api/user/llm-config/discover-models`
+
+检测 OpenAI-compatible endpoint 的可用模型列表。该接口只检测，不保存 API Key 或 endpoint。
 
 请求示例：
 
 ```json
 {
-  "providerKey": "deepseek",
-  "model": "deepseek-chat",
+  "baseUrl": "https://example.com/v1",
+  "apiKey": "sk-xxx"
+}
+```
+
+响应示例：
+
+```json
+{
+  "providerKey": "openai-compatible",
+  "baseUrl": "https://example.com/v1",
+  "models": ["model-a", "model-b"]
+}
+```
+
+### `PUT /api/user/llm-config`
+
+保存当前用户的 Provider、endpoint、模型和 API Key。
+
+请求示例：
+
+```json
+{
+  "providerKey": "openai-compatible",
+  "baseUrl": "https://example.com/v1",
+  "model": "model-id",
   "apiKey": "sk-xxx"
 }
 ```
@@ -84,6 +120,7 @@
 说明：
 
 - `apiKey` 留空（不传或空字符串）表示不修改现有 Key。主动清空需传 `"__CLEAR__"`。
+- `providerKey` 为 `openai-compatible` 时，`baseUrl` 必填，保存 endpoint root，不保存完整 `/chat/completions`。
 - 真实模式下 Key 使用后端加密后保存。
 - Demo 模式下不会保存真实 Key，只保存演示占位值。
 
@@ -98,8 +135,8 @@
   "code": 200,
   "message": "success",
   "data": {
-    "providerKey": "deepseek",
-    "model": "deepseek-chat",
+    "providerKey": "openai-compatible",
+    "model": "model-id",
     "ok": true,
     "message": "模型配置测试通过"
   }
