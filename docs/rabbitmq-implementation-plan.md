@@ -1,6 +1,10 @@
 # RabbitMQ 报告任务队列实现计划
 
-> **状态**：待实现。当前代码仍使用 Redis List 作为报告生成异步任务队列。
+> **状态**：已执行并由后续证据取代。当前实现与论文口径以
+> `thesis-assets/evidence/code-snippets/impl-2026-06-13-rabbitmq.md`、
+> `thesis-assets/meta/final-evidence-lock.md` 和
+> `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` 为准。
+> 本文件保留为历史实施计划，不再作为当前状态依据。
 >
 > **目标**：引入 RabbitMQ 替换 Redis List 报告任务队列，使 Redis 回归限流、缓存和状态辅助职责。
 
@@ -8,14 +12,14 @@
 
 ## 1. 背景与现状
 
-### 1.1 当前技术栈
+### 1.1 历史基线技术栈
 
 - 后端：Spring Boot 3.2.12
 - 已有依赖：Redis、WebSocket、Resilience4j、Actuator、Prometheus
 - **未引入**：`spring-boot-starter-amqp`
 - **未配置**：`docker-compose.yml` 中无 RabbitMQ 服务
 
-### 1.2 当前报告生成链路
+### 1.2 历史报告生成链路
 
 ```
 用户点击"结束面试"
@@ -364,11 +368,11 @@ docker compose up -d mysql redis rabbitmq
 
 | # | 验收项 | 状态 |
 |---|--------|------|
-| 1 | `mvn -q test` 通过 | 待验证 |
-| 2 | `docker compose config` 通过 | 待验证 |
-| 3 | RabbitMQ 5672/15672 端口监听正常 | 待验证 |
-| 4 | 后端代码不再使用 Redis List 作为报告任务队列 | 待验证 |
-| 5 | `ReportJobWorker` 使用 `@RabbitListener` | 待验证 |
-| 6 | `InterviewServiceImpl.finish(...)` 使用 RabbitMQ 发布任务 | 待验证 |
-| 7 | 论文资产口径统一为"已引入报告任务队列" | 待验证 |
-| 8 | 无"已通过高并发压测"的无证据表述 | 待验证 |
+| 1 | `mvn -q test` 通过 | 已由 `final-evidence-lock.md` 记录 22/22 |
+| 2 | `docker compose config` 通过 | 已由 `final-evidence-lock.md` 记录 |
+| 3 | RabbitMQ 5672/15672 端口监听正常 | 已由 `impl-2026-06-13-rabbitmq.md` 记录本地 Docker Compose 基础链路 |
+| 4 | 后端代码不再使用 Redis List 作为报告任务队列 | 已完成 |
+| 5 | `ReportJobWorker` 使用 `@RabbitListener` | 已完成 |
+| 6 | `InterviewServiceImpl.finish(...)` 使用 RabbitMQ 发布任务 | 已完成 |
+| 7 | 论文资产口径统一为"已引入报告任务队列" | 已由后续证据锁定，正文尚未同步 |
+| 8 | 无"已通过高并发压测"的无证据表述 | 作为限制口径保留 |
