@@ -34,8 +34,8 @@
 * thesis-assets/evidence/test-data/archive/env-2026-04-24.md
 * thesis-assets/evidence/test-data/env-2026-06.md
 * thesis-assets/evidence/test-data/functional-cases-2026-06.md
-* thesis-assets/evidence/test-data/mimo-2026-05-27.json
-* thesis-assets/evidence/test-data/mimo-2026-05-27.md
+* thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.json
+* thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.md
 
 ### defense/
 * thesis-assets/defense/package-2026-04-25.md

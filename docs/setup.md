@@ -22,12 +22,15 @@ app:
   crypto:
     aes-secret: replace-with-at-least-32-bytes-aes-secret
 
-deepseek:
-  api-key: your_deepseek_key
+openai:
+  base-url: ${OPENAI_BASE_URL:}
+  model: ${OPENAI_MODEL:}
+  api-key: ${OPENAI_API_KEY:}
 ```
 
 - `application-local.yml` 已被 `.gitignore` 忽略，不要提交真实数据库密码、JWT secret、AES secret 或模型 Key。
 - JWT secret 和 AES secret 必须通过本地配置或环境变量提供，避免误用默认密钥。
+- 推荐在前端全局设置中使用 OpenAI-compatible BYOK 配置用户级 endpoint、API Key 与运行模型；环境变量仅作为内置 Provider 的兼容路径。
 
 ## 前端配置
 
@@ -62,6 +65,16 @@ mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_demo DEFAULT CHARACT
 ```
 
 真实模式默认只初始化岗位模板和 LLM Provider 基础数据。Demo 模式额外加载 `data-demo.sql`，并由 `/api/demo/reset` 重建完整演示闭环。
+
+## RabbitMQ
+
+后端报告生成任务队列依赖 RabbitMQ。启动真实版或 Demo 版前需确保 AMQP 端口可用：
+
+```powershell
+Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -eq 5672 }
+```
+
+也可以使用 Docker Compose 启动项目内置 RabbitMQ 服务。Redis 仅承担限流、缓存和状态辅助职责，不再承担报告任务队列。
 
 ## 端口规划
 

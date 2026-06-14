@@ -6,14 +6,14 @@
 
 ## 2. 本地启动脚本修复
 
-- 复现根因：后端启动首先失败于本地未跟踪 `application-local.yml` 中 `${MIMO_API_KEY}` 无默认值占位符。
+- 复现根因：后端启动首先失败于本地未跟踪 `application-local.yml` 中历史 API Key 环境变量无默认值占位符。
 - 本地处理：未跟踪本地配置改为允许空值，不写入仓库。
 - 仓库处理：`start-demo.bat`、`start-real.bat`、`scripts/demo/start-demo.ps1`、`scripts/real/start-real.ps1` 增加 RabbitMQ 5672 前置检测，避免 RabbitMQ 未启动时进入较晚的 AMQP 连接失败。
 
 ## 3. 论文资产噪音整理
 
 - 修复答辩讲稿中“Redis 用于限流和异步任务队列”的旧口径。
-- 将 `docs/rabbitmq-implementation-plan.md` 标记为历史计划，当前事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。
+- 删除旧 RabbitMQ 实施计划，当前事实以 `impl-2026-06-13-rabbitmq.md` 与 `final-evidence-lock.md` 为准。
 - 清理证据层中过强的“彻底”“企业级”“生产级可靠”等非证据化措辞。
 
 ## 4. Docker Compose 真实 API Key 功能链路

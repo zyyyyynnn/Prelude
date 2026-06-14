@@ -60,12 +60,12 @@
 
 | 能力 | 代码或配置证据 | 测试结果证据 | 阶段 3 写法 | 风险 |
 | :--- | :--- | :--- | :--- | :--- |
-| **SSE / 流式响应** | `InterviewServiceImpl.java` 建立 `SseEmitter` | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md) (流式耗时 1.84s)<br>[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) (TTFB 59ms) | SSE 交互链路通畅，首字符下发时延正常；流式渲染能有效降频物理帧率。 | 无压测数据，仅限单用户功能流畅验证。 |
+| **SSE / 流式响应** | `InterviewServiceImpl.java` 建立 `SseEmitter` | [real-llm-api-2026-05-27-redacted.md](file:///E:/Prelude/thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.md) (流式耗时 1.84s)<br>[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) (TTFB 59ms) | SSE 交互链路通畅，首字符下发时延正常；流式渲染能有效降频物理帧率。 | 无压测数据，仅限单用户功能流畅验证。 |
 | **限流** | `LlmRateLimitInterceptor.java` | 无 (无高并发限流触发日志) | 仅描述系统集成了 Redis 滑动窗口高频限流算法，限缩在机制说明中。 | 夸大为“在高并发下对限流进行了压力实测”。 |
 | **熔断** | `application-local.yml` 中 Resilience4j 熔断参数 | 无 (未在生产网络模拟接口雪崩熔断) | 仅能描述网关具有 Resilience4j 熔断灾备机制与切换模型提供商的能力。 | 宣称为“通过了系统雪崩与熔断抗灾测试”。 |
 | **重试** | 前端 `InterviewView.vue` 静默核对与指数退避重试 | 无 | 描述流式链接闪断时，系统具有客户端状态对齐、分流幂等核对与自愈逻辑。 | 缺乏大样本闪断重连的数据统计。 |
-| **PDF 解析** | `ResumeServiceImpl.java` (PDFBox) | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md) (文本提取 54ms) | PDFBox 本地解析标准文本耗时极低。 | 该耗时仅针对本地文本流清洗，不代表大模型结构化提取耗时。 |
-| **LLM 调用** | `LlmRouter.java` 网关适配器 | [mimo-2026-05-27.md](file:///E:/Prelude/thesis-assets/evidence/test-data/mimo-2026-05-27.md) (报告生成 118s) | 真实公网长对话大模型评估报告生成耗时较长（百秒级），属正常业务阻断。 | 模型调用易受公网网络波动影响。 |
+| **PDF 解析** | `ResumeServiceImpl.java` (PDFBox) | [real-llm-api-2026-05-27-redacted.md](file:///E:/Prelude/thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.md) (文本提取 54ms) | PDFBox 本地解析标准文本耗时极低。 | 该耗时仅针对本地文本流清洗，不代表大模型结构化提取耗时。 |
+| **LLM 调用** | `LlmRouter.java` 网关适配器 | [real-llm-api-2026-05-27-redacted.md](file:///E:/Prelude/thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.md) (报告生成 118s) | 历史真实 API 长对话大模型评估报告生成耗时较长（百秒级），属正常业务阻断。 | 模型调用易受公网网络波动影响。 |
 | **高并发** | 无 | 无 | **论文第五章不宣称通过了高并发性能测试，略过此方面测试数据。** | 虚造测试数据属于学术不端，绝不可出现。 |
 | **数据库连接稳定性** | `start-demo.ps1` 数据库连接连通性前置核查 | [02-mysql-preflight.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/02-mysql-preflight.md) (Hikari 初始化校验成功) | 系统通过启动脚本对 MySQL 数据库连通性进行了前置校验，增强了本地部署稳定性。 | 本地校验不等同于生产环境高并发连接稳定性。 |
 | **中间件服务状态** | `LlmRateLimitInterceptor.java` 拦截机制 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) (Redis/RabbitMQ服务连通) | 本地测试验证了 Redis 和 RabbitMQ 中间件的正常运行与连通，为缓存限流提供支持。 | 仅限本地单机，无集群高可用数据。 |
@@ -74,7 +74,7 @@
 
 图表资产规划方案中存在部分不切实际的口径宣称，为防止后续阶段误导图表刷新与生成，提出以下修正建议：
 1. **将 nature-figure 定位降级**：必须将“`nature-figure` 必须参与”降级为“**可选增强工具**”。架构设计仍以原生的 Mermaid 文件和手工审查为主。
-2. **严禁可视化未实测指标**：在 [figure-assets-plan.md](file:///E:/Prelude/thesis-assets/evidence/figure-assets-plan.md) 中原计划生成的“测试数据图”、“Demo/MIMO延迟对比图”等，涉及未实测性能指标的部分（如高并发压力响应、SSE高并发并发耗时等）**不得进行任何可视化画图**。仅允许对已有真实实测数据（如单用户本地/公网时延、编译构建时间等）进行绘图。
+2. **严禁可视化未实测指标**：在 [figure-assets-plan.md](file:///E:/Prelude/thesis-assets/evidence/figure-assets-plan.md) 中原计划生成的“测试数据图”、“Demo/历史真实 API 延迟对比图”等，涉及未实测性能指标的部分（如高并发压力响应、SSE高并发并发耗时等）**不得进行任何可视化画图**。仅允许对已有真实实测数据（如单用户本地/公网时延、编译构建时间等）进行绘图。
 3. **图表必须先登记**：必须确保所有进入正文的图表资产均已登记在 [figure-table-register.md](file:///E:/Prelude/thesis-assets/evidence/figure-table-register.md) 中。
 4. **图表不得替代事实**：所有图表所表达的内容必须与代码事实及实际测试数据百分之百吻合，禁止使用 nature-figure 凭空捏造未实现或未实测的图表。
 

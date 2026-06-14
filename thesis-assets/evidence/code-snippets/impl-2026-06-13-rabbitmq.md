@@ -157,20 +157,22 @@ private void processJob(ReportJobMessage job) {
 - `mvn -q test` → `Tests run: 22, Failures: 0, Errors: 0, Skipped: 0`
 - `BUILD SUCCESS`
 
-### 14.4 Docker Compose 真实 API Key 功能链路补充
+### 14.4 Docker Compose BYOK 真实 API Key 功能链路补充
 - 2026-06-14 在 Docker Compose 容器环境中关闭 Demo 模式（`APP_DEMO_ENABLED=false`）。
-- API Key、OpenAI-compatible endpoint 与运行模型均通过当前 PowerShell 环境变量临时注入；具体模型仅为本轮运行参数，不作为仓库默认配置或论文固定推荐模型。
+- 通过用户级 OpenAI-compatible BYOK 输入 endpoint 与 API Key，调用模型发现接口后选择运行模型并保存；具体模型仅为运行参数，不作为仓库默认配置或论文模型推荐依据。
 - 功能链路结果：
-  - `/finish` 返回 `status=generating` 与 `jobId=cdbf8ae0-b058-44d1-b6d5-186b7b927baa`；
+  - 模型发现返回可用模型列表，用户级配置保存后 `hasApiKey=true`；
+  - `/api/user/llm-config/test` 返回 `ok=true`；
+  - `/finish` 返回 `status=generating` 与 `jobId`；
   - 后端日志出现 `Published report generation job to RabbitMQ`；
   - 后端日志出现 `Received RabbitMQ report job`；
   - 后端日志出现 `Broadcasting event 'report_ready' to 1 SSE emitters`；
-  - `interview_session.status=finished`，`summary_report` 长度为 2724；
-  - RabbitMQ 队列最终 `messages=0`，`consumers=1`。
+  - `interview_session.status=finished`，`summary_report` 长度为 4731；
+  - RabbitMQ 队列最终 `messages=0`，`messages_ready=0`，`messages_unacknowledged=0`，`consumers=1`。
 
 ### 14.5 严格限制（必须保留）
 - 本次验证为**本地 Docker Compose 基础链路联调**：服务可启动、容器可连通、`/finish` → RabbitMQ → `@RabbitListener` → SSE `report_ready` 一次完整链路在 demo 模式（`APP_DEMO_ENABLED=true`）下成功跑通。
-- 本次补充验证只证明关闭 Demo 模式后，当前网络与运行模型条件下的一次真实 API Key 功能链路可用。
-- 上述验证**不代表公网高并发压测**；不证明生产级可靠投递；不证明消息绝不丢失；不构成固定模型推荐。
+- 本次补充验证只证明关闭 Demo 模式后，当前网络与运行模型条件下的一次真实 BYOK 功能链路可用。
+- 上述验证**不代表公网高并发压测**；不证明生产级可靠投递；不证明消息绝不丢失；不构成模型推荐依据。
 - 当前实现未引入 DLQ、未引入 outbox、未启用 publisher confirm、未做消费并发调优。
 - 仍依赖 Redis 承担限流、缓存与状态辅助职责。

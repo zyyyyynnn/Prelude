@@ -1,121 +1,31 @@
 {
-  "rows": [
-    {
-      "id": "TC-01",
-      "module": "用户注册",
-      "operation": "提交用户名和密码进行注册",
-      "expected": "创建新用户成功，返回 200 成功状态码",
-      "actual": "注册成功，用户名 mimo_tester_1779876796",
-      "pass": true
-    },
-    {
-      "id": "TC-02",
-      "module": "用户登录",
-      "operation": "提交注册信息以获取访问令牌",
-      "expected": "返回 200 及可用 JWT Token，用于后续鉴权",
-      "actual": "登录成功，成功提取 JWT 授权令牌",
-      "pass": true
-    },
-    {
-      "id": "TC-03",
-      "module": "模型配置",
-      "operation": "将 OpenAI 提供商映射至 MIMO 节点并保存",
-      "expected": "绑定 openai 渠道至 mimo-v2.5-pro 成功",
-      "actual": "更新配置成功，保存至用户表数据库",
-      "pass": true
-    },
-    {
-      "id": "TC-04",
-      "module": "连通性测试",
-      "operation": "调用 /api/user/llm-config/test",
-      "expected": "后端与真实 MIMO API 通信，返回“模型配置测试通过”",
-      "actual": "通过，真实请求公网 MIMO 并取得响应（耗时 3.20s）",
-      "pass": true
-    },
-    {
-      "id": "TC-05",
-      "module": "简历上传",
-      "operation": "上传测试简历 demo-resume.pdf",
-      "expected": "后端成功提取文本并返回 resumeId",
-      "actual": "通过，返回 resumeId=7，技能与项目占位数组成功提取",
-      "pass": true
-    },
-    {
-      "id": "TC-06",
-      "module": "会话初始化",
-      "operation": "选择 Java 后端工程师 岗位并关联简历启动面试",
-      "expected": "创建新会话成功，写入首条 system 提示词",
-      "actual": "成功，会话 ID = 5，状态初始化为 ongoing，阶段为 warmup",
-      "pass": true
-    },
-    {
-      "id": "TC-07",
-      "module": "破冰流式提问",
-      "operation": "触发 autoStart 进行第一轮提问",
-      "expected": "后端通过 SSE 返回面试官开场自述和提问",
-      "actual": "成功，获取流式提问：“请先做一个简短的自我介绍...”",
-      "pass": true
-    },
-    {
-      "id": "TC-08",
-      "module": "追问流式交互",
-      "operation": "提交用户回答并获取追问",
-      "expected": "后端写入用户回答，并流式输出针对项目的跟进问题",
-      "actual": "成功，获取流式追问：“业务目标是什么？系统架构图？技术挑战？”",
-      "pass": true
-    },
-    {
-      "id": "TC-09",
-      "module": "阶段推进校验",
-      "operation": "修改阶段为 technical 并提交追问",
-      "expected": "成功推进阶段至 technical 并进行技术问答",
-      "actual": "成功更新，返回阶段为 technical，通过修改后的非锁死校验",
-      "pass": true
-    },
-    {
-      "id": "TC-10",
-      "module": "评估报告生成",
-      "operation": "调用 finish 接口结束面试",
-      "expected": "触发大模型对多轮对话深度总结并输出三维评分报告",
-      "actual": "成功生成，Markdown 评估报告共包含 2085 字符（耗时 118.35s）",
-      "pass": true
-    },
-    {
-      "id": "TC-11",
-      "module": "历史指标分析",
-      "operation": "请求雷达图数据与薄弱点统计接口",
-      "expected": "数据库成功持久化评分数据与分析数据，可供图表读取",
-      "actual": "成功提取技术 6 分、表达 4 分、逻辑 5 分及 4 项分类薄弱点描述",
-      "pass": true
-    }
-  ],
-  "metrics": [
-    {
-      "metric": "外部模型连通性测试时延",
-      "value": "3.20 s",
-      "method": "后端测试接口响应时长"
-    },
-    {
-      "metric": "简历上传及文本提取时延",
-      "value": "54 ms",
-      "method": "后端 /api/resume/upload 接口耗时"
-    },
-    {
-      "metric": "首轮面试官开场词流式耗时",
-      "value": "1.84 s",
-      "method": "SSE 客户端首字符接收至读取流结束"
-    },
-    {
-      "metric": "真实模型多维报告生成时延",
-      "value": "118.35 s",
-      "method": "后端 /api/interview/{id}/finish 接口耗时"
-    }
-  ],
-  "info": {
-    "targetPosition": "Java 后端工程师",
-    "providerKey": "openai",
-    "model": "mimo-v2.5-pro",
-    "username": "mimo_tester_1779876796",
-    "generatedAt": "2026-05-27T18:16:36Z"
-  }
+  "status": "historical-redacted",
+  "note": "历史真实 API 功能链路记录，已脱敏；不作为当前默认 Provider、默认模型或正文固定模型依据。",
+  "executedAt": "2026-05-27T18:13:15+08:00",
+  "scope": {
+    "mode": "real",
+    "backend": "http://127.0.0.1:8080",
+    "protocol": "HTTP / JWT / SSE",
+    "endpoint": "redacted OpenAI-compatible endpoint",
+    "apiKey": "redacted user runtime API key",
+    "model": "redacted runtime model"
+  },
+  "summary": {
+    "passed": 11,
+    "total": 11
+  },
+  "latency": {
+    "configTestSeconds": 3.2,
+    "pdfTextExtractionMilliseconds": 54,
+    "firstSseResponseSeconds": 1.84,
+    "reportGenerationSeconds": 118.35
+  },
+  "limits": [
+    "not a default provider record",
+    "not a default model record",
+    "not a public performance benchmark",
+    "not high-concurrency load testing",
+    "not production-grade delivery evidence",
+    "not zero-message-loss evidence"
+  ]
 }

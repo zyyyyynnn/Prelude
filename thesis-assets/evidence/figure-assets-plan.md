@@ -25,7 +25,7 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **图3.1** | 系统核心用例图 | Mermaid 导出图 | [fig-3.1-core-use-case.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.1-core-use-case.png) | [fig-3.1-core-use-case.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.1-core-use-case.mmd) | 可刷新 | 需在 2.11C 依据当前代码设计进行事实核对。 |
 | **图3.2** | 数据库 E-R 图 | Mermaid 导出图 | [fig-3.2-database-er.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.2-database-er.png) | [fig-3.2-database-er.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.2-database-er.mmd) | 可刷新 | 需在 2.11C 依据当前数据库 DDL 和 MyBatis-Plus 实体类进行事实核对。 |
-| **图3.3** | 系统整体架构图 | Mermaid 导出图 | [fig-3.3-system-architecture.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.png) | [fig-3.3-system-architecture.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.mmd) | 可刷新 | 需在 2.11C 依据项目模块物理结构及配置（如 Redis, Resilience4j, Prometheus）进行事实核对。RabbitMQ 已确认纳入后续升级，但当前代码尚未补齐；正文采用前必须完成依赖、服务、生产者/消费者和测试证据。 |
+| **图3.3** | 系统整体架构图 | Mermaid 导出图 | [fig-3.3-system-architecture.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.png) | [fig-3.3-system-architecture.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.mmd) | 待决策 | 需依据项目模块物理结构及配置进行事实核对。RabbitMQ 已接入报告生成异步任务队列；当前图 3.3 暂不加入 RabbitMQ，后续如修改必须同步图源、导出图、登记表和第三章正文。 |
 | **表5.1** | 测试环境表 | Markdown 表格 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 第1节 | 本地全栈开发测试环境版本采集 | 可进入正文候选 | 需阶段 3 结合章节位置确认。 |
 | **表5.2** | 功能测试用例表 | Markdown 表格 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 本地 TC-01 ~ TC-09 实际联调测试记录 | 可进入正文候选 | 需阶段 3 结合章节位置确认，对“待实测”项进行严格限缩描述。 |
 | **表5.3** | Demo 验证结果表 | Markdown 表格 | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md) | 本地回环数据隔离与重置机制实际测试指标 | 可进入正文候选 | 需阶段 3 结合章节位置确认。 |
@@ -53,7 +53,7 @@
 | **ASR 语音识别准确率图** | 语音录音采集与 WebSocket 端点检测属于待实测内容，无真实公网 ASR 的大样本识别率统计。 | 降调处理，在论文中用文字描述方案设计，不展现识别准确率图表。 |
 | **AI 评分公平无偏图** | 系统未开展任何关于评分偏差、盲测对照和多行业样本覆盖的算法公平性量化实验。 | 在第五章降调说明 AI 评估属于结构化反馈，不证明 AI 评分绝对无偏。 |
 | **招聘效果优于人工图** | 系统属于辅助训练工具，未投入真实的招聘转化率比对或企业 HR 录用成功率统计。 | 严禁宣称该系统提高了企业招聘效率，不提供任何招聘转化图表。 |
-| **生产环境性能图** | 本项目所有有效数据均在本地回环（Demo 隔离）及单人单账号调用（MIMO 真实模式）下产生，并非真实生产部署环境。 | 明确指出测试在本地 Windows/Windows Server 单机环境完成，禁止包装为分布式云端生产性能。 |
+| **生产环境性能图** | 本项目所有有效数据均在本地回环（Demo 隔离）及单人单账号真实 API 功能链路下产生，并非真实生产部署环境。 | 明确指出测试在本地 Windows/Windows Server 单机环境完成，禁止包装为分布式云端生产性能。 |
 
 ## 5. nature-figure 使用边界
 
