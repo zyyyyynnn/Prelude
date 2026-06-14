@@ -54,6 +54,16 @@ WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'anthropic'
 );
 
+INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
+SELECT 'openai-compatible',
+       'OpenAI-compatible',
+       '',
+       '[]',
+       1
+WHERE NOT EXISTS (
+    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai-compatible'
+);
+
 UPDATE `user`
 SET `llm_model` = 'deepseek-v4-pro'
 WHERE `llm_provider` = 'deepseek'
