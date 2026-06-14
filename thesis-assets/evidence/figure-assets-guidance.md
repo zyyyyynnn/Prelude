@@ -1,4 +1,4 @@
-# 图表资产准入计划
+# 图表资产准入说明
 
 ## 1. 文件定位
 
@@ -26,10 +26,10 @@
 | **图3.1** | 系统核心用例图 | Mermaid 导出图 | [fig-3.1-core-use-case.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.1-core-use-case.png) | [fig-3.1-core-use-case.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.1-core-use-case.mmd) | 可刷新 | 需在 2.11C 依据当前代码设计进行事实核对。 |
 | **图3.2** | 数据库 E-R 图 | Mermaid 导出图 | [fig-3.2-database-er.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.2-database-er.png) | [fig-3.2-database-er.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.2-database-er.mmd) | 可刷新 | 需在 2.11C 依据当前数据库 DDL 和 MyBatis-Plus 实体类进行事实核对。 |
 | **图3.3** | 系统整体架构图 | Mermaid 导出图 | [fig-3.3-system-architecture.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.png) | [fig-3.3-system-architecture.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.mmd) | 待决策 | 需依据项目模块物理结构及配置进行事实核对。RabbitMQ 已接入报告生成异步任务队列；当前图 3.3 暂不加入 RabbitMQ，后续如修改必须同步图源、导出图、登记表和第三章正文。 |
-| **表5.1** | 测试环境表 | Markdown 表格 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 第1节 | 本地全栈开发测试环境版本采集 | 可进入正文候选 | 需阶段 3 结合章节位置确认。 |
-| **表5.2** | 功能测试用例表 | Markdown 表格 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 本地 TC-01 ~ TC-09 实际联调测试记录 | 可进入正文候选 | 需阶段 3 结合章节位置确认，对“待实测”项进行严格限缩描述。 |
-| **表5.3** | Demo 验证结果表 | Markdown 表格 | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md) | 本地回环数据隔离与重置机制实际测试指标 | 可进入正文候选 | 需阶段 3 结合章节位置确认。 |
-| **表5.4** | 测试边界说明表 | Markdown 表格 | [test-evidence-matrix-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md) 第4, 5节 | 本阶段证据核对中确立的性能与边界受限描述 | 可进入正文候选 | 需阶段 3 结合章节位置确认。 |
+| **表5.1** | 测试环境表 | Markdown 表格 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 第1节 | 本地全栈开发测试环境版本采集 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
+| **表5.2** | 功能测试用例表 | Markdown 表格 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 本地 TC-01 ~ TC-09 实际联调测试记录 | 可进入正文候选 | 进入正文前结合章节位置确认，对“待实测”项进行严格限缩描述。 |
+| **表5.3** | Demo 验证结果表 | Markdown 表格 | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md) | 本地回环数据隔离与重置机制实际测试指标 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
+| **表5.4** | 测试边界说明表 | Markdown 表格 | [test-evidence-matrix-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md) 第4, 5节 | 当前证据核对中确立的性能与边界受限描述 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
 | **UI-01** | 登录页截图候选 | 界面截图 | [login.png](file:///E:/Prelude/docs/images/login.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
 | **UI-02** | 注册页截图候选 | 界面截图 | [register.png](file:///E:/Prelude/docs/images/register.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
 | **UI-03** | 工作台 / 首页截图候选 | 界面截图 | [interview-empty.png](file:///E:/Prelude/docs/images/interview-empty.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
@@ -38,7 +38,7 @@
 | **UI-06** | 面试报告页截图候选 | 界面截图 | [interview-report.png](file:///E:/Prelude/docs/images/interview-report.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
 | **UI-07** | 数据分析页截图候选 | 界面截图 | [analytics.png](file:///E:/Prelude/docs/images/analytics.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
 
-*注：本准入计划不冻结最终图号；各 UI 截图统一采用 UI-xx 独立代号，在进入正文排版（阶段 3）前，严禁将其直接重命名为图4.x。*
+*注：本准入说明不冻结最终图号；各 UI 截图统一采用 UI-xx 独立代号，在进入正文排版前，严禁将其直接重命名为图4.x。*
 
 ## 4. 禁止可视化内容
 
@@ -76,11 +76,11 @@
 5. **双重复核**：经用户和审查官最终人工复核通过，状态变更为“已复核”；
 6. **零夸大**：不包含任何未实测的性能、压力或多模态对比指标；
 7. **机制宣称**：对于代码实现但未测试的保护机制，只允许进行工程逻辑或流程图式的原理解析，不包装为通过测试；
-8. **图号松耦合**：在阶段 3 排版完成之前，不冻结图表的最终物理顺序图号，以防增删章节导致图号断裂。
+8. **图号松耦合**：在正文排版完成之前，不冻结图表的最终物理顺序图号，以防增删章节导致图号断裂。
 
-## 7. 后续阶段安排
+## 7. 后续处理边界
 
-* **阶段 2.11C**：对三张核心用例与架构图进行事实刷新与刷新后核对（[fig-3.1-core-use-case.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.1-core-use-case.mmd)、[fig-3.2-database-er.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.2-database-er.mmd)、[fig-3.3-system-architecture.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.mmd)）；
-* **阶段 2.11D**：启动系统本地运行并重新采集前述 7 张真实界面截图，存入指定证据区；
-* **阶段 2.11E**：补齐这 7 张截图在 [figure-table-register.md](file:///E:/Prelude/thesis-assets/evidence/figure-table-register.md) 中的登记，核对图题；
-* **阶段 3**：根据 chapters/*.md 的单章学术降噪改写进度，按章节叙述的实际承载位置，决定图表最终的物理图号和正文引用。
+* 核心图核对：对三张核心用例与架构图进行事实刷新与刷新后核对（[fig-3.1-core-use-case.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.1-core-use-case.mmd)、[fig-3.2-database-er.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.2-database-er.mmd)、[fig-3.3-system-architecture.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.mmd)）；
+* 界面截图采集：启动系统本地运行并重新采集前述 7 张真实界面截图，存入指定证据区；
+* 登记表同步：补齐这 7 张截图在 [figure-table-register.md](file:///E:/Prelude/thesis-assets/evidence/figure-table-register.md) 中的登记，核对图题；
+* 正文引用确认：根据 chapters/*.md 的单章学术降噪改写进度，按章节叙述的实际承载位置，决定图表最终的物理图号和正文引用。

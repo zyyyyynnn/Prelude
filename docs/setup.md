@@ -1,5 +1,7 @@
 # 环境配置指南
 
+运行模式边界见 [runtime-modes.md](runtime-modes.md)。`start-real.bat`、`start-demo.bat` 和对应 `.ps1` 是 local runtime 入口，使用本机或本机可达 MySQL / Redis / RabbitMQ；Docker runtime 使用 `docker compose up -d ...`，二者不应混用同一组默认端口。
+
 ## 后端配置
 
 复制后端配置模板：
@@ -74,7 +76,7 @@ mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS interview_demo DEFAULT CHARACT
 Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -eq 5672 }
 ```
 
-也可以使用 Docker Compose 启动项目内置 RabbitMQ 服务。Redis 仅承担限流、缓存和状态辅助职责，不再承担报告任务队列。
+如需使用 Docker Compose 管理 RabbitMQ，应按 Docker runtime 启动整组容器服务，而不是把 local launcher 当作 Docker 入口。Redis 仅承担限流、缓存和状态辅助职责，不再承担报告任务队列。
 
 ## 端口规划
 

@@ -17,6 +17,7 @@
 | `meta/`       | 治理规范、证据锁定索引、唯一模板                                       | 是         |
 | `chapters/`   | 正文 Markdown 唯一真相源                                      | 是         |
 | `evidence/`   | 图表、测试、截图、代码片段等证据                                       | 是         |
+| `evidence/phase-reports/` | 过程记录，仅用于审计和追溯，不直接作为正文事实依据 | 降权保留 |
 | `literature/` | `references.bib`、`quality-review.md`、`evidence-map.md` | 是         |
 | `defense/`    | 答辩材料                                                   | 是         |
 
@@ -32,8 +33,10 @@
 
 * 治理规范：`meta/workflow-governance.md`
 * 证据锁定：`meta/final-evidence-lock.md`
+* 测试事实矩阵：`evidence/test-data/test-evidence-matrix-2026-06.md`
 * 文献资产：`literature/references.bib`、`literature/quality-review.md`、`literature/evidence-map.md`
 * 图表证据：`evidence/figure-table-register.md`
+* 过程记录：`evidence/phase-reports/README.md`，仅用于审计和追溯，不直接作为正文事实依据
 * 正文唯一真相源：`chapters/*.md`
 
 ## 5. 构建边界
