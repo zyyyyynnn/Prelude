@@ -41,8 +41,9 @@
 
 * 代码层面，报告生成异步任务队列已由 RabbitMQ 承担；`/finish` 接口将 `session.status` 置为 `generating` 并通过 `RabbitTemplate.convertAndSend(REPORT_EXCHANGE, REPORT_ROUTING_KEY, ReportJobMessage)` 发布任务；`ReportJobWorker` 通过 `@RabbitListener(queues = REPORT_QUEUE)` 消费并在完成后通过 SSE 推送 `report_ready` 事件。
 * 本地 Docker Compose 环境下已通过 `mvn -q test`（22/22）+ `docker compose config --quiet` + `prelude-rabbitmq` 健康检查 + `/finish` → RabbitMQ → `report_ready` 端到端基础链路联调。
+* 2026-06-14 已在 Docker Compose 容器环境关闭 Demo 模式，通过用户环境变量临时注入 OpenAI-compatible API Key、endpoint 与运行模型，完成一次 `/finish` → RabbitMQ → `ReportJobWorker` → 真实 LLM 调用 → `report_ready` 功能链路验证；具体模型仅为本轮运行参数，不作为仓库默认配置或论文固定推荐模型。
 * Redis 回归限流、缓存和状态辅助职责；本轮仍保留 `spring-boot-starter-data-redis`。
-* 严格限制：本次验证为本地 Docker Compose 基础链路联调，**不等同于公网高并发压测**，**不证明生产级可靠投递**，**不证明消息绝不丢失**。
+* 严格限制：上述验证仅覆盖本地 Docker Compose 基础链路与一次真实 API Key 功能链路，**不等同于公网高并发压测**，**不证明生产级可靠投递**，**不证明消息绝不丢失**。
 * 数据库源 DDL 已同步 `interview_session.status = ongoing / generating / finished`，其中 `generating` 对应 RabbitMQ 报告任务已发布但尚未完成消费的中间态。
 * 当前实现未引入 DLQ、outbox、publisher confirm、消费并发调优。
 * 答辩材料与正文如要使用“已引入 RabbitMQ”作为可写能力宣称，必须同时保留上述严格限制段。
