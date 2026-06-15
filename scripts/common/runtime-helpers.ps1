@@ -160,8 +160,6 @@ function Start-BackgroundCommand {
     -PassThru
 }
 
-
-
 function Get-ApplicationLocalDatasourceConfig {
   param([string]$ConfigPath)
 
