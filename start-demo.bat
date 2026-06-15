@@ -110,6 +110,11 @@ REM ---- 确保前端依赖与 Demo 环境变量 ----
 if not exist "%FRONTEND_DIR%\node_modules" (
   echo [INFO] Installing frontend dependencies...
   call npm --prefix "%FRONTEND_DIR%" install
+  if errorlevel 1 (
+    echo [ERROR] npm install failed.
+    pause
+    exit /b 1
+  )
 )
 
 if not exist "%FRONTEND_DIR%\.env.demo" (
