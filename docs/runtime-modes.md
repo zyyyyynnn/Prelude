@@ -34,7 +34,9 @@ docker compose --profile real --profile observability up -d --build   # 叠加 P
 ```powershell
 docker compose stop backend-real frontend-real      # 仅停真实版应用层
 docker compose stop backend-demo frontend-demo      # 仅停 Demo 应用层
+docker compose stop prometheus grafana              # 仅停观测栈
 docker compose --profile real --profile demo down   # 停全部 + 共享中间件
+docker compose --profile real --profile demo --profile observability down  # 含观测栈
 ```
 
 ## Dev local runtime（仅开发调试）
