@@ -134,7 +134,15 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
 
         String baseUrl = null;
         if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerKey)) {
-            baseUrl = OpenAiCompatibleUrl.normalizeRoot(request.baseUrl());
+            String draftBaseUrl = request.baseUrl();
+            if (draftBaseUrl == null || draftBaseUrl.isBlank()) {
+                if (!OpenAiCompatibleProvider.PROVIDER_KEY.equals(user.getLlmProvider())
+                    || user.getLlmBaseUrl() == null || user.getLlmBaseUrl().isBlank()) {
+                    throw BusinessException.badRequest("请填写 Base URL");
+                }
+                draftBaseUrl = user.getLlmBaseUrl();
+            }
+            baseUrl = OpenAiCompatibleUrl.normalizeRoot(draftBaseUrl);
         }
 
         if (isDemoEnabled()) {

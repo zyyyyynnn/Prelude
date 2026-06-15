@@ -228,6 +228,45 @@ class UserLlmConfigServiceImplTest {
     }
 
     @Test
+    void draftTestUsesSavedBaseUrlWhenOpenAiCompatibleBaseUrlBlank() {
+        User user = new User();
+        user.setId(7L);
+        user.setLlmProvider("openai-compatible");
+        user.setLlmBaseUrl("https://saved.example/v1");
+        user.setLlmModel("model-a");
+        user.setLlmApiKeyEncrypted("old-cipher");
+
+        when(userMapper.selectById(7L)).thenReturn(user);
+        when(demoModeService.isEnabled()).thenReturn(false);
+        when(aesGcmEncryptor.decrypt("old-cipher")).thenReturn("sk-saved");
+        when(llmRouter.chatWithExplicit(
+            eq("openai-compatible"),
+            eq("model-a"),
+            eq("https://saved.example/v1"),
+            eq("sk-saved"),
+            any(),
+            eq(null),
+            eq(null)
+        )).thenReturn("OK");
+
+        com.interview.common.UserContext.setCurrentUserId(7L);
+        var response = service.testConfig(new LlmConfigTestRequest(
+            "openai-compatible", "", "model-a", null, null, null
+        ));
+
+        assertThat(response.ok()).isTrue();
+        verify(llmRouter).chatWithExplicit(
+            eq("openai-compatible"),
+            eq("model-a"),
+            eq("https://saved.example/v1"),
+            eq("sk-saved"),
+            any(),
+            eq(null),
+            eq(null)
+        );
+    }
+
+    @Test
     void testConfigPassesMaxTokensAndThinkingDepthToRouter() {
         User user = new User();
         user.setId(7L);

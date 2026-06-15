@@ -131,7 +131,7 @@ public class LlmRouter {
     ) {
         LlmProvider provider = requireProvider(providerKey);
         String normalizedModel = normalizeModel(model, provider.defaultModel());
-        LlmProviderConfig providerConfig = requireEnabledProviderConfig(providerKey);
+        LlmProviderConfig providerConfig = validateProviderSelection(providerKey, normalizedModel);
         String resolvedApiKey = resolveExplicitApiKey(provider, apiKey);
         return provider.chat(buildInvocationExplicit(
             providerConfig, normalizedModel, baseUrl, resolvedApiKey, messages, maxTokens, extraParams));
@@ -200,7 +200,11 @@ public class LlmRouter {
         List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getEnabled, 1)
             .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
-            .orderByAsc(LlmProviderConfig::getId));
+            .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
+            .orderByAsc(LlmProviderConfig::getId))
+            .stream()
+            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
+            .toList();
 
         if (configs.isEmpty()) {
             throw BusinessException.badRequest("主大模型不可用且无配置的可用备用通道");
@@ -230,7 +234,11 @@ public class LlmRouter {
         List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getEnabled, 1)
             .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
-            .orderByAsc(LlmProviderConfig::getId));
+            .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
+            .orderByAsc(LlmProviderConfig::getId))
+            .stream()
+            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
+            .toList();
 
         if (configs.isEmpty()) {
             throw BusinessException.badRequest("主大模型不可用且无配置的可用备用通道");
