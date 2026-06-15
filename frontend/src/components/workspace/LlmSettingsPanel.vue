@@ -3,13 +3,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useLlmSettings } from '../../composables/useLlmSettings'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
-  PopoverAnchor,
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-} from 'reka-ui'
+  Combobox,
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+} from '@/components/ui/combobox'
 import {
   Select,
   SelectContent,
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Check, Eye, EyeOff, Trash2 } from '@lucide/vue'
+import { Eye, EyeOff, Trash2 } from '@lucide/vue'
 import {
   FormControl,
   FormField,
@@ -37,7 +37,7 @@ const DISPLAY_NAME_MAP: Record<string, string> = {
 }
 
 const {
-  loading, saving, testing, discovering, testStatus,
+  loading, saving, testing, discovering,
   providerOptions, selectedProviderKey, selectedModel,
   baseUrlInput, apiKeyInput, apiKeyMasked, maxTokens, thinkingDepth,
   modelOptions, modelDiscoveryHint, isOpenAiCompatible,
@@ -45,7 +45,7 @@ const {
 } = useLlmSettings()
 
 const showApiKey = ref(false)
-const modelPopoverOpen = ref(false)
+const modelComboboxOpen = ref(false)
 
 const { handleSubmit, setValues } = useForm({
   validationSchema: toTypedSchema(llmSettingsSchema),
@@ -55,34 +55,12 @@ function providerDisplayName(key: string, fallback: string): string {
   return DISPLAY_NAME_MAP[key] ?? fallback
 }
 
-const testBadgeVariant = computed(() => {
-  switch (testStatus.value.state) {
-    case 'testing': return 'secondary'
-    case 'success': return 'default'
-    case 'error': return 'destructive'
-    default: return 'outline'
-  }
-})
-const testBadgeText = computed(() => {
-  switch (testStatus.value.state) {
-    case 'testing': return '测试中'
-    case 'success': return '已通过'
-    case 'error': return '失败'
-    default: return '未测试'
-  }
-})
 const apiKeyStatusLabel = computed(() => apiKeyMasked.value ? `已保存：${apiKeyMasked.value}` : '未保存')
-const canShowModelPopover = computed(() => isOpenAiCompatible.value && modelOptions.value.length > 0)
-
-function openModelPopover() {
-  if (canShowModelPopover.value) {
-    modelPopoverOpen.value = true
-  }
-}
+const canShowModelCombobox = computed(() => isOpenAiCompatible.value && modelOptions.value.length > 0)
 
 function selectModelCandidate(model: string) {
   selectedModel.value = model
-  modelPopoverOpen.value = false
+  modelComboboxOpen.value = false
 }
 
 watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth], () => {
@@ -96,9 +74,9 @@ watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens,
   })
 }, { immediate: true })
 
-watch(canShowModelPopover, (canShow) => {
+watch(canShowModelCombobox, (canShow) => {
   if (!canShow) {
-    modelPopoverOpen.value = false
+    modelComboboxOpen.value = false
   }
 })
 
@@ -165,50 +143,48 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               </SelectContent>
             </Select>
             <template v-else>
-              <PopoverRoot v-model:open="modelPopoverOpen">
-                <PopoverAnchor as-child>
+              <Combobox
+                v-model:open="modelComboboxOpen"
+                :model-value="selectedModel"
+                :open-on-focus="canShowModelCombobox"
+                :open-on-click="canShowModelCombobox"
+                :reset-search-term-on-select="false"
+                ignore-filter
+                @update:model-value="(value) => { selectModelCandidate(String(value)) }"
+              >
+                <ComboboxAnchor as-child>
                   <div class="model-combobox">
                     <FormControl>
-                      <Input
+                      <ComboboxInput
                         :model-value="selectedModel"
                         autocomplete="off"
                         placeholder="填写或选择模型 ID"
                         @update:model-value="(value) => { selectedModel = String(value) }"
                         @blur="componentField.onBlur"
-                        @focus="openModelPopover"
-                        @click="openModelPopover"
-                        @keydown.down.prevent="openModelPopover"
-                        @keydown.esc="modelPopoverOpen = false"
+                        @keydown.esc.stop.prevent="modelComboboxOpen = false"
                       />
                     </FormControl>
                   </div>
-                </PopoverAnchor>
-                <PopoverPortal>
-                  <PopoverContent
-                    v-if="canShowModelPopover"
-                    align="start"
-                    side="bottom"
-                    :side-offset="4"
-                    class="model-combobox__content z-[105] w-[var(--reka-popover-trigger-width)] rounded-md border border-border bg-surface shadow-md"
+                </ComboboxAnchor>
+                <ComboboxContent
+                  v-if="canShowModelCombobox"
+                  data-byok-model-combobox-content
+                  align="start"
+                  side="bottom"
+                  :side-offset="4"
+                  @escape-key-down.prevent="modelComboboxOpen = false"
+                >
+                  <ComboboxItem
+                    v-for="model in modelOptions"
+                    :key="model"
+                    :value="model"
+                    :text-value="model"
+                    data-byok-model-combobox-item
                   >
-                    <div class="model-combobox__viewport">
-                      <button
-                        v-for="model in modelOptions"
-                        :key="model"
-                        type="button"
-                        class="model-combobox__item"
-                        @mousedown.prevent
-                        @click="selectModelCandidate(model)"
-                      >
-                        <span class="model-combobox__check">
-                          <Check v-if="selectedModel === model" class="h-4 w-4" />
-                        </span>
-                        <span class="model-combobox__item-text">{{ model }}</span>
-                      </button>
-                    </div>
-                  </PopoverContent>
-                </PopoverPortal>
-              </PopoverRoot>
+                    {{ model }}
+                  </ComboboxItem>
+                </ComboboxContent>
+              </Combobox>
               <p v-if="modelDiscoveryHint" class="helper-text">{{ modelDiscoveryHint }}</p>
             </template>
             <FormMessage />
@@ -285,14 +261,6 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
           <FormMessage />
         </FormItem>
       </FormField>
-
-      <div class="test-status-row">
-        <span class="test-status-row__label">连接测试</span>
-        <Badge :variant="testBadgeVariant">{{ testBadgeText }}</Badge>
-        <span class="test-status-row__message" :class="{ 'test-status-row__message--error': testStatus.state === 'error' }">
-          {{ testStatus.message }}
-        </span>
-      </div>
 
       <div class="form-section">
         <div class="form-section__title">高级设置</div>
@@ -390,73 +358,5 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 }
 .model-combobox {
   width: 100%;
-}
-.model-combobox__content {
-  max-height: calc(var(--ui-height-base) * 7);
-  overflow: hidden;
-}
-.model-combobox__viewport {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs);
-  max-height: calc(var(--ui-height-base) * 7);
-  overflow-y: auto;
-}
-.model-combobox__item {
-  appearance: none;
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: var(--ui-height-base);
-  border: 0;
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) calc(var(--spacing-md) + var(--spacing-lg));
-  background: transparent;
-  color: var(--color-text-primary);
-  text-align: left;
-  cursor: default;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-}
-.model-combobox__item:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
-}
-.model-combobox__item:focus-visible {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
-  outline: none;
-  box-shadow: var(--shadow-ring);
-}
-.model-combobox__check {
-  position: absolute;
-  left: var(--spacing-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--spacing-md);
-  height: var(--spacing-md);
-}
-.model-combobox__item-text {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.test-status-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-.test-status-row__label {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-.test-status-row__message {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-.test-status-row__message--error {
-  color: var(--color-error);
 }
 </style>

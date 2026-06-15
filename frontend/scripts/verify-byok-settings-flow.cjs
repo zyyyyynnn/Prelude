@@ -18,8 +18,11 @@ function assertNoMixedInputBinding() {
   if (mixed.length > 0) {
     throw new Error(`Input must not combine v-model with v-bind="componentField"; found ${mixed.length}`)
   }
-  if (source.includes('datalist') || source.includes('model-suggestions') || source.includes('model-suggestion')) {
+  if (source.includes('datalist') || source.includes('model-suggestions') || source.includes('model-suggestion') || source.includes('model-combobox__item')) {
     throw new Error('Legacy model suggestion implementation is still present')
+  }
+  if (source.includes('test-status-row')) {
+    throw new Error('Panel test status row must be removed')
   }
 }
 
@@ -185,14 +188,42 @@ async function verifyBrowserFlow(port) {
   await page.waitForFunction(() => document.body.innerText.includes('模型列表已更新'))
 
   const modelInput = page.getByPlaceholder('填写或选择模型 ID')
+  if (await page.locator('.test-status-row').count() !== 0) {
+    throw new Error('Panel test status row is still rendered')
+  }
+  await modelInput.press('ArrowDown')
+  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
+  await modelInput.press('Enter')
+  await page.waitForFunction(() => {
+    const input = document.querySelector('input[placeholder="填写或选择模型 ID"]')
+    return input?.value === 'detected-model-pro'
+  })
+  await modelInput.press('ArrowDown')
+  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
+  await modelInput.press('Escape')
+  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'hidden', timeout: 5000 })
+
   await modelInput.fill(manualModel)
-  await page.getByRole('button', { name: '测试连接' }).click()
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: '测试连接' }).click({ force: true })
   await page.waitForFunction(() => document.body.innerText.includes('模型配置测试通过'))
-  await page.getByRole('button', { name: '保存设置' }).click()
+  const panelText = await page.locator('.panel-content-wrapper').innerText()
+  if (panelText.includes('模型配置测试通过') || panelText.includes('已通过') || panelText.includes('测试中')) {
+    throw new Error('Panel still renders connection test status text')
+  }
+  await page.getByRole('button', { name: '保存设置' }).click({ force: true })
   await page.waitForFunction(() => document.body.innerText.includes('LLM 配置已保存'))
 
   await modelInput.click()
-  await page.waitForSelector('.model-combobox__content', { state: 'visible', timeout: 5000 })
+  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
+  const legacyItemCount = await page.locator('.model-combobox__item, .model-suggestion').count()
+  if (legacyItemCount !== 0) {
+    throw new Error('Legacy raw suggestion item is still rendered')
+  }
+  const optionCount = await page.locator('[data-byok-model-combobox-item]').count()
+  if (optionCount < 1) {
+    throw new Error('Combobox items are not rendered')
+  }
   fs.mkdirSync(path.dirname(screenshotPath), { recursive: true })
   await page.screenshot({ path: screenshotPath, fullPage: true })
   await browser.close()
