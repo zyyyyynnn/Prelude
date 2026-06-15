@@ -46,9 +46,8 @@ if exist "%ROOT%.env" (
 )
 if "!JWT_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder JWT_SECRET.
 if "!AES_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder APP_CRYPTO_AES_SECRET.
-if "!JWT_PLACEHOLDER!"=="1" if "!AES_PLACEHOLDER!"=="1" (
-  echo [WARN] Real stack can start for local demo, but replace them before long-term use.
-)
+if "!JWT_PLACEHOLDER!"=="1" echo [WARN] Real stack can start for local demo, but replace them before long-term use.
+if "!AES_PLACEHOLDER!"=="1" echo [WARN] Real stack can start for local demo, but replace them before long-term use.
 
 REM ---- 校验 compose 配置 ----
 echo [INFO] Validating docker compose config ^(profile: %PROFILE%^)...
