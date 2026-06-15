@@ -1,7 +1,7 @@
 package com.interview.controller;
 
 import com.interview.common.Result;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,15 +10,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/demo")
-@ConditionalOnProperty(prefix = "app.local", name = "enabled", havingValue = "true")
-public class DemoController {
+@RequestMapping("/api/dev-fixtures")
+@ConditionalOnProperty(prefix = "app.dev-fixtures", name = "enabled", havingValue = "true")
+public class DevFixtureController {
 
-    private final DemoModeService demoModeService;
+    private final DevFixtureService devFixtureService;
 
     @PostMapping("/reset")
     public Result<Void> reset() {
-        demoModeService.reset();
+        devFixtureService.reset();
         return Result.success();
     }
 }

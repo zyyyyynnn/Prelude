@@ -32,7 +32,7 @@ dev mode 连接约定（与 `application-local.yml` 默认值一致）：
 2. 启动中间件并运行脚本：
    ```powershell
    docker compose up -d mysql redis rabbitmq
-   .\scripts\real\start-real.ps1
+   .\scripts\dev\start-dev.ps1
    ```
 
-> 注意：这些 `.ps1` 脚本是 `start-real.bat` 底层调用的更细粒度版本，推荐直接使用根目录的批处理文件。
+> 注意：这些 `.ps1` 脚本是 `start-dev.bat` 的更细粒度版本，推荐直接使用根目录的批处理文件。

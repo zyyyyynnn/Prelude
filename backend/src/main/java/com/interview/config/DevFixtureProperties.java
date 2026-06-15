@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "app.local")
-public class DemoProperties {
+@ConfigurationProperties(prefix = "app.dev-fixtures")
+public class DevFixtureProperties {
 
     private boolean enabled = false;
     private int streamDelayMs = 18;

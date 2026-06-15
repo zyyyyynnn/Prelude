@@ -18,12 +18,12 @@ $backendDir = Join-Path $rootDir 'backend'
 $frontendDir = Join-Path $rootDir 'frontend'
 $runtimeDir = Join-Path $rootDir 'output\runtime'
 $mysqlLogDir = Join-Path $runtimeDir 'mysql'
-$backendLogDir = Join-Path $runtimeDir 'backend-real'
-$frontendLogDir = Join-Path $runtimeDir 'frontend-real'
-$backendOutLog = Join-Path $backendLogDir 'backend-real.out.log'
-$backendErrLog = Join-Path $backendLogDir 'backend-real.err.log'
-$frontendOutLog = Join-Path $frontendLogDir 'frontend-real.out.log'
-$frontendErrLog = Join-Path $frontendLogDir 'frontend-real.err.log'
+$backendLogDir = Join-Path $runtimeDir 'backend-dev'
+$frontendLogDir = Join-Path $runtimeDir 'frontend-dev'
+$backendOutLog = Join-Path $backendLogDir 'backend-dev.out.log'
+$backendErrLog = Join-Path $backendLogDir 'backend-dev.err.log'
+$frontendOutLog = Join-Path $frontendLogDir 'frontend-dev.out.log'
+$frontendErrLog = Join-Path $frontendLogDir 'frontend-dev.err.log'
 $backendUrl = 'http://127.0.0.1:8080/api/health'
 $frontendUrl = 'http://localhost:5173/login'
 $databaseName = 'interview_system'
@@ -50,7 +50,7 @@ Assert-BackendLocalConfig -ConfigPath $applicationLocalPath -RequireDatasourceUr
 $datasourceConfig = Get-ApplicationLocalDatasourceConfig -ConfigPath $applicationLocalPath
 
 if (-not (Ensure-MySqlReady -DatasourceConfig $datasourceConfig -MySqlLogDir $mysqlLogDir)) {
-  throw "MySQL is not listening on $($datasourceConfig.Host):$($datasourceConfig.Port). Start MySQL first, or set MYSQLD_PATH / MYSQL_DEFAULTS_FILE so the launcher can start it automatically."
+  throw "MySQL is not listening on $($datasourceConfig.Host):$($datasourceConfig.Port). Please start Docker middleware via: docker compose up -d mysql redis rabbitmq"
 }
 
 if (-not (Try-EnsureDatabase -DatabaseName $databaseName -DatasourceConfig $datasourceConfig)) {
@@ -73,7 +73,7 @@ if (-not (Test-PortListening -Port $redisPort)) {
 Assert-RabbitMqReady
 
 if ($PrepareOnly) {
-  Write-Host 'Real runtime preparation complete.'
+  Write-Host 'Dev runtime preparation complete.'
   return
 }
 
@@ -105,7 +105,7 @@ if (-not (Test-PortListening -Port 5173)) {
 
 Wait-HttpReady -Url $frontendUrl -TimeoutSeconds 90 -Process $frontendProcess -StdOutPath $frontendOutLog -StdErrPath $frontendErrLog
 
-Write-Host "Real backend:  http://127.0.0.1:8080"
-Write-Host "Real frontend: http://127.0.0.1:5173"
+Write-Host "Dev backend:  http://127.0.0.1:8080"
+Write-Host "Dev frontend: http://127.0.0.1:5173"
 Write-Host "Backend logs:  $backendLogDir"
 Write-Host "Frontend logs: $frontendLogDir"
