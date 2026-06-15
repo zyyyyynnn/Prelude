@@ -1,0 +1,14 @@
+# 本机依赖与构建产物
+node_modules/
+dist/
+
+# 本机环境变量（含真实密钥，禁止进镜像）
+.env
+.env.*
+!.env.example
+!.env.demo
+
+# 日志与测试临时产物
+*.log
+.playwright-cli/
+coverage/

@@ -99,6 +99,16 @@ flowchart TB
 
 > Demo 截图脚本、重置命令与输出路径见 [docs/demo.md](docs/demo.md)。
 
+### 停止服务
+
+real 与 demo 共享同一组基础中间件（mysql/redis/rabbitmq）。并行运行时停单一 profile 会连带停掉共享中间件，按需选择：
+
+```powershell
+docker compose stop backend-real frontend-real      # 仅停真实版应用层
+docker compose stop backend-demo frontend-demo      # 仅停 Demo 应用层
+docker compose --profile real --profile demo down   # 停全部 + 共享中间件
+```
+
 ## 技术栈
 
 - **后端**：`Java 21` `Spring Boot 3.2` `MyBatis-Plus` `MySQL 8.4` `Redis` `RabbitMQ` `WebSocket` `Resilience4j` `PDFBox` `OkHttp` `JWT` `BCrypt` `AES-256-GCM`
