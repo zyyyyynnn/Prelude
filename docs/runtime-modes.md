@@ -19,7 +19,7 @@
 
 适用：部署验证、容器化交付验证。
 
-特点：全栈容器化，开箱即用，无需本机安装 Java / Maven / Node。**注意：前端在容器内是以 build 后的 nginx 静态产物运行的，修改前端代码需要 rebuild/restart 才能生效，不支持 HMR 热重载。**
+特点：全栈容器化，无需本机安装 Java / Maven / Node 即可完成容器化验证。**注意：前端在容器内是以 build 后的 nginx 静态产物运行的，修改前端代码需要 rebuild/restart 才能生效，不支持 HMR 热重载。**
 
 入口：`.\start-docker.bat`
 
@@ -30,7 +30,7 @@ docker compose --profile app up -d --build
 
 ## 3. Dev scripts（源码级调试）
 
-适用：需要利用 `.ps1` 脚本进行极细粒度的阶段启动与日志拦截。
+适用：需要利用 `.ps1` 脚本进行分阶段的启动与日志拦截。
 
 入口：
 - `scripts/dev/start-dev.ps1`

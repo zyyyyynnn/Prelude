@@ -51,6 +51,12 @@ OPENAI_MODEL=
 
 ### 3. 访问地址
 
+- **前端界面**：http://127.0.0.1:5173
+- **后端健康检查**：http://127.0.0.1:8080/api/health
+- **RabbitMQ 管理台**：http://127.0.0.1:15672
+
+*注：内置演示账号 `demo / 123456` 由 `data-dev.sql` 和 dev fixture 提供，仅在 local/dev 本地验收模式下生效。*
+
 ## 2. 可选：start-docker.bat
 
 用于部署验证的全量容器化。

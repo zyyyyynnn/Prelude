@@ -13,11 +13,11 @@
 
 | 资产类型 | 主要工具 | 适用内容 | 当前状态 | 准入条件 | 禁止事项 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Mermaid / .mmd** | Mermaid CLI | 用例图、E-R 图、系统架构图、流程图。 | 主事实图源 | 必须对应当前代码、实体、接口、数据库或系统实际设计。 | 绝对禁止加入源码中不存在的虚构模块、组件或未实现网络流。 |
+| **Mermaid / .mmd** | Mermaid CLI | 用例图、E-R 图、系统架构图、流程图。 | 主事实图源 | 必须对应当前代码、实体、接口、数据库或系统实际设计。 | 禁止加入源码中不存在的虚构模块、组件或未实现网络流。 |
 | **draw.io / 人工排版** | draw.io | 对 Mermaid 导出图或基础框图进行版面排版优化与文本微调。 | 可选人工微调 | 优化过程不得改变图中事实节点、层次结构和依赖关系。 | 不得为了追求视觉美观而添加不存在的架构节点或依赖线。 |
-| **nature-figure** | Python Matplotlib / Seaborn | 对已有真实测试数据（如单用户编译/打包时延、真实公网 LLM 报告延迟）的可视化增强。 | 可选增强工具 | 必须具备真实数据源、已在 [figure-table-register.md](file:///E:/Prelude/thesis-assets/evidence/figure-table-register.md) 登记，且通过用户与审查官复核。 | 绝对禁止生成任何未实测的性能图，也不得凭空生成学术式 / 科研式伪造图表。 |
-| **界面截图** | 浏览器截图 / Playwright 自动捕获 | 毕业论文与答辩演示中用于展示系统实际页面、功能入口与流程可达性。 | 待刷新与登记 | 必须来自于当前真实运行的系统，必须使用 Demo 模式隔离数据，且必须先行登记。 | 绝对禁止使用历史旧版本截图蒙混过关，也禁止使用大模型/AI 虚构、补造或修补系统界面图。 |
-| **测试表格** | Markdown 表格 | 第五章测试报告中用以展示功能测试用例、环境配置验证、Demo 隔离测试结论。 | 优先使用的呈现方式 | 必须真实来自 `test-data` 目录下的运行结果或实际手动验证记录。 | 绝对禁止将“未实测”或“部分实测”项在表格中编写或暗示为“完全通过”。 |
+| **nature-figure** | Python Matplotlib / Seaborn | 对已有真实测试数据（如单用户编译/打包时延、真实公网 LLM 报告延迟）的可视化增强。 | 可选增强工具 | 必须具备真实数据源、已在 [figure-table-register.md](file:///E:/Prelude/thesis-assets/evidence/figure-table-register.md) 登记，且通过用户与审查官复核。 | 禁止生成任何未实测的性能图，也不得凭空生成学术式 / 科研式伪造图表。 |
+| **界面截图** | 浏览器截图 / Playwright 自动捕获 | 毕业论文与答辩演示中用于展示系统实际页面、功能入口与流程可达性。 | 待刷新与登记 | 必须来自当前真实运行系统；如需固定验收数据，使用 start-dev 下的 dev fixture 本地验收数据夹具，且必须先行登记。 | 禁止使用历史旧版本截图蒙混过关，也禁止使用大模型/AI 虚构、补造或修补系统界面图。 |
+| **测试表格** | Markdown 表格 | 第五章测试报告中用以展示功能测试用例、环境配置验证、dev fixture 本地验收数据边界验证结论。 | 优先使用的呈现方式 | 必须真实来自 `test-data` 目录下的运行结果或实际手动验证记录。 | 禁止将“未实测”或“部分实测”项在表格中编写或暗示为“完全通过”。 |
 
 ## 3. 当前准入图表清单
 
@@ -28,8 +28,8 @@
 | **图3.3** | 系统整体架构图 | Mermaid 导出图 | [fig-3.3-system-architecture.png](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.png) | [fig-3.3-system-architecture.mmd](file:///E:/Prelude/thesis-assets/evidence/diagrams/fig-3.3-system-architecture.mmd) | 可刷新 | 需依据项目模块物理结构及配置进行事实核对。当前图 3.3 已展示 MySQL、Redis、RabbitMQ 三类中间件职责；RabbitMQ 仅表示报告生成异步任务队列，不扩展为完整可靠消息处理方案。 |
 | **表5.1** | 测试环境表 | Markdown 表格 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 第1节 | 本地全栈开发测试环境版本采集 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
 | **表5.2** | 功能测试用例表 | Markdown 表格 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 本地 TC-01 ~ TC-09 实际联调测试记录 | 可进入正文候选 | 进入正文前结合章节位置确认，对“待实测”项进行严格限缩描述。 |
-| **表5.3** | Demo 验证结果表 | Markdown 表格 | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md) | 本地回环数据隔离与重置机制实际测试指标 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
-| **表5.4** | 测试边界说明表 | Markdown 表格 | [test-evidence-matrix-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md) 第4, 5节 | 当前证据核对中确立的性能与边界受限描述 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
+| **表5.3** | 构建与自动化验证记录表 | Markdown 表格 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) | 本地回环（dev fixture 本地验收数据）与重置机制实际测试指标 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
+| **表5.4** | 业务性能采集记录表 | Markdown 表格 | [test-evidence-matrix-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md) 第4, 5节 | 当前证据核对中确立的性能与边界受限描述 | 可进入正文候选 | 进入正文前结合章节位置确认。 |
 | **UI-01** | 登录页截图候选 | 界面截图 | [login.png](file:///E:/Prelude/docs/images/login.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
 | **UI-02** | 注册页截图候选 | 界面截图 | [register.png](file:///E:/Prelude/docs/images/register.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
 | **UI-03** | 工作台 / 首页截图候选 | 界面截图 | [interview-empty.png](file:///E:/Prelude/docs/images/interview-empty.png) | 真实系统运行界面 | 候选 | 需在 2.11D 重新采集并登记。 |
@@ -42,7 +42,7 @@
 
 ## 4. 禁止可视化内容
 
-本毕业设计在开发与测试中未获取以下领域的实测压力、并发和对比量化指标，因此**绝对禁止在正文或答辩中进行任何图表化 / 可视化表达**：
+本毕业设计在开发与测试中未获取以下领域的实测压力、并发和对比量化指标，因此**禁止在正文或答辩中进行任何图表化 / 可视化表达**：
 
 | 禁止内容 | 原因 | 后续处理 |
 | :--- | :--- | :--- |
@@ -53,7 +53,7 @@
 | **ASR 语音识别准确率图** | 语音录音采集与 WebSocket 端点检测属于待实测内容，无真实公网 ASR 的大样本识别率统计。 | 降调处理，在论文中用文字描述方案设计，不展现识别准确率图表。 |
 | **AI 评分公平无偏图** | 系统未开展任何关于评分偏差、盲测对照和多行业样本覆盖的算法公平性量化实验。 | 在第五章降调说明 AI 评估属于结构化反馈，不证明 AI 评分绝对无偏。 |
 | **招聘效果优于人工图** | 系统属于辅助训练工具，未投入真实的招聘转化率比对或企业 HR 录用成功率统计。 | 严禁宣称该系统提高了企业招聘效率，不提供任何招聘转化图表。 |
-| **生产环境性能图** | 本项目所有有效数据均在本地回环（Demo 隔离）及单人单账号真实 API 功能链路下产生，并非真实生产部署环境。 | 明确指出测试在本地 Windows/Windows Server 单机环境完成，禁止包装为分布式云端生产性能。 |
+| **生产环境性能图** | 本项目所有有效数据均在本地回环（dev fixture 本地验收数据）及单人单账号真实 API 功能链路下产生，并非真实生产部署环境。 | 明确指出测试在本地 Windows/Windows Server 单机环境完成，禁止包装为分布式云端生产性能。 |
 
 ## 5. nature-figure 使用边界
 

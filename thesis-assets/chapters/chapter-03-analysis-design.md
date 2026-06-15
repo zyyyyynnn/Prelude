@@ -119,16 +119,16 @@
 5. 报告内容和评分仅作为求职训练辅助反馈。
 6. 报告结果不作为用户能力的最终判断。
 
-### 3.1.8 dev fixture 本地验收隔离需求
+### 3.1.8 本地验收数据夹具隔离需求
 
-为支持本地开发、人工验收和答辩展示，系统需要具备 dev fixture 本地验收数据夹具能力。local/dev 数据夹具只用于本地验收，Full Docker / prod 默认不加载 data-dev.sql，也不开放 reset API。
+为支持本地开发、人工验收和答辩展示，系统需要具备本地验收数据夹具（dev fixture）能力。local/dev 数据夹具只用于本地验收，Full Docker / prod 默认不加载 data-dev.sql，也不开放 reset API。
 
-dev fixture 本地验收数据夹具模块需要满足以下需求：
+本地验收数据夹具模块需要满足以下需求：
 
 1. 支持 local/dev 验收数据重置。
-2. dev fixture 数据不应进入 Full Docker / prod 默认路径。
-3. dev fixture 模式下的状态和数据应具备可重置性。
-4. dev fixture 不应与 Full Docker / prod 配置混用。
+2. 本地验收数据夹具数据不应进入 Full Docker / prod 默认路径。
+3. 本地验收数据夹具模式下的状态和数据应具备可重置性。
+4. 本地验收数据夹具不应与 Full Docker / prod 配置混用。
 5. 本地测试和验收结论不应扩展为公网生产环境结论。
 
 ## 3.2 非功能性需求分析
@@ -188,7 +188,7 @@ dev fixture 本地验收数据夹具模块需要满足以下需求：
 2. 用户级 BYOK 配置可支持不同 endpoint root、API Key 和 model。
 3. 报告生成通过 RabbitMQ 与用户请求解耦。
 4. 数据看板可基于评分记录和薄弱点记录扩展更多统计维度。
-5. dev fixture 本地验收模式应与Full Docker / prod 配置保持边界，便于后续维护。
+5. 本地验收数据夹具模式应与 Full Docker / prod 配置保持边界，便于后续维护。
 
 上述可扩展性设计主要服务于系统后续迭代，不表示当前系统已经具备复杂部署环境下的性能能力。
 
@@ -508,13 +508,13 @@ BYOK 设计提高了模型接入灵活性，但不同 OpenAI-compatible endpoint
 
 报告展示页面主要向用户展示面试表现总结、能力评分、优势、薄弱点和改进建议。数据看板可基于历史评分和薄弱点记录展示趋势变化。该流程用于辅助用户复盘训练结果，不用于替代真实招聘评价。
 
-### 3.5.6 dev fixture 本地验收数据夹具流程
+### 3.5.6 本地验收数据夹具流程
 
-dev fixture 本地验收数据夹具流程用于支持本地展示或答辩展示。其设计目标是在 local/dev 路径中提供可展示、可重置的业务流程。
+本地验收数据夹具流程用于支持本地展示或答辩展示。其设计目标是在 local/dev 路径中提供可展示、可重置的业务流程。
 
-dev fixture 设计要求包括：
+本地验收数据夹具设计要求包括：
 
-1. dev fixture 与 Full Docker / prod 默认路径隔离。
+1. 本地验收数据夹具与 Full Docker / prod 默认路径隔离。
 2. local/dev 可通过 reset 端点重置验收数据。
 3. local/dev 验收链路和 Full Docker / prod 路径不应混用。
 4. 展示链路用于展示核心功能流程，不代表公网生产环境性能结论。

@@ -1,6 +1,6 @@
 # Bug 1 证据：Demo 登录代理 `ECONNREFUSED`
 
-> 注：本文档记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+> 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
 
 ## 主讲定位
 

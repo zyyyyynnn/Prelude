@@ -15,15 +15,15 @@
 | 第 7 页 | 核心实现一：SSE 流式面试 | `thesis-assets/evidence/diagrams/fig-4.x-sse-streaming-flow.png`、SSE 代码片段 | 第四章 | 说明后端 SseEmitter 流式推送、前端 rAF 缓冲渲染和 `[DONE]` 收口。 | 候选图4.x |
 | 第 8 页 | 核心实现二：Structured Output | JSON Schema 代码片段、反序列化降级逻辑 | 第四章 | 说明旧版正则评分的风险，新版 Jackson 反序列化 + clampScore + 安全降级 6 分。 | 对比新旧方案 |
 | 第 9 页 | 核心实现三：高可用机制 | Redis 限流脚本、Resilience4j 配置、SSE 重连逻辑 | 第四章 | 说明 Redis Lua 令牌桶限流、熔断器自动切换备用 Provider、SSE 指数退避重连。 | 限缩为机制说明，不写成已验证的高并发能力 |
-| 第 10 页 | 测试验证 | `thesis-assets/evidence/test-data/env-2026-06.md`、`functional-cases-2026-06.md`、`demo-2026-06.md` | 第五章 | 展示 TC-01 到 TC-09 全通过，后端 14 个单元测试全绿，前端构建零错误。明确 dev fixture 本机回环口径。 | 旧 4 月数据仅作 archive 历史对照 |
-| 第 11 页 | Bug 复盘 | `thesis-assets/evidence/bug-evidence/bug-fix-cases-2026-04-24.md` | 第四章、第五章 | 讲 Demo 代理错连和 MySQL 未就绪两个真实问题，突出排查和脚本前置校验。 | 选 1-2 个重点讲 |
-| 第 12 页 | 系统展示路线 | `thesis-assets/defense/defense-demo-runbook-2026-04-25.md` | 全文 | 按登录、主工作台、简历、面试、报告、看板、LLM 配置、设置展示。 | 准备离线截图兜底 |
+| 第 10 页 | 测试验证 | `thesis-assets/evidence/test-data/env-2026-06.md`、`functional-cases-2026-06.md`、`dev-fixture-2026-06.md` | 第五章 | 展示 TC-01 到 TC-09 全通过，后端 14 个单元测试全绿，前端构建通过。明确 dev fixture 本机回环口径。 | 旧 4 月数据仅作 archive 历史对照 |
+| 第 11 页 | Bug 复盘 | `thesis-assets/evidence/bug-evidence/bug-fix-cases-2026-04-24.md` | 第四章、第五章 | 讲历史 Demo 代理错连问题和 MySQL 未就绪两个真实问题，突出排查和脚本前置校验。 | 选 1-2 个重点讲 |
+| 第 12 页 | 系统展示路线 | `thesis-assets/defense/defense-dev-runbook-2026-06.md` | 全文 | 按登录、主工作台、简历、面试、报告、看板、LLM 配置、设置展示。 | 准备离线截图兜底 |
 | 第 13 页 | 总结与不足 | 第六章总结、局限与改进方向 | 第六章 | 总结完整闭环、SSE 体验、Structured Output、高可用机制、Docker 编排和证据化测试；说明语音交互和部分性能指标仍为待实测状态。 | 收束到可扩展方向 |
-| 第 14 页 | Q&A 准备 | `thesis-assets/defense/defense-demo-runbook-2026-04-25.md` 第五节 | — | 预备 6-8 个高频追问的口径（SSE vs WS、熔断降级、RabbitMQ 现状、语音待实测、测试口径等）。 | 可选页，视答辩时间决定是否展示 |
+| 第 14 页 | Q&A 准备 | `thesis-assets/defense/defense-dev-runbook-2026-06.md` 第五节 | — | 预备 6-8 个高频追问的口径（SSE vs WS、熔断降级、RabbitMQ 现状、语音待实测、测试口径等）。 | 可选页，视答辩时间决定是否展示 |
 
 ## 关键提示
 
-- 当前测试数据代表 dev fixture 本机闭环与 2026-05-27 真实 API 补充测试，不代表真实公网 LLM 响应性能。
+- 当前测试数据代表 dev fixture 本机闭环与用户级 BYOK 链路补充验证，不代表真实公网 LLM 响应性能。
 - 语音交互（Voice/WebSocket）只写成规划或待实测能力，不得写成真实公网低延迟已完成。
 - RabbitMQ 已用于报告生成异步链路并完成本地闭环验证（`/finish → RabbitMQ → @RabbitListener → report_ready`）；Redis 回归限流、缓存与状态辅助职责。本次验证为本地基础链路联调，不等同于公网高并发压测，不证明生产级可靠投递或消息绝不丢失。
 - fig-4.x 为候选图号，仅在正文实际引用时转为正式图号。

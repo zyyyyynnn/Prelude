@@ -1,6 +1,6 @@
 # 阶段性功能测试用例登记表
 
-> 注：本文档记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+> 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
 
 **测试日期**：2026-06-12
 **测试环境**：本机全栈联调环境 (Demo Twin)
