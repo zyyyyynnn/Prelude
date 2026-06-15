@@ -106,6 +106,24 @@ public class LlmRouter {
         return chatWithSnapshot(providerKey, model, messages, null);
     }
 
+    /**
+     * 用显式参数测试草稿配置，不读写用户表、不触发 fallback、不经过熔断器。
+     * openai-compatible 用 baseUrl 归一化后的 chat/completions 地址。
+     */
+    public String chatWithExplicit(
+        String providerKey,
+        String model,
+        String baseUrl,
+        String apiKey,
+        List<Map<String, String>> messages
+    ) {
+        LlmProvider provider = requireProvider(providerKey);
+        String normalizedModel = normalizeModel(model, provider.defaultModel());
+        LlmProviderConfig providerConfig = requireEnabledProviderConfig(providerKey);
+        return provider.chat(buildInvocationExplicit(
+            providerConfig, normalizedModel, baseUrl, apiKey, messages, null));
+    }
+
     public String chatWithSnapshot(
         String providerKey,
         String model,
@@ -162,6 +180,10 @@ public class LlmRouter {
     }
 
     private String executeFallbackChat(String failedProviderKey, String model, List<Map<String, String>> messages, Map<String, Object> extraParams) {
+        // openai-compatible 是用户 BYOK 配置，失败必须显式暴露，不得静默 fallback 到系统通道（否则会用系统 Key 调用户接口或泄露 Key）。
+        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(failedProviderKey)) {
+            throw BusinessException.badRequest("自定义接口调用失败，请检查 Base URL、API Key 与模型后重试。");
+        }
         List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getEnabled, 1)
             .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
@@ -182,12 +204,16 @@ public class LlmRouter {
             User user = requireCurrentUser();
             LlmProvider provider = requireProvider(fallbackProviderKey);
             String fallbackModel = provider.defaultModel();
-            String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+            // fallback 仅允许使用目标 provider 的系统 Key，绝不复用用户 BYOK Key，避免把用户 Key 发给其他 provider。
+            String apiKey = resolveSystemApiKey(provider);
             return provider.chat(buildInvocation(fallbackConfig, fallbackModel, apiKey, user, messages, extraParams));
         });
     }
 
     private void executeFallbackStream(String failedProviderKey, String model, List<Map<String, String>> messages, Consumer<String> onDelta, Map<String, Object> extraParams) {
+        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(failedProviderKey)) {
+            throw BusinessException.badRequest("自定义接口调用失败，请检查 Base URL、API Key 与模型后重试。");
+        }
         List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getEnabled, 1)
             .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
@@ -208,7 +234,7 @@ public class LlmRouter {
             User user = requireCurrentUser();
             LlmProvider provider = requireProvider(fallbackProviderKey);
             String fallbackModel = provider.defaultModel();
-            String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+            String apiKey = resolveSystemApiKey(provider);
             provider.streamChat(buildInvocation(fallbackConfig, fallbackModel, apiKey, user, messages, extraParams), onDelta);
         });
     }
@@ -272,6 +298,31 @@ public class LlmRouter {
         );
     }
 
+    /**
+     * 草稿测试专用：用显式 baseUrl/apiKey 构建 invocation，不读 user 表的 maxTokens/thinkingDepth/baseUrl。
+     */
+    private LlmProvider.LlmInvocation buildInvocationExplicit(
+        LlmProviderConfig providerConfig,
+        String model,
+        String baseUrl,
+        String apiKey,
+        List<Map<String, String>> messages,
+        Map<String, Object> callerExtraParams
+    ) {
+        String resolvedBaseUrl = providerConfig.getBaseUrl();
+        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerConfig.getProviderKey())) {
+            resolvedBaseUrl = OpenAiCompatibleUrl.toChatCompletionsUrl(baseUrl);
+        }
+        return new LlmProvider.LlmInvocation(
+            resolvedBaseUrl,
+            model,
+            apiKey,
+            messages,
+            null,
+            callerExtraParams
+        );
+    }
+
     private User requireCurrentUser() {
         Long userId = UserContext.getCurrentUserId();
         if (userId == null) {
@@ -322,6 +373,17 @@ public class LlmRouter {
             return systemApiKey;
         }
         throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换 Provider");
+    }
+
+    /**
+     * fallback 专用：只允许使用目标 provider 的系统 Key，绝不解密用户 BYOK Key。
+     */
+    private String resolveSystemApiKey(LlmProvider provider) {
+        String systemApiKey = provider.systemApiKey();
+        if (systemApiKey != null && !systemApiKey.isBlank()) {
+            return systemApiKey;
+        }
+        throw BusinessException.badRequest("备用通道未配置系统 Key，无法 fallback");
     }
 
     private String decryptUserApiKey(String encryptedUserKey) {

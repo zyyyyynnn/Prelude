@@ -135,13 +135,22 @@ export type LlmConfigResponse = {
 
 export type LlmModelDiscoveryPayload = {
   baseUrl: string
-  apiKey: string
+  apiKey?: string
 }
 
 export type LlmModelDiscoveryResponse = {
   providerKey: string
   baseUrl: string
   models: string[]
+}
+
+export type LlmConfigTestPayload = {
+  providerKey?: string
+  baseUrl?: string
+  model?: string
+  apiKey?: string
+  maxTokens?: number
+  thinkingDepth?: string
 }
 
 export type LlmConfigTestResponse = {

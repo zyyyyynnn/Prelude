@@ -3,6 +3,7 @@ import type {
   ApiResult,
   LlmConfigPayload,
   LlmConfigResponse,
+  LlmConfigTestPayload,
   LlmConfigTestResponse,
   LlmModelDiscoveryPayload,
   LlmModelDiscoveryResponse,
@@ -99,7 +100,7 @@ export async function discoverLlmModels(payload: LlmModelDiscoveryPayload) {
   return unwrapResult(response.data)
 }
 
-export async function testUserLlmConfig() {
-  const response = await http.post<ApiResult<LlmConfigTestResponse>>('/user/llm-config/test')
+export async function testUserLlmConfig(payload?: LlmConfigTestPayload) {
+  const response = await http.post<ApiResult<LlmConfigTestResponse>>('/user/llm-config/test', payload ?? {})
   return unwrapResult(response.data)
 }
