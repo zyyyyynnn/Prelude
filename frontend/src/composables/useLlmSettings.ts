@@ -1,17 +1,31 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { discoverLlmModels, fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
 import { withMinDelay } from '../lib/utils'
 import type { LlmProviderOption } from '../api/contracts'
 import { usePageNotice } from './usePageNotice'
 import { getErrorMessage } from '../utils/errors'
 
+const OPENAI_COMPATIBLE_PROVIDER = 'openai-compatible'
+
+export type LlmTestState = 'idle' | 'testing' | 'success' | 'error'
+
+function normalizeBaseUrl(baseUrl: string): string {
+  // 轻量归一化用于 scope 比对：去尾部斜杠，去 /chat/completions 后缀。后端仍会做权威校验。
+  let v = (baseUrl || '').trim()
+  v = v.replace(/\/+$/, '')
+  if (v.endsWith('/chat/completions')) {
+    v = v.slice(0, -'/chat/completions'.length)
+  }
+  v = v.replace(/\/+$/, '')
+  return v
+}
+
 export function useLlmSettings() {
-  const OPENAI_COMPATIBLE_PROVIDER = 'openai-compatible'
   const loading = ref(false)
   const saving = ref(false)
   const testing = ref(false)
   const discovering = ref(false)
-  const lastTestMessage = ref('未测试')
+  const testStatus = ref<{ state: LlmTestState; message: string }>({ state: 'idle', message: '未测试' })
   const { showNotice } = usePageNotice()
 
   const providerOptions = ref<LlmProviderOption[]>([])
@@ -23,6 +37,9 @@ export function useLlmSettings() {
   const apiKeyMasked = ref('')
   const maxTokens = ref<number | undefined>(undefined)
   const thinkingDepth = ref<string | undefined>(undefined)
+
+  // scope 快照：loadSettings 成功后记录，用于判断「表单 scope 是否相对已保存配置变化」。
+  const initialScope = ref<{ providerKey: string; baseUrl: string }>({ providerKey: '', baseUrl: '' })
 
   const currentProvider = computed(
     () => providerOptions.value.find((item) => item.providerKey === selectedProviderKey.value) ?? null,
@@ -41,24 +58,19 @@ export function useLlmSettings() {
     return models
   })
 
+  function isScopeChanged(): boolean {
+    const providerChanged = selectedProviderKey.value !== initialScope.value.providerKey
+    if (!isOpenAiCompatible.value) {
+      return providerChanged
+    }
+    return providerChanged
+      || normalizeBaseUrl(baseUrlInput.value) !== normalizeBaseUrl(initialScope.value.baseUrl)
+  }
+
   function applySelection(providerKey: string, model: string) {
     selectedProviderKey.value = providerKey
     selectedModel.value = model
   }
-
-  watch(
-    modelOptions,
-    (models) => {
-      if (!models.length) {
-        selectedModel.value = ''
-        return
-      }
-      if (!models.includes(selectedModel.value)) {
-        selectedModel.value = models[0]
-      }
-    },
-    { immediate: true },
-  )
 
   async function loadSettings() {
     loading.value = true
@@ -73,7 +85,8 @@ export function useLlmSettings() {
       apiKeyMasked.value = config.apiKeyMasked || ''
       maxTokens.value = config.maxTokens ?? undefined
       thinkingDepth.value = config.thinkingDepth ?? undefined
-      lastTestMessage.value = '未测试'
+      initialScope.value = { providerKey: selectedProviderKey.value, baseUrl: baseUrlInput.value }
+      testStatus.value = { state: 'idle', message: '未测试' }
       showNotice('配置已加载', 'success')
     } catch (error) {
       showNotice(getErrorMessage(error), 'error')
@@ -84,11 +97,11 @@ export function useLlmSettings() {
 
   async function saveSettings() {
     if (!selectedProviderKey.value || !selectedModel.value) {
-      showNotice('请选择 Provider 和模型', 'warning')
+      showNotice('请选择接入方式和模型', 'warning')
       return
     }
     if (isOpenAiCompatible.value && !baseUrlInput.value.trim()) {
-      showNotice('请填写 OpenAI-compatible endpoint', 'warning')
+      showNotice('请填写 Base URL', 'warning')
       return
     }
 
@@ -110,7 +123,8 @@ export function useLlmSettings() {
       apiKeyMasked.value = result.apiKeyMasked || ''
       maxTokens.value = result.maxTokens ?? undefined
       thinkingDepth.value = result.thinkingDepth ?? undefined
-      lastTestMessage.value = '配置已变更，建议重新测试'
+      initialScope.value = { providerKey: selectedProviderKey.value, baseUrl: baseUrlInput.value }
+      testStatus.value = { state: 'idle', message: '配置已变更，建议重新测试' }
       if (apiKeyInput.value && !result.apiKeyMasked) {
         apiKeyInput.value = ''
         showNotice('配置已保存，但接口未返回脱敏 Key', 'warning')
@@ -136,6 +150,7 @@ export function useLlmSettings() {
       }))
       apiKeyMasked.value = result.apiKeyMasked || ''
       apiKeyInput.value = ''
+      testStatus.value = { state: 'idle', message: '未测试' }
       showNotice('API Key 已清除', 'success')
     } catch (error) {
       showNotice(getErrorMessage(error), 'error')
@@ -146,13 +161,23 @@ export function useLlmSettings() {
 
   async function testSettings() {
     testing.value = true
+    testStatus.value = { state: 'testing', message: '测试中…' }
     try {
-      const result = await withMinDelay(testUserLlmConfig())
-      lastTestMessage.value = result.message || '模型配置测试通过'
-      showNotice(lastTestMessage.value, result.ok ? 'success' : 'warning')
+      const result = await withMinDelay(testUserLlmConfig({
+        providerKey: selectedProviderKey.value,
+        baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
+        model: selectedModel.value,
+        apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
+        maxTokens: maxTokens.value ?? undefined,
+        thinkingDepth: thinkingDepth.value ?? undefined,
+      }))
+      const message = result.message || '模型配置测试通过'
+      testStatus.value = { state: result.ok ? 'success' : 'error', message }
+      showNotice(message, result.ok ? 'success' : 'warning')
     } catch (error) {
-      lastTestMessage.value = getErrorMessage(error)
-      showNotice(lastTestMessage.value, 'error')
+      const message = getErrorMessage(error)
+      testStatus.value = { state: 'error', message }
+      showNotice(message, 'error')
     } finally {
       testing.value = false
     }
@@ -160,19 +185,25 @@ export function useLlmSettings() {
 
   async function discoverModels() {
     if (!baseUrlInput.value.trim()) {
-      showNotice('请填写 OpenAI-compatible endpoint', 'warning')
+      showNotice('请填写 Base URL', 'warning')
       return
     }
-    if (!apiKeyInput.value.trim()) {
-      showNotice('请输入 API Key 后再自动检测模型', 'warning')
-      return
+    // Key 选择规则：新 Key > 同 scope 已保存 Key > 否则提示重新填 Key。
+    const hasNewKey = apiKeyInput.value.trim() !== ''
+    if (!hasNewKey) {
+      const scopeChanged = isScopeChanged()
+      const hasSavedKey = apiKeyMasked.value !== ''
+      if (scopeChanged || !hasSavedKey) {
+        showNotice('更换接入方式或 Base URL 后，请重新填写 API Key 再检测。', 'warning')
+        return
+      }
     }
 
     discovering.value = true
     try {
       const result = await withMinDelay(discoverLlmModels({
         baseUrl: baseUrlInput.value.trim(),
-        apiKey: apiKeyInput.value.trim(),
+        apiKey: hasNewKey ? apiKeyInput.value.trim() : undefined,
       }))
       baseUrlInput.value = result.baseUrl
       discoveredModels.value = result.models
@@ -192,7 +223,7 @@ export function useLlmSettings() {
     saving,
     testing,
     discovering,
-    lastTestMessage,
+    testStatus,
     providerOptions,
     selectedProviderKey,
     baseUrlInput,

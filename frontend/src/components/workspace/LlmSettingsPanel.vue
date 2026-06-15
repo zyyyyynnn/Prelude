@@ -1,8 +1,9 @@
-﻿<script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue'
 import { useLlmSettings } from '../../composables/useLlmSettings'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Eye, EyeOff, LoaderCircle, Trash2 } from '@lucide/vue'
+import { Eye, EyeOff, Trash2 } from '@lucide/vue'
 import {
   FormControl,
   FormField,
@@ -22,8 +23,15 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { llmSettingsSchema } from '../../schemas/llm'
 
+const OPENAI_COMPATIBLE_PROVIDER = 'openai-compatible'
+
+// 前端展示映射：后端 providerKey 仍为 openai-compatible，仅展示层映射为对普通用户友好的名称。
+const DISPLAY_NAME_MAP: Record<string, string> = {
+  [OPENAI_COMPATIBLE_PROVIDER]: '自定义 OpenAI 兼容接口',
+}
+
 const {
-  loading, saving, testing, discovering,
+  loading, saving, testing, discovering, testStatus,
   providerOptions, selectedProviderKey, selectedModel,
   baseUrlInput, apiKeyInput, apiKeyMasked, maxTokens, thinkingDepth,
   modelOptions, isOpenAiCompatible,
@@ -35,6 +43,29 @@ const showApiKey = ref(false)
 const { handleSubmit, setValues } = useForm({
   validationSchema: toTypedSchema(llmSettingsSchema),
 })
+
+function providerDisplayName(key: string, fallback: string): string {
+  return DISPLAY_NAME_MAP[key] ?? fallback
+}
+
+// 测试状态 Badge 映射。
+const testBadgeVariant = computed(() => {
+  switch (testStatus.value.state) {
+    case 'testing': return 'secondary'
+    case 'success': return 'default'
+    case 'error': return 'destructive'
+    default: return 'outline'
+  }
+})
+const testBadgeText = computed(() => {
+  switch (testStatus.value.state) {
+    case 'testing': return '测试中'
+    case 'success': return '已通过'
+    case 'error': return '失败'
+    default: return '未测试'
+  }
+})
+const apiKeyStatusLabel = computed(() => apiKeyMasked.value ? `已保存：${apiKeyMasked.value}` : '未保存')
 
 watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth], () => {
   setValues({
@@ -65,10 +96,10 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
       <div class="field-grid">
         <FormField name="providerKey" v-slot="{ componentField }">
           <FormItem>
-            <FormLabel>Provider</FormLabel>
+            <FormLabel>接入方式</FormLabel>
             <Select v-bind="componentField" v-model="selectedProviderKey">
               <SelectTrigger>
-                <SelectValue placeholder="请选择 Provider" />
+                <SelectValue placeholder="请选择接入方式" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
@@ -76,7 +107,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   :key="provider.providerKey"
                   :value="provider.providerKey"
                 >
-                  {{ provider.displayName }}
+                  {{ providerDisplayName(provider.providerKey, provider.displayName) }}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -87,7 +118,13 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         <FormField name="model" v-slot="{ componentField }">
           <FormItem>
             <FormLabel>模型</FormLabel>
-            <Select :disabled="modelOptions.length === 0" v-bind="componentField" v-model="selectedModel">
+            <!-- 自定义接口：可手填模型 ID（datalist 提供候选但不阻止手动输入）；内置 provider 保持 Select -->
+            <Select
+              v-if="!isOpenAiCompatible"
+              :disabled="modelOptions.length === 0"
+              v-bind="componentField"
+              v-model="selectedModel"
+            >
               <SelectTrigger>
                 <SelectValue placeholder="请选择模型" />
               </SelectTrigger>
@@ -101,6 +138,20 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 </SelectItem>
               </SelectContent>
             </Select>
+            <template v-else>
+              <FormControl>
+                <Input
+                  v-model="selectedModel"
+                  v-bind="componentField"
+                  list="llm-model-suggestions"
+                  autocomplete="off"
+                  placeholder="填写或选择模型 ID"
+                />
+              </FormControl>
+              <datalist id="llm-model-suggestions">
+                <option v-for="model in modelOptions" :key="model" :value="model" />
+              </datalist>
+            </template>
             <FormMessage />
           </FormItem>
         </FormField>
@@ -108,14 +159,14 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 
       <FormField v-if="isOpenAiCompatible" name="baseUrl" v-slot="{ componentField }">
         <FormItem>
-          <FormLabel>OpenAI-compatible endpoint</FormLabel>
+          <FormLabel>Base URL</FormLabel>
           <div class="endpoint-row">
             <FormControl>
               <Input
                 v-model="baseUrlInput"
                 v-bind="componentField"
                 autocomplete="off"
-                placeholder="https://example.com/v1"
+                placeholder="例如：https://api.deepseek.com/v1"
               />
             </FormControl>
             <Button
@@ -123,28 +174,27 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               variant="secondary"
               class="endpoint-row__button"
               :disabled="discovering"
+              :loading="discovering"
               @click="discoverModels"
             >
-              <span :class="{ 'opacity-0': discovering }">自动检测模型</span>
-              <span v-if="discovering" class="endpoint-row__spinner">
-                <LoaderCircle class="h-4 w-4 animate-spin" />
-              </span>
+              自动检测模型
             </Button>
           </div>
+          <p class="helper-text">填写接口根地址，通常以 /v1 结尾；不要填写 /chat/completions。</p>
           <FormMessage />
         </FormItem>
       </FormField>
 
       <FormField name="apiKey" v-slot="{ componentField }">
         <FormItem class="relative">
-          <FormLabel>新 API Key / 清空</FormLabel>
+          <FormLabel>API Key</FormLabel>
           <div class="relative w-full flex items-center">
             <FormControl>
               <Input
                 v-model="apiKeyInput"
                 v-bind="componentField"
                 autocomplete="off"
-                placeholder="留空表示不修改当前用户 Key"
+                placeholder="留空表示不修改当前 Key"
                 :type="showApiKey ? 'text' : 'password'"
                 class="pr-20"
               />
@@ -153,14 +203,16 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               <button
                 v-if="apiKeyMasked"
                 type="button"
-                class="px-2 py-2 hover:bg-transparent text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"
+                aria-label="清除 API Key"
+                class="px-2 py-2 hover:bg-transparent text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors duration-300 ease-in-out"
                 @click="clearApiKey"
               >
                 <Trash2 class="h-4 w-4" />
               </button>
               <button
                 type="button"
-                class="px-2 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center"
+                :aria-label="showApiKey ? '隐藏 API Key' : '显示 API Key'"
+                class="px-2 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center transition-colors duration-300 ease-in-out"
                 @click="showApiKey = !showApiKey"
               >
                 <Eye v-if="showApiKey" class="h-4 w-4" />
@@ -168,9 +220,19 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               </button>
             </div>
           </div>
+          <p class="helper-text api-key-status">{{ apiKeyStatusLabel }}</p>
           <FormMessage />
         </FormItem>
       </FormField>
+
+      <!-- 持久测试状态：不依赖 2 秒 toast，表单内始终可见 -->
+      <div class="test-status-row">
+        <span class="test-status-row__label">连接测试</span>
+        <Badge :variant="testBadgeVariant">{{ testBadgeText }}</Badge>
+        <span class="test-status-row__message" :class="{ 'test-status-row__message--error': testStatus.state === 'error' }">
+          {{ testStatus.message }}
+        </span>
+      </div>
 
       <div class="form-section">
         <div class="form-section__title">高级设置</div>
@@ -209,12 +271,12 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   <SelectItem value="xhigh">极高 (Extreme)</SelectItem>
                 </SelectContent>
               </Select>
+              <p class="helper-text">部分模型可能不支持，测试失败时请改回默认。</p>
               <FormMessage />
             </FormItem>
           </FormField>
         </div>
       </div>
-
 
     </form>
   </div>
@@ -252,11 +314,29 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
   position: relative;
   min-width: calc(var(--ui-height-base) * 4);
 }
-.endpoint-row__spinner {
-  position: absolute;
-  inset: 0;
+.helper-text {
+  margin-top: var(--spacing-xs);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.api-key-status {
+  font-weight: 500;
+}
+.test-status-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+.test-status-row__label {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+.test-status-row__message {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.test-status-row__message--error {
+  color: var(--color-error);
 }
 </style>

@@ -1,6 +1,7 @@
 package com.interview.controller;
 
 import com.interview.common.Result;
+import com.interview.dto.LlmConfigTestRequest;
 import com.interview.dto.LlmConfigTestResponse;
 import com.interview.dto.LlmModelDiscoveryRequest;
 import com.interview.dto.LlmModelDiscoveryResponse;
@@ -33,8 +34,8 @@ public class UserController {
     }
 
     @PostMapping("/llm-config/test")
-    public Result<LlmConfigTestResponse> testLlmConfig() {
-        return Result.success(userLlmConfigService.testCurrentUserConfig());
+    public Result<LlmConfigTestResponse> testLlmConfig(@RequestBody(required = false) LlmConfigTestRequest request) {
+        return Result.success(userLlmConfigService.testConfig(request));
     }
 
     @PostMapping("/llm-config/discover-models")
