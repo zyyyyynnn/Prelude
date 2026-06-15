@@ -78,7 +78,7 @@
 | --- | --- |
 | `thesis-assets/evidence/test-data/env-2026-06.md` | 测试环境与构建验证 |
 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 功能测试用例 TC-01 ~ TC-09 |
-| `thesis-assets/evidence/test-data/demo-2026-06.md` | Demo Twin 业务验证 |
+| `thesis-assets/evidence/test-data/dev-fixture-2026-06.md` | Demo Twin 业务验证 |
 | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试证据矩阵 |
 | `thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.md` | 历史真实 API 功能链路记录（已脱敏） |
 

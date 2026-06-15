@@ -34,7 +34,7 @@
 | 证据类别 | 当前资产 | 可支撑章节 | 当前状态 | 风险说明 |
 | :--- | :--- | :--- | :--- | :--- |
 | **功能测试** | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 第五章 | 活跃资产 | 部分高可用防护及语音多模态标记为“待实测”，需作限制性描述 |
-| **Demo 验证** | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md)、[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) | 第五章 | 活跃资产/历史对比 | 仅限本机回环隔离环境，不得引申为生产公网表现 |
+| **Demo 验证** | [dev-fixture-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/dev-fixture-2026-06.md)、[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) | 第五章 | 活跃资产/历史对比 | 仅限本机回环隔离环境，不得引申为生产公网表现 |
 | **构建验证** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 2.1 与 2.2 小节 | 第五章 | 活跃资产 | 仅能证明编译、类型检查和打包顺利完成 |
 | **环境配置** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 1.0 小节 | 第五章 | 活跃资产 | 代表本机全栈测试环境，不能声称云端分布式部署 |
 | **Bug 修复证据** | [01-demo-proxy.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/01-demo-proxy.md)、[02-mysql-preflight.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/02-mysql-preflight.md) | 第四/五章 | 活跃资产 | 仅用于排查和健壮性展示，不可夸大为高可用性能 |

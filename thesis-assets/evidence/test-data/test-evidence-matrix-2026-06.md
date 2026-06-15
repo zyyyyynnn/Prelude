@@ -16,7 +16,7 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | [demo-2026-04-25.json](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.json) | JSON 原始测试数据 | 记录 2026 年 4 月本机回环 Demo 模式运行的原始 JSON 交互结果 | Demo 模式 / 模拟数据 | 第五章 | 历史存档 | 仅限本地隔离验证，不能代表真实网络环境 |
 | [demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) | 测试记录 Markdown | 包含 4 月 25 日 TC-01 ~ TC-09 本地测试步骤与响应时延指标 | Demo 模式 / 前后端联调 | 第五章 | 历史存档 | 数据属于旧版本，仅作对比参考 |
-| [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md) | 测试记录 Markdown | 记录 6 月最新本机 Windows 全栈环境测试结论与历史真实 API 记录对比 | Demo / Real 模式 | 第五章 | 活跃资产 | 明确标示了大部分高并发与 SSE 并发为“未实测” |
+| [dev-fixture-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/dev-fixture-2026-06.md) | 测试记录 Markdown | 记录 6 月最新本机 Windows 全栈环境测试结论与历史真实 API 记录对比 | Demo / Real 模式 | 第五章 | 活跃资产 | 明确标示了大部分高并发与 SSE 并发为“未实测” |
 | [env-2026-04-24.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/env-2026-04-24.md) | 环境配置 Markdown | 记录 4 月份的操作系统、基础依赖和 Maven/Vite 验证命令 | 测试环境 | 第五章 | 历史存档 | 仅记录历史状态 |
 | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) | 环境配置 Markdown | 记录 6 月最新 Node.js、JDK21、MySQL 等版本，以及最新的 Maven 测试和 Vite 构建通过日志 | 测试环境 / 构建记录 | 第五章 | 活跃资产 | 仅代表单机开发环境，不代表分布式部署环境 |
 | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 功能测试用例 | 列出 TC-01 到 TC-09 的测试项、预期结果与实际测试结论（含“待实测”项） | 核心业务模块 | 第五章 | 活跃资产 | 部分高可用及语音多模态为“待实测”状态，不可夸大 |
