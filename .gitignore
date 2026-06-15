@@ -2,6 +2,9 @@
 backend/target/
 backend/src/main/resources/application-local.yml
 
+# Docker Compose local env (do not commit real secrets)
+.env
+
 # Frontend
 frontend/node_modules/
 frontend/dist/
