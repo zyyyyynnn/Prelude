@@ -37,6 +37,19 @@ if not exist "%ROOT%.env" (
   )
 )
 
+REM ---- 占位密钥检测（仅警告，不阻塞） ----
+set "JWT_PLACEHOLDER=0"
+set "AES_PLACEHOLDER=0"
+if exist "%ROOT%.env" (
+  findstr /B /I "JWT_SECRET=replace-with-at-least-32-bytes-jwt-secret" "%ROOT%.env" >nul 2>nul && set "JWT_PLACEHOLDER=1"
+  findstr /B /I "APP_CRYPTO_AES_SECRET=replace-with-at-least-32-bytes-aes-secret" "%ROOT%.env" >nul 2>nul && set "AES_PLACEHOLDER=1"
+)
+if "!JWT_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder JWT_SECRET.
+if "!AES_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder APP_CRYPTO_AES_SECRET.
+if "!JWT_PLACEHOLDER!"=="1" if "!AES_PLACEHOLDER!"=="1" (
+  echo [WARN] Real stack can start for local demo, but replace them before long-term use.
+)
+
 REM ---- 校验 compose 配置 ----
 echo [INFO] Validating docker compose config ^(profile: %PROFILE%^)...
 %COMPOSE% --profile %PROFILE% config >nul 2>nul
@@ -102,12 +115,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ready = $false;" ^
   "while ((Get-Date) -lt $deadline) {" ^
   "  try {" ^
-  "    Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5 | Out-Null;" ^
-  "    $ready = $true;" ^
-  "    break;" ^
-  "  } catch {" ^
-  "    if ($_.Exception.Response) { $ready = $true; break }" ^
-  "  }" ^
+  "    $resp = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5;" ^
+  "    if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) { $ready = $true; break }" ^
+  "  } catch { }" ^
   "  Start-Sleep -Seconds 2;" ^
   "}" ^
   "if ($ready) { exit 0 } else { exit 1 }"

@@ -102,12 +102,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ready = $false;" ^
   "while ((Get-Date) -lt $deadline) {" ^
   "  try {" ^
-  "    Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5 | Out-Null;" ^
-  "    $ready = $true;" ^
-  "    break;" ^
-  "  } catch {" ^
-  "    if ($_.Exception.Response) { $ready = $true; break }" ^
-  "  }" ^
+  "    $resp = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5;" ^
+  "    if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) { $ready = $true; break }" ^
+  "  } catch { }" ^
   "  Start-Sleep -Seconds 2;" ^
   "}" ^
   "if ($ready) { exit 0 } else { exit 1 }"
