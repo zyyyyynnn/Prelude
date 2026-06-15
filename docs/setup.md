@@ -45,6 +45,19 @@ OPENAI_MODEL=
 
 底层等价于 `docker compose --profile real up -d --build` / `--profile demo`。
 
+### 停止服务
+
+real 与 demo 共享同一组基础中间件（mysql/redis/rabbitmq）。并行运行时，停止单一 profile 会连带停掉共享中间件，影响另一侧。按需选择：
+
+```powershell
+# 仅停真实版应用层（保留中间件与 Demo 版运行）
+docker compose stop backend-real frontend-real
+# 仅停 Demo 应用层
+docker compose stop backend-demo frontend-demo
+# 停全部应用层 + 共享中间件（real/demo 均停）
+docker compose --profile real --profile demo down
+```
+
 ### 3. 访问地址
 
 | 项 | 真实版 | Demo 版 |

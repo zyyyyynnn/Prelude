@@ -1,7 +1,7 @@
 name: prelude
 
-# Base services (no profile) are always started alongside any profile.
-# Profiles:
+# 基础服务（mysql/redis/rabbitmq）无 profile，作为公共依赖随 real/demo 自动启动。
+# Profiles 仅控制应用层与可选观测层：
 #   real          -> backend-real + frontend-real (真实版)
 #   demo          -> backend-demo + frontend-demo (Demo Twin)
 #   observability -> prometheus + grafana (可选叠加)
@@ -17,7 +17,6 @@ services:
     image: mysql:8.4
     container_name: prelude-mysql
     restart: always
-    profiles: ["", real, demo]
     environment:
       MYSQL_DATABASE: interview_system
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
@@ -37,7 +36,6 @@ services:
     image: redis:alpine
     container_name: prelude-redis
     restart: always
-    profiles: ["", real, demo]
     ports:
       - "${REDIS_HOST_PORT:-16379}:6379"
     volumes:
@@ -52,7 +50,6 @@ services:
     image: rabbitmq:3-management
     container_name: prelude-rabbitmq
     restart: always
-    profiles: ["", real, demo]
     ports:
       - "${RABBITMQ_HOST_PORT:-5672}:5672"
       - "${RABBITMQ_MANAGEMENT_HOST_PORT:-15672}:15672"

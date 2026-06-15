@@ -8,6 +8,7 @@ set "PROFILE=demo"
 set "BACKEND_READY_URL=http://127.0.0.1:8081/api/health"
 set "BACKEND_READY_TIMEOUT=120"
 set "FRONTEND_URL=http://127.0.0.1:5174"
+set "FRONTEND_READY_TIMEOUT=90"
 
 cd /d "%ROOT%"
 
@@ -66,6 +67,17 @@ if errorlevel 1 (
 )
 echo [INFO] Backend is reachable.
 
+REM ---- 等待前端就绪 ----
+echo [INFO] Waiting for frontend readiness at %FRONTEND_URL% ^(timeout: %FRONTEND_READY_TIMEOUT%s^)...
+call :wait_for_url "%FRONTEND_URL%" %FRONTEND_READY_TIMEOUT%
+if errorlevel 1 (
+  echo [ERROR] Frontend did not become reachable within %FRONTEND_READY_TIMEOUT%s.
+  echo [ERROR] Run: docker compose --profile %PROFILE% logs frontend-demo
+  pause
+  exit /b 1
+)
+echo [INFO] Frontend is reachable.
+
 echo.
 echo ============================================================
 echo  Prelude Demo Twin stack is running ^(Docker^).
@@ -75,7 +87,8 @@ echo  - Health   : http://127.0.0.1:8081/api/health
 echo  - Login    : demo / 123456
 echo  - MySQL    : 127.0.0.1:13306  ^(db: interview_demo^)
 echo ============================================================
-echo  Stop:  docker compose --profile %PROFILE% down
+echo  Stop app layer : docker compose stop backend-demo frontend-demo
+echo  Stop all + mw  : docker compose --profile real --profile demo down
 echo ============================================================
 echo.
 pause

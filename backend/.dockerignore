@@ -1,0 +1,14 @@
+# 构建产物
+target/
+
+# 本机 dev 配置（含真实密钥，禁止进镜像）
+src/main/resources/application-local.yml
+
+# 日志
+*.log
+
+# Eclipse / IDE 元数据
+.classpath
+.factorypath
+.project
+.settings/

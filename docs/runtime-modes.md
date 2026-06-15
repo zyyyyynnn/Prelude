@@ -29,6 +29,14 @@ docker compose --profile real --profile observability up -d --build   # 叠加 P
 
 真实版与 Demo 版隔离：后端 `8080`/`8081`、前端 `5173`/`5174`、数据库 `interview_system`/`interview_demo`、Redis db `0`/`1`。
 
+停止服务时注意：real 与 demo 共享同一组基础中间件（mysql/redis/rabbitmq）。并行运行时，`docker compose --profile real down` 会连带停掉共享中间件，影响 Demo 版。按需选择：
+
+```powershell
+docker compose stop backend-real frontend-real      # 仅停真实版应用层
+docker compose stop backend-demo frontend-demo      # 仅停 Demo 应用层
+docker compose --profile real --profile demo down   # 停全部 + 共享中间件
+```
+
 ## Dev local runtime（仅开发调试）
 
 适用：需要 IDE 断点调试后端，或 Vite HMR 调试前端。
