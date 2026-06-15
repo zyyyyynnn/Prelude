@@ -224,6 +224,34 @@ async function verifyBrowserFlow(port) {
   if (optionCount < 1) {
     throw new Error('Combobox items are not rendered')
   }
+
+  const chevronVisible = await page.locator('.model-combobox svg.lucide-chevron-down').isVisible()
+  if (!chevronVisible) {
+    throw new Error('Combobox trigger is missing the chevron icon')
+  }
+
+  const triggerBox = await page.locator('.model-combobox > *').first().boundingBox()
+  if (Math.abs(triggerBox.height - 34) > 1) {
+    throw new Error(`Combobox trigger height is not 34px, got ${triggerBox.height}`)
+  }
+
+  const contentBox = await page.locator('[data-byok-model-combobox-content]').boundingBox()
+  if (Math.abs(contentBox.width - triggerBox.width) > 1) {
+    throw new Error(`Dropdown content width (${contentBox.width}) does not match trigger width (${triggerBox.width})`)
+  }
+
+  const itemBox = await page.locator('[data-byok-model-combobox-item]').first().boundingBox()
+  if (Math.abs(itemBox.height - 34) > 1) {
+    throw new Error(`Dropdown item height is not 34px, got ${itemBox.height}`)
+  }
+
+  // To allow human comparison, we try to open a Select at the same time. We will open the "高级设置" Select.
+  await page.evaluate(() => {
+    document.addEventListener('pointerdown', (e) => e.stopPropagation(), true)
+  })
+  await page.locator('button[role="combobox"]').nth(1).click() // maxTokens select
+  await page.waitForTimeout(300)
+
   fs.mkdirSync(path.dirname(screenshotPath), { recursive: true })
   await page.screenshot({ path: screenshotPath, fullPage: true })
   await browser.close()

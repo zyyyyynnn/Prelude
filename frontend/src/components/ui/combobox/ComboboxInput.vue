@@ -2,8 +2,14 @@
 import type { ComboboxInputEmits, ComboboxInputProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
 import { reactiveOmit } from "@vueuse/core"
-import { ComboboxInput, useForwardPropsEmits } from "reka-ui"
+import { ComboboxInput, ComboboxTrigger, useForwardPropsEmits } from "reka-ui"
+import { ChevronDown } from "@lucide/vue"
 import { cn } from "@/lib/utils"
+import { dropdownTriggerClasses } from "@/components/ui/shared-dropdown"
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = defineProps<ComboboxInputProps & { class?: HTMLAttributes["class"] }>()
 const emits = defineEmits<ComboboxInputEmits>()
@@ -13,8 +19,13 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
 <template>
-  <ComboboxInput
-    v-bind="forwarded"
-    :class="cn('flex h-[34px] w-full rounded-md border border-input bg-surface px-3 py-1.5 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-foreground file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50', props.class)"
-  />
+  <div :class="cn(dropdownTriggerClasses, props.class)">
+    <ComboboxInput
+      v-bind="{ ...forwarded, ...$attrs }"
+      class="flex-1 bg-transparent outline-none placeholder:text-muted-foreground truncate"
+    />
+    <ComboboxTrigger tabindex="-1" class="shrink-0 outline-none border-0 bg-transparent flex items-center justify-center p-0">
+      <ChevronDown class="w-4 h-4 opacity-50 shrink-0" />
+    </ComboboxTrigger>
+  </div>
 </template>
