@@ -222,6 +222,30 @@ class LlmRouterTest {
     }
 
     @Test
+    void chatWithExplicitRejectsNonWhitelistedModelForBuiltInProvider() {
+        LlmProviderConfig config = new LlmProviderConfig();
+        config.setProviderKey("test");
+        config.setBaseUrl("https://example.test/chat");
+        config.setAvailableModels("[\"model-a\"]");
+        config.setEnabled(1);
+
+        when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
+
+        assertThatThrownBy(() -> router.chatWithExplicit(
+            "test",
+            "model-b",
+            null,
+            null,
+            List.of(Map.of("role", "user", "content", "hello")),
+            null,
+            null
+        ))
+            .isInstanceOf(com.interview.common.BusinessException.class)
+            .hasMessageContaining("所选模型不在可用列表中");
+        assertThat(provider.invocationCount).isZero();
+    }
+
+    @Test
     void chatWithExplicitRejectsOpenAiCompatibleWhenApiKeyMissing() {
         CapturingProvider customProvider = new CapturingProvider("openai-compatible", "OpenAI-compatible", "");
         LlmRouter customRouter = new LlmRouter(
@@ -277,6 +301,50 @@ class LlmRouterTest {
 
         assertThat(provider.lastInvocation.maxTokens()).isEqualTo(8192);
         assertThat(provider.lastInvocation.extraParams()).containsEntry("thinking_depth", "high");
+    }
+
+    @Test
+    void fallbackExcludesOpenAiCompatibleProvider() {
+        FailingProvider failingProvider = new FailingProvider(
+            "test", "Test", "model-a", new com.interview.common.LlmServerException("upstream 500"));
+        CapturingProvider customProvider = new CapturingProvider("openai-compatible", "OpenAI-compatible", "");
+        LlmRouter customRouter = new LlmRouter(
+            userMapper,
+            llmProviderConfigMapper,
+            aesGcmEncryptor,
+            new ObjectMapper(),
+            List.of(failingProvider, customProvider),
+            sseEmitterRegistry
+        );
+
+        User user = new User();
+        user.setId(9L);
+
+        LlmProviderConfig mainConfig = new LlmProviderConfig();
+        mainConfig.setProviderKey("test");
+        mainConfig.setBaseUrl("https://example.test/chat");
+        mainConfig.setAvailableModels("[\"model-a\"]");
+        mainConfig.setEnabled(1);
+
+        LlmProviderConfig customConfig = new LlmProviderConfig();
+        customConfig.setProviderKey("openai-compatible");
+        customConfig.setBaseUrl("");
+        customConfig.setAvailableModels("[]");
+        customConfig.setEnabled(1);
+
+        when(userMapper.selectById(9L)).thenReturn(user);
+        when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(mainConfig);
+        when(llmProviderConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(customConfig));
+
+        UserContext.setCurrentUserId(9L);
+        assertThatThrownBy(() -> customRouter.chatWithSnapshot(
+            "test",
+            "model-a",
+            List.of(Map.of("role", "user", "content", "hello"))
+        ))
+            .isInstanceOf(com.interview.common.BusinessException.class)
+            .hasMessageContaining("无配置的可用备用通道");
+        assertThat(customProvider.invocationCount).isZero();
     }
 
     private void verifyNoInteractionsWithFallbackConfig() {

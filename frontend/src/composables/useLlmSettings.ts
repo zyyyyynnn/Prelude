@@ -40,6 +40,7 @@ export function useLlmSettings() {
   const thinkingDepth = ref<string | undefined>(undefined)
   const changeTrackingReady = ref(false)
   const lastConfirmedDraft = ref('')
+  const discoveredModelScope = ref<{ providerKey: string; baseUrl: string }>({ providerKey: '', baseUrl: '' })
 
   // scope 快照：loadSettings 成功后记录，用于判断「表单 scope 是否相对已保存配置变化」。
   const initialScope = ref<{ providerKey: string; baseUrl: string }>({ providerKey: '', baseUrl: '' })
@@ -70,6 +71,19 @@ export function useLlmSettings() {
 
   function markCurrentDraftConfirmed() {
     lastConfirmedDraft.value = currentDraftSignature()
+  }
+
+  function currentModelDiscoveryScope() {
+    return {
+      providerKey: selectedProviderKey.value,
+      baseUrl: normalizeBaseUrl(baseUrlInput.value),
+    }
+  }
+
+  function clearDiscoveredModels() {
+    discoveredModels.value = []
+    modelDiscoveryHint.value = ''
+    discoveredModelScope.value = { providerKey: '', baseUrl: '' }
   }
 
   function isScopeChanged(): boolean {
@@ -243,6 +257,10 @@ export function useLlmSettings() {
       }))
       baseUrlInput.value = result.baseUrl
       discoveredModels.value = result.models
+      discoveredModelScope.value = {
+        providerKey: OPENAI_COMPATIBLE_PROVIDER,
+        baseUrl: normalizeBaseUrl(result.baseUrl),
+      }
       modelDiscoveryHint.value = result.models.length === 0 ? '未能读取模型列表，可手动填写模型 ID。' : ''
       if (result.models.length > 0 && !result.models.includes(selectedModel.value)) {
         selectedModel.value = result.models[0]
@@ -255,6 +273,19 @@ export function useLlmSettings() {
       discovering.value = false
     }
   }
+
+  watch(
+    [selectedProviderKey, baseUrlInput],
+    () => {
+      const scope = currentModelDiscoveryScope()
+      if (
+        scope.providerKey !== discoveredModelScope.value.providerKey
+        || scope.baseUrl !== discoveredModelScope.value.baseUrl
+      ) {
+        clearDiscoveredModels()
+      }
+    },
+  )
 
   watch(
     [selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth],

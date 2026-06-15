@@ -5,13 +5,19 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
+  PopoverAnchor,
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot,
+} from 'reka-ui'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Eye, EyeOff, Trash2 } from '@lucide/vue'
+import { Check, Eye, EyeOff, Trash2 } from '@lucide/vue'
 import {
   FormControl,
   FormField,
@@ -39,6 +45,7 @@ const {
 } = useLlmSettings()
 
 const showApiKey = ref(false)
+const modelPopoverOpen = ref(false)
 
 const { handleSubmit, setValues } = useForm({
   validationSchema: toTypedSchema(llmSettingsSchema),
@@ -65,6 +72,18 @@ const testBadgeText = computed(() => {
   }
 })
 const apiKeyStatusLabel = computed(() => apiKeyMasked.value ? `已保存：${apiKeyMasked.value}` : '未保存')
+const canShowModelPopover = computed(() => isOpenAiCompatible.value && modelOptions.value.length > 0)
+
+function openModelPopover() {
+  if (canShowModelPopover.value) {
+    modelPopoverOpen.value = true
+  }
+}
+
+function selectModelCandidate(model: string) {
+  selectedModel.value = model
+  modelPopoverOpen.value = false
+}
 
 watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth], () => {
   setValues({
@@ -76,6 +95,12 @@ watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens,
     thinkingDepth: thinkingDepth.value,
   })
 }, { immediate: true })
+
+watch(canShowModelPopover, (canShow) => {
+  if (!canShow) {
+    modelPopoverOpen.value = false
+  }
+})
 
 const onSubmit = handleSubmit(async () => {
   await saveSettings()
@@ -137,25 +162,49 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               </SelectContent>
             </Select>
             <template v-else>
-              <FormControl>
-                <Input
-                  v-model="selectedModel"
-                  v-bind="componentField"
-                  autocomplete="off"
-                  placeholder="填写或选择模型 ID"
-                />
-              </FormControl>
-              <div v-if="modelOptions.length > 0" class="model-suggestions" aria-label="模型候选列表">
-                <button
-                  v-for="model in modelOptions"
-                  :key="model"
-                  type="button"
-                  class="model-suggestion"
-                  @click="selectedModel = model"
-                >
-                  {{ model }}
-                </button>
-              </div>
+              <PopoverRoot v-model:open="modelPopoverOpen">
+                <PopoverAnchor as-child>
+                  <div class="model-combobox">
+                    <FormControl>
+                      <Input
+                        v-model="selectedModel"
+                        v-bind="componentField"
+                        autocomplete="off"
+                        placeholder="填写或选择模型 ID"
+                        @focus="openModelPopover"
+                        @click="openModelPopover"
+                        @keydown.down.prevent="openModelPopover"
+                        @keydown.esc="modelPopoverOpen = false"
+                      />
+                    </FormControl>
+                  </div>
+                </PopoverAnchor>
+                <PopoverPortal>
+                  <PopoverContent
+                    v-if="canShowModelPopover"
+                    align="start"
+                    side="bottom"
+                    :side-offset="4"
+                    class="model-combobox__content z-[105] w-[var(--reka-popover-trigger-width)] rounded-md border border-border bg-surface shadow-md"
+                  >
+                    <div class="model-combobox__viewport">
+                      <button
+                        v-for="model in modelOptions"
+                        :key="model"
+                        type="button"
+                        class="model-combobox__item"
+                        @mousedown.prevent
+                        @click="selectModelCandidate(model)"
+                      >
+                        <span class="model-combobox__check">
+                          <Check v-if="selectedModel === model" class="h-4 w-4" />
+                        </span>
+                        <span class="model-combobox__item-text">{{ model }}</span>
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </PopoverPortal>
+              </PopoverRoot>
               <p v-if="modelDiscoveryHint" class="helper-text">{{ modelDiscoveryHint }}</p>
             </template>
             <FormMessage />
@@ -327,40 +376,59 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 .api-key-status {
   font-weight: 500;
 }
-.model-suggestions {
+.model-combobox {
+  width: 100%;
+}
+.model-combobox__content {
+  max-height: calc(var(--ui-height-base) * 7);
+  overflow: hidden;
+}
+.model-combobox__viewport {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
-  margin-top: var(--spacing-sm);
   padding: var(--spacing-xs);
-  max-height: calc(var(--ui-height-base) * 6);
+  max-height: calc(var(--ui-height-base) * 7);
   overflow-y: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
 }
-.model-suggestion {
+.model-combobox__item {
   appearance: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
   min-height: var(--ui-height-base);
   border: 0;
   border-radius: var(--radius-md);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) calc(var(--spacing-md) + var(--spacing-lg));
   background: transparent;
   color: var(--color-text-primary);
   text-align: left;
-  overflow-wrap: anywhere;
-  cursor: pointer;
+  cursor: default;
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
-.model-suggestion:hover {
+.model-combobox__item:hover {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
-.model-suggestion:focus-visible {
+.model-combobox__item:focus-visible {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
   outline: none;
   box-shadow: var(--shadow-ring);
+}
+.model-combobox__check {
+  position: absolute;
+  left: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-md);
+  height: var(--spacing-md);
+}
+.model-combobox__item-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .test-status-row {
   display: flex;
