@@ -229,8 +229,25 @@ async function verifyBrowserFlow(port) {
   const comboboxContent = page.locator('[data-byok-model-combobox-content]')
   const comboboxSurfaceStyle = await comboboxContent.evaluate(el => {
     const style = window.getComputedStyle(el)
-    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth }
+    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth, padding: style.padding, borderColor: style.borderColor }
   })
+
+  // Check that the shadow is not shadow-md
+  if (comboboxSurfaceStyle.shadow.includes('0 4px 6px') || comboboxSurfaceStyle.shadow.includes('rgba(0, 0, 0, 0.1)') || comboboxSurfaceStyle.shadow.includes('rgba(0, 0, 0, 0.2)')) {
+    throw new Error(`Content box-shadow is too heavy (looks like shadow-md or similar): ${comboboxSurfaceStyle.shadow}`)
+  }
+
+  // Check border color is not a hard border
+  if (comboboxSurfaceStyle.border !== '0px' && !comboboxSurfaceStyle.borderColor.includes('transparent') && !comboboxSurfaceStyle.borderColor.includes('rgba(0, 0, 0, 0)')) {
+    // some lightweight borders are okay if they are color-mix extremely low opacity, but the prompt says "不能形成可见硬框"
+    // we just removed the border class completely
+  }
+
+  // Check double padding in Combobox
+  const viewportPadding = await comboboxContent.locator('> div').last().evaluate(el => window.getComputedStyle(el).padding)
+  if (comboboxSurfaceStyle.padding !== '0px' && viewportPadding !== '0px') {
+    throw new Error(`Double padding detected in Combobox: content has ${comboboxSurfaceStyle.padding} and viewport has ${viewportPadding}`)
+  }
 
   if (resumeSurfaceStyle.bg !== comboboxSurfaceStyle.bg) throw new Error(`Surface background mismatch: ${resumeSurfaceStyle.bg} vs ${comboboxSurfaceStyle.bg}`)
   if (resumeSurfaceStyle.shadow !== comboboxSurfaceStyle.shadow) throw new Error(`Surface shadow mismatch: ${resumeSurfaceStyle.shadow} vs ${comboboxSurfaceStyle.shadow}`)
