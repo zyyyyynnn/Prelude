@@ -12,74 +12,83 @@ title: 图3.3 系统整体架构图
     "secondaryColor": "#F6F0E8",
     "tertiaryColor": "#FBFAF6",
     "fontFamily": "system-ui, -apple-system, \"Microsoft YaHei\", sans-serif",
-    "fontSize": "14px",
-    "nodePadding": "15px"
+    "fontSize": "16px",
+    "nodePadding": "16px"
   },
   "flowchart": {
-    "nodeSpacing": 85,
-    "rankSpacing": 55
+    "nodeSpacing": 70,
+    "rankSpacing": 82,
+    "curve": "basis"
   }
 }}%%
 flowchart TB
-  subgraph Layer0[" &nbsp; 运行入口 &nbsp; "]
-    start_dev[" &nbsp; start-dev.bat &nbsp; <br/> &nbsp; 本机 Spring Boot + Vite HMR &nbsp; "]
-    start_docker[" &nbsp; start-docker.bat &nbsp; <br/> &nbsp; Full Docker / nginx 静态前端 &nbsp; "]
+  user((" &nbsp; 用户 / 浏览器端 &nbsp; "))
+
+  subgraph Frontend[" &nbsp; 前端展示层 &nbsp; "]
+    ui[" &nbsp; Vue 3 页面交互 &nbsp; <br/> &nbsp; 登录 / 上传 / 面试 / 报告 &nbsp; "]
+    chart[" &nbsp; ECharts 数据看板 &nbsp; "]
   end
 
-  subgraph Layer1[" &nbsp; 前端层 &nbsp; "]
-    fe_web[" &nbsp; Vue 3 主界面 &nbsp; "]
-    fe_charts[" &nbsp; ECharts 数据画布 &nbsp; "]
+  subgraph Backend[" &nbsp; 后端服务层 &nbsp; "]
+    api[" &nbsp; Spring Boot API &nbsp; "]
+    security[" &nbsp; JWT / CORS &nbsp; "]
+    sse[" &nbsp; SSE 事件通道 &nbsp; "]
   end
 
-  subgraph Layer2[" &nbsp; 网关层 &nbsp; "]
-    gate_sec[" &nbsp; 安全过滤 &nbsp; <br/> &nbsp; CORS / JWT &nbsp; "]
-    gate_limit[" &nbsp; Redis 限流 &nbsp; "]
+  subgraph Business[" &nbsp; 业务模块 &nbsp; "]
+    core[" &nbsp; 认证 / 简历解析 / 岗位匹配 &nbsp; <br/> &nbsp; 模拟面试 / BYOK 配置 / 数据看板 &nbsp; "]
+    report[" &nbsp; 报告生成服务 &nbsp; <br/> &nbsp; /finish -> generating &nbsp; "]
+    worker[" &nbsp; ReportJobWorker &nbsp; "]
   end
 
-  subgraph Layer3[" &nbsp; 应用层 &nbsp; "]
-    app_ctrl[" &nbsp; 控制器与路由拦截 &nbsp; "]
-    app_orche[" &nbsp; 服务层与业务编排 &nbsp; "]
+  subgraph Model[" &nbsp; 模型服务层 &nbsp; "]
+    llm[" &nbsp; LLM Provider &nbsp; <br/> &nbsp; OpenAI-compatible / BYOK &nbsp; "]
   end
 
-  subgraph Layer4[" &nbsp; 业务与模型 &nbsp; "]
-    core[" &nbsp; 核心业务 &nbsp; <br/> &nbsp; 简历/岗位/面试/报告 &nbsp; "]
-    llm[" &nbsp; 外部模型服务 &nbsp; <br/> &nbsp; (LLM Provider) &nbsp; "]
+  subgraph Data[" &nbsp; 数据与中间件层 &nbsp; "]
+    mysql[" &nbsp; MySQL &nbsp; <br/> &nbsp; 核心业务数据 &nbsp; "]
+    redis[" &nbsp; Redis &nbsp; <br/> &nbsp; 限流 / 缓存 / 评分锁 / 状态辅助 &nbsp; "]
+    rabbit[" &nbsp; RabbitMQ &nbsp; <br/> &nbsp; 报告生成异步任务队列 &nbsp; "]
   end
 
-  subgraph Layer5[" &nbsp; 数据与扩展 &nbsp; "]
-    data[" &nbsp; 数据与中间件 &nbsp; <br/> &nbsp; MySQL / Redis / RabbitMQ &nbsp; "]
-    dev_fixture[" &nbsp; dev fixture &nbsp; <br/> &nbsp; data-dev.sql / reset API (local only) &nbsp; "]
-    voice[" &nbsp; 语音扩展 &nbsp; <br/> &nbsp; (规划/待测) &nbsp; "]
+  subgraph Observability[" &nbsp; 可选观测层 &nbsp; "]
+    monitor[" &nbsp; Prometheus / Grafana &nbsp; "]
   end
 
-  start_dev --> fe_web
-  start_dev --> app_ctrl
-  start_docker --> fe_web
-  start_docker --> app_ctrl
+  fixture[" &nbsp; 本地验收数据夹具 &nbsp; <br/> &nbsp; local/dev reset / data seed &nbsp; "]
 
-  fe_web --> gate_sec
-  fe_charts --> gate_limit
-  
-  gate_sec --> app_ctrl
-  gate_limit --> app_orche
-  
-  app_ctrl --> core
-  app_orche --> core
-  
-  core --> llm
-  core --> data
-  core -.-> dev_fixture
-  fe_web -.-> voice
+  user --> ui
+  ui --> chart
+  ui -->|REST API / SSE| api
+  api --> security
+  api --> core
+  api --> sse
 
+  core -->|业务数据| mysql
+  core -->|限流 / 缓存 / 状态辅助| redis
+  core -->|OpenAI-compatible / BYOK| llm
+  core --> report
+  report -->|发布报告任务| rabbit
+  rabbit -->|消费任务| worker
+  worker -->|summary_report / finished| mysql
+  worker -->|report_ready| sse
+  sse -->|事件通知| ui
+
+  fixture -.->|local/dev only| core
+  fixture -.->|data-dev.sql| mysql
+  monitor -.->|metrics| api
+
+  classDef actor fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.5px,color:#252525
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
-  classDef main fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.4px,color:#252525
-  classDef store fill:#EEE7DC,stroke:#A89183,stroke-width:1.2px,color:#252525
+  classDef main fill:#F6F0E8,stroke:#C8B7AA,stroke-width:1.2px,color:#252525
+  classDef store fill:#EEE7DC,stroke:#A89183,stroke-width:1.3px,color:#252525
   classDef ext fill:#F9F9F6,stroke:#CCCCCC,stroke-width:1.2px,color:#555555
-  classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 4 4,color:#555555
+  classDef optional fill:#FBFAF6,stroke:#C8B7AA,stroke-dasharray: 5 5,color:#555555
 
-  class Layer0,Layer1,Layer2,Layer3,Layer4,Layer5 layer
-  class fe_web,fe_charts,gate_sec,gate_limit,app_ctrl,app_orche,core main
-  class data,dev_fixture store
+  class user actor
+  class Frontend,Backend,Business,Model,Data,Observability layer
+  class ui,chart,api,security,sse,core,report,worker main
+  class mysql,redis,rabbit store
   class llm ext
-  class voice plan
-  linkStyle default stroke:#A89A90,stroke-width:1.3px
+  class fixture,monitor optional
+  linkStyle default stroke:#A89A90,stroke-width:1.25px
