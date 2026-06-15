@@ -190,7 +190,8 @@
 ### 5.3 浮层组件 (Select / Combobox / DropdownMenu / Tooltip)
 
 - **共享低浮层视觉**：Select、Combobox 和 DropdownMenu 必须强制共享同一套 `dropdownContentClasses` 纸感 surface（基于 `cva` 或共享常量）。绝对禁止业务组件局部写 `border-black/5`、`shadow-lg`、`rounded-xl` 等制造独立外观。
-- **极致克制边框**：下拉浮层不允许出现明显的外层卡片边框。如有必要，必须使用极弱的 token（如 `border-transparent` 或极低透明度的 `color-mix` 边框）+ 柔和阴影，实现肉眼无明显硬框。
+- **全局统一表面间距**：所有下拉浮层表面 padding 全局统一为 `2px`（即 `p-0.5`）。不允许出现 content 与 viewport 双层 padding 造成间距塌陷或白边放大。
+- **极致克制边框**：下拉浮层不允许出现明显的外层卡片边框。如有必要，必须使用极弱的 token（如 `border-transparent` 或极低透明度的 `color-mix` 边框）+ 柔和阴影（如 `shadow-whisper`），实现肉眼无明显硬框。
 - **动态高度锚定**：下拉选项（Item）的高度必须绝对跟随其触发器（Trigger）的高度：
   - Compact Trigger (`30px`) -> Compact Item (`30px`)
   - Default Trigger (`34px`) -> Default Item (`34px`)
