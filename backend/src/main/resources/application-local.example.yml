@@ -33,6 +33,10 @@ jwt:
 app:
   crypto:
     aes-secret: replace-with-at-least-32-bytes-aes-secret
+  dev-fixtures:
+    enabled: true
+    stream-delay-ms: 18
+    chunk-size: 12
 
 openai:
   base-url: ${OPENAI_BASE_URL:}

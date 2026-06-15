@@ -4,8 +4,6 @@ type AuthState = {
   token: string
 }
 
-const persistKey = `${import.meta.env.VITE_APP_VARIANT === 'demo' ? 'demo:' : ''}auth`
-
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     token: '',
@@ -22,6 +20,6 @@ export const useAuthStore = defineStore('auth', {
     },
   },
   persist: {
-    key: persistKey,
+    key: 'auth',
   },
 })

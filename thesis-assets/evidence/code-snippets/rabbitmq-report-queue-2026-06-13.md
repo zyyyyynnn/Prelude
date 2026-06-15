@@ -1,5 +1,7 @@
 # RabbitMQ 报告任务队列集成实现证据 2026-06-13
 
+> 注：本文档记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+
 > 本文件记录 RabbitMQ 作为报告生成异步任务队列的代码级集成与本地 Docker Compose 基础链路联调证据。
 > 本轮不引入死信队列、outbox、publisher confirm、并发调优。
 > 答辩材料和正文引用前，必须确认 RabbitMQ / MQ 口径限制段。

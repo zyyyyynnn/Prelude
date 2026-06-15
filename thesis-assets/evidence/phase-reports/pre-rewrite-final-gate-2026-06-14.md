@@ -1,5 +1,7 @@
 # 正文改写前最终闸门记录（2026-06-14）
 
+> 注：本文档记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+
 ## 1. 范围
 
 本记录用于正文改写前复审，不属于正文，不生成 DOCX/PDF，不修改 `thesis-assets/chapters/*.md`。

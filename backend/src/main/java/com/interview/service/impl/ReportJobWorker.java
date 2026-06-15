@@ -18,7 +18,7 @@ import com.interview.mapper.InterviewStageMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserWeaknessMapper;
 import com.interview.messaging.ReportJobMessage;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -45,7 +45,7 @@ public class ReportJobWorker {
     private final ScoreHistoryMapper scoreHistoryMapper;
     private final UserWeaknessMapper userWeaknessMapper;
     private final LlmRouter llmRouter;
-    private final DemoModeService demoModeService;
+    private final DevFixtureService devFixtureService;
     private final InterviewReportParser interviewReportParser;
     private final SseEmitterRegistry sseEmitterRegistry;
 
@@ -82,9 +82,9 @@ public class ReportJobWorker {
             String prompt = buildFinishPrompt(session, messages);
             String reportContent;
 
-            boolean demoEnabled = demoModeService != null && demoModeService.isEnabled();
-            if (demoEnabled) {
-                reportContent = demoModeService.resolveReport(session.getTargetPosition());
+            boolean devFixtureEnabled = devFixtureService != null && devFixtureService.isEnabled();
+            if (devFixtureEnabled) {
+                reportContent = devFixtureService.resolveReport(session.getTargetPosition());
                 try {
                     Thread.sleep(1500); // Simulate processing delay
                 } catch (InterruptedException e) {
@@ -207,9 +207,9 @@ public class ReportJobWorker {
     private void persistWeaknesses(InterviewSession session, String report) {
         try {
             List<UserWeakness> weaknesses;
-            boolean demoEnabled = demoModeService != null && demoModeService.isEnabled();
-            if (demoEnabled) {
-                weaknesses = demoModeService.buildWeaknesses(session.getUserId(), session.getId());
+            boolean devFixtureEnabled = devFixtureService != null && devFixtureService.isEnabled();
+            if (devFixtureEnabled) {
+                weaknesses = devFixtureService.buildWeaknesses(session.getUserId(), session.getId());
             } else {
                 weaknesses = extractWeaknesses(session, report);
             }

@@ -1,5 +1,7 @@
 # Bug 1 证据：Demo 登录代理 `ECONNREFUSED`
 
+> 注：本文档记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+
 ## 主讲定位
 
 该问题适合作为论文或答辩主讲 Bug，用于说明 Demo Twin 与真实模式必须在端口、代理目标和启动脚本校验上保持明确隔离。

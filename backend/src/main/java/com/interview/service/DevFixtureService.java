@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.BusinessException;
-import com.interview.config.DemoProperties;
+import com.interview.config.DevFixtureProperties;
 import com.interview.dto.ResumeProjectDto;
 import com.interview.dto.ResumeUploadResponse;
 import com.interview.entity.InterviewMessage;
@@ -38,15 +38,15 @@ import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
-public class DemoModeService {
+public class DevFixtureService {
 
-    private static final String DEMO_USERNAME = "demo";
-    private static final String DEMO_EMAIL = "demo@example.com";
-    private static final String DEMO_PASSWORD_HASH = "$2a$10$cwL4a7RrPcB895DFoO2MyuhK6QGDWhU0fScSmKj/LuBDtIzmL2zL2";
-    private static final String DEMO_API_KEY_PLACEHOLDER = "demo-key-placeholder";
-    private static final String DEMO_JAVA_POSITION_NAME = "Java 后端工程师";
-    private static final String DEMO_FRONTEND_POSITION_NAME = "前端工程师";
-    private static final String DEMO_ALGORITHM_POSITION_NAME = "算法工程师";
+    private static final String DEV_TEST_USERNAME = "demo";
+    private static final String DEV_TEST_EMAIL = "demo@example.com";
+    private static final String DEV_TEST_PASSWORD_HASH = "$2a$10$cwL4a7RrPcB895DFoO2MyuhK6QGDWhU0fScSmKj/LuBDtIzmL2zL2";
+    private static final String DEV_FIXTURE_API_KEY_PLACEHOLDER = "dev-fixture-key-placeholder";
+    private static final String DEV_FIXTURE_JAVA_POSITION_NAME = "Java 后端工程师";
+    private static final String DEV_FIXTURE_FRONTEND_POSITION_NAME = "前端工程师";
+    private static final String DEV_FIXTURE_ALGORITHM_POSITION_NAME = "算法工程师";
     private static final String STATUS_ONGOING = "ongoing";
     private static final String STATUS_FINISHED = "finished";
     private static final String ROLE_SYSTEM = "system";
@@ -57,7 +57,7 @@ public class DemoModeService {
     private static final String DEEP_DIVE_STAGE_PROMPT = "面试已进入深挖阶段，请针对候选人前面回答中的薄弱点和模糊点继续深挖。";
     private static final String CLOSING_STAGE_PROMPT = "面试已进入收尾阶段，请用 1 到 2 个总结性问题结束本场面试。";
 
-    private final DemoProperties demoProperties;
+    private final DevFixtureProperties devFixtureProperties;
     private final ObjectMapper objectMapper;
     private final UserMapper userMapper;
     private final ResumeMapper resumeMapper;
@@ -69,7 +69,7 @@ public class DemoModeService {
     private final UserWeaknessMapper userWeaknessMapper;
 
     public boolean isEnabled() {
-        return demoProperties.isEnabled();
+        return devFixtureProperties.isEnabled();
     }
 
     public String resolveMockJudge(String stageName, int replyIndex) {
@@ -92,7 +92,7 @@ public class DemoModeService {
     public void reset() {
         assertEnabled();
 
-        User user = ensureDemoUser();
+        User user = ensureDevTestUser();
         List<Long> sessionIds = interviewSessionMapper.selectList(new LambdaQueryWrapper<InterviewSession>()
                 .eq(InterviewSession::getUserId, user.getId()))
             .stream()
@@ -115,19 +115,19 @@ public class DemoModeService {
         resumeMapper.delete(new LambdaQueryWrapper<Resume>()
             .eq(Resume::getUserId, user.getId()));
 
-        DemoLlmConfigFixture fixture = readJson("demo/llm-config.json", new TypeReference<>() {
+        DevLlmConfigFixture fixture = readJson("demo/llm-config.json", new TypeReference<>() {
         });
-        user.setEmail(DEMO_EMAIL);
+        user.setEmail(DEV_TEST_EMAIL);
         user.setLlmProvider(fixture.providerKey());
         user.setLlmModel(fixture.model());
-        user.setLlmApiKeyEncrypted(DEMO_API_KEY_PLACEHOLDER);
+        user.setLlmApiKeyEncrypted(DEV_FIXTURE_API_KEY_PLACEHOLDER);
         userMapper.updateById(user);
 
         seedStoryline(user);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public ResumeUploadResponse createDemoResume(Long userId, String fileName) {
+    public ResumeUploadResponse createDevFixtureResume(Long userId, String fileName) {
         assertEnabled();
         Resume resume = insertResume(userId, fileName, LocalDateTime.now());
         String jsonPath = "demo/resume_java.json"; // 默认兜底
@@ -136,17 +136,17 @@ public class DemoModeService {
             else if (fileName.contains("前端")) jsonPath = "demo/resume_frontend.json";
             else if (fileName.contains("算法")) jsonPath = "demo/resume_algorithm.json";
         }
-        DemoResumeFixture fixture = readJson(jsonPath, new TypeReference<>() {});
+        DevResumeFixture fixture = readJson(jsonPath, new TypeReference<>() {});
         return new ResumeUploadResponse(resume.getId(), fixture.skills(), fixture.projects());
     }
 
     public String resolveScriptedReply(String stageName, int replyIndex) {
         assertEnabled();
-        DemoStageRepliesFixture fixture = readJson("demo/stage-replies.json", new TypeReference<>() {
+        DevStageRepliesFixture fixture = readJson("demo/stage-replies.json", new TypeReference<>() {
         });
         List<String> replies = fixture.replies().get(stageName);
         if (replies == null || replies.isEmpty()) {
-            throw BusinessException.badRequest("演示阶段回复未配置");
+            throw BusinessException.badRequest("dev fixture 阶段回复未配置");
         }
         if (replyIndex >= replies.size()) {
             return "";
@@ -160,8 +160,8 @@ public class DemoModeService {
         if (reply == null || reply.isBlank()) {
             return;
         }
-        int chunkSize = Math.max(1, demoProperties.getChunkSize());
-        int delayMs = Math.max(0, demoProperties.getStreamDelayMs());
+        int chunkSize = Math.max(1, devFixtureProperties.getChunkSize());
+        int delayMs = Math.max(0, devFixtureProperties.getStreamDelayMs());
         for (int start = 0; start < reply.length(); start += chunkSize) {
             int end = Math.min(start + chunkSize, reply.length());
             consumer.accept(reply.substring(start, end));
@@ -178,10 +178,10 @@ public class DemoModeService {
 
     public String resolveReport(String targetPosition) {
         assertEnabled();
-        if (DEMO_FRONTEND_POSITION_NAME.equals(targetPosition)) {
+        if (DEV_FIXTURE_FRONTEND_POSITION_NAME.equals(targetPosition)) {
             return frontendReport();
         }
-        if (DEMO_ALGORITHM_POSITION_NAME.equals(targetPosition)) {
+        if (DEV_FIXTURE_ALGORITHM_POSITION_NAME.equals(targetPosition)) {
             return algorithmReport();
         }
         String template = readText("demo/report-template.md");
@@ -246,7 +246,7 @@ public class DemoModeService {
 
     public List<UserWeakness> buildWeaknesses(Long userId, Long sessionId) {
         assertEnabled();
-        List<DemoWeaknessFixture> items = readJson("demo/weaknesses.json", new TypeReference<>() {
+        List<DevWeaknessFixture> items = readJson("demo/weaknesses.json", new TypeReference<>() {
         });
         return items.stream()
             .map(item -> buildWeakness(userId, sessionId, item.category(), item.description(), LocalDateTime.now()))
@@ -257,20 +257,20 @@ public class DemoModeService {
         if (storedValue == null || storedValue.isBlank()) {
             return null;
         }
-        return "****demo";
+        return "****dev";
     }
 
     public String nextStoredApiKey(String requestApiKey, String currentStoredApiKey) {
         if (requestApiKey == null) {
             return currentStoredApiKey;
         }
-        return requestApiKey.isBlank() ? null : DEMO_API_KEY_PLACEHOLDER;
+        return requestApiKey.isBlank() ? null : DEV_FIXTURE_API_KEY_PLACEHOLDER;
     }
 
     private void seedStoryline(User user) {
-        PositionTemplate javaPosition = requireDemoPosition(DEMO_JAVA_POSITION_NAME);
-        PositionTemplate frontendPosition = requireDemoPosition(DEMO_FRONTEND_POSITION_NAME);
-        PositionTemplate algorithmPosition = requireDemoPosition(DEMO_ALGORITHM_POSITION_NAME);
+        PositionTemplate javaPosition = requireDevFixturePosition(DEV_FIXTURE_JAVA_POSITION_NAME);
+        PositionTemplate frontendPosition = requireDevFixturePosition(DEV_FIXTURE_FRONTEND_POSITION_NAME);
+        PositionTemplate algorithmPosition = requireDevFixturePosition(DEV_FIXTURE_ALGORITHM_POSITION_NAME);
         
         Resume javaResume = insertResume(user.getId(), "Java高级架构.pdf", LocalDateTime.of(2026, 4, 22, 16, 40));
         Resume frontendResume = insertResume(user.getId(), "大前端资深开发.pdf", LocalDateTime.of(2026, 4, 20, 16, 10));
@@ -464,7 +464,7 @@ public class DemoModeService {
             else if (fileName.contains("前端")) jsonPath = "demo/resume_frontend.json";
             else if (fileName.contains("算法")) jsonPath = "demo/resume_algorithm.json";
         }
-        DemoResumeFixture fixture = readJson(jsonPath, new TypeReference<>() {
+        DevResumeFixture fixture = readJson(jsonPath, new TypeReference<>() {
         });
 
         Resume resume = new Resume();
@@ -507,38 +507,38 @@ public class DemoModeService {
         return weakness;
     }
 
-    private PositionTemplate requireDemoPosition(String positionName) {
+    private PositionTemplate requireDevFixturePosition(String positionName) {
         PositionTemplate position = positionTemplateMapper.selectOne(new LambdaQueryWrapper<PositionTemplate>()
             .eq(PositionTemplate::getName, positionName)
             .last("LIMIT 1"));
 
         if (position == null) {
-            throw BusinessException.badRequest("演示岗位模板不存在: " + positionName);
+            throw BusinessException.badRequest("dev fixture 岗位模板不存在: " + positionName);
         }
 
         return position;
     }
 
-    private User ensureDemoUser() {
+    private User ensureDevTestUser() {
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
-            .eq(User::getUsername, DEMO_USERNAME)
+            .eq(User::getUsername, DEV_TEST_USERNAME)
             .last("LIMIT 1"));
         if (user != null) {
             return user;
         }
 
-        User demoUser = new User();
-        demoUser.setUsername(DEMO_USERNAME);
-        demoUser.setPassword(DEMO_PASSWORD_HASH);
-        demoUser.setEmail(DEMO_EMAIL);
-        demoUser.setCreatedAt(LocalDateTime.now());
-        userMapper.insert(demoUser);
-        return demoUser;
+        User devTestUser = new User();
+        devTestUser.setUsername(DEV_TEST_USERNAME);
+        devTestUser.setPassword(DEV_TEST_PASSWORD_HASH);
+        devTestUser.setEmail(DEV_TEST_EMAIL);
+        devTestUser.setCreatedAt(LocalDateTime.now());
+        userMapper.insert(devTestUser);
+        return devTestUser;
     }
 
     private void assertEnabled() {
         if (!isEnabled()) {
-            throw BusinessException.badRequest("演示模式未启用");
+            throw BusinessException.badRequest("dev fixture 未启用");
         }
     }
 
@@ -546,7 +546,7 @@ public class DemoModeService {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (IOException exception) {
-            throw BusinessException.badRequest("演示夹具序列化失败");
+            throw BusinessException.badRequest("dev fixture 夹具序列化失败");
         }
     }
 
@@ -554,7 +554,7 @@ public class DemoModeService {
         try (InputStream inputStream = new ClassPathResource(path).getInputStream()) {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            throw BusinessException.badRequest("读取演示夹具失败: " + path);
+            throw BusinessException.badRequest("读取 dev fixture 夹具失败: " + path);
         }
     }
 
@@ -562,24 +562,24 @@ public class DemoModeService {
         try (InputStream inputStream = new ClassPathResource(path).getInputStream()) {
             return objectMapper.readValue(inputStream, typeReference);
         } catch (IOException exception) {
-            throw BusinessException.badRequest("读取演示夹具失败: " + path);
+            throw BusinessException.badRequest("读取 dev fixture 夹具失败: " + path);
         }
     }
 
-    private record DemoLlmConfigFixture(String providerKey, String model, String apiKeyMasked) {
+    private record DevLlmConfigFixture(String providerKey, String model, String apiKeyMasked) {
     }
 
-    private record DemoResumeFixture(
+    private record DevResumeFixture(
         List<String> skills,
         List<ResumeProjectDto> projects,
         String rawText
     ) {
     }
 
-    private record DemoStageRepliesFixture(Map<String, List<String>> replies) {
+    private record DevStageRepliesFixture(Map<String, List<String>> replies) {
     }
 
-    private record DemoWeaknessFixture(String category, String description) {
+    private record DevWeaknessFixture(String category, String description) {
     }
 
     private record ScoreSeed(int technical, int expression, int logic) {

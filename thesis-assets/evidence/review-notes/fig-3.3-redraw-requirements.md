@@ -1,5 +1,7 @@
 # 图 3.3 系统架构图重绘需求说明
 
+> 注：本文档记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+
 > **[SUPERSEDED / PARTIALLY COMPLETED]**
 > 本需求已由 `thesis-assets/evidence/phase-reports/phase-2.11C-diagram-refresh-report.md` 与
 > `thesis-assets/evidence/phase-reports/phase-2.11C-fix-diagram-readability-review.md` 部分承接。

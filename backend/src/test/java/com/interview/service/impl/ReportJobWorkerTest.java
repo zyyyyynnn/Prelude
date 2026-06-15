@@ -16,7 +16,7 @@ import com.interview.mapper.InterviewStageMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserWeaknessMapper;
 import com.interview.messaging.ReportJobMessage;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class ReportJobWorkerTest {
     @Mock private ScoreHistoryMapper scoreHistoryMapper;
     @Mock private UserWeaknessMapper userWeaknessMapper;
     @Mock private LlmRouter llmRouter;
-    @Mock private DemoModeService demoModeService;
+    @Mock private DevFixtureService devFixtureService;
     @Mock private InterviewReportParser interviewReportParser;
     @Mock private SseEmitterRegistry sseEmitterRegistry;
 
@@ -66,7 +66,7 @@ class ReportJobWorkerTest {
             scoreHistoryMapper,
             userWeaknessMapper,
             llmRouter,
-            demoModeService,
+            devFixtureService,
             interviewReportParser,
             sseEmitterRegistry
         );
@@ -95,12 +95,12 @@ class ReportJobWorkerTest {
         when(interviewMessageMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(Collections.<InterviewMessage>emptyList());
         when(interviewStageMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(stage);
-        when(demoModeService.isEnabled()).thenReturn(true);
-        when(demoModeService.resolveReport("Backend Engineer"))
+        when(devFixtureService.isEnabled()).thenReturn(true);
+        when(devFixtureService.resolveReport("Backend Engineer"))
             .thenReturn("{\"reportMarkdown\":\"# Report\",\"scores\":{\"technical\":8,\"expression\":7,\"logic\":9}}");
         when(interviewReportParser.parse(anyString()))
             .thenReturn(new InterviewReportParser.ParsedReport("# Report", 8, 7, 9));
-        when(demoModeService.buildWeaknesses(42L, 7L)).thenReturn(Collections.<UserWeakness>emptyList());
+        when(devFixtureService.buildWeaknesses(42L, 7L)).thenReturn(Collections.<UserWeakness>emptyList());
 
         worker.handleReportJob(job);
 
@@ -140,8 +140,8 @@ class ReportJobWorkerTest {
             .thenReturn(sameRowAfterFailure);
         when(interviewMessageMapper.selectList(any(LambdaQueryWrapper.class)))
             .thenReturn(Collections.<InterviewMessage>emptyList());
-        when(demoModeService.isEnabled()).thenReturn(true);
-        when(demoModeService.resolveReport("Backend Engineer"))
+        when(devFixtureService.isEnabled()).thenReturn(true);
+        when(devFixtureService.resolveReport("Backend Engineer"))
             .thenThrow(new RuntimeException("LLM broker down"));
 
         worker.handleReportJob(job);
@@ -185,7 +185,7 @@ class ReportJobWorkerTest {
         verify(interviewSessionMapper, never()).updateById(any(InterviewSession.class));
         verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("report_ready"), anyString());
         verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("error"), anyString());
-        verify(demoModeService, never()).isEnabled();
-        verify(demoModeService, never()).resolveReport(anyString());
+        verify(devFixtureService, never()).isEnabled();
+        verify(devFixtureService, never()).resolveReport(anyString());
     }
 }

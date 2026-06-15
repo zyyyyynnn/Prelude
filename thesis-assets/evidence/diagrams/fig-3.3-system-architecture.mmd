@@ -21,6 +21,11 @@ title: 图3.3 系统整体架构图
   }
 }}%%
 flowchart TB
+  subgraph Layer0[" &nbsp; 运行入口 &nbsp; "]
+    start_dev[" &nbsp; start-dev.bat &nbsp; <br/> &nbsp; 本机 Spring Boot + Vite HMR &nbsp; "]
+    start_docker[" &nbsp; start-docker.bat &nbsp; <br/> &nbsp; Full Docker / nginx 静态前端 &nbsp; "]
+  end
+
   subgraph Layer1[" &nbsp; 前端层 &nbsp; "]
     fe_web[" &nbsp; Vue 3 主界面 &nbsp; "]
     fe_charts[" &nbsp; ECharts 数据画布 &nbsp; "]
@@ -42,10 +47,15 @@ flowchart TB
   end
 
   subgraph Layer5[" &nbsp; 数据与扩展 &nbsp; "]
-    data[" &nbsp; 数据与中间件 &nbsp; <br/> &nbsp; MySQL / Redis &nbsp; "]
-    demo[" &nbsp; Demo Twin 隔离演示 &nbsp; "]
+    data[" &nbsp; 数据与中间件 &nbsp; <br/> &nbsp; MySQL / Redis / RabbitMQ &nbsp; "]
+    dev_fixture[" &nbsp; dev fixture &nbsp; <br/> &nbsp; data-dev.sql / reset API (local only) &nbsp; "]
     voice[" &nbsp; 语音扩展 &nbsp; <br/> &nbsp; (规划/待测) &nbsp; "]
   end
+
+  start_dev --> fe_web
+  start_dev --> app_ctrl
+  start_docker --> fe_web
+  start_docker --> app_ctrl
 
   fe_web --> gate_sec
   fe_charts --> gate_limit
@@ -58,7 +68,7 @@ flowchart TB
   
   core --> llm
   core --> data
-  core -.-> demo
+  core -.-> dev_fixture
   fe_web -.-> voice
 
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
@@ -67,9 +77,9 @@ flowchart TB
   classDef ext fill:#F9F9F6,stroke:#CCCCCC,stroke-width:1.2px,color:#555555
   classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 4 4,color:#555555
 
-  class Layer1,Layer2,Layer3,Layer4,Layer5 layer
+  class Layer0,Layer1,Layer2,Layer3,Layer4,Layer5 layer
   class fe_web,fe_charts,gate_sec,gate_limit,app_ctrl,app_orche,core main
-  class data store
+  class data,dev_fixture store
   class llm ext
-  class demo,voice plan
+  class voice plan
   linkStyle default stroke:#A89A90,stroke-width:1.3px

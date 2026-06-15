@@ -9,4 +9,4 @@
 | 表5.1 | 表 | 测试环境表 | `thesis-assets/evidence/test-data/env-2026-06.md` | 第五章 | 最新环境与依赖版本 | 已对齐 2026-06 证据 / 待正文采用确认 | 是 | 无 |
 | 表5.2 | 表 | 功能测试用例表 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 第五章 | 指向最新功能用例 | 已对齐 2026-06 证据 / 待正文采用确认 | 是 | 无 |
 | 表5.3 | 表 | 构建与自动化验证记录表 | `thesis-assets/evidence/test-data/env-2026-06.md` | 第五章 | 后端测试与前端构建 | 已对齐 2026-06 证据 / 待正文采用确认 | 是 | 无 |
-| 表5.4 | 表 | 业务性能采集记录表 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 第五章 | Demo Twin 隔离验证 | 已对齐 2026-06 证据 / 待正文采用确认 | 是 | 多数真实性能指标未实测，禁止写成公网或高并发性能结论 |
+| 表5.4 | 表 | 业务性能采集记录表 | `thesis-assets/evidence/test-data/demo-2026-06.md` | 第五章 | dev fixture 本地验收数据隔离验证 | 已对齐 2026-06 证据 / 待正文采用确认 | 是 | 多数真实性能指标未实测，禁止写成公网或高并发性能结论 |

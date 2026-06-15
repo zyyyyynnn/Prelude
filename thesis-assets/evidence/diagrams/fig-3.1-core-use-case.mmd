@@ -32,14 +32,14 @@ flowchart LR
     report_feedback[" &nbsp; 报告反馈 &nbsp; "]
     analytics_history[" &nbsp; 分析回放 &nbsp; "]
     
-    demo_twin[" &nbsp; Demo Twin &nbsp; "]
+    dev_fixture[" &nbsp; dev fixture &nbsp; <br/>(本地验收数据夹具) "]
     voice_extension[" &nbsp; 语音扩展 &nbsp; <br/>(规划/待测) "]
 
     login_profile --> resume_parse --> job_match --> mock_interview --> report_feedback --> analytics_history
   end
 
   user --> login_profile
-  user -.-> demo_twin
+  user -.-> dev_fixture
   user -.-> voice_extension
 
   resume_parse -.-> llm_service
@@ -52,6 +52,6 @@ flowchart LR
   classDef plan fill:#EEE7DC,stroke:#C8B7AA,stroke-dasharray: 5 5,color:#555555
   class user,llm_service actor
   class system_boundary layer
-  class login_profile,resume_parse,job_match,mock_interview,report_feedback,analytics_history,demo_twin node
+  class login_profile,resume_parse,job_match,mock_interview,report_feedback,analytics_history,dev_fixture node
   class voice_extension plan
   linkStyle default stroke:#A89A90,stroke-width:1.2px
