@@ -193,8 +193,12 @@ async function verifyBrowserFlow(port) {
   
   const resumeSurfaceStyle = await resumeContentInner.evaluate(el => {
     const style = window.getComputedStyle(el)
-    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth }
+    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth, paddingTop: style.paddingTop, paddingRight: style.paddingRight, paddingBottom: style.paddingBottom, paddingLeft: style.paddingLeft }
   })
+
+  if (resumeSurfaceStyle.paddingTop !== '2px' || resumeSurfaceStyle.paddingRight !== '2px' || resumeSurfaceStyle.paddingBottom !== '2px' || resumeSurfaceStyle.paddingLeft !== '2px') {
+    throw new Error(`Resume DropdownMenu content padding is not exactly 2px, got padding: ${resumeSurfaceStyle.paddingTop} ${resumeSurfaceStyle.paddingRight} ${resumeSurfaceStyle.paddingBottom} ${resumeSurfaceStyle.paddingLeft}`)
+  }
 
   await page.keyboard.press('Escape')
   await page.waitForSelector('[role="menu"]', { state: 'hidden', timeout: 5000 })
@@ -229,8 +233,13 @@ async function verifyBrowserFlow(port) {
   const comboboxContent = page.locator('[data-byok-model-combobox-content]')
   const comboboxSurfaceStyle = await comboboxContent.evaluate(el => {
     const style = window.getComputedStyle(el)
-    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth, padding: style.padding, borderColor: style.borderColor }
+    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth, padding: style.padding, borderColor: style.borderColor, paddingTop: style.paddingTop, paddingRight: style.paddingRight, paddingBottom: style.paddingBottom, paddingLeft: style.paddingLeft }
   })
+
+  // Check padding is exactly 2px globally
+  if (comboboxSurfaceStyle.paddingTop !== '2px' || comboboxSurfaceStyle.paddingRight !== '2px' || comboboxSurfaceStyle.paddingBottom !== '2px' || comboboxSurfaceStyle.paddingLeft !== '2px') {
+    throw new Error(`Combobox content padding is not exactly 2px, got padding: ${comboboxSurfaceStyle.padding}`)
+  }
 
   // Check that the shadow is not shadow-md
   if (comboboxSurfaceStyle.shadow.includes('0 4px 6px') || comboboxSurfaceStyle.shadow.includes('rgba(0, 0, 0, 0.1)') || comboboxSurfaceStyle.shadow.includes('rgba(0, 0, 0, 0.2)')) {
@@ -245,8 +254,8 @@ async function verifyBrowserFlow(port) {
 
   // Check double padding in Combobox
   const viewportPadding = await comboboxContent.locator('> div').last().evaluate(el => window.getComputedStyle(el).padding)
-  if (comboboxSurfaceStyle.padding !== '0px' && viewportPadding !== '0px') {
-    throw new Error(`Double padding detected in Combobox: content has ${comboboxSurfaceStyle.padding} and viewport has ${viewportPadding}`)
+  if (viewportPadding !== '0px') {
+    throw new Error(`Double padding detected in Combobox: viewport has ${viewportPadding}`)
   }
 
   if (resumeSurfaceStyle.bg !== comboboxSurfaceStyle.bg) throw new Error(`Surface background mismatch: ${resumeSurfaceStyle.bg} vs ${comboboxSurfaceStyle.bg}`)
@@ -280,6 +289,25 @@ async function verifyBrowserFlow(port) {
   const itemBox = await page.locator('[data-byok-model-combobox-item]').first().boundingBox()
   if (Math.abs(itemBox.height - 34) > 1) {
     throw new Error(`Dropdown item height is not 34px, got ${itemBox.height}`)
+  }
+
+  // Verify Select also
+  await page.locator('button[role="combobox"]').nth(1).click() // maxTokens select
+  await page.waitForTimeout(300)
+  const selectContent = page.locator('[role="listbox"]').first() // reka select uses role="listbox"
+  const selectSurfaceStyle = await selectContent.evaluate(el => {
+    const style = window.getComputedStyle(el)
+    return { paddingTop: style.paddingTop, paddingRight: style.paddingRight, paddingBottom: style.paddingBottom, paddingLeft: style.paddingLeft }
+  })
+  
+  if (selectSurfaceStyle.paddingTop !== '2px' || selectSurfaceStyle.paddingRight !== '2px' || selectSurfaceStyle.paddingBottom !== '2px' || selectSurfaceStyle.paddingLeft !== '2px') {
+    throw new Error(`Select content padding is not exactly 2px, got padding: ${selectSurfaceStyle.paddingTop} ${selectSurfaceStyle.paddingRight} ${selectSurfaceStyle.paddingBottom} ${selectSurfaceStyle.paddingLeft}`)
+  }
+
+  // Check double padding in Select (Viewport shouldn't have padding)
+  const selectViewportPadding = await selectContent.locator('> div[data-reka-select-viewport], > div[style*="overflow"]').first().evaluate(el => window.getComputedStyle(el).padding)
+  if (selectViewportPadding !== '0px') {
+    throw new Error(`Double padding detected in Select: viewport has ${selectViewportPadding}`)
   }
 
   // To allow human comparison, open Resume dropdown simultaneously
