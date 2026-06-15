@@ -36,7 +36,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
     @Value("${openai.embedding-model:text-embedding-3-small}")
     private String embeddingModel;
 
-    @Value("${app.demo.enabled:false}")
+    @Value("${app.local.enabled:false}")
     private boolean demoEnabled;
 
     @Override

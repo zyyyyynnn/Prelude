@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/demo")
-@ConditionalOnProperty(prefix = "app.demo", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "app.local", name = "enabled", havingValue = "true")
 public class DemoController {
 
     private final DemoModeService demoModeService;

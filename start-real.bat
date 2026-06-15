@@ -149,7 +149,9 @@ echo  - Frontend window: Frontend - Vite
 echo  - Frontend URL: %FRONTEND_URL%
 echo  - Middleware: Docker mysql/redis/rabbitmq
 echo.
+echo  * Note: Local App Runtime only shows middleware in Docker Desktop. Backend/Frontend run in local windows.
 echo  * Frontend uses Vite dev server, Vue/CSS modifications will apply instantly via HMR.
+echo  * Default dev/test account: demo / 123456
 echo ============================================================
 echo  Stop app: close Backend/Frontend windows or Ctrl+C in them
 echo  Stop middleware: docker compose stop mysql redis rabbitmq

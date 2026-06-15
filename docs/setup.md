@@ -42,7 +42,6 @@ OPENAI_MODEL=
 
 ```powershell
 .\start-real.bat   # 真实版
-.\start-demo.bat   # Demo Twin（登录 demo / 123456）
 ```
 
 脚本将自动执行以下操作：
@@ -52,13 +51,6 @@ OPENAI_MODEL=
 
 ### 3. 访问地址
 
-| 项 | 真实版 | Demo 版 |
-| :-- | :----- | :------ |
-| 前端 | http://127.0.0.1:5173 | http://127.0.0.1:5174 |
-| 后端 | http://127.0.0.1:8080 | http://127.0.0.1:8081 |
-| 健康检查 | `/api/health` | `/api/health` |
-| 数据库 | interview_system | interview_demo（首次启动自动创建） |
-
 ## 2. 可选：Full Docker runtime
 
 用于部署验证的全量容器化。
@@ -67,22 +59,17 @@ OPENAI_MODEL=
 
 ```powershell
 .\start-real-docker.bat   # 真实版全 Docker
-.\start-demo-docker.bat   # Demo Twin 全 Docker
 ```
 
 > **注意**：容器内的前端是 build 后的 nginx 静态产物。如修改了前端代码，需要重新 build 才能生效，不支持 HMR 热重载。
 
 ### 停止服务
 
-real 与 demo 共享同一组基础中间件。
-
 ```powershell
-# 仅停真实版应用层（保留中间件与 Demo 版运行）
+# 仅停真实版应用层（保留中间件运行）
 docker compose stop backend-real frontend-real
-# 仅停 Demo 应用层
-docker compose stop backend-demo frontend-demo
 # 停全部应用层 + 共享中间件
-docker compose --profile real --profile demo down
+docker compose --profile real down
 ```
 
 ## 3. Dev scripts（源码级调试）
@@ -140,31 +127,13 @@ VITE_PROXY_TARGET=http://127.0.0.1:8080
 VITE_HOST=127.0.0.1
 ```
 
-Demo 前端固定使用 `frontend/.env.demo`：
-
-```env
-VITE_PORT=5174
-VITE_PROXY_TARGET=http://127.0.0.1:8081
-```
-
 ### 启动 dev
 
 ```powershell
-# 真实版 dev
 docker compose up -d mysql redis rabbitmq
 .\scripts\real\start-real.ps1
-
-# Demo 版 dev
-docker compose up -d mysql redis rabbitmq
-.\scripts\demo\start-demo.ps1
 ```
 
 ## 端口规划
 
-| 项 | 真实版 | Demo 版 | 中间件宿主机端口 |
-| :-- | :----- | :------ | :--------------- |
-| 后端 | 8080 | 8081 | MySQL 13306 |
-| 前端 | 5173 | 5174 | Redis 16379 |
-| 数据库 | interview_system | interview_demo | RabbitMQ 5672 / 15672 |
-
-真实版和 Demo 版的端口、数据库、Redis db、前端环境与登录态相互隔离。可叠加观测栈：`docker compose --profile real --profile observability up -d`（Prometheus 9090 / Grafana 3000）。
+可叠加观测栈：`docker compose --profile real --profile observability up -d`（Prometheus 9090 / Grafana 3000）。
