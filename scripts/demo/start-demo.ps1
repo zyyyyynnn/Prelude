@@ -91,8 +91,17 @@ if (-not (Try-EnsureDatabase -DatabaseName $databaseName -DatasourceConfig $data
   Write-Warning "Failed to ensure database $databaseName. Check MySQL credentials in application-local.yml or MYSQL_* environment variables."
 }
 
-if (-not (Test-PortListening -Port 6379)) {
-  throw "Redis is not listening on port 6379. Please start Redis server before launching the application."
+$redisPort = 16379
+if (Test-Path -LiteralPath $applicationLocalPath) {
+  $content_yaml = Get-Content -LiteralPath $applicationLocalPath -Raw
+  $redisPortMatch = [regex]::Match($content_yaml, '(?m)^\s*port:\s*(?<value>\d+)\s*(#.*)?$')
+  if ($redisPortMatch.Success) {
+    $redisPort = [int]$redisPortMatch.Groups['value'].Value
+  }
+}
+
+if (-not (Test-PortListening -Port $redisPort)) {
+  throw "Redis is not listening on port $redisPort. Please start Docker middleware via: docker compose up -d mysql redis rabbitmq"
 }
 
 Assert-RabbitMqReady

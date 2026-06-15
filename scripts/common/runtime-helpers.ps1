@@ -124,14 +124,17 @@ function Wait-HttpReady {
     }
 
     try {
-      Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 5 | Out-Null
-      return
-    } catch {
-      $hasResponse = $_.Exception -and $_.Exception.PSObject.Properties.Match('Response').Count -gt 0 -and $null -ne $_.Exception.Response
-      if ($hasResponse) {
+      $resp = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 5
+      if ([int]$resp.StatusCode -ge 200 -and [int]$resp.StatusCode -lt 400) {
         return
       }
-
+    } catch {
+      if ($_.Exception.Response) {
+        $resp = $_.Exception.Response
+        if ([int]$resp.StatusCode -ge 200 -and [int]$resp.StatusCode -lt 400) {
+          return
+        }
+      }
       Start-Sleep -Seconds 2
     }
   }
@@ -281,76 +284,7 @@ function Ensure-MySqlReady {
     return $true
   }
 
-  $serviceCandidates = @('MySQL84', 'MySQL', 'mysql')
-  $serviceWarnings = New-Object System.Collections.Generic.List[string]
-  foreach ($serviceName in $serviceCandidates) {
-    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-    if (-not $service) {
-      continue
-    }
-
-    if ($service.Status -ne 'Running') {
-      try {
-        Start-Service -Name $serviceName -ErrorAction Stop
-      } catch {
-        $serviceWarnings.Add("Failed to start MySQL service ${serviceName}: $($_.Exception.Message)")
-      }
-    }
-
-    if (Wait-PortListening -Port $DatasourceConfig.Port -TimeoutSeconds 15) {
-      return $true
-    }
-  }
-
-  $mysqldCandidates = @()
-  if ($env:MYSQLD_PATH) {
-    $mysqldCandidates += $env:MYSQLD_PATH
-  }
-  $mysqldCandidates += @(
-    'E:\DevEnv\MySQL84\bin\mysqld.exe',
-    'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqld.exe',
-    'C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqld.exe'
-  )
-
-  $defaultsCandidates = @()
-  if ($env:MYSQL_DEFAULTS_FILE) {
-    $defaultsCandidates += $env:MYSQL_DEFAULTS_FILE
-  }
-  $defaultsCandidates += @(
-    'E:\DevEnv\MySQL84\conf\my.ini',
-    'C:\ProgramData\MySQL\MySQL Server 8.0\my.ini',
-    'C:\ProgramData\MySQL\MySQL Server 8.4\my.ini'
-  )
-
-  $mysqldPath = $mysqldCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-  $defaultsFile = $defaultsCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-
-  if ($mysqldPath -and $defaultsFile) {
-    Ensure-Directory $MySqlLogDir
-    $mysqlOutLog = Join-Path $MySqlLogDir 'mysql-auto.out.log'
-    $mysqlErrLog = Join-Path $MySqlLogDir 'mysql-auto.err.log'
-
-    if (-not (Get-Process mysqld -ErrorAction SilentlyContinue)) {
-      Reset-LogFile -Path $mysqlOutLog
-      Reset-LogFile -Path $mysqlErrLog
-      Start-HiddenMySqlProcess `
-        -FilePath $mysqldPath `
-        -DefaultsFile $defaultsFile `
-        -ErrorLogPath $mysqlErrLog `
-        -WorkingDirectory (Split-Path -Parent $mysqldPath) `
-        | Out-Null
-    }
-
-    if (Wait-PortListening -Port $DatasourceConfig.Port -TimeoutSeconds 15) {
-      return $true
-    }
-  }
-
-  foreach ($warningMessage in $serviceWarnings) {
-    Write-Warning $warningMessage
-  }
-
-  return $false
+  throw "MySQL is not listening on port $($DatasourceConfig.Port).`nPlease start Docker middleware via: docker compose up -d mysql redis rabbitmq`nOr ensure application-local.yml uses the correct database port (e.g. 127.0.0.1:13306)."
 }
 
 function Try-EnsureDatabase {
@@ -394,6 +328,6 @@ function Assert-RabbitMqReady {
   }
 
   $service = Get-Service -Name 'RabbitMQ' -ErrorAction SilentlyContinue
-  $status = if ($service) { " Current RabbitMQ service status: $($service.Status)." } else { '' }
-  throw "RabbitMQ is not listening on port 5672.$status Start RabbitMQ before launching the backend."
+  $status = if ($service) { " Current native RabbitMQ service status: $($service.Status)." } else { '' }
+  throw "RabbitMQ is not listening on port 5672.$status`nPlease start Docker middleware via: docker compose up -d mysql redis rabbitmq"
 }
