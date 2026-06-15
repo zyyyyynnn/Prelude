@@ -1,6 +1,6 @@
 package com.interview.service.impl;
 
-import com.interview.config.DemoProperties;
+import com.interview.config.DevFixtureProperties;
 import com.interview.entity.InterviewMessage;
 import com.interview.mapper.InterviewMessageMapper;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 class VoiceServiceImplTest {
 
     @Mock
-    private DemoProperties demoProperties;
+    private DevFixtureProperties devFixtureProperties;
 
     @Mock
     private InterviewMessageMapper interviewMessageMapper;
@@ -29,9 +29,9 @@ class VoiceServiceImplTest {
     private VoiceServiceImpl voiceService;
 
     @Test
-    void testSpeechToTextDemoModeReturnsScriptedAnswers() {
-        // Enable demo mode
-        when(demoProperties.isEnabled()).thenReturn(true);
+    void testSpeechToTextDevFixtureReturnsScriptedAnswers() {
+        // Enable dev fixture mode
+        when(devFixtureProperties.isEnabled()).thenReturn(true);
 
         // Round 0: expect warmup answer
         when(interviewMessageMapper.selectList(any())).thenReturn(Collections.emptyList());
@@ -50,9 +50,9 @@ class VoiceServiceImplTest {
     }
 
     @Test
-    void testTextToSpeechDemoModeOrFallbackReturnsMockWav() {
-        // Enable demo mode to force WAV mock synthesis
-        when(demoProperties.isEnabled()).thenReturn(true);
+    void testTextToSpeechDevFixtureOrFallbackReturnsMockWav() {
+        // Enable dev fixture mode to force WAV mock synthesis
+        when(devFixtureProperties.isEnabled()).thenReturn(true);
 
         byte[] audioBytes = voiceService.textToSpeech("Synthesize this mock text");
         assertThat(audioBytes).isNotEmpty();

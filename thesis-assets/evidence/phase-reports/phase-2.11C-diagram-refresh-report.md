@@ -1,5 +1,7 @@
 # 阶段 2.11C 核心工程图事实刷新报告
 
+> 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+
 > **[后续口径说明]**
 > 本文保留历史阶段审查语境。2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `rabbitmq-report-queue-2026-06-13.md` 与 `final-evidence-lock.md` 为准。
 

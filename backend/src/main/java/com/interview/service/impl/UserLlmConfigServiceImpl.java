@@ -15,7 +15,7 @@ import com.interview.llm.OpenAiCompatibleProvider;
 import com.interview.llm.OpenAiCompatibleUrl;
 import com.interview.mapper.UserMapper;
 import com.interview.security.AesGcmEncryptor;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import com.interview.service.LlmModelDiscoveryService;
 import com.interview.service.UserLlmConfigService;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     private final UserMapper userMapper;
     private final LlmRouter llmRouter;
     private final AesGcmEncryptor aesGcmEncryptor;
-    private final DemoModeService demoModeService;
+    private final DevFixtureService devFixtureService;
     private final LlmModelDiscoveryService llmModelDiscoveryService;
 
     @Override
@@ -66,8 +66,8 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
 
         String encryptedApiKey = user.getLlmApiKeyEncrypted();
         if (request.apiKey() != null && !request.apiKey().isBlank()) {
-            encryptedApiKey = isDemoEnabled()
-                ? demoModeService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
+            encryptedApiKey = isDevFixtureEnabled()
+                ? devFixtureService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
                 : "__CLEAR__".equals(request.apiKey())
                     ? null
                     : aesGcmEncryptor.encrypt(request.apiKey());
@@ -99,8 +99,8 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     @Override
     public LlmConfigTestResponse testCurrentUserConfig() {
         LlmSelection selection = llmRouter.resolveCurrentUserSelection();
-        if (isDemoEnabled()) {
-            return new LlmConfigTestResponse(selection.providerKey(), selection.model(), true, "Demo 模式配置可用");
+        if (isDevFixtureEnabled()) {
+            return new LlmConfigTestResponse(selection.providerKey(), selection.model(), true, "Dev fixture 配置可用");
         }
 
         String content = llmRouter.chatCurrentUser(List.of(
@@ -145,8 +145,8 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
             baseUrl = OpenAiCompatibleUrl.normalizeRoot(draftBaseUrl);
         }
 
-        if (isDemoEnabled()) {
-            return new LlmConfigTestResponse(providerKey, model, true, "Demo 模式配置可用");
+        if (isDevFixtureEnabled()) {
+            return new LlmConfigTestResponse(providerKey, model, true, "Dev fixture 配置可用");
         }
 
         String apiKey = resolveDraftApiKey(request.apiKey(), user, providerKey, baseUrl);
@@ -235,8 +235,8 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     }
 
     private String maskApiKey(String encryptedApiKey) {
-        if (isDemoEnabled()) {
-            return demoModeService.maskApiKey(encryptedApiKey);
+        if (isDevFixtureEnabled()) {
+            return devFixtureService.maskApiKey(encryptedApiKey);
         }
         if (encryptedApiKey == null || encryptedApiKey.isBlank()) {
             return null;
@@ -249,7 +249,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         }
     }
 
-    private boolean isDemoEnabled() {
-        return demoModeService != null && demoModeService.isEnabled();
+    private boolean isDevFixtureEnabled() {
+        return devFixtureService != null && devFixtureService.isEnabled();
     }
 }

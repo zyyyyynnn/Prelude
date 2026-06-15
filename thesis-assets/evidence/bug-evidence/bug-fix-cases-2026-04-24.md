@@ -1,5 +1,7 @@
 # Bug 修复案例记录 2026-04-24
 
+> 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+
 ## 主讲 Bug 选择
 
 | 优先级 | Bug | 选择理由 | 证据文件 |

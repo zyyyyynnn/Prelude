@@ -13,7 +13,7 @@ import com.interview.entity.InterviewSession;
 import com.interview.llm.LlmRouter;
 import com.interview.mapper.InterviewSessionMapper;
 import com.interview.mapper.ResumeMapper;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import com.interview.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
@@ -40,14 +40,14 @@ public class ResumeServiceImpl implements ResumeService {
     private final InterviewSessionMapper interviewSessionMapper;
     private final ObjectMapper objectMapper;
     private final LlmRouter llmRouter;
-    private final DemoModeService demoModeService;
+    private final DevFixtureService devFixtureService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ResumeUploadResponse upload(MultipartFile file) {
         validateFile(file);
-        if (isDemoEnabled()) {
-            return demoModeService.createDemoResume(currentUserId(), file.getOriginalFilename());
+        if (isDevFixtureEnabled()) {
+            return devFixtureService.createDevFixtureResume(currentUserId(), file.getOriginalFilename());
         }
         String rawText = extractPdfText(file);
         ResumeParseResult parseResult = parseByLlm(limitText(rawText, MAX_LLM_PARSE_TEXT_LENGTH));
@@ -228,7 +228,7 @@ public class ResumeServiceImpl implements ResumeService {
         return userId;
     }
 
-    private boolean isDemoEnabled() {
-        return demoModeService != null && demoModeService.isEnabled();
+    private boolean isDevFixtureEnabled() {
+        return devFixtureService != null && devFixtureService.isEnabled();
     }
 }

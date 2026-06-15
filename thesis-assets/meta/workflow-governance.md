@@ -1,4 +1,4 @@
-﻿# Prelude 论文工作流治理规范
+# Prelude 论文工作流治理规范
 
 ## 1. 文件定位与规范优先级
 
@@ -71,7 +71,7 @@ workflow-governance.md > AGENTS.md > thesis-assets/README.md > thesis-assets/bui
 | 数据库结构变化 | 是 | 第三章 | 无 | 是（E-R 图） | 否 |
 | 核心 API 语义变化 | 是 | 第三/四/五章 | 代码片段 | 否 | 视测试覆盖决定 |
 | LLM Provider / SSE / WebSocket / Redis / 熔断 / 监控变化 | 是 | 第四章和第五章 | 代码片段 | 否 | 必要时重跑测试 |
-| Demo Twin 机制变化 | 是 | 第四章、第五章、答辩材料 | 测试数据 | 否 | 必要时重采 Demo 数据 |
+| dev fixture 与运行入口机制变化 | 是 | 第四章、第五章、答辩材料 | 测试数据 | 否 | 必要时重采 dev fixture 数据 |
 | README 宣称能力变化 | 必须核对 | 若涉及能力变更 | 对应证据 | 否 | 否 |
 | 前端页面/路由变化 | 视引用情况 | 第四章（若引用截图） | 运行截图 | 否 | 否 |
 | 依赖版本变化 | 视影响决定 | 第五章 | 描述或测试环境说明 | 否 | 否 |
@@ -83,7 +83,7 @@ workflow-governance.md > AGENTS.md > thesis-assets/README.md > thesis-assets/bui
 2. 数据库结构变化：必须同步；影响第三章；必须更新 E-R 图。
 3. 核心 API 语义变化：必须同步；影响第三/四/五章；视测试覆盖决定是否重跑测试。
 4. LLM Provider / SSE / WebSocket / Redis / 熔断 / 监控变化：必须同步；影响第四章和第五章；必要时重跑测试。
-5. Demo Twin 机制变化：必须同步；影响第四章、第五章、答辩材料；必要时重采 Demo 数据。
+5. dev fixture 与运行入口机制变化：必须同步；影响第四章、第五章、答辩材料；必要时重采 dev fixture 数据。
 6. README 宣称能力变化：必须同步核对；如果论文已引用该能力，必须更新正文或降级 README 表述。
 7. 前端页面/路由变化：如果论文正文、截图、图表、答辩演示路径引用该页面，则必须同步；否则只记录。
 8. 依赖版本变化：如果影响第五章环境、构建性能、测试结论或论文中版本表述，则必须同步；否则只记录。
@@ -239,7 +239,7 @@ PDF 必须由人工终审后的 DOCX 导出。
 2. 新增或删除中间件。
 3. 新增 Redis / RabbitMQ / WebSocket / SSE / Resilience4j / Prometheus / Grafana 等链路。
 4. LLM Provider、模型配置、API Key 管理、降级策略变化。
-5. Demo Twin、demo profile、reset-demo、演示端口或隔离数据库变化。
+5. dev fixture、start-dev/start-docker、reset API 或 local/dev 数据夹具变化。
 6. 数据库表结构、实体类、DDL、Mapper 或迁移脚本变化。
 7. 前端页面、路由、状态管理、图表组件、语音组件变化。
 8. README 宣称能力变化。

@@ -1,5 +1,7 @@
 # 阶段 2.11A 测试数据与论证证据核对报告
 
+> 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+
 > **[后续口径说明]**
 > 本文保留历史阶段审查语境。2026-06-13 后，RabbitMQ 已接入代码层并完成本地 Docker Compose 基础链路联调；当前报告任务队列事实以 `rabbitmq-report-queue-2026-06-13.md` 与 `final-evidence-lock.md` 为准。
 
@@ -32,7 +34,7 @@
 | 证据类别 | 当前资产 | 可支撑章节 | 当前状态 | 风险说明 |
 | :--- | :--- | :--- | :--- | :--- |
 | **功能测试** | [functional-cases-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/functional-cases-2026-06.md) | 第五章 | 活跃资产 | 部分高可用防护及语音多模态标记为“待实测”，需作限制性描述 |
-| **Demo 验证** | [demo-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/demo-2026-06.md)、[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) | 第五章 | 活跃资产/历史对比 | 仅限本机回环隔离环境，不得引申为生产公网表现 |
+| **Demo 验证** | [dev-fixture-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/dev-fixture-2026-06.md)、[demo-2026-04-25.md](file:///E:/Prelude/thesis-assets/evidence/test-data/archive/demo-2026-04-25.md) | 第五章 | 活跃资产/历史对比 | 仅限本机回环隔离环境，不得引申为生产公网表现 |
 | **构建验证** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 2.1 与 2.2 小节 | 第五章 | 活跃资产 | 仅能证明编译、类型检查和打包顺利完成 |
 | **环境配置** | [env-2026-06.md](file:///E:/Prelude/thesis-assets/evidence/test-data/env-2026-06.md) 1.0 小节 | 第五章 | 活跃资产 | 代表本机全栈测试环境，不能声称云端分布式部署 |
 | **Bug 修复证据** | [01-demo-proxy.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/01-demo-proxy.md)、[02-mysql-preflight.md](file:///E:/Prelude/thesis-assets/evidence/bug-evidence/02-mysql-preflight.md) | 第四/五章 | 活跃资产 | 仅用于排查和健壮性展示，不可夸大为高可用性能 |

@@ -16,7 +16,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtInterceptor)
             .addPathPatterns("/api/**")
-            .excludePathPatterns("/api/auth/**", "/api/health", "/api/llm/providers", "/api/demo/reset");
+            .excludePathPatterns("/api/auth/**", "/api/health", "/api/llm/providers", "/api/dev-fixtures/reset");
 
         registry.addInterceptor(llmRateLimitInterceptor)
             .addPathPatterns("/api/interview/*/chat", "/api/interview/*/finish");

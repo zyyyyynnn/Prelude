@@ -3,7 +3,7 @@
 ## 通用约定
 
 - 业务接口统一返回 `Result<T>`：`code`、`message`、`data`。
-- 除登录、注册、健康检查、Provider 列表和 Demo 重置外，其余接口均需携带 `Authorization: Bearer <token>`。
+- 除登录、注册、健康检查、Provider 列表和 dev fixture 重置外，其余接口均需携带 `Authorization: Bearer <token>`。
 - SSE 流式接口使用 `event: message` 推送文本片段，使用 `event: error` 返回流式错误。
 
 ## 认证与基础数据
@@ -121,8 +121,8 @@
 
 - `apiKey` 留空（不传或空字符串）表示不修改现有 Key。主动清空需传 `"__CLEAR__"`。
 - `providerKey` 为 `openai-compatible` 时，`baseUrl` 必填，保存 endpoint root，不保存完整 `/chat/completions`。
-- 真实模式下 Key 使用后端加密后保存。
-- Demo 模式下不会保存真实 Key，只保存演示占位值。
+- 常规模式下 Key 使用后端加密后保存。
+- dev fixture 开启时不会保存真实 Key，只保存本地夹具占位值。
 
 ### `POST /api/user/llm-config/test`
 
@@ -145,8 +145,8 @@
 
 说明：
 
-- 真实模式会发起一次轻量模型调用。
-- Demo 模式直接返回演示配置可用，用于答辩离线演示。
+- 常规模式会发起一次轻量模型调用。
+- dev fixture 开启时直接返回本地夹具配置可用，用于 local/dev 验收。
 
 ### `GET /api/user/profile`
 
@@ -266,14 +266,14 @@ warmup -> technical -> deep_dive -> closing
 
 获取薄弱点统计数据。
 
-## Demo 接口
+## Dev fixture 接口
 
-### `POST /api/demo/reset`
+### `POST /api/dev-fixtures/reset`
 
-重置 Demo Twin 演示数据。
+重置 local/dev 验收数据夹具。
 
 说明：
 
-- 仅 Demo profile 下可用。
-- 会重建演示账号、简历、进行中会话、已完成会话、评分历史和薄弱点数据。
+- 仅 `app.dev-fixtures.enabled=true` 时可用。
+- 会重建 dev test account、简历、进行中会话、已完成会话、评分历史和薄弱点数据。
 - 默认会话包含 1 场 `Java 后端工程师` 进行中会话，以及 `Java 后端工程师`、`前端工程师`、`算法工程师` 各 1 场已完成会话。

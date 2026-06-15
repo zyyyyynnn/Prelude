@@ -143,19 +143,20 @@ if errorlevel 1 (
 
 echo.
 echo ============================================================
-echo  Prelude Local App Runtime is running.
+echo  Prelude start-dev is running.
 echo  - Backend window: Backend - Spring Boot
 echo  - Frontend window: Frontend - Vite
-echo  - Frontend URL: %FRONTEND_URL%
+echo  - Frontend: %FRONTEND_URL%
+echo  - Backend: http://127.0.0.1:8080
 echo  - Middleware: Docker mysql/redis/rabbitmq
+echo  - Dev test account: demo / 123456
 echo.
-echo  * Note: Local App Runtime only shows middleware in Docker Desktop. Backend/Frontend run in local windows.
+echo  * Docker Desktop only shows middleware containers in this mode.
 echo  * Frontend uses Vite dev server, Vue/CSS modifications will apply instantly via HMR.
-echo  * Default dev/test account: demo / 123456
 echo ============================================================
 echo  Stop app: close Backend/Frontend windows or Ctrl+C in them
 echo  Stop middleware: docker compose stop mysql redis rabbitmq
-echo  Full Docker alternative: .\start-real-docker.bat
+echo  Full Docker alternative: .\start-docker.bat
 echo ============================================================
 echo.
 pause
@@ -170,5 +171,6 @@ if errorlevel 1 (
 exit /b 0
 
 :wait_for_url
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$url = '%~1'; $deadline = (Get-Date).AddSeconds([int]'%~2'); while ((Get-Date) -lt $deadline) { try { $resp = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5; if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) { exit 0 } } catch { if ($_.Exception.Response) { $resp = $_.Exception.Response; if ([int]$resp.StatusCode -ge 200 -and [int]$resp.StatusCode -lt 400) { exit 0 } } }; Start-Sleep -Seconds 2 }; exit 1"
-exit /b %errorlevel%
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$url = '%~1'; $deadline = (Get-Date).AddSeconds([int]'%~2'); while ((Get-Date) -lt $deadline) { try { $resp = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5; if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) { exit 0 } } catch { }; Start-Sleep -Seconds 2 }; exit 1"
+if errorlevel 1 exit /b 1
+exit /b 0

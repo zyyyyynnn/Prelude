@@ -30,7 +30,7 @@
 * thesis-assets/evidence/review-notes/stage-2-evidence-sync.md
 * thesis-assets/evidence/test-data/archive/demo-2026-04-25.json
 * thesis-assets/evidence/test-data/archive/demo-2026-04-25.md
-* thesis-assets/evidence/test-data/demo-2026-06.md
+* thesis-assets/evidence/test-data/dev-fixture-2026-06.md
 * thesis-assets/evidence/test-data/archive/env-2026-04-24.md
 * thesis-assets/evidence/test-data/env-2026-06.md
 * thesis-assets/evidence/test-data/functional-cases-2026-06.md
@@ -81,7 +81,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `thesis-assets/evidence/test-data/env-2026-06.md` | 测试环境 | 第五章 | 测试所使用的环境及配置 | 可用 | 无 |
 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 测试用例 | 第五章 | 系统各模块的功能测试情况 | 可用 | 无 |
-| `thesis-assets/evidence/test-data/demo-2026-06.md` | 测试报告 | 第五章 | Demo 隔离验证等实际性能指标 | 可用 | 部分指标未测，勿过度拔高 |
+| `thesis-assets/evidence/test-data/dev-fixture-2026-06.md` | 测试报告 | 第五章 | Demo 隔离验证等实际性能指标 | 可用 | 部分指标未测，勿过度拔高 |
 | `thesis-assets/evidence/bug-evidence/bug-fix-cases-2026-04-24.md` | Bug 修复 | 第四/五章 | Vite 代理与 MySQL 错误排查 | 可用 | 避免夸大为系统能力证明 |
 | `thesis-assets/evidence/code-snippets/impl-*.md` | 代码实现 | 第三/四章 | 后端 SSE、前台交互的代码事实 | 可用 | 需与当前代码一致 |
 
