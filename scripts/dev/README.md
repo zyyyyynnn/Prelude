@@ -1,4 +1,4 @@
-# Dev Scripts (极细粒度调试)
+# Dev Scripts (源码级调试)
 
 > **日常开发推荐入口**：根目录 `start-real.bat` / `start-demo.bat` (Local App Runtime)。
 > 本目录的脚本面向**更底层、更定制化**的后端/前端源码级调试，拦截启动步骤与日志分析。
@@ -10,7 +10,7 @@
 
 ## 中间件：复用 Docker 暴露的端口
 
-dev mode **不单独安装本机 MySQL/Redis/RabbitMQ**。必须先启动 Docker 中间件：
+dev mode **不单独安装本机 MySQL/Redis/RabbitMQ**。启动前请运行中间件：
 
 ```powershell
 docker compose up -d mysql redis rabbitmq

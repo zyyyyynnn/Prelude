@@ -76,8 +76,20 @@ if exist "%ROOT%.env" (
 
 echo [INFO] Waiting for middleware ports: MySQL %MYSQL_PORT%, Redis %REDIS_PORT%, RabbitMQ %RABBITMQ_PORT%
 call :wait_for_port %MYSQL_PORT%
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
 call :wait_for_port %REDIS_PORT%
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
 call :wait_for_port %RABBITMQ_PORT%
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
 
 REM ---- 确保后端本地配置 ----
 if not exist "%BACKEND_DIR%\src\main\resources\application-local.yml" (
