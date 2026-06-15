@@ -3,7 +3,7 @@
 
 # Prelude
 
-_一款支持简历诊断与流式语音交互的沉浸式模拟面试平台_
+_一款支持简历诊断、流式面试和语音链路预留的模拟面试平台_
 
 ![Java](https://img.shields.io/badge/Java-21-blue) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green) ![Vue](https://img.shields.io/badge/Vue-3-brightgreen) ![MySQL](https://img.shields.io/badge/MySQL-8.4-orange) ![Redis](https://img.shields.io/badge/Redis-7.0-red)
 <br>
@@ -31,7 +31,7 @@ flowchart TB
 
   subgraph Server ["服务层"]
     API["Spring Boot API"]
-    WS["SSE / WS 双向流"]
+    WS["SSE 流式面试 / WebSocket 语音预留"]
   end
 
   subgraph Data ["数据与解析层"]
