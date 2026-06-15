@@ -12,7 +12,8 @@
     "dev:demo": "vite --mode demo --host 127.0.0.1",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "capture:demo": "playwright test -c playwright.demo.config.ts"
+    "capture:demo": "playwright test -c playwright.demo.config.ts",
+    "verify:byok": "node scripts/verify-byok-settings-flow.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

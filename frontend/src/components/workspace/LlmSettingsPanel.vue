@@ -118,10 +118,13 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
     <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
 
       <div class="field-grid">
-        <FormField name="providerKey" v-slot="{ componentField }">
+        <FormField name="providerKey">
           <FormItem>
             <FormLabel>接入方式</FormLabel>
-            <Select v-bind="componentField" v-model="selectedProviderKey">
+            <Select
+              :model-value="selectedProviderKey"
+              @update:model-value="(value) => { selectedProviderKey = String(value) }"
+            >
               <SelectTrigger>
                 <SelectValue placeholder="请选择接入方式" />
               </SelectTrigger>
@@ -145,8 +148,8 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
             <Select
               v-if="!isOpenAiCompatible"
               :disabled="modelOptions.length === 0"
-              v-bind="componentField"
-              v-model="selectedModel"
+              :model-value="selectedModel"
+              @update:model-value="(value) => { selectedModel = String(value) }"
             >
               <SelectTrigger>
                 <SelectValue placeholder="请选择模型" />
@@ -167,10 +170,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   <div class="model-combobox">
                     <FormControl>
                       <Input
-                        v-model="selectedModel"
-                        v-bind="componentField"
+                        :model-value="selectedModel"
                         autocomplete="off"
                         placeholder="填写或选择模型 ID"
+                        @update:model-value="(value) => { selectedModel = String(value) }"
+                        @blur="componentField.onBlur"
                         @focus="openModelPopover"
                         @click="openModelPopover"
                         @keydown.down.prevent="openModelPopover"
@@ -218,10 +222,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
           <div class="endpoint-row">
             <FormControl>
               <Input
-                v-model="baseUrlInput"
-                v-bind="componentField"
+                :model-value="baseUrlInput"
                 autocomplete="off"
                 placeholder="例如：https://api.deepseek.com/v1"
+                @update:model-value="(value) => { baseUrlInput = String(value) }"
+                @blur="componentField.onBlur"
               />
             </FormControl>
             <Button
@@ -246,12 +251,13 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
           <div class="relative w-full flex items-center">
             <FormControl>
               <Input
-                v-model="apiKeyInput"
-                v-bind="componentField"
+                :model-value="apiKeyInput"
                 autocomplete="off"
                 placeholder="留空表示不修改当前 Key"
                 :type="showApiKey ? 'text' : 'password'"
                 class="pr-20"
+                @update:model-value="(value) => { apiKeyInput = String(value) }"
+                @blur="componentField.onBlur"
               />
             </FormControl>
             <div class="absolute right-0 top-0 h-full flex items-center pr-1">
@@ -291,11 +297,14 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
       <div class="form-section">
         <div class="form-section__title">高级设置</div>
         <div class="advanced-grid">
-          <FormField name="maxTokens" v-slot="{ componentField }">
+          <FormField name="maxTokens">
             <FormItem>
               <FormLabel>最大回复长度 (Max Tokens)</FormLabel>
               <FormControl>
-                <Select v-bind="componentField" :model-value="maxTokens ? String(maxTokens) : 'auto'" @update:model-value="v => maxTokens = v === 'auto' ? undefined : Number(v)">
+                <Select
+                  :model-value="maxTokens ? String(maxTokens) : 'auto'"
+                  @update:model-value="(value) => { maxTokens = value === 'auto' ? undefined : Number(value) }"
+                >
                   <SelectTrigger class="w-full">
                     <SelectValue placeholder="模型默认 (Auto)" />
                   </SelectTrigger>
@@ -311,10 +320,13 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
             </FormItem>
           </FormField>
 
-          <FormField name="thinkingDepth" v-slot="{ componentField }">
+          <FormField name="thinkingDepth">
             <FormItem>
               <FormLabel>思考深度 (Thinking Depth)</FormLabel>
-              <Select v-bind="componentField" v-model="thinkingDepth">
+              <Select
+                :model-value="thinkingDepth"
+                @update:model-value="(value) => { thinkingDepth = String(value) }"
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="默认 (Default)" />
                 </SelectTrigger>
