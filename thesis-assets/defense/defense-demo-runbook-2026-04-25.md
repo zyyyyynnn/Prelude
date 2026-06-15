@@ -1,8 +1,6 @@
 # 答辩演示 Runbook 2026-04-25
 
-> 注：本文档记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
-
-> 状态：2026-06 口径重写版。日期后缀保留 2026-04-25 是为了兼容既有索引，不代表内容仍停留在 4 月。
+> 历史状态说明：本文记录 2026-04 阶段的 Demo Twin 答辩演示路线，仅用于历史复盘。当前系统已收敛为 start-dev.bat 与 start-docker.bat，本文件不作为当前演示或部署指引。
 
 ## 一、演示路线
 
@@ -78,7 +76,7 @@
 | --- | --- |
 | `thesis-assets/evidence/test-data/env-2026-06.md` | 测试环境与构建验证 |
 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 功能测试用例 TC-01 ~ TC-09 |
-| `thesis-assets/evidence/test-data/dev-fixture-2026-06.md` | Demo Twin 业务验证 |
+| `thesis-assets/evidence/test-data/dev-fixture-2026-06.md` | dev fixture 本地验收数据夹具 |
 | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试证据矩阵 |
 | `thesis-assets/evidence/test-data/real-llm-api-2026-05-27-redacted.md` | 历史真实 API 功能链路记录（已脱敏） |
 
