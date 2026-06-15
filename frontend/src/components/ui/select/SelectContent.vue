@@ -9,6 +9,7 @@ import {
   useForwardPropsEmits,
 } from "reka-ui"
 import { cn } from "@/lib/utils"
+import { dropdownContentClasses } from "@/components/ui/shared-dropdown"
 import { SelectScrollDownButton, SelectScrollUpButton } from "."
 
 defineOptions({
@@ -32,9 +33,9 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
   <SelectPortal>
     <SelectContent
       v-bind="{ ...forwarded, ...$attrs }" :class="cn(
-        'relative z-[105] max-h-96 w-[var(--reka-select-trigger-width)] overflow-hidden rounded-md border border-border bg-surface dark:bg-zinc-950 text-popover-foreground shadow-md duration-300 ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+        dropdownContentClasses,
         position === 'popper'
-          && 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
+          && 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1 w-[var(--reka-select-trigger-width)]',
         props.class,
       )
       "
