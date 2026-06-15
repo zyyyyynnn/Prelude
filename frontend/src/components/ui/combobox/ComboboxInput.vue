@@ -5,7 +5,7 @@ import { reactiveOmit } from "@vueuse/core"
 import { ComboboxInput, ComboboxTrigger, useForwardPropsEmits } from "reka-ui"
 import { ChevronDown } from "@lucide/vue"
 import { cn } from "@/lib/utils"
-import { dropdownTriggerClasses } from "@/components/ui/shared-dropdown"
+import { dropdownTriggerVariants } from "@/components/ui/shared-dropdown"
 
 defineOptions({
   inheritAttrs: false,
@@ -19,7 +19,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
 <template>
-  <div :class="cn(dropdownTriggerClasses, props.class)">
+  <div :class="cn(dropdownTriggerVariants(), props.class)">
     <ComboboxInput
       v-bind="{ ...forwarded, ...$attrs }"
       class="flex-1 bg-transparent outline-none placeholder:text-muted-foreground truncate"

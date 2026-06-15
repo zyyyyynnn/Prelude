@@ -9,7 +9,7 @@ import {
   useForwardPropsEmits,
 } from "reka-ui"
 import { cn } from "@/lib/utils"
-import { dropdownItemClasses } from "@/components/ui/shared-dropdown"
+import { dropdownItemVariants } from "@/components/ui/shared-dropdown"
 
 const props = defineProps<ComboboxItemProps & { class?: HTMLAttributes["class"] }>()
 const emits = defineEmits<ComboboxItemEmits>()
@@ -21,7 +21,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 <template>
   <ComboboxItem
     v-bind="forwarded"
-    :class="cn(dropdownItemClasses, props.class)"
+    :class="cn(dropdownItemVariants(), props.class)"
   >
     <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <ComboboxItemIndicator>

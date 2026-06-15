@@ -179,6 +179,26 @@ async function verifyBrowserFlow(port) {
   })
 
   await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'networkidle' })
+
+  const resumeTrigger = page.locator('button').filter({ has: page.locator('.lucide-file-text') }).first()
+  const resumeTriggerBox = await resumeTrigger.boundingBox()
+  if (Math.abs(resumeTriggerBox.height - 30) > 1) throw new Error(`Resume trigger height is not 30px, got ${resumeTriggerBox.height}`)
+  
+  await resumeTrigger.click()
+  await page.waitForSelector('[role="menu"]', { state: 'visible', timeout: 5000 })
+  const resumeContentInner = page.locator('[role="menu"]').first()
+  const resumeItem = resumeContentInner.locator('[role="menuitem"]').first()
+  const resumeItemBox = await resumeItem.boundingBox()
+  if (Math.abs(resumeItemBox.height - 30) > 1) throw new Error(`Resume item height is not 30px, got ${resumeItemBox.height}`)
+  
+  const resumeSurfaceStyle = await resumeContentInner.evaluate(el => {
+    const style = window.getComputedStyle(el)
+    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth }
+  })
+
+  await page.keyboard.press('Escape')
+  await page.waitForSelector('[role="menu"]', { state: 'hidden', timeout: 5000 })
+
   await page.getByRole('button', { name: '设置' }).click()
   await page.getByRole('button', { name: 'LLM 配置' }).click()
 
@@ -191,17 +211,6 @@ async function verifyBrowserFlow(port) {
   if (await page.locator('.test-status-row').count() !== 0) {
     throw new Error('Panel test status row is still rendered')
   }
-  await modelInput.press('ArrowDown')
-  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
-  await modelInput.press('Enter')
-  await page.waitForFunction(() => {
-    const input = document.querySelector('input[placeholder="填写或选择模型 ID"]')
-    return input?.value === 'detected-model-pro'
-  })
-  await modelInput.press('ArrowDown')
-  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
-  await modelInput.press('Escape')
-  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'hidden', timeout: 5000 })
 
   await modelInput.fill(manualModel)
   await page.waitForTimeout(400)
@@ -216,6 +225,17 @@ async function verifyBrowserFlow(port) {
 
   await modelInput.click()
   await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
+  
+  const comboboxContent = page.locator('[data-byok-model-combobox-content]')
+  const comboboxSurfaceStyle = await comboboxContent.evaluate(el => {
+    const style = window.getComputedStyle(el)
+    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth }
+  })
+
+  if (resumeSurfaceStyle.bg !== comboboxSurfaceStyle.bg) throw new Error(`Surface background mismatch: ${resumeSurfaceStyle.bg} vs ${comboboxSurfaceStyle.bg}`)
+  if (resumeSurfaceStyle.shadow !== comboboxSurfaceStyle.shadow) throw new Error(`Surface shadow mismatch: ${resumeSurfaceStyle.shadow} vs ${comboboxSurfaceStyle.shadow}`)
+  if (resumeSurfaceStyle.border !== comboboxSurfaceStyle.border) throw new Error(`Surface border mismatch: ${resumeSurfaceStyle.border} vs ${comboboxSurfaceStyle.border}`)
+
   const legacyItemCount = await page.locator('.model-combobox__item, .model-suggestion').count()
   if (legacyItemCount !== 0) {
     throw new Error('Legacy raw suggestion item is still rendered')
@@ -235,7 +255,7 @@ async function verifyBrowserFlow(port) {
     throw new Error(`Combobox trigger height is not 34px, got ${triggerBox.height}`)
   }
 
-  const contentBox = await page.locator('[data-byok-model-combobox-content]').boundingBox()
+  const contentBox = await comboboxContent.boundingBox()
   if (Math.abs(contentBox.width - triggerBox.width) > 1) {
     throw new Error(`Dropdown content width (${contentBox.width}) does not match trigger width (${triggerBox.width})`)
   }
@@ -245,11 +265,21 @@ async function verifyBrowserFlow(port) {
     throw new Error(`Dropdown item height is not 34px, got ${itemBox.height}`)
   }
 
-  // To allow human comparison, we try to open a Select at the same time. We will open the "高级设置" Select.
+  // To allow human comparison, open Resume dropdown simultaneously
   await page.evaluate(() => {
-    document.addEventListener('pointerdown', (e) => e.stopPropagation(), true)
+    document.addEventListener('pointerdown', (e) => {
+      // stop propagation to prevent combobox from closing
+      if (!e.target.closest('[role="dialog"]') && !e.target.closest('[role="menu"]')) {
+        e.stopPropagation()
+      }
+    }, true)
   })
-  await page.locator('button[role="combobox"]').nth(1).click() // maxTokens select
+  
+  // Click Resume trigger via evaluate to bypass Playwright's synthetic pointerdown that might be stopped
+  await page.evaluate(() => {
+    const trigger = Array.from(document.querySelectorAll('button')).find(b => b.querySelector('.lucide-file-text'))
+    if (trigger) trigger.click()
+  })
   await page.waitForTimeout(300)
 
   fs.mkdirSync(path.dirname(screenshotPath), { recursive: true })

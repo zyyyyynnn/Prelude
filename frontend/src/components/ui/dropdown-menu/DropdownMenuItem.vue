@@ -4,10 +4,11 @@ import type { HTMLAttributes } from "vue"
 import { reactiveOmit } from "@vueuse/core"
 import { DropdownMenuItem, useForwardProps } from "reka-ui"
 import { cn } from "@/lib/utils"
+import { dropdownItemVariants } from "@/components/ui/shared-dropdown"
 
-const props = defineProps<DropdownMenuItemProps & { class?: HTMLAttributes["class"], inset?: boolean }>()
+const props = defineProps<DropdownMenuItemProps & { class?: HTMLAttributes["class"], inset?: boolean, size?: 'default' | 'compact' }>()
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class", "size", "inset")
 
 const forwardedProps = useForwardProps(delegatedProps)
 </script>
@@ -16,7 +17,7 @@ const forwardedProps = useForwardProps(delegatedProps)
   <DropdownMenuItem
     v-bind="forwardedProps"
     :class="cn(
-      'relative flex cursor-default select-none items-center rounded-sm gap-2 px-2 h-[34px] text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
+      dropdownItemVariants({ size: props.size }),
       inset && 'pl-8',
       props.class,
     )"

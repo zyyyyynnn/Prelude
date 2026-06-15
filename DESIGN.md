@@ -187,9 +187,13 @@
 - **Dialog**: 内部滚动区域必须使用 `overflow-y: auto; flex: 1; min-height: 0`。默认 `<DialogContent>` 通过 `z-[101]` 断绝下层干扰。业务可通过附加 `.dialog-no-close` 类名隐藏默认的关闭 X 按钮。
 - **Toast/Notice**: 页面级通知统一收束至 `usePageNotice` 钩子，严禁散落直接调用 UI 库原生 Message。
 
-### 5.3 浮层组件 (Select / Dropdown / Tooltip)
+### 5.3 浮层组件 (Select / Combobox / DropdownMenu / Tooltip)
 
-- 下拉内容区必须配对 `border-border`，禁止裸写 `border` 导致回退纯黑。
+- **共享低浮层视觉**：Select、Combobox 和 DropdownMenu 必须强制共享同一套 `dropdownContentClasses` 纸感 surface（基于 `cva` 或共享常量）。绝对禁止业务组件局部写 `border-black/5`、`shadow-lg`、`rounded-xl` 等制造独立外观。
+- **极致克制边框**：下拉浮层不允许出现明显的外层卡片边框。如有必要，必须使用极弱的 token（如 `border-transparent` 或极低透明度的 `color-mix` 边框）+ 柔和阴影，实现肉眼无明显硬框。
+- **动态高度锚定**：下拉选项（Item）的高度必须绝对跟随其触发器（Trigger）的高度：
+  - Compact Trigger (`30px`) -> Compact Item (`30px`)
+  - Default Trigger (`34px`) -> Default Item (`34px`)
 - Menu Items 悬浮背景色使用 `var(--color-surface-hover)`，并且必须加上 `rounded-md`，绝对禁止贴边直角出现。
 - 原生 `title` 属性全局禁用，必须使用 `z-[110]` 的 shadcn `<Tooltip>` 替代。
 

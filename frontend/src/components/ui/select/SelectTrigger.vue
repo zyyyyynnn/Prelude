@@ -6,7 +6,7 @@ import { ChevronDown } from "@lucide/vue"
 import { SelectIcon, SelectTrigger, useForwardProps } from "reka-ui"
 import { cn } from "@/lib/utils"
 
-import { dropdownTriggerClasses } from "@/components/ui/shared-dropdown"
+import { dropdownTriggerVariants } from "@/components/ui/shared-dropdown"
 
 const props = defineProps<SelectTriggerProps & { class?: HTMLAttributes["class"] }>()
 
@@ -18,7 +18,7 @@ const forwardedProps = useForwardProps(delegatedProps)
 <template>
   <SelectTrigger
     v-bind="forwardedProps"
-    :class="cn(dropdownTriggerClasses, props.class)"
+    :class="cn(dropdownTriggerVariants(), props.class)"
   >
     <slot />
     <SelectIcon as-child>
