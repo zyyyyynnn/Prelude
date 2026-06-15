@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "app.demo")
+@ConfigurationProperties(prefix = "app.local")
 public class DemoProperties {
 
     private boolean enabled = false;

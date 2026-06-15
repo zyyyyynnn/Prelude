@@ -1,6 +1,5 @@
 # Dev Scripts (源码级调试)
 
-> **日常开发推荐入口**：根目录 `start-real.bat` / `start-demo.bat` (Local App Runtime)。
 > 本目录的脚本面向**更底层、更定制化**的后端/前端源码级调试，拦截启动步骤与日志分析。
 
 ## 何时用 dev mode 脚本 (`.ps1`)
@@ -26,7 +25,6 @@ dev mode 连接约定（与 `application-local.yml` 默认值一致）：
 
 ## 入口脚本
 
-`scripts/real/start-real.ps1`、`scripts/demo/start-demo.ps1` 是底层的 PowerShell 启动器。
 
 使用前：
 

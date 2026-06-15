@@ -10,7 +10,6 @@
 
 入口：
 - 真实版：`.\start-real.bat`
-- Demo Twin：`.\start-demo.bat`
 
 底层执行流程：
 1. 启动中间件：`docker compose up -d mysql redis rabbitmq`
@@ -25,12 +24,10 @@
 
 入口：
 - 真实版：`.\start-real-docker.bat`
-- Demo Twin：`.\start-demo-docker.bat`
 
 底层执行（等价手动命令）：
 ```powershell
 docker compose --profile real up -d --build   # 真实版
-docker compose --profile demo  up -d --build  # Demo Twin
 ```
 
 ## 3. Dev scripts（源码级调试）
@@ -39,7 +36,6 @@ docker compose --profile demo  up -d --build  # Demo Twin
 
 入口：
 - `scripts/real/start-real.ps1`
-- `scripts/demo/start-demo.ps1`
 
 详见 [scripts/dev/README.md](../scripts/dev/README.md)。
 
@@ -55,7 +51,7 @@ docker compose --profile demo  up -d --build  # Demo Twin
 | Redis   | 16379                           |
 | RabbitMQ | 5672 / 15672                    |
 
-真实版与 Demo 版隔离：后端 `8080`/`8081`、前端 `5173`/`5174`、数据库 `interview_system`/`interview_demo`、Redis db `0`/`1`。
+
 
 ## 不推荐的方式
 
@@ -65,4 +61,5 @@ docker compose --profile demo  up -d --build  # Demo Twin
 
 ## Docker Desktop 视图提示
 
-在使用 Local app runtime 启动时，Docker Desktop 中只会显示 mysql、redis 和 rabbitmq 等中间件容器。后端与前端服务运行在本机的独立命令行窗口中，不会显示为 Docker 容器。
+- **Local App Runtime** 下，Docker Desktop 只会显示 mysql、redis 和 rabbitmq 等中间件容器。
+- **Full Docker Runtime** 下，才会显示 backend-real / frontend-real 容器。

@@ -46,8 +46,8 @@ if exist "%ROOT%.env" (
 )
 if "!JWT_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder JWT_SECRET.
 if "!AES_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder APP_CRYPTO_AES_SECRET.
-if "!JWT_PLACEHOLDER!"=="1" echo [WARN] Real stack can start for local demo, but replace them before long-term use.
-if "!AES_PLACEHOLDER!"=="1" echo [WARN] Real stack can start for local demo, but replace them before long-term use.
+if "!JWT_PLACEHOLDER!"=="1" echo [WARN] Real stack can start, but replace them before long-term use.
+if "!AES_PLACEHOLDER!"=="1" echo [WARN] Real stack can start, but replace them before long-term use.
 
 REM ---- 校验 compose 配置 ----
 echo [INFO] Validating docker compose config ^(profile: %PROFILE%^)...
@@ -100,7 +100,7 @@ echo  - MySQL    : 127.0.0.1:13306  ^(db: interview_system^)
 echo  - RabbitMQ : 127.0.0.1:15672  ^(guest / guest^)
 echo ============================================================
 echo  Stop app layer : docker compose stop backend-real frontend-real
-echo  Stop all + mw  : docker compose --profile real --profile demo down
+echo  Stop all + mw  : docker compose --profile real down
 echo ============================================================
 echo.
 pause

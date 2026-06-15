@@ -1,6 +1,9 @@
 # dev mode 本地配置模板（仅开发调试，非默认入口）。
 # 默认端口对齐 Docker Compose 暴露端口：先 docker compose up 中间件，再本机跑后端。
 spring:
+  sql:
+    init:
+      data-locations: classpath:data.sql,classpath:data-dev.sql
   datasource:
     url: jdbc:mysql://127.0.0.1:13306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
@@ -35,3 +38,4 @@ openai:
   base-url: ${OPENAI_BASE_URL:}
   model: ${OPENAI_MODEL:}
   api-key: ${OPENAI_API_KEY:}
+
