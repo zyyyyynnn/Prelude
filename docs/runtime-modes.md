@@ -1,6 +1,6 @@
 # 运行模式说明
 
-项目提供三种运行模式。**推荐使用 Local app runtime**，以获得最佳的开发与演示体验（支持 Vite HMR 即时热重载）。
+项目提供三种运行模式。推荐使用 **Local app runtime** 用于日常开发和演示（支持 Vite HMR 热重载）。
 
 ## 1. Local app runtime（推荐）
 
@@ -59,5 +59,10 @@ docker compose --profile demo  up -d --build  # Demo Twin
 
 ## 不推荐的方式
 
-- **强烈不推荐**在本机单独安装运行 MySQL84 / Redis / RabbitMQ 系统服务。
+- 不建议同时运行本机 MySQL84 / Redis / RabbitMQ 系统服务，以免端口冲突。
 - 不要占用本机 `3306` / `6379` / `5672`，以免引发端口冲突。Docker runtime 已自带所需中间件，dev mode 也会默认连接 Docker 暴露的中间件端口。
+
+
+## Docker Desktop 视图提示
+
+在使用 Local app runtime 启动时，Docker Desktop 中只会显示 mysql、redis 和 rabbitmq 等中间件容器。后端与前端服务运行在本机的独立命令行窗口中，不会显示为 Docker 容器。

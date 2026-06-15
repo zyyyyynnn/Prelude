@@ -85,15 +85,16 @@ flowchart TB
 
 ### 推荐：启动 Local app runtime（含热重载）
 
-1. 准备环境变量：\Copy-Item .\.env.example .\.env2. 启动：\.\start-real.bat\ （或 \.\start-demo.bat\）
+1. 准备环境变量：`Copy-Item .\.env.example .\.env`
+2. 启动：`.\start-real.bat` （或 `.\start-demo.bat`）
 3. 脚本会自动启动 Docker 中间件（MySQL/Redis/RabbitMQ）并打开两个控制台窗口运行后端和前端。
-4. 访问：前端 \http://127.0.0.1:5173\，修改 Vue/CSS 即时生效。
+4. 访问：前端 `http://127.0.0.1:5173`，前端修改支持 HMR 即时生效。
 
 > 完整配置模板与字段说明见 [docs/setup.md](docs/setup.md)。
 
 ### 可选：启动 Full Docker runtime（无热重载）
 
-1. 启动：\.\start-real-docker.bat\ （或 \.\start-demo-docker.bat\）
+1. 启动：`.\start-real-docker.bat` （或 `.\start-demo-docker.bat`）
 2. 注意：前端为 build 后的 nginx 静态产物，修改前端代码需要 rebuild 才能生效，不支持 HMR。
 
 ### 停止服务

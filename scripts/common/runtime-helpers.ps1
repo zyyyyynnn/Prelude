@@ -160,21 +160,7 @@ function Start-BackgroundCommand {
     -PassThru
 }
 
-function Start-HiddenMySqlProcess {
-  param(
-    [string]$FilePath,
-    [string]$DefaultsFile,
-    [string]$ErrorLogPath,
-    [string]$WorkingDirectory
-  )
 
-  return Start-Process `
-    -FilePath $FilePath `
-    -ArgumentList @("--defaults-file=`"$DefaultsFile`"", "--log-error=`"$ErrorLogPath`"") `
-    -WorkingDirectory $WorkingDirectory `
-    -WindowStyle Hidden `
-    -PassThru
-}
 
 function Get-ApplicationLocalDatasourceConfig {
   param([string]$ConfigPath)
@@ -327,7 +313,5 @@ function Assert-RabbitMqReady {
     return
   }
 
-  $service = Get-Service -Name 'RabbitMQ' -ErrorAction SilentlyContinue
-  $status = if ($service) { " Current native RabbitMQ service status: $($service.Status)." } else { '' }
-  throw "RabbitMQ is not listening on port 5672.$status`nPlease start Docker middleware via: docker compose up -d mysql redis rabbitmq"
+  throw "RabbitMQ is not listening on port 5672.`nPlease start Docker middleware via: docker compose up -d mysql redis rabbitmq"
 }

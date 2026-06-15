@@ -1,6 +1,6 @@
 # 环境配置指南
 
-推荐运行方式为 **Local app runtime**，即 Docker 管理基础中间件，本机运行 Maven 和 Vite。全量容器化运行请参阅 [runtime-modes.md](runtime-modes.md)。
+推荐运行方式为 **Local app runtime**：Docker 管理基础中间件，本机运行 Maven 和 Vite。全量容器化运行请参阅 [runtime-modes.md](runtime-modes.md)。
 
 ## 1. 推荐：Local App Runtime
 
