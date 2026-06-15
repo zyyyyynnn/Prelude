@@ -21,62 +21,51 @@ title: 图3.3 系统整体架构图
     "curve": "basis"
   }
 }}%%
-flowchart TB
+flowchart LR
   user((" &nbsp; 用户 / 浏览器端 &nbsp; "))
 
-  subgraph Frontend[" &nbsp; 前端展示层 &nbsp; "]
-    ui[" &nbsp; Vue 3 页面交互 &nbsp; <br/> &nbsp; 登录 / 上传 / 面试 / 报告 &nbsp; "]
-    chart[" &nbsp; ECharts 数据看板 &nbsp; "]
+  subgraph frontend[" &nbsp; 前端层 &nbsp; "]
+    vue[" &nbsp; Vue 3 / Vite &nbsp; "]
+    view[" &nbsp; 面试 / 报告 / 看板 &nbsp; "]
   end
 
-  subgraph Backend[" &nbsp; 后端服务层 &nbsp; "]
+  subgraph backend[" &nbsp; 后端层 &nbsp; "]
     api[" &nbsp; Spring Boot API &nbsp; "]
-    security[" &nbsp; JWT / CORS &nbsp; "]
-    sse[" &nbsp; SSE 事件通道 &nbsp; "]
+    auth[" &nbsp; JWT / 权限校验 &nbsp; "]
+    biz[" &nbsp; 简历解析 / 面试 / BYOK / 报告编排 &nbsp; "]
   end
 
-  subgraph Business[" &nbsp; 业务模块 &nbsp; "]
-    core[" &nbsp; 认证 / 简历解析 / 岗位匹配 &nbsp; <br/> &nbsp; 模拟面试 / BYOK 配置 / 数据看板 &nbsp; "]
-    report[" &nbsp; 报告生成服务 &nbsp; <br/> &nbsp; /finish -> generating &nbsp; "]
+  subgraph async[" &nbsp; 异步报告链路 &nbsp; "]
+    rabbit[" &nbsp; RabbitMQ &nbsp; <br/> &nbsp; 报告任务队列 &nbsp; "]
     worker[" &nbsp; ReportJobWorker &nbsp; "]
   end
 
-  subgraph Model[" &nbsp; 模型服务层 &nbsp; "]
-    llm[" &nbsp; LLM Provider &nbsp; <br/> &nbsp; OpenAI-compatible / BYOK &nbsp; "]
+  subgraph data[" &nbsp; 数据与中间件层 &nbsp; "]
+    mysql[" &nbsp; MySQL &nbsp; <br/> &nbsp; 业务数据 &nbsp; "]
+    redis[" &nbsp; Redis &nbsp; <br/> &nbsp; 限流 / 缓存 / 状态辅助 &nbsp; "]
   end
 
-  subgraph Data[" &nbsp; 数据与中间件层 &nbsp; "]
-    mysql[" &nbsp; MySQL &nbsp; <br/> &nbsp; 核心业务数据 &nbsp; "]
-    redis[" &nbsp; Redis &nbsp; <br/> &nbsp; 限流 / 缓存 / 评分锁 / 状态辅助 &nbsp; "]
-    rabbit[" &nbsp; RabbitMQ &nbsp; <br/> &nbsp; 报告生成异步任务队列 &nbsp; "]
-  end
+  llm[" &nbsp; LLM Provider &nbsp; <br/> &nbsp; OpenAI-compatible / BYOK &nbsp; "]
+  fixture[" &nbsp; 本地验收数据夹具 &nbsp; <br/> &nbsp; local/dev only &nbsp; "]
+  monitor[" &nbsp; Prometheus / Grafana &nbsp; <br/> &nbsp; 可选观测层 &nbsp; "]
 
-  subgraph Observability[" &nbsp; 可选观测层 &nbsp; "]
-    monitor[" &nbsp; Prometheus / Grafana &nbsp; "]
-  end
+  user --> vue
+  vue --> view
+  vue --> api
 
-  fixture[" &nbsp; 本地验收数据夹具 &nbsp; <br/> &nbsp; local/dev reset / data seed &nbsp; "]
+  api --> auth
+  api --> biz
+  biz --> mysql
+  biz --> redis
+  biz --> llm
+  biz --> rabbit
+  rabbit --> worker
+  worker --> mysql
+  worker --> api
 
-  user --> ui
-  ui --> chart
-  ui -->|REST API / SSE| api
-  api --> security
-  api --> core
-  api --> sse
-
-  core -->|业务数据| mysql
-  core -->|限流 / 缓存 / 状态辅助| redis
-  core -->|OpenAI-compatible / BYOK| llm
-  core --> report
-  report -->|发布报告任务| rabbit
-  rabbit -->|消费任务| worker
-  worker -->|summary_report / finished| mysql
-  worker -->|report_ready| sse
-  sse -->|事件通知| ui
-
-  fixture -.->|local/dev only| core
-  fixture -.->|data-dev.sql| mysql
-  monitor -.->|metrics| api
+  fixture -.-> biz
+  fixture -.-> mysql
+  monitor -.-> api
 
   classDef actor fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.5px,color:#252525
   classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
@@ -86,8 +75,8 @@ flowchart TB
   classDef optional fill:#FBFAF6,stroke:#C8B7AA,stroke-dasharray: 5 5,color:#555555
 
   class user actor
-  class Frontend,Backend,Business,Model,Data,Observability layer
-  class ui,chart,api,security,sse,core,report,worker main
+  class frontend,backend,async,data layer
+  class vue,view,api,auth,biz,worker main
   class mysql,redis,rabbit store
   class llm ext
   class fixture,monitor optional
