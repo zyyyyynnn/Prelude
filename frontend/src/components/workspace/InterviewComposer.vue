@@ -393,17 +393,18 @@ onBeforeUnmount(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="z-[105] w-36 border border-black/5 shadow-lg rounded-xl p-0" align="start">
+                <DropdownMenuContent class="w-36" align="start">
                   <DropdownMenuItem 
                     v-for="r in resumes" 
                     :key="r.id" 
                     @click="emit('update:selectedResumeId', r.id)"
-                    class="flex h-[30px] items-center justify-between px-3 text-[13px] !font-serif rounded-md cursor-pointer"
+                    size="compact"
+                    class="justify-between !font-serif cursor-pointer"
                   >
                     {{ r.fileName }}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem @click="triggerUpload" class="flex h-[30px] items-center justify-between px-3 text-[13px] !font-serif rounded-md cursor-pointer text-primary font-medium justify-center">
+                  <DropdownMenuItem @click="triggerUpload" size="compact" class="justify-center !font-serif cursor-pointer text-primary font-medium">
                     {{ uploading ? '上传中...' : '+ 上传 PDF' }}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -436,12 +437,13 @@ onBeforeUnmount(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="z-[105] w-36 border border-black/5 shadow-lg rounded-xl p-0" align="start">
+                <DropdownMenuContent class="w-36" align="start">
                   <DropdownMenuItem 
                     v-for="p in positions" 
                     :key="p.id" 
                     @click="emit('update:selectedPositionId', p.id)"
-                    class="flex h-[30px] items-center justify-between px-3 text-[13px] !font-serif rounded-md cursor-pointer"
+                    size="compact"
+                    class="justify-between !font-serif cursor-pointer"
                   >
                     {{ p.name }}
                   </DropdownMenuItem>

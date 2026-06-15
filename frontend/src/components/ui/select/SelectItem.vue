@@ -10,7 +10,7 @@ import {
   useForwardProps,
 } from "reka-ui"
 import { cn } from "@/lib/utils"
-import { dropdownItemClasses } from "@/components/ui/shared-dropdown"
+import { dropdownItemVariants } from "@/components/ui/shared-dropdown"
 
 const props = defineProps<SelectItemProps & { class?: HTMLAttributes["class"] }>()
 
@@ -22,7 +22,7 @@ const forwardedProps = useForwardProps(delegatedProps)
 <template>
   <SelectItem
     v-bind="forwardedProps"
-    :class="cn(dropdownItemClasses, props.class)"
+    :class="cn(dropdownItemVariants(), props.class)"
   >
     <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectItemIndicator>
