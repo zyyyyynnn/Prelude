@@ -34,7 +34,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         props.class,
       )"
     >
-      <ComboboxViewport class="p-1">
+      <ComboboxViewport>
         <slot />
       </ComboboxViewport>
     </ComboboxContent>
