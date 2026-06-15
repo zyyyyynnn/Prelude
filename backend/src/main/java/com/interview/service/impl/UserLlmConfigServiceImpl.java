@@ -142,10 +142,14 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         }
 
         String apiKey = resolveDraftApiKey(request.apiKey(), user, providerKey, baseUrl);
+        Map<String, Object> extraParams = null;
+        if (request.thinkingDepth() != null && !request.thinkingDepth().isBlank()) {
+            extraParams = Map.of("thinking_depth", request.thinkingDepth());
+        }
         String content = llmRouter.chatWithExplicit(providerKey, model, baseUrl, apiKey, List.of(
             Map.of("role", "system", "content", "你是模型连通性测试助手。"),
             Map.of("role", "user", "content", "请只回复 OK")
-        ));
+        ), request.maxTokens(), extraParams);
         if (content == null || content.isBlank()) {
             throw BusinessException.badRequest("模型服务返回内容为空");
         }

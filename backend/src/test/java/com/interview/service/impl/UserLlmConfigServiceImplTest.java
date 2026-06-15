@@ -18,9 +18,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -94,7 +97,7 @@ class UserLlmConfigServiceImplTest {
             null
         )))
             .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("endpoint");
+            .hasMessageContaining("Base URL");
     }
 
     @Test
@@ -222,5 +225,43 @@ class UserLlmConfigServiceImplTest {
         )))
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("重新填写 API Key");
+    }
+
+    @Test
+    void testConfigPassesMaxTokensAndThinkingDepthToRouter() {
+        User user = new User();
+        user.setId(7L);
+        user.setLlmProvider("deepseek");
+        user.setLlmModel("deepseek-v4-pro");
+
+        when(userMapper.selectById(7L)).thenReturn(user);
+        when(demoModeService.isEnabled()).thenReturn(false);
+        when(llmRouter.chatWithExplicit(
+            eq("deepseek"),
+            eq("deepseek-v4-pro"),
+            eq(null),
+            eq(null),
+            any(),
+            eq(8192),
+            any()
+        )).thenReturn("OK");
+
+        com.interview.common.UserContext.setCurrentUserId(7L);
+        service.testConfig(new LlmConfigTestRequest(
+            "deepseek", null, "deepseek-v4-pro", null, 8192, "high"
+        ));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> extraParamsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(llmRouter).chatWithExplicit(
+            eq("deepseek"),
+            eq("deepseek-v4-pro"),
+            eq(null),
+            eq(null),
+            any(),
+            eq(8192),
+            extraParamsCaptor.capture()
+        );
+        assertThat(extraParamsCaptor.getValue()).containsEntry("thinking_depth", "high");
     }
 }

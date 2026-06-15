@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { discoverLlmModels, fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
 import { withMinDelay } from '../lib/utils'
 import type { LlmProviderOption } from '../api/contracts'
@@ -33,10 +33,13 @@ export function useLlmSettings() {
   const baseUrlInput = ref('')
   const selectedModel = ref('')
   const discoveredModels = ref<string[]>([])
+  const modelDiscoveryHint = ref('')
   const apiKeyInput = ref('')
   const apiKeyMasked = ref('')
   const maxTokens = ref<number | undefined>(undefined)
   const thinkingDepth = ref<string | undefined>(undefined)
+  const changeTrackingReady = ref(false)
+  const lastConfirmedDraft = ref('')
 
   // scope 快照：loadSettings 成功后记录，用于判断「表单 scope 是否相对已保存配置变化」。
   const initialScope = ref<{ providerKey: string; baseUrl: string }>({ providerKey: '', baseUrl: '' })
@@ -51,12 +54,23 @@ export function useLlmSettings() {
     if (!isOpenAiCompatible.value) {
       return currentProvider.value?.models ?? []
     }
-    const models = [...discoveredModels.value]
-    if (selectedModel.value && !models.includes(selectedModel.value)) {
-      models.unshift(selectedModel.value)
-    }
-    return models
+    return discoveredModels.value
   })
+
+  function currentDraftSignature(): string {
+    return JSON.stringify({
+      providerKey: selectedProviderKey.value,
+      baseUrl: normalizeBaseUrl(baseUrlInput.value),
+      model: selectedModel.value,
+      apiKey: apiKeyInput.value,
+      maxTokens: maxTokens.value ?? null,
+      thinkingDepth: thinkingDepth.value ?? null,
+    })
+  }
+
+  function markCurrentDraftConfirmed() {
+    lastConfirmedDraft.value = currentDraftSignature()
+  }
 
   function isScopeChanged(): boolean {
     const providerChanged = selectedProviderKey.value !== initialScope.value.providerKey
@@ -74,6 +88,7 @@ export function useLlmSettings() {
 
   async function loadSettings() {
     loading.value = true
+    changeTrackingReady.value = false
     try {
       const [providers, config] = await Promise.all([fetchProviders(), fetchUserLlmConfig()])
       providerOptions.value = providers
@@ -86,10 +101,13 @@ export function useLlmSettings() {
       maxTokens.value = config.maxTokens ?? undefined
       thinkingDepth.value = config.thinkingDepth ?? undefined
       initialScope.value = { providerKey: selectedProviderKey.value, baseUrl: baseUrlInput.value }
+      markCurrentDraftConfirmed()
       testStatus.value = { state: 'idle', message: '未测试' }
+      changeTrackingReady.value = true
       showNotice('配置已加载', 'success')
     } catch (error) {
       showNotice(getErrorMessage(error), 'error')
+      changeTrackingReady.value = true
     } finally {
       loading.value = false
     }
@@ -106,6 +124,9 @@ export function useLlmSettings() {
     }
 
     saving.value = true
+    const hadSavedApiKey = apiKeyMasked.value !== ''
+    const scopeChangedBeforeSave = isScopeChanged()
+    const hasNewApiKey = apiKeyInput.value.trim() !== ''
 
     try {
       const result = await withMinDelay(saveUserLlmConfig({
@@ -117,6 +138,7 @@ export function useLlmSettings() {
         thinkingDepth: thinkingDepth.value ?? undefined,
       }))
 
+      changeTrackingReady.value = false
       selectedProviderKey.value = result.providerKey || selectedProviderKey.value
       baseUrlInput.value = result.baseUrl || baseUrlInput.value
       selectedModel.value = result.model || selectedModel.value
@@ -124,13 +146,22 @@ export function useLlmSettings() {
       maxTokens.value = result.maxTokens ?? undefined
       thinkingDepth.value = result.thinkingDepth ?? undefined
       initialScope.value = { providerKey: selectedProviderKey.value, baseUrl: baseUrlInput.value }
-      testStatus.value = { state: 'idle', message: '配置已变更，建议重新测试' }
       if (apiKeyInput.value && !result.apiKeyMasked) {
         apiKeyInput.value = ''
+        markCurrentDraftConfirmed()
+        testStatus.value = { state: 'idle', message: '未测试' }
+        changeTrackingReady.value = true
         showNotice('配置已保存，但接口未返回脱敏 Key', 'warning')
         return
       }
       apiKeyInput.value = ''
+      markCurrentDraftConfirmed()
+      testStatus.value = { state: 'idle', message: '未测试' }
+      changeTrackingReady.value = true
+      if (scopeChangedBeforeSave && !hasNewApiKey && hadSavedApiKey && !result.apiKeyMasked) {
+        showNotice('接入方式或 Base URL 已变更，旧 API Key 已清空，请重新填写后测试。', 'warning')
+        return
+      }
       showNotice('LLM 配置已保存', 'success')
     } catch (error) {
       showNotice(getErrorMessage(error), 'error')
@@ -148,9 +179,12 @@ export function useLlmSettings() {
         model: selectedModel.value,
         apiKey: '__CLEAR__',
       }))
+      changeTrackingReady.value = false
       apiKeyMasked.value = result.apiKeyMasked || ''
       apiKeyInput.value = ''
+      markCurrentDraftConfirmed()
       testStatus.value = { state: 'idle', message: '未测试' }
+      changeTrackingReady.value = true
       showNotice('API Key 已清除', 'success')
     } catch (error) {
       showNotice(getErrorMessage(error), 'error')
@@ -172,10 +206,12 @@ export function useLlmSettings() {
         thinkingDepth: thinkingDepth.value ?? undefined,
       }))
       const message = result.message || '模型配置测试通过'
+      markCurrentDraftConfirmed()
       testStatus.value = { state: result.ok ? 'success' : 'error', message }
       showNotice(message, result.ok ? 'success' : 'warning')
     } catch (error) {
       const message = getErrorMessage(error)
+      markCurrentDraftConfirmed()
       testStatus.value = { state: 'error', message }
       showNotice(message, 'error')
     } finally {
@@ -207,16 +243,31 @@ export function useLlmSettings() {
       }))
       baseUrlInput.value = result.baseUrl
       discoveredModels.value = result.models
-      if (!result.models.includes(selectedModel.value)) {
-        selectedModel.value = result.models[0] || ''
+      modelDiscoveryHint.value = result.models.length === 0 ? '未能读取模型列表，可手动填写模型 ID。' : ''
+      if (result.models.length > 0 && !result.models.includes(selectedModel.value)) {
+        selectedModel.value = result.models[0]
       }
-      showNotice('模型列表已更新', 'success')
+      showNotice(result.models.length > 0 ? '模型列表已更新' : modelDiscoveryHint.value, result.models.length > 0 ? 'success' : 'warning')
     } catch (error) {
+      modelDiscoveryHint.value = '未能读取模型列表，可手动填写模型 ID。'
       showNotice(getErrorMessage(error), 'error')
     } finally {
       discovering.value = false
     }
   }
+
+  watch(
+    [selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth],
+    () => {
+      if (!changeTrackingReady.value || testStatus.value.state === 'testing') {
+        return
+      }
+      if (currentDraftSignature() !== lastConfirmedDraft.value) {
+        testStatus.value = { state: 'idle', message: '配置已变更，建议重新测试' }
+      }
+    },
+    { flush: 'sync' },
+  )
 
   return {
     loading,
@@ -228,6 +279,7 @@ export function useLlmSettings() {
     selectedProviderKey,
     baseUrlInput,
     selectedModel,
+    modelDiscoveryHint,
     apiKeyInput,
     apiKeyMasked,
     maxTokens,

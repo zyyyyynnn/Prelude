@@ -34,7 +34,7 @@ function normalizeProviderDisplayName(provider: LlmProviderRecord) {
     rawProvider.name ||
     rawProvider.providerKey ||
     rawProvider.provider_key
-  return typeof candidate === 'string' && candidate ? candidate : '未命名 Provider'
+  return typeof candidate === 'string' && candidate ? candidate : '未命名接入方式'
 }
 
 function normalizeModelValue(model: string | Record<string, unknown>) {

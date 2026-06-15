@@ -59,7 +59,7 @@ public class LlmModelDiscoveryServiceImpl implements LlmModelDiscoveryService {
                 throw BusinessException.badRequest("鉴权失败，请检查 API Key");
             }
             if (!response.isSuccessful()) {
-                throw BusinessException.badRequest("endpoint 不可达或模型列表接口返回异常：" + response.code());
+                throw BusinessException.badRequest("Base URL 不可达或模型列表接口返回异常：" + response.code());
             }
             List<String> models = parseModelsResponse(body);
             return new LlmModelDiscoveryResponse(OpenAiCompatibleProvider.PROVIDER_KEY, baseUrl, models);
@@ -67,7 +67,7 @@ public class LlmModelDiscoveryServiceImpl implements LlmModelDiscoveryService {
             throw exception;
         } catch (IOException exception) {
             log.warn("Failed to discover OpenAI-compatible models from endpoint {}", baseUrl);
-            throw BusinessException.badRequest("endpoint 不可达，请检查 OpenAI-compatible endpoint");
+            throw BusinessException.badRequest("Base URL 不可达，请检查 Base URL");
         }
     }
 

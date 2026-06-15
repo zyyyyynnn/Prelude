@@ -34,7 +34,7 @@ const {
   loading, saving, testing, discovering, testStatus,
   providerOptions, selectedProviderKey, selectedModel,
   baseUrlInput, apiKeyInput, apiKeyMasked, maxTokens, thinkingDepth,
-  modelOptions, isOpenAiCompatible,
+  modelOptions, modelDiscoveryHint, isOpenAiCompatible,
   loadSettings, saveSettings, clearApiKey, testSettings, discoverModels,
 } = useLlmSettings()
 
@@ -48,7 +48,6 @@ function providerDisplayName(key: string, fallback: string): string {
   return DISPLAY_NAME_MAP[key] ?? fallback
 }
 
-// 测试状态 Badge 映射。
 const testBadgeVariant = computed(() => {
   switch (testStatus.value.state) {
     case 'testing': return 'secondary'
@@ -118,7 +117,6 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         <FormField name="model" v-slot="{ componentField }">
           <FormItem>
             <FormLabel>模型</FormLabel>
-            <!-- 自定义接口：可手填模型 ID（datalist 提供候选但不阻止手动输入）；内置 provider 保持 Select -->
             <Select
               v-if="!isOpenAiCompatible"
               :disabled="modelOptions.length === 0"
@@ -143,14 +141,22 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 <Input
                   v-model="selectedModel"
                   v-bind="componentField"
-                  list="llm-model-suggestions"
                   autocomplete="off"
                   placeholder="填写或选择模型 ID"
                 />
               </FormControl>
-              <datalist id="llm-model-suggestions">
-                <option v-for="model in modelOptions" :key="model" :value="model" />
-              </datalist>
+              <div v-if="modelOptions.length > 0" class="model-suggestions" aria-label="模型候选列表">
+                <button
+                  v-for="model in modelOptions"
+                  :key="model"
+                  type="button"
+                  class="model-suggestion"
+                  @click="selectedModel = model"
+                >
+                  {{ model }}
+                </button>
+              </div>
+              <p v-if="modelDiscoveryHint" class="helper-text">{{ modelDiscoveryHint }}</p>
             </template>
             <FormMessage />
           </FormItem>
@@ -225,7 +231,6 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         </FormItem>
       </FormField>
 
-      <!-- 持久测试状态：不依赖 2 秒 toast，表单内始终可见 -->
       <div class="test-status-row">
         <span class="test-status-row__label">连接测试</span>
         <Badge :variant="testBadgeVariant">{{ testBadgeText }}</Badge>
@@ -260,7 +265,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
           <FormField name="thinkingDepth" v-slot="{ componentField }">
             <FormItem>
               <FormLabel>思考深度 (Thinking Depth)</FormLabel>
-              <Select v-bind="componentField">
+              <Select v-bind="componentField" v-model="thinkingDepth">
                 <SelectTrigger>
                   <SelectValue placeholder="默认 (Default)" />
                 </SelectTrigger>
@@ -321,6 +326,41 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 }
 .api-key-status {
   font-weight: 500;
+}
+.model-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs);
+  max-height: calc(var(--ui-height-base) * 6);
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.model-suggestion {
+  appearance: none;
+  min-height: var(--ui-height-base);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+.model-suggestion:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+.model-suggestion:focus-visible {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  outline: none;
+  box-shadow: var(--shadow-ring);
 }
 .test-status-row {
   display: flex;
