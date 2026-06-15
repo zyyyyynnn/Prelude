@@ -1,13 +1,15 @@
+# dev mode 本地配置模板（仅开发调试，非默认入口）。
+# 默认端口对齐 Docker Compose 暴露端口：先 docker compose up 中间件，再本机跑后端。
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://127.0.0.1:13306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
-    password: your_mysql_password   # 本地使用 123456
+    password: root_password   # 与 .env 中 MYSQL_ROOT_PASSWORD 保持一致
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: 127.0.0.1
+      port: 16379
       database: 0
       password: your_redis_password_if_any
       lettuce:
@@ -16,6 +18,11 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
 
 jwt:
   secret: replace-with-at-least-32-bytes-jwt-secret

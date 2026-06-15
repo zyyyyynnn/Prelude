@@ -1,14 +1,19 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/interview_demo?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    # dev mode 默认连 Docker 暴露的 127.0.0.1:13306；Docker runtime 由 SPRING_DATASOURCE_URL 覆盖
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://127.0.0.1:13306/interview_demo?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root_password}
   sql:
     init:
       data-locations: classpath:data.sql,classpath:data-demo.sql
   data:
     redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:16379}
       database: 1
 
 app:

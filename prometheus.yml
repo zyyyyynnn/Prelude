@@ -5,4 +5,4 @@ scrape_configs:
   - job_name: 'prelude-backend'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['backend:8080']
+      - targets: ['backend-real:8080']

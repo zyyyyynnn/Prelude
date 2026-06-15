@@ -1,36 +1,58 @@
+name: prelude
+
+# Base services (no profile) are always started alongside any profile.
+# Profiles:
+#   real          -> backend-real + frontend-real (真实版)
+#   demo          -> backend-demo + frontend-demo (Demo Twin)
+#   observability -> prometheus + grafana (可选叠加)
+#
+# 启动示例:
+#   docker compose --profile real up -d --build
+#   docker compose --profile demo  up -d --build
+#   docker compose --profile real --profile observability up -d --build
+
 services:
+  # ---------- 基础中间件（无 profile，所有模式共享） ----------
   mysql:
     image: mysql:8.4
     container_name: prelude-mysql
     restart: always
+    profiles: ["", real, demo]
     environment:
       MYSQL_DATABASE: interview_system
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
     ports:
-      - "${MYSQL_HOST_PORT:-3306}:3306"
+      - "${MYSQL_HOST_PORT:-13306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
-      - ./backend/src/main/resources/data.sql:/docker-entrypoint-initdb.d/2-data.sql
+      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro
+      - ./backend/src/main/resources/data.sql:/docker-entrypoint-initdb.d/2-data.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   redis:
     image: redis:alpine
     container_name: prelude-redis
     restart: always
+    profiles: ["", real, demo]
     ports:
-      - "${REDIS_HOST_PORT:-6379}:6379"
+      - "${REDIS_HOST_PORT:-16379}:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: prelude-rabbitmq
     restart: always
+    profiles: ["", real, demo]
     ports:
       - "${RABBITMQ_HOST_PORT:-5672}:5672"
       - "${RABBITMQ_MANAGEMENT_HOST_PORT:-15672}:15672"
@@ -45,25 +67,30 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
+  # ---------- 真实版（profile: real） ----------
+  backend-real:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: prelude-backend
+    image: prelude/backend:real
+    container_name: prelude-backend-real
     restart: always
+    profiles: [real]
     depends_on:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root_password
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_DATABASE: 0
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
@@ -71,30 +98,84 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1/chat/completions}
       OPENAI_MODEL: ${OPENAI_MODEL:-}
-      APP_DEMO_ENABLED: ${APP_DEMO_ENABLED:-true}
-      SPRING_PROFILES_ACTIVE: prod
-      JWT_SECRET: replace-with-at-least-32-bytes-jwt-secret
-      APP_CRYPTO_AES_SECRET: replace-with-at-least-32-bytes-aes-secret
+      JWT_SECRET: ${JWT_SECRET:-replace-with-at-least-32-bytes-jwt-secret}
+      APP_CRYPTO_AES_SECRET: ${APP_CRYPTO_AES_SECRET:-replace-with-at-least-32-bytes-aes-secret}
+      APP_DEMO_ENABLED: "false"
     ports:
       - "8080:8080"
 
-  frontend:
+  frontend-real:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: prelude-frontend
+    image: prelude/frontend:real
+    container_name: prelude-frontend-real
     restart: always
-    ports:
-      - "80:80"
+    profiles: [real]
     depends_on:
-      - backend
+      - backend-real
+    ports:
+      - "5173:80"
 
+  # ---------- Demo Twin（profile: demo） ----------
+  backend-demo:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: prelude/backend:demo
+    container_name: prelude-backend-demo
+    restart: always
+    profiles: [demo]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      # createDatabaseIfNotExist=true: interview_demo 库由后端首次启动时自动创建
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/interview_demo?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_DATABASE: 1
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      JWT_SECRET: ${JWT_SECRET:-replace-with-at-least-32-bytes-jwt-secret}
+      APP_CRYPTO_AES_SECRET: ${APP_CRYPTO_AES_SECRET:-replace-with-at-least-32-bytes-aes-secret}
+      APP_DEMO_ENABLED: "true"
+    ports:
+      - "8081:8081"
+
+  frontend-demo:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: prelude/frontend:demo
+    container_name: prelude-frontend-demo
+    restart: always
+    profiles: [demo]
+    depends_on:
+      - backend-demo
+    ports:
+      - "5174:80"
+    volumes:
+      # demo nginx 代理指向 backend-demo:8081（覆盖镜像内默认 nginx.conf）
+      - ./frontend/nginx.demo.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # ---------- 观测（profile: observability，可选叠加） ----------
   prometheus:
     image: prom/prometheus:latest
     container_name: prelude-prometheus
     restart: always
+    profiles: [observability]
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
 
@@ -102,6 +183,7 @@ services:
     image: grafana/grafana:latest
     container_name: prelude-grafana
     restart: always
+    profiles: [observability]
     ports:
       - "3000:3000"
     volumes:
