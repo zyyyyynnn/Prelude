@@ -1,6 +1,6 @@
 # Dev Scripts (源码级调试)
 
-> 本目录的脚本面向**更底层、更定制化**的后端/前端源码级调试，拦截启动步骤与日志分析。
+> 本目录的脚本面向**分阶段、可定制**的后端/前端源码级调试，拦截启动步骤与日志分析。
 
 ## 何时用 dev mode 脚本 (`.ps1`)
 
@@ -32,7 +32,7 @@ dev mode 连接约定（与 `application-local.yml` 默认值一致）：
 2. 启动中间件并运行脚本：
    ```powershell
    docker compose up -d mysql redis rabbitmq
-   .\scripts\real\start-real.ps1
+   .\scripts\dev\start-dev.ps1
    ```
 
-> 注意：这些 `.ps1` 脚本是 `start-real.bat` 底层调用的更细粒度版本，推荐直接使用根目录的批处理文件。
+> 注意：这些 `.ps1` 脚本是 `start-dev.bat` 的分步骤版本，推荐直接使用根目录的批处理文件。

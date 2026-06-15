@@ -3,7 +3,7 @@ package com.interview.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.interview.config.DemoProperties;
+import com.interview.config.DevFixtureProperties;
 import com.interview.entity.InterviewMessage;
 import com.interview.entity.LlmProviderConfig;
 import com.interview.entity.User;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class VoiceServiceImpl implements VoiceService {
 
-    private final DemoProperties demoProperties;
+    private final DevFixtureProperties devFixtureProperties;
     private final UserMapper userMapper;
     private final LlmProviderConfigMapper llmProviderConfigMapper;
     private final AesGcmEncryptor aesGcmEncryptor;
@@ -51,7 +51,7 @@ public class VoiceServiceImpl implements VoiceService {
 
     @Override
     public String speechToText(Long sessionId, byte[] audioBytes, String filename) {
-        if (demoProperties.isEnabled()) {
+        if (devFixtureProperties.isEnabled()) {
             return getMockScriptedAnswer(sessionId);
         }
 
@@ -90,7 +90,7 @@ public class VoiceServiceImpl implements VoiceService {
 
     @Override
     public byte[] textToSpeech(String text) {
-        if (demoProperties.isEnabled()) {
+        if (devFixtureProperties.isEnabled()) {
             return generateMockSpeechWav();
         }
 
@@ -129,7 +129,7 @@ public class VoiceServiceImpl implements VoiceService {
     }
 
     /**
-     * Helper to retrieve scripted answers for mock demo mode or fallback scenarios.
+     * Helper to retrieve scripted answers for mock dev fixture mode or fallback scenarios.
      */
     private String getMockScriptedAnswer(Long sessionId) {
         if (sessionId == null) {
@@ -144,7 +144,7 @@ public class VoiceServiceImpl implements VoiceService {
                 case 0:
                     return "我主要做后端这一块，从登录鉴权、简历上传，到面试会话、SSE 流式回复和报告落库都参与了。实际开发里我花时间最多的是把阶段推进和消息记录串成闭环，保证后面回放和看板都有数据可用。";
                 case 1:
-                    return "一开始我也想过直接写在一个服务里，但很快发现会越来越乱。后来拆成简历解析、会话记录和报告生成三块，是为了让每块职责清楚一点。比如 Demo 模式可以复用会话和报告流程，只把模型调用替换成脚本数据。";
+                    return "一开始我也想过直接写在一个服务里，但很快发现会越来越乱。后来拆成简历解析、会话记录和报告生成三块，是为了让每块职责清楚一点。比如 dev fixture 可以复用会话和报告流程，只把模型调用替换成脚本数据。";
                 case 2:
                     return "如果继续做，我会先补评分解释。现在报告能给分，但用户更关心为什么扣分、下一次该怎么改。把每个分数和具体回答片段关联起来，会比单纯多做几个页面更有价值。";
                 default:

@@ -34,7 +34,7 @@ import com.interview.mapper.ResumeMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserWeaknessMapper;
 import com.interview.messaging.ReportJobMessage;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import com.interview.service.InterviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +86,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final ScoreHistoryMapper scoreHistoryMapper;
     private final UserWeaknessMapper userWeaknessMapper;
     private final LlmRouter llmRouter;
-    private final DemoModeService demoModeService;
+    private final DevFixtureService devFixtureService;
     private final ObjectMapper objectMapper;
     private final InterviewReportParser interviewReportParser;
     @Qualifier("sseTaskExecutor")
@@ -243,8 +243,8 @@ public class InterviewServiceImpl implements InterviewService {
 
         int seqNum = nextSeqNum(sessionId);
         insertMessage(sessionId, ROLE_SYSTEM, STAGE_PROMPTS.get(nextStage), seqNum);
-        if (isDemoEnabled()) {
-            insertMessage(sessionId, ROLE_ASSISTANT, demoModeService.resolveScriptedReply(nextStage, 0), seqNum + 1);
+        if (isDevFixtureEnabled()) {
+            insertMessage(sessionId, ROLE_ASSISTANT, devFixtureService.resolveScriptedReply(nextStage, 0), seqNum + 1);
         }
         return new InterviewStageUpdateResponse(stage.getStageName(), stage.getStartedAt());
     }
@@ -619,8 +619,8 @@ public class InterviewServiceImpl implements InterviewService {
 
     private void persistWeaknesses(InterviewSession session, String report) {
         try {
-            List<UserWeakness> weaknesses = isDemoEnabled()
-                ? demoModeService.buildWeaknesses(session.getUserId(), session.getId())
+            List<UserWeakness> weaknesses = isDevFixtureEnabled()
+                ? devFixtureService.buildWeaknesses(session.getUserId(), session.getId())
                 : extractWeaknesses(session, report);
             userWeaknessMapper.delete(new LambdaQueryWrapper<UserWeakness>()
                 .eq(UserWeakness::getSessionId, session.getId()));
@@ -671,11 +671,11 @@ public class InterviewServiceImpl implements InterviewService {
         StringBuilder assistantReply,
         SseEmitter emitter
     ) {
-        if (isDemoEnabled()) {
+        if (isDevFixtureEnabled()) {
             String currentStage = currentStageName(sessionId);
             int replyIndex = assistantRepliesInCurrentStage(sessionId);
-            String scriptedReply = demoModeService.resolveScriptedReply(currentStage, replyIndex);
-            demoModeService.streamReply(scriptedReply, delta -> {
+            String scriptedReply = devFixtureService.resolveScriptedReply(currentStage, replyIndex);
+            devFixtureService.streamReply(scriptedReply, delta -> {
                 assistantReply.append(delta);
                 sendDelta(emitter, delta);
             });
@@ -825,8 +825,8 @@ public class InterviewServiceImpl implements InterviewService {
         return userId;
     }
 
-    private boolean isDemoEnabled() {
-        return demoModeService != null && demoModeService.isEnabled();
+    private boolean isDevFixtureEnabled() {
+        return devFixtureService != null && devFixtureService.isEnabled();
     }
 
     private void internalAdvanceStage(Long sessionId) {
@@ -897,11 +897,11 @@ public class InterviewServiceImpl implements InterviewService {
                 }
 
                 String judgeResultJson;
-                if (isDemoEnabled()) {
-                    // Scripted demo mock judge
+                if (isDevFixtureEnabled()) {
+                    // Scripted dev fixture mock judge
                     String currentStage = currentStageName(session.getId());
                     int replyIndex = assistantRepliesInCurrentStage(session.getId());
-                    judgeResultJson = demoModeService.resolveMockJudge(currentStage, replyIndex);
+                    judgeResultJson = devFixtureService.resolveMockJudge(currentStage, replyIndex);
                     // Stream delay to simulate thinking/processing
                     try {
                         Thread.sleep(1500);
@@ -1003,8 +1003,8 @@ public class InterviewServiceImpl implements InterviewService {
                                      "已有摘要历史：" + (existingSummary != null ? existingSummary : "无") + "\n" +
                                      "新增面试记录：\n" + builder.toString();
 
-                    String newSummary = isDemoEnabled() 
-                        ? "演示模式下自动生成的模拟对话摘要。候选人对后端架构设计、MyBatis-Plus 分页与自定义 SQL 执行进行了基本的回答，表现稳定。"
+                    String newSummary = isDevFixtureEnabled()
+                        ? "dev fixture 下自动生成的模拟对话摘要。候选人对后端架构设计、MyBatis-Plus 分页与自定义 SQL 执行进行了基本的回答，表现稳定。"
                         : llmRouter.chatWithSnapshot(
                             session.getLlmProvider(),
                             session.getLlmModel(),

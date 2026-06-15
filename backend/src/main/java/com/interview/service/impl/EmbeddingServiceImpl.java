@@ -36,13 +36,13 @@ public class EmbeddingServiceImpl implements EmbeddingService {
     @Value("${openai.embedding-model:text-embedding-3-small}")
     private String embeddingModel;
 
-    @Value("${app.local.enabled:false}")
-    private boolean demoEnabled;
+    @Value("${app.dev-fixtures.enabled:false}")
+    private boolean devFixtureEnabled;
 
     @Override
     public float[] getEmbedding(String text) {
-        if (demoEnabled || apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
-            // Predictable mock embedding based on character hash code to support offline/demo testing
+        if (devFixtureEnabled || apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
+            // Predictable mock embedding based on character hash code to support offline/dev-fixture testing
             float[] mock = new float[1536];
             int hash = text.hashCode();
             for (int i = 0; i < 1536; i++) {

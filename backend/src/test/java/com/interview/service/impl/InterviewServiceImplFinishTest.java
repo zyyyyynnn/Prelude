@@ -16,7 +16,7 @@ import com.interview.mapper.ResumeMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserWeaknessMapper;
 import com.interview.messaging.ReportJobMessage;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import com.interview.service.SessionRagService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ class InterviewServiceImplFinishTest {
     @Mock private ScoreHistoryMapper scoreHistoryMapper;
     @Mock private UserWeaknessMapper userWeaknessMapper;
     @Mock private LlmRouter llmRouter;
-    @Mock private DemoModeService demoModeService;
+    @Mock private DevFixtureService devFixtureService;
     @Mock private InterviewReportParser interviewReportParser;
     @Mock private SseEmitterRegistry sseEmitterRegistry;
     @Mock private StringRedisTemplate stringRedisTemplate;
@@ -75,7 +75,7 @@ class InterviewServiceImplFinishTest {
             scoreHistoryMapper,
             userWeaknessMapper,
             llmRouter,
-            demoModeService,
+            devFixtureService,
             new ObjectMapper(),
             interviewReportParser,
             directExecutor,

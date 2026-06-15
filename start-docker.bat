@@ -4,7 +4,7 @@ chcp 65001 >nul
 
 set "ROOT=%~dp0"
 set "COMPOSE=docker compose"
-set "PROFILE=real"
+set "PROFILE=app"
 set "BACKEND_READY_URL=http://127.0.0.1:8080/api/health"
 set "BACKEND_READY_TIMEOUT=120"
 set "FRONTEND_URL=http://127.0.0.1:5173"
@@ -30,7 +30,7 @@ echo [INFO] Docker is available.
 REM ---- 确保 .env 存在（缺则从模板复制，不阻塞启动） ----
 if not exist "%ROOT%.env" (
   if exist "%ROOT%.env.example" (
-    echo [INFO] .env not found, copying from .env.example ^(please edit real secrets later^).
+    echo [INFO] .env not found, copying from .env.example ^(please edit secrets later^).
     copy /Y "%ROOT%.env.example" "%ROOT%.env" >nul
   ) else (
     echo [WARN] .env and .env.example both missing; proceeding with compose defaults.
@@ -46,8 +46,8 @@ if exist "%ROOT%.env" (
 )
 if "!JWT_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder JWT_SECRET.
 if "!AES_PLACEHOLDER!"=="1" echo [WARN] .env still uses placeholder APP_CRYPTO_AES_SECRET.
-if "!JWT_PLACEHOLDER!"=="1" echo [WARN] Real stack can start, but replace them before long-term use.
-if "!AES_PLACEHOLDER!"=="1" echo [WARN] Real stack can start, but replace them before long-term use.
+if "!JWT_PLACEHOLDER!"=="1" echo [WARN] Full Docker can start, but replace them before long-term use.
+if "!AES_PLACEHOLDER!"=="1" echo [WARN] Full Docker can start, but replace them before long-term use.
 
 REM ---- 校验 compose 配置 ----
 echo [INFO] Validating docker compose config ^(profile: %PROFILE%^)...
@@ -73,7 +73,7 @@ echo [INFO] Waiting for backend readiness at %BACKEND_READY_URL% ^(timeout: %BAC
 call :wait_for_url "%BACKEND_READY_URL%" %BACKEND_READY_TIMEOUT%
 if errorlevel 1 (
   echo [ERROR] Backend did not become reachable within %BACKEND_READY_TIMEOUT%s.
-  echo [ERROR] Run: docker compose --profile %PROFILE% logs backend-real
+  echo [ERROR] Run: docker compose --profile %PROFILE% logs backend
   pause
   exit /b 1
 )
@@ -84,7 +84,7 @@ echo [INFO] Waiting for frontend readiness at %FRONTEND_URL% ^(timeout: %FRONTEN
 call :wait_for_url "%FRONTEND_URL%" %FRONTEND_READY_TIMEOUT%
 if errorlevel 1 (
   echo [ERROR] Frontend did not become reachable within %FRONTEND_READY_TIMEOUT%s.
-  echo [ERROR] Run: docker compose --profile %PROFILE% logs frontend-real
+  echo [ERROR] Run: docker compose --profile %PROFILE% logs frontend
   pause
   exit /b 1
 )
@@ -92,15 +92,15 @@ echo [INFO] Frontend is reachable.
 
 echo.
 echo ============================================================
-echo  Prelude real stack is running ^(Full Docker / Deployment Verification^).
+echo  Prelude Full Docker stack is running ^(Full Docker / deployment verification^).
 echo  - Frontend : %FRONTEND_URL%
 echo  - Backend  : http://127.0.0.1:8080
 echo  - Health   : http://127.0.0.1:8080/api/health
 echo  - MySQL    : 127.0.0.1:13306  ^(db: interview_system^)
 echo  - RabbitMQ : 127.0.0.1:15672  ^(guest / guest^)
 echo ============================================================
-echo  Stop app layer : docker compose stop backend-real frontend-real
-echo  Stop all + mw  : docker compose --profile real down
+echo  Stop all       : docker compose --profile app down
+echo  Stop with obs  : docker compose --profile app --profile observability down
 echo ============================================================
 echo.
 pause

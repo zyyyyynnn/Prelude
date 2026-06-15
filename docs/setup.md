@@ -1,8 +1,8 @@
 # 环境配置指南
 
-推荐运行方式为 **Local app runtime**：Docker 管理基础中间件，本机运行 Maven 和 Vite。全量容器化运行请参阅 [runtime-modes.md](runtime-modes.md)。
+推荐运行方式为 `start-dev.bat`：Docker 管理基础中间件，本机运行 Maven 和 Vite。Full Docker / 部署验证请参阅 [runtime-modes.md](runtime-modes.md)。
 
-## 1. 推荐：Local App Runtime
+## 1. 推荐：start-dev.bat
 
 利用 Docker 管理底层中间件，应用程序在本机原生运行，支持前端 HMR 热重载。
 
@@ -41,7 +41,7 @@ OPENAI_MODEL=
 ### 2. 启动
 
 ```powershell
-.\start-real.bat   # 真实版
+.\start-dev.bat
 ```
 
 脚本将自动执行以下操作：
@@ -51,14 +51,20 @@ OPENAI_MODEL=
 
 ### 3. 访问地址
 
-## 2. 可选：Full Docker runtime
+- **前端界面**：http://127.0.0.1:5173
+- **后端健康检查**：http://127.0.0.1:8080/api/health
+- **RabbitMQ 管理台**：http://127.0.0.1:15672
+
+*注：内置演示账号 `demo / 123456` 由 `data-dev.sql` 和 dev fixture 提供，仅在 local/dev 本地验收模式下生效。*
+
+## 2. 可选：start-docker.bat
 
 用于部署验证的全量容器化。
 
 ### 启动
 
 ```powershell
-.\start-real-docker.bat   # 真实版全 Docker
+.\start-docker.bat
 ```
 
 > **注意**：容器内的前端是 build 后的 nginx 静态产物。如修改了前端代码，需要重新 build 才能生效，不支持 HMR 热重载。
@@ -66,10 +72,15 @@ OPENAI_MODEL=
 ### 停止服务
 
 ```powershell
-# 仅停真实版应用层（保留中间件运行）
-docker compose stop backend-real frontend-real
-# 停全部应用层 + 共享中间件
-docker compose --profile real down
+# start-dev.bat
+# 关闭后端/前端窗口或 Ctrl+C
+docker compose stop mysql redis rabbitmq
+
+# start-docker.bat
+docker compose --profile app down
+
+# 含观测栈
+docker compose --profile app --profile observability down
 ```
 
 ## 3. Dev scripts（源码级调试）
@@ -106,10 +117,15 @@ jwt:
 app:
   crypto:
     aes-secret: replace-with-at-least-32-bytes-aes-secret
+  dev-fixtures:
+    enabled: true
+    stream-delay-ms: 18
+    chunk-size: 12
 ```
 
 - `application-local.yml` 已被 `.gitignore` 忽略。
 - 启动前先 `docker compose up -d mysql redis rabbitmq`。
+- `demo / 123456` 是 dev test account，仅用于 local/dev 验收。
 
 ### 前端配置
 
@@ -119,7 +135,7 @@ app:
 Copy-Item .\frontend\.env.example .\frontend\.env.local
 ```
 
-默认真实版：
+默认本地开发：
 
 ```env
 VITE_PORT=5173
@@ -131,9 +147,9 @@ VITE_HOST=127.0.0.1
 
 ```powershell
 docker compose up -d mysql redis rabbitmq
-.\scripts\real\start-real.ps1
+.\scripts\dev\start-dev.ps1
 ```
 
 ## 端口规划
 
-可叠加观测栈：`docker compose --profile real --profile observability up -d`（Prometheus 9090 / Grafana 3000）。
+可叠加观测栈：`docker compose --profile app --profile observability up -d`（Prometheus 9090 / Grafana 3000）。

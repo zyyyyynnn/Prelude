@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.UserContext;
-import com.interview.config.DemoProperties;
+import com.interview.config.DevFixtureProperties;
 import com.interview.entity.InterviewMessage;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.InterviewStage;
@@ -44,7 +44,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     private final InterviewMessageMapper interviewMessageMapper;
     private final InterviewStageMapper interviewStageMapper;
     private final SessionRagService sessionRagService;
-    private final DemoProperties demoProperties;
+    private final DevFixtureProperties devFixtureProperties;
     
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
@@ -456,7 +456,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             }
 
             String judgeResultJson;
-            if (demoProperties.isEnabled()) {
+            if (devFixtureProperties.isEnabled()) {
                 int replyIndex = nextSeqNum(session.getId());
                 int score = 7 + (replyIndex % 3);
                 judgeResultJson = String.format("{\"score\": %d, \"hint\": \"语音表达流畅，内容符合技术规范要求。\"}", score);
@@ -546,8 +546,8 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
                                      "已有摘要历史：" + (existingSummary != null ? existingSummary : "无") + "\n" +
                                      "新增面试记录：\n" + builder.toString();
 
-                    String newSummary = demoProperties.isEnabled()
-                        ? "演示模式下自动生成的模拟对话摘要。候选人对后端架构设计进行了基本的回答，表现稳定。"
+                    String newSummary = devFixtureProperties.isEnabled()
+                        ? "dev fixture 下自动生成的模拟对话摘要。候选人对后端架构设计进行了基本的回答，表现稳定。"
                         : llmRouter.chatWithSnapshot(
                             session.getLlmProvider(),
                             session.getLlmModel(),

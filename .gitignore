@@ -10,7 +10,6 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env*
 !frontend/.env.example
-!frontend/.env.demo
 frontend/.env.local
 
 # Playwright
@@ -21,8 +20,7 @@ frontend/.env.local
 
 # Runtime outputs
 output/runtime/
-output/demo/.artifacts/
-output/demo/
+output/screenshots/dev/.artifacts/
 output/playwright/
 output/*.txt
 

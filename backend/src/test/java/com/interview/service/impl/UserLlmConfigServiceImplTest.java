@@ -8,7 +8,7 @@ import com.interview.llm.LlmRouter;
 import com.interview.llm.LlmSelection;
 import com.interview.mapper.UserMapper;
 import com.interview.security.AesGcmEncryptor;
-import com.interview.service.DemoModeService;
+import com.interview.service.DevFixtureService;
 import com.interview.service.LlmModelDiscoveryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ class UserLlmConfigServiceImplTest {
     private AesGcmEncryptor aesGcmEncryptor;
 
     @Mock
-    private DemoModeService demoModeService;
+    private DevFixtureService devFixtureService;
 
     @Mock
     private LlmModelDiscoveryService llmModelDiscoveryService;
@@ -64,7 +64,7 @@ class UserLlmConfigServiceImplTest {
         user.setLlmApiKeyEncrypted("cipher-text");
 
         when(userMapper.selectById(7L)).thenReturn(user);
-        when(demoModeService.isEnabled()).thenReturn(false);
+        when(devFixtureService.isEnabled()).thenReturn(false);
         when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai", "gpt-4o"));
         when(aesGcmEncryptor.mask("cipher-text")).thenReturn("****1234");
 
@@ -107,7 +107,7 @@ class UserLlmConfigServiceImplTest {
 
         when(userMapper.selectById(7L)).thenReturn(user);
         when(aesGcmEncryptor.encrypt("sk-test")).thenReturn("cipher-text");
-        when(demoModeService.isEnabled()).thenReturn(false);
+        when(devFixtureService.isEnabled()).thenReturn(false);
         when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
 
         com.interview.common.UserContext.setCurrentUserId(7L);
@@ -134,7 +134,7 @@ class UserLlmConfigServiceImplTest {
         user.setLlmApiKeyEncrypted("old-cipher");
 
         when(userMapper.selectById(7L)).thenReturn(user);
-        when(demoModeService.isEnabled()).thenReturn(false);
+        when(devFixtureService.isEnabled()).thenReturn(false);
         when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("deepseek", "deepseek-v4-pro"));
 
         com.interview.common.UserContext.setCurrentUserId(7L);
@@ -158,7 +158,7 @@ class UserLlmConfigServiceImplTest {
         user.setLlmApiKeyEncrypted("old-cipher");
 
         when(userMapper.selectById(7L)).thenReturn(user);
-        when(demoModeService.isEnabled()).thenReturn(false);
+        when(devFixtureService.isEnabled()).thenReturn(false);
         when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
 
         com.interview.common.UserContext.setCurrentUserId(7L);
@@ -182,7 +182,7 @@ class UserLlmConfigServiceImplTest {
         user.setLlmApiKeyEncrypted("old-cipher");
 
         when(userMapper.selectById(7L)).thenReturn(user);
-        when(demoModeService.isEnabled()).thenReturn(false);
+        when(devFixtureService.isEnabled()).thenReturn(false);
         when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
 
         com.interview.common.UserContext.setCurrentUserId(7L);
@@ -198,7 +198,7 @@ class UserLlmConfigServiceImplTest {
     @Test
     void testConfigNullDoesNotPersistDraft() {
         // 无 body：回退测试已保存配置，绝不写入用户表。
-        when(demoModeService.isEnabled()).thenReturn(true);
+        when(devFixtureService.isEnabled()).thenReturn(true);
         when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("deepseek", "deepseek-v4-pro"));
 
         com.interview.common.UserContext.setCurrentUserId(7L);
@@ -237,7 +237,7 @@ class UserLlmConfigServiceImplTest {
         user.setLlmApiKeyEncrypted("old-cipher");
 
         when(userMapper.selectById(7L)).thenReturn(user);
-        when(demoModeService.isEnabled()).thenReturn(false);
+        when(devFixtureService.isEnabled()).thenReturn(false);
         when(aesGcmEncryptor.decrypt("old-cipher")).thenReturn("sk-saved");
         when(llmRouter.chatWithExplicit(
             eq("openai-compatible"),
@@ -274,7 +274,7 @@ class UserLlmConfigServiceImplTest {
         user.setLlmModel("deepseek-v4-pro");
 
         when(userMapper.selectById(7L)).thenReturn(user);
-        when(demoModeService.isEnabled()).thenReturn(false);
+        when(devFixtureService.isEnabled()).thenReturn(false);
         when(llmRouter.chatWithExplicit(
             eq("deepseek"),
             eq("deepseek-v4-pro"),

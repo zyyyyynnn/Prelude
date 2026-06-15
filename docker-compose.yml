@@ -1,13 +1,13 @@
 name: prelude
 
-# 基础服务（mysql/redis/rabbitmq）无 profile，作为公共依赖随 real 自动启动。
+# 基础服务（mysql/redis/rabbitmq）无 profile，作为 dev 与 Docker 应用层的公共依赖。
 # Profiles 仅控制应用层与可选观测层：
-#   real          -> backend-real + frontend-real (真实版)
+#   app           -> backend + frontend (Full Docker / deployment verification)
 #   observability -> prometheus + grafana (可选叠加)
 #
 # 启动示例:
-#   docker compose --profile real up -d --build
-#   docker compose --profile real --profile observability up -d --build
+#   docker compose --profile app up -d --build
+#   docker compose --profile app --profile observability up -d --build
 
 services:
   # ---------- 基础中间件（无 profile，所有模式共享） ----------
@@ -62,15 +62,15 @@ services:
       timeout: 5s
       retries: 10
 
-  # ---------- 真实版（profile: real） ----------
-  backend-real:
+  # ---------- 应用层（profile: app） ----------
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: prelude/backend:real
-    container_name: prelude-backend-real
+    image: prelude/backend:app
+    container_name: prelude-backend
     restart: always
-    profiles: [real]
+    profiles: [app]
     depends_on:
       mysql:
         condition: service_healthy
@@ -98,16 +98,16 @@ services:
     ports:
       - "8080:8080"
 
-  frontend-real:
+  frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: prelude/frontend:real
-    container_name: prelude-frontend-real
+    image: prelude/frontend:app
+    container_name: prelude-frontend
     restart: always
-    profiles: [real]
+    profiles: [app]
     depends_on:
-      - backend-real
+      - backend
     ports:
       - "5173:80"
 
