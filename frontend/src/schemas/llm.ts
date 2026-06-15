@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const llmSettingsSchema = z.object({
-  providerKey: z.string().min(1, '请选择 Provider'),
+  providerKey: z.string().min(1, '请选择接入方式'),
   baseUrl: z.string().optional(),
   model: z.string().min(1, '请选择模型'),
   apiKey: z.string().optional(),

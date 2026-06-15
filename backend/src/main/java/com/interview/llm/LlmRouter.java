@@ -117,11 +117,24 @@ public class LlmRouter {
         String apiKey,
         List<Map<String, String>> messages
     ) {
+        return chatWithExplicit(providerKey, model, baseUrl, apiKey, messages, null, null);
+    }
+
+    public String chatWithExplicit(
+        String providerKey,
+        String model,
+        String baseUrl,
+        String apiKey,
+        List<Map<String, String>> messages,
+        Integer maxTokens,
+        Map<String, Object> extraParams
+    ) {
         LlmProvider provider = requireProvider(providerKey);
         String normalizedModel = normalizeModel(model, provider.defaultModel());
         LlmProviderConfig providerConfig = requireEnabledProviderConfig(providerKey);
+        String resolvedApiKey = resolveExplicitApiKey(provider, apiKey);
         return provider.chat(buildInvocationExplicit(
-            providerConfig, normalizedModel, baseUrl, apiKey, messages, null));
+            providerConfig, normalizedModel, baseUrl, resolvedApiKey, messages, maxTokens, extraParams));
     }
 
     public String chatWithSnapshot(
@@ -307,6 +320,7 @@ public class LlmRouter {
         String baseUrl,
         String apiKey,
         List<Map<String, String>> messages,
+        Integer maxTokens,
         Map<String, Object> callerExtraParams
     ) {
         String resolvedBaseUrl = providerConfig.getBaseUrl();
@@ -318,7 +332,7 @@ public class LlmRouter {
             model,
             apiKey,
             messages,
-            null,
+            maxTokens,
             callerExtraParams
         );
     }
@@ -337,24 +351,24 @@ public class LlmRouter {
 
     private LlmProvider requireProvider(String providerKey) {
         if (providerKey == null || providerKey.isBlank()) {
-            throw BusinessException.badRequest("Provider 不能为空");
+            throw BusinessException.badRequest("接入方式不能为空");
         }
         return providers.stream()
             .filter(provider -> provider.providerKey().equalsIgnoreCase(providerKey))
             .findFirst()
-            .orElseThrow(() -> BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换 Provider"));
+            .orElseThrow(() -> BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换接入方式"));
     }
 
     private LlmProviderConfig requireEnabledProviderConfig(String providerKey) {
         if (providerKey == null || providerKey.isBlank()) {
-            throw BusinessException.badRequest("Provider 不能为空");
+            throw BusinessException.badRequest("接入方式不能为空");
         }
         LlmProviderConfig providerConfig = llmProviderConfigMapper.selectOne(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getProviderKey, providerKey)
             .eq(LlmProviderConfig::getEnabled, 1)
             .last("LIMIT 1"));
         if (providerConfig == null) {
-            throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换 Provider");
+            throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换接入方式");
         }
         return providerConfig;
     }
@@ -372,7 +386,7 @@ public class LlmRouter {
         if (systemApiKey != null && !systemApiKey.isBlank()) {
             return systemApiKey;
         }
-        throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换 Provider");
+        throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换接入方式");
     }
 
     /**
@@ -384,6 +398,20 @@ public class LlmRouter {
             return systemApiKey;
         }
         throw BusinessException.badRequest("备用通道未配置系统 Key，无法 fallback");
+    }
+
+    private String resolveExplicitApiKey(LlmProvider provider, String explicitApiKey) {
+        if (explicitApiKey != null && !explicitApiKey.isBlank()) {
+            return explicitApiKey;
+        }
+        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(provider.providerKey())) {
+            throw BusinessException.badRequest("自定义接口 API Key 不能为空");
+        }
+        String systemApiKey = provider.systemApiKey();
+        if (systemApiKey != null && !systemApiKey.isBlank()) {
+            return systemApiKey;
+        }
+        throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换接入方式");
     }
 
     private String decryptUserApiKey(String encryptedUserKey) {
@@ -415,7 +443,7 @@ public class LlmRouter {
             return objectMapper.readValue(availableModels, new TypeReference<List<String>>() {
             });
         } catch (JsonProcessingException exception) {
-            throw BusinessException.badRequest("Provider 配置格式错误");
+            throw BusinessException.badRequest("接入方式配置格式错误");
         }
     }
 }

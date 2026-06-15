@@ -197,6 +197,88 @@ class LlmRouterTest {
         assertThat(fallbackProvider.lastInvocation.apiKey()).isEqualTo("system-key");
     }
 
+    @Test
+    void chatWithExplicitUsesSystemKeyForBuiltInProviderWhenApiKeyMissing() {
+        LlmProviderConfig config = new LlmProviderConfig();
+        config.setProviderKey("test");
+        config.setBaseUrl("https://example.test/chat");
+        config.setAvailableModels("[\"model-a\"]");
+        config.setEnabled(1);
+
+        when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
+
+        String result = router.chatWithExplicit(
+            "test",
+            "model-a",
+            null,
+            null,
+            List.of(Map.of("role", "user", "content", "hello")),
+            null,
+            null
+        );
+
+        assertThat(result).isEqualTo("ok");
+        assertThat(provider.lastInvocation.apiKey()).isEqualTo("system-key");
+    }
+
+    @Test
+    void chatWithExplicitRejectsOpenAiCompatibleWhenApiKeyMissing() {
+        CapturingProvider customProvider = new CapturingProvider("openai-compatible", "OpenAI-compatible", "");
+        LlmRouter customRouter = new LlmRouter(
+            userMapper,
+            llmProviderConfigMapper,
+            aesGcmEncryptor,
+            new ObjectMapper(),
+            List.of(customProvider),
+            sseEmitterRegistry
+        );
+
+        LlmProviderConfig config = new LlmProviderConfig();
+        config.setProviderKey("openai-compatible");
+        config.setBaseUrl("");
+        config.setAvailableModels("[]");
+        config.setEnabled(1);
+
+        when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
+
+        assertThatThrownBy(() -> customRouter.chatWithExplicit(
+            "openai-compatible",
+            "model-a",
+            "https://example.com/v1",
+            null,
+            List.of(Map.of("role", "user", "content", "hello")),
+            null,
+            null
+        ))
+            .isInstanceOf(com.interview.common.BusinessException.class)
+            .hasMessageContaining("API Key");
+        assertThat(customProvider.invocationCount).isZero();
+    }
+
+    @Test
+    void chatWithExplicitPassesMaxTokensAndExtraParams() {
+        LlmProviderConfig config = new LlmProviderConfig();
+        config.setProviderKey("test");
+        config.setBaseUrl("https://example.test/chat");
+        config.setAvailableModels("[\"model-a\"]");
+        config.setEnabled(1);
+
+        when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
+
+        router.chatWithExplicit(
+            "test",
+            "model-a",
+            null,
+            null,
+            List.of(Map.of("role", "user", "content", "hello")),
+            8192,
+            Map.of("thinking_depth", "high")
+        );
+
+        assertThat(provider.lastInvocation.maxTokens()).isEqualTo(8192);
+        assertThat(provider.lastInvocation.extraParams()).containsEntry("thinking_depth", "high");
+    }
+
     private void verifyNoInteractionsWithFallbackConfig() {
         org.mockito.Mockito.verify(llmProviderConfigMapper, org.mockito.Mockito.never())
             .selectList(any(LambdaQueryWrapper.class));

@@ -13,20 +13,20 @@ public final class OpenAiCompatibleUrl {
 
     public static String normalizeRoot(String input) {
         if (input == null || input.isBlank()) {
-            throw BusinessException.badRequest("OpenAI-compatible endpoint 不能为空");
+            throw BusinessException.badRequest("Base URL 不能为空");
         }
         URI uri;
         try {
             uri = URI.create(input.trim());
         } catch (IllegalArgumentException exception) {
-            throw BusinessException.badRequest("OpenAI-compatible endpoint 格式不正确");
+            throw BusinessException.badRequest("Base URL 格式不正确");
         }
         String scheme = uri.getScheme();
         if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-            throw BusinessException.badRequest("OpenAI-compatible endpoint 仅支持 http/https");
+            throw BusinessException.badRequest("Base URL 仅支持 http/https");
         }
         if (uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) {
-            throw BusinessException.badRequest("OpenAI-compatible endpoint 不得包含凭证、查询参数或片段");
+            throw BusinessException.badRequest("Base URL 不得包含凭证、查询参数或片段");
         }
 
         String path = uri.getPath() == null ? "" : trimTrailingSlash(uri.getPath());
@@ -46,7 +46,7 @@ public final class OpenAiCompatibleUrl {
                 null
             ).toString();
         } catch (Exception exception) {
-            throw BusinessException.badRequest("OpenAI-compatible endpoint 格式不正确");
+            throw BusinessException.badRequest("Base URL 格式不正确");
         }
     }
 
