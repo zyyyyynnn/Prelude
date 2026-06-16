@@ -52,6 +52,15 @@ function hexToRgba(color: string, alpha: number) {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`
 }
 
+function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
+  const d = new Date(dateString)
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  if (format === 'MM/DD') return `${mm}/${dd}`
+  return `${yyyy}/${mm}/${dd}`
+}
+
 function weaknessDetails(item: AnalyticsWeaknessItem) {
   return item.descriptions.slice(1)
 }
@@ -113,12 +122,24 @@ function renderCharts() {
     trendChart ??= init(trendRef.value)
     trendChart.setOption({
       animation: false,
-      tooltip: { trigger: 'axis' },
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: any) => {
+          if (!params || !params.length) return ''
+          const dataIndex = params[0].dataIndex
+          const originalDate = trend.value[dataIndex].createdAt
+          let html = `<div>${formatDate(originalDate, 'YYYY/MM/DD')}</div>`
+          for (const param of params) {
+            html += `<div>${param.marker} ${param.seriesName}: <span style="float:right;margin-left:20px;font-weight:900">${param.value}</span></div>`
+          }
+          return html
+        }
+      },
       grid: { left: 44, right: 18, top: 30, bottom: 30 },
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: trend.value.map((item) => new Date(item.createdAt).toLocaleDateString()),
+        data: trend.value.map((item) => formatDate(item.createdAt, 'MM/DD')),
         axisLine: { lineStyle: { color: ring } },
         axisLabel: { color: secondary },
       },
@@ -302,11 +323,13 @@ onBeforeUnmount(() => {
 }
 .weakness-item__descriptions {
   margin: 0;
-  padding-left: var(--spacing-lg);
-  font-size: 13px;
+  padding-left: var(--spacing-xl);
+  font-size: 13.5px;
   color: var(--color-text-tertiary);
+  list-style-type: disc;
 }
 .weakness-item__descriptions li {
   margin-bottom: var(--spacing-xs);
+  line-height: 1.5;
 }
 </style>

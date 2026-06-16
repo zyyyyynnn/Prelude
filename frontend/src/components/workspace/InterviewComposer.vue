@@ -555,7 +555,6 @@ onBeforeUnmount(() => {
                     </svg>
                   </Button>
                   <Button
-                    variant="secondary"
                     size="compact"
                     class="voice-press-btn"
                     :class="{ 'is-pressed': isRecording }"
@@ -586,6 +585,7 @@ onBeforeUnmount(() => {
                     </svg>
                   </Button>
                   <Button
+                    size="compact"
                     class="rounded-md px-6 flex-shrink-0 !font-serif"
                     :disabled="disabled || !canSend"
                     :loading="sending"
