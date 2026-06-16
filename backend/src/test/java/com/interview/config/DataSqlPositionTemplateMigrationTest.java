@@ -88,6 +88,30 @@ class DataSqlPositionTemplateMigrationTest {
             .doesNotContain("DELETE FROM `resume`");
     }
 
+    @Test
+    void demoSeedMigratesOldAprilDataToJune() throws Exception {
+        String sql = readDataSql();
+
+        // data.sql 包含旧 4 月 demo natural key 及其迁移逻辑
+        assertThat(sql).containsSubsequence(
+            "-- 3.0 清理或迁移旧的 4 月 demo session 到 6 月",
+            "DELETE uw",
+            "FROM `user_weakness` uw",
+            "JOIN `interview_session` old_s ON uw.`session_id` = old_s.`id`",
+            "JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'",
+            "WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')",
+            "DELETE old_s",
+            "FROM `interview_session` old_s",
+            "JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'",
+            "UPDATE `interview_session` old_s",
+            "JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'",
+            "WHEN '2026-04-23 14:00:00' THEN '2026-06-16 14:00:00'"
+        );
+
+        // 确保清理逻辑严格作用于 demo 用户
+        assertThat(sql).doesNotContain("DELETE FROM `interview_session`;");
+    }
+
     private static void assertDefaultPositionCleanup(String sql, String defaultName, String badNameHex) {
         assertThat(sql).containsSubsequence(
             "UPDATE `position_template`",
