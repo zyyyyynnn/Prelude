@@ -7,7 +7,6 @@ const { chromium } = require('playwright')
 const rootDir = path.resolve(__dirname, '..')
 const panelPath = path.join(rootDir, 'src', 'components', 'workspace', 'LlmSettingsPanel.vue')
 const sharedDropdownPath = path.join(rootDir, 'src', 'components', 'ui', 'shared-dropdown.ts')
-const screenshotPath = path.resolve(rootDir, '..', 'output', 'playwright', 'byok-settings-flow.png')
 const baseUrl = 'https://api.tokenrouter.com/v1'
 const apiKey = 'sk-tokenrouter-new'
 const manualModel = 'manual-model-2026'
@@ -258,7 +257,6 @@ async function verifyBrowserFlow(port) {
     await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'hidden', timeout: 5000 })
 
     await modelInput.fill(manualModel)
-    await page.waitForTimeout(400)
     await page.getByRole('button', { name: '测试连接' }).click({ force: true })
     await page.waitForFunction(() => document.body.innerText.includes('模型配置测试通过'))
     const panelText = await page.locator('.panel-content-wrapper').innerText()
@@ -313,9 +311,6 @@ async function verifyBrowserFlow(port) {
     if (Math.abs(itemBox.height - expectedControlHeight) > 1) {
       throw new Error(`Dropdown item height is not standard, got ${itemBox.height}`)
     }
-
-    fs.mkdirSync(path.dirname(screenshotPath), { recursive: true })
-    await page.screenshot({ path: screenshotPath, fullPage: true })
   } finally {
     await browser.close()
   }
@@ -332,8 +327,6 @@ async function verifyBrowserFlow(port) {
   if (save?.baseUrl !== baseUrl) throw new Error(`save baseUrl mismatch: ${save?.baseUrl}`)
   if (save?.model !== manualModel) throw new Error(`save model mismatch: ${save?.model}`)
   if (save?.apiKey !== apiKey) throw new Error('save apiKey mismatch')
-
-  console.log(JSON.stringify({ discover, test, save, screenshotPath }, null, 2))
 }
 
 async function main() {

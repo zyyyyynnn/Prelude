@@ -2,11 +2,11 @@ package com.interview.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.io.IOException;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +34,14 @@ class DataSqlPositionTemplateMigrationTest {
         assertDefaultPositionCleanup(sql, "Java 后端工程师", JAVA_BAD_NAME_HEX);
         assertDefaultPositionCleanup(sql, "前端工程师", FRONTEND_BAD_NAME_HEX);
         assertDefaultPositionCleanup(sql, "算法工程师", ALGORITHM_BAD_NAME_HEX);
+
+        assertThat(countOccurrences(sql, "UPDATE `interview_session` s")).isEqualTo(3);
+        assertThat(countOccurrences(sql, "SET s.`position_id` = default_position.`id`")).isEqualTo(3);
+        assertThat(countOccurrences(sql, "s.`target_position` = default_position.`name`")).isEqualTo(3);
+        assertThat(countOccurrences(sql, "DELETE bad_position")).isEqualTo(3);
+        assertThat(countOccurrences(sql, "ORDER BY `id`")).isEqualTo(3);
+        assertThat(countOccurrences(sql, "LIMIT 1")).isEqualTo(3);
+        assertThat(countOccurrences(sql, "WHERE bad_position.`name` IN")).isEqualTo(6);
     }
 
     private static void assertDefaultPositionCleanup(String sql, String defaultName, String badNameHex) {
@@ -67,5 +75,15 @@ class DataSqlPositionTemplateMigrationTest {
             DataSqlPositionTemplateMigrationTest.class.getClassLoader().getResource("data.sql")
         );
         return Files.readString(Path.of(resource.toURI()), StandardCharsets.UTF_8);
+    }
+
+    private static int countOccurrences(String value, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = value.indexOf(needle, index)) >= 0) {
+            count++;
+            index += needle.length();
+        }
+        return count;
     }
 }
