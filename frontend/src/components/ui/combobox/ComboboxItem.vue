@@ -21,7 +21,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 <template>
   <ComboboxItem
     v-bind="forwarded"
-    :class="cn(dropdownItemVariants(), props.class)"
+    :class="cn(dropdownItemVariants(), 'pl-8', props.class)"
   >
     <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <ComboboxItemIndicator>

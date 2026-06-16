@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import type { DropdownMenuItemProps } from "reka-ui"
+import type { VariantProps } from "class-variance-authority"
 import type { HTMLAttributes } from "vue"
 import { reactiveOmit } from "@vueuse/core"
 import { DropdownMenuItem, useForwardProps } from "reka-ui"
 import { cn } from "@/lib/utils"
 import { dropdownItemVariants } from "@/components/ui/shared-dropdown"
 
-const props = defineProps<DropdownMenuItemProps & { class?: HTMLAttributes["class"], inset?: boolean }>()
+type DropdownItemVariants = VariantProps<typeof dropdownItemVariants>
 
-const delegatedProps = reactiveOmit(props, "class", "inset")
+const props = defineProps<DropdownMenuItemProps & { class?: HTMLAttributes["class"], inset?: boolean, size?: DropdownItemVariants["size"] }>()
+
+const delegatedProps = reactiveOmit(props, "class", "inset", "size")
 
 const forwardedProps = useForwardProps(delegatedProps)
 </script>
@@ -17,7 +20,7 @@ const forwardedProps = useForwardProps(delegatedProps)
   <DropdownMenuItem
     v-bind="forwardedProps"
     :class="cn(
-      dropdownItemVariants(),
+      dropdownItemVariants({ size }),
       inset && 'pl-8',
       props.class,
     )"
