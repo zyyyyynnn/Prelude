@@ -289,7 +289,6 @@ export function useLlmSettings() {
       return
     }
     selectedModel.value = ''
-    clearDiscoveredModels()
   })
 
   watch(
