@@ -109,7 +109,7 @@ export function useLlmSettings() {
 
       const providerKey = config.providerKey || providers[0]?.providerKey || ''
       const provider = providers.find((item) => item.providerKey === providerKey) ?? providers[0] ?? null
-      applySelection(provider?.providerKey || '', config.model || provider?.models[0] || '')
+      applySelection(provider?.providerKey || '', config.model || '')
       baseUrlInput.value = config.baseUrl || ''
       apiKeyMasked.value = config.apiKeyMasked || ''
       maxTokens.value = config.maxTokens ?? undefined
@@ -262,9 +262,6 @@ export function useLlmSettings() {
         baseUrl: normalizeBaseUrl(result.baseUrl),
       }
       modelDiscoveryHint.value = result.models.length === 0 ? '未能读取模型列表，可手动填写模型 ID。' : ''
-      if (result.models.length > 0 && !result.models.includes(selectedModel.value)) {
-        selectedModel.value = result.models[0]
-      }
       showNotice(result.models.length > 0 ? '模型列表已更新' : modelDiscoveryHint.value, result.models.length > 0 ? 'success' : 'warning')
     } catch (error) {
       modelDiscoveryHint.value = '未能读取模型列表，可手动填写模型 ID。'
@@ -286,6 +283,14 @@ export function useLlmSettings() {
       }
     },
   )
+
+  watch(selectedProviderKey, (providerKey, previousProviderKey) => {
+    if (!changeTrackingReady.value || providerKey === previousProviderKey) {
+      return
+    }
+    selectedModel.value = ''
+    clearDiscoveredModels()
+  })
 
   watch(
     [selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth],

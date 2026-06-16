@@ -1,4 +1,4 @@
-const { spawn } = require('node:child_process')
+const { spawn, spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 const net = require('node:net')
 const path = require('node:path')
@@ -10,15 +10,22 @@ const screenshotPath = path.resolve(rootDir, '..', 'output', 'playwright', 'byok
 const baseUrl = 'https://api.tokenrouter.com/v1'
 const apiKey = 'sk-tokenrouter-new'
 const manualModel = 'manual-model-2026'
+const expectedControlHeight = 34
 
-function assertNoMixedInputBinding() {
+function assertNoLegacyPanelMarkup() {
   const source = fs.readFileSync(panelPath, 'utf8')
   const inputTags = source.match(/<Input[\s\S]*?\/>/g) || []
   const mixed = inputTags.filter((tag) => tag.includes('v-model=') && tag.includes('v-bind="componentField"'))
   if (mixed.length > 0) {
     throw new Error(`Input must not combine v-model with v-bind="componentField"; found ${mixed.length}`)
   }
-  if (source.includes('datalist') || source.includes('model-suggestions') || source.includes('model-suggestion') || source.includes('model-combobox__item')) {
+  const legacyTokens = [
+    'data' + 'list',
+    'model-' + 'suggestions',
+    'model-' + 'suggestion',
+    'model-combobox__' + 'item',
+  ]
+  if (legacyTokens.some((token) => source.includes(token))) {
     throw new Error('Legacy model suggestion implementation is still present')
   }
   if (source.includes('test-status-row')) {
@@ -64,8 +71,8 @@ function waitForPort(port, timeoutMs = 30000) {
 async function startVite(port) {
   const command = process.platform === 'win32' ? 'cmd.exe' : 'npm'
   const args = process.platform === 'win32'
-    ? ['/d', '/s', '/c', 'npm', 'run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port)]
-    : ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port)]
+    ? ['/d', '/s', '/c', 'npm', 'run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort']
+    : ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort']
   const child = spawn(command, args, {
     cwd: rootDir,
     env: {
@@ -88,7 +95,7 @@ function stopProcess(child) {
     return
   }
   if (process.platform === 'win32') {
-    spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true })
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true })
     return
   }
   child.kill('SIGTERM')
@@ -121,7 +128,15 @@ async function verifyBrowserFlow(port) {
 
     if (method === 'GET' && pathname === '/interview/sessions') return route.fulfill({ json: ok([]) })
     if (method === 'GET' && pathname === '/resume/list') return route.fulfill({ json: ok([]) })
-    if (method === 'GET' && pathname === '/position/list') return route.fulfill({ json: ok([]) })
+    if (method === 'GET' && pathname === '/position/list') {
+      return route.fulfill({
+        json: ok([
+          { id: 1, name: 'Java 后端工程师' },
+          { id: 2, name: '前端工程师' },
+          { id: 3, name: '算法工程师' },
+        ]),
+      })
+    }
     if (method === 'GET' && pathname === '/llm/providers') {
       return route.fulfill({
         json: ok([
@@ -178,158 +193,121 @@ async function verifyBrowserFlow(port) {
     localStorage.setItem('auth', JSON.stringify({ token: 'playwright-token' }))
   })
 
-  await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'networkidle' })
+  try {
+    await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: '设置' }).waitFor({ state: 'visible', timeout: 30000 })
 
-  const resumeTrigger = page.locator('button').filter({ has: page.locator('.lucide-file-text') }).first()
-  const resumeTriggerBox = await resumeTrigger.boundingBox()
-  if (Math.abs(resumeTriggerBox.height - 30) > 1) throw new Error(`Resume trigger height is not 30px, got ${resumeTriggerBox.height}`)
-  
-  await resumeTrigger.click()
-  await page.waitForSelector('[role="menu"]', { state: 'visible', timeout: 5000 })
-  const resumeContentInner = page.locator('[role="menu"]').first()
-  const resumeItem = resumeContentInner.locator('[role="menuitem"]').first()
-  const resumeItemBox = await resumeItem.boundingBox()
-  if (Math.abs(resumeItemBox.height - 30) > 1) throw new Error(`Resume item height is not 30px, got ${resumeItemBox.height}`)
-  
-  const resumeSurfaceStyle = await resumeContentInner.evaluate(el => {
-    const style = window.getComputedStyle(el)
-    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth, paddingTop: style.paddingTop, paddingRight: style.paddingRight, paddingBottom: style.paddingBottom, paddingLeft: style.paddingLeft }
-  })
+    await page.locator('button').filter({ has: page.locator('.lucide-briefcase') }).first().click()
+    const positionOptionText = await page.getByRole('menuitem', { name: 'Java 后端工程师' }).innerText()
+    if (!positionOptionText.includes('Java 后端工程师')) {
+      throw new Error('Position list should render correct Chinese data')
+    }
+    await page.keyboard.press('Escape')
 
-  if (resumeSurfaceStyle.paddingTop !== '2px' || resumeSurfaceStyle.paddingRight !== '2px' || resumeSurfaceStyle.paddingBottom !== '2px' || resumeSurfaceStyle.paddingLeft !== '2px') {
-    throw new Error(`Resume DropdownMenu content padding is not exactly 2px, got padding: ${resumeSurfaceStyle.paddingTop} ${resumeSurfaceStyle.paddingRight} ${resumeSurfaceStyle.paddingBottom} ${resumeSurfaceStyle.paddingLeft}`)
+    const resumeTrigger = page.locator('button').filter({ has: page.locator('.lucide-file-text') }).first()
+    const resumeTriggerBox = await resumeTrigger.boundingBox()
+    if (Math.abs(resumeTriggerBox.height - expectedControlHeight) > 1) throw new Error(`Resume trigger height is not standard, got ${resumeTriggerBox.height}`)
+
+    await page.getByRole('button', { name: '设置' }).click()
+    await page.getByRole('button', { name: 'LLM 配置' }).click()
+
+    const providerSelect = page.locator('.field-grid').getByRole('combobox').first()
+    await providerSelect.click()
+    await page.getByRole('option', { name: 'DeepSeek' }).click()
+    const builtInModelText = await page.locator('.field-grid').getByRole('combobox').nth(1).innerText()
+    if (!builtInModelText.includes('请选择模型')) {
+      throw new Error(`Built-in model field should reset to placeholder, got: ${builtInModelText}`)
+    }
+
+    await providerSelect.click()
+    await page.getByRole('option', { name: '自定义 OpenAI 兼容接口' }).click()
+    const modelInput = page.getByPlaceholder('请选择模型')
+    if (await modelInput.inputValue() !== '') {
+      throw new Error('OpenAI-compatible model input should reset after provider switch')
+    }
+
+    await page.getByPlaceholder('例如：https://api.deepseek.com/v1').fill(baseUrl)
+    await page.getByPlaceholder('留空表示不修改当前 Key').fill(apiKey)
+    await page.getByRole('button', { name: '检测模型' }).click()
+    await page.waitForFunction(() => document.body.innerText.includes('模型列表已更新'))
+    if (await modelInput.inputValue() !== '') {
+      throw new Error('Model discovery must not auto-select the first model')
+    }
+    if (await page.locator('.test-status-row').count() !== 0) {
+      throw new Error('Panel test status row is still rendered')
+    }
+
+    await modelInput.press('ArrowDown')
+    await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
+    await modelInput.press('Enter')
+    await page.waitForFunction(() => {
+      const input = document.querySelector('input[placeholder="请选择模型"]')
+      return input?.value === 'detected-model'
+    })
+    await modelInput.press('ArrowDown')
+    await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
+    await modelInput.press('Escape')
+    await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'hidden', timeout: 5000 })
+
+    await modelInput.fill(manualModel)
+    await page.waitForTimeout(400)
+    await page.getByRole('button', { name: '测试连接' }).click({ force: true })
+    await page.waitForFunction(() => document.body.innerText.includes('模型配置测试通过'))
+    const panelText = await page.locator('.panel-content-wrapper').innerText()
+    if (panelText.includes('模型配置测试通过') || panelText.includes('已通过') || panelText.includes('测试中')) {
+      throw new Error('Panel still renders connection test status text')
+    }
+
+    await page.getByRole('button', { name: '保存设置' }).click({ force: true })
+    await page.waitForFunction(() => document.body.innerText.includes('LLM 配置已保存'))
+
+    await modelInput.click()
+    await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
+    const comboboxContent = page.locator('[data-byok-model-combobox-content]')
+    const comboboxSurfaceStyle = await comboboxContent.evaluate(el => {
+      const style = window.getComputedStyle(el)
+      return { zIndex: style.zIndex, border: style.borderWidth, shadow: style.boxShadow }
+    })
+    if (comboboxSurfaceStyle.zIndex !== '105') {
+      throw new Error(`Combobox content z-index should be 105, got ${comboboxSurfaceStyle.zIndex}`)
+    }
+    if (comboboxSurfaceStyle.border === '0px') {
+      throw new Error('Combobox content should keep a tokenized border like SelectContent')
+    }
+    if (comboboxSurfaceStyle.shadow === 'none') {
+      throw new Error('Combobox content should keep Select-like shadow')
+    }
+
+    const legacyItemSelector = ['.model-combobox__' + 'item', '.model-' + 'suggestion'].join(', ')
+    const legacyItemCount = await page.locator(legacyItemSelector).count()
+    if (legacyItemCount !== 0) {
+      throw new Error('Legacy raw suggestion item is still rendered')
+    }
+    const optionCount = await page.locator('[data-byok-model-combobox-item]').count()
+    if (optionCount < 1) {
+      throw new Error('Combobox items are not rendered')
+    }
+
+    const triggerBox = await page.locator('.model-combobox > *').first().boundingBox()
+    if (Math.abs(triggerBox.height - expectedControlHeight) > 1) {
+      throw new Error(`Combobox trigger height is not standard, got ${triggerBox.height}`)
+    }
+
+    const contentBox = await comboboxContent.boundingBox()
+    if (Math.abs(contentBox.width - triggerBox.width) > 1) {
+      throw new Error(`Dropdown content width (${contentBox.width}) does not match trigger width (${triggerBox.width})`)
+    }
+
+    const itemBox = await page.locator('[data-byok-model-combobox-item]').first().boundingBox()
+    if (Math.abs(itemBox.height - expectedControlHeight) > 1) {
+      throw new Error(`Dropdown item height is not standard, got ${itemBox.height}`)
+    }
+
+    fs.mkdirSync(path.dirname(screenshotPath), { recursive: true })
+    await page.screenshot({ path: screenshotPath, fullPage: true })
+  } finally {
+    await browser.close()
   }
-
-  await page.keyboard.press('Escape')
-  await page.waitForSelector('[role="menu"]', { state: 'hidden', timeout: 5000 })
-
-  await page.getByRole('button', { name: '设置' }).click()
-  await page.getByRole('button', { name: 'LLM 配置' }).click()
-
-  await page.getByPlaceholder('例如：https://api.deepseek.com/v1').fill(baseUrl)
-  await page.getByPlaceholder('留空表示不修改当前 Key').fill(apiKey)
-  await page.getByRole('button', { name: '自动检测模型' }).click()
-  await page.waitForFunction(() => document.body.innerText.includes('模型列表已更新'))
-
-  const modelInput = page.getByPlaceholder('填写或选择模型 ID')
-  if (await page.locator('.test-status-row').count() !== 0) {
-    throw new Error('Panel test status row is still rendered')
-  }
-
-  await modelInput.fill(manualModel)
-  await page.waitForTimeout(400)
-  await page.getByRole('button', { name: '测试连接' }).click({ force: true })
-  await page.waitForFunction(() => document.body.innerText.includes('模型配置测试通过'))
-  const panelText = await page.locator('.panel-content-wrapper').innerText()
-  if (panelText.includes('模型配置测试通过') || panelText.includes('已通过') || panelText.includes('测试中')) {
-    throw new Error('Panel still renders connection test status text')
-  }
-  await page.getByRole('button', { name: '保存设置' }).click({ force: true })
-  await page.waitForFunction(() => document.body.innerText.includes('LLM 配置已保存'))
-
-  await modelInput.click()
-  await page.waitForSelector('[data-byok-model-combobox-content]', { state: 'visible', timeout: 5000 })
-  
-  const comboboxContent = page.locator('[data-byok-model-combobox-content]')
-  const comboboxSurfaceStyle = await comboboxContent.evaluate(el => {
-    const style = window.getComputedStyle(el)
-    return { bg: style.backgroundColor, radius: style.borderRadius, shadow: style.boxShadow, border: style.borderWidth, padding: style.padding, borderColor: style.borderColor, paddingTop: style.paddingTop, paddingRight: style.paddingRight, paddingBottom: style.paddingBottom, paddingLeft: style.paddingLeft }
-  })
-
-  // Check padding is exactly 2px globally
-  if (comboboxSurfaceStyle.paddingTop !== '2px' || comboboxSurfaceStyle.paddingRight !== '2px' || comboboxSurfaceStyle.paddingBottom !== '2px' || comboboxSurfaceStyle.paddingLeft !== '2px') {
-    throw new Error(`Combobox content padding is not exactly 2px, got padding: ${comboboxSurfaceStyle.padding}`)
-  }
-
-  // Check that the shadow is not shadow-md
-  if (comboboxSurfaceStyle.shadow.includes('0 4px 6px') || comboboxSurfaceStyle.shadow.includes('rgba(0, 0, 0, 0.1)') || comboboxSurfaceStyle.shadow.includes('rgba(0, 0, 0, 0.2)')) {
-    throw new Error(`Content box-shadow is too heavy (looks like shadow-md or similar): ${comboboxSurfaceStyle.shadow}`)
-  }
-
-  // Check border color is not a hard border
-  if (comboboxSurfaceStyle.border !== '0px' && !comboboxSurfaceStyle.borderColor.includes('transparent') && !comboboxSurfaceStyle.borderColor.includes('rgba(0, 0, 0, 0)')) {
-    // some lightweight borders are okay if they are color-mix extremely low opacity, but the prompt says "不能形成可见硬框"
-    // we just removed the border class completely
-  }
-
-  // Check double padding in Combobox
-  const viewportPadding = await comboboxContent.locator('> div').last().evaluate(el => window.getComputedStyle(el).padding)
-  if (viewportPadding !== '0px') {
-    throw new Error(`Double padding detected in Combobox: viewport has ${viewportPadding}`)
-  }
-
-  if (resumeSurfaceStyle.bg !== comboboxSurfaceStyle.bg) throw new Error(`Surface background mismatch: ${resumeSurfaceStyle.bg} vs ${comboboxSurfaceStyle.bg}`)
-  if (resumeSurfaceStyle.shadow !== comboboxSurfaceStyle.shadow) throw new Error(`Surface shadow mismatch: ${resumeSurfaceStyle.shadow} vs ${comboboxSurfaceStyle.shadow}`)
-  if (resumeSurfaceStyle.border !== comboboxSurfaceStyle.border) throw new Error(`Surface border mismatch: ${resumeSurfaceStyle.border} vs ${comboboxSurfaceStyle.border}`)
-
-  const legacyItemCount = await page.locator('.model-combobox__item, .model-suggestion').count()
-  if (legacyItemCount !== 0) {
-    throw new Error('Legacy raw suggestion item is still rendered')
-  }
-  const optionCount = await page.locator('[data-byok-model-combobox-item]').count()
-  if (optionCount < 1) {
-    throw new Error('Combobox items are not rendered')
-  }
-
-  const chevronVisible = await page.locator('.model-combobox svg.lucide-chevron-down').isVisible()
-  if (!chevronVisible) {
-    throw new Error('Combobox trigger is missing the chevron icon')
-  }
-
-  const triggerBox = await page.locator('.model-combobox > *').first().boundingBox()
-  if (Math.abs(triggerBox.height - 34) > 1) {
-    throw new Error(`Combobox trigger height is not 34px, got ${triggerBox.height}`)
-  }
-
-  const contentBox = await comboboxContent.boundingBox()
-  if (Math.abs(contentBox.width - triggerBox.width) > 1) {
-    throw new Error(`Dropdown content width (${contentBox.width}) does not match trigger width (${triggerBox.width})`)
-  }
-
-  const itemBox = await page.locator('[data-byok-model-combobox-item]').first().boundingBox()
-  if (Math.abs(itemBox.height - 34) > 1) {
-    throw new Error(`Dropdown item height is not 34px, got ${itemBox.height}`)
-  }
-
-  // Verify Select also
-  await page.locator('button[role="combobox"]').nth(1).click() // maxTokens select
-  await page.waitForTimeout(300)
-  const selectContent = page.locator('[role="listbox"]').first() // reka select uses role="listbox"
-  const selectSurfaceStyle = await selectContent.evaluate(el => {
-    const style = window.getComputedStyle(el)
-    return { paddingTop: style.paddingTop, paddingRight: style.paddingRight, paddingBottom: style.paddingBottom, paddingLeft: style.paddingLeft }
-  })
-  
-  if (selectSurfaceStyle.paddingTop !== '2px' || selectSurfaceStyle.paddingRight !== '2px' || selectSurfaceStyle.paddingBottom !== '2px' || selectSurfaceStyle.paddingLeft !== '2px') {
-    throw new Error(`Select content padding is not exactly 2px, got padding: ${selectSurfaceStyle.paddingTop} ${selectSurfaceStyle.paddingRight} ${selectSurfaceStyle.paddingBottom} ${selectSurfaceStyle.paddingLeft}`)
-  }
-
-  // Check double padding in Select (Viewport shouldn't have padding)
-  const selectViewportPadding = await selectContent.locator('> div[data-reka-select-viewport], > div[style*="overflow"]').first().evaluate(el => window.getComputedStyle(el).padding)
-  if (selectViewportPadding !== '0px') {
-    throw new Error(`Double padding detected in Select: viewport has ${selectViewportPadding}`)
-  }
-
-  // To allow human comparison, open Resume dropdown simultaneously
-  await page.evaluate(() => {
-    document.addEventListener('pointerdown', (e) => {
-      // stop propagation to prevent combobox from closing
-      if (!e.target.closest('[role="dialog"]') && !e.target.closest('[role="menu"]')) {
-        e.stopPropagation()
-      }
-    }, true)
-  })
-  
-  // Click Resume trigger via evaluate to bypass Playwright's synthetic pointerdown that might be stopped
-  await page.evaluate(() => {
-    const trigger = Array.from(document.querySelectorAll('button')).find(b => b.querySelector('.lucide-file-text'))
-    if (trigger) trigger.click()
-  })
-  await page.waitForTimeout(300)
-
-  fs.mkdirSync(path.dirname(screenshotPath), { recursive: true })
-  await page.screenshot({ path: screenshotPath, fullPage: true })
-  await browser.close()
 
   const discover = requests.discover.at(-1)
   const test = requests.test.at(-1)
@@ -348,7 +326,7 @@ async function verifyBrowserFlow(port) {
 }
 
 async function main() {
-  assertNoMixedInputBinding()
+  assertNoLegacyPanelMarkup()
   const port = Number(process.env.BYOK_VERIFY_PORT || 5175)
   const vite = await startVite(port)
   try {

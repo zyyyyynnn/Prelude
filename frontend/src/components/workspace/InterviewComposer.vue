@@ -120,14 +120,14 @@ watch(() => props.incomingAudio, (newVal) => {
 })
 
 // Visual colors extracted dynamically from CSS variables
-let brandColor = '#9e7b6a'
-let borderWarmColor = '#e8e6dc'
+let brandColor = ''
+let borderWarmColor = ''
 
 function getThemeColors() {
   if (typeof window !== 'undefined') {
     const style = getComputedStyle(document.documentElement)
-    brandColor = style.getPropertyValue('--color-brand').trim() || '#9e7b6a'
-    borderWarmColor = style.getPropertyValue('--color-border-warm').trim() || '#e8e6dc'
+    brandColor = style.getPropertyValue('--color-brand').trim()
+    borderWarmColor = style.getPropertyValue('--color-border-warm').trim()
   }
 }
 
@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
             <div class="composer-voice-area">
               <div class="voice-status-container">
                 <span class="status-indicator" :class="voiceStatus" />
-                <span class="status-text">{{ displayStatus }}</span>
+                <span class="status-text text-sm">{{ displayStatus }}</span>
               </div>
               <div class="voice-wave-container">
                 <canvas ref="canvasRef" width="300" height="60" class="voice-canvas" />
@@ -378,10 +378,10 @@ onBeforeUnmount(() => {
               <!-- Resume Picker -->
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <button class="flex h-[30px] w-36 items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent px-2 py-1 text-[13px] hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer !font-serif">
+                  <button class="composer-toolbar-control composer-toolbar-select flex items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent text-sm hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer">
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <div class="flex h-full w-full items-center gap-1.5 overflow-hidden">
+                        <div class="flex h-full w-full items-center gap-[var(--spacing-xs)] overflow-hidden">
                           <FileText class="w-3.5 h-3.5 shrink-0 opacity-70" />
                           <span class="font-medium truncate text-foreground">{{ selectedResumeName }}</span>
                         </div>
@@ -398,13 +398,12 @@ onBeforeUnmount(() => {
                     v-for="r in resumes" 
                     :key="r.id" 
                     @click="emit('update:selectedResumeId', r.id)"
-                    size="compact"
-                    class="justify-between !font-serif cursor-pointer"
+                    class="justify-between cursor-pointer"
                   >
                     {{ r.fileName }}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem @click="triggerUpload" size="compact" class="justify-center !font-serif cursor-pointer text-primary font-medium">
+                  <DropdownMenuItem @click="triggerUpload" class="justify-center cursor-pointer text-primary font-medium">
                     {{ uploading ? '上传中...' : '+ 上传 PDF' }}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -422,10 +421,10 @@ onBeforeUnmount(() => {
               <!-- Position Picker -->
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <button class="flex h-[30px] w-36 items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent px-2 py-1 text-[13px] hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer !font-serif">
+                  <button class="composer-toolbar-control composer-toolbar-select flex items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent text-sm hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer">
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <div class="flex h-full w-full items-center gap-1.5 overflow-hidden">
+                        <div class="flex h-full w-full items-center gap-[var(--spacing-xs)] overflow-hidden">
                           <Briefcase class="w-3.5 h-3.5 shrink-0 opacity-70" />
                           <span class="font-medium truncate text-foreground">{{ selectedPositionName }}</span>
                         </div>
@@ -442,8 +441,7 @@ onBeforeUnmount(() => {
                     v-for="p in positions" 
                     :key="p.id" 
                     @click="emit('update:selectedPositionId', p.id)"
-                    size="compact"
-                    class="justify-between !font-serif cursor-pointer"
+                    class="justify-between cursor-pointer"
                   >
                     {{ p.name }}
                   </DropdownMenuItem>
@@ -453,7 +451,7 @@ onBeforeUnmount(() => {
               <!-- JD Toggle -->
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <Button variant="ghost" size="sm" class="h-[30px] px-2 text-[13px] gap-1.5 max-w-[180px] min-w-[100px] overflow-hidden !font-serif" type="button" @click="showJdInput = !showJdInput" :class="{ 'bg-accent text-accent-foreground': showJdInput }">
+                  <Button variant="ghost" size="sm" class="composer-toolbar-control overflow-hidden" type="button" @click="showJdInput = !showJdInput" :class="{ 'bg-accent text-accent-foreground': showJdInput }">
                     <FileSearch class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate">{{ showJdInput ? '已开启' : '未开启' }}</span>
                   </Button>
@@ -466,7 +464,7 @@ onBeforeUnmount(() => {
             <template v-else>
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <div class="inline-flex h-[30px] max-w-[180px] min-w-[100px] overflow-hidden items-center gap-1.5 rounded-md px-2 text-[13px] !font-serif pointer-events-none opacity-65">
+                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm pointer-events-none opacity-65">
                     <FileText class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate text-foreground">{{ selectedResumeName }}</span>
                   </div>
@@ -478,7 +476,7 @@ onBeforeUnmount(() => {
 
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <div class="inline-flex h-[30px] max-w-[180px] min-w-[100px] overflow-hidden items-center gap-1.5 rounded-md px-2 text-[13px] !font-serif pointer-events-none opacity-65">
+                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm pointer-events-none opacity-65">
                     <Briefcase class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate text-foreground">{{ selectedPositionName }}</span>
                   </div>
@@ -490,7 +488,7 @@ onBeforeUnmount(() => {
 
               <Tooltip v-if="jdText">
                 <TooltipTrigger as-child>
-                  <div class="inline-flex h-[30px] max-w-[180px] min-w-[100px] overflow-hidden items-center gap-1.5 rounded-md px-2 text-[13px] !font-serif pointer-events-none opacity-65">
+                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm pointer-events-none opacity-65">
                     <FileSearch class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate text-foreground">已开启</span>
                   </div>
@@ -504,7 +502,7 @@ onBeforeUnmount(() => {
             <!-- Model Info -->
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" size="sm" class="h-[30px] px-2 text-[13px] gap-1.5 max-w-[180px] min-w-[100px] overflow-hidden !font-serif" @click="navigateToLlm" type="button">
+                <Button variant="ghost" size="sm" class="composer-toolbar-control overflow-hidden" @click="navigateToLlm" type="button">
                   <Terminal class="w-3.5 h-3.5 shrink-0 opacity-70" />
                   <span class="font-medium truncate">{{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}</span>
                 </Button>
@@ -550,7 +548,7 @@ onBeforeUnmount(() => {
                     </svg>
                   </Button>
                   <button
-                    class="voice-press-btn"
+                    class="voice-press-btn text-sm"
                     :class="{ 'is-pressed': isRecording }"
                     :disabled="disabled || sending"
                     @mousedown="startRecording"
@@ -614,7 +612,7 @@ onBeforeUnmount(() => {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-text-primary) 4%, transparent), 0 0 0 1px var(--color-ring);
+  box-shadow: var(--shadow-whisper), var(--shadow-ring);
   padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
@@ -655,7 +653,6 @@ onBeforeUnmount(() => {
   gap: var(--spacing-md);
 }
 .composer-actions__hint {
-  font-size: 12px;
   color: var(--color-text-tertiary);
   padding-left: var(--spacing-xs);
 }
@@ -664,6 +661,16 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: var(--spacing-sm);
   min-width: 0;
+}
+.composer-toolbar-control {
+  height: var(--ui-height-base);
+  min-width: calc(var(--ui-height-base) * 3);
+  max-width: calc(var(--ui-height-base) * 6);
+  padding: 0 var(--spacing-sm);
+  gap: var(--spacing-xs);
+}
+.composer-toolbar-select {
+  width: calc(var(--ui-height-base) * 4.25);
 }
 
 /* Voice Integration Styles */
@@ -686,23 +693,22 @@ onBeforeUnmount(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: var(--color-ring, #d1cfc5);
+  background-color: var(--color-ring);
 }
 .status-indicator.listening {
-  background-color: var(--color-brand, #9e7b6a);
+  background-color: var(--color-brand);
   animation: pulse 1.5s infinite ease-in-out;
 }
 .status-indicator.stt_processing,
 .status-indicator.tts_processing {
-  background-color: var(--color-coral, #b08878);
+  background-color: var(--color-coral);
   animation: pulse 1s infinite ease-in-out;
 }
 .status-indicator.speaking {
-  background-color: var(--color-brand, #9e7b6a);
-  box-shadow: 0 0 8px var(--color-brand);
+  background-color: var(--color-brand);
+  box-shadow: 0 0 var(--spacing-sm) var(--color-brand);
 }
 .status-text {
-  font-size: 14px;
   color: var(--color-text-secondary);
   font-weight: 500;
 }
@@ -722,7 +728,6 @@ onBeforeUnmount(() => {
   height: var(--ui-height-base);
   padding: 0 var(--spacing-lg);
   border-radius: var(--radius-md);
-  font-size: 14px;
   font-weight: 500;
   font-family: var(--font-serif);
   cursor: pointer;
@@ -747,14 +752,14 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 .voice-press-btn:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--shadow-ring-deep);
 }
 .voice-press-btn.is-pressed {
   background-color: var(--color-brand);
   color: var(--color-surface);
   border-color: var(--color-brand);
-  box-shadow: 0 0 12px var(--color-brand);
+  box-shadow: 0 0 var(--spacing-md) var(--color-brand);
   transform: scale(0.98);
 }
 
@@ -765,11 +770,11 @@ onBeforeUnmount(() => {
 }
 .jd-fade-float-enter-from {
   opacity: 0;
-  transform: translateY(4px); /* 自下而上柔和 4px 浮入 */
+  transform: translateY(var(--spacing-xs));
 }
 .jd-fade-float-leave-to {
   opacity: 0;
-  transform: translateY(-4px); /* 向上方 4px 飘散淡出 */
+  transform: translateY(calc(var(--spacing-xs) * -1));
 }
 .jd-fade-float-leave-active {
   pointer-events: none; /* 绝对保留：离场防遮挡 */
@@ -783,11 +788,11 @@ onBeforeUnmount(() => {
 }
 .mode-switch-enter-from {
   opacity: 0;
-  transform: translateY(4px);
+  transform: translateY(var(--spacing-xs));
 }
 .mode-switch-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(calc(var(--spacing-xs) * -1));
 }
 
 @keyframes pulse {
