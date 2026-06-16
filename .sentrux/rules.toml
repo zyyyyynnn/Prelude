@@ -1,18 +1,15 @@
-# Initial architecture guardrails are report-only until CI installation and
-# runtime behavior are proven stable.
+# Report-only guardrails: this file is checked manually and is not a blocking
+# CI gate until sentrux behavior is proven stable in GitHub Actions.
 
-[policy]
-mode = "report"
-blocking = false
+[constraints]
+# sentrux 0.5.7 treats constraints as hard failures and has no warn severity.
+# Current equality is about 0.4820; 0.55 remains the report-stage target.
+min_equality = 0.48
 
-[rules.controller_direct_mapper_dependency]
-severity = "warn"
-from = "backend/src/main/java/com/interview/controller/**"
-to = "backend/src/main/java/com/interview/mapper/**"
-message = "Controllers should depend on services, not mappers directly."
-
-[thresholds]
-equality = { warn = 0.55 }
+[[boundaries]]
+from = "backend/src/main/java/com/interview/controller/*"
+to = "backend/src/main/java/com/interview/mapper/*"
+reason = "Controllers should depend on services, not mappers directly."
 
 [coverage]
 target = "stage-goal"
