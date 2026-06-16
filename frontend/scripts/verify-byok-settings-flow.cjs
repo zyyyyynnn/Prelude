@@ -6,6 +6,7 @@ const { chromium } = require('playwright')
 
 const rootDir = path.resolve(__dirname, '..')
 const panelPath = path.join(rootDir, 'src', 'components', 'workspace', 'LlmSettingsPanel.vue')
+const sharedDropdownPath = path.join(rootDir, 'src', 'components', 'ui', 'shared-dropdown.ts')
 const screenshotPath = path.resolve(rootDir, '..', 'output', 'playwright', 'byok-settings-flow.png')
 const baseUrl = 'https://api.tokenrouter.com/v1'
 const apiKey = 'sk-tokenrouter-new'
@@ -30,6 +31,13 @@ function assertNoLegacyPanelMarkup() {
   }
   if (source.includes('test-status-row')) {
     throw new Error('Panel test status row must be removed')
+  }
+  const dropdownSource = fs.readFileSync(sharedDropdownPath, 'utf8')
+  if (!dropdownSource.includes('shadow-whisper') || dropdownSource.includes('shadow-md')) {
+    throw new Error('Shared dropdown content must keep the low-elevation shadow token')
+  }
+  if (!dropdownSource.includes('border-transparent') || dropdownSource.includes('border-border')) {
+    throw new Error('Shared dropdown content must not use a hard border token')
   }
 }
 
@@ -266,16 +274,19 @@ async function verifyBrowserFlow(port) {
     const comboboxContent = page.locator('[data-byok-model-combobox-content]')
     const comboboxSurfaceStyle = await comboboxContent.evaluate(el => {
       const style = window.getComputedStyle(el)
-      return { zIndex: style.zIndex, border: style.borderWidth, shadow: style.boxShadow }
+      return { zIndex: style.zIndex, shadow: style.boxShadow, className: el.className }
     })
     if (comboboxSurfaceStyle.zIndex !== '105') {
       throw new Error(`Combobox content z-index should be 105, got ${comboboxSurfaceStyle.zIndex}`)
     }
-    if (comboboxSurfaceStyle.border === '0px') {
-      throw new Error('Combobox content should keep a tokenized border like SelectContent')
+    if (!comboboxSurfaceStyle.className.includes('border-transparent') || comboboxSurfaceStyle.className.includes('border-border')) {
+      throw new Error('Combobox content should keep the shared low-border dropdown styling')
+    }
+    if (!comboboxSurfaceStyle.className.includes('shadow-whisper') || comboboxSurfaceStyle.className.includes('shadow-md')) {
+      throw new Error('Combobox content should keep the shared low-elevation shadow styling')
     }
     if (comboboxSurfaceStyle.shadow === 'none') {
-      throw new Error('Combobox content should keep Select-like shadow')
+      throw new Error('Combobox content should render a dropdown shadow')
     }
 
     const legacyItemSelector = ['.model-combobox__' + 'item', '.model-' + 'suggestion'].join(', ')
