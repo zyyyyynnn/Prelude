@@ -174,6 +174,59 @@ WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai-compatible'
 );
 
+-- 3.0 清理或迁移旧的 4 月 demo session 到 6 月
+
+-- a) 如果目标 6 月 session 已存在，则清理掉多余的旧 4 月 session 的子表与本体
+DELETE uw
+FROM `user_weakness` uw
+JOIN `interview_session` old_s ON uw.`session_id` = old_s.`id`
+JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `interview_session` new_s ON new_s.`user_id` = u.`id` AND new_s.`target_position` = old_s.`target_position`
+WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')
+  AND new_s.`created_at` IN ('2026-06-16 14:00:00', '2026-06-15 10:00:00', '2026-06-14 16:10:00', '2026-06-12 15:30:00');
+
+DELETE sh
+FROM `score_history` sh
+JOIN `interview_session` old_s ON sh.`session_id` = old_s.`id`
+JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `interview_session` new_s ON new_s.`user_id` = u.`id` AND new_s.`target_position` = old_s.`target_position`
+WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')
+  AND new_s.`created_at` IN ('2026-06-16 14:00:00', '2026-06-15 10:00:00', '2026-06-14 16:10:00', '2026-06-12 15:30:00');
+
+DELETE st
+FROM `interview_stage` st
+JOIN `interview_session` old_s ON st.`session_id` = old_s.`id`
+JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `interview_session` new_s ON new_s.`user_id` = u.`id` AND new_s.`target_position` = old_s.`target_position`
+WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')
+  AND new_s.`created_at` IN ('2026-06-16 14:00:00', '2026-06-15 10:00:00', '2026-06-14 16:10:00', '2026-06-12 15:30:00');
+
+DELETE msg
+FROM `interview_message` msg
+JOIN `interview_session` old_s ON msg.`session_id` = old_s.`id`
+JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `interview_session` new_s ON new_s.`user_id` = u.`id` AND new_s.`target_position` = old_s.`target_position`
+WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')
+  AND new_s.`created_at` IN ('2026-06-16 14:00:00', '2026-06-15 10:00:00', '2026-06-14 16:10:00', '2026-06-12 15:30:00');
+
+DELETE old_s
+FROM `interview_session` old_s
+JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `interview_session` new_s ON new_s.`user_id` = u.`id` AND new_s.`target_position` = old_s.`target_position`
+WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')
+  AND new_s.`created_at` IN ('2026-06-16 14:00:00', '2026-06-15 10:00:00', '2026-06-14 16:10:00', '2026-06-12 15:30:00');
+
+-- b) 对于没有被删除的旧 4 月 session (说明 6 月 session 尚不存在)，直接迁移其时间
+UPDATE `interview_session` old_s
+JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'
+SET old_s.`created_at` = CASE old_s.`created_at`
+    WHEN '2026-04-23 14:00:00' THEN '2026-06-16 14:00:00'
+    WHEN '2026-04-22 10:00:00' THEN '2026-06-15 10:00:00'
+    WHEN '2026-04-20 16:10:00' THEN '2026-06-14 16:10:00'
+    WHEN '2026-04-18 15:30:00' THEN '2026-06-12 15:30:00'
+END
+WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00');
+
 -- 3. demo 用户/默认演示会话/消息/评分/报告 seed：仅维护 demo 用户的固定演示数据。
 INSERT INTO `user` (`username`, `password`, `email`)
 SELECT 'demo',
