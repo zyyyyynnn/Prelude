@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { Badge } from '@/components/ui/badge'
+import { TooltipText } from '@/components/ui/tooltip'
 import type { InterviewMessageRecord, InterviewMessageRole } from '../../api/contracts'
 
 const props = defineProps<{
@@ -73,9 +74,9 @@ onMounted(() => {
         </div>
         <div v-if="message.role === 'user'" class="message-bubble__judge-container">
           <transition name="fade">
-            <div v-if="message.score" class="judge-badge">
-              <span class="judge-badge__score">评分: {{ message.score }}/10</span>
-              <span v-if="message.hint" class="judge-badge__hint" :title="message.hint">{{ message.hint }}</span>
+            <div v-if="message.score" class="judge-badge text-xs">
+              <span class="judge-badge__score">评分：{{ message.score }}/10</span>
+              <TooltipText v-if="message.hint" class="judge-badge__hint" :text="message.hint" />
             </div>
           </transition>
         </div>
@@ -170,37 +171,36 @@ onMounted(() => {
 }
 
 .message-bubble__judge-container {
-  min-height: 24px;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
   display: flex;
   justify-content: flex-end;
   width: 100%;
 }
 .judge-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 2px 8px;
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
+  gap: var(--spacing-xs);
+  max-width: min(100%, calc(var(--ui-height-base) * 15));
   color: var(--color-text-secondary);
-  height: 24px;
-  line-height: 24px;
-  max-width: 100%;
   font-family: var(--font-serif);
-  letter-spacing: 0.05em; /* tracking-wider equivalent */
+  letter-spacing: 0.05em;
 }
 .judge-badge__score {
-  font-weight: 600; /* semibold */
+  flex-shrink: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  font-weight: 600;
   color: var(--color-brand);
 }
 .judge-badge__hint {
-  max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  max-width: calc(var(--ui-height-base) * 10);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
 }
 
 .fade-enter-active,

@@ -57,6 +57,7 @@ const messages = computed(() => replay.value?.messages ?? [])
 const currentStage = computed(() => replay.value?.currentStage)
 const activeSession = computed(() => sessions.value.find(s => s.sessionId === activeSessionId.value))
 const targetPosition = computed(() => activeSession.value?.targetPosition || activeSession.value?.positionName || '')
+const sessionStatus = computed(() => replay.value?.status || activeSession.value?.status)
 const llmProvider = computed(() => activeSession.value?.llmProvider || 'deepseek')
 const llmModel = computed(() => activeSession.value?.llmModel || 'default')
 const isFinished = computed(() => activeSession.value?.status === 'finished' || replay.value?.status === 'finished')
@@ -804,6 +805,7 @@ onBeforeUnmount(() => {
         :active-session-id="activeSessionId"
         :target-position="targetPosition"
         :current-stage="currentStage"
+        :session-status="sessionStatus"
         :sending="sending"
         :finishing="finishing"
         :has-report="hasReport"

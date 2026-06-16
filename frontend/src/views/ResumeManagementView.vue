@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import EmptyState from '@/components/ui/empty-state/EmptyState.vue'
+import { TooltipText } from '@/components/ui/tooltip'
 import { withMinDelay } from '@/lib/utils'
 
 const { showNotice } = usePageNotice()
@@ -173,7 +174,7 @@ onBeforeUnmount(() => {
             <article v-for="item in items" :key="item.id" class="resume-row">
               <div class="resume-row__main">
                 <div class="resume-row__title-wrap">
-                  <h4 class="resume-item__title">{{ item.fileName }}</h4>
+                  <TooltipText as="h4" class="resume-item__title" :text="item.fileName" />
                   <p class="resume-item__hint">
                     {{ item.createdAt ? new Date(item.createdAt).toLocaleString() : '未知时间' }}
                   </p>

@@ -5,6 +5,7 @@ import { useInterviewWorkspace } from '../../composables/useInterviewWorkspace'
 import BrandMetaballs from '../BrandMetaballs.vue'
 import { usePageNotice } from '../../composables/usePageNotice'
 import { Separator } from '@/components/ui/separator'
+import { TooltipText } from '@/components/ui/tooltip'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const props = defineProps<{
@@ -121,7 +122,7 @@ function navigateTo(path: string) {
                 :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
                 @click="handleSessionClick(session.sessionId)"
               >
-                <span class="session-item__name truncate">{{ session.targetPosition || '未命名岗位' }}</span>
+                <TooltipText class="session-item__name" :text="session.targetPosition || '未命名岗位'" />
               </button>
               
               <!-- Pin indicator when not hovered -->
@@ -163,7 +164,7 @@ function navigateTo(path: string) {
                 :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
                 @click="handleSessionClick(session.sessionId)"
               >
-                <span class="session-item__name truncate">{{ session.targetPosition || '未命名岗位' }}</span>
+                <TooltipText class="session-item__name" :text="session.targetPosition || '未命名岗位'" />
               </button>
 
               <!-- Pin indicator when not hovered -->

@@ -15,6 +15,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  TooltipText,
 } from '@/components/ui/tooltip'
 import { FileText, Briefcase, FileSearch, Terminal } from '@lucide/vue'
 import { cn } from '@/lib/utils'
@@ -74,6 +75,8 @@ const selectedPositionName = computed(() => {
   if (!props.selectedPositionId) return '选择'
   return props.positions.find(p => p.id === props.selectedPositionId)?.name || '选择'
 })
+
+const modelDisplay = computed(() => `${props.llmProvider || '未配置'} / ${props.llmModel || 'default'}`)
 
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement
@@ -385,7 +388,7 @@ onBeforeUnmount(() => {
                       <TooltipTrigger as-child>
                         <div class="flex h-full w-full items-center gap-[var(--spacing-xs)] overflow-hidden">
                           <FileText class="w-3.5 h-3.5 shrink-0 opacity-70" />
-                          <span class="font-medium truncate text-foreground">{{ selectedResumeName }}</span>
+                          <span class="min-w-0 flex-1 truncate font-medium text-foreground">{{ selectedResumeName }}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
@@ -401,12 +404,12 @@ onBeforeUnmount(() => {
                     :key="r.id" 
                     size="compact"
                     @click="emit('update:selectedResumeId', r.id)"
-                    class="justify-between cursor-pointer"
+                    class="cursor-pointer overflow-hidden whitespace-nowrap"
                   >
-                    {{ r.fileName }}
+                    <TooltipText class="min-w-0 flex-1 text-foreground" :text="r.fileName" />
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem size="compact" @click="triggerUpload" class="justify-center cursor-pointer text-primary font-medium">
+                  <DropdownMenuItem size="compact" @click="triggerUpload" class="justify-center cursor-pointer whitespace-nowrap text-primary font-medium">
                     {{ uploading ? '上传中...' : '+ 上传 PDF' }}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -429,7 +432,7 @@ onBeforeUnmount(() => {
                       <TooltipTrigger as-child>
                         <div class="flex h-full w-full items-center gap-[var(--spacing-xs)] overflow-hidden">
                           <Briefcase class="w-3.5 h-3.5 shrink-0 opacity-70" />
-                          <span class="font-medium truncate text-foreground">{{ selectedPositionName }}</span>
+                          <span class="min-w-0 flex-1 truncate font-medium text-foreground">{{ selectedPositionName }}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
@@ -445,9 +448,9 @@ onBeforeUnmount(() => {
                     :key="p.id" 
                     size="compact"
                     @click="emit('update:selectedPositionId', p.id)"
-                    class="justify-between cursor-pointer"
+                    class="cursor-pointer overflow-hidden whitespace-nowrap"
                   >
-                    {{ p.name }}
+                    <TooltipText class="min-w-0 flex-1 text-foreground" :text="p.name" />
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -468,7 +471,7 @@ onBeforeUnmount(() => {
             <template v-else>
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm pointer-events-none opacity-65">
+                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm opacity-65">
                     <FileText class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate text-foreground">{{ selectedResumeName }}</span>
                   </div>
@@ -480,7 +483,7 @@ onBeforeUnmount(() => {
 
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm pointer-events-none opacity-65">
+                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm opacity-65">
                     <Briefcase class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate text-foreground">{{ selectedPositionName }}</span>
                   </div>
@@ -492,7 +495,7 @@ onBeforeUnmount(() => {
 
               <Tooltip v-if="jdText">
                 <TooltipTrigger as-child>
-                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm pointer-events-none opacity-65">
+                  <div class="composer-toolbar-control inline-flex overflow-hidden items-center rounded-md text-sm opacity-65">
                     <FileSearch class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate text-foreground">已开启</span>
                   </div>
@@ -508,11 +511,11 @@ onBeforeUnmount(() => {
               <TooltipTrigger as-child>
                 <Button variant="ghost" size="compact" class="composer-toolbar-control overflow-hidden" @click="navigateToLlm" type="button">
                   <Terminal class="w-3.5 h-3.5 shrink-0 opacity-70" />
-                  <span class="font-medium truncate">{{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}</span>
+                  <span class="font-medium truncate">{{ modelDisplay }}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
-                {{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}
+                {{ modelDisplay }}
               </TooltipContent>
             </Tooltip>
           </div>
@@ -534,7 +537,7 @@ onBeforeUnmount(() => {
               <template v-if="isVoiceMode">
                 <div key="voice" class="flex items-center gap-2">
                   <Button 
-                    variant="outline" size="icon-sm" class="rounded-md"
+                    variant="outline" size="icon-compact" class="rounded-md"
                     @click="emit('update:isVoiceMode', false)"
                     type="button"
                   >
@@ -551,8 +554,10 @@ onBeforeUnmount(() => {
                       <line x1="14" y1="12" x2="14.01" y2="12" />
                     </svg>
                   </Button>
-                  <button
-                    class="voice-press-btn text-sm"
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    class="voice-press-btn"
                     :class="{ 'is-pressed': isRecording }"
                     :disabled="disabled || sending"
                     @mousedown="startRecording"
@@ -563,13 +568,13 @@ onBeforeUnmount(() => {
                     type="button"
                   >
                     {{ isRecording ? '松开发送' : '按住说话' }}
-                  </button>
+                  </Button>
                 </div>
               </template>
               <template v-else>
                 <div key="text" class="flex items-center gap-2">
                   <Button 
-                    variant="outline" size="icon-sm" class="rounded-md"
+                    variant="outline" size="icon-compact" class="rounded-md"
                     @click="emit('update:isVoiceMode', true)"
                     type="button"
                   >
@@ -729,42 +734,13 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 .voice-press-btn {
-  height: var(--ui-height-compact);
   padding: 0 var(--spacing-lg);
-  border-radius: var(--radius-md);
-  font-weight: 500;
   font-family: var(--font-serif);
-  cursor: pointer;
-  border: 1px solid var(--color-brand);
-  background-color: var(--color-brand);
-  color: var(--color-surface);
-  transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* 快速响应按下 */
-}
-.voice-press-btn:not(:active) {
-  transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* 从容释放 */
-}
-.voice-press-btn {
   user-select: none;
-  outline: none;
-}
-.voice-press-btn:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
-}
-.voice-press-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-  pointer-events: none;
-}
-.voice-press-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-ring-deep);
 }
 .voice-press-btn.is-pressed {
-  background-color: var(--color-brand);
-  color: var(--color-surface);
-  border-color: var(--color-brand);
-  box-shadow: 0 0 var(--spacing-md) var(--color-brand);
-  transform: scale(0.98);
+  transform: translateY(1px);
+  box-shadow: var(--shadow-ring-deep);
 }
 
 
