@@ -1,0 +1,19 @@
+# Initial architecture guardrails are report-only until CI installation and
+# runtime behavior are proven stable.
+
+[policy]
+mode = "report"
+blocking = false
+
+[rules.controller_direct_mapper_dependency]
+severity = "warn"
+from = "backend/src/main/java/com/interview/controller/**"
+to = "backend/src/main/java/com/interview/mapper/**"
+message = "Controllers should depend on services, not mappers directly."
+
+[thresholds]
+equality = { warn = 0.55 }
+
+[coverage]
+target = "stage-goal"
+blocking = false

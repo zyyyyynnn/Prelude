@@ -66,10 +66,10 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
 
         String encryptedApiKey = user.getLlmApiKeyEncrypted();
         if (request.apiKey() != null && !request.apiKey().isBlank()) {
-            encryptedApiKey = isDevFixtureEnabled()
-                ? devFixtureService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
-                : "__CLEAR__".equals(request.apiKey())
-                    ? null
+            encryptedApiKey = "__CLEAR__".equals(request.apiKey())
+                ? null
+                : isDevFixtureEnabled()
+                    ? devFixtureService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
                     : aesGcmEncryptor.encrypt(request.apiKey());
         } else if (scopeChanged) {
             // 未提供新 Key 且 provider/baseUrl 已变：清空旧 Key，避免串用到新接入方式。
