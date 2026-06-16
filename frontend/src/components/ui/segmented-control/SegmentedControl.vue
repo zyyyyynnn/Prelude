@@ -25,7 +25,7 @@ const activeIndex = computed(() => {
     <button
       v-for="item in items"
       :key="item"
-      class="segmented-control__item"
+      class="segmented-control__item text-sm"
       :class="{ 'is-active': item === modelValue }"
       @click="emit('update:modelValue', item)"
     >
@@ -38,24 +38,24 @@ const activeIndex = computed(() => {
 .segmented-control {
   position: relative;
   display: flex;
-  height: 32px;
-  min-width: 160px;
-  background-color: color-mix(in srgb, var(--color-border) 30%, var(--color-surface));
-  border-radius: var(--radius-lg);
-  padding: 2px;
+  height: var(--ui-height-base);
+  min-width: calc(var(--ui-height-base) * 4.75);
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border-warm);
+  border-radius: var(--radius-md);
+  padding: calc(var(--spacing-xs) / 2);
 }
 
 .segmented-control__pill {
   position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 2px;
-  /* Calculate width based on number of items */
-  width: calc((100% - 4px) / v-bind('items.length'));
+  top: calc(var(--spacing-xs) / 2);
+  bottom: calc(var(--spacing-xs) / 2);
+  left: calc(var(--spacing-xs) / 2);
+  width: calc((100% - var(--spacing-xs)) / v-bind('items.length'));
   background-color: var(--color-surface);
-  border-radius: calc(var(--radius-lg) - 2px);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
-  transition: transform 300ms ease-in-out;
+  border-radius: calc(var(--radius-md) - calc(var(--spacing-xs) / 2));
+  box-shadow: var(--shadow-ring);
+  transition: transform 0.3s ease-in-out;
   z-index: 1;
 }
 
@@ -68,11 +68,10 @@ const activeIndex = computed(() => {
   padding: 0 var(--spacing-md);
   min-width: 0;
   white-space: nowrap;
-  font-size: 13px;
   font-weight: 500;
   color: var(--color-text-secondary);
-  border-radius: calc(var(--radius-lg) - 2px);
-  transition: color 300ms ease-in-out;
+  border-radius: calc(var(--radius-md) - calc(var(--spacing-xs) / 2));
+  transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out;
   z-index: 2;
   cursor: pointer;
 }
@@ -82,7 +81,7 @@ const activeIndex = computed(() => {
 }
 
 .segmented-control__item:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 calc(var(--spacing-xs) / 2) var(--color-brand);
 }
 </style>

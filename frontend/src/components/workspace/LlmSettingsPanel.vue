@@ -46,6 +46,7 @@ const {
 
 const showApiKey = ref(false)
 const modelComboboxOpen = ref(false)
+const modelCandidateIndex = ref(-1)
 
 const { handleSubmit, setValues } = useForm({
   validationSchema: toTypedSchema(llmSettingsSchema),
@@ -61,6 +62,62 @@ const canShowModelCombobox = computed(() => isOpenAiCompatible.value && modelOpt
 function selectModelCandidate(model: string) {
   selectedModel.value = model
   modelComboboxOpen.value = false
+  modelCandidateIndex.value = -1
+}
+
+function moveModelCandidate(delta: number) {
+  if (!canShowModelCombobox.value) {
+    return
+  }
+  modelComboboxOpen.value = true
+  const count = modelOptions.value.length
+  if (count === 0) {
+    return
+  }
+  if (modelCandidateIndex.value < 0) {
+    modelCandidateIndex.value = delta > 0 ? 0 : count - 1
+    return
+  }
+  modelCandidateIndex.value = (modelCandidateIndex.value + delta + count) % count
+}
+
+function selectHighlightedModelCandidate() {
+  if (!modelComboboxOpen.value || !canShowModelCombobox.value) {
+    return
+  }
+  const model = modelOptions.value[modelCandidateIndex.value]
+  if (model) {
+    selectModelCandidate(model)
+  }
+}
+
+function handleModelCandidateKeydown(event: KeyboardEvent) {
+  if (event.isComposing) {
+    return
+  }
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    event.stopPropagation()
+    moveModelCandidate(1)
+    return
+  }
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    event.stopPropagation()
+    moveModelCandidate(-1)
+    return
+  }
+  if (event.key === 'Enter' && modelComboboxOpen.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    selectHighlightedModelCandidate()
+    return
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    modelComboboxOpen.value = false
+  }
 }
 
 watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth], () => {
@@ -77,7 +134,12 @@ watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens,
 watch(canShowModelCombobox, (canShow) => {
   if (!canShow) {
     modelComboboxOpen.value = false
+    modelCandidateIndex.value = -1
   }
+})
+
+watch(modelOptions, () => {
+  modelCandidateIndex.value = -1
 })
 
 const onSubmit = handleSubmit(async () => {
@@ -158,10 +220,10 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                       <ComboboxInput
                         :model-value="selectedModel"
                         autocomplete="off"
-                        placeholder="填写或选择模型 ID"
+                        placeholder="请选择模型"
                         @update:model-value="(value) => { selectedModel = String(value) }"
                         @blur="componentField.onBlur"
-                        @keydown.esc.stop.prevent="modelComboboxOpen = false"
+                        @keydown.capture="handleModelCandidateKeydown"
                       />
                     </FormControl>
                   </div>
@@ -175,17 +237,19 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   @escape-key-down.prevent="modelComboboxOpen = false"
                 >
                   <ComboboxItem
-                    v-for="model in modelOptions"
+                    v-for="(model, index) in modelOptions"
                     :key="model"
                     :value="model"
                     :text-value="model"
+                    :class="{ 'bg-accent text-accent-foreground': modelCandidateIndex === index }"
                     data-byok-model-combobox-item
+                    @pointermove="modelCandidateIndex = index"
                   >
                     {{ model }}
                   </ComboboxItem>
                 </ComboboxContent>
               </Combobox>
-              <p v-if="modelDiscoveryHint" class="helper-text">{{ modelDiscoveryHint }}</p>
+              <p v-if="modelDiscoveryHint" class="helper-text text-sm">{{ modelDiscoveryHint }}</p>
             </template>
             <FormMessage />
           </FormItem>
@@ -213,10 +277,10 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               :loading="discovering"
               @click="discoverModels"
             >
-              自动检测模型
+              检测模型
             </Button>
           </div>
-          <p class="helper-text">填写接口根地址，通常以 /v1 结尾；不要填写 /chat/completions。</p>
+          <p class="helper-text text-sm">填写接口根地址，通常以 /v1 结尾；不要填写 /chat/completions。</p>
           <FormMessage />
         </FormItem>
       </FormField>
@@ -257,7 +321,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               </button>
             </div>
           </div>
-          <p class="helper-text api-key-status">{{ apiKeyStatusLabel }}</p>
+          <p class="helper-text api-key-status text-sm">{{ apiKeyStatusLabel }}</p>
           <FormMessage />
         </FormItem>
       </FormField>
@@ -305,7 +369,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   <SelectItem value="xhigh">极高 (Extreme)</SelectItem>
                 </SelectContent>
               </Select>
-              <p class="helper-text">部分模型可能不支持，测试失败时请改回默认。</p>
+              <p class="helper-text text-sm">部分模型可能不支持，测试失败时请改回默认。</p>
               <FormMessage />
             </FormItem>
           </FormField>
@@ -350,7 +414,6 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 }
 .helper-text {
   margin-top: var(--spacing-xs);
-  font-size: 13px;
   color: var(--color-text-secondary);
 }
 .api-key-status {
