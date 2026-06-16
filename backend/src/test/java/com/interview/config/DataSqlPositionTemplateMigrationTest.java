@@ -37,7 +37,7 @@ class DataSqlPositionTemplateMigrationTest {
         assertDefaultPositionCleanup(sql, "前端工程师", FRONTEND_BAD_NAME_HEX);
         assertDefaultPositionCleanup(sql, "算法工程师", ALGORITHM_BAD_NAME_HEX);
 
-        assertThat(countOccurrences(sql, "UPDATE `interview_session` s")).isEqualTo(3);
+        assertThat(countOccurrences(sql, "JOIN `position_template` bad_position ON s.`position_id` = bad_position.`id`")).isEqualTo(3);
         assertThat(countOccurrences(sql, "SET s.`position_id` = default_position.`id`")).isEqualTo(3);
         assertThat(countOccurrences(sql, "s.`target_position` = default_position.`name`")).isEqualTo(3);
         assertThat(countOccurrences(sql, "DELETE bad_position")).isEqualTo(3);
@@ -56,15 +56,32 @@ class DataSqlPositionTemplateMigrationTest {
         assertThat(sql).containsSubsequence(
             "-- 3. demo 用户/默认演示会话/消息/评分/报告 seed",
             "WHERE u.`username` = 'demo'",
-            "DELETE s",
-            "FROM `interview_session` s",
-            "AND s.`created_at` IN",
-            "AND s.`target_position` IN",
+            "UPDATE `interview_session` s",
+            "s.`created_at` = '2026-04-23 14:00:00'",
             "INSERT INTO `interview_session`",
             "INSERT INTO `interview_message`",
-            "INSERT INTO `score_history`"
+            "INSERT INTO `interview_stage`",
+            "INSERT INTO `score_history`",
+            "INSERT INTO `user_weakness`"
         );
+        assertThat(sql)
+            .doesNotContain("DELETE s\nFROM `interview_session` s")
+            .doesNotContain("DELETE FROM `interview_session`");
         assertThat(countOccurrences(sql, "INSERT INTO `interview_session`")).isEqualTo(4);
+        assertThat(countOccurrences(sql, "UPDATE `interview_session` s\nJOIN `user` u ON s.`user_id` = u.`id` AND u.`username` = 'demo'")).isEqualTo(4);
+        assertThat(sql)
+            .contains("s.`status` = 'ongoing'")
+            .contains("s.`summary_report` = NULL")
+            .contains("'deep_dive', 18, NULL")
+            .contains("JOIN `interview_session` s ON uw.`session_id` = s.`id`")
+            .contains("JOIN `interview_session` s ON st.`session_id` = s.`id`")
+            .contains("JOIN `interview_session` s ON m.`session_id` = s.`id`")
+            .contains("分布式一致性")
+            .contains("前端边界治理")
+            .contains("实验复盘")
+            .contains("## 分阶段表现")
+            .contains("## 逐题反馈")
+            .contains("## 下一步学习计划");
         assertThat(countOccurrences(sql, "UNION ALL SELECT")).isGreaterThanOrEqualTo(24);
         assertThat(sql)
             .doesNotContain("DELETE FROM `user`")

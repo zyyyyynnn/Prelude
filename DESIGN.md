@@ -81,12 +81,13 @@
 | Token | 值 | 用途 |
 |-------|-----|------|
 | `--ui-height-base` | 34px | **全局统一交互高度**。适用于 Button/Input/Select/侧边栏项目等。 |
+| `--ui-height-compact` | 30px | **紧凑交互高度**。仅用于 send composer toolbar、compact dropdown、compact icon button。 |
 | `--ui-height-md` | 34px | 侧边栏等价交互高度（当前等于 base，保留语义区分） |
 | `--ui-height-sm` | 34px | 紧凑场景等价交互高度（当前等于 base，保留语义区分） |
 | `--header-height` | 72px | 工作区页头 |
 | `--composer-height` | 260px | 底部输入框占位高度 |
 
-> **shadcn 按钮尺寸变体**（`buttonVariants`）全部锚定 `h-[34px]`：`default`、`sm`、`icon`、`icon-sm` 均为 34px。`lg` 为 `h-11`(44px)，`icon-lg` 为 `size-11`(44px)，仅用于特殊大号场景。
+> **shadcn 按钮尺寸变体**（`buttonVariants`）默认锚定 `var(--ui-height-base)`：`default`、`sm`、`icon`、`icon-sm`。`compact`、`icon-compact` 锚定 `var(--ui-height-compact)`，只用于 send composer 等紧凑工具栏。`lg` / `icon-lg` 仅用于特殊大号场景。
 
 ### 2.5 圆角 Token
 
@@ -126,8 +127,8 @@
 
 ### 3.1 字体族
 
-- **Serif (Lora)**：`var(--font-serif)`，仅用于页面标题、卡片标题、品牌主操作按钮及特定 Badge。
-- **Sans (Inter)**：`var(--font-sans)`，全局基准，用于正文、表单输入、交互菜单。
+- **Serif (Lora)**：`var(--font-serif)`，UI 控件默认字体。用于按钮、菜单、标签、表单、下拉、Tooltip、Sidebar、Header、设置页文字及标题。
+- **Sans (Inter)**：`var(--font-sans)`，仅用于对话气泡正文、面试报告正文等长阅读内容。
 - **Mono (JetBrains)**：`var(--font-mono)`，代码及接口片段。
 
 ### 3.2 字号阶梯 (Scale)
@@ -142,7 +143,7 @@
 | `text-2xl` | 24px | 侧边栏品牌名、特定大数字或强调标题。 |
 | `text-3xl` | 32px | 页面 Hero Title（可根据屏幕使用 `clamp`）。 |
 
-**全局字体重置**：`index.css` 的 `body, button, input, select, textarea` 统一为 `font-family: var(--font-sans)`。品牌主操作按钮（如"开始新面试"）可使用 `!font-serif` 强制覆盖以强化品牌调性。小标签 `<Badge>` 组件统一采用品牌衬线，通过字距（tracking-wider）保持精致呼吸感。
+**全局字体重置**：`index.css` 的 `body, button, input, select, textarea` 可保留基础字体映射，但所有 UI 控件、按钮、菜单、标签、表单、下拉、Tooltip、Sidebar、Header、设置页文字必须在组件层使用 `var(--font-serif)` 或 `font-serif`。仅对话气泡正文、面试报告正文等长阅读区域允许使用 `var(--font-sans)`。
 
 ---
 
@@ -196,7 +197,8 @@
   - Compact Trigger (`30px`) -> Compact Item (`30px`)
   - Default Trigger (`34px`) -> Default Item (`34px`)
 - Menu Items 悬浮背景色使用 `var(--color-surface-hover)`，并且必须加上 `rounded-md`，绝对禁止贴边直角出现。
-- 原生 `title` 属性全局禁用，必须使用 `z-[110]` 的 shadcn `<Tooltip>` 替代。
+- Tooltip 使用顶层 `z-[110]`，视觉必须与低浮层一致：`bg-surface`、`border-transparent`、`shadow-whisper`、`rounded-md`、token padding、`font-serif`。
+- 原生 `title` 属性全局禁用，必须使用 shadcn/reka `<Tooltip>` 替代。所有 truncate / ellipsis 的动态文本必须提供 Tooltip，Tooltip 文案展示完整值。
 
 ---
 

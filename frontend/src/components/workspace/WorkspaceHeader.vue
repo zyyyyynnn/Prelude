@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import StageBar from './StageBar.vue'
 import type { InterviewStageName } from '../../api/contracts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { TooltipText } from '@/components/ui/tooltip'
 import SegmentedControl from '../ui/segmented-control/SegmentedControl.vue'
 
 const props = defineProps<{
   activeSessionId?: number | null
   targetPosition?: string
   currentStage?: InterviewStageName
+  sessionStatus?: string
   sending: boolean
   finishing: boolean
   hasReport: boolean
@@ -22,14 +25,31 @@ const emit = defineEmits<{
   (e: 'toggle-report', show: boolean): void
   (e: 'export-pdf'): void
 }>()
+
+const stageLabels: Record<InterviewStageName, string> = {
+  warmup: '破冰',
+  technical: '技术问答',
+  deep_dive: '深挖追问',
+  closing: '收尾',
+}
+
+const statusLabel = computed(() => {
+  if (props.sessionStatus === 'generating') return '报告生成中'
+  if (props.sessionStatus === 'finished' || props.isFinished) return '已完成'
+  return stageLabels[props.currentStage || 'warmup']
+})
 </script>
 
 <template>
   <header class="workspace-header">
     <div class="workspace-header__main">
       <div class="workspace-header__title-area">
-        <h2 class="workspace-header__title">{{ targetPosition || '新面试会话' }}</h2>
-        <Badge v-if="activeSessionId" variant="secondary">#{{ activeSessionId }}</Badge>
+        <TooltipText
+          as="h2"
+          class="workspace-header__title"
+          :text="targetPosition || '新面试会话'"
+        />
+        <Badge v-if="activeSessionId" variant="secondary">{{ statusLabel }}</Badge>
       </div>
       
       <div class="workspace-header__right">

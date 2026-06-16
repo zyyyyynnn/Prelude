@@ -174,7 +174,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai-compatible'
 );
 
--- 3. demo 用户/默认演示会话/消息/评分/报告 seed：仅重建 demo 用户的固定演示数据。
+-- 3. demo 用户/默认演示会话/消息/评分/报告 seed：仅维护 demo 用户的固定演示数据。
 INSERT INTO `user` (`username`, `password`, `email`)
 SELECT 'demo',
        '$2a$10$cwL4a7RrPcB895DFoO2MyuhK6QGDWhU0fScSmKj/LuBDtIzmL2zL2',
@@ -200,6 +200,134 @@ SELECT u.`id`, '推荐算法工程师.pdf', '["推荐系统","机器学习","特
 FROM `user` u
 WHERE u.`username` = 'demo'
   AND NOT EXISTS (SELECT 1 FROM `resume` r WHERE r.`user_id` = u.`id` AND r.`file_name` = '推荐算法工程师.pdf');
+
+UPDATE `interview_session` s
+JOIN `user` u ON s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = 'Java高级架构.pdf'
+JOIN `position_template` p ON p.`name` = 'Java 后端工程师'
+SET s.`resume_id` = r.`id`,
+    s.`position_id` = p.`id`,
+    s.`target_position` = p.`name`,
+    s.`llm_provider` = 'deepseek',
+    s.`llm_model` = 'deepseek-v4-pro',
+    s.`status` = 'ongoing',
+    s.`summary` = '候选人正在进行深挖阶段，已完成慢请求排查、幂等补偿和状态一致性讨论。',
+    s.`summary_report` = NULL
+WHERE s.`target_position` = 'Java 后端工程师'
+  AND s.`created_at` = '2026-04-23 14:00:00';
+
+UPDATE `interview_session` s
+JOIN `user` u ON s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = 'Java高级架构.pdf'
+JOIN `position_template` p ON p.`name` = 'Java 后端工程师'
+SET s.`resume_id` = r.`id`,
+    s.`position_id` = p.`id`,
+    s.`target_position` = p.`name`,
+    s.`llm_provider` = 'deepseek',
+    s.`llm_model` = 'deepseek-v4-pro',
+    s.`status` = 'finished',
+    s.`summary` = '候选人对高并发秒杀、消息最终一致性和降级设计有较完整的回答。',
+    s.`summary_report` = '# 面试评估报告\n\n## 面试概览\n- 目标岗位：Java 后端工程师\n- 会话状态：已完成\n- 结论：候选人在高并发秒杀、消息最终一致性和架构降级方面表达稳定，具备进入下一轮架构专项面试的基础。\n\n## 维度评分\n- 技术能力：8/10\n- 表达清晰度：9/10\n- 逻辑思维：8/10\n\n## 分阶段表现\n- 破冰/项目背景：能快速说明 Redis Lua 预扣减与 MQ 异步落库链路。\n- 技术问答：能解释 Hash Tag、本地事务状态、消息回查和补偿库设计。\n- 深挖追问：能识别 Full GC 锁失效、库存分片和分布式事务吞吐风险。\n- 收尾总结：能优先选择查询链路静态化与边缘缓存，抓住核心路径瘦身。\n\n## 逐题反馈\n1. 秒杀原子性：回答完整，能把缓存原子性和异步削峰联系起来。\n2. MQ 超时收场：状态回查、补偿和最终一致性表达清楚。\n3. 分布式锁失效：能给出数据库乐观扣减作为最终兜底。\n4. 库存分片取舍：能明确说明一致性和吞吐的工程权衡。\n\n## 优势总结\n- 具备高并发链路拆解能力，能把缓存、消息、数据库约束串成闭环。\n- 对核心库保护、补偿库和 Canal 对账等工程取舍有清晰认识。\n- 表达结构完整，能主动说明技术方案的边界和兜底。\n\n## 薄弱点列表\n- 容量指标：缺少 QPS、库存分片规模和延迟指标的量化说明。\n- 降级治理：对业务损失、用户体验和补偿策略的风险边界还可更细。\n\n## 风险判断\n候选人整体稳定，主要风险是架构方案偏经验表达，生产指标和压测证据仍需进一步核实。\n\n## 改进建议\n1. 补充大促链路的容量估算、压测口径和关键监控阈值。\n2. 对库存分片、对账延迟和补偿策略给出可量化边界。\n3. 在架构降级方案中补充用户体验和业务风险控制。\n\n## 下一步学习计划\n- 梳理 Redis Cluster、RocketMQ 事务消息和数据库乐观扣减的完整故障矩阵。\n- 准备一个真实压测案例，明确峰值 QPS、P99 延迟、回滚策略和监控指标。'
+WHERE s.`target_position` = 'Java 后端工程师'
+  AND s.`created_at` = '2026-04-22 10:00:00';
+
+UPDATE `interview_session` s
+JOIN `user` u ON s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = '大前端资深开发.pdf'
+JOIN `position_template` p ON p.`name` = '前端工程师'
+SET s.`resume_id` = r.`id`,
+    s.`position_id` = p.`id`,
+    s.`target_position` = p.`name`,
+    s.`llm_provider` = 'deepseek',
+    s.`llm_model` = 'deepseek-v4-pro',
+    s.`status` = 'finished',
+    s.`summary` = '候选人具备前端工程化与性能排查意识，但复杂状态边界还可更清楚。',
+    s.`summary_report` = '# 面试评估报告\n\n## 面试概览\n- 目标岗位：前端工程师\n- 会话状态：已完成\n- 结论：候选人具备较完整的前端工程化和页面性能意识，适合继续进入专项评估。\n\n## 维度评分\n- 技术能力：7/10\n- 表达清晰度：7/10\n- 逻辑思维：7/10\n\n## 分阶段表现\n- 破冰/项目背景：能说明微前端隔离、Pinia 状态回收和组件卸载边界。\n- 技术问答：能从 DOM 替换、可见区计算和高度缓存解释虚拟列表白屏。\n- 深挖追问：能补充 ResizeObserver 批处理、弱网音频降级和平台 API 差异。\n- 收尾总结：能提出 Adapter 层隔离平台能力，迁移思路正确。\n\n## 逐题反馈\n1. 微前端隔离：方向正确，但弹窗、主题变量和卸载清理还可更充分。\n2. 状态泄漏：能说明 reset 和生命周期绑定，隔离边界仍需更细。\n3. 虚拟列表性能：能覆盖渲染与计算两侧，回答有工程细节。\n4. 平台迁移：平台差异举例清楚，抽象层设计合理。\n\n## 优势总结\n- 能将组件状态、渲染性能和弱网体验关联到真实使用场景。\n- 对微前端、虚拟列表、音视频降级和跨端适配有基本工程判断。\n- 回答结构清晰，能够给出具体优化手段。\n\n## 薄弱点列表\n- 状态边界：复杂组件状态归属和复用边界需要更清晰的拆分原则。\n- 性能量化：缺少 FPS、长任务、资源加载和渲染耗时等指标支撑。\n\n## 风险判断\n候选人有工程经验，但复杂系统治理的边界表达仍偏概括，需要通过专项追问确认深度。\n\n## 改进建议\n1. 补强浏览器性能指标、资源加载和渲染链路的量化说明。\n2. 对微前端弹窗、主题变量、沙箱卸载和状态隔离给出更完整边界。\n3. 增加移动端、键盘焦点和无障碍状态的说明。\n\n## 下一步学习计划\n- 复盘一次虚拟列表性能优化，记录指标、瓶颈、优化手段和结果。\n- 总结微前端隔离清单，覆盖 JS 沙箱、样式隔离、状态回收和跨应用通信。'
+WHERE s.`target_position` = '前端工程师'
+  AND s.`created_at` = '2026-04-20 16:10:00';
+
+UPDATE `interview_session` s
+JOIN `user` u ON s.`user_id` = u.`id` AND u.`username` = 'demo'
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = '推荐算法工程师.pdf'
+JOIN `position_template` p ON p.`name` = '算法工程师'
+SET s.`resume_id` = r.`id`,
+    s.`position_id` = p.`id`,
+    s.`target_position` = p.`name`,
+    s.`llm_provider` = 'deepseek',
+    s.`llm_model` = 'deepseek-v4-pro',
+    s.`status` = 'finished',
+    s.`summary` = '候选人能覆盖推荐系统主链路，但实验细节与线上诊断仍需加强。',
+    s.`summary_report` = '# 面试评估报告\n\n## 面试概览\n- 目标岗位：算法工程师\n- 会话状态：已完成\n- 结论：候选人能按数据、模型和评估链路组织回答，但实验复现和误差分析仍需加强。\n\n## 维度评分\n- 技术能力：6/10\n- 表达清晰度：7/10\n- 逻辑思维：6/10\n\n## 分阶段表现\n- 破冰/项目背景：能说明双塔召回的交互不足和粗排补强思路。\n- 技术问答：能覆盖 ESSM、多任务共享 Embedding 和 LoRA 通信瓶颈。\n- 深挖追问：能说出 Reward Hacking 约束和线上特征漂移排查方向。\n- 收尾总结：能意识到 AUC 与线上收益目标不一致。\n\n## 逐题反馈\n1. 双塔召回：思路可行，但缺少特征、延迟和召回规模的量化说明。\n2. 多目标排序：能说出 ESSM 和 MTL 思路，但缺少损失函数和样本构造。\n3. LoRA 通信：覆盖术语，但真实多机经验和性能指标说明不足。\n4. 指标判断：能意识到离线和线上目标差异，但实验归因仍需加强。\n\n## 优势总结\n- 能从样本、特征、基线方案和指标口径拆解推荐问题。\n- 对离线评估和线上表现差异有基本排查路径。\n- 回答结构清楚，能说明数据分布变化带来的影响。\n\n## 薄弱点列表\n- 实验复盘：缺少版本、参数、样本切分和失败样本分析。\n- 指标解释：对 AUC、CTR、留存和商业指标之间的权衡不够量化。\n\n## 风险判断\n候选人具备算法岗继续评估基础，但生产实验和线上诊断经验需要进一步验证。\n\n## 改进建议\n1. 补强时间复杂度、空间复杂度和边界规模的量化表达。\n2. 在验证集划分、误差分析和指标选择上给出更具体示例。\n3. 对实验版本、参数记录和失败样本复盘说明更严谨。\n\n## 下一步学习计划\n- 整理一个推荐模型从离线训练到线上 A/B 的完整实验记录模板。\n- 复盘一次线上指标下跌案例，补齐特征覆盖率、样本分布和回滚决策依据。'
+WHERE s.`target_position` = '算法工程师'
+  AND s.`created_at` = '2026-04-18 15:30:00';
+
+INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
+SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'ongoing',
+       '候选人正在进行深挖阶段，已完成慢请求排查、幂等补偿和状态一致性讨论。',
+       NULL,
+       '2026-04-23 14:00:00'
+FROM `user` u
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = 'Java高级架构.pdf'
+JOIN `position_template` p ON p.`name` = 'Java 后端工程师'
+WHERE u.`username` = 'demo'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `interview_session` s
+      WHERE s.`user_id` = u.`id`
+        AND s.`target_position` = 'Java 后端工程师'
+        AND s.`created_at` = '2026-04-23 14:00:00'
+  );
+
+INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
+SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'finished',
+       '候选人对高并发秒杀、消息最终一致性和降级设计有较完整的回答。',
+       '# 面试评估报告\n\n## 面试概览\n- 目标岗位：Java 后端工程师\n- 会话状态：已完成\n- 结论：候选人在高并发秒杀、消息最终一致性和架构降级方面表达稳定，具备进入下一轮架构专项面试的基础。\n\n## 维度评分\n- 技术能力：8/10\n- 表达清晰度：9/10\n- 逻辑思维：8/10\n\n## 分阶段表现\n- 破冰/项目背景：能快速说明 Redis Lua 预扣减与 MQ 异步落库链路。\n- 技术问答：能解释 Hash Tag、本地事务状态、消息回查和补偿库设计。\n- 深挖追问：能识别 Full GC 锁失效、库存分片和分布式事务吞吐风险。\n- 收尾总结：能优先选择查询链路静态化与边缘缓存，抓住核心路径瘦身。\n\n## 逐题反馈\n1. 秒杀原子性：回答完整，能把缓存原子性和异步削峰联系起来。\n2. MQ 超时收场：状态回查、补偿和最终一致性表达清楚。\n3. 分布式锁失效：能给出数据库乐观扣减作为最终兜底。\n4. 库存分片取舍：能明确说明一致性和吞吐的工程权衡。\n\n## 优势总结\n- 具备高并发链路拆解能力，能把缓存、消息、数据库约束串成闭环。\n- 对核心库保护、补偿库和 Canal 对账等工程取舍有清晰认识。\n- 表达结构完整，能主动说明技术方案的边界和兜底。\n\n## 薄弱点列表\n- 容量指标：缺少 QPS、库存分片规模和延迟指标的量化说明。\n- 降级治理：对业务损失、用户体验和补偿策略的风险边界还可更细。\n\n## 风险判断\n候选人整体稳定，主要风险是架构方案偏经验表达，生产指标和压测证据仍需进一步核实。\n\n## 改进建议\n1. 补充大促链路的容量估算、压测口径和关键监控阈值。\n2. 对库存分片、对账延迟和补偿策略给出可量化边界。\n3. 在架构降级方案中补充用户体验和业务风险控制。\n\n## 下一步学习计划\n- 梳理 Redis Cluster、RocketMQ 事务消息和数据库乐观扣减的完整故障矩阵。\n- 准备一个真实压测案例，明确峰值 QPS、P99 延迟、回滚策略和监控指标。',
+       '2026-04-22 10:00:00'
+FROM `user` u
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = 'Java高级架构.pdf'
+JOIN `position_template` p ON p.`name` = 'Java 后端工程师'
+WHERE u.`username` = 'demo'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `interview_session` s
+      WHERE s.`user_id` = u.`id`
+        AND s.`target_position` = 'Java 后端工程师'
+        AND s.`created_at` = '2026-04-22 10:00:00'
+  );
+
+INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
+SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'finished',
+       '候选人具备前端工程化与性能排查意识，但复杂状态边界还可更清楚。',
+       '# 面试评估报告\n\n## 面试概览\n- 目标岗位：前端工程师\n- 会话状态：已完成\n- 结论：候选人具备较完整的前端工程化和页面性能意识，适合继续进入专项评估。\n\n## 维度评分\n- 技术能力：7/10\n- 表达清晰度：7/10\n- 逻辑思维：7/10\n\n## 分阶段表现\n- 破冰/项目背景：能说明微前端隔离、Pinia 状态回收和组件卸载边界。\n- 技术问答：能从 DOM 替换、可见区计算和高度缓存解释虚拟列表白屏。\n- 深挖追问：能补充 ResizeObserver 批处理、弱网音频降级和平台 API 差异。\n- 收尾总结：能提出 Adapter 层隔离平台能力，迁移思路正确。\n\n## 逐题反馈\n1. 微前端隔离：方向正确，但弹窗、主题变量和卸载清理还可更充分。\n2. 状态泄漏：能说明 reset 和生命周期绑定，隔离边界仍需更细。\n3. 虚拟列表性能：能覆盖渲染与计算两侧，回答有工程细节。\n4. 平台迁移：平台差异举例清楚，抽象层设计合理。\n\n## 优势总结\n- 能将组件状态、渲染性能和弱网体验关联到真实使用场景。\n- 对微前端、虚拟列表、音视频降级和跨端适配有基本工程判断。\n- 回答结构清晰，能够给出具体优化手段。\n\n## 薄弱点列表\n- 状态边界：复杂组件状态归属和复用边界需要更清晰的拆分原则。\n- 性能量化：缺少 FPS、长任务、资源加载和渲染耗时等指标支撑。\n\n## 风险判断\n候选人有工程经验，但复杂系统治理的边界表达仍偏概括，需要通过专项追问确认深度。\n\n## 改进建议\n1. 补强浏览器性能指标、资源加载和渲染链路的量化说明。\n2. 对微前端弹窗、主题变量、沙箱卸载和状态隔离给出更完整边界。\n3. 增加移动端、键盘焦点和无障碍状态的说明。\n\n## 下一步学习计划\n- 复盘一次虚拟列表性能优化，记录指标、瓶颈、优化手段和结果。\n- 总结微前端隔离清单，覆盖 JS 沙箱、样式隔离、状态回收和跨应用通信。',
+       '2026-04-20 16:10:00'
+FROM `user` u
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = '大前端资深开发.pdf'
+JOIN `position_template` p ON p.`name` = '前端工程师'
+WHERE u.`username` = 'demo'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `interview_session` s
+      WHERE s.`user_id` = u.`id`
+        AND s.`target_position` = '前端工程师'
+        AND s.`created_at` = '2026-04-20 16:10:00'
+  );
+
+INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
+SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'finished',
+       '候选人能覆盖推荐系统主链路，但实验细节与线上诊断仍需加强。',
+       '# 面试评估报告\n\n## 面试概览\n- 目标岗位：算法工程师\n- 会话状态：已完成\n- 结论：候选人能按数据、模型和评估链路组织回答，但实验复现和误差分析仍需加强。\n\n## 维度评分\n- 技术能力：6/10\n- 表达清晰度：7/10\n- 逻辑思维：6/10\n\n## 分阶段表现\n- 破冰/项目背景：能说明双塔召回的交互不足和粗排补强思路。\n- 技术问答：能覆盖 ESSM、多任务共享 Embedding 和 LoRA 通信瓶颈。\n- 深挖追问：能说出 Reward Hacking 约束和线上特征漂移排查方向。\n- 收尾总结：能意识到 AUC 与线上收益目标不一致。\n\n## 逐题反馈\n1. 双塔召回：思路可行，但缺少特征、延迟和召回规模的量化说明。\n2. 多目标排序：能说出 ESSM 和 MTL 思路，但缺少损失函数和样本构造。\n3. LoRA 通信：覆盖术语，但真实多机经验和性能指标说明不足。\n4. 指标判断：能意识到离线和线上目标差异，但实验归因仍需加强。\n\n## 优势总结\n- 能从样本、特征、基线方案和指标口径拆解推荐问题。\n- 对离线评估和线上表现差异有基本排查路径。\n- 回答结构清楚，能说明数据分布变化带来的影响。\n\n## 薄弱点列表\n- 实验复盘：缺少版本、参数、样本切分和失败样本分析。\n- 指标解释：对 AUC、CTR、留存和商业指标之间的权衡不够量化。\n\n## 风险判断\n候选人具备算法岗继续评估基础，但生产实验和线上诊断经验需要进一步验证。\n\n## 改进建议\n1. 补强时间复杂度、空间复杂度和边界规模的量化表达。\n2. 在验证集划分、误差分析和指标选择上给出更具体示例。\n3. 对实验版本、参数记录和失败样本复盘说明更严谨。\n\n## 下一步学习计划\n- 整理一个推荐模型从离线训练到线上 A/B 的完整实验记录模板。\n- 复盘一次线上指标下跌案例，补齐特征覆盖率、样本分布和回滚决策依据。',
+       '2026-04-18 15:30:00'
+FROM `user` u
+JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = '推荐算法工程师.pdf'
+JOIN `position_template` p ON p.`name` = '算法工程师'
+WHERE u.`username` = 'demo'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `interview_session` s
+      WHERE s.`user_id` = u.`id`
+        AND s.`target_position` = '算法工程师'
+        AND s.`created_at` = '2026-04-18 15:30:00'
+  );
 
 DELETE uw
 FROM `user_weakness` uw
@@ -232,53 +360,6 @@ JOIN `user` u ON s.`user_id` = u.`id`
 WHERE u.`username` = 'demo'
   AND s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')
   AND s.`target_position` IN ('Java 后端工程师', '前端工程师', '算法工程师');
-
-DELETE s
-FROM `interview_session` s
-JOIN `user` u ON s.`user_id` = u.`id`
-WHERE u.`username` = 'demo'
-  AND s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')
-  AND s.`target_position` IN ('Java 后端工程师', '前端工程师', '算法工程师');
-
-INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
-SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'finished',
-       '候选人能说明接口排查与幂等处理，但部分架构取舍仍偏概括。',
-       '# 面试评估报告\n\n## 面试概览\n- 目标岗位：Java 后端工程师\n- 结论：候选人能围绕后端链路说明排查与幂等设计，具备继续深入评估的基础。\n\n## 三维评分\n- 技术能力：7/10\n- 表达清晰度：6/10\n- 逻辑思维：7/10\n\n## 优势总结\n- 能够把慢请求排查拆解到接口耗时、SQL 执行计划和数据量分析\n- 能意识到报告任务需要状态落库、幂等键和通知补偿\n- 对 SSE 断连、广播失败等异步链路问题有基本兜底思路\n\n## 改进建议\n1. 补强事务边界、失败恢复和重试退避的具体设计\n2. 在性能排查中增加监控指标、日志字段和压测数据支撑\n3. 对数据库约束、状态流转和补偿任务的细节说明可以更严谨\n\n## 总结\n整体回答能覆盖核心链路，但工程细节仍偏概括，建议继续补强可观测性和异常场景表达。',
-       '2026-04-23 14:00:00'
-FROM `user` u
-JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = 'Java高级架构.pdf'
-JOIN `position_template` p ON p.`name` = 'Java 后端工程师'
-WHERE u.`username` = 'demo';
-
-INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
-SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'finished',
-       '候选人对高并发秒杀、消息最终一致性和降级设计有较完整的回答。',
-       '# 面试评估报告\n\n## 面试概览\n- 目标岗位：Java 后端工程师\n- 结论：候选人在高并发秒杀、消息最终一致性和架构降级方面表达稳定，具备进入下一轮架构专项面试的基础。\n\n## 三维评分\n- 技术能力：8/10\n- 表达清晰度：9/10\n- 逻辑思维：8/10\n\n## 优势总结\n- 能围绕 Redis Lua、RocketMQ 事务消息和数据库兜底说明秒杀主链路\n- 对 Redis Cluster、MQ 回查、补偿库和核心库保护有较清晰的工程判断\n- 能明确说明一致性与吞吐之间的取舍，表达结构完整\n\n## 改进建议\n1. 补充更多线上容量指标、压测口径和监控阈值\n2. 对库存分片、对账延迟和补偿策略给出更量化的边界\n3. 在架构降级方案中进一步说明用户体验与业务风险控制\n\n## 总结\n整体表现成熟，技术判断和表达都较稳定，适合继续进入更高强度的架构专项评估。',
-       '2026-04-22 10:00:00'
-FROM `user` u
-JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = 'Java高级架构.pdf'
-JOIN `position_template` p ON p.`name` = 'Java 后端工程师'
-WHERE u.`username` = 'demo';
-
-INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
-SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'finished',
-       '候选人具备前端工程化与性能排查意识，但复杂状态边界还可更清楚。',
-       '# 面试评估报告\n\n## 面试概览\n- 目标岗位：前端工程师\n- 结论：候选人具备较完整的前端工程化和页面性能意识，适合继续深入评估。\n\n## 三维评分\n- 技术能力：7/10\n- 表达清晰度：7/10\n- 逻辑思维：7/10\n\n## 优势总结\n- 能够围绕微前端隔离、状态回收和虚拟列表性能说明实现思路\n- 对渲染压力、可见区计算、弱网降级和平台适配有基本判断能力\n- 能将交互细节与真实使用体验关联起来\n\n## 改进建议\n1. 补强浏览器性能指标、资源加载和渲染链路的量化说明\n2. 在复杂组件状态归属和复用边界上给出更清晰的取舍\n3. 对移动端适配、键盘焦点和无障碍状态说明可以更完整\n\n## 总结\n整体表现稳定，具备继续进入前端专项面试的基础。',
-       '2026-04-20 16:10:00'
-FROM `user` u
-JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = '大前端资深开发.pdf'
-JOIN `position_template` p ON p.`name` = '前端工程师'
-WHERE u.`username` = 'demo';
-
-INSERT INTO `interview_session` (`user_id`, `resume_id`, `position_id`, `target_position`, `llm_provider`, `llm_model`, `status`, `summary`, `summary_report`, `created_at`)
-SELECT u.`id`, r.`id`, p.`id`, p.`name`, 'deepseek', 'deepseek-v4-pro', 'finished',
-       '候选人能覆盖推荐系统主链路，但实验细节与线上诊断仍需加强。',
-       '# 面试评估报告\n\n## 面试概览\n- 目标岗位：算法工程师\n- 结论：候选人能按数据、模型和评估链路组织回答，但实验复现和误差分析仍需加强。\n\n## 三维评分\n- 技术能力：6/10\n- 表达清晰度：7/10\n- 逻辑思维：6/10\n\n## 优势总结\n- 能够从样本、特征、基线方案和指标口径拆解问题\n- 对离线评估和线上表现差异有基本排查路径\n- 回答结构较清楚，能说明数据分布变化带来的影响\n\n## 改进建议\n1. 补强时间复杂度、空间复杂度和边界规模的量化表达\n2. 在验证集划分、误差分析和指标选择上给出更具体示例\n3. 对实验版本、参数记录和失败样本复盘说明可以更严谨\n\n## 总结\n整体具备算法岗继续评估的基础，但需要提高实验细节和表达稳定性。',
-       '2026-04-18 15:30:00'
-FROM `user` u
-JOIN `resume` r ON r.`user_id` = u.`id` AND r.`file_name` = '推荐算法工程师.pdf'
-JOIN `position_template` p ON p.`name` = '算法工程师'
-WHERE u.`username` = 'demo';
 
 INSERT INTO `interview_message` (`session_id`, `role`, `content`, `seq_num`, `score`, `hint`, `created_at`)
 SELECT s.`id`, seed.`role`, seed.`content`, seed.`seq_num`, seed.`score`, seed.`hint`, TIMESTAMPADD(MINUTE, seed.`seq_num`, s.`created_at`)
@@ -353,16 +434,56 @@ JOIN (
 ) seed ON seed.`target_position` = s.`target_position` AND seed.`session_created_at` = s.`created_at`
 WHERE u.`username` = 'demo';
 
+INSERT INTO `interview_stage` (`session_id`, `stage_name`, `started_at`, `ended_at`)
+SELECT s.`id`, stage.`stage_name`, TIMESTAMPADD(MINUTE, stage.`start_minute`, s.`created_at`),
+       CASE WHEN stage.`end_minute` IS NULL THEN NULL ELSE TIMESTAMPADD(MINUTE, stage.`end_minute`, s.`created_at`) END
+FROM `interview_session` s
+JOIN `user` u ON s.`user_id` = u.`id`
+JOIN (
+    SELECT 'Java 后端工程师' AS target_position, '2026-04-23 14:00:00' AS session_created_at, 'warmup' AS stage_name, 0 AS start_minute, 8 AS end_minute
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-23 14:00:00', 'technical', 8, 18
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-23 14:00:00', 'deep_dive', 18, NULL
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-22 10:00:00', 'warmup', 0, 8
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-22 10:00:00', 'technical', 8, 18
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-22 10:00:00', 'deep_dive', 18, 28
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-22 10:00:00', 'closing', 28, 34
+    UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', 'warmup', 0, 8
+    UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', 'technical', 8, 18
+    UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', 'deep_dive', 18, 28
+    UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', 'closing', 28, 34
+    UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', 'warmup', 0, 8
+    UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', 'technical', 8, 18
+    UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', 'deep_dive', 18, 28
+    UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', 'closing', 28, 34
+) stage ON stage.`target_position` = s.`target_position` AND stage.`session_created_at` = s.`created_at`
+WHERE u.`username` = 'demo';
+
 INSERT INTO `score_history` (`user_id`, `session_id`, `technical_score`, `expression_score`, `logic_score`, `created_at`)
 SELECT s.`user_id`, s.`id`, score.`technical_score`, score.`expression_score`, score.`logic_score`, TIMESTAMPADD(MINUTE, 35, s.`created_at`)
 FROM `interview_session` s
 JOIN `user` u ON s.`user_id` = u.`id`
 JOIN (
-    SELECT 'Java 后端工程师' AS target_position, '2026-04-23 14:00:00' AS session_created_at, 7 AS technical_score, 6 AS expression_score, 7 AS logic_score
-    UNION ALL SELECT 'Java 后端工程师', '2026-04-22 10:00:00', 8, 9, 8
+    SELECT 'Java 后端工程师' AS target_position, '2026-04-22 10:00:00' AS session_created_at, 8 AS technical_score, 9 AS expression_score, 8 AS logic_score
     UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', 7, 7, 7
     UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', 6, 7, 6
 ) score ON score.`target_position` = s.`target_position` AND score.`session_created_at` = s.`created_at`
+WHERE u.`username` = 'demo';
+
+INSERT INTO `user_weakness` (`user_id`, `session_id`, `category`, `description`, `created_at`)
+SELECT s.`user_id`, s.`id`, weakness.`category`, weakness.`description`, TIMESTAMPADD(MINUTE, 36, s.`created_at`)
+FROM `interview_session` s
+JOIN `user` u ON s.`user_id` = u.`id`
+JOIN (
+    SELECT 'Java 后端工程师' AS target_position, '2026-04-22 10:00:00' AS session_created_at, '性能量化' AS category, '秒杀方案具备主链路设计能力，但 QPS、P99 延迟、库存分片规模等量化指标不足。' AS description
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-22 10:00:00', '分布式一致性', '对 MQ 回查和补偿库表达清晰，但对补偿延迟、异常回滚和对账窗口的边界说明还可更细。'
+    UNION ALL SELECT 'Java 后端工程师', '2026-04-22 10:00:00', '架构降级', '能说明读链路降级，但业务损失、用户体验和补偿策略的风险控制仍需量化。'
+    UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', '前端边界治理', '微前端状态回收和样式隔离方向正确，但弹窗、主题变量和卸载清理边界仍需完整清单。'
+    UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', '性能量化', '虚拟列表优化有工程手段，但缺少 FPS、长任务、资源加载和渲染耗时等指标支撑。'
+    UNION ALL SELECT '前端工程师', '2026-04-20 16:10:00', '平台适配', '跨端迁移能提出 Adapter 层，但 WebRTC、iframe 和 Proxy 沙箱替代方案还需更具体。'
+    UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', '实验复盘', '回答覆盖推荐链路，但缺少实验版本、参数、样本切分和失败样本分析记录。'
+    UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', '指标解释', '能意识到离线 AUC 与线上收益差异，但缺少 CTR、留存、RPM 和显著性检验的量化取舍。'
+    UNION ALL SELECT '算法工程师', '2026-04-18 15:30:00', '工程稳定性', '线上点击率下跌排查方向正确，但回滚策略、监控阈值和样本归因仍不够落地。'
+) weakness ON weakness.`target_position` = s.`target_position` AND weakness.`session_created_at` = s.`created_at`
 WHERE u.`username` = 'demo';
 
 -- 4. 非破坏性迁移兜底。
