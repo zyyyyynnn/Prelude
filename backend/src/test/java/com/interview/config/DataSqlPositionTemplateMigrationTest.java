@@ -57,7 +57,7 @@ class DataSqlPositionTemplateMigrationTest {
             "-- 3. demo 用户/默认演示会话/消息/评分/报告 seed",
             "WHERE u.`username` = 'demo'",
             "UPDATE `interview_session` s",
-            "s.`created_at` = '2026-04-23 14:00:00'",
+            "s.`created_at` = '2026-06-16 14:00:00'",
             "INSERT INTO `interview_session`",
             "INSERT INTO `interview_message`",
             "INSERT INTO `interview_stage`",
@@ -118,7 +118,7 @@ class DataSqlPositionTemplateMigrationTest {
         var resource = Objects.requireNonNull(
             DataSqlPositionTemplateMigrationTest.class.getClassLoader().getResource("data.sql")
         );
-        return Files.readString(Path.of(resource.toURI()), StandardCharsets.UTF_8);
+        return Files.readString(Path.of(resource.toURI()), StandardCharsets.UTF_8).replace("\r\n", "\n");
     }
 
     private static int countOccurrences(String value, String needle) {

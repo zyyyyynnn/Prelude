@@ -537,7 +537,7 @@ onBeforeUnmount(() => {
               <template v-if="isVoiceMode">
                 <div key="voice" class="flex items-center gap-2">
                   <Button 
-                    variant="outline" size="icon-compact" class="rounded-md"
+                    variant="outline" size="icon" class="rounded-md"
                     @click="emit('update:isVoiceMode', false)"
                     type="button"
                   >
@@ -555,7 +555,6 @@ onBeforeUnmount(() => {
                     </svg>
                   </Button>
                   <Button
-                    size="compact"
                     class="voice-press-btn"
                     :class="{ 'is-pressed': isRecording }"
                     :disabled="disabled || sending"
@@ -573,7 +572,7 @@ onBeforeUnmount(() => {
               <template v-else>
                 <div key="text" class="flex items-center gap-2">
                   <Button 
-                    variant="outline" size="icon-compact" class="rounded-md"
+                    variant="outline" size="icon" class="rounded-md"
                     @click="emit('update:isVoiceMode', true)"
                     type="button"
                   >
@@ -585,7 +584,6 @@ onBeforeUnmount(() => {
                     </svg>
                   </Button>
                   <Button
-                    size="compact"
                     class="rounded-md px-6 flex-shrink-0 !font-serif"
                     :disabled="disabled || !canSend"
                     :loading="sending"

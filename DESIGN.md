@@ -87,7 +87,7 @@
 | `--header-height` | 72px | 工作区页头 |
 | `--composer-height` | 260px | 底部输入框占位高度 |
 
-> **shadcn 按钮尺寸变体**（`buttonVariants`）默认锚定 `var(--ui-height-base)`：`default`、`sm`、`icon`、`icon-sm`。`compact`、`icon-compact` 锚定 `var(--ui-height-compact)`，只用于 send composer 等紧凑工具栏以及 active action buttons（发送、按住说话、语音/文字切换）。`lg` / `icon-lg` 仅用于特殊大号场景。
+> **shadcn 按钮尺寸变体**（`buttonVariants`）默认锚定 `var(--ui-height-base)`：`default`、`sm`、`icon`、`icon-sm`。`compact`、`icon-compact` 锚定 `var(--ui-height-compact)`，只用于 send composer 左侧的 metadata controls（简历、岗位、模型等紧凑工具栏）。send 右侧的 primary actions（发送、按住说话、语音/文字切换）使用 base `34px`。`lg` / `icon-lg` 仅用于特殊大号场景。
 
 ### 2.5 圆角 Token
 
