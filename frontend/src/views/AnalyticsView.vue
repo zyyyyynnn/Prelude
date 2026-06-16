@@ -61,9 +61,7 @@ function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
   return `${yyyy}/${mm}/${dd}`
 }
 
-function weaknessDetails(item: AnalyticsWeaknessItem) {
-  return item.descriptions.slice(1)
-}
+
 
 async function loadAnalytics() {
   try {
@@ -263,12 +261,11 @@ onBeforeUnmount(() => {
                 <div class="weakness-item__head">
                   <div>
                     <h4 class="weakness-item__title">{{ item.category }}</h4>
-                    <p class="weakness-item__summary">{{ item.descriptions[0] || '待补充说明' }}</p>
                   </div>
                   <Badge variant="secondary">{{ item.count }} 次</Badge>
                 </div>
-                <ul v-if="weaknessDetails(item).length" class="weakness-item__descriptions">
-                  <li v-for="description in weaknessDetails(item)" :key="description">{{ description }}</li>
+                <ul class="weakness-item__descriptions">
+                  <li v-for="description in item.descriptions" :key="description">{{ description }}</li>
                 </ul>
               </article>
             </div>
