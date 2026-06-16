@@ -40,3 +40,8 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
+
+      - name: Verify BYOK settings flow
+        working-directory: frontend
+        continue-on-error: true
+        run: npm run verify:byok

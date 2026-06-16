@@ -196,6 +196,29 @@ class UserLlmConfigServiceImplTest {
     }
 
     @Test
+    void devFixtureClearSentinelClearsStoredApiKeyBeforePlaceholderHandling() {
+        User user = new User();
+        user.setId(7L);
+        user.setLlmProvider("openai-compatible");
+        user.setLlmBaseUrl("https://example.com/v1");
+        user.setLlmApiKeyEncrypted("fixture-placeholder");
+
+        when(userMapper.selectById(7L)).thenReturn(user);
+        when(devFixtureService.isEnabled()).thenReturn(true);
+        when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
+
+        com.interview.common.UserContext.setCurrentUserId(7L);
+        service.updateCurrentUserConfig(new UserLlmConfigRequest(
+            "openai-compatible", "https://example.com/v1", "model-a", "__CLEAR__", null, null
+        ));
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper).updateById(captor.capture());
+        assertThat(captor.getValue().getLlmApiKeyEncrypted()).isNull();
+        verify(devFixtureService, never()).nextStoredApiKey(eq("__CLEAR__"), any());
+    }
+
+    @Test
     void testConfigNullDoesNotPersistDraft() {
         // 无 body：回退测试已保存配置，绝不写入用户表。
         when(devFixtureService.isEnabled()).thenReturn(true);
