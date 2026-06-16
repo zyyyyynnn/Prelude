@@ -69,6 +69,7 @@ const activeIndex = computed(() => {
   min-width: 0;
   white-space: nowrap;
   font-weight: 500;
+  font-family: var(--font-serif);
   color: var(--color-text-secondary);
   border-radius: calc(var(--radius-md) - calc(var(--spacing-xs) / 2));
   transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out;

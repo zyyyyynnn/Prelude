@@ -11,6 +11,7 @@ const baseUrl = 'https://api.tokenrouter.com/v1'
 const apiKey = 'sk-tokenrouter-new'
 const manualModel = 'manual-model-2026'
 const expectedControlHeight = 34
+const expectedCompactControlHeight = 30
 
 function assertNoLegacyPanelMarkup() {
   const source = fs.readFileSync(panelPath, 'utf8')
@@ -213,10 +214,13 @@ async function verifyBrowserFlow(port) {
 
     const resumeTrigger = page.locator('button').filter({ has: page.locator('.lucide-file-text') }).first()
     const resumeTriggerBox = await resumeTrigger.boundingBox()
-    if (Math.abs(resumeTriggerBox.height - expectedControlHeight) > 1) throw new Error(`Resume trigger height is not standard, got ${resumeTriggerBox.height}`)
+    if (Math.abs(resumeTriggerBox.height - expectedCompactControlHeight) > 1) throw new Error(`Resume trigger height is not compact, got ${resumeTriggerBox.height}`)
 
     await page.getByRole('button', { name: '设置' }).click()
     await page.getByRole('button', { name: 'LLM 配置' }).click()
+    if (await page.locator('.panel-content-wrapper .text-destructive', { hasText: '请选择模型' }).count() !== 0) {
+      throw new Error('Model validation error should not be shown before submit/test')
+    }
 
     const providerSelect = page.locator('.field-grid').getByRole('combobox').first()
     await providerSelect.click()
@@ -235,6 +239,16 @@ async function verifyBrowserFlow(port) {
 
     await page.getByPlaceholder('例如：https://api.deepseek.com/v1').fill(baseUrl)
     await page.getByPlaceholder('留空表示不修改当前 Key').fill(apiKey)
+    const discoverButtonStyle = await page.getByRole('button', { name: '检测模型' }).evaluate(el => {
+      const style = window.getComputedStyle(el)
+      return { width: el.getBoundingClientRect().width, fontFamily: style.fontFamily }
+    })
+    if (discoverButtonStyle.width > 120) {
+      throw new Error(`Discover button should use natural width, got ${discoverButtonStyle.width}`)
+    }
+    if (!discoverButtonStyle.fontFamily.toLowerCase().includes('lora') && !discoverButtonStyle.fontFamily.includes('Noto Serif')) {
+      throw new Error(`Discover button should use serif font, got ${discoverButtonStyle.fontFamily}`)
+    }
     await page.getByRole('button', { name: '检测模型' }).click()
     await page.waitForFunction(() => document.body.innerText.includes('模型列表已更新'))
     if (await modelInput.inputValue() !== '') {

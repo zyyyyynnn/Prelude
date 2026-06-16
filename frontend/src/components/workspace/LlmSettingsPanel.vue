@@ -48,7 +48,7 @@ const showApiKey = ref(false)
 const modelComboboxOpen = ref(false)
 const modelCandidateIndex = ref(-1)
 
-const { handleSubmit, setValues } = useForm({
+const { handleSubmit, setValues, submitCount } = useForm({
   validationSchema: toTypedSchema(llmSettingsSchema),
 })
 
@@ -178,7 +178,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 </SelectItem>
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage v-if="submitCount > 0" />
           </FormItem>
         </FormField>
 
@@ -251,7 +251,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               </Combobox>
               <p v-if="modelDiscoveryHint" class="helper-text text-sm">{{ modelDiscoveryHint }}</p>
             </template>
-            <FormMessage />
+            <FormMessage v-if="submitCount > 0" />
           </FormItem>
         </FormField>
       </div>
@@ -281,7 +281,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
             </Button>
           </div>
           <p class="helper-text text-sm">填写接口根地址，通常以 /v1 结尾；不要填写 /chat/completions。</p>
-          <FormMessage />
+          <FormMessage v-if="submitCount > 0" />
         </FormItem>
       </FormField>
 
@@ -322,7 +322,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
             </div>
           </div>
           <p class="helper-text api-key-status text-sm">{{ apiKeyStatusLabel }}</p>
-          <FormMessage />
+          <FormMessage v-if="submitCount > 0" />
         </FormItem>
       </FormField>
 
@@ -348,7 +348,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   </SelectContent>
                 </Select>
               </FormControl>
-              <FormMessage />
+              <FormMessage v-if="submitCount > 0" />
             </FormItem>
           </FormField>
 
@@ -370,7 +370,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 </SelectContent>
               </Select>
               <p class="helper-text text-sm">部分模型可能不支持，测试失败时请改回默认。</p>
-              <FormMessage />
+              <FormMessage v-if="submitCount > 0" />
             </FormItem>
           </FormField>
         </div>
@@ -385,6 +385,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  font-family: var(--font-serif);
 }
 .form-section {
   margin-top: var(--spacing-md);
@@ -410,7 +411,6 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 }
 .endpoint-row__button {
   position: relative;
-  min-width: calc(var(--ui-height-base) * 4);
 }
 .helper-text {
   margin-top: var(--spacing-xs);

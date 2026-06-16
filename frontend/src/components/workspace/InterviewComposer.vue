@@ -17,6 +17,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { FileText, Briefcase, FileSearch, Terminal } from '@lucide/vue'
+import { cn } from '@/lib/utils'
+import { dropdownTriggerVariants } from '@/components/ui/shared-dropdown'
 
 const props = defineProps<{
   isCentered: boolean
@@ -378,7 +380,7 @@ onBeforeUnmount(() => {
               <!-- Resume Picker -->
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <button class="composer-toolbar-control composer-toolbar-select flex items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent text-sm hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer">
+                  <button :class="cn(dropdownTriggerVariants({ size: 'compact' }), 'composer-toolbar-control composer-toolbar-select cursor-pointer overflow-hidden !border-transparent bg-transparent hover:bg-accent hover:text-accent-foreground')">
                     <Tooltip>
                       <TooltipTrigger as-child>
                         <div class="flex h-full w-full items-center gap-[var(--spacing-xs)] overflow-hidden">
@@ -393,17 +395,18 @@ onBeforeUnmount(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="w-36" align="start">
+                <DropdownMenuContent class="w-[calc(var(--ui-height-compact)*4+var(--spacing-lg))]" align="start">
                   <DropdownMenuItem 
                     v-for="r in resumes" 
                     :key="r.id" 
+                    size="compact"
                     @click="emit('update:selectedResumeId', r.id)"
                     class="justify-between cursor-pointer"
                   >
                     {{ r.fileName }}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem @click="triggerUpload" class="justify-center cursor-pointer text-primary font-medium">
+                  <DropdownMenuItem size="compact" @click="triggerUpload" class="justify-center cursor-pointer text-primary font-medium">
                     {{ uploading ? '上传中...' : '+ 上传 PDF' }}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -421,7 +424,7 @@ onBeforeUnmount(() => {
               <!-- Position Picker -->
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <button class="composer-toolbar-control composer-toolbar-select flex items-center justify-between overflow-hidden rounded-md border border-transparent bg-transparent text-sm hover:bg-accent hover:text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer">
+                  <button :class="cn(dropdownTriggerVariants({ size: 'compact' }), 'composer-toolbar-control composer-toolbar-select cursor-pointer overflow-hidden !border-transparent bg-transparent hover:bg-accent hover:text-accent-foreground')">
                     <Tooltip>
                       <TooltipTrigger as-child>
                         <div class="flex h-full w-full items-center gap-[var(--spacing-xs)] overflow-hidden">
@@ -436,10 +439,11 @@ onBeforeUnmount(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="w-36" align="start">
+                <DropdownMenuContent class="w-[calc(var(--ui-height-compact)*4+var(--spacing-lg))]" align="start">
                   <DropdownMenuItem 
                     v-for="p in positions" 
                     :key="p.id" 
+                    size="compact"
                     @click="emit('update:selectedPositionId', p.id)"
                     class="justify-between cursor-pointer"
                   >
@@ -451,7 +455,7 @@ onBeforeUnmount(() => {
               <!-- JD Toggle -->
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <Button variant="ghost" size="sm" class="composer-toolbar-control overflow-hidden" type="button" @click="showJdInput = !showJdInput" :class="{ 'bg-accent text-accent-foreground': showJdInput }">
+                  <Button variant="ghost" size="compact" class="composer-toolbar-control overflow-hidden" type="button" @click="showJdInput = !showJdInput" :class="{ 'bg-accent text-accent-foreground': showJdInput }">
                     <FileSearch class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate">{{ showJdInput ? '已开启' : '未开启' }}</span>
                   </Button>
@@ -502,7 +506,7 @@ onBeforeUnmount(() => {
             <!-- Model Info -->
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" size="sm" class="composer-toolbar-control overflow-hidden" @click="navigateToLlm" type="button">
+                <Button variant="ghost" size="compact" class="composer-toolbar-control overflow-hidden" @click="navigateToLlm" type="button">
                   <Terminal class="w-3.5 h-3.5 shrink-0 opacity-70" />
                   <span class="font-medium truncate">{{ llmProvider || '未配置' }} / {{ llmModel || 'default' }}</span>
                 </Button>
@@ -663,16 +667,16 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 .composer-toolbar-control {
-  height: var(--ui-height-base);
-  min-width: calc(var(--ui-height-base) * 3);
-  max-width: calc(var(--ui-height-base) * 6);
+  height: var(--ui-height-compact);
+  min-width: calc(var(--ui-height-compact) * 3);
+  max-width: calc(var(--ui-height-compact) * 6);
   padding: 0 var(--spacing-sm);
   gap: var(--spacing-xs);
+  font-family: var(--font-serif);
 }
 .composer-toolbar-select {
-  width: calc(var(--ui-height-base) * 4.25);
+  width: calc(var(--ui-height-compact) * 4 + var(--spacing-lg));
 }
-
 /* Voice Integration Styles */
 .composer-voice-area {
   height: 88px;
@@ -725,7 +729,7 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 .voice-press-btn {
-  height: var(--ui-height-base);
+  height: var(--ui-height-compact);
   padding: 0 var(--spacing-lg);
   border-radius: var(--radius-md);
   font-weight: 500;
