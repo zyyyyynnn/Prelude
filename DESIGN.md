@@ -228,7 +228,7 @@
 ### 6.1 Login
 
 - 保持纸感背景和登录卡片。
-- BrandMetaballs 必须使用专用 logo token palette，不得写散落品牌色；视觉目标是延续旧版暖棕层次，不因 token 化变成新视觉。
+- BrandMetaballs 必须使用专用 logo token palette，不得写散落品牌色；视觉目标是延续旧版暖棕层次，不因 token 化变成新视觉。背景圆盘必须柔和，贴近所在容器纸感，避免成为沉重的实心圆盘（logo background token should stay close to the surrounding surface and must not read as a separate heavy disk）。
 - 登录/注册切换继续使用 SegmentedControl。
 - 密码可见按钮为透明图标按钮，必须有 `aria-label` 和 focus 样式。
 - submit 使用 base 高度，登录页允许 full width。
