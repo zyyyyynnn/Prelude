@@ -54,3 +54,5 @@ This document is the maintenance baseline after the Prelude UI convergence work.
 - Radar chart must avoid heavy filled background surfaces.
 - Demo/dev seed should contain varied realistic interview sessions: 5 completed sessions for analytics and 1-3 ongoing sessions for workspace review.
 - Seed messages must not reuse identical scripts across sessions.
+
+Demo seed data must be deterministic: exactly 5 finished sessions and 2 ongoing sessions for the demo user, with reports and score history only attached to finished sessions.
