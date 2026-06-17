@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority"
 export { default as Button } from "./Button.vue"
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium font-serif ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium font-serif ring-offset-background transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -22,11 +22,9 @@ export const buttonVariants = cva(
         "default": "h-[var(--ui-height-base)] px-4 py-1.5",
         "sm": "h-[var(--ui-height-base)] rounded-md px-3",
         "compact": "h-[var(--ui-height-compact)] rounded-md px-2",
-        "lg": "h-11 rounded-md px-8",
         "icon": "size-[var(--ui-height-base)]",
         "icon-sm": "size-[var(--ui-height-base)]",
         "icon-compact": "size-[var(--ui-height-compact)]",
-        "icon-lg": "size-11",
       },
     },
     defaultVariants: {

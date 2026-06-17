@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS `user` (
   `username` VARCHAR(64) NOT NULL COMMENT '用户名',
   `password` VARCHAR(255) NOT NULL COMMENT 'BCrypt加密密码',
   `email` VARCHAR(128) DEFAULT NULL COMMENT '邮箱',
+  `avatar_url` VARCHAR(512) DEFAULT NULL COMMENT '头像 URL',
+  `theme_preference` VARCHAR(16) NOT NULL DEFAULT 'system' COMMENT '主题偏好',
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT 'LLM Provider',
   `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT 'LLM 模型',
   `llm_base_url` VARCHAR(255) DEFAULT NULL COMMENT '用户自定义 OpenAI-compatible API 根地址',
@@ -48,6 +50,32 @@ SET @sql = (
   )
   FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_base_url'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `avatar_url` VARCHAR(512) DEFAULT NULL COMMENT ''头像 URL''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'avatar_url'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `theme_preference` VARCHAR(16) NOT NULL DEFAULT ''system'' COMMENT ''主题偏好''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'theme_preference'
 );
 PREPARE stmt FROM @sql;
 EXECUTE stmt;

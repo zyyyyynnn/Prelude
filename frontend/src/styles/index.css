@@ -47,6 +47,11 @@
 
   /* 阴影 */
   --shadow-modal: var(--shadow-modal);
+  --shadow-whisper: var(--shadow-whisper);
+
+  /* 动效 */
+  --ease-standard: var(--motion-ease-standard);
+  --animate-duration-base: var(--motion-duration-base);
 
   /* shadcn-vue 核心语义色彩桥接 */
   --color-background: var(--color-bg);
@@ -136,6 +141,7 @@
   --radius-xl: 16px;
   --radius-2xl: 24px;
   --radius-3xl: 32px;
+  --radius-full: 9999px;
 
   --shadow-ring: 0 0 0 1px var(--color-ring);
   --shadow-ring-deep: 0 0 0 1px var(--color-ring-deep);
@@ -144,7 +150,32 @@
   --shadow-modal: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
+  --chart-technical: var(--color-brand);
+  --chart-expression: var(--color-coral);
+  --chart-logic: var(--color-ring-deep);
+
+  --rose-three-color: var(--color-brand);
+  --rose-three-muted: color-mix(in srgb, var(--color-brand) 42%, transparent);
+  --rose-three-stroke: 1.5;
+  --rose-three-speed: 1;
+
+  --motion-duration-base: 300ms;
+  --motion-duration-slow: 600ms;
+  --motion-duration-thinking: 1500ms;
+  --motion-ease-standard: ease-in-out;
+  --motion-delay-min: 300ms;
+  --motion-transition-color: color var(--motion-duration-base) var(--motion-ease-standard);
+  --motion-transition-surface: background-color var(--motion-duration-base) var(--motion-ease-standard), border-color var(--motion-duration-base) var(--motion-ease-standard), box-shadow var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
+  --motion-transition-opacity: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  --motion-transition-transform: transform var(--motion-duration-base) var(--motion-ease-standard), opacity var(--motion-duration-base) var(--motion-ease-standard);
+
   /* ── UI System Tokens ── */
+  --font-size-xs: 13px;
+  --font-size-sm: 14px;
+  --font-size-meta: 13.5px;
+  --font-size-md: 16px;
+  --font-size-lg: 24px;
+
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -160,6 +191,27 @@
   --composer-height: 260px;
 
 
+}
+
+:root.dark,
+.dark {
+  --color-bg: #191816;
+  --color-surface: #22201d;
+  --color-sand: #34302a;
+  --color-text-primary: #f1eee6;
+  --color-text-secondary: #c9c2b7;
+  --color-text-tertiary: #aaa296;
+  --color-text-button: #eee8dc;
+  --color-brand: #c7a392;
+  --color-coral: #c29988;
+  --color-error: #d46a64;
+  --color-focus: #d5b9a9;
+  --color-border: #312d27;
+  --color-border-warm: #3b352f;
+  --color-ring: #655c51;
+  --color-ring-deep: #807568;
+  --color-line-decor: #514a41;
+  --color-line-decor-light: #6a6156;
 }
 
 * {
@@ -186,12 +238,15 @@ body {
 }
 
 @layer base {
-  body,
+  body {
+    font-family: var(--font-sans);
+  }
+
   button,
   input,
   select,
   textarea {
-    font-family: var(--font-sans);
+    font-family: var(--font-serif);
   }
 }
 
@@ -317,10 +372,10 @@ a {
   box-shadow: var(--shadow-ring);
   cursor: pointer;
   transition:
-    border-color 0.3s ease-in-out,
-    box-shadow 0.3s ease-in-out,
-    background-color 0.3s ease-in-out,
-    transform 0.3s ease-in-out;
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    transform var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .app-shell__menu-trigger:hover,
@@ -344,14 +399,14 @@ a {
 
 .app-shell__menu-trigger-label {
   color: currentColor;
-  font: 500 15px/1 var(--font-sans);
+  font: 500 15px/1 var(--font-serif);
   white-space: nowrap;
 }
 
 .app-shell__menu-icon-line {
   transition:
-    transform 0.3s ease-in-out,
-    opacity 0.3s ease-in-out;
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
   transform-origin: center;
 }
 
@@ -395,7 +450,7 @@ a {
   white-space: nowrap;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  animation: app-shell-menu-enter 0.3s ease-in-out both;
+  animation: app-shell-menu-enter var(--motion-duration-base) var(--motion-ease-standard) both;
 }
 
 .app-shell__action-menu-section {
@@ -430,15 +485,15 @@ a {
   padding: 9px 8px;
   background: transparent;
   color: var(--color-text-primary);
-  font: 500 15px var(--font-sans);
+  font: 500 15px var(--font-serif);
   cursor: pointer;
   text-align: center;
   box-shadow: var(--shadow-ring);
   transition:
-    border-color 0.3s ease-in-out,
-    background-color 0.3s ease-in-out,
-    box-shadow 0.3s ease-in-out,
-    color 0.3s ease-in-out;
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .app-shell__action-menu-item:hover,
@@ -597,7 +652,7 @@ a {
 .weakness-item__summary {
   margin: 0;
   color: var(--color-text-tertiary);
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   line-height: 1.58;
 }
 
@@ -742,7 +797,7 @@ label,
 }
 
 .field__hint {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .status-banner {
@@ -760,7 +815,7 @@ label,
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   padding: 0 18px;
-  font: 500 16px var(--font-sans);
+  font: 500 16px var(--font-serif);
   letter-spacing: 0;
 }
 
@@ -779,7 +834,7 @@ label,
   min-width: 64px;
   min-height: var(--ui-height-sm);
   padding: 0 14px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .ui-button.is-disabled,
@@ -813,7 +868,7 @@ label,
 
 .ui-button--secondary:hover,
 .ui-button--secondary:focus-visible {
-  background: color-mix(in srgb, #2C2A29 12%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-text-primary) 12%, var(--color-surface));
   color: var(--color-text-button);
   border-color: transparent;
 }
@@ -886,7 +941,7 @@ label,
   padding: 0 18px;
   background: var(--color-surface-muted);
   color: var(--color-text-button);
-  font: 500 15px var(--font-sans);
+  font: 500 15px var(--font-serif);
   box-shadow: var(--shadow-ring);
   cursor: pointer;
 }
@@ -1030,7 +1085,7 @@ label,
   border: 1px solid var(--color-border-warm);
   border-radius: 999px;
   padding: 0 8px;
-  font-size: 13px;
+  font-size: var(--font-size-xs);
 }
 
 .stage-rail__label {
@@ -1104,7 +1159,7 @@ label,
 .stage-timeline__meta {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   line-height: 1.5;
 }
 
@@ -1336,7 +1391,7 @@ label,
   padding: 0;
   background: transparent;
   color: var(--color-brand);
-  font: 500 15px var(--font-sans);
+  font: 500 15px var(--font-serif);
   cursor: pointer;
 }
 
@@ -1353,7 +1408,7 @@ label,
   width: min(100%, 1180px);
   border: 1px solid var(--color-line-decor);
   border-radius: var(--radius-xl);
-  padding: 40px;
+  padding: var(--spacing-2xl);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 36%, transparent), color-mix(in srgb, var(--color-surface) 8%, transparent)),
     color-mix(in srgb, var(--color-surface) 82%, transparent);
@@ -1392,7 +1447,7 @@ label,
   aspect-ratio: 1;
   border-radius: 999px;
   box-shadow: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
-  animation: brand-awaken 1.5s ease-out both;
+  animation: brand-awaken var(--motion-duration-slow) var(--motion-ease-standard) both;
 }
 
 @keyframes brand-awaken {
@@ -1407,7 +1462,7 @@ label,
 .login-card__brand-caption {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.18em;
   line-height: 1.2;
   text-align: center;
@@ -1713,7 +1768,7 @@ label,
 }
 .detail-card__meta {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
 .button-row {
@@ -1724,7 +1779,7 @@ label,
 
 /* ── Icon Action Button ── */
 .icon-action-btn {
-  transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  transition: color var(--motion-duration-base) var(--motion-ease-standard), background-color var(--motion-duration-base) var(--motion-ease-standard);
   border-radius: var(--radius-sm);
   padding: 4px;
   margin: -4px;
@@ -1755,7 +1810,7 @@ textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset !important;
   -webkit-text-fill-color: var(--color-text) !important;
-  transition: background-color 5000s ease-in-out 0s;
+  transition: none;
 }
 
 /* 彻底隐藏 Edge/Chrome 原生的密码查看眼睛图标，防止与业务 Icon 冲突 */

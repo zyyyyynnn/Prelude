@@ -33,7 +33,7 @@ const OPENAI_COMPATIBLE_PROVIDER = 'openai-compatible'
 
 // 前端展示映射：后端 providerKey 仍为 openai-compatible，仅展示层映射为对普通用户友好的名称。
 const DISPLAY_NAME_MAP: Record<string, string> = {
-  [OPENAI_COMPATIBLE_PROVIDER]: '自定义 OpenAI 兼容接口',
+  [OPENAI_COMPATIBLE_PROVIDER]: 'OpenAI 兼容协议',
 }
 
 const {
@@ -305,7 +305,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 v-if="apiKeyMasked"
                 type="button"
                 aria-label="清除 API Key"
-                class="px-2 py-2 hover:bg-transparent text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors duration-300 ease-in-out"
+                class="px-2 py-2 hover:bg-transparent text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]"
                 @click="clearApiKey"
               >
                 <Trash2 class="h-4 w-4" />
@@ -313,7 +313,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               <button
                 type="button"
                 :aria-label="showApiKey ? '隐藏 API Key' : '显示 API Key'"
-                class="px-2 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center transition-colors duration-300 ease-in-out"
+                class="px-2 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]"
                 @click="showApiKey = !showApiKey"
               >
                 <Eye v-if="showApiKey" class="h-4 w-4" />
@@ -356,13 +356,14 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
             <FormItem>
               <FormLabel>思考深度 (Thinking Depth)</FormLabel>
               <Select
-                :model-value="thinkingDepth"
-                @update:model-value="(value) => { thinkingDepth = String(value) }"
+                :model-value="thinkingDepth || 'default'"
+                @update:model-value="(value) => { thinkingDepth = String(value) === 'default' ? undefined : String(value) }"
               >
                 <SelectTrigger>
                   <SelectValue placeholder="默认 (Default)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="default">默认（Default）</SelectItem>
                   <SelectItem value="low">低 (Low)</SelectItem>
                   <SelectItem value="medium">中 (Medium)</SelectItem>
                   <SelectItem value="high">高 (High)</SelectItem>

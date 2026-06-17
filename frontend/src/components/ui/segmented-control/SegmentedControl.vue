@@ -55,7 +55,7 @@ const activeIndex = computed(() => {
   background-color: var(--color-surface);
   border-radius: calc(var(--radius-md) - calc(var(--spacing-xs) / 2));
   box-shadow: var(--shadow-ring);
-  transition: transform 0.3s ease-in-out;
+  transition: transform var(--motion-duration-base) var(--motion-ease-standard);
   z-index: 1;
 }
 
@@ -72,7 +72,9 @@ const activeIndex = computed(() => {
   font-family: var(--font-serif);
   color: var(--color-text-secondary);
   border-radius: calc(var(--radius-md) - calc(var(--spacing-xs) / 2));
-  transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  transition:
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard);
   z-index: 2;
   cursor: pointer;
 }

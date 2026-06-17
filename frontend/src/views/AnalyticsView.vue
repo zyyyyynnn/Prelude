@@ -36,20 +36,25 @@ const scoreCards = computed(() => {
   ]
 })
 
-function cssVar(name: string, fallback: string) {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  return value || fallback
+function normalizeChartColor(value: string) {
+  const srgbMatch = value.match(/^color\(srgb\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)/)
+  if (!srgbMatch) return value
+  const [, r, g, b] = srgbMatch
+  return `rgb(${Math.round(Number(r) * 255)}, ${Math.round(Number(g) * 255)}, ${Math.round(Number(b) * 255)})`
 }
 
-function hexToRgba(color: string, alpha: number) {
-  const normalized = color.replace('#', '')
-  if (!/^[\da-fA-F]{6}$/.test(normalized)) {
-    return color
-  }
-  const red = Number.parseInt(normalized.slice(0, 2), 16)
-  const green = Number.parseInt(normalized.slice(2, 4), 16)
-  const blue = Number.parseInt(normalized.slice(4, 6), 16)
-  return `rgba(${red}, ${green}, ${blue}, ${alpha})`
+function resolveChartColor(value: string) {
+  const probe = document.createElement('span')
+  probe.style.color = value
+  document.body.appendChild(probe)
+  const computed = getComputedStyle(probe).color
+  probe.remove()
+  return normalizeChartColor(computed || value)
+}
+
+function cssVar(name: string, fallback: string) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return resolveChartColor(value || fallback)
 }
 
 function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
@@ -81,11 +86,13 @@ async function loadAnalytics() {
 }
 
 function renderCharts() {
-  const brand = cssVar('--color-brand', '#9e7b6a')
-  const coral = cssVar('--color-coral', '#b08878')
-  const secondary = cssVar('--color-text-secondary', '#5e5d59')
-  const lineDecor = cssVar('--color-border-warm', '#e8e6dc')
-  const ring = cssVar('--color-ring', '#d1cfc5')
+  const brand = cssVar('--chart-technical', 'var(--color-brand)')
+  const coral = cssVar('--chart-expression', 'var(--color-coral)')
+  const logic = cssVar('--chart-logic', 'var(--color-ring-deep)')
+  const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
+  const lineDecor = cssVar('--color-border-warm', 'var(--color-border-warm)')
+  const ring = cssVar('--color-ring', 'var(--color-ring)')
+  const surface = cssVar('--color-surface', 'var(--color-surface)')
 
   if (radar.value && radarRef.value && radar.value.sessionCount > 0) {
     radarChart ??= init(radarRef.value)
@@ -96,7 +103,7 @@ function renderCharts() {
         splitNumber: 5,
         axisName: { color: secondary, fontSize: 14 },
         splitLine: { lineStyle: { color: lineDecor } },
-        splitArea: { areaStyle: { color: ['rgba(250,249,245,0)', hexToRgba(lineDecor, 0.12)] } },
+        splitArea: { areaStyle: { color: [surface, lineDecor] } },
         axisLine: { lineStyle: { color: ring } },
         indicator: [
           { name: '技术能力', max: 10 },
@@ -108,7 +115,7 @@ function renderCharts() {
         type: 'radar',
         data: [{
           value: [radar.value.technical, radar.value.expression, radar.value.logic],
-          areaStyle: { color: hexToRgba(brand, 0.16) },
+          areaStyle: { color: brand, opacity: 0.16 },
           lineStyle: { color: brand, width: 2 },
           itemStyle: { color: brand },
         }],
@@ -122,13 +129,16 @@ function renderCharts() {
       animation: false,
       tooltip: {
         trigger: 'axis',
+        backgroundColor: surface,
+        borderColor: ring,
+        textStyle: { color: secondary, fontFamily: 'var(--font-serif)' },
         formatter: (params: any) => {
           if (!params || !params.length) return ''
           const dataIndex = params[0].dataIndex
           const originalDate = trend.value[dataIndex].createdAt
           let html = `<div>${formatDate(originalDate, 'YYYY/MM/DD')}</div>`
           for (const param of params) {
-            html += `<div>${param.marker} ${param.seriesName}: <span style="float:right;margin-left:20px;font-weight:900">${param.value}</span></div>`
+            html += `<div>${param.marker} ${param.seriesName}: ${param.value}</div>`
           }
           return html
         }
@@ -170,8 +180,8 @@ function renderCharts() {
           type: 'line',
           smooth: true,
           data: trend.value.map((item) => item.logic),
-          lineStyle: { color: secondary, width: 2 },
-          itemStyle: { color: secondary },
+          lineStyle: { color: logic, width: 2 },
+          itemStyle: { color: logic },
         },
       ],
     })
@@ -315,13 +325,13 @@ onBeforeUnmount(() => {
 }
 .weakness-item__summary {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 .weakness-item__descriptions {
   margin: 0;
   padding-left: var(--spacing-xl);
-  font-size: 13.5px;
+  font-size: var(--font-size-meta);
   color: var(--color-text-tertiary);
   list-style-type: disc;
 }

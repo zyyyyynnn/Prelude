@@ -1,28 +1,61 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import AppSidebar from './components/workspace/AppSidebar.vue'
 import GlobalSettingsModal from './components/workspace/GlobalSettingsModal.vue'
 import GlobalConfirmDialog from './components/GlobalConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
+import { fetchUserProfile } from './api/user'
+import { applyThemePreference, getStoredThemePreference, resolveThemePreference, storeThemePreference } from './utils/theme'
 
 const authStore = useAuthStore()
 const route = useRoute()
 const isSidebarCollapsed = ref(false)
 const showGlobalSettings = ref(false)
-const activeSettingsTab = ref<'profile' | 'llm'>('profile')
+const activeSettingsTab = ref<'profile' | 'theme' | 'llm'>('profile')
 
-function handleOpenSettings(tab?: 'profile' | 'llm') {
+function handleOpenSettings(tab?: 'profile' | 'theme' | 'llm') {
   activeSettingsTab.value = tab || 'profile'
   showGlobalSettings.value = true
 }
 
 const showSidebar = computed(() => route.path !== '/login' && authStore.isLoggedIn)
+
+const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+async function loadThemePreference() {
+  const stored = getStoredThemePreference()
+  applyThemePreference(stored)
+  if (!authStore.isLoggedIn) return
+  try {
+    const profile = await fetchUserProfile()
+    const preference = resolveThemePreference(profile.themePreference)
+    storeThemePreference(preference)
+    applyThemePreference(preference)
+  } catch {
+    applyThemePreference(stored)
+  }
+}
+
+function handleSystemThemeChange() {
+  if (getStoredThemePreference() === 'system') {
+    applyThemePreference('system')
+  }
+}
+
+onMounted(() => {
+  void loadThemePreference()
+  mediaQuery.addEventListener('change', handleSystemThemeChange)
+})
+
+onBeforeUnmount(() => {
+  mediaQuery.removeEventListener('change', handleSystemThemeChange)
+})
 </script>
 
 <template>
-  <div class="app-layout" :class="{ 'is-dark': false }">
+  <div class="app-layout">
     <AppSidebar
       v-if="showSidebar"
       v-model:collapsed="isSidebarCollapsed"

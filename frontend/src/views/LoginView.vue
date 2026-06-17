@@ -137,7 +137,8 @@ onMounted(() => {
                     />
                     <button
                       type="button"
-                      class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center"
+                      :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+                      class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                       @click="showPassword = !showPassword"
                     >
                       <Eye v-if="showPassword" class="h-4 w-4" />
@@ -150,7 +151,7 @@ onMounted(() => {
             </FormField>
 
             <div
-              :class="['transition-opacity duration-300 ease-in-out', isRegisterMode ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none']"
+              :class="['transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', isRegisterMode ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none']"
               :aria-hidden="!isRegisterMode"
             >
               <FormField name="email" v-slot="{ componentField }">

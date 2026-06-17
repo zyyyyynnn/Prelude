@@ -149,7 +149,7 @@ async function verifyBrowserFlow(port) {
       return route.fulfill({
         json: ok([
           { providerKey: 'deepseek', displayName: 'DeepSeek', models: ['deepseek-chat', 'deepseek-reasoner'] },
-          { providerKey: 'openai-compatible', displayName: 'OpenAI 兼容接口', models: [] },
+          { providerKey: 'openai-compatible', displayName: 'OpenAI 兼容协议', models: [] },
         ]),
       })
     }
@@ -161,7 +161,7 @@ async function verifyBrowserFlow(port) {
           model: 'old-model',
           hasApiKey: true,
           apiKeyMasked: 'sk-***old',
-          displayName: 'OpenAI 兼容接口',
+          displayName: 'OpenAI 兼容协议',
         }),
       })
     }
@@ -188,7 +188,7 @@ async function verifyBrowserFlow(port) {
           model: manualModel,
           hasApiKey: true,
           apiKeyMasked: 'sk-***new',
-          displayName: 'OpenAI 兼容接口',
+          displayName: 'OpenAI 兼容协议',
         }),
       })
     }
@@ -231,7 +231,7 @@ async function verifyBrowserFlow(port) {
     }
 
     await providerSelect.click()
-    await page.getByRole('option', { name: '自定义 OpenAI 兼容接口' }).click()
+    await page.getByRole('option', { name: 'OpenAI 兼容协议' }).click()
     const modelInput = page.getByPlaceholder('请选择模型')
     if (await modelInput.inputValue() !== '') {
       throw new Error('OpenAI-compatible model input should reset after provider switch')

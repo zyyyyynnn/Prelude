@@ -166,13 +166,18 @@ WHERE NOT EXISTS (
 
 INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
 SELECT 'openai-compatible',
-       'OpenAI-compatible',
+       'OpenAI 兼容协议',
        '',
        '[]',
        1
 WHERE NOT EXISTS (
     SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai-compatible'
 );
+
+UPDATE `llm_provider_config`
+SET `display_name` = 'OpenAI 兼容协议'
+WHERE `provider_key` = 'openai-compatible'
+  AND `display_name` <> 'OpenAI 兼容协议';
 
 -- 3.0 清理或迁移旧的 4 月 demo session 到 6 月
 
