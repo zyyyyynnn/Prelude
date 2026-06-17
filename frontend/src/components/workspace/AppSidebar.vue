@@ -263,8 +263,7 @@ function navigateTo(path: string) {
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
   overflow-x: hidden;
-  transition: width var(--motion-duration-base) var(--motion-ease-standard);
-  will-change: width;
+  will-change: transform;
   transform: translateZ(0); /* 强制开启 GPU 加速，消除卡顿 */
   backface-visibility: hidden; /* 消除某些浏览器在动画期间的字体模糊闪烁 */
   flex-shrink: 0;
@@ -289,7 +288,7 @@ function navigateTo(path: string) {
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard), width var(--motion-duration-base) var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
   width: 180px;
   opacity: 1;
   transform: translateZ(0);
@@ -316,7 +315,7 @@ function navigateTo(path: string) {
 .sidebar-label {
   white-space: nowrap;
   opacity: 1;
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard), width var(--motion-duration-base) var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
   display: inline-block;
   overflow: hidden;
   transform: translateZ(0);
@@ -367,10 +366,12 @@ function navigateTo(path: string) {
   padding: 0 var(--spacing-sm);
   border-radius: var(--radius-md);
   font-family: var(--font-serif);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard), padding var(--motion-duration-base) var(--motion-ease-standard), gap var(--motion-duration-base) var(--motion-ease-standard);
+  transition:
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;

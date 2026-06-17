@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
 }
 .resume-item__title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: 500;
   color: var(--color-text-primary);
 }
