@@ -25,10 +25,12 @@ function resolveShaderColor(name: string, fallback: string) {
   return normalizeShaderColor(computed || raw)
 }
 
-onMounted(() => {
+function renderMetaballs() {
   if (!hostRef.value) {
     return
   }
+
+  root ??= createRoot(hostRef.value)
 
   const colors = [
     resolveShaderColor('--brand-metaballs-1', 'var(--color-surface)'),
@@ -38,9 +40,10 @@ onMounted(() => {
     resolveShaderColor('--brand-metaballs-5', 'var(--color-text-primary)'),
   ]
   const bg = resolveShaderColor('--brand-metaballs-bg', 'var(--color-bg)')
+  const renderKey = `${bg}:${colors.join(':')}`
 
-  root = createRoot(hostRef.value)
   root.render(createElement(Metaballs, {
+    key: renderKey,
     speed: 1.7,
     count: 10,
     size: 1,
@@ -55,9 +58,15 @@ onMounted(() => {
       boxShadow: 'var(--brand-metaballs-shadow)',
     },
   }))
+}
+
+onMounted(() => {
+  renderMetaballs()
+  window.addEventListener('prelude-theme-change', renderMetaballs)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('prelude-theme-change', renderMetaballs)
   root?.unmount()
   root = null
 })

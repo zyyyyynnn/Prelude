@@ -302,6 +302,7 @@
 - 主题取值固定为 `light | dark | system`。
 - 登录用户主题偏好保存到后端；未登录用户保存到 localStorage。
 - 应用启动时根据偏好设置根节点主题；system 跟随系统变化。
+- 暗色主题切换必须通知依赖 canvas、chart、shader 的组件重新解析 token 并重绘。
 - 暗色主题必须通过 token 映射完成，业务组件不得写 `dark:bg-*` 作为独立视觉。
 
 ### 7.2 用户资料与头像
