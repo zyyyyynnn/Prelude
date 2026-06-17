@@ -30,11 +30,14 @@ onMounted(() => {
     return
   }
 
-  const brand = resolveShaderColor('--color-brand', 'var(--color-brand)')
-  const brandLight = resolveShaderColor('--color-brand-light', 'var(--color-brand)')
-  const surface = resolveShaderColor('--color-surface', 'var(--color-surface)')
-  const bg = resolveShaderColor('--color-bg', 'var(--color-bg)')
-  const text = resolveShaderColor('--color-text-primary', 'var(--color-text-primary)')
+  const colors = [
+    resolveShaderColor('--brand-metaballs-1', 'var(--color-surface)'),
+    resolveShaderColor('--brand-metaballs-2', 'var(--color-brand-light)'),
+    resolveShaderColor('--brand-metaballs-3', 'var(--color-brand)'),
+    resolveShaderColor('--brand-metaballs-4', 'var(--color-ring-deep)'),
+    resolveShaderColor('--brand-metaballs-5', 'var(--color-text-primary)'),
+  ]
+  const bg = resolveShaderColor('--brand-metaballs-bg', 'var(--color-bg)')
 
   root = createRoot(hostRef.value)
   root.render(createElement(Metaballs, {
@@ -42,14 +45,14 @@ onMounted(() => {
     count: 10,
     size: 1,
     scale: 1,
-    colors: [surface, brandLight, brand, text, bg],
+    colors,
     colorBack: bg,
     style: {
       width: '100%',
       height: '100%',
       backgroundColor: bg,
       borderRadius: 'var(--radius-3xl)',
-      boxShadow: 'var(--shadow-ring)',
+      boxShadow: 'var(--brand-metaballs-shadow)',
     },
   }))
 })
