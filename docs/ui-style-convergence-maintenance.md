@@ -49,3 +49,4 @@ This document is the maintenance baseline after the Prelude UI convergence work.
 - Read `DESIGN.md` before changing UI behavior or styles.
 - New UI components must be added to `docs/ui-component-review-matrix.md`.
 - Components backed by canvas, charts, or shaders must respond to theme changes and rerender their palette.
+- Theme selection may preview immediately, but persisted preference must only be written after a successful save.

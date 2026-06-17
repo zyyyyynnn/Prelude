@@ -240,18 +240,48 @@ async function assertDarkInputTextFill(page) {
 }
 
 async function assertBrandMetaballsThemeUpdate(page) {
+  const darkPalette = await page.evaluate(() => {
+    const style = window.getComputedStyle(document.documentElement)
+    return [
+      style.getPropertyValue('--brand-metaballs-1').trim(),
+      style.getPropertyValue('--brand-metaballs-2').trim(),
+      style.getPropertyValue('--brand-metaballs-3').trim(),
+      style.getPropertyValue('--brand-metaballs-4').trim(),
+      style.getPropertyValue('--brand-metaballs-5').trim(),
+      style.getPropertyValue('--brand-metaballs-bg').trim(),
+    ].join('|')
+  })
+
   await page.evaluate(() => {
     window.__preludeBrandCanvas = document.querySelector('.brand-metaballs canvas')
   })
+
   await page.evaluate(() => {
     document.documentElement.classList.remove('dark')
     document.documentElement.dataset.theme = 'light'
     window.dispatchEvent(new CustomEvent('prelude-theme-change', { detail: { theme: 'light' } }))
   })
+
   await page.waitForFunction(() => {
     const canvas = document.querySelector('.brand-metaballs canvas')
     return canvas && canvas !== window.__preludeBrandCanvas
   })
+
+  const lightPalette = await page.evaluate(() => {
+    const style = window.getComputedStyle(document.documentElement)
+    return [
+      style.getPropertyValue('--brand-metaballs-1').trim(),
+      style.getPropertyValue('--brand-metaballs-2').trim(),
+      style.getPropertyValue('--brand-metaballs-3').trim(),
+      style.getPropertyValue('--brand-metaballs-4').trim(),
+      style.getPropertyValue('--brand-metaballs-5').trim(),
+      style.getPropertyValue('--brand-metaballs-bg').trim(),
+    ].join('|')
+  })
+
+  if (!darkPalette || !lightPalette || darkPalette === lightPalette) {
+    throw new Error('BrandMetaballs palette tokens should change between dark and light themes')
+  }
 }
 
 async function chartFrame(page) {

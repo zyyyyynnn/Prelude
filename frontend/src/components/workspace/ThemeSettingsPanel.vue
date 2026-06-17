@@ -42,7 +42,6 @@ async function loadTheme() {
 
 function selectTheme(value: ThemePreference) {
   state.themePreference = value
-  storeThemePreference(value)
   applyThemePreference(value)
 }
 
@@ -63,6 +62,8 @@ async function saveTheme() {
     applyThemePreference(state.themePreference)
     showNotice('主题已保存', 'success')
   } catch (error) {
+    state.themePreference = initial.themePreference
+    applyThemePreference(initial.themePreference)
     showNotice(getErrorMessage(error), 'error')
   } finally {
     saving.value = false
