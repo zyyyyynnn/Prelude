@@ -38,6 +38,7 @@
 - `--color-error`：破坏性和错误状态。
 - `--mask-overlay`：Dialog、Confirm 等遮罩。
 - `--chart-technical`、`--chart-expression`、`--chart-logic`：数据看板三维图表色。
+- `--brand-metaballs-1` 至 `--brand-metaballs-5`、`--brand-metaballs-bg`、`--brand-metaballs-shadow`：BrandMetaballs 专用 logo palette，用于保留旧版暖棕层次。
 - `--rose-three-color`、`--rose-three-muted`：Rose Three 加载视觉。
 
 ### 2.2 shadcn-vue 映射
@@ -227,7 +228,7 @@
 ### 6.1 Login
 
 - 保持纸感背景和登录卡片。
-- BrandMetaballs 必须 token 化，不得写散落品牌色。
+- BrandMetaballs 必须使用专用 logo token palette，不得写散落品牌色；视觉目标是延续旧版暖棕层次，不因 token 化变成新视觉。
 - 登录/注册切换继续使用 SegmentedControl。
 - 密码可见按钮为透明图标按钮，必须有 `aria-label` 和 focus 样式。
 - submit 使用 base 高度，登录页允许 full width。
@@ -269,7 +270,7 @@
 ### 6.6 Settings
 
 - 设置弹窗保持左侧导航、右侧内容双栏。
-- 当前只保留账号资料和 LLM 配置两个 tab；主题卡片作为账号资料内容，不新增独立 tab。
+- 设置页包含账号资料、主题、LLM 配置三个 tab。
 - 退出登录放左侧底部；保存、测试按钮放右上角；内容较长时只滚动右侧内容。
 - 用户名可编辑；邮箱可编辑；密码区只保留旧密码和新密码。
 - 新增真实头像上传：后端保存头像 URL/路径，未设置时展示用户名首字母。

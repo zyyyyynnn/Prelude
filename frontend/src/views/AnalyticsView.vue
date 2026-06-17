@@ -193,6 +193,12 @@ function handleResize() {
   trendChart?.resize()
 }
 
+async function handleThemeChange() {
+  await nextTick()
+  renderCharts()
+  handleResize()
+}
+
 watch([radar, trend], async () => {
   await nextTick()
   renderCharts()
@@ -200,11 +206,13 @@ watch([radar, trend], async () => {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
+  window.addEventListener('prelude-theme-change', handleThemeChange)
   void loadAnalytics()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('prelude-theme-change', handleThemeChange)
   radarChart?.dispose()
   trendChart?.dispose()
 })

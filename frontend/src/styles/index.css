@@ -154,6 +154,14 @@
   --chart-expression: var(--color-coral);
   --chart-logic: var(--color-ring-deep);
 
+  --brand-metaballs-1: #e9ded6;
+  --brand-metaballs-2: #c6a99a;
+  --brand-metaballs-3: #9e7b6a;
+  --brand-metaballs-4: #5f463b;
+  --brand-metaballs-5: #2f241f;
+  --brand-metaballs-bg: #e9ded6;
+  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
+
   --rose-three-color: var(--color-brand);
   --rose-three-muted: color-mix(in srgb, var(--color-brand) 42%, transparent);
   --rose-three-stroke: 1.5;
@@ -212,6 +220,13 @@
   --color-ring-deep: #807568;
   --color-line-decor: #514a41;
   --color-line-decor-light: #6a6156;
+  --brand-metaballs-1: #6b5147;
+  --brand-metaballs-2: #8a6a5c;
+  --brand-metaballs-3: #b18a78;
+  --brand-metaballs-4: #d0aa98;
+  --brand-metaballs-5: #ead3c5;
+  --brand-metaballs-bg: #201814;
+  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-3) 18%, transparent);
 }
 
 * {
@@ -1809,7 +1824,7 @@ textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset !important;
-  -webkit-text-fill-color: var(--color-text) !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
   transition: none;
 }
 

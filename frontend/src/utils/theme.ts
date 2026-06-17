@@ -20,4 +20,5 @@ export function applyThemePreference(value: ThemePreference) {
   const dark = value === 'dark' || (value === 'system' && prefersDark)
   root.classList.toggle('dark', dark)
   root.dataset.theme = value
+  window.dispatchEvent(new CustomEvent('prelude-theme-change', { detail: { theme: value } }))
 }
