@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnalyticsServiceImpl implements AnalyticsService {
 
+
     private final ScoreHistoryMapper scoreHistoryMapper;
     private final UserWeaknessMapper userWeaknessMapper;
 
@@ -31,7 +32,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         List<ScoreHistory> recentScores = scoreHistoryMapper.selectList(new LambdaQueryWrapper<ScoreHistory>()
             .eq(ScoreHistory::getUserId, currentUserId())
             .orderByDesc(ScoreHistory::getCreatedAt)
-            .last("LIMIT 10"));
+            .last("LIMIT 5"));
 
         return new AnalyticsRadarResponse(
             average(recentScores.stream().map(ScoreHistory::getTechnicalScore).toList()),

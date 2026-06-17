@@ -287,6 +287,11 @@
 
 ### 6.8 Analytics
 
+- Analytics cards / radar / trend use the latest 5 real completed scored sessions.
+- Radar chart must avoid heavy filled background surfaces.
+- Demo/dev seed should contain varied realistic interview sessions: 5 completed sessions for analytics and 1-3 ongoing sessions for workspace review.
+- Seed messages must not reuse identical scripts across sessions.
+
 - Score cards 固定技术、表达、逻辑三项。
 - 雷达图固定三维：技术能力、表达清晰度、逻辑思维；不增加维度。
 - 趋势图显示最近五次真实评分数据，日期来自真实 `score_history.created_at` 或关联 session 时间。
