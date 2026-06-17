@@ -56,3 +56,5 @@ This document is the maintenance baseline after the Prelude UI convergence work.
 - Seed messages must not reuse identical scripts across sessions.
 
 Demo seed data must be deterministic: exactly 5 finished sessions and 2 ongoing sessions for the demo user, with reports and score history only attached to finished sessions.
+
+- Seed SQL must remain reviewable: multi-line statements, no legacy April migration logic, and no generated compressed SQL lines.
