@@ -226,6 +226,38 @@ async function assertCanvasNonBlank(page, selector) {
   if (!nonBlank) throw new Error(`${selector} should render nonblank canvas pixels`)
 }
 
+async function assertDarkInputTextFill(page) {
+  const inputTextFill = await page.getByPlaceholder('请输入用户名').evaluate((input) => {
+    const style = window.getComputedStyle(input)
+    return {
+      fill: style.webkitTextFillColor,
+      primary: window.getComputedStyle(document.documentElement).getPropertyValue('--color-text-primary').trim(),
+    }
+  })
+  if (!inputTextFill.fill || inputTextFill.fill === 'rgb(0, 0, 0)') {
+    throw new Error(`Dark login input text fill should not be black, got ${inputTextFill.fill}`)
+  }
+}
+
+async function assertBrandMetaballsThemeUpdate(page) {
+  await page.evaluate(() => {
+    window.__preludeBrandCanvas = document.querySelector('.brand-metaballs canvas')
+  })
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark')
+    document.documentElement.dataset.theme = 'light'
+    window.dispatchEvent(new CustomEvent('prelude-theme-change', { detail: { theme: 'light' } }))
+  })
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('.brand-metaballs canvas')
+    return canvas && canvas !== window.__preludeBrandCanvas
+  })
+}
+
+async function chartFrame(page) {
+  return page.locator('.chart-surface canvas').first().evaluate((canvas) => canvas.toDataURL())
+}
+
 async function verifyDarkFlow(port) {
   const executablePath = findBrowserExecutable()
   const browser = await chromium.launch(executablePath ? { headless: true, executablePath } : { headless: true })
@@ -242,18 +274,9 @@ async function verifyDarkFlow(port) {
       await page.waitForSelector('html.dark', { timeout: 10000 })
       await page.waitForSelector('.brand-metaballs canvas', { timeout: 10000 })
       await assertCanvasNonBlank(page, '.brand-metaballs canvas')
+      await assertDarkInputTextFill(page)
+      await assertBrandMetaballsThemeUpdate(page)
     })
-
-    const inputTextFill = await page.getByPlaceholder('请输入用户名').evaluate((input) => {
-      const style = window.getComputedStyle(input)
-      return {
-        fill: style.webkitTextFillColor,
-        primary: window.getComputedStyle(document.documentElement).getPropertyValue('--color-text-primary').trim(),
-      }
-    })
-    if (!inputTextFill.fill || inputTextFill.fill === 'rgb(0, 0, 0)') {
-      throw new Error(`Dark login input text fill should not be black, got ${inputTextFill.fill}`)
-    }
 
     await page.addInitScript(() => {
       localStorage.setItem('auth', JSON.stringify({ token: 'playwright-token' }))
@@ -296,13 +319,29 @@ async function verifyDarkFlow(port) {
       await page.getByText('能力雷达').waitFor({ state: 'visible', timeout: 30000 })
       await page.waitForSelector('.chart-surface canvas', { state: 'visible', timeout: 10000 })
       await assertCanvasNonBlank(page, '.chart-surface canvas')
+      await page.evaluate(() => {
+        window.__preludeThemeEvents = 0
+        window.addEventListener('prelude-theme-change', () => {
+          window.__preludeThemeEvents += 1
+        })
+      })
 
       await page.getByRole('button', { name: '设置' }).click()
       await page.getByRole('button', { name: '主题' }).click()
+      const darkFrame = await chartFrame(page)
       await page.getByRole('button', { name: '浅色' }).click()
       await page.waitForSelector('html:not(.dark)', { timeout: 10000 })
+      await page.waitForFunction((previous) => {
+        const canvas = document.querySelector('.chart-surface canvas')
+        return window.__preludeThemeEvents >= 1 && canvas && canvas.toDataURL() !== previous
+      }, darkFrame)
+      const lightFrame = await chartFrame(page)
       await page.getByRole('button', { name: '暗色' }).click()
       await page.waitForSelector('html.dark', { timeout: 10000 })
+      await page.waitForFunction((previous) => {
+        const canvas = document.querySelector('.chart-surface canvas')
+        return window.__preludeThemeEvents >= 2 && canvas && canvas.toDataURL() !== previous
+      }, lightFrame)
       await page.keyboard.press('Escape')
       await assertCanvasNonBlank(page, '.chart-surface canvas')
     })
