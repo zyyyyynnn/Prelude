@@ -5,15 +5,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useAuthStore } from '../../stores/auth'
 import UserProfilePanel from './UserProfilePanel.vue'
 import LlmSettingsPanel from './LlmSettingsPanel.vue'
+import ThemeSettingsPanel from './ThemeSettingsPanel.vue'
 import { Button } from '@/components/ui/button'
+import { Palette } from '@lucide/vue'
 
 const visible = defineModel<boolean>('visible', { default: false })
-const activeTab = defineModel<'profile' | 'llm'>('activeTab', { default: 'profile' })
+const activeTab = defineModel<'profile' | 'theme' | 'llm'>('activeTab', { default: 'profile' })
 
 const router = useRouter()
 const authStore = useAuthStore()
 const profilePanel = ref<InstanceType<typeof UserProfilePanel> | null>(null)
+const themePanel = ref<InstanceType<typeof ThemeSettingsPanel> | null>(null)
 const llmPanel = ref<InstanceType<typeof LlmSettingsPanel> | null>(null)
+
+const settingsTitle = {
+  profile: '账号资料',
+  theme: '主题',
+  llm: 'LLM 配置',
+} as const
 
 function handleLogout() {
   authStore.clearSession()
@@ -38,6 +47,10 @@ function handleLogout() {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               账号资料
             </button>
+            <button :class="['menu-item', { 'is-active': activeTab === 'theme' }]" @click="activeTab = 'theme'">
+              <Palette class="h-4 w-4" />
+              主题
+            </button>
             <button :class="['menu-item', { 'is-active': activeTab === 'llm' }]" @click="activeTab = 'llm'">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
               LLM 配置
@@ -53,7 +66,7 @@ function handleLogout() {
 
         <main class="settings-main">
           <header class="settings-header">
-            <h3 class="settings-header__title">{{ activeTab === 'profile' ? '账号资料' : 'LLM 配置' }}</h3>
+            <h3 class="settings-header__title">{{ settingsTitle[activeTab] }}</h3>
             <div class="settings-header__actions">
               <template v-if="activeTab === 'llm'">
                 <Button
@@ -87,10 +100,22 @@ function handleLogout() {
                   保存设置
                 </Button>
               </template>
+              <template v-else-if="activeTab === 'theme'">
+                <Button
+                  size="sm"
+                  class="!font-serif"
+                  :disabled="themePanel?.saving || themePanel?.loading"
+                  :loading="themePanel?.saving"
+                  @click="themePanel?.submit()"
+                >
+                  保存主题
+                </Button>
+              </template>
             </div>
           </header>
           <div class="settings-content scrollable">
             <UserProfilePanel v-if="activeTab === 'profile'" ref="profilePanel" />
+            <ThemeSettingsPanel v-else-if="activeTab === 'theme'" ref="themePanel" />
             <LlmSettingsPanel v-else-if="activeTab === 'llm'" ref="llmPanel" />
           </div>
         </main>
@@ -135,17 +160,17 @@ function handleLogout() {
   gap: var(--spacing-sm);
   width: 100%;
   text-align: left;
-  padding: 0 14px;
+  padding: 0 var(--spacing-md);
   height: var(--ui-height-md);
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   font-family: var(--font-serif);
   color: var(--color-text-secondary);
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard), box-shadow var(--motion-duration-base) var(--motion-ease-standard);
 }
 .menu-item:hover {
   background: var(--color-surface-hover);
@@ -180,7 +205,7 @@ function handleLogout() {
 }
 .settings-header__title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: 500;
   font-family: var(--font-serif);
   color: var(--color-text-primary);
@@ -198,6 +223,6 @@ function handleLogout() {
 .placeholder {
   color: var(--color-text-tertiary);
   text-align: center;
-  padding: 40px;
+  padding: var(--spacing-2xl);
 }
 </style>

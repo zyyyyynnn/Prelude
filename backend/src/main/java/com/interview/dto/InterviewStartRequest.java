@@ -13,4 +13,6 @@ public class InterviewStartRequest {
     private Long positionId;
 
     private String jdText;
+
+    private String llmModel;
 }

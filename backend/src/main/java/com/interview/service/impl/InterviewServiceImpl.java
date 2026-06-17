@@ -132,7 +132,7 @@ public class InterviewServiceImpl implements InterviewService {
         session.setResumeId(resume.getId());
         session.setPositionId(position.getId());
         session.setTargetPosition(position.getName());
-        LlmSelection selection = llmRouter.resolveCurrentUserSelection();
+        LlmSelection selection = llmRouter.resolveCurrentUserSelection(request.getLlmModel());
         session.setLlmProvider(selection.providerKey());
         session.setLlmModel(selection.model());
         session.setStatus(STATUS_ONGOING);

@@ -24,20 +24,20 @@ const props = withDefaults(defineProps<Props>(), {
   <Primitive
     :as="as"
     :as-child="asChild"
-    :class="cn(buttonVariants({ variant, size }), 'relative overflow-hidden transition-colors duration-300 ease-in-out', props.class)"
+    :class="cn(buttonVariants({ variant, size }), 'relative overflow-hidden transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', props.class)"
     :disabled="loading || disabled"
   >
     <span 
-      :class="cn('flex w-full h-full min-w-0 items-center transition-opacity duration-300 ease-in-out', loading ? 'opacity-0' : 'opacity-100')"
+      :class="cn('flex w-full h-full min-w-0 items-center transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', loading ? 'opacity-0' : 'opacity-100')"
       style="gap: inherit; justify-content: inherit; align-items: inherit; flex-direction: inherit;"
     >
       <slot />
     </span>
     <Transition
-      enter-active-class="transition-opacity duration-300 ease-in-out"
+      enter-active-class="transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]"
       enter-from-class="opacity-0"
       enter-to-class="opacity-100"
-      leave-active-class="transition-opacity duration-300 ease-in-out"
+      leave-active-class="transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]"
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >

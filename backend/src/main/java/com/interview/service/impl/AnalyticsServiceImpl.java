@@ -43,9 +43,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     public List<AnalyticsTrendItemResponse> getTrend() {
-        return scoreHistoryMapper.selectList(new LambdaQueryWrapper<ScoreHistory>()
+        List<AnalyticsTrendItemResponse> recent = scoreHistoryMapper.selectList(new LambdaQueryWrapper<ScoreHistory>()
                 .eq(ScoreHistory::getUserId, currentUserId())
-                .orderByAsc(ScoreHistory::getCreatedAt))
+                .orderByDesc(ScoreHistory::getCreatedAt)
+                .last("LIMIT 5"))
             .stream()
             .map(item -> new AnalyticsTrendItemResponse(
                 item.getSessionId(),
@@ -55,6 +56,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 item.getLogicScore()
             ))
             .toList();
+        return recent.reversed();
     }
 
     @Override

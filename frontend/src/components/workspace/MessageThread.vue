@@ -122,7 +122,7 @@ onMounted(() => {
   align-items: flex-start;
 }
 .message-bubble__content {
-  padding: 12px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -130,24 +130,25 @@ onMounted(() => {
   white-space: pre-wrap;
   word-break: break-word;
   box-shadow: var(--shadow-whisper);
+  font-family: var(--font-sans);
 }
 .message-bubble--user .message-bubble__content {
   background: var(--color-surface-muted);
   border-color: var(--color-border);
-  border-top-right-radius: 4px;
+  border-top-right-radius: var(--radius-sm);
 }
 .message-bubble--assistant .message-bubble__content {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-whisper);
-  border-top-left-radius: 4px;
+  border-top-left-radius: var(--radius-sm);
 }
 .thinking-dots {
   color: var(--color-text-tertiary);
 }
 .thinking-dots::after {
   content: '';
-  animation: thinking-ellipsis 1.5s infinite;
+  animation: thinking-ellipsis var(--motion-duration-thinking) infinite;
 }
 @keyframes thinking-ellipsis {
   0% { content: '.'; }
@@ -156,18 +157,18 @@ onMounted(() => {
 }
 .reconnecting-status {
   align-self: center;
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-lg);
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   box-shadow: var(--shadow-whisper);
-  margin-top: 8px;
+  margin-top: var(--spacing-sm);
 }
 .reconnecting-status::after {
   content: '';
-  animation: thinking-ellipsis 1.5s infinite;
+  animation: thinking-ellipsis var(--motion-duration-thinking) infinite;
 }
 
 .message-bubble__judge-container {
@@ -205,7 +206,7 @@ onMounted(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {

@@ -167,7 +167,6 @@ onBeforeUnmount(() => {
             accept="application/pdf"
             type="file"
             @change="handleUpload"
-            style="display: none;"
           />
 
           <div v-if="items.length" class="resume-catalog">
@@ -224,7 +223,9 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  transition:
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard);
 }
 .resume-row:hover {
   border-color: var(--color-border-warm);
@@ -250,7 +251,7 @@ onBeforeUnmount(() => {
 }
 .resume-item__hint {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
 .resume-item__badges {

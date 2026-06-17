@@ -77,9 +77,13 @@ public class LlmRouter {
     }
 
     public LlmSelection resolveCurrentUserSelection() {
+        return resolveCurrentUserSelection(null);
+    }
+
+    public LlmSelection resolveCurrentUserSelection(String requestedModel) {
         User user = requireCurrentUser();
         LlmProvider provider = requireProvider(user.getLlmProvider());
-        String model = normalizeModel(user.getLlmModel(), provider.defaultModel());
+        String model = normalizeModel(requestedModel == null || requestedModel.isBlank() ? user.getLlmModel() : requestedModel, provider.defaultModel());
         validateProviderSelection(provider.providerKey(), model);
         return new LlmSelection(provider.providerKey(), model);
     }

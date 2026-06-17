@@ -14,6 +14,7 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
 
   // Clone original element so we can modify its layout without affecting the visible page
   const clone = originalElement.cloneNode(true) as HTMLElement
+  const surfaceColor = getComputedStyle(document.documentElement).getPropertyValue('--color-surface').trim()
   
   // Set clone dimensions and move it out of the viewport
   clone.style.position = 'absolute'
@@ -21,7 +22,7 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
   clone.style.top = '0'
   clone.style.width = originalElement.offsetWidth + 'px'
   clone.style.height = 'auto'
-  clone.style.backgroundColor = 'var(--color-surface, #faf9f5)'
+  clone.style.backgroundColor = surfaceColor
   
   document.body.appendChild(clone)
 
@@ -77,7 +78,7 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
     useCORS: true,
     logging: false,
     allowTaint: true,
-    backgroundColor: '#faf9f5', // Visual baseline background color
+    backgroundColor: surfaceColor,
   })
 
   // Optimize image smoothness

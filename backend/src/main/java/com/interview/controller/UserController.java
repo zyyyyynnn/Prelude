@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/user")
@@ -56,5 +58,10 @@ public class UserController {
     @PutMapping("/profile")
     public Result<UserProfileResponse> updateProfile(@Valid @RequestBody UserProfileRequest request) {
         return Result.success(userProfileService.updateCurrentUserProfile(request));
+    }
+
+    @PostMapping("/avatar")
+    public Result<UserProfileResponse> updateAvatar(@RequestParam("file") MultipartFile file) {
+        return Result.success(userProfileService.updateAvatar(file));
     }
 }

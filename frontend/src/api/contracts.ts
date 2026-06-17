@@ -32,6 +32,13 @@ export type InterviewStartResponse = {
   currentStage?: InterviewStageName
 }
 
+export type InterviewStartPayload = {
+  resumeId: number
+  positionId: number
+  jdText?: string
+  llmModel?: string
+}
+
 export type InterviewFinishResponse = {
   sessionId?: number
   summaryReport: string
@@ -161,15 +168,21 @@ export type LlmConfigTestResponse = {
 }
 
 export type UserProfilePayload = {
+  username?: string
   email?: string
   oldPassword?: string
   newPassword?: string
+  themePreference?: ThemePreference
 }
 
 export type UserProfileResponse = {
   username?: string
   email?: string
+  avatarUrl?: string
+  themePreference?: ThemePreference
 }
+
+export type ThemePreference = 'light' | 'dark' | 'system'
 
 export type AnalyticsRadarResponse = {
   technical: number

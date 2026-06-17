@@ -15,14 +15,17 @@ import MessageThread from '../components/workspace/MessageThread.vue'
 import InterviewComposer from '../components/workspace/InterviewComposer.vue'
 import { exportToPdf } from '../utils/pdf'
 import { withMinDelay } from '../lib/utils'
+import { useConfirmDialog } from '../composables/useConfirmDialog'
+import RoseThree from '../components/ui/loader/RoseThree.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const { showNotice } = usePageNotice()
+const confirmDialog = useConfirmDialog()
 
 const emit = defineEmits<{ 
   // 该事件会向上冒泡，最终由 App.vue 的 handleOpenSettings 接管处理
-  (e: 'open-global-settings', tab?: 'profile' | 'llm'): void 
+  (e: 'open-global-settings', tab?: 'profile' | 'theme' | 'llm'): void
 }>()
 
 const {
@@ -98,7 +101,12 @@ async function loadDashboard() {
         try {
           const parsed = JSON.parse(snapshot)
           if (parsed.sessionId === activeSessionId.value) {
-            const doResume = window.confirm('检测到上次未完成的 AI 回复，是否恢复？')
+            const doResume = await confirmDialog.confirm({
+              title: '恢复 AI 回复',
+              message: '检测到上次未完成的 AI 回复，是否恢复？',
+              confirmText: '恢复',
+              cancelText: '忽略',
+            })
             if (doResume && replay.value) {
               const target = replay.value.messages.find(m => m.id === parsed.messageId)
               if (target) {
@@ -142,7 +150,7 @@ async function handleUpload(file: File) {
   }
 }
 
-async function createNewInterview(jdText = '') {
+async function createNewInterview(jdText = '', llmModel?: string) {
   if (!selectedResumeId.value || !selectedPositionId.value) {
     showNotice('请选择简历和岗位', 'warning')
     return
@@ -157,6 +165,7 @@ async function createNewInterview(jdText = '') {
       resumeId: selectedResumeId.value,
       positionId: selectedPositionId.value,
       jdText: jdText || undefined,
+      llmModel: llmModel || undefined,
     }))
     await refreshSessionList()
     await loadSession(result.sessionId, true)
@@ -820,7 +829,7 @@ onBeforeUnmount(() => {
       <div class="workspace-active__main">
         <div v-if="isGenerating" class="workspace-generating scrollable">
           <div class="generating-card">
-            <div class="sandglass-icon">⏳</div>
+            <RoseThree class="generating-rose" :speed-multiplier="0.9" />
             <h3 class="generating-title">AI 评估报告生成中...</h3>
             <p class="generating-subtitle">我们正在整理您的答题表现，并调用 LLM-as-Judge 进行深度诊断，请稍候（约需 10-15 秒）</p>
             <div class="generating-progress">
@@ -950,7 +959,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--spacing-2xl);
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--color-brand) 8%, transparent), 0 2px 6px color-mix(in srgb, var(--color-brand) 4%, transparent);
+  box-shadow: var(--shadow-whisper);
 }
 .workspace-composer-fixed {
   position: absolute;
@@ -980,7 +989,7 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 .voice-close-btn {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   padding: 0 var(--spacing-md);
   height: var(--ui-height-sm);
   border-radius: var(--radius-md);
@@ -988,7 +997,7 @@ onBeforeUnmount(() => {
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  transition: var(--motion-transition-surface);
 }
 .voice-close-btn:hover {
   background-color: var(--color-surface-hover);
@@ -1015,16 +1024,11 @@ onBeforeUnmount(() => {
   box-shadow: 0 8px 30px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
   text-align: center;
 }
-.sandglass-icon {
-  font-size: 48px;
+.generating-rose {
+  width: calc(var(--ui-height-base) * 2);
+  height: calc(var(--ui-height-base) * 2);
+  color: var(--rose-three-color);
   margin-bottom: var(--spacing-lg);
-  animation: flip-sandglass 2s infinite ease-in-out;
-}
-@keyframes flip-sandglass {
-  0% { transform: rotate(0deg); }
-  45% { transform: rotate(0deg); }
-  55% { transform: rotate(180deg); }
-  100% { transform: rotate(180deg); }
 }
 .generating-title {
   font-family: var(--font-serif);
@@ -1034,7 +1038,7 @@ onBeforeUnmount(() => {
   margin-bottom: var(--spacing-xs);
 }
 .generating-subtitle {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-lg);
   line-height: 1.6;
@@ -1054,7 +1058,7 @@ onBeforeUnmount(() => {
   border-radius: 2px;
   position: absolute;
   left: -50%;
-  animation: progress-ind-anim 1.5s infinite linear;
+  animation: progress-ind-anim var(--motion-duration-slow) infinite var(--motion-ease-standard);
 }
 @keyframes progress-ind-anim {
   0% { left: -50%; }

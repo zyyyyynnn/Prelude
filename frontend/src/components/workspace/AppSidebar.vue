@@ -90,7 +90,7 @@ function navigateTo(path: string) {
           <span class="sidebar-label app-sidebar__title">Prelude</span>
       </div>
       <button class="app-sidebar__toggle" @click="toggleCollapse" aria-label="Toggle Sidebar">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" :class="['transition-transform duration-300 ease-in-out', { 'rotate-180': collapsed }]">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" :class="['transition-transform [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', { 'rotate-180': collapsed }]">
           <path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
@@ -134,7 +134,7 @@ function navigateTo(path: string) {
 
               <!-- Quick actions on hover -->
               <div class="session-item-actions">
-                <button class="action-btn" @click.stop="togglePin(session.sessionId)">
+                <button class="action-btn" :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'" @click.stop="togglePin(session.sessionId)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" v-if="isSessionPinned(session.sessionId)">
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                   </svg>
@@ -142,7 +142,7 @@ function navigateTo(path: string) {
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
+                <button class="action-btn delete-btn" aria-label="删除会话" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6" stroke-linecap="round" stroke-linejoin="round"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -176,7 +176,7 @@ function navigateTo(path: string) {
 
               <!-- Quick actions on hover -->
               <div class="session-item-actions">
-                <button class="action-btn" @click.stop="togglePin(session.sessionId)">
+                <button class="action-btn" :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'" @click.stop="togglePin(session.sessionId)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" v-if="isSessionPinned(session.sessionId)">
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                   </svg>
@@ -184,7 +184,7 @@ function navigateTo(path: string) {
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
+                <button class="action-btn delete-btn" aria-label="删除会话" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6" stroke-linecap="round" stroke-linejoin="round"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -263,7 +263,7 @@ function navigateTo(path: string) {
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
   overflow-x: hidden;
-  transition: width 0.3s ease-in-out;
+  transition: width var(--motion-duration-base) var(--motion-ease-standard);
   will-change: width;
   transform: translateZ(0); /* 强制开启 GPU 加速，消除卡顿 */
   backface-visibility: hidden; /* 消除某些浏览器在动画期间的字体模糊闪烁 */
@@ -289,7 +289,7 @@ function navigateTo(path: string) {
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard), width var(--motion-duration-base) var(--motion-ease-standard);
   width: 180px;
   opacity: 1;
   transform: translateZ(0);
@@ -316,7 +316,7 @@ function navigateTo(path: string) {
 .sidebar-label {
   white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.3s ease-in-out, width 0.3s ease-in-out;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard), width var(--motion-duration-base) var(--motion-ease-standard);
   display: inline-block;
   overflow: hidden;
   transform: translateZ(0);
@@ -370,7 +370,7 @@ function navigateTo(path: string) {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, padding 0.3s ease-in-out, gap 0.3s ease-in-out;
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard), padding var(--motion-duration-base) var(--motion-ease-standard), gap var(--motion-duration-base) var(--motion-ease-standard);
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -449,10 +449,10 @@ function navigateTo(path: string) {
   border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-family: var(--font-serif);
   line-height: 1;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -471,7 +471,7 @@ function navigateTo(path: string) {
   outline-offset: -2px;
 }
 .session-group__empty {
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   margin: 0 0 0 var(--spacing-sm);
 }
@@ -500,7 +500,7 @@ function navigateTo(path: string) {
   align-items: center;
   gap: 4px;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
   background: linear-gradient(90deg, transparent 0%, var(--color-surface) 25%, var(--color-surface) 100%);
   padding-left: var(--spacing-sm);
 }
@@ -536,7 +536,7 @@ function navigateTo(path: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
 }
 .action-btn:focus-visible {
   outline: 2px solid var(--color-brand);
@@ -554,7 +554,7 @@ function navigateTo(path: string) {
 /* 侧边栏折叠过度 */
 .sidebar-fade-enter-active,
 .sidebar-fade-leave-active {
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
 }
 .sidebar-fade-enter-from,
 .sidebar-fade-leave-to {
