@@ -364,7 +364,7 @@ a {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: calc(var(--spacing-sm) + (var(--spacing-xs) / 2));
   justify-content: flex-end;
   min-width: var(--app-shell-menu-width);
   min-height: 42px;
@@ -453,7 +453,7 @@ a {
 
 .app-shell__action-menu {
   display: grid;
-  gap: 10px;
+  gap: calc(var(--spacing-sm) + (var(--spacing-xs) / 2));
   width: calc(var(--app-shell-menu-width) + var(--app-shell-menu-frame-extra));
   padding: 8px;
   border: 1px solid var(--color-border-warm);
@@ -754,7 +754,7 @@ a {
 .prep-summary-panel__section {
   display: grid;
   align-content: center;
-  gap: 10px;
+  gap: calc(var(--spacing-sm) + (var(--spacing-xs) / 2));
   padding: 22px 20px;
 }
 
@@ -797,17 +797,17 @@ label,
 [data-slot="label"] {
   font-family: var(--font-serif);
   font-weight: 500;
-  font-size: 15px;
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
 
 .field {
   display: grid;
-  gap: 10px;
+  gap: calc(var(--spacing-sm) + (var(--spacing-xs) / 2));
 }
 
 .field__label {
-  font-size: 15px;
+  font-size: var(--font-size-md);
   color: var(--color-text-secondary);
 }
 
@@ -974,7 +974,7 @@ label,
 .upload-field__name {
   min-width: 0;
   color: var(--color-text-secondary);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1062,7 +1062,7 @@ label,
 .stage-rail {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: calc(var(--spacing-sm) + (var(--spacing-xs) / 2));
 }
 
 .stage-rail__item {
@@ -1099,12 +1099,12 @@ label,
   height: 26px;
   border: 1px solid var(--color-border-warm);
   border-radius: 999px;
-  padding: 0 8px;
+  padding: 0 var(--spacing-sm);
   font-size: var(--font-size-xs);
 }
 
 .stage-rail__label {
-  font-size: 15px;
+  font-size: var(--font-size-md);
 }
 
 .session-list,
@@ -1252,7 +1252,7 @@ label,
 .markdown-body {
   color: var(--color-text-primary);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   line-height: 1.7;
 }
 
