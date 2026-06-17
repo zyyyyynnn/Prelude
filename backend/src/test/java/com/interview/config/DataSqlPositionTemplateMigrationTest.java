@@ -70,8 +70,14 @@ class DataSqlPositionTemplateMigrationTest {
             .doesNotContain("2026-04")
             .doesNotContain("旧的 4 月")
             .doesNotContain("迁移旧")
+            .doesNotContain("old_s")
+            .doesNotContain("new_s")
             .doesNotContain("UPDATE `interview_session` old_s")
-            .doesNotContain("INSERT INTO `interview_stage`");
+            .doesNotContain("INSERT INTO `interview_stage`")
+            .doesNotContain("2026-06-16 14:00:00")
+            .doesNotContain("2026-06-15 10:00:00")
+            .doesNotContain("2026-06-14 16:10:00")
+            .doesNotContain("2026-06-12 15:30:00");
 
         // 4. 禁止垃圾内容
         assertThat(sql)
@@ -98,8 +104,25 @@ class DataSqlPositionTemplateMigrationTest {
         assertThat(countOccurrences(sql, "'finished', NULL, CONCAT(")).isEqualTo(5);
         assertThat(countOccurrences(sql, "'ongoing', NULL, NULL,")).isEqualTo(2);
 
+        assertThat(sql).contains(
+            "SELECT u.`id`, s.`id`, 5, 6, 4, '2026-06-11 10:00:00'",
+            "SELECT u.`id`, s.`id`, 6, 7, 5, '2026-06-12 11:00:00'",
+            "SELECT u.`id`, s.`id`, 7, 6, 8, '2026-06-13 14:00:00'",
+            "SELECT u.`id`, s.`id`, 7, 8, 6, '2026-06-14 16:00:00'",
+            "SELECT u.`id`, s.`id`, 8, 7, 9, '2026-06-15 15:00:00'"
+        );
+
         // 全量清理 SQL
-        assertThat(sql).contains("DELETE uw FROM `user_weakness` uw JOIN `interview_session` s ON uw.`session_id` = s.`id` JOIN `user` u ON s.`user_id` = u.`id` WHERE u.`username` = 'demo';");
+        assertThat(sql).containsSubsequence(
+            "DELETE uw FROM `user_weakness` uw JOIN `interview_session` s ON uw.`session_id` = s.`id` JOIN `user` u ON s.`user_id` = u.`id` WHERE u.`username` = 'demo';",
+            "DELETE sh FROM `score_history` sh JOIN `interview_session` s ON sh.`session_id` = s.`id` JOIN `user` u ON s.`user_id` = u.`id` WHERE u.`username` = 'demo';",
+            "DELETE st FROM `interview_stage` st JOIN `interview_session` s ON st.`session_id` = s.`id` JOIN `user` u ON s.`user_id` = u.`id` WHERE u.`username` = 'demo';",
+            "DELETE msg FROM `interview_message` msg JOIN `interview_session` s ON msg.`session_id` = s.`id` JOIN `user` u ON s.`user_id` = u.`id` WHERE u.`username` = 'demo';",
+            "DELETE s FROM `interview_session` s JOIN `user` u ON s.`user_id` = u.`id` WHERE u.`username` = 'demo';"
+        );
+        assertThat(sql)
+            .doesNotContain("created_at IN")
+            .doesNotContain("target_position IN");
         
         assertThat(sql).doesNotContain("INSERT INTO `interview_stage`");
     }
