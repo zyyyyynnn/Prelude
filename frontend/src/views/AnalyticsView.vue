@@ -30,9 +30,9 @@ const scoreCards = computed(() => {
   }
 
   return [
-    { label: '技术能力', value: radar.value.technical.toFixed(1), hint: '最近 10 场均分' },
-    { label: '表达清晰度', value: radar.value.expression.toFixed(1), hint: '结构、表达和节奏' },
-    { label: '逻辑思维', value: radar.value.logic.toFixed(1), hint: '问题拆解与推演' },
+    { label: '技术能力', value: radar.value.technical.toFixed(1), hint: '最近 5 场均分' },
+    { label: '表达清晰度', value: radar.value.expression.toFixed(1), hint: '最近 5 场均分' },
+    { label: '逻辑思维', value: radar.value.logic.toFixed(1), hint: '最近 5 场均分' },
   ]
 })
 
@@ -109,7 +109,7 @@ function renderCharts() {
         splitNumber: 5,
         axisName: { color: secondary, fontSize: cssVarNumber('--font-size-sm', 14) },
         splitLine: { lineStyle: { color: lineDecor } },
-        splitArea: { areaStyle: { color: [surface, lineDecor] } },
+        splitArea: { show: false },
         axisLine: { lineStyle: { color: ring } },
         indicator: [
           { name: '技术能力', max: 10 },

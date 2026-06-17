@@ -54,35 +54,29 @@ class DataSqlPositionTemplateMigrationTest {
         String sql = readDataSql();
 
         assertThat(sql).containsSubsequence(
-            "-- 3. demo 用户/默认演示会话/消息/评分/报告 seed",
+            "-- 4. Session UPDATE + INSERT",
             "WHERE u.`username` = 'demo'",
             "UPDATE `interview_session` s",
             "s.`created_at` = '2026-06-16 14:00:00'",
             "INSERT INTO `interview_session`",
             "INSERT INTO `interview_message`",
             "INSERT INTO `interview_stage`",
-            "INSERT INTO `score_history`",
-            "INSERT INTO `user_weakness`"
+            "INSERT INTO `user_weakness`",
+            "INSERT INTO `score_history`"
         );
         assertThat(sql)
             .doesNotContain("DELETE s\nFROM `interview_session` s")
             .doesNotContain("DELETE FROM `interview_session`");
-        assertThat(countOccurrences(sql, "INSERT INTO `interview_session`")).isEqualTo(4);
-        assertThat(countOccurrences(sql, "UPDATE `interview_session` s\nJOIN `user` u ON s.`user_id` = u.`id` AND u.`username` = 'demo'")).isEqualTo(4);
+        assertThat(countOccurrences(sql, "INSERT INTO `interview_session`")).isEqualTo(8);
+        assertThat(countOccurrences(sql, "UPDATE `interview_session` s\nJOIN `user` u ON s.`user_id` = u.`id` AND u.`username` = 'demo'")).isEqualTo(8);
         assertThat(sql)
             .contains("s.`status` = 'ongoing'")
             .contains("s.`summary_report` = NULL")
-            .contains("'deep_dive', 18, NULL")
             .contains("JOIN `interview_session` s ON uw.`session_id` = s.`id`")
             .contains("JOIN `interview_session` s ON st.`session_id` = s.`id`")
             .contains("JOIN `interview_session` s ON m.`session_id` = s.`id`")
-            .contains("分布式一致性")
-            .contains("前端边界治理")
-            .contains("实验复盘")
-            .contains("## 分阶段表现")
-            .contains("## 逐题反馈")
-            .contains("## 下一步学习计划");
-        assertThat(countOccurrences(sql, "UNION ALL SELECT")).isGreaterThanOrEqualTo(24);
+            .contains("## 结论")
+            .contains("## 维度评分");
         assertThat(sql)
             .doesNotContain("DELETE FROM `user`")
             .doesNotContain("DELETE FROM `resume`");

@@ -50,3 +50,7 @@ This document is the maintenance baseline after the Prelude UI convergence work.
 - New UI components must be added to `docs/ui-component-review-matrix.md`.
 - Components backed by canvas, charts, or shaders must respond to theme changes and rerender their palette.
 - Theme selection may preview immediately, but persisted preference must only be written after a successful save.
+- Analytics cards / radar / trend use the latest 5 real completed scored sessions.
+- Radar chart must avoid heavy filled background surfaces.
+- Demo/dev seed should contain varied realistic interview sessions: 5 completed sessions for analytics and 1-3 ongoing sessions for workspace review.
+- Seed messages must not reuse identical scripts across sessions.
