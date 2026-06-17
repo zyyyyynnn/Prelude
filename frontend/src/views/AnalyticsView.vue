@@ -57,6 +57,12 @@ function cssVar(name: string, fallback: string) {
   return resolveChartColor(value || fallback)
 }
 
+function cssVarNumber(name: string, fallback: number) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
 function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
   const d = new Date(dateString)
   const yyyy = d.getFullYear()
@@ -101,7 +107,7 @@ function renderCharts() {
       radar: {
         radius: '64%',
         splitNumber: 5,
-        axisName: { color: secondary, fontSize: 14 },
+        axisName: { color: secondary, fontSize: cssVarNumber('--font-size-sm', 14) },
         splitLine: { lineStyle: { color: lineDecor } },
         splitArea: { areaStyle: { color: [surface, lineDecor] } },
         axisLine: { lineStyle: { color: ring } },
@@ -327,7 +333,7 @@ onBeforeUnmount(() => {
 }
 .weakness-item__title {
   margin: 0 0 var(--spacing-xs) 0;
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: 500;
   color: var(--color-text-primary);
 }
