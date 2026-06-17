@@ -69,7 +69,9 @@ class DataSqlPositionTemplateMigrationTest {
         assertThat(sql)
             .doesNotContain("2026-04")
             .doesNotContain("旧的 4 月")
-            .doesNotContain("迁移旧");
+            .doesNotContain("迁移旧")
+            .doesNotContain("UPDATE `interview_session` old_s")
+            .doesNotContain("INSERT INTO `interview_stage`");
 
         // 4. 禁止垃圾内容
         assertThat(sql)
