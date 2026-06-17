@@ -50,58 +50,56 @@ class DataSqlPositionTemplateMigrationTest {
     }
 
     @Test
-    void demoSeedIsScopedToDemoUserAndDefaultSessions() throws Exception {
+    void demoSeedIsDeterministicAndReviewable() throws Exception {
         String sql = readDataSql();
 
+        // 1. 文件不是压缩 SQL
+        String[] lines = sql.split("\n");
+        assertThat(lines.length).isGreaterThan(300);
+        for (String line : lines) {
+            assertThat(line.length()).isLessThanOrEqualTo(240);
+        }
+
+        // 2. 禁止裸说明文字
+        assertThat(sql)
+            .doesNotContain("默认岗位数据与乱码修复/迁移：")
+            .doesNotContain("LLM provider 默认配置。");
+
+        // 3. 禁止旧迁移逻辑
+        assertThat(sql)
+            .doesNotContain("2026-04")
+            .doesNotContain("旧的 4 月")
+            .doesNotContain("迁移旧");
+
+        // 4. 禁止垃圾内容
+        assertThat(sql)
+            .doesNotContain("推荐算法工程师")
+            .doesNotContain("系统设计")
+            .doesNotContain("二面")
+            .doesNotContain("进阶")
+            .doesNotContain("demo message")
+            .doesNotContain("placeholder")
+            .doesNotContain("模拟数据")
+            .doesNotContain("#77");
+
+        // 5. 确定性 seed
         assertThat(sql).contains(
-            "-- === BEGIN DEMO SEED DATA ===",
-            "-- 1. DELETE EXISTING DEMO SESSIONS IN THIS TIME RANGE",
-            "WHERE u.`username` = 'demo'",
-            "INSERT INTO `interview_session`",
-            "INSERT INTO `interview_message`",
-            "INSERT INTO `score_history`",
-            "INSERT INTO `user_weakness`"
-        );
-        assertThat(sql)
-            .doesNotContain("DELETE s\nFROM `interview_session` s")
-            .doesNotContain("DELETE FROM `interview_session`;");
-        assertThat(countOccurrences(sql, "INSERT INTO `interview_session`")).isEqualTo(7);
-        assertThat(sql)
-            .contains("JOIN `interview_session` s ON uw.`session_id` = s.`id`")
-            .contains("JOIN `interview_session` s ON sh.`session_id` = s.`id`")
-            .contains("JOIN `interview_session` s ON im.`session_id` = s.`id`")
-            .contains("Spring 事务")
-            .contains("组件 API 设计")
-            .contains("简历与岗位匹配")
-            .contains("请求的幂等控制")
-            .contains("暗色主题");
-        assertThat(sql)
-            .doesNotContain("DELETE FROM `user`")
-            .doesNotContain("DELETE FROM `resume`");
-    }
-
-    @Test
-    void demoSeedMigratesOldAprilDataToJune() throws Exception {
-        String sql = readDataSql();
-
-        // data.sql 包含旧 4 月 demo natural key 及其迁移逻辑
-        assertThat(sql).containsSubsequence(
-            "-- 3.0 清理或迁移旧的 4 月 demo session 到 6 月",
-            "DELETE uw",
-            "FROM `user_weakness` uw",
-            "JOIN `interview_session` old_s ON uw.`session_id` = old_s.`id`",
-            "JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'",
-            "WHERE old_s.`created_at` IN ('2026-04-23 14:00:00', '2026-04-22 10:00:00', '2026-04-20 16:10:00', '2026-04-18 15:30:00')",
-            "DELETE old_s",
-            "FROM `interview_session` old_s",
-            "JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'",
-            "UPDATE `interview_session` old_s",
-            "JOIN `user` u ON old_s.`user_id` = u.`id` AND u.`username` = 'demo'",
-            "WHEN '2026-04-23 14:00:00' THEN '2026-06-16 14:00:00'"
+            "2026-06-11 10:00:00",
+            "2026-06-12 11:00:00",
+            "2026-06-13 14:00:00",
+            "2026-06-14 16:00:00",
+            "2026-06-15 15:00:00",
+            "2026-06-16 10:00:00",
+            "2026-06-16 11:30:00"
         );
 
-        // 确保清理逻辑严格作用于 demo 用户
-        assertThat(sql).doesNotContain("DELETE FROM `interview_session`;");
+        assertThat(countOccurrences(sql, "'finished', NULL, CONCAT(")).isEqualTo(5);
+        assertThat(countOccurrences(sql, "'ongoing', NULL, NULL,")).isEqualTo(2);
+
+        // 全量清理 SQL
+        assertThat(sql).contains("DELETE uw FROM `user_weakness` uw JOIN `interview_session` s ON uw.`session_id` = s.`id` JOIN `user` u ON s.`user_id` = u.`id` WHERE u.`username` = 'demo';");
+        
+        assertThat(sql).doesNotContain("INSERT INTO `interview_stage`");
     }
 
     private static void assertDefaultPositionCleanup(String sql, String defaultName, String badNameHex) {
