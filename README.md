@@ -124,12 +124,13 @@ docker compose --profile app --profile observability down
 ```text
 E:\Prelude
 ├── README.md
+├── DESIGN.md                  # UI 设计规范与样式维护基线
 ├── docs/                      # 公开文档、接口说明与截图
 ├── backend/                   # Spring Boot 后端
 ├── frontend/                  # Vue 前端
 ├── scripts/                   # dev mode 本机启动、重置和截图脚本
-├── thesis-assets/             # 论文材料、交付物与答辩资产
-├── thesis-handbook/           # 毕设流程手册与协作提示词
+├── thesis-assets/             # 论文材料、证据、交付物与答辩资产
+├── output/                    # dev 截图、验证产物与可复现输出记录
 ├── start-dev.bat              # 开发与人工验收入口（含 Vite HMR）
 ├── start-docker.bat           # Full Docker / 部署验证入口
 ```
