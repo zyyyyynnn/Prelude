@@ -1,199 +1,74 @@
 # 面试领域逻辑重构证据（2026-06-18）
 
-## 范围
+## 证据范围
 
-本证据记录一次结构质量重构：将文本面试链路与语音面试链路中重复的领域逻辑抽出到共享服务中，同时保持 API 契约、演示数据 seed 口径和前端视觉样式不变。
+本证据记录一次结构质量重构：文本面试链路和语音面试链路复用同一组领域服务，前端页面将底层流式通信、报告监听、语音 WebSocket 和语音播放队列下沉到 composable。重构不改变 API 契约、演示数据 seed、前端视觉样式或 UI token。
 
-涉及源码文件：
+## 后端源码索引
 
 - `backend/src/main/java/com/interview/service/impl/InterviewStageManager.java`
+  - 统一维护阶段顺序、阶段提示词、初始阶段创建、当前阶段查询、阶段推进和阶段关闭。
 - `backend/src/main/java/com/interview/service/impl/InterviewContextService.java`
+  - 统一构造文本与语音共用的 LLM 上下文，包含系统提示词、RAG 片段、滑动摘要和最近对话。
 - `backend/src/main/java/com/interview/service/impl/InterviewJudgeService.java`
+  - 统一处理即时评分、Redis 评分锁、JSON 解析、分数裁剪和消息评分持久化。
 - `backend/src/main/java/com/interview/service/impl/InterviewSummaryService.java`
+  - 统一处理滑动摘要异步刷新。
 - `backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
+  - 保留文本面试 start/list/get/updateStage/chat/finish/listen 编排职责。
 - `backend/src/main/java/com/interview/config/VoiceWebSocketHandler.java`
+  - 保留 WebSocket session 管理、音频 buffer、消息收发和语音链路编排职责。
+
+## 前端源码索引
+
 - `frontend/src/composables/useInterviewTextStream.ts`
+  - 负责普通文本 SSE stream、chunk buffer、离线 snapshot、watchdog 和发送流程。
 - `frontend/src/composables/useReportListener.ts`
+  - 负责 `/interview/{id}/listen` SSE、报告完成、fallback 和错误事件处理。
 - `frontend/src/composables/useVoiceInterviewSocket.ts`
+  - 负责语音 WebSocket 初始化、消息解析、语音状态和音频 chunk 入口。
 - `frontend/src/composables/useComposerVoice.ts`
+  - 负责麦克风录音、波形绘制、音频播放队列和 object URL 生命周期。
+- `frontend/src/views/InterviewView.vue`
+  - 保留页面状态编排和模板渲染。
+- `frontend/src/components/workspace/InterviewComposer.vue`
+  - 保留 send 框模板、事件绑定和视觉样式。
 
-## 后端领域服务
+## 核心片段定位
 
-`InterviewStageManager` 统一维护面试阶段顺序、阶段提示词、初始阶段创建、阶段推进和当前阶段查询：
-
-```java
-@Service
-@RequiredArgsConstructor
-public class InterviewStageManager {
-    public static final String STAGE_WARMUP = "warmup";
-    public static final String STAGE_TECHNICAL = "technical";
-    public static final String STAGE_DEEP_DIVE = "deep_dive";
-    public static final String STAGE_CLOSING = "closing";
-
-    public String currentStageName(Long sessionId) {
-        return Optional.ofNullable(currentOrLatestStage(sessionId))
-            .map(InterviewStage::getStageName)
-            .orElse(STAGE_WARMUP);
-    }
-
-    public Optional<InterviewStage> advanceStage(Long sessionId, boolean insertSystemPrompt) {
-        InterviewStage current = currentOrLatestStage(sessionId);
-        if (current == null || current.getEndedAt() != null) {
-            return Optional.empty();
-        }
-        closeStage(current);
-        int currentIndex = STAGE_ORDER.indexOf(current.getStageName());
-        if (currentIndex < 0 || currentIndex >= STAGE_ORDER.size() - 1) {
-            return Optional.empty();
-        }
-        return Optional.of(insertNextStage(sessionId, STAGE_ORDER.get(currentIndex + 1), insertSystemPrompt));
-    }
-}
-```
-
-`InterviewContextService` 统一构造文本与语音两条链路共用的 LLM 上下文，内容包括 RAG 片段、滑动摘要和最近对话：
+后端共享阶段逻辑入口：
 
 ```java
-public List<Map<String, String>> buildContextMessages(Long sessionId) {
-    InterviewSession session = interviewSessionMapper.selectById(sessionId);
-    if (session == null) {
-        return List.of();
-    }
-
-    ArrayList<Map<String, String>> messages = new ArrayList<>();
-    messages.add(Map.of("role", "system", "content", buildSystemPrompt(session)));
-
-    for (String chunk : sessionRagService.searchTopChunks(sessionId, session.getTargetPosition(), 4)) {
-        messages.add(Map.of("role", "system", "content", "相关简历/JD片段：" + chunk));
-    }
-
-    appendSummary(messages, session);
-    appendRecentDialogs(messages, sessionId);
-    return messages;
-}
+public Optional<InterviewStage> advanceStage(Long sessionId, boolean insertSystemPrompt)
 ```
 
-`InterviewJudgeService` 统一处理即时评分与提示生成、Redis 评分锁、JSON 解析、分数裁剪和持久化：
+后端共享上下文入口：
 
 ```java
-public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg, boolean voiceMode) {
-    String lockKey = "interview:judge:" + userMsg.getId();
-    Boolean locked = redisTemplate.opsForValue().setIfAbsent(lockKey, "1", Duration.ofMinutes(2));
-    if (!Boolean.TRUE.equals(locked)) {
-        return Optional.empty();
-    }
-
-    try {
-        JudgeResult result = resolveJudgeResult(session, userMsg, voiceMode);
-        userMsg.setScore(result.score());
-        userMsg.setHint(result.hint());
-        interviewMessageMapper.updateById(userMsg);
-        return Optional.of(result);
-    } finally {
-        redisTemplate.delete(lockKey);
-    }
-}
+public List<Map<String, String>> buildContextMessages(Long sessionId)
 ```
 
-`InterviewSummaryService` 统一处理异步滑动摘要刷新：
+后端共享评分入口：
 
 ```java
-public void triggerAsyncSummarizeIfNeeded(InterviewSession session, boolean voiceMode) {
-    if (session == null || session.getId() == null) {
-        return;
-    }
-    sseTaskExecutor.execute(() -> summarizeIfNeeded(session, voiceMode));
-}
+public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg, boolean voiceMode)
 ```
 
-## 重构后的编排关系
-
-`InterviewServiceImpl` 现在只保留文本面试编排职责，将阶段、上下文、评分和摘要等内部领域逻辑委托给共享服务：
-
-```java
-List<Map<String, String>> contextMessages = autoStart
-    ? interviewContextService.buildAutoStartMessages(session)
-    : interviewContextService.buildContextMessages(sessionId);
-
-llmRouter.streamWithSnapshot(
-    session.getLlmProvider(),
-    session.getLlmModel(),
-    contextMessages,
-    delta -> { ... }
-);
-
-interviewJudgeService.judgeAndPersist(session, userMsg, false)
-    .ifPresent(result -> sendJudgeEvent(emitter, result));
-interviewSummaryService.triggerAsyncSummarizeIfNeeded(session, false);
-```
-
-`VoiceWebSocketHandler` 保留 WebSocket 会话管理和语音链路编排职责，并复用共享领域服务：
-
-```java
-List<Map<String, String>> contextMessages = interviewContextService.buildContextMessages(activeSessionId);
-String aiText = llmRouter.chatWithSnapshot(
-    interviewSession.getLlmProvider(),
-    interviewSession.getLlmModel(),
-    contextMessages
-);
-
-interviewStageManager.advanceStage(activeSessionId, false);
-triggerVoiceJudge(interviewSession, userMsg, session);
-interviewSummaryService.triggerAsyncSummarizeIfNeeded(interviewSession, true);
-```
-
-## 前端职责拆分
-
-`InterviewView.vue` 将底层 SSE 流处理、报告监听和语音 WebSocket 管理委托给 composable：
+前端文本流入口：
 
 ```ts
-const {
-  appendMessage,
-  ensureAssistantPlaceholder,
-  appendAssistantDelta,
-  streamReply,
-  cleanupTextStream,
-} = useInterviewTextStream({ ... })
-
-const {
-  startListeningReport,
-  stopListeningReport,
-} = useReportListener({ ... })
-
-const {
-  voiceStatus,
-  incomingAudioChunk,
-  closeVoiceSocket,
-  handleAudioChunk,
-  handleStartRecording,
-  handleStopRecording,
-  handlePlayStatus,
-} = useVoiceInterviewSocket({ ... })
+const { streamReply, cleanupTextStream } = useInterviewTextStream({ ... })
 ```
 
-`InterviewComposer.vue` 保持模板和样式不变，将录音、波形绘制和音频播放队列委托给 `useComposerVoice`：
+前端语音播放入口：
 
 ```ts
-const {
-  setCanvasRef,
-  displayStatus,
-  isRecording,
-  startRecording,
-  stopRecording,
-} = useComposerVoice({
-  incomingAudio: toRef(props, 'incomingAudio'),
-  isVoiceMode: toRef(props, 'isVoiceMode'),
-  voiceStatus: toRef(props, 'voiceStatus'),
-  onAudioChunk: (chunk) => emit('voice-audio-chunk', chunk),
-  onStartRecording: () => emit('voice-start-recording'),
-  onStopRecording: () => emit('voice-stop-recording'),
-  onPlayStatus: (status) => emit('voice-play-status', status),
-})
+const { startRecording, stopRecording } = useComposerVoice({ ... })
 ```
 
 ## 验证记录
 
-本次证据检查点使用的验证命令：
+本证据检查点使用以下命令验证：
 
 ```powershell
 cd backend; mvn test

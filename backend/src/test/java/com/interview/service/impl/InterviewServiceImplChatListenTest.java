@@ -79,6 +79,7 @@ class InterviewServiceImplChatListenTest {
             interviewContextService,
             interviewJudgeService,
             interviewSummaryService,
+            new InterviewMessageService(interviewMessageMapper),
             directExecutor,
             sessionRagService,
             sseEmitterRegistry,

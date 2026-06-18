@@ -163,12 +163,13 @@ export function useInterviewTextStream(options: UseInterviewTextStreamOptions) {
   }
 
   async function streamReply(content: string, autoStart = false) {
-    if (!options.activeSessionId.value) {
+    const sessionId = options.activeSessionId.value
+    if (!sessionId) {
       options.showNotice('请先创建或选择一场面试', 'warning')
       return false
     }
     if (!options.replay.value) {
-      await options.loadSession(options.activeSessionId.value, true)
+      await options.loadSession(sessionId, true)
     }
 
     const optimisticUserId = autoStart ? null : Date.now()
@@ -193,15 +194,15 @@ export function useInterviewTextStream(options: UseInterviewTextStreamOptions) {
       options.reconnectingStatus.value = ''
       await streamInterviewChat(
         options.authToken(),
-        options.activeSessionId.value,
+        sessionId,
         { content, messages: trimContextMessages(options.replay.value?.messages || []) },
         autoStart,
         {
           onChunk(chunk) {
             appendAssistantDelta(assistantMessageId, chunk)
             const target = options.replay.value?.messages.find((m) => m.id === assistantMessageId)
-            if (target && options.activeSessionId.value) {
-              saveStreamSnapshot(options.activeSessionId.value, assistantMessageId, target.content + chunkBuffer)
+            if (target) {
+              saveStreamSnapshot(sessionId, assistantMessageId, target.content + chunkBuffer)
             }
           },
           onEvent(event) {
@@ -212,7 +213,9 @@ export function useInterviewTextStream(options: UseInterviewTextStreamOptions) {
       )
       options.reconnectingStatus.value = ''
       await options.refreshSessionList()
-      await options.loadSession(options.activeSessionId.value, true)
+      if (options.activeSessionId.value === sessionId) {
+        await options.loadSession(sessionId, true)
+      }
       return true
     } catch (error) {
       options.reconnectingStatus.value = ''

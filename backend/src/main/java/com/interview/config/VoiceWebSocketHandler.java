@@ -1,18 +1,11 @@
 package com.interview.config;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.UserContext;
-import com.interview.entity.InterviewMessage;
-import com.interview.entity.InterviewSession;
+import com.interview.entity.*;
 import com.interview.llm.LlmRouter;
-import com.interview.mapper.InterviewMessageMapper;
-import com.interview.mapper.InterviewSessionMapper;
-import com.interview.service.impl.InterviewContextService;
-import com.interview.service.impl.InterviewJudgeService;
-import com.interview.service.impl.InterviewStageManager;
-import com.interview.service.impl.InterviewSummaryService;
+import com.interview.service.impl.*;
 import com.interview.service.VoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,12 +31,12 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     private final VoiceService voiceService;
     private final LlmRouter llmRouter;
     private final ObjectMapper objectMapper;
-    private final InterviewSessionMapper interviewSessionMapper;
-    private final InterviewMessageMapper interviewMessageMapper;
     private final InterviewStageManager interviewStageManager;
     private final InterviewContextService interviewContextService;
     private final InterviewJudgeService interviewJudgeService;
     private final InterviewSummaryService interviewSummaryService;
+    private final VoiceInterviewSessionService voiceInterviewSessionService;
+    private final InterviewMessageService interviewMessageService;
     
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
@@ -105,12 +98,18 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
         if ("start".equalsIgnoreCase(type)) {
             Number sessionIdNum = (Number) requestMap.get("sessionId");
             if (sessionIdNum != null) {
-                activeSessionIds.put(session.getId(), sessionIdNum.longValue());
+                Long requestedSessionId = sessionIdNum.longValue();
+                InterviewSession interviewSession = voiceInterviewSessionService.validateActiveSession(userId, requestedSessionId);
+                if (interviewSession == null) {
+                    sendJson(session, Map.of("type", "error", "message", "面试会话不可用，请刷新后重试"));
+                    return;
+                }
+                activeSessionIds.put(session.getId(), requestedSessionId);
                 ByteArrayOutputStream buffer = sessionBuffers.get(session.getId());
                 if (buffer != null) {
                     buffer.reset(); // Reset audio accumulator for a new recording
                 }
-                log.info("Started voice session {} on connection {}", sessionIdNum, session.getId());
+                log.info("Started voice session {} on connection {}", requestedSessionId, session.getId());
             }
         } else if ("stop".equalsIgnoreCase(type)) {
             Long activeSessionId = activeSessionIds.get(session.getId());
@@ -131,7 +130,19 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             // Run processing chain asynchronously to prevent blocking WS connection thread
             sseTaskExecutor.execute(() -> {
                 UserContext.setCurrentUserId(userId);
+                UserContext.setCurrentSessionId(activeSessionId);
                 try {
+                    if (!Objects.equals(activeSessionIds.get(session.getId()), activeSessionId)) {
+                        sendJson(session, Map.of("type", "error", "message", "面试会话已切换，请重新开始语音输入"));
+                        return;
+                    }
+                    InterviewSession interviewSession = voiceInterviewSessionService.validateActiveSession(userId, activeSessionId);
+                    if (interviewSession == null) {
+                        activeSessionIds.remove(session.getId());
+                        sendJson(session, Map.of("type", "error", "message", "面试会话不可用，请刷新后重试"));
+                        return;
+                    }
+
                     // 1. Tell client that we are transcribing speech to text
                     sendJson(session, Map.of("type", "status", "status", "stt_processing"));
 
@@ -142,13 +153,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
                     }
 
                     // 2. Persist user message to database
-                    InterviewSession interviewSession = interviewSessionMapper.selectById(activeSessionId);
-                    InterviewMessage userMsg = new InterviewMessage();
-                    userMsg.setSessionId(activeSessionId);
-                    userMsg.setRole(ROLE_USER);
-                    userMsg.setContent(transcribed);
-                    userMsg.setSeqNum(nextSeqNum(activeSessionId));
-                    interviewMessageMapper.insert(userMsg);
+                    InterviewMessage userMsg = interviewMessageService.insertMessage(activeSessionId, ROLE_USER, transcribed);
 
                     // Send recognized text to display immediately in user chat bubble
                     sendJson(session, Map.of("type", "user_text", "text", transcribed));
@@ -231,7 +236,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
                     }
 
                     if (!finalReply.isEmpty()) {
-                        insertMessage(activeSessionId, ROLE_ASSISTANT, finalReply, nextSeqNum(activeSessionId));
+                        interviewMessageService.insertMessage(activeSessionId, ROLE_ASSISTANT, finalReply);
                     }
                     if (shouldAdvance) {
                         interviewStageManager.advanceStage(activeSessionId, false);
@@ -264,22 +269,6 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
         } catch (IOException e) {
             log.warn("Failed to push websocket message: {}", e.getMessage());
         }
-    }
-
-    private int nextSeqNum(Long sessionId) {
-        Long count = interviewMessageMapper.selectCount(new LambdaQueryWrapper<InterviewMessage>()
-                .eq(InterviewMessage::getSessionId, sessionId));
-        return count == null ? 0 : count.intValue();
-    }
-
-    private void insertMessage(Long sessionId, String role, String content, int seqNum) {
-        InterviewMessage message = new InterviewMessage();
-        message.setSessionId(sessionId);
-        message.setRole(role);
-        message.setContent(content);
-        message.setSeqNum(seqNum);
-        message.setCreatedAt(java.time.LocalDateTime.now());
-        interviewMessageMapper.insert(message);
     }
 
     private String extractSentenceIfComplete(StringBuilder builder) {

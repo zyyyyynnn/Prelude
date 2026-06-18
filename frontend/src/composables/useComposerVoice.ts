@@ -17,6 +17,7 @@ export function useComposerVoice(options: UseComposerVoiceOptions) {
   const isPlaying = ref(false)
   const displayStatus = ref('等待中')
   let currentAudio: HTMLAudioElement | null = null
+  let currentAudioUrl: string | null = null
   let brandColor = ''
   let borderWarmColor = ''
   let analyser: AnalyserNode | null = null
@@ -124,6 +125,13 @@ export function useComposerVoice(options: UseComposerVoiceOptions) {
     }
   }
 
+  function releaseCurrentAudioUrl() {
+    if (currentAudioUrl) {
+      URL.revokeObjectURL(currentAudioUrl)
+      currentAudioUrl = null
+    }
+  }
+
   function playNext() {
     if (playlist.value.length === 0) {
       isPlaying.value = false
@@ -143,17 +151,19 @@ export function useComposerVoice(options: UseComposerVoiceOptions) {
       }
       const blob = new Blob([array], { type: 'audio/mp3' })
       const url = URL.createObjectURL(blob)
+      currentAudioUrl = url
       currentAudio = new Audio(url)
       currentAudio.onended = () => {
-        URL.revokeObjectURL(url)
+        releaseCurrentAudioUrl()
         playNext()
       }
       currentAudio.onerror = () => {
-        URL.revokeObjectURL(url)
+        releaseCurrentAudioUrl()
         playNext()
       }
       currentAudio.play().catch((error) => {
         console.warn('Audio playback blocked or interrupted:', error)
+        releaseCurrentAudioUrl()
         playNext()
       })
     } catch (error) {
@@ -170,6 +180,7 @@ export function useComposerVoice(options: UseComposerVoiceOptions) {
       currentAudio.pause()
       currentAudio = null
     }
+    releaseCurrentAudioUrl()
   }
 
   watch(options.incomingAudio, (newVal) => {
