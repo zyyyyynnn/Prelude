@@ -5,27 +5,11 @@ import com.interview.common.BusinessException;
 import com.interview.common.UserContext;
 import com.interview.config.RabbitMqConfig;
 import com.interview.config.SseEmitterRegistry;
-import com.interview.dto.InterviewChatRequest;
-import com.interview.dto.InterviewFinishResponse;
-import com.interview.dto.InterviewMessageItemResponse;
-import com.interview.dto.InterviewMessagesResponse;
-import com.interview.dto.InterviewSessionItemResponse;
-import com.interview.dto.InterviewStageItemResponse;
-import com.interview.dto.InterviewStageUpdateRequest;
-import com.interview.dto.InterviewStageUpdateResponse;
-import com.interview.dto.InterviewStartRequest;
-import com.interview.dto.InterviewStartResponse;
-import com.interview.entity.InterviewMessage;
-import com.interview.entity.InterviewSession;
-import com.interview.entity.InterviewStage;
-import com.interview.entity.PositionTemplate;
-import com.interview.entity.Resume;
+import com.interview.dto.*;
+import com.interview.entity.*;
 import com.interview.llm.LlmRouter;
 import com.interview.llm.LlmSelection;
-import com.interview.mapper.InterviewMessageMapper;
-import com.interview.mapper.InterviewSessionMapper;
-import com.interview.mapper.PositionTemplateMapper;
-import com.interview.mapper.ResumeMapper;
+import com.interview.mapper.*;
 import com.interview.messaging.ReportJobMessage;
 import com.interview.service.DevFixtureService;
 import com.interview.service.InterviewService;
@@ -39,8 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 
 @Slf4j
@@ -70,6 +53,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final InterviewContextService interviewContextService;
     private final InterviewJudgeService interviewJudgeService;
     private final InterviewSummaryService interviewSummaryService;
+    private final InterviewMessageService interviewMessageService;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
     private final SessionRagService sessionRagService;
@@ -123,7 +107,7 @@ public class InterviewServiceImpl implements InterviewService {
         String jdText = request.getJdText();
         sseTaskExecutor.execute(() -> sessionRagService.indexSession(session.getId(), resumeText, jdText));
 
-        insertMessage(session.getId(), ROLE_SYSTEM, position.getSystemPrompt(), 0);
+        interviewMessageService.insertMessage(session.getId(), ROLE_SYSTEM, position.getSystemPrompt());
         interviewStageManager.ensureInitialStage(session);
 
         return new InterviewStartResponse(session.getId(), position.getName(), InterviewStageManager.STAGE_WARMUP);
@@ -189,7 +173,7 @@ public class InterviewServiceImpl implements InterviewService {
         }
         InterviewStage stage = interviewStageManager.moveToStage(sessionId, request.stageName(), true);
         if (isDevFixtureEnabled()) {
-            insertMessage(sessionId, ROLE_ASSISTANT, devFixtureService.resolveScriptedReply(stage.getStageName(), 0), nextSeqNum(sessionId));
+            interviewMessageService.insertMessage(sessionId, ROLE_ASSISTANT, devFixtureService.resolveScriptedReply(stage.getStageName(), 0));
         }
         return new InterviewStageUpdateResponse(stage.getStageName(), stage.getStartedAt());
     }
@@ -225,12 +209,7 @@ public class InterviewServiceImpl implements InterviewService {
                     }
                     Object lock = SESSION_LOCKS.get(sessionId.toString(), k -> new Object());
                     synchronized (lock) {
-                        insertedUserMsg = new InterviewMessage();
-                        insertedUserMsg.setSessionId(session.getId());
-                        insertedUserMsg.setRole(ROLE_USER);
-                        insertedUserMsg.setContent(content);
-                        insertedUserMsg.setSeqNum(nextSeqNum(session.getId()));
-                        interviewMessageMapper.insert(insertedUserMsg);
+                        insertedUserMsg = interviewMessageService.insertMessage(session.getId(), ROLE_USER, content);
                     }
 
                     List<Map<String, String>> messages = interviewContextService.buildContextMessages(session.getId());
@@ -246,7 +225,7 @@ public class InterviewServiceImpl implements InterviewService {
                 }
 
                 if (!finalReply.isEmpty()) {
-                    insertMessage(session.getId(), ROLE_ASSISTANT, finalReply, nextSeqNum(session.getId()));
+                    interviewMessageService.insertMessage(session.getId(), ROLE_ASSISTANT, finalReply);
                 }
                 assistantPersisted = true;
 
@@ -353,23 +332,6 @@ public class InterviewServiceImpl implements InterviewService {
         return interviewMessageMapper.selectCount(new LambdaQueryWrapper<InterviewMessage>()
             .eq(InterviewMessage::getSessionId, sessionId)
             .in(InterviewMessage::getRole, ROLE_USER, ROLE_ASSISTANT)) > 0;
-    }
-
-    private int nextSeqNum(Long sessionId) {
-        InterviewMessage latest = interviewMessageMapper.selectOne(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId)
-            .orderByDesc(InterviewMessage::getSeqNum)
-            .last("LIMIT 1"));
-        return latest == null ? 0 : latest.getSeqNum() + 1;
-    }
-
-    private void insertMessage(Long sessionId, String role, String content, int seqNum) {
-        InterviewMessage message = new InterviewMessage();
-        message.setSessionId(sessionId);
-        message.setRole(role);
-        message.setContent(content);
-        message.setSeqNum(seqNum);
-        interviewMessageMapper.insert(message);
     }
 
     private void streamAssistantReply(
