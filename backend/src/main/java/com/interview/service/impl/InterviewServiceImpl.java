@@ -5,11 +5,27 @@ import com.interview.common.BusinessException;
 import com.interview.common.UserContext;
 import com.interview.config.RabbitMqConfig;
 import com.interview.config.SseEmitterRegistry;
-import com.interview.dto.*;
-import com.interview.entity.*;
+import com.interview.dto.InterviewChatRequest;
+import com.interview.dto.InterviewFinishResponse;
+import com.interview.dto.InterviewMessageItemResponse;
+import com.interview.dto.InterviewMessagesResponse;
+import com.interview.dto.InterviewSessionItemResponse;
+import com.interview.dto.InterviewStageItemResponse;
+import com.interview.dto.InterviewStageUpdateRequest;
+import com.interview.dto.InterviewStageUpdateResponse;
+import com.interview.dto.InterviewStartRequest;
+import com.interview.dto.InterviewStartResponse;
+import com.interview.entity.InterviewMessage;
+import com.interview.entity.InterviewSession;
+import com.interview.entity.InterviewStage;
+import com.interview.entity.PositionTemplate;
+import com.interview.entity.Resume;
 import com.interview.llm.LlmRouter;
 import com.interview.llm.LlmSelection;
-import com.interview.mapper.*;
+import com.interview.mapper.InterviewMessageMapper;
+import com.interview.mapper.InterviewSessionMapper;
+import com.interview.mapper.PositionTemplateMapper;
+import com.interview.mapper.ResumeMapper;
 import com.interview.messaging.ReportJobMessage;
 import com.interview.service.DevFixtureService;
 import com.interview.service.InterviewService;
@@ -23,7 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 @Slf4j
@@ -38,11 +55,6 @@ public class InterviewServiceImpl implements InterviewService {
     private static final String ROLE_ASSISTANT = "assistant";
     private static final long SSE_TIMEOUT_MS = 120000L;
     private static final String STAGE_COMPLETE_TAG = "[STAGE_COMPLETE]";
-    private static final com.github.benmanes.caffeine.cache.Cache<String, Object> SESSION_LOCKS =
-        com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
-            .expireAfterAccess(java.time.Duration.ofMinutes(30))
-            .maximumSize(10_000)
-            .build();
     private final ResumeMapper resumeMapper;
     private final PositionTemplateMapper positionTemplateMapper;
     private final InterviewSessionMapper interviewSessionMapper;
@@ -207,10 +219,7 @@ public class InterviewServiceImpl implements InterviewService {
                     if (content.isEmpty()) {
                         throw BusinessException.badRequest("回答内容不能为空");
                     }
-                    Object lock = SESSION_LOCKS.get(sessionId.toString(), k -> new Object());
-                    synchronized (lock) {
-                        insertedUserMsg = interviewMessageService.insertMessage(session.getId(), ROLE_USER, content);
-                    }
+                    insertedUserMsg = interviewMessageService.insertMessage(session.getId(), ROLE_USER, content);
 
                     List<Map<String, String>> messages = interviewContextService.buildContextMessages(session.getId());
                     streamAssistantReply(session.getId(), session.getLlmProvider(), session.getLlmModel(), messages, assistantReply, emitter);
@@ -284,7 +293,7 @@ public class InterviewServiceImpl implements InterviewService {
             throw BusinessException.badRequest("报告生成任务发布失败");
         }
 
-        SESSION_LOCKS.invalidate(sessionId.toString());
+        interviewMessageService.invalidateSessionLock(sessionId);
 
         return new InterviewFinishResponse(session.getId(), null, "generating", jobId);
     }
