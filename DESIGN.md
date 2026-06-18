@@ -65,6 +65,7 @@
 - `--spacing-md`：面板和 section 常规 gap/padding。
 - `--spacing-lg`：页面 header、区块大 gap。
 - `--spacing-xl`、`--spacing-2xl`：页面级留白。
+- 常用半阶/负向间距必须沉淀为共享 token 直接使用，不在业务侧写 `calc(var(--spacing-*) ...)` 拼出常见值。
 
 ### 2.4 高度
 
