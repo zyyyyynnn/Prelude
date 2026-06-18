@@ -4,7 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.interview.entity.*;
+import com.interview.entity.InterviewMessage;
+import com.interview.entity.InterviewSession;
 import com.interview.llm.LlmRouter;
 import com.interview.mapper.InterviewMessageMapper;
 import com.interview.service.DevFixtureService;
@@ -14,7 +15,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
