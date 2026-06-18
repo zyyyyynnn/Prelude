@@ -58,6 +58,10 @@ class InterviewServiceImplChatListenTest {
     @Mock private StringRedisTemplate stringRedisTemplate;
     @Mock private SessionRagService sessionRagService;
     @Mock private RabbitTemplate rabbitTemplate;
+    @Mock private InterviewStageManager interviewStageManager;
+    @Mock private InterviewContextService interviewContextService;
+    @Mock private InterviewJudgeService interviewJudgeService;
+    @Mock private InterviewSummaryService interviewSummaryService;
 
     private final Executor directExecutor = Runnable::run;
     private InterviewServiceImpl service;
@@ -69,15 +73,13 @@ class InterviewServiceImplChatListenTest {
             positionTemplateMapper,
             interviewSessionMapper,
             interviewMessageMapper,
-            interviewStageMapper,
-            scoreHistoryMapper,
-            userWeaknessMapper,
             llmRouter,
             devFixtureService,
-            new ObjectMapper(),
-            interviewReportParser,
+            interviewStageManager,
+            interviewContextService,
+            interviewJudgeService,
+            interviewSummaryService,
             directExecutor,
-            stringRedisTemplate,
             sessionRagService,
             sseEmitterRegistry,
             rabbitTemplate
@@ -120,9 +122,6 @@ class InterviewServiceImplChatListenTest {
         when(interviewSessionMapper.selectById(7L)).thenReturn(session);
         when(interviewMessageMapper.selectOne(any())).thenReturn(null);
         AtomicReference<InterviewMessage> inserted = new AtomicReference<>();
-        when(interviewMessageMapper.selectList(any())).thenAnswer(invocation ->
-            inserted.get() == null ? List.of() : List.of(inserted.get()));
-        when(sessionRagService.searchTopChunks(any(), any(), anyInt())).thenReturn(List.of());
         doAnswer(invocation -> {
             InterviewMessage message = invocation.getArgument(0);
             message.setId(100L);

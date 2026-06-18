@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { computed, ref, watch, onMounted, toRef } from 'vue'
 import type { LlmProviderOption, ResumeItem, PositionTemplate } from '../../api/contracts'
 import { fetchProviders, fetchUserLlmConfig } from '../../api/llm'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,6 +21,7 @@ import {
 import { FileText, Briefcase, FileSearch, Terminal } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 import { dropdownTriggerVariants } from '@/components/ui/shared-dropdown'
+import { useComposerVoice } from '../../composables/useComposerVoice'
 
 const props = defineProps<{
   isCentered: boolean
@@ -142,239 +143,24 @@ function navigateToLlm() {
   emit('open-global-settings', 'llm')
 }
 
-// ==================== VOICE & CANVAS INTEGRATION ====================
-import { useVoiceMedia } from '../../composables/useVoiceMedia'
-
-const { isRecording, startRecording: mediaStart, stopRecording: mediaStop } = useVoiceMedia({
-  onAudioChunk(chunk) {
-    emit('voice-audio-chunk', chunk)
-  },
-  onWaveform(a) {
-    drawWaveLoop(a)
-  },
-})
-
-// Canvas for wave visualization
-const canvasRef = ref<HTMLCanvasElement | null>(null)
-
-// Audio playback queue
-const playlist = ref<string[]>([])
-let currentAudio: HTMLAudioElement | null = null
-const isPlaying = ref(false)
-
-// Watch incoming audio chunks to play them in queue
-watch(() => props.incomingAudio, (newVal) => {
-  if (newVal) {
-    appendAudio(newVal)
-  }
-})
-
-// Visual colors extracted dynamically from CSS variables
-let brandColor = ''
-let borderWarmColor = ''
-
-function getThemeColors() {
-  if (typeof window !== 'undefined') {
-    const style = getComputedStyle(document.documentElement)
-    brandColor = style.getPropertyValue('--color-brand').trim()
-    borderWarmColor = style.getPropertyValue('--color-border-warm').trim()
-  }
-}
-
-// Visual wave renderer
-let analyser: AnalyserNode | null = null
-let animFrameId: number | null = null
-
-function drawWaveLoop(a: AnalyserNode) {
-  if (!canvasRef.value) return
-  analyser = a
-  drawWave()
-}
-
-function drawWave() {
-  if (!canvasRef.value || !analyser) return
-  const canvas = canvasRef.value
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-
-  const bufferLength = analyser.frequencyBinCount
-  const dataArray = new Uint8Array(bufferLength)
-
-  const width = canvas.width
-  const height = canvas.height
-
-  const draw = () => {
-    animFrameId = requestAnimationFrame(draw)
-    analyser!.getByteFrequencyData(dataArray)
-
-    ctx.clearRect(0, 0, width, height)
-
-    // Draw multi-bar smooth jumping wave conforming to visual constraints
-    ctx.fillStyle = brandColor
-    const barWidth = 6
-    const barGap = 4
-    const barCount = Math.floor(width / (barWidth + barGap))
-
-    for (let i = 0; i < barCount; i++) {
-      // Create symmetrical heights
-      const distFromCenter = Math.abs(i - barCount / 2) / (barCount / 2)
-      const factor = Math.max(0, 1 - distFromCenter * distFromCenter)
-      
-      // Calculate dynamic bar height
-      let barHeight = (dataArray[i % bufferLength] / 255) * (height * 0.7) * factor
-      if (barHeight < 4) {
-        barHeight = 4 // Minimum bar height
-      }
-
-      const x = i * (barWidth + barGap)
-      const y = (height - barHeight) / 2
-
-      // Draw rounded rectangle for bars
-      ctx.beginPath()
-      ctx.roundRect(x, y, barWidth, barHeight, 3)
-      ctx.fill()
-    }
-  }
-
-  draw()
-}
-
-// Draw flat line as visual placeholder
-function drawFlatLine() {
-  const canvas = canvasRef.value
-  const ctx = canvas?.getContext('2d')
-  if (canvas && ctx) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.fillStyle = borderWarmColor
-    ctx.beginPath()
-    ctx.roundRect((canvas.width - 120) / 2, (canvas.height - 4) / 2, 120, 4, 2)
-    ctx.fill()
-  }
-}
-
-// Start capturing mic & record
-async function startRecording() {
-  if (isRecording.value) return
-  emit('voice-start-recording')
-
-  // Stop any active playbacks
-  stopPlayback()
-
-  await mediaStart()
-}
-
-// Stop recording and close mic
-function stopRecording() {
-  if (!isRecording.value) return
-  emit('voice-stop-recording')
-
-  mediaStop()
-
-  if (animFrameId) {
-    cancelAnimationFrame(animFrameId)
-    animFrameId = null
-  }
-
-  drawFlatLine()
-}
-
-// Add base64 sound to playback queue
-function appendAudio(base64: string) {
-  playlist.value.push(base64)
-  if (!isPlaying.value) {
-    playNext()
-  }
-}
-
-// Play next chunk in sequence
-function playNext() {
-  if (playlist.value.length === 0) {
-    isPlaying.value = false
-    emit('voice-play-status', 'idle')
-    return
-  }
-
-  isPlaying.value = true
-  emit('voice-play-status', 'playing')
-  const base64 = playlist.value.shift()!
-
-  try {
-    const binary = atob(base64)
-    const array = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) {
-      array[i] = binary.charCodeAt(i)
-    }
-    const blob = new Blob([array], { type: 'audio/mp3' })
-    const url = URL.createObjectURL(blob)
-
-    currentAudio = new Audio(url)
-    currentAudio.onended = () => {
-      URL.revokeObjectURL(url)
-      playNext()
-    }
-    currentAudio.onerror = () => {
-      URL.revokeObjectURL(url)
-      playNext()
-    }
-    currentAudio.play().catch((err) => {
-      console.warn('Audio playback blocked or interrupted:', err)
-      playNext()
-    })
-  } catch (err) {
-    console.error('Failed to parse and play audio chunk:', err)
-    playNext()
-  }
-}
-
-// Immediately abort any current playbacks
-function stopPlayback() {
-  playlist.value = []
-  isPlaying.value = false
-  emit('voice-play-status', 'idle')
-  if (currentAudio) {
-    currentAudio.pause()
-    currentAudio = null
-  }
-}
-
-// Display text mapping for voice interactions
-const displayStatus = ref('等待中')
-watch(() => props.voiceStatus, (newStatus) => {
-  if (newStatus === 'stt_processing') {
-    displayStatus.value = '正在识别您的发言...'
-  } else if (newStatus === 'tts_processing') {
-    displayStatus.value = 'AI 正在思考...'
-  } else if (newStatus === 'speaking') {
-    displayStatus.value = 'AI 正在发言...'
-  } else if (newStatus === 'listening') {
-    displayStatus.value = '您可以开始说话...'
-  } else {
-    displayStatus.value = '按住说话进行模拟'
-  }
-}, { immediate: true })
-
-watch(() => props.isVoiceMode, (newVal) => {
-  if (!newVal) {
-    stopRecording()
-    stopPlayback()
-  } else {
-    nextTick(() => {
-      drawFlatLine()
-    })
-  }
+const {
+  setCanvasRef,
+  displayStatus,
+  isRecording,
+  startRecording,
+  stopRecording,
+} = useComposerVoice({
+  incomingAudio: toRef(props, 'incomingAudio'),
+  isVoiceMode: toRef(props, 'isVoiceMode'),
+  voiceStatus: toRef(props, 'voiceStatus'),
+  onAudioChunk: (chunk) => emit('voice-audio-chunk', chunk),
+  onStartRecording: () => emit('voice-start-recording'),
+  onStopRecording: () => emit('voice-stop-recording'),
+  onPlayStatus: (status) => emit('voice-play-status', status),
 })
 
 onMounted(() => {
-  getThemeColors()
   void loadComposerModels()
-  if (props.isVoiceMode) {
-    drawFlatLine()
-  }
-})
-
-onBeforeUnmount(() => {
-  stopRecording()
-  stopPlayback()
 })
 </script>
 
@@ -413,7 +199,7 @@ onBeforeUnmount(() => {
                 <span class="status-text text-sm">{{ displayStatus }}</span>
               </div>
               <div class="voice-wave-container">
-                <canvas ref="canvasRef" width="300" height="60" class="voice-canvas" />
+                <canvas :ref="setCanvasRef" width="300" height="60" class="voice-canvas" />
               </div>
             </div>
           </div>

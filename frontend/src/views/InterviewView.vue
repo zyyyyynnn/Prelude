@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchPositions } from '../api/auth'
-import type { PositionTemplate, ResumeItem, InterviewMessageRecord } from '../api/contracts'
-import { startInterview, streamInterviewChat, finishInterview } from '../api/interview'
+import type { PositionTemplate, ResumeItem } from '../api/contracts'
+import { startInterview, finishInterview } from '../api/interview'
 import { getErrorMessage } from '../utils/errors'
 import { usePageNotice } from '../composables/usePageNotice'
 import { fetchResumes, uploadResume } from '../api/resume'
 import { useAuthStore } from '../stores/auth'
 import { renderMarkdown } from '../utils/markdown'
 import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
+import { useInterviewTextStream } from '../composables/useInterviewTextStream'
+import { useReportListener } from '../composables/useReportListener'
+import { useVoiceInterviewSocket } from '../composables/useVoiceInterviewSocket'
 import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
 import MessageThread from '../components/workspace/MessageThread.vue'
 import InterviewComposer from '../components/workspace/InterviewComposer.vue'
@@ -68,6 +71,68 @@ const isGenerating = computed(() => activeSession.value?.status === 'generating'
 
 const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
 const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || replay.value?.summaryReport || ''))
+
+const {
+  appendMessage,
+  ensureAssistantPlaceholder,
+  appendAssistantDelta,
+  streamReply,
+  cleanupTextStream,
+} = useInterviewTextStream({
+  activeSessionId,
+  replay,
+  reportMarkdown,
+  reconnectingStatus,
+  streamTimeoutId,
+  authToken: () => authStore.token,
+  getNewAbortSignal,
+  abortActiveStream,
+  loadSession,
+  refreshSessionList,
+  showNotice,
+  showReport: () => {
+    showingReport.value = true
+  },
+  async onAuthExpired() {
+    authStore.clearSession()
+    await router.replace('/login?reason=expired')
+  },
+})
+
+const {
+  startListeningReport,
+  stopListeningReport,
+} = useReportListener({
+  activeSessionId,
+  isGenerating,
+  replay,
+  sessions,
+  reportMarkdown,
+  showingReport,
+  authToken: () => authStore.token,
+  loadSession,
+  showNotice,
+})
+
+const isVoiceMode = ref(false)
+const {
+  voiceStatus,
+  incomingAudioChunk,
+  closeVoiceSocket,
+  handleAudioChunk,
+  handleStartRecording,
+  handleStopRecording,
+  handlePlayStatus,
+} = useVoiceInterviewSocket({
+  activeSessionId,
+  isVoiceMode,
+  replay,
+  authToken: () => authStore.token,
+  showNotice,
+  appendMessage,
+  ensureAssistantPlaceholder,
+  appendAssistantDelta,
+})
 
 
 
@@ -179,224 +244,6 @@ async function createNewInterview(jdText = '', llmModel?: string) {
   }
 }
 
-function appendMessage(message: InterviewMessageRecord) {
-  if (!replay.value) return
-  replay.value.messages = [...replay.value.messages, message]
-}
-
-function removeMessageById(id: number | null) {
-  if (!replay.value || id == null) return
-  replay.value.messages = replay.value.messages.filter((message) => message.id !== id)
-}
-
-function ensureAssistantPlaceholder(id: number) {
-  if (!replay.value || replay.value.messages.some((message) => message.id === id)) return
-  appendMessage({
-    id,
-    role: 'assistant',
-    content: '',
-    createdAt: new Date().toISOString(),
-  })
-}
-
-// === Phase 3: Token Window & Offline Snapshot ===
-const MAX_CONTEXT_MESSAGES = 20
-
-function trimContextMessages(messages: InterviewMessageRecord[]) {
-  if (!messages) return []
-  if (messages.length <= MAX_CONTEXT_MESSAGES) return messages
-  const systemMsg = messages.find((m) => m.role === 'system')
-  const restMsgs = messages.filter((m) => m.role !== 'system')
-  const trimmed = restMsgs.slice(-MAX_CONTEXT_MESSAGES)
-  if (systemMsg) {
-    return [systemMsg, ...trimmed]
-  }
-  return trimmed
-}
-
-function createThrottle(fn: Function, delay: number) {
-  let lastTime = 0
-  return function (...args: any[]) {
-    const now = Date.now()
-    if (now - lastTime >= delay) {
-      fn(...args)
-      lastTime = now
-    }
-  }
-}
-
-const saveStreamSnapshot = createThrottle((sessionId: number, messageId: number, content: string) => {
-  sessionStorage.setItem('interview-stream-snapshot', JSON.stringify({ sessionId, messageId, content, timestamp: Date.now() }))
-}, 3000)
-
-// === Chunk Buffer (非响应式，避免高频触发 Vue 重渲染) ===
-let chunkBuffer = ''
-let chunkTargetId: number | null = null
-let chunkRafId: number | null = null
-
-function flushChunkBuffer() {
-  if (!chunkBuffer || !chunkTargetId || !replay.value) {
-    chunkBuffer = ''
-    chunkTargetId = null
-    chunkRafId = null
-    return
-  }
-
-  const list = [...replay.value.messages]
-  const target = list.find((m) => m.id === chunkTargetId)
-
-  if (!target || target.role !== 'assistant') {
-    list.push({
-      id: chunkTargetId,
-      role: 'assistant',
-      content: chunkBuffer,
-      createdAt: new Date().toISOString(),
-    })
-  } else {
-    target.content += chunkBuffer
-  }
-
-  replay.value.messages = list
-  chunkBuffer = ''
-  chunkRafId = null
-}
-
-function appendAssistantDelta(id: number, delta: string) {
-  // 将 chunk 追加到非响应式 buffer
-  chunkBuffer += delta
-  chunkTargetId = id
-  // 通过 rAF 节流：每个渲染帧最多刷新一次
-  if (chunkRafId === null) {
-    chunkRafId = requestAnimationFrame(flushChunkBuffer)
-  }
-}
-
-function clearAssistantPlaceholder(id: number) {
-  if (!replay.value) return
-  const list = [...replay.value.messages]
-  const target = list.find((message) => message.id === id)
-  if (target && target.role === 'assistant') {
-    target.content = ''
-    replay.value.messages = list
-  }
-}
-
-async function streamReply(content: string, autoStart = false) {
-  if (!activeSessionId.value) {
-    showNotice('请先创建或选择一场面试', 'warning')
-    return false
-  }
-  if (!replay.value) {
-    await loadSession(activeSessionId.value, true)
-  }
-
-  const optimisticUserId = autoStart ? null : Date.now()
-  const assistantMessageId = Date.now() + 1
-
-  if (!autoStart) {
-    appendMessage({
-      id: optimisticUserId!,
-      role: 'user',
-      content,
-      createdAt: new Date().toISOString(),
-    })
-  }
-  ensureAssistantPlaceholder(assistantMessageId)
-
-  const signal = getNewAbortSignal()
-
-  streamTimeoutId.value = setTimeout(() => {
-    abortActiveStream()
-    showNotice('网络或模型响应超时，已强制断开，请重试', 'error')
-    // sending 由 finally 块统一清理，不在 watchdog 中重复设置
-  }, 120000)
-
-  try {
-    reconnectingStatus.value = ''
-    await streamInterviewChat(
-      authStore.token,
-      activeSessionId.value,
-      { content, messages: trimContextMessages(replay.value?.messages || []) },
-      autoStart,
-      {
-        onChunk(chunk) {
-          appendAssistantDelta(assistantMessageId, chunk)
-          const target = replay.value?.messages.find((m) => m.id === assistantMessageId)
-          if (target) {
-            saveStreamSnapshot(activeSessionId.value, assistantMessageId, target.content + chunkBuffer)
-          }
-        },
-        onEvent(event) {
-          if (event.eventName === 'status') {
-            if (event.data === 'checking') {
-              reconnectingStatus.value = '连接异常，正在核对会话状态...'
-            } else if (event.data.startsWith('reconnecting_')) {
-              const attempt = event.data.split('_')[1]
-              reconnectingStatus.value = `连接已断开，正在尝试第 ${attempt} 次重连...`
-              clearAssistantPlaceholder(assistantMessageId)
-            }
-          } else if (event.eventName === 'sync') {
-            const serverMsgs = JSON.parse(event.data)
-            if (replay.value) {
-              replay.value.messages = serverMsgs
-            }
-            reconnectingStatus.value = ''
-          } else if (event.eventName === 'report_ready') {
-            reportMarkdown.value = event.data
-            if (replay.value) {
-              replay.value.summaryReport = event.data
-            }
-            showingReport.value = true
-          } else if (event.eventName === 'judge') {
-            const data = JSON.parse(event.data)
-            if (replay.value) {
-              const userMsgs = replay.value.messages.filter(m => m.role === 'user')
-              if (userMsgs.length > 0) {
-                const lastUserMsg = userMsgs[userMsgs.length - 1]
-                lastUserMsg.score = data.score
-                lastUserMsg.hint = data.hint
-              }
-            }
-          }
-        }
-      },
-      signal,
-    )
-    reconnectingStatus.value = ''
-    await refreshSessionList()
-    await loadSession(activeSessionId.value, true)
-    return true
-  } catch (error) {
-    reconnectingStatus.value = ''
-    if (error instanceof Error && error.name === 'AbortError') {
-      return false
-    }
-    removeMessageById(assistantMessageId)
-    removeMessageById(optimisticUserId)
-    const message = getErrorMessage(error)
-    if (message.includes('登录已失效')) {
-      authStore.clearSession()
-      await router.replace('/login?reason=expired')
-      return false
-    }
-    showNotice(message, 'error')
-    return false
-  } finally {
-    sessionStorage.removeItem('interview-stream-snapshot')
-    // 流结束时强制 flush 残留 chunk buffer
-    if (chunkRafId !== null) {
-      cancelAnimationFrame(chunkRafId)
-      flushChunkBuffer()
-    }
-    if (streamTimeoutId.value !== null) {
-      clearTimeout(streamTimeoutId.value)
-      streamTimeoutId.value = null
-    }
-  }
-}
-
-
-
 async function handleSend() {
   const content = answer.value.trim()
   if (!content) return
@@ -413,106 +260,6 @@ async function handleSend() {
 }
 
 
-
-const listenController = ref<AbortController | null>(null)
-
-function stopListening() {
-  if (listenController.value) {
-    listenController.value.abort()
-    listenController.value = null
-  }
-}
-
-function parseSseEvent(rawEvent: string) {
-  const lines = rawEvent.split('\n')
-  const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || 'message'
-  const data = lines
-    .filter((line) => line.startsWith('data:'))
-    .map((line) => line.slice(5).trimStart())
-    .join('\n')
-
-  return { eventName, data }
-}
-
-async function startListeningReport(sessionId: number) {
-  stopListening()
-  const controller = new AbortController()
-  listenController.value = controller
-  
-  const token = authStore.token
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
-  
-  try {
-    const response = await fetch(`${apiBaseUrl}/interview/${sessionId}/listen`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      signal: controller.signal,
-    })
-    
-    if (!response.ok || !response.body) {
-      throw new Error('监听接口连接失败')
-    }
-    
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      
-      buffer += decoder.decode(value, { stream: true }).replace(/\r/g, '')
-      let boundary = buffer.indexOf('\n\n')
-      while (boundary !== -1) {
-        const rawEvent = buffer.slice(0, boundary).trim()
-        buffer = buffer.slice(boundary + 2)
-        if (rawEvent) {
-          const parsed = parseSseEvent(rawEvent)
-          if (parsed.eventName === 'report_ready') {
-            reportMarkdown.value = parsed.data
-            if (replay.value) {
-              replay.value.summaryReport = parsed.data
-              replay.value.status = 'finished'
-            }
-            const sIdx = sessions.value.findIndex(s => s.sessionId === sessionId)
-            if (sIdx !== -1) {
-              sessions.value[sIdx].summaryReport = parsed.data
-              sessions.value[sIdx].status = 'finished'
-            }
-            showingReport.value = true
-            showNotice('评估报告已生成并就绪', 'success')
-            stopListening()
-            await loadSession(sessionId, true)
-          } else if (parsed.eventName === 'fallback') {
-            showNotice(parsed.data || '已为您自动切换至备用通道', 'warning')
-          } else if (parsed.eventName === 'error') {
-            showNotice(parsed.data || '报告生成失败', 'error')
-            if (replay.value) {
-              replay.value.status = 'ongoing'
-            }
-            const sIdx = sessions.value.findIndex(s => s.sessionId === sessionId)
-            if (sIdx !== -1) {
-              sessions.value[sIdx].status = 'ongoing'
-            }
-            stopListening()
-          }
-        }
-        boundary = buffer.indexOf('\n\n')
-      }
-    }
-  } catch (error: any) {
-    if (error.name === 'AbortError') return
-    console.error('Listen stream error:', error)
-    if (activeSessionId.value === sessionId && isGenerating.value) {
-      setTimeout(() => {
-        if (activeSessionId.value === sessionId && isGenerating.value) {
-          void startListeningReport(sessionId)
-        }
-      }, 3000)
-    }
-  }
-}
 
 async function handleFinish() {
   if (!activeSessionId.value) return
@@ -576,27 +323,15 @@ watch(isGenerating, (generating) => {
   if (generating && activeSessionId.value) {
     void startListeningReport(activeSessionId.value)
   } else {
-    stopListening()
+    stopListeningReport()
   }
 }, { immediate: true })
 
 watch(activeSessionId, (newId) => {
-  stopListening()
+  stopListeningReport()
   if (isGenerating.value && newId) {
     void startListeningReport(newId)
   }
-})
-
-onMounted(() => {
-  void loadDashboard()
-})
-
-onBeforeUnmount(() => {
-  if (streamTimeoutId.value !== null) {
-    clearTimeout(streamTimeoutId.value)
-    streamTimeoutId.value = null
-  }
-  abortActiveStream()
 })
 
 const reportRef = ref<HTMLElement | null>(null)
@@ -617,150 +352,10 @@ async function handleExportPdf() {
   }
 }
 
-// Voice-to-Voice Websocket Interactive States
-const isVoiceMode = ref(false)
-const voiceStatus = ref<'idle' | 'listening' | 'stt_processing' | 'tts_processing' | 'speaking'>('idle')
-const incomingAudioChunk = ref('')
-let voiceSocket: WebSocket | null = null
-const currentVoiceAssistantMsgId = ref<number | null>(null)
-
-function initVoiceWebSocket() {
-  if (voiceSocket) {
-    voiceSocket.close()
-    voiceSocket = null
-  }
-  if (!isVoiceMode.value || !activeSessionId.value) {
-    return
-  }
-
-  const loc = window.location
-  const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:'
-  // WebSocket endpoint maps to /api/ws and handles authentication
-  const wsUrl = `${proto}//${loc.host}/api/ws?token=${authStore.token}`
-
-  voiceSocket = new WebSocket(wsUrl)
-
-  voiceSocket.onopen = () => {
-    voiceSocket?.send(JSON.stringify({
-      type: 'start',
-      sessionId: activeSessionId.value
-    }))
-    voiceStatus.value = 'listening'
-  }
-
-  voiceSocket.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data)
-      if (msg.type === 'status') {
-        if (msg.status === 'stt_processing') {
-          voiceStatus.value = 'stt_processing'
-        } else if (msg.status === 'tts_processing') {
-          voiceStatus.value = 'tts_processing'
-        } else if (msg.status === 'speech_end') {
-          voiceStatus.value = 'listening'
-          currentVoiceAssistantMsgId.value = null
-        }
-      } else if (msg.type === 'user_text') {
-        // Optimistic append of users transcribed reply to the thread
-        appendMessage({
-          id: Date.now(),
-          role: 'user',
-          content: msg.text,
-          createdAt: new Date().toISOString()
-        })
-      } else if (msg.type === 'text') {
-        // Streaming subtitles from LLM assistant output
-        if (currentVoiceAssistantMsgId.value === null) {
-          currentVoiceAssistantMsgId.value = Date.now() + 2
-          ensureAssistantPlaceholder(currentVoiceAssistantMsgId.value)
-        }
-        appendAssistantDelta(currentVoiceAssistantMsgId.value, msg.chunk)
-      } else if (msg.type === 'audio') {
-        // Forward synthesized speech stream to playback queue
-        incomingAudioChunk.value = msg.data
-        nextTick(() => {
-          incomingAudioChunk.value = ''
-        })
-      } else if (msg.type === 'judge') {
-        // Feed live score badge
-        if (replay.value) {
-          const userMsgs = replay.value.messages.filter((m) => m.role === 'user')
-          if (userMsgs.length > 0) {
-            const last = userMsgs[userMsgs.length - 1]
-            last.score = msg.score
-            last.hint = msg.hint
-          }
-        }
-      } else if (msg.type === 'error') {
-        // Audio connection failure, fallback cleanly
-        showNotice(msg.message, 'warning')
-        isVoiceMode.value = false
-      }
-    } catch (e) {
-      console.error('Failed to parse voice socket message:', e)
-    }
-  }
-
-  voiceSocket.onclose = () => {
-    if (isVoiceMode.value) {
-      voiceStatus.value = 'idle'
-    }
-  }
-
-  voiceSocket.onerror = () => {
-    if (isVoiceMode.value) {
-      showNotice('语音交互连接异常，已自动为您切回文字模式', 'warning')
-      isVoiceMode.value = false
-    }
-  }
-}
-
-function handleAudioChunk(arrayBuffer: ArrayBuffer) {
-  if (voiceSocket && voiceSocket.readyState === WebSocket.OPEN) {
-    voiceSocket.send(new Uint8Array(arrayBuffer))
-  }
-}
-
-function handleStartRecording() {
-  if (voiceSocket && voiceSocket.readyState === WebSocket.OPEN) {
-    voiceSocket.send(JSON.stringify({ type: 'start', sessionId: activeSessionId.value }))
-    voiceStatus.value = 'listening'
-  }
-}
-
-function handleStopRecording() {
-  if (voiceSocket && voiceSocket.readyState === WebSocket.OPEN) {
-    voiceSocket.send(JSON.stringify({ type: 'stop' }))
-  }
-}
-
-function handlePlayStatus(status: 'playing' | 'idle') {
-  if (status === 'playing') {
-    voiceStatus.value = 'speaking'
-  } else {
-    if (voiceStatus.value === 'speaking') {
-      voiceStatus.value = 'listening'
-    }
-  }
-}
-
-watch(isVoiceMode, (newVal) => {
-  initVoiceWebSocket()
-  if (!newVal && voiceSocket) {
-    voiceSocket.close()
-    voiceSocket = null
-  }
-})
-
 watch(activeSessionId, (newId, oldId) => {
   if (newId !== oldId) {
     showingReport.value = false
     answer.value = ''
-    isVoiceMode.value = false
-    if (voiceSocket) {
-      voiceSocket.close()
-      voiceSocket = null
-    }
   }
 })
 
@@ -769,15 +364,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (streamTimeoutId.value !== null) {
-    clearTimeout(streamTimeoutId.value)
-    streamTimeoutId.value = null
-  }
+  cleanupTextStream()
   abortActiveStream()
-  if (voiceSocket) {
-    voiceSocket.close()
-    voiceSocket = null
-  }
+  closeVoiceSocket()
+  stopListeningReport()
 })
 </script>
 
