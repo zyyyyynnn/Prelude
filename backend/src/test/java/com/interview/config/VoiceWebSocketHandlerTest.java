@@ -1,18 +1,11 @@
 package com.interview.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.interview.entity.InterviewMessage;
 import com.interview.entity.InterviewSession;
-import com.interview.llm.LlmRouter;
-import com.interview.mapper.InterviewMessageMapper;
 import com.interview.mapper.InterviewSessionMapper;
-import com.interview.service.VoiceService;
-import com.interview.service.impl.InterviewContextService;
-import com.interview.service.impl.InterviewJudgeService;
-import com.interview.service.impl.InterviewMessageService;
-import com.interview.service.impl.InterviewStageManager;
-import com.interview.service.impl.InterviewSummaryService;
 import com.interview.service.impl.VoiceInterviewSessionService;
+import com.interview.service.impl.VoiceInterviewTurnService;
+import com.interview.service.impl.VoiceTurnEventSink;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,13 +17,12 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -40,50 +32,28 @@ import static org.mockito.Mockito.when;
 class VoiceWebSocketHandlerTest {
 
     @Mock
-    private VoiceService voiceService;
-    @Mock
-    private LlmRouter llmRouter;
-    @Mock
     private InterviewSessionMapper interviewSessionMapper;
     @Mock
-    private InterviewMessageMapper interviewMessageMapper;
-    @Mock
-    private InterviewStageManager interviewStageManager;
-    @Mock
-    private InterviewContextService interviewContextService;
-    @Mock
-    private InterviewJudgeService interviewJudgeService;
-    @Mock
-    private InterviewSummaryService interviewSummaryService;
+    private VoiceInterviewTurnService voiceInterviewTurnService;
     @Mock
     private WebSocketSession webSocketSession;
 
     private VoiceWebSocketHandler handler;
     private VoiceInterviewSessionService voiceInterviewSessionService;
-    private InterviewMessageService interviewMessageService;
 
     @BeforeEach
     void setUp() {
-        Executor directExecutor = Runnable::run;
         voiceInterviewSessionService = new VoiceInterviewSessionService(interviewSessionMapper);
-        interviewMessageService = new InterviewMessageService(interviewMessageMapper);
         handler = new VoiceWebSocketHandler(
-            voiceService,
-            llmRouter,
             new ObjectMapper(),
-            interviewStageManager,
-            interviewContextService,
-            interviewJudgeService,
-            interviewSummaryService,
             voiceInterviewSessionService,
-            interviewMessageService,
-            directExecutor
+            voiceInterviewTurnService
         );
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("userId", 42L);
         when(webSocketSession.getAttributes()).thenReturn(attributes);
         when(webSocketSession.getId()).thenReturn("ws-1");
-        when(webSocketSession.isOpen()).thenReturn(true);
+        org.mockito.Mockito.lenient().when(webSocketSession.isOpen()).thenReturn(true);
     }
 
     @Test
@@ -99,45 +69,42 @@ class VoiceWebSocketHandlerTest {
         verify(webSocketSession, times(2)).sendMessage(messageCaptor.capture());
         assertThat(messageCaptor.getAllValues().get(0).getPayload()).contains("面试会话不可用");
         assertThat(messageCaptor.getAllValues().get(1).getPayload()).contains("面试会话未初始化");
-        verifyNoInteractions(voiceService);
+        verifyNoInteractions(voiceInterviewTurnService);
     }
 
     @Test
-    void stopRevalidatesSessionBeforeAsyncVoiceProcessing() throws Exception {
+    void stopDelegatesAudioBufferToTurnServiceAfterValidStart() throws Exception {
         InterviewSession ongoing = session(7L, 42L, "ongoing");
-        InterviewSession finished = session(7L, 42L, "finished");
-        when(interviewSessionMapper.selectById(7L)).thenReturn(ongoing, finished);
+        when(interviewSessionMapper.selectById(7L)).thenReturn(ongoing);
 
         handler.afterConnectionEstablished(webSocketSession);
         handler.handleTextMessage(webSocketSession, new TextMessage("{\"type\":\"start\",\"sessionId\":7}"));
         handler.handleBinaryMessage(webSocketSession, new BinaryMessage(new byte[] {1, 2, 3}));
+        handler.handleTextMessage(webSocketSession, new TextMessage("{\"type\":\"stop\"}"));
+
+        ArgumentCaptor<byte[]> bytesCaptor = ArgumentCaptor.forClass(byte[].class);
+        verify(voiceInterviewTurnService).processTurn(
+            org.mockito.ArgumentMatchers.eq(42L),
+            org.mockito.ArgumentMatchers.eq(7L),
+            bytesCaptor.capture(),
+            any(VoiceTurnEventSink.class)
+        );
+        assertThat(bytesCaptor.getValue()).containsExactly(1, 2, 3);
+    }
+
+    @Test
+    void stopWithEmptyAudioBufferDoesNotInvokeTurnService() throws Exception {
+        InterviewSession ongoing = session(7L, 42L, "ongoing");
+        when(interviewSessionMapper.selectById(7L)).thenReturn(ongoing);
+
+        handler.afterConnectionEstablished(webSocketSession);
+        handler.handleTextMessage(webSocketSession, new TextMessage("{\"type\":\"start\",\"sessionId\":7}"));
         handler.handleTextMessage(webSocketSession, new TextMessage("{\"type\":\"stop\"}"));
 
         ArgumentCaptor<TextMessage> messageCaptor = ArgumentCaptor.forClass(TextMessage.class);
         verify(webSocketSession).sendMessage(messageCaptor.capture());
-        assertThat(messageCaptor.getValue().getPayload()).contains("面试会话不可用");
-        verifyNoInteractions(voiceService);
-    }
-
-    @Test
-    void stopUsesMaxSeqNumWhenPersistingVoiceUserMessage() throws Exception {
-        InterviewSession ongoing = session(7L, 42L, "ongoing");
-        when(interviewSessionMapper.selectById(7L)).thenReturn(ongoing, ongoing);
-        when(voiceService.speechToText(eq(7L), any(byte[].class), eq("voice.webm"))).thenReturn("语音回答");
-        when(interviewContextService.buildContextMessages(7L)).thenReturn(List.of());
-        InterviewMessage latest = new InterviewMessage();
-        latest.setSeqNum(5);
-        when(interviewMessageMapper.selectOne(any())).thenReturn(latest);
-
-        handler.afterConnectionEstablished(webSocketSession);
-        handler.handleTextMessage(webSocketSession, new TextMessage("{\"type\":\"start\",\"sessionId\":7}"));
-        handler.handleBinaryMessage(webSocketSession, new BinaryMessage(new byte[] {1, 2, 3}));
-        handler.handleTextMessage(webSocketSession, new TextMessage("{\"type\":\"stop\"}"));
-
-        ArgumentCaptor<InterviewMessage> messageCaptor = ArgumentCaptor.forClass(InterviewMessage.class);
-        verify(interviewMessageMapper).insert(messageCaptor.capture());
-        assertThat(messageCaptor.getValue().getRole()).isEqualTo("user");
-        assertThat(messageCaptor.getValue().getSeqNum()).isEqualTo(6);
+        assertThat(messageCaptor.getValue().getPayload()).contains("没有检测到任何音频数据");
+        verify(voiceInterviewTurnService, never()).processTurn(anyLong(), anyLong(), any(byte[].class), any());
     }
 
     private InterviewSession session(Long id, Long userId, String status) {
