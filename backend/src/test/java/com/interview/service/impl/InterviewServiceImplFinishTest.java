@@ -59,6 +59,10 @@ class InterviewServiceImplFinishTest {
     @Mock private StringRedisTemplate stringRedisTemplate;
     @Mock private SessionRagService sessionRagService;
     @Mock private RabbitTemplate rabbitTemplate;
+    @Mock private InterviewStageManager interviewStageManager;
+    @Mock private InterviewContextService interviewContextService;
+    @Mock private InterviewJudgeService interviewJudgeService;
+    @Mock private InterviewSummaryService interviewSummaryService;
 
     private final Executor directExecutor = Runnable::run;
 
@@ -71,15 +75,13 @@ class InterviewServiceImplFinishTest {
             positionTemplateMapper,
             interviewSessionMapper,
             interviewMessageMapper,
-            interviewStageMapper,
-            scoreHistoryMapper,
-            userWeaknessMapper,
             llmRouter,
             devFixtureService,
-            new ObjectMapper(),
-            interviewReportParser,
+            interviewStageManager,
+            interviewContextService,
+            interviewJudgeService,
+            interviewSummaryService,
             directExecutor,
-            stringRedisTemplate,
             sessionRagService,
             sseEmitterRegistry,
             rabbitTemplate

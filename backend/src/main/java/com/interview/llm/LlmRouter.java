@@ -201,14 +201,7 @@ public class LlmRouter {
         if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(failedProviderKey)) {
             throw BusinessException.badRequest("自定义接口调用失败，请检查 Base URL、API Key 与模型后重试。");
         }
-        List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
-            .eq(LlmProviderConfig::getEnabled, 1)
-            .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
-            .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
-            .orderByAsc(LlmProviderConfig::getId))
-            .stream()
-            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
-            .toList();
+        List<LlmProviderConfig> configs = listFallbackProviderConfigs(failedProviderKey);
 
         if (configs.isEmpty()) {
             throw BusinessException.badRequest("主大模型不可用且无配置的可用备用通道");
@@ -235,14 +228,7 @@ public class LlmRouter {
         if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(failedProviderKey)) {
             throw BusinessException.badRequest("自定义接口调用失败，请检查 Base URL、API Key 与模型后重试。");
         }
-        List<LlmProviderConfig> configs = llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
-            .eq(LlmProviderConfig::getEnabled, 1)
-            .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
-            .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
-            .orderByAsc(LlmProviderConfig::getId))
-            .stream()
-            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
-            .toList();
+        List<LlmProviderConfig> configs = listFallbackProviderConfigs(failedProviderKey);
 
         if (configs.isEmpty()) {
             throw BusinessException.badRequest("主大模型不可用且无配置的可用备用通道");
@@ -262,6 +248,17 @@ public class LlmRouter {
             String apiKey = resolveSystemApiKey(provider);
             provider.streamChat(buildInvocation(fallbackConfig, fallbackModel, apiKey, user, messages, extraParams), onDelta);
         });
+    }
+
+    private List<LlmProviderConfig> listFallbackProviderConfigs(String failedProviderKey) {
+        return llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
+            .eq(LlmProviderConfig::getEnabled, 1)
+            .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
+            .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
+            .orderByAsc(LlmProviderConfig::getId))
+            .stream()
+            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
+            .toList();
     }
 
     private void broadcastFallbackNotification(String displayName) {
