@@ -40,6 +40,7 @@ public class InterviewStageManager {
 
     private final InterviewStageMapper interviewStageMapper;
     private final InterviewMessageMapper interviewMessageMapper;
+    private final InterviewMessageService interviewMessageService;
 
     public void ensureInitialStage(InterviewSession session) {
         if (currentOrLatestStage(session.getId()) != null) {
@@ -234,20 +235,7 @@ public class InterviewStageManager {
             .orderByAsc(InterviewMessage::getSeqNum));
     }
 
-    private int nextSeqNum(Long sessionId) {
-        InterviewMessage latest = interviewMessageMapper.selectOne(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId)
-            .orderByDesc(InterviewMessage::getSeqNum)
-            .last("LIMIT 1"));
-        return latest == null ? 0 : latest.getSeqNum() + 1;
-    }
-
     private void insertSystemMessage(Long sessionId, String content) {
-        InterviewMessage message = new InterviewMessage();
-        message.setSessionId(sessionId);
-        message.setRole(ROLE_SYSTEM);
-        message.setContent(content);
-        message.setSeqNum(nextSeqNum(sessionId));
-        interviewMessageMapper.insert(message);
+        interviewMessageService.insertMessage(sessionId, ROLE_SYSTEM, content);
     }
 }
