@@ -72,7 +72,7 @@ jobs:
 
       - name: Check backend tests
         working-directory: backend
-        run: mvn -q test jacoco:report
+        run: mvn -q test
 
       - name: Upload backend coverage report
         if: always()
