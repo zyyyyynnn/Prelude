@@ -19,4 +19,15 @@ public class ThreadPoolConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean("ttsTaskExecutor")
+    public Executor ttsTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(64);
+        executor.setThreadNamePrefix("tts-");
+        executor.initialize();
+        return executor;
+    }
 }

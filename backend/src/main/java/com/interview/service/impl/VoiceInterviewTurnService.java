@@ -10,14 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -36,7 +35,6 @@ public class VoiceInterviewTurnService {
     private static final String ROLE_USER = "user";
     private static final String ROLE_ASSISTANT = "assistant";
     private static final String STAGE_COMPLETE_TAG = "[STAGE_COMPLETE]";
-    private static final long TTS_AWAIT_SECONDS = 5L;
 
     private final VoiceService voiceService;
     private final LlmRouter llmRouter;
@@ -49,6 +47,9 @@ public class VoiceInterviewTurnService {
 
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
+
+    @Qualifier("ttsTaskExecutor")
+    private final Executor ttsTaskExecutor;
 
     public void processTurn(Long userId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
         sseTaskExecutor.execute(() -> runTurn(userId, sessionId, audioBytes, sink));
@@ -87,7 +88,7 @@ public class VoiceInterviewTurnService {
             StringBuilder assistantReply = new StringBuilder();
             StringBuilder sentenceBuilder = new StringBuilder();
 
-            ExecutorService ttsExecutor = Executors.newSingleThreadExecutor();
+            List<CompletableFuture<Void>> ttsFutures = new ArrayList<>();
             AtomicBoolean ttsFailed = new AtomicBoolean(false);
 
             llmRouter.streamWithSnapshot(
@@ -101,22 +102,19 @@ public class VoiceInterviewTurnService {
 
                     String sentence = extractSentenceIfComplete(sentenceBuilder);
                     if (sentence != null && !sentence.trim().isEmpty() && !ttsFailed.get()) {
-                        ttsExecutor.submit(() -> synthesizeSentence(sentence, sink, ttsFailed));
+                        ttsFutures.add(CompletableFuture.runAsync(
+                            () -> synthesizeSentence(sentence, sink, ttsFailed), ttsTaskExecutor));
                     }
                 }
             );
 
             String remaining = sentenceBuilder.toString();
             if (!remaining.trim().isEmpty() && !ttsFailed.get()) {
-                ttsExecutor.submit(() -> synthesizeSentence(remaining, sink, ttsFailed));
+                ttsFutures.add(CompletableFuture.runAsync(
+                    () -> synthesizeSentence(remaining, sink, ttsFailed), ttsTaskExecutor));
             }
 
-            ttsExecutor.shutdown();
-            try {
-                ttsExecutor.awaitTermination(TTS_AWAIT_SECONDS, TimeUnit.SECONDS);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
+            CompletableFuture.allOf(ttsFutures.toArray(CompletableFuture[]::new)).join();
 
             String finalReply = assistantReply.toString();
             boolean shouldAdvance = false;
