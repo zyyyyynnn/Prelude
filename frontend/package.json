@@ -51,5 +51,9 @@
     "vue-router": "^4.6.1",
     "vue-sonner": "^2.0.9",
     "zod": "^3.25.76"
+  },
+  "overrides": {
+    "form-data": "4.0.6",
+    "dompurify": "3.4.11"
   }
 }

@@ -150,10 +150,15 @@ public class InterviewJudgeService {
         return "";
     }
 
-    private int nextSeqNum(Long sessionId) {
-        Long count = interviewMessageMapper.selectCount(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId));
-        return count == null ? 0 : count.intValue();
+    int nextSeqNum(Long sessionId) {
+        InterviewMessage latest = interviewMessageMapper.selectOne(new LambdaQueryWrapper<InterviewMessage>()
+            .eq(InterviewMessage::getSessionId, sessionId)
+            .orderByDesc(InterviewMessage::getSeqNum)
+            .last("LIMIT 1"));
+        if (latest == null || latest.getSeqNum() == null) {
+            return 0;
+        }
+        return latest.getSeqNum() + 1;
     }
 
     private String stripJsonFence(String text) {
