@@ -76,6 +76,20 @@ git branch -D codex/ci-pr-whitespace-smoke
 
 ---
 
+## CI 暂缓说明（已撤销）
+
+`sentrux` **已接入 CI**（自 commit `1cd55d2` 后续轮次）。`.github/workflows/ci.yml` 通过下载
+`https://github.com/sentrux/sentrux/releases/download/v0.5.7/sentrux-windows-x86_64.exe`，
+用 SHA256 校验后执行 `sentrux check .`。
+
+`.sentrux/rules.toml` 顶部原注释 `# CI gate until sentrux behavior is proven stable in GitHub Actions`
+保留作为历史判断记录；接入决策由用户在本轮显式确认（用户提供 upstream URL 后验证可固定安装渠道）。
+
+如未来 sentrux upstream 重新组织 release / 改变 binary 命名，需要同步更新
+`.github/workflows/ci.yml` 的下载 URL 与 SHA256。
+
+---
+
 ## 使用约定
 
 - 这份清单**不是** CI 的复刻，仅供本地预检。

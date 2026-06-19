@@ -119,24 +119,7 @@ public class VoiceInterviewTurnService {
                     () -> synthesizeSentence(remaining, sink, ttsFailed, ttsTimedOut), ttsTaskExecutor));
             }
 
-            try {
-                CompletableFuture.allOf(ttsFutures.toArray(CompletableFuture[]::new))
-                    .get(TTS_AWAIT_SECONDS, TimeUnit.SECONDS);
-            } catch (TimeoutException timeout) {
-                ttsTimedOut.set(true);
-                ttsFailed.set(true);
-                log.warn("TTS await timed out after {}s for session {}", TTS_AWAIT_SECONDS, sessionId);
-                sink.error("网络状况不佳，已为您切回文字模式");
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-                ttsTimedOut.set(true);
-                ttsFailed.set(true);
-                sink.error("网络状况不佳，已为您切回文字模式");
-            } catch (ExecutionException executionFailure) {
-                // individual synthesizeSentence already surfaced the error via sink.error;
-                // the AtomicBoolean stops later sentences from re-emitting.
-                log.debug("TTS synthesis raised during turn for session {}: {}", sessionId, executionFailure.getMessage());
-            }
+            awaitTtsFutures(ttsFutures, TTS_AWAIT_SECONDS, sessionId, sink, ttsFailed, ttsTimedOut);
 
             String finalReply = assistantReply.toString();
             boolean shouldAdvance = false;
@@ -184,6 +167,36 @@ public class VoiceInterviewTurnService {
             log.error("TTS generation failed, fallback to text-only: {}", e.getMessage());
             ttsFailed.set(true);
             sink.error("网络状况不佳，已为您切回文字模式");
+        }
+    }
+
+    /**
+     * Package-private for test access only. Production code should always pass
+     * {@link #TTS_AWAIT_SECONDS} as the timeout. Tests can pass {@code 0} with a never-completing
+     * future to assert the timeout branch deterministically without sleeping.
+     */
+    void awaitTtsFutures(List<CompletableFuture<Void>> futures, long timeoutSeconds, Long sessionId,
+                         VoiceTurnEventSink sink, AtomicBoolean ttsFailed, AtomicBoolean ttsTimedOut) {
+        if (futures.isEmpty()) {
+            return;
+        }
+        try {
+            CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                .get(timeoutSeconds, TimeUnit.SECONDS);
+        } catch (TimeoutException timeout) {
+            ttsTimedOut.set(true);
+            ttsFailed.set(true);
+            log.warn("TTS await timed out after {}s for session {}", timeoutSeconds, sessionId);
+            sink.error("网络状况不佳，已为您切回文字模式");
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            ttsTimedOut.set(true);
+            ttsFailed.set(true);
+            sink.error("网络状况不佳，已为您切回文字模式");
+        } catch (ExecutionException executionFailure) {
+            // individual synthesizeSentence already surfaced the error via sink.error;
+            // the AtomicBoolean stops later sentences from re-emitting.
+            log.debug("TTS synthesis raised during turn for session {}: {}", sessionId, executionFailure.getMessage());
         }
     }
 
