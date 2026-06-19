@@ -11,6 +11,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check whitespace
+        run: git diff --check HEAD~1
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -43,5 +48,8 @@ jobs:
 
       - name: Verify BYOK settings flow
         working-directory: frontend
-        continue-on-error: true
         run: npm run verify:byok
+
+      - name: Verify dark theme flow
+        working-directory: frontend
+        run: npm run verify:dark
