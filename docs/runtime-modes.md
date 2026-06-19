@@ -1,63 +1,60 @@
 # 运行模式说明
 
-项目提供三种入口。推荐使用 `start-dev.bat` 用于日常开发、人工验收和答辩演示（支持 Vite HMR 热重载）。
+Prelude 当前只维护三类运行入口：`start-dev.bat`、`start-docker.bat` 和 `scripts/dev`。旧 Demo Twin、`start-demo`、`start-real`、8081/5174 等口径只属于历史归档材料，不作为当前启动方式。
 
-## 1. start-dev.bat（推荐）
+## 1. `start-dev.bat`（推荐）
 
-适用：日常开发调试、功能演示、答辩。
+适用：日常开发、人工验收、答辩演示。
 
-特点：利用 Docker 管理底层中间件（MySQL、Redis、RabbitMQ），而应用程序（Spring Boot 后端和 Vite 前端）直接在本机原生运行。修改前端代码（Vue/CSS）可以即时通过 HMR 看到效果。
+特点：Docker 只管理基础中间件，Spring Boot 后端与 Vite 前端在本机运行，支持 Vite HMR。
 
-入口：`.\start-dev.bat`
+底层流程：
 
-底层执行流程：
-1. 启动中间件：`docker compose up -d mysql redis rabbitmq`
-2. 启动本机后端：`mvn spring-boot:run`
-3. 启动本机前端：`npm run dev`
+1. `docker compose up -d mysql redis rabbitmq`
+2. 启动后端：`mvn spring-boot:run`
+3. 启动前端：`npm run dev`
 
-## 2. start-docker.bat（可选）
+访问入口：`http://127.0.0.1:5173`。
 
-适用：部署验证、容器化交付验证。
+## 2. `start-docker.bat`（部署验证）
 
-特点：全栈容器化，无需本机安装 Java / Maven / Node 即可完成容器化验证。**注意：前端在容器内是以 build 后的 nginx 静态产物运行的，修改前端代码需要 rebuild/restart 才能生效，不支持 HMR 热重载。**
+适用：Full Docker / 容器化交付验证。
 
-入口：`.\start-docker.bat`
+特点：应用和中间件均在 Docker Compose 中运行；前端是 build 后的 nginx 静态产物，不支持 HMR。
 
-底层执行（等价手动命令）：
+等价命令：
+
 ```powershell
 docker compose --profile app up -d --build
 ```
 
-## 3. Dev scripts（源码级调试）
+## 3. `scripts/dev`（源码级调试）
 
-适用：需要利用 `.ps1` 脚本进行分阶段的启动与日志拦截。
+适用：需要分步骤控制 Maven、Vite 和日志输出时。
 
-入口：
-- `scripts/dev/start-dev.ps1`
+入口：`scripts/dev/start-dev.ps1`。详细说明见 [scripts/dev/README.md](../scripts/dev/README.md)。
 
-详见 [scripts/dev/README.md](../scripts/dev/README.md)。
+## 中间件端口
 
----
+中间件统一由 Docker Compose 管理。默认宿主机端口避开常见本机服务端口：
 
-## 端口与中间件隔离
+| 中间件 | 宿主机端口 |
+| --- | --- |
+| MySQL | 13306 |
+| Redis | 16379 |
+| RabbitMQ | 5672 / 15672 |
 
-中间件由 Docker Compose 统一管理。为避免与本机原生端口冲突，宿主机暴露的默认端口已刻意避开默认值：
+不建议同时运行本机 MySQL / Redis / RabbitMQ 系统服务，以免端口冲突。
 
-| 中间件   | 宿主机端口（可在 `.env` 覆盖） |
-| :------ | :------------------------------ |
-| MySQL   | 13306                           |
-| Redis   | 16379                           |
-| RabbitMQ | 5672 / 15672                    |
+## 停止服务
 
+```powershell
+# start-dev.bat：关闭后端/前端窗口或 Ctrl+C 后停止中间件
+docker compose stop mysql redis rabbitmq
 
+# start-docker.bat
+docker compose --profile app down
 
-## 不推荐的方式
-
-- 不建议同时运行本机 MySQL84 / Redis / RabbitMQ 系统服务，以免端口冲突。
-- 不要占用本机 `3306` / `6379` / `5672`，以免引发端口冲突。Docker runtime 已自带所需中间件，dev mode 也会默认连接 Docker 暴露的中间件端口。
-
-
-## Docker Desktop 视图提示
-
-- `start-dev.bat` 下，Docker Desktop 只会显示 mysql、redis 和 rabbitmq 等中间件容器。
-- `start-docker.bat` 下，才会显示 backend / frontend 应用容器。
+# 含观测栈
+docker compose --profile app --profile observability down
+```
