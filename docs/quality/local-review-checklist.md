@@ -1,29 +1,18 @@
 # Local Quality Review Checklist
 
-本地复现 CI 必备命令 + 红线扫描。仅放命令，不放长篇说明。
-
----
+本清单用于本地预检，不替代 `.github/workflows/ci.yml`。
 
 ## 必备命令
 
 ```powershell
-# 后端
 mvn -f backend/pom.xml test
-
-# 前端
 npm --prefix frontend run build
 npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
 npm --prefix frontend audit --omit=dev
-
-# 架构
 sentrux check E:\Prelude
-
-# Whitespace
 git diff --check
 ```
-
----
 
 ## 红线扫描
 
@@ -34,11 +23,13 @@ rg -n "transition-all|window\.confirm|title=" frontend/src
 rg -n "shadow-md|border-border|h-\[30px\]|h-\[32px\]|h-\[34px\]|font-size:\s*15px|gap:\s*10px|padding:\s*0\s+8px" frontend/src
 ```
 
-### 旧 demo 口径
+### 当前文档中的旧运行口径
 
 ```powershell
-rg -n "Demo Twin|DemoModeService|start-real|start-demo|8081|5174|/api/demo" -g "*.md"
+rg -n "start-real|start-demo|DemoModeService|/api/demo|8081|5174" README.md docs thesis-assets --glob "*.md" --glob "!thesis-assets/evidence/test-data/archive/**"
 ```
+
+说明：历史归档或阶段过程报告中出现 Demo Twin、8081、5174 不必直接修；active 文档命中时必须判断是否应降权、归档或改写。
 
 ### 禁改区守卫
 
@@ -52,47 +43,23 @@ git diff --name-only | rg "controller|dto|schema.sql|data.sql|data-dev.sql|DESIG
 npx --yes js-yaml .github/workflows/ci.yml
 ```
 
----
-
 ## PR 路径本地模拟
 
 ```powershell
-# 假设 PR HEAD 当前 commit，base 是其父
 $baseSha = "<上一轮 merge commit>"
 git fetch origin $baseSha --depth=1
 git diff --check "$baseSha...HEAD"
 ```
 
-如要反向验证会捕获 whitespace 错误，可在临时分支注入 trailing whitespace 并跑相同命令：
-```powershell
-git switch -c codex/ci-pr-whitespace-smoke
-Add-Content -LiteralPath README.md -Value "`nprobe   `n" -Encoding UTF8
-git add README.md
-git commit -m "ci probe: trailing whitespace"
-git diff --check <baseSha>...HEAD   # 应当 exit=2
-git switch main
-git branch -D codex/ci-pr-whitespace-smoke
-```
-
----
-
 ## CI 接入说明
 
-`sentrux` **已接入 CI**（自 commit `b821bf7` 起）。`.github/workflows/ci.yml` 通过下载
-`https://github.com/sentrux/sentrux/releases/download/v0.5.7/sentrux-windows-x86_64.exe`，
-用 SHA256 校验后执行 `sentrux check .`。
-
-`.sentrux/rules.toml` 顶部历史注释已由 `docs(quality): clarify sentrux ci status`
-更新为反映 CI 已落地（不再保留"暂缓"措辞）；`[constraints]` 仍为硬失败，
-`[coverage] blocking = false` 表示 coverage 口径仍为 report-only、不阻塞构建。
-
-如未来 sentrux upstream 重新组织 release / 改变 binary 命名，需要同步更新
-`.github/workflows/ci.yml` 的下载 URL 与 SHA256。
-
----
+- `sentrux check .` 已接入 CI，自 commit `b821bf7` 起作为架构规则门禁。
+- JaCoCo 只生成 report artifact，不设置 coverage threshold。
+- `npm audit --omit=dev` 已作为前端生产依赖门禁。
+- `verify:byok` 与 `verify:dark` 已对 Vite cold-start 做等待与失败诊断加固。
 
 ## 使用约定
 
-- 这份清单**不是** CI 的复刻，仅供本地预检。
-- CI 仍然以 `.github/workflows/ci.yml` 为准。
-- 任何命令输出命中红线，先定位再决定是否豁免；既有且本轮未触碰的命中项需记录豁免原因，不得无说明跳过。
+- 命中红线时先定位，再决定修复或豁免。
+- 既有且本轮未触碰的历史命中项需记录原因，不得无说明跳过。
+- 本轮触碰过的文档必须保证 `git diff --check` 干净。
