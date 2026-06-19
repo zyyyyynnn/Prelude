@@ -302,4 +302,41 @@ class ReportJobWorkerTest {
         verify(devFixtureService, never()).isEnabled();
         verify(devFixtureService, never()).resolveReport(anyString());
     }
+
+    @Test
+    void handleReportJobSkipsWhenSessionOngoing() {
+        ReportJobMessage job = new ReportJobMessage(11L, 42L, "job-ongoing");
+
+        InterviewSession ongoingSession = new InterviewSession();
+        ongoingSession.setId(11L);
+        ongoingSession.setUserId(42L);
+        ongoingSession.setStatus("ongoing");
+        ongoingSession.setTargetPosition("Backend Engineer");
+
+        when(interviewSessionMapper.selectById(11L)).thenReturn(ongoingSession);
+
+        worker.handleReportJob(job);
+
+        verify(interviewMessageMapper, never()).selectList(any(LambdaQueryWrapper.class));
+        verify(llmRouter, never()).chatWithSnapshot(anyString(), anyString(), anyList());
+        verify(interviewReportParser, never()).parse(anyString());
+        verify(scoreHistoryMapper, never()).delete(any(LambdaQueryWrapper.class));
+        verify(scoreHistoryMapper, never()).insert(any(ScoreHistory.class));
+        verify(userWeaknessMapper, never()).delete(any(LambdaQueryWrapper.class));
+        verify(userWeaknessMapper, never()).insert(any(UserWeakness.class));
+        verify(interviewSessionMapper, never()).updateById(any(InterviewSession.class));
+        verify(sseEmitterRegistry, never()).broadcast(anyLong(), anyString(), anyString());
+        verify(devFixtureService, never()).isEnabled();
+    }
+
+    @Test
+    void handleReportJobClearsUserContextEvenWhenSessionMissing() {
+        ReportJobMessage job = new ReportJobMessage(404L, 42L, "job-cleanup-missing");
+        when(interviewSessionMapper.selectById(404L)).thenReturn(null);
+
+        worker.handleReportJob(job);
+
+        org.assertj.core.api.Assertions.assertThat(UserContext.getCurrentUserId()).isNull();
+        org.assertj.core.api.Assertions.assertThat(UserContext.getCurrentSessionId()).isNull();
+    }
 }
