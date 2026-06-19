@@ -1,4 +1,4 @@
-﻿# 当前论文证据锁定索引
+# 当前论文证据锁定索引
 
 ## 1. 文件定位
 
@@ -16,12 +16,13 @@
 | 图表登记表     | `thesis-assets/evidence/figure-table-register.md` | 图表资产索引      | 已更新   | 图表进入正文前必须登记；候选图4.x 未冻结图号   |
 | 绘图与模型资产   | `thesis-assets/evidence/diagrams/`                | 图表源文件与导出图   | 可用    | 需与正文图题一致；含候选图4.x SSE流程图     |
 | 测试数据与报告   | `thesis-assets/evidence/test-data/`               | 系统测试依据      | 可用    | 以 2026-06 版本为准；4 月数据已归档      |
-| 测试证据矩阵   | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试数据与论证证据映射 | 可用    | 映射所有证据到章节                   |
+| 测试证据矩阵   | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试数据与论证证据映射 | 可用    | 映射所有证据到章节；2026-06-19 后以质量门禁快照补充小重构证据 |
+| 质量门禁证据 | `thesis-assets/evidence/test-data/quality-gates-2026-06-19.md` | CI / 本地质量门禁与小重构验证证据 | 新增 / 可用 | 只证明自动化工程验证链路，不等同生产压测或覆盖率阈值达标 |
 | 数据库表字典   | `thesis-assets/evidence/test-data/database-table-dictionary-2026-06.md` | 数据库表结构参考 | 可用    | 补充 E-R 图字段细节                 |
 | 代码片段证据    | `thesis-assets/evidence/code-snippets/`           | 系统实现依据      | 可用    | 证据 4（正则评分）已废弃；以证据 9 为准      |
 | Bug 与修复证据 | `thesis-assets/evidence/bug-evidence/`            | 问题复盘与答辩依据   | 可用    | 不夸大为系统能力证明                  |
-| 阶段过程记录      | `thesis-assets/evidence/phase-reports/`            | 审计和追溯      | 可追溯    | 不直接作为正文事实依据       |
-| 答辩材料      | `thesis-assets/defense/`                          | PPT、讲稿、答辩映射 | 可用    | 2026-06 口径重写版               |
+| 阶段过程记录      | `thesis-assets/evidence/phase-reports/`            | 审计和追溯      | 可追溯    | 不直接作为正文事实依据；最新漂移审查见 `phase-2.12-project-drift-sync-2026-06-19.md` |
+| 答辩材料      | `thesis-assets/defense/`                          | PPT、讲稿、答辩映射 | 可用    | 2026-06 口径重写版；如用于正式答辩，需再次核对是否仍含历史 Demo 性能表达 |
 
 ## 3. 当前锁定边界
 
@@ -29,9 +30,11 @@
 * 新增证据必须先进入当前有效证据路径，再由用户和审查官复核。
 * 不允许通过临时输出或外部生成物反向覆盖 `chapters/*.md`。
 * 文献资产以 `references.bib`、`quality-review.md`、`evidence-map.md` 为准。
+* 2026-06-19 小重构后的质量门禁、BYOK 验证、TTS 容错、fallback、报告任务幂等与 seqNum 证据，以 `quality-gates-2026-06-19.md` 和对应源码/测试为准。
 
 ## 4. 阶段状态
 
+* 阶段 2.12 项目漂移同步已完成 evidence 层补齐。
 * 阶段 3 仍未开始。
 * 正文未修改。
 * 引用编号未冻结。
@@ -47,3 +50,11 @@
 * 数据库源 DDL 已同步 `interview_session.status = ongoing / generating / finished`，其中 `generating` 对应 RabbitMQ 报告任务已发布但尚未完成消费的中间态。
 * 当前实现未引入 DLQ、outbox、publisher confirm、消费并发调优。
 * 答辩材料与正文如要使用“已引入 RabbitMQ”作为可写能力宣称，必须同时保留上述严格限制段。
+
+## 6. 2026-06-19 小重构证据边界
+
+* 质量门禁：CI 已包含 whitespace diff check、Sentrux 架构规则、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify；其中 JaCoCo 仍为 report-only，无 coverage threshold。
+* BYOK：`verify-byok-settings-flow.cjs` 仅使用 mock API 自动验证设置页交互、OpenAI-compatible 模型发现、草稿测试、保存 payload 与下拉样式；不得写成真实公网模型性能验证。
+* TTS：`VoiceInterviewTurnService` 已使用 `ttsTaskExecutor`、30s timeout 与双 flag 保护，并由单元测试覆盖句子顺序、失败与 timeout；不得写成真实 ASR/TTS 服务低延迟性能基准。
+* fallback：openai-compatible 属用户 BYOK 自定义接口，失败时不静默 fallback 到系统 provider；fallback 仅面向内置 provider 并使用系统 Key。
+* seqNum 与报告任务：消息序号写入、stage system message、ReportJobWorker 幂等/跳过路径已有回归测试；可作为一致性与可维护性证据，不得写成并发绝对无冲突或生产级任务可靠性证明。
