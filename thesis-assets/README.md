@@ -1,4 +1,4 @@
-﻿# thesis-assets 论文资产索引
+# thesis-assets 论文资产索引
 
 ## 1. 核心原则
 
@@ -34,9 +34,11 @@
 * 治理规范：`meta/workflow-governance.md`
 * 证据锁定：`meta/final-evidence-lock.md`
 * 测试事实矩阵：`evidence/test-data/test-evidence-matrix-2026-06.md`
+* 质量门禁证据：`evidence/test-data/quality-gates-2026-06-19.md`
 * 文献资产：`literature/references.bib`、`literature/quality-review.md`、`literature/evidence-map.md`
 * 图表证据：`evidence/figure-table-register.md`
 * 过程记录：`evidence/phase-reports/README.md`，仅用于审计和追溯，不直接作为正文事实依据
+* 最新项目漂移同步报告：`evidence/phase-reports/phase-2.12-project-drift-sync-2026-06-19.md`
 * 正文唯一真相源：`chapters/*.md`
 
 ## 5. 构建边界
