@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -117,6 +118,119 @@ class ReportJobWorkerTest {
         verify(scoreHistoryMapper, times(1)).insert(any(ScoreHistory.class));
         verify(sseEmitterRegistry).broadcast(eq(7L), eq("report_ready"), eq("# Report"));
         verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("error"), anyString());
+    }
+
+    @Test
+    void handleReportJobDeletesThenInsertsScoreHistory() {
+        ReportJobMessage job = new ReportJobMessage(8L, 42L, "job-score");
+
+        InterviewSession session = new InterviewSession();
+        session.setId(8L);
+        session.setUserId(42L);
+        session.setStatus("generating");
+        session.setTargetPosition("Backend Engineer");
+
+        InterviewStage stage = new InterviewStage();
+        stage.setId(101L);
+        stage.setSessionId(8L);
+
+        when(interviewSessionMapper.selectById(8L)).thenReturn(session);
+        when(interviewMessageMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.<InterviewMessage>emptyList());
+        when(interviewStageMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(stage);
+        when(devFixtureService.isEnabled()).thenReturn(true);
+        when(devFixtureService.resolveReport("Backend Engineer"))
+            .thenReturn("{\"reportMarkdown\":\"# R\",\"scores\":{\"technical\":7,\"expression\":6,\"logic\":8}}");
+        when(interviewReportParser.parse(anyString()))
+            .thenReturn(new InterviewReportParser.ParsedReport("# R", 7, 6, 8));
+        when(devFixtureService.buildWeaknesses(42L, 8L)).thenReturn(Collections.<UserWeakness>emptyList());
+
+        worker.handleReportJob(job);
+
+        verify(scoreHistoryMapper, times(1)).delete(any(LambdaQueryWrapper.class));
+        ArgumentCaptor<ScoreHistory> scoreCaptor = ArgumentCaptor.forClass(ScoreHistory.class);
+        verify(scoreHistoryMapper, times(1)).insert(scoreCaptor.capture());
+        ScoreHistory score = scoreCaptor.getValue();
+        assertThat(score.getUserId()).isEqualTo(42L);
+        assertThat(score.getSessionId()).isEqualTo(8L);
+        assertThat(score.getTechnicalScore()).isEqualTo(7);
+        assertThat(score.getExpressionScore()).isEqualTo(6);
+        assertThat(score.getLogicScore()).isEqualTo(8);
+    }
+
+    @Test
+    void handleReportJobDeletesThenInsertsWeaknesses() {
+        ReportJobMessage job = new ReportJobMessage(9L, 42L, "job-weakness");
+
+        InterviewSession session = new InterviewSession();
+        session.setId(9L);
+        session.setUserId(42L);
+        session.setStatus("generating");
+        session.setTargetPosition("Backend Engineer");
+
+        InterviewStage stage = new InterviewStage();
+        stage.setId(102L);
+        stage.setSessionId(9L);
+
+        UserWeakness weakness = new UserWeakness();
+        weakness.setUserId(42L);
+        weakness.setSessionId(9L);
+        weakness.setCategory("性能量化");
+        weakness.setDescription("回答需要补充指标口径和压测数据。");
+
+        when(interviewSessionMapper.selectById(9L)).thenReturn(session);
+        when(interviewMessageMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.<InterviewMessage>emptyList());
+        when(interviewStageMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(stage);
+        when(devFixtureService.isEnabled()).thenReturn(true);
+        when(devFixtureService.resolveReport("Backend Engineer"))
+            .thenReturn("{\"reportMarkdown\":\"# R\",\"scores\":{\"technical\":7,\"expression\":6,\"logic\":8}}");
+        when(interviewReportParser.parse(anyString()))
+            .thenReturn(new InterviewReportParser.ParsedReport("# R", 7, 6, 8));
+        when(devFixtureService.buildWeaknesses(42L, 9L)).thenReturn(List.of(weakness));
+
+        worker.handleReportJob(job);
+
+        verify(userWeaknessMapper, times(1)).delete(any(LambdaQueryWrapper.class));
+        ArgumentCaptor<UserWeakness> weaknessCaptor = ArgumentCaptor.forClass(UserWeakness.class);
+        verify(userWeaknessMapper, times(1)).insert(weaknessCaptor.capture());
+        UserWeakness inserted = weaknessCaptor.getValue();
+        assertThat(inserted.getUserId()).isEqualTo(42L);
+        assertThat(inserted.getSessionId()).isEqualTo(9L);
+        assertThat(inserted.getCategory()).isEqualTo("性能量化");
+        assertThat(inserted.getDescription()).isEqualTo("回答需要补充指标口径和压测数据。");
+        verify(sseEmitterRegistry, atLeastOnce()).broadcast(eq(9L), eq("report_ready"), anyString());
+    }
+
+    @Test
+    void handleReportJobClearsUserContextInFinallyBlock() {
+        ReportJobMessage job = new ReportJobMessage(10L, 42L, "job-cleanup");
+
+        InterviewSession session = new InterviewSession();
+        session.setId(10L);
+        session.setUserId(42L);
+        session.setStatus("generating");
+        session.setTargetPosition("Backend Engineer");
+
+        InterviewStage stage = new InterviewStage();
+        stage.setId(103L);
+        stage.setSessionId(10L);
+
+        when(interviewSessionMapper.selectById(10L)).thenReturn(session);
+        when(interviewMessageMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.<InterviewMessage>emptyList());
+        when(interviewStageMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(stage);
+        when(devFixtureService.isEnabled()).thenReturn(true);
+        when(devFixtureService.resolveReport("Backend Engineer"))
+            .thenReturn("{\"reportMarkdown\":\"# R\",\"scores\":{\"technical\":7,\"expression\":6,\"logic\":8}}");
+        when(interviewReportParser.parse(anyString()))
+            .thenReturn(new InterviewReportParser.ParsedReport("# R", 7, 6, 8));
+        when(devFixtureService.buildWeaknesses(42L, 10L)).thenReturn(Collections.<UserWeakness>emptyList());
+
+        worker.handleReportJob(job);
+
+        org.assertj.core.api.Assertions.assertThat(UserContext.getCurrentUserId()).isNull();
+        org.assertj.core.api.Assertions.assertThat(UserContext.getCurrentSessionId()).isNull();
     }
 
     @Test

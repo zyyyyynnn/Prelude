@@ -15,7 +15,20 @@ jobs:
           fetch-depth: 0
 
       - name: Check whitespace
-        run: git diff --check HEAD~1
+        shell: pwsh
+        run: |
+          $event = "${{ github.event_name }}"
+          if ($event -eq 'pull_request') {
+            $baseSha = "${{ github.event.pull_request.base.sha }}"
+            if ([string]::IsNullOrWhiteSpace($baseSha)) {
+              git diff --check HEAD~1
+            } else {
+              git fetch origin "$baseSha" --depth=1
+              git diff --check "$baseSha"...HEAD
+            }
+          } else {
+            git diff --check HEAD~1
+          }
 
       - name: Set up Java
         uses: actions/setup-java@v4
