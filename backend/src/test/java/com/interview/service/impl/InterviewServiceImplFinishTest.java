@@ -85,7 +85,8 @@ class InterviewServiceImplFinishTest {
             directExecutor,
             sessionRagService,
             sseEmitterRegistry,
-            rabbitTemplate
+            rabbitTemplate,
+            new InterviewResponseAssembler()
         );
         UserContext.setCurrentUserId(42L);
     }
