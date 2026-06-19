@@ -4,7 +4,7 @@
 
 This document is the maintenance baseline after the Prelude UI convergence work. `DESIGN.md` is the highest source of truth for UI rules; this file only summarizes the implemented scope, verification path, and non-negotiable boundaries.
 
-## Current Scope
+## Current scope
 
 - Global token, theme, and motion systems are centralized in `frontend/src/styles/index.css`.
 - UI primitives are the default path for controls, overlays, dialogs, toast, badges, cards, empty states, and segmented controls.
@@ -13,10 +13,10 @@ This document is the maintenance baseline after the Prelude UI convergence work.
 - Profile supports editable user info and avatar upload. Avatar storage is local filesystem plus static resource mapping.
 - Theme supports light, dark, and system preferences.
 - Analytics radar is three-dimensional: technical ability, expression clarity, and logical thinking.
-- BrandMetaballs uses a dedicated logo token palette to preserve the old warm-brown visual hierarchy.
+- BrandMetaballs uses a dedicated logo token palette to preserve the warm-brown visual hierarchy.
 - RoseThree uses SVG plus `requestAnimationFrame`, currentColor, and motion parameters.
 
-## Non-Negotiables
+## Non-negotiables
 
 - Do not hardcode business colors, heights, fonts, shadows, radius, dates, or z-index values.
 - Do not use `transition-all`.
@@ -30,32 +30,38 @@ This document is the maintenance baseline after the Prelude UI convergence work.
 
 ## Verification
 
-- `cd frontend; npm run build`
-- `cd frontend; npm run verify:byok`
-- `cd frontend; npm run verify:dark`
-- `git diff --check`
-- If backend, schema, or seed data changes: `cd backend; mvn test`
-- Static scan:
-  - `rg -n "var\\(--color-text\\)|transition-all|window\\.confirm|title=|shadow-md|border-border|rgba\\(|h-\\[(30|32|34)px\\]|text-\\[[0-9.]+px\\]" frontend DESIGN.md docs`
+```powershell
+npm --prefix frontend run build
+npm --prefix frontend run verify:byok
+npm --prefix frontend run verify:dark
+git diff --check
+```
 
-## Known Visual Follow-Ups
+If backend, schema, or seed data changes, also run:
 
-- BrandMetaballs still needs human visual review when its token palette changes, with the old warm-brown hierarchy as the target.
-- Dark theme needs dedicated smoke coverage after token, overlay, chart, canvas, or shader changes.
+```powershell
+mvn -f backend/pom.xml test
+```
+
+Static scan:
+
+```powershell
+rg -n "var\\(--color-text\\)|transition-all|window\\.confirm|title=|shadow-md|border-border|rgba\\(|h-\\[(30|32|34)px\\]|text-\\[[0-9.]+px\\]" frontend DESIGN.md docs
+```
+
+## Known visual follow-ups
+
+- BrandMetaballs still needs human visual review when its token palette changes.
+- Dark theme needs smoke coverage after token, overlay, chart, canvas, or shader changes.
 - Analytics must be checked in light and dark themes whenever ECharts token usage changes.
 
-## Maintenance Notes
+## Maintenance notes
 
 - Read `DESIGN.md` before changing UI behavior or styles.
 - New UI components must be added to `docs/ui-component-review-matrix.md`.
 - Components backed by canvas, charts, or shaders must respond to theme changes and rerender their palette.
 - Theme selection may preview immediately, but persisted preference must only be written after a successful save.
-- Analytics cards / radar / trend use the latest 5 real completed scored sessions.
+- Analytics cards, radar, and trend use the latest five completed scored sessions.
 - Radar chart must avoid heavy filled background surfaces.
-- Demo/dev seed should contain varied realistic interview sessions: 5 completed sessions for analytics and 1-3 ongoing sessions for workspace review.
-- Seed messages must not reuse identical scripts across sessions.
-
-Demo seed data must be deterministic: exactly 5 finished sessions and 2 ongoing sessions for the demo user, with reports and score history only attached to finished sessions.
-
+- Dev fixture seed data must be deterministic: exactly five finished sessions and two ongoing sessions for the demo user, with reports and score history only attached to finished sessions.
 - Seed SQL must remain reviewable: multi-line statements, no legacy April migration logic, and no generated compressed SQL lines.
-- Legacy April-session migration is forbidden in seed data; demo sessions must be reset by user scope and rebuilt from the fixed 7-session dataset.
