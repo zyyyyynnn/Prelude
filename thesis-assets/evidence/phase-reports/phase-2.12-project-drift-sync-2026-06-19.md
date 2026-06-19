@@ -2,13 +2,15 @@
 
 ## 1. 结论
 
-已完成一次基于最新 `main` 的论文资产漂移审查。项目最近约 20 次提交显示：主线没有引入新的数据库表、API 路径或论文需要重绘的核心架构图；但质量门禁、BYOK 验证、语音 TTS 容错、报告任务幂等、消息序号一致性等工程证据已经明显领先旧论文资产，需要补充到 evidence 层。
+已完成一次基于当时 `main` 的论文资产漂移审查。项目最近约 20 次提交显示：主线没有引入新的数据库表、API 路径或论文需要重绘的核心架构图；但质量门禁、BYOK 验证、语音 TTS 容错、报告任务幂等、消息序号一致性等工程证据已经明显领先旧论文资产，需要补充到 evidence 层。
 
 本报告不修改 `chapters/*.md`，不启动阶段 3 正文改写。
 
+> 后续补记：`57eba82` 之后，CI 又经历 BYOK/dark verify cold-start 稳定化、文档 whitespace 修复和本轮文档降噪整理。当前 active 证据入口以 `final-evidence-lock.md`、`quality-gates-2026-06-19.md`、`test-evidence-matrix-2026-06.md` 为准；本报告保留为过程记录。
+
 ## 2. 审查范围
 
-本轮按最新 `main`，重点覆盖以下最近约 20 个主线提交或同域提交：
+本轮按当时 `main`，重点覆盖以下最近约 20 个主线提交或同域提交：
 
 | 提交 | 类型 | 对论文资产影响 |
 | --- | --- | --- |
@@ -48,12 +50,12 @@
 
 | 资产 | 状态判断 | 处理意见 |
 | --- | --- | --- |
-| `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 大体仍可用，但部分测试数字与语音待实测口径已落后 | 本轮不大改长表，新增 `quality-gates-2026-06-19.md` 作为补充证据；后续进入阶段 3 前可集中把矩阵压缩重写 |
-| `thesis-assets/evidence/test-data/dev-fixture-2026-06.md` | 已明确旧 Demo Twin 迁移说明，未发现必须立刻修改项 | 保留，仅作为 dev fixture 与历史真实 API 对照 |
-| `thesis-assets/evidence/test-data/env-2026-06.md` | 环境与 BYOK/RabbitMQ 链路仍可用，但构建记录不是最新小重构后的完整质量门禁 | 由新增质量门禁快照补足，不直接覆盖历史采集记录 |
-| `thesis-assets/evidence/figure-table-register.md` | 图 3.3 对 MySQL/Redis/RabbitMQ/dev fixture 的边界说明仍匹配当前架构 | 仅更新表 5.3 证据路径，无需重绘图 |
-| `thesis-assets/defense/` | 答辩材料可能仍含历史 Demo 性能表达 | 本轮只登记风险，若准备答辩演示，应单独审查讲稿和 slide-map |
-| `output/README.md` | 可作为历史产物说明，不应作为正文事实源 | 无需本轮处理 |
+| `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 原长表大体可用，但历史 Demo Twin 主叙述过重 | 已在后续整理中压缩为当前证据矩阵 |
+| `thesis-assets/evidence/test-data/dev-fixture-2026-06.md` | 已明确旧 Demo Twin 迁移说明 | 后续整理中进一步瘦身为 dev fixture 边界说明 |
+| `thesis-assets/evidence/test-data/env-2026-06.md` | 环境与 BYOK/RabbitMQ 链路仍可用，但构建记录不是最新完整质量门禁 | 由质量门禁快照补足 |
+| `thesis-assets/evidence/figure-table-register.md` | 图 3.3 对 MySQL/Redis/RabbitMQ/dev fixture 的边界说明仍匹配当前架构 | 无需重绘图 |
+| `thesis-assets/defense/` | 答辩材料可能仍含历史 Demo 性能表达 | 后续整理中已对讲稿和 slide-map 做口径收缩 |
+| `output/README.md` | 可作为运行产物说明，不应作为正文事实源 | 保留 |
 
 ## 5. 进入正文前的强制边界
 
@@ -61,11 +63,11 @@
 2. 不得把 BYOK verify 脚本的 mock API 流程写成真实公网模型性能验证。
 3. 不得把 TTS 单元测试写成真实 ASR/TTS 服务端到端低延迟测试。
 4. 不得把 JaCoCo report-only 写成覆盖率阈值达标。
-5. 不得把 Sentrux 当前两条规则写成完整架构正确性证明。
+5. 不得把 Sentrux 当前有限规则写成完整架构正确性证明。
 6. 不得把 RabbitMQ 本地链路写成生产级可靠投递。
 
 ## 6. 后续建议
 
-- 阶段 3 前，建议对 `test-evidence-matrix-2026-06.md` 做一次压缩重写，删除旧 Demo Twin 主叙述，把历史数据降为 archive 对照。
-- 若答辩材料要直接使用，应先审查 `defense/script.md` 和 `defense/slide-map.md` 是否还含“极短时间”“低延迟”“Demo 模式”等容易被误解的表达。
+- 阶段 3 前，继续以 active evidence 为事实入口，不再从早期阶段报告中抽取当前事实。
+- 若答辩材料要直接使用，应先审查 `defense/script.md` 和 `defense/slide-map.md` 是否与当前 CI、运行入口和测试矩阵一致。
 - 如果后续真的要写语音能力，应补一份真实 ASR/TTS 端到端测试记录；否则正文只能写架构与单元测试覆盖。
