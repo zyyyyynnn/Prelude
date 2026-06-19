@@ -181,4 +181,39 @@ class InterviewServiceImplFinishTest {
 
         verify(sseEmitterRegistry, never()).broadcast(any(), anyString(), anyString());
     }
+
+    @Test
+    void finishReturnsGeneratingWithoutRepublishWhenAlreadyGenerating() {
+        InterviewSession session = new InterviewSession();
+        session.setId(7L);
+        session.setUserId(42L);
+        session.setStatus("generating");
+        when(interviewSessionMapper.selectById(7L)).thenReturn(session);
+
+        InterviewFinishResponse response = service.finish(7L);
+
+        assertThat(response.getStatus()).isEqualTo("generating");
+        assertThat(response.getJobId()).isNull();
+        assertThat(response.getSummaryReport()).isNull();
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+        verify(interviewSessionMapper, never()).updateById(any(InterviewSession.class));
+    }
+
+    @Test
+    void finishReturnsFinishedReportWithoutRepublishWhenAlreadyFinished() {
+        InterviewSession session = new InterviewSession();
+        session.setId(7L);
+        session.setUserId(42L);
+        session.setStatus("finished");
+        session.setSummaryReport("# Report");
+        when(interviewSessionMapper.selectById(7L)).thenReturn(session);
+
+        InterviewFinishResponse response = service.finish(7L);
+
+        assertThat(response.getStatus()).isEqualTo("finished");
+        assertThat(response.getSummaryReport()).isEqualTo("# Report");
+        assertThat(response.getJobId()).isNull();
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+        verify(interviewSessionMapper, never()).updateById(any(InterviewSession.class));
+    }
 }
