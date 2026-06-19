@@ -1,5 +1,11 @@
-# Report-only guardrails: this file is checked manually and is not a blocking
-# CI gate until sentrux behavior is proven stable in GitHub Actions.
+# Arch rules executed by CI via `sentrux check .` (pinned v0.5.7 in
+# .github/workflows/ci.yml). Constraints below are hard failures: a violation
+# blocks the build. Coverage reporting stays report-only — see [coverage].
+#
+# Historical note: prior revisions of this comment said the file was not a
+# blocking CI gate until sentrux behavior was proven stable in GitHub Actions.
+# That deferral was closed by commit b821bf7, which wired the v0.5.7 binary
+# into .github/workflows/ci.yml with a pinned URL + SHA256.
 
 [constraints]
 # sentrux 0.5.7 treats constraints as hard failures and has no warn severity.
