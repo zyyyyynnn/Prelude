@@ -5,6 +5,8 @@ const path = require('node:path')
 const { chromium } = require('playwright')
 
 const rootDir = path.resolve(__dirname, '..')
+const screenshotDir = path.resolve(rootDir, '..', 'output', 'playwright')
+const COLD_START_TIMEOUT_MS = 60000
 
 function findBrowserExecutable() {
   const candidates = [
@@ -74,6 +76,46 @@ function stopProcess(child) {
 
 function ok(data) {
   return { code: 200, message: 'OK', data }
+}
+
+async function captureDiagnostics(page, label) {
+  const safe = (text) => String(text || '').slice(0, 2000)
+  return {
+    label,
+    url: page.url(),
+    title: await page.title().catch(() => ''),
+    appChildren: await page.evaluate(() => document.querySelector('#app')?.children.length || 0),
+    hasBrandHost: await page.evaluate(() => Boolean(document.querySelector('.brand-metaballs'))),
+    hasBrandCanvas: await page.evaluate(() => Boolean(document.querySelector('.brand-metaballs canvas'))),
+    localStorageAuth: await page.evaluate(() => localStorage.getItem('auth')),
+    localStorageTheme: await page.evaluate(() => localStorage.getItem('prelude-theme')),
+    localStorageKeys: await page.evaluate(() => Object.keys(localStorage)),
+    bodyText: safe(await page.evaluate(() => document.body?.innerText || '')),
+  }
+}
+
+function printDiagnostics(diagnostics) {
+  console.error('--- verify:dark diagnostics ---')
+  console.error(JSON.stringify(diagnostics, null, 2))
+}
+
+async function saveFailureScreenshot(page, label) {
+  try {
+    fs.mkdirSync(screenshotDir, { recursive: true })
+    const filePath = path.join(screenshotDir, 'dark-failure.png')
+    await page.screenshot({ path: filePath, fullPage: true })
+    console.error(`Saved failure screenshot to ${filePath}`)
+  } catch (screenshotError) {
+    console.error(`Failed to capture screenshot (${label}):`, screenshotError.message)
+  }
+}
+
+async function waitForAppMounted(page) {
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('#app')?.children?.length),
+    null,
+    { timeout: COLD_START_TIMEOUT_MS },
+  )
 }
 
 async function installApiMocks(page) {
@@ -202,8 +244,8 @@ async function assertNoDarkConsoleErrors(page, action) {
   }
 }
 
-async function assertCanvasNonBlank(page, selector) {
-  await page.waitForSelector(selector, { state: 'visible', timeout: 10000 })
+async function assertCanvasNonBlank(page, selector, timeout = 10000) {
+  await page.waitForSelector(selector, { state: 'visible', timeout })
   const nonBlank = await page.locator(selector).first().evaluate((canvas) => {
     const webgl = canvas.getContext('webgl2') || canvas.getContext('webgl')
     if (webgl) {
@@ -265,7 +307,7 @@ async function assertBrandMetaballsThemeUpdate(page) {
   await page.waitForFunction(() => {
     const canvas = document.querySelector('.brand-metaballs canvas')
     return canvas && canvas !== window.__preludeBrandCanvas
-  })
+  }, null, { timeout: COLD_START_TIMEOUT_MS })
 
   const lightPalette = await page.evaluate(() => {
     const style = window.getComputedStyle(document.documentElement)
@@ -293,6 +335,10 @@ async function verifyDarkFlow(port) {
   const browser = await chromium.launch(executablePath ? { headless: true, executablePath } : { headless: true })
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 })
 
+  page.on('pageerror', (err) => {
+    console.error(`[page error] ${err.message}`)
+  })
+
   await installApiMocks(page)
   await page.addInitScript(() => {
     localStorage.setItem('prelude-theme', 'dark')
@@ -300,10 +346,10 @@ async function verifyDarkFlow(port) {
 
   try {
     await assertNoDarkConsoleErrors(page, async () => {
-      await page.goto(`http://127.0.0.1:${port}/login`, { waitUntil: 'domcontentloaded' })
-      await page.waitForSelector('html.dark', { timeout: 10000 })
-      await page.waitForSelector('.brand-metaballs canvas', { timeout: 10000 })
-      await assertCanvasNonBlank(page, '.brand-metaballs canvas')
+      await page.goto(`http://127.0.0.1:${port}/login`, { waitUntil: 'domcontentloaded', timeout: COLD_START_TIMEOUT_MS })
+      await waitForAppMounted(page)
+      await page.waitForSelector('html.dark', { timeout: COLD_START_TIMEOUT_MS })
+      await assertCanvasNonBlank(page, '.brand-metaballs canvas', COLD_START_TIMEOUT_MS)
       await assertDarkInputTextFill(page)
       await assertBrandMetaballsThemeUpdate(page)
     })
@@ -313,8 +359,9 @@ async function verifyDarkFlow(port) {
       localStorage.setItem('prelude-theme', 'dark')
     })
     await assertNoDarkConsoleErrors(page, async () => {
-      await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'domcontentloaded' })
-      await page.getByRole('button', { name: '设置' }).waitFor({ state: 'visible', timeout: 30000 })
+      await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'domcontentloaded', timeout: COLD_START_TIMEOUT_MS })
+      await waitForAppMounted(page)
+      await page.getByRole('button', { name: '设置' }).waitFor({ state: 'visible', timeout: COLD_START_TIMEOUT_MS })
 
       await page.getByRole('button', { name: '设置' }).click()
       await page.getByRole('button', { name: '账号资料' }).click()
@@ -345,7 +392,8 @@ async function verifyDarkFlow(port) {
     })
 
     await assertNoDarkConsoleErrors(page, async () => {
-      await page.goto(`http://127.0.0.1:${port}/analytics`, { waitUntil: 'domcontentloaded' })
+      await page.goto(`http://127.0.0.1:${port}/analytics`, { waitUntil: 'domcontentloaded', timeout: COLD_START_TIMEOUT_MS })
+      await waitForAppMounted(page)
       await page.getByText('能力雷达').waitFor({ state: 'visible', timeout: 30000 })
       await page.waitForSelector('.chart-surface canvas', { state: 'visible', timeout: 10000 })
       await assertCanvasNonBlank(page, '.chart-surface canvas')
@@ -375,6 +423,11 @@ async function verifyDarkFlow(port) {
       await page.keyboard.press('Escape')
       await assertCanvasNonBlank(page, '.chart-surface canvas')
     })
+  } catch (error) {
+    const diagnostics = await captureDiagnostics(page, 'dark-flow-failure')
+    printDiagnostics(diagnostics)
+    await saveFailureScreenshot(page, diagnostics.label)
+    throw error
   } finally {
     await browser.close()
   }
