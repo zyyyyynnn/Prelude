@@ -16,7 +16,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -250,6 +252,33 @@ class VoiceInterviewTurnServiceTest {
 
         org.assertj.core.api.Assertions.assertThat(com.interview.common.UserContext.getCurrentUserId()).isNull();
         org.assertj.core.api.Assertions.assertThat(com.interview.common.UserContext.getCurrentSessionId()).isNull();
+    }
+
+    @Test
+    void awaitTtsFuturesTimesOutAndTripsStopFlags() {
+        // Never-completing future simulates a stuck TTS call. timeout=0 forces an immediate
+        // TimeoutException without sleeping, so the test runs in milliseconds.
+        List<CompletableFuture<Void>> stuck = List.of(new CompletableFuture<>());
+        AtomicBoolean ttsFailed = new AtomicBoolean(false);
+        AtomicBoolean ttsTimedOut = new AtomicBoolean(false);
+
+        turnService.awaitTtsFutures(stuck, 0L, 7L, sink, ttsFailed, ttsTimedOut);
+
+        assertThat(ttsTimedOut.get()).isTrue();
+        assertThat(ttsFailed.get()).isTrue();
+        verify(sink).error("网络状况不佳，已为您切回文字模式");
+    }
+
+    @Test
+    void awaitTtsFuturesHandlesEmptyListWithoutInvokingSink() {
+        AtomicBoolean ttsFailed = new AtomicBoolean(false);
+        AtomicBoolean ttsTimedOut = new AtomicBoolean(false);
+
+        turnService.awaitTtsFutures(List.of(), 0L, 7L, sink, ttsFailed, ttsTimedOut);
+
+        assertThat(ttsTimedOut.get()).isFalse();
+        assertThat(ttsFailed.get()).isFalse();
+        verify(sink, never()).error(anyString());
     }
 
     private void verifyNoVoiceProcessing() {

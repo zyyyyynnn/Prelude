@@ -43,13 +43,45 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Install sentrux (v0.5.7)
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/sentrux/sentrux/releases/download/v0.5.7/sentrux-windows-x86_64.exe'
+          $expectedSha256 = '40dd2e47804bf9f006015eb742abfe178a824f42d4a19eb00478a7d705697cac'
+          $destDir = Join-Path $env:RUNNER_TEMP 'sentrux'
+          New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+          $exePath = Join-Path $destDir 'sentrux.exe'
+          Invoke-WebRequest -Uri $url -OutFile $exePath -UseBasicParsing
+          $actualSha256 = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
+          if ($actualSha256 -ne $expectedSha256) {
+            throw "sentrux sha256 mismatch: expected $expectedSha256, got $actualSha256"
+          }
+          Write-Host "sentrux sha256 verified: $actualSha256"
+          # Make available to subsequent steps via GITHUB_PATH.
+          $envDir = Join-Path $destDir 'bin'
+          New-Item -ItemType Directory -Path $envDir -Force | Out-Null
+          Copy-Item $exePath (Join-Path $envDir 'sentrux.exe')
+          "$envDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Check architecture rules
+        run: sentrux check .
+
       - name: Build backend
         working-directory: backend
         run: mvn -q -DskipTests compile
 
       - name: Check backend tests
         working-directory: backend
-        run: mvn -q test
+        run: mvn -q test jacoco:report
+
+      - name: Upload backend coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-report
+          path: backend/target/site/jacoco
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Install frontend dependencies
         working-directory: frontend

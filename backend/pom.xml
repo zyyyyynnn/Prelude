@@ -23,6 +23,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <okhttp.version>4.12.0</okhttp.version>
         <pdfbox.version>3.0.3</pdfbox.version>
+        <jacoco.version>0.8.11</jacoco.version>
     </properties>
 
     <dependencies>
@@ -123,6 +124,30 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!--
+              JaCoCo coverage report generation. Report-only: no `check` goal and no
+              coverage thresholds, so the build cannot fail on coverage. CI uploads the
+              resulting HTML/XML as an artifact for inspection.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
