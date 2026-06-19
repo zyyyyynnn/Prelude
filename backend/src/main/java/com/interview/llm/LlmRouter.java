@@ -257,7 +257,6 @@ public class LlmRouter {
             .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
             .orderByAsc(LlmProviderConfig::getId))
             .stream()
-            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
             .toList();
     }
 
