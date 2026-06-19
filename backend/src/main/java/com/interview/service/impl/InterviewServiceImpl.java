@@ -49,6 +49,7 @@ import java.util.concurrent.Executor;
 public class InterviewServiceImpl implements InterviewService {
 
     private static final String STATUS_ONGOING = "ongoing";
+    private static final String STATUS_GENERATING = "generating";
     private static final String STATUS_FINISHED = "finished";
     private static final String ROLE_SYSTEM = "system";
     private static final String ROLE_USER = "user";
@@ -264,9 +265,20 @@ public class InterviewServiceImpl implements InterviewService {
     @Override
     public InterviewFinishResponse finish(Long sessionId) {
         Long userId = currentUserId();
-        InterviewSession session = requireOngoingSession(sessionId, userId);
+        InterviewSession session = requireOwnedSession(sessionId, userId);
+        String status = session.getStatus();
 
-        session.setStatus("generating");
+        if (STATUS_GENERATING.equals(status)) {
+            return new InterviewFinishResponse(session.getId(), null, STATUS_GENERATING, null);
+        }
+        if (STATUS_FINISHED.equals(status)) {
+            return new InterviewFinishResponse(session.getId(), session.getSummaryReport(), STATUS_FINISHED, null);
+        }
+        if (!STATUS_ONGOING.equals(status)) {
+            throw BusinessException.badRequest("面试会话状态异常");
+        }
+
+        session.setStatus(STATUS_GENERATING);
         interviewSessionMapper.updateById(session);
 
         String jobId = java.util.UUID.randomUUID().toString();
@@ -282,7 +294,7 @@ public class InterviewServiceImpl implements InterviewService {
             log.error("Failed to publish report generation job to RabbitMQ for session {}", sessionId, e);
             try {
                 InterviewSession restoreSession = interviewSessionMapper.selectById(sessionId);
-                if (restoreSession != null && "generating".equals(restoreSession.getStatus())) {
+                if (restoreSession != null && STATUS_GENERATING.equals(restoreSession.getStatus())) {
                     restoreSession.setStatus(STATUS_ONGOING);
                     interviewSessionMapper.updateById(restoreSession);
                     log.info("Restored session {} status to ongoing after publish failure", sessionId);
@@ -295,7 +307,7 @@ public class InterviewServiceImpl implements InterviewService {
 
         interviewMessageService.invalidateSessionLock(sessionId);
 
-        return new InterviewFinishResponse(session.getId(), null, "generating", jobId);
+        return new InterviewFinishResponse(session.getId(), null, STATUS_GENERATING, jobId);
     }
 
     @Override
