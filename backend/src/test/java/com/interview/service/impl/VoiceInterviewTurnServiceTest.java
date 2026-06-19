@@ -196,6 +196,62 @@ class VoiceInterviewTurnServiceTest {
         verify(sink, never()).audio(anyString());
     }
 
+    @Test
+    void multipleSentencesInvokeTextToSpeechInSubmissionOrderAndPushAudio() {
+        InterviewSession ongoing = session(7L, 42L, "ongoing");
+        when(sink.currentActiveSessionId()).thenReturn(7L);
+        when(interviewSessionMapper.selectById(7L)).thenReturn(ongoing);
+        when(voiceService.speechToText(eq(7L), any(byte[].class), eq("voice.webm"))).thenReturn("ok");
+        when(interviewContextService.buildContextMessages(7L)).thenReturn(List.of());
+        // "第一句。" is closed by the punctuation; "第二句" stays in the sentenceBuilder and is
+        // submitted as the trailing remainder. Expect two synthesizeSentence calls in submission order.
+        org.mockito.Mockito.doAnswer(inv -> {
+            Consumer<String> onDelta = inv.getArgument(3);
+            onDelta.accept("第一句。第二句");
+            return null;
+        }).when(llmRouter).streamWithSnapshot(anyString(), anyString(), any(), any());
+        org.mockito.Mockito.doAnswer(inv -> {
+            String arg = inv.getArgument(0);
+            return arg.equals("第一句。") ? new byte[] {1} : new byte[] {2};
+        }).when(voiceService).textToSpeech(anyString());
+
+        turnService.processTurn(42L, 7L, new byte[] {1, 2, 3}, sink);
+
+        // Two distinct TTS tasks were submitted, in order.
+        ArgumentCaptor<String> sentenceCaptor = ArgumentCaptor.forClass(String.class);
+        verify(voiceService, times(2)).textToSpeech(sentenceCaptor.capture());
+        assertThat(sentenceCaptor.getAllValues()).containsExactly("第一句。", "第二句");
+        // Two audio pushes, in submission order, base64 of the byte[] we returned.
+        ArgumentCaptor<String> audioCaptor = ArgumentCaptor.forClass(String.class);
+        verify(sink, times(2)).audio(audioCaptor.capture());
+        assertThat(audioCaptor.getAllValues())
+            .containsExactly(
+                java.util.Base64.getEncoder().encodeToString(new byte[] {1}),
+                java.util.Base64.getEncoder().encodeToString(new byte[] {2})
+            );
+        verify(sink, never()).error(anyString());
+    }
+
+    @Test
+    void ttsFailureClearsUserContext() {
+        InterviewSession ongoing = session(7L, 42L, "ongoing");
+        when(sink.currentActiveSessionId()).thenReturn(7L);
+        when(interviewSessionMapper.selectById(7L)).thenReturn(ongoing);
+        when(voiceService.speechToText(eq(7L), any(byte[].class), eq("voice.webm"))).thenReturn("ok");
+        when(interviewContextService.buildContextMessages(7L)).thenReturn(List.of());
+        org.mockito.Mockito.doAnswer(inv -> {
+            Consumer<String> onDelta = inv.getArgument(3);
+            onDelta.accept("一句话。");
+            return null;
+        }).when(llmRouter).streamWithSnapshot(anyString(), anyString(), any(), any());
+        when(voiceService.textToSpeech(anyString())).thenThrow(new RuntimeException("tts down"));
+
+        turnService.processTurn(42L, 7L, new byte[] {1, 2, 3}, sink);
+
+        org.assertj.core.api.Assertions.assertThat(com.interview.common.UserContext.getCurrentUserId()).isNull();
+        org.assertj.core.api.Assertions.assertThat(com.interview.common.UserContext.getCurrentSessionId()).isNull();
+    }
+
     private void verifyNoVoiceProcessing() {
         verify(voiceService, never()).speechToText(anyLong(), any(byte[].class), anyString());
         verify(llmRouter, never()).streamWithSnapshot(anyString(), anyString(), any(), any());

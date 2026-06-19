@@ -326,13 +326,18 @@ class LlmRouterTest {
         mainConfig.setAvailableModels("[\"model-a\"]");
         mainConfig.setEnabled(1);
 
+        LlmProviderConfig customConfig = new LlmProviderConfig();
+        customConfig.setProviderKey("openai-compatible");
+        customConfig.setBaseUrl("https://attacker.example/v1");
+        customConfig.setAvailableModels("[]");
+        customConfig.setEnabled(1);
+
         when(userMapper.selectById(9L)).thenReturn(user);
         when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(mainConfig);
-        // After deduplicating the fallback filter, only the LambdaQueryWrapper .ne(..., openai-compatible)
-        // guard remains in production. This mock mirrors what the real mapper returns when that guard
-        // is honored: an empty fallback list. If a future change removes the SQL .ne() guard, this test
-        // still passes (mock is unconditional); pair it with code review to keep the SQL guard intact.
-        when(llmProviderConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+        // Mapper mock intentionally returns the openai-compatible row, simulating either a
+        // misconfigured custom mapper or a future regression that drops the SQL .ne(...) guard.
+        // The in-memory .filter(...) in listFallbackProviderConfigs must still exclude it.
+        when(llmProviderConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(customConfig));
 
         UserContext.setCurrentUserId(9L);
         assertThatThrownBy(() -> customRouter.chatWithSnapshot(

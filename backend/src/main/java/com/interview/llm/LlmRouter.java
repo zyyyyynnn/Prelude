@@ -251,12 +251,17 @@ public class LlmRouter {
     }
 
     private List<LlmProviderConfig> listFallbackProviderConfigs(String failedProviderKey) {
+        // DB guard is the primary filter: the SQL .ne(..., openai-compatible) clause excludes
+        // user-configured BYOK providers from the fallback list at the data source. The in-memory
+        // filter below is a defensive belt-and-braces guard for mocked or custom mapper paths
+        // where the SQL clause is not actually evaluated.
         return llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getEnabled, 1)
             .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
             .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
             .orderByAsc(LlmProviderConfig::getId))
             .stream()
+            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
             .toList();
     }
 

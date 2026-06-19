@@ -16,7 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -35,6 +38,7 @@ public class VoiceInterviewTurnService {
     private static final String ROLE_USER = "user";
     private static final String ROLE_ASSISTANT = "assistant";
     private static final String STAGE_COMPLETE_TAG = "[STAGE_COMPLETE]";
+    private static final long TTS_AWAIT_SECONDS = 30L;
 
     private final VoiceService voiceService;
     private final LlmRouter llmRouter;
@@ -90,6 +94,7 @@ public class VoiceInterviewTurnService {
 
             List<CompletableFuture<Void>> ttsFutures = new ArrayList<>();
             AtomicBoolean ttsFailed = new AtomicBoolean(false);
+            AtomicBoolean ttsTimedOut = new AtomicBoolean(false);
 
             llmRouter.streamWithSnapshot(
                 interviewSession.getLlmProvider(),
@@ -103,7 +108,7 @@ public class VoiceInterviewTurnService {
                     String sentence = extractSentenceIfComplete(sentenceBuilder);
                     if (sentence != null && !sentence.trim().isEmpty() && !ttsFailed.get()) {
                         ttsFutures.add(CompletableFuture.runAsync(
-                            () -> synthesizeSentence(sentence, sink, ttsFailed), ttsTaskExecutor));
+                            () -> synthesizeSentence(sentence, sink, ttsFailed, ttsTimedOut), ttsTaskExecutor));
                     }
                 }
             );
@@ -111,10 +116,27 @@ public class VoiceInterviewTurnService {
             String remaining = sentenceBuilder.toString();
             if (!remaining.trim().isEmpty() && !ttsFailed.get()) {
                 ttsFutures.add(CompletableFuture.runAsync(
-                    () -> synthesizeSentence(remaining, sink, ttsFailed), ttsTaskExecutor));
+                    () -> synthesizeSentence(remaining, sink, ttsFailed, ttsTimedOut), ttsTaskExecutor));
             }
 
-            CompletableFuture.allOf(ttsFutures.toArray(CompletableFuture[]::new)).join();
+            try {
+                CompletableFuture.allOf(ttsFutures.toArray(CompletableFuture[]::new))
+                    .get(TTS_AWAIT_SECONDS, TimeUnit.SECONDS);
+            } catch (TimeoutException timeout) {
+                ttsTimedOut.set(true);
+                ttsFailed.set(true);
+                log.warn("TTS await timed out after {}s for session {}", TTS_AWAIT_SECONDS, sessionId);
+                sink.error("网络状况不佳，已为您切回文字模式");
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                ttsTimedOut.set(true);
+                ttsFailed.set(true);
+                sink.error("网络状况不佳，已为您切回文字模式");
+            } catch (ExecutionException executionFailure) {
+                // individual synthesizeSentence already surfaced the error via sink.error;
+                // the AtomicBoolean stops later sentences from re-emitting.
+                log.debug("TTS synthesis raised during turn for session {}: {}", sessionId, executionFailure.getMessage());
+            }
 
             String finalReply = assistantReply.toString();
             boolean shouldAdvance = false;
@@ -143,13 +165,18 @@ public class VoiceInterviewTurnService {
         }
     }
 
-    private void synthesizeSentence(String sentence, VoiceTurnEventSink sink, AtomicBoolean ttsFailed) {
-        if (ttsFailed.get()) {
+    private void synthesizeSentence(String sentence, VoiceTurnEventSink sink, AtomicBoolean ttsFailed, AtomicBoolean ttsTimedOut) {
+        if (ttsFailed.get() || ttsTimedOut.get()) {
             return;
         }
         try {
             byte[] speechBytes = voiceService.textToSpeech(sentence);
             if (speechBytes != null && speechBytes.length > 0) {
+                // Re-check stop flags right before pushing audio: a later sentence may have tripped
+                // ttsTimedOut/ttsFailed after this task was already queued on the single-thread executor.
+                if (ttsFailed.get() || ttsTimedOut.get()) {
+                    return;
+                }
                 String base64 = Base64.getEncoder().encodeToString(speechBytes);
                 sink.audio(base64);
             }
