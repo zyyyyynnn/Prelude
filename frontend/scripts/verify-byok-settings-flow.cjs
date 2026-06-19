@@ -7,11 +7,14 @@ const { chromium } = require('playwright')
 const rootDir = path.resolve(__dirname, '..')
 const panelPath = path.join(rootDir, 'src', 'components', 'workspace', 'LlmSettingsPanel.vue')
 const sharedDropdownPath = path.join(rootDir, 'src', 'components', 'ui', 'shared-dropdown.ts')
+const screenshotDir = path.resolve(rootDir, '..', 'output', 'playwright')
 const baseUrl = 'https://api.tokenrouter.com/v1'
 const apiKey = 'sk-tokenrouter-new'
 const manualModel = 'manual-model-2026'
 const expectedControlHeight = 34
 const expectedCompactControlHeight = 30
+const SETTINGS_BUTTON_SELECTOR = '.app-sidebar__btn--settings'
+const WORKSPACE_READY_TIMEOUT_MS = 60000
 
 function assertNoLegacyPanelMarkup() {
   const source = fs.readFileSync(panelPath, 'utf8')
@@ -113,6 +116,57 @@ function ok(data) {
   return { code: 200, message: 'OK', data }
 }
 
+async function captureDiagnostics(page, label) {
+  const safe = (text) => String(text || '').slice(0, 2000)
+  const diagnostics = {
+    label,
+    url: page.url(),
+    title: await page.title().catch(() => ''),
+    appChildren: await page.evaluate(() => document.querySelector('#app')?.children.length || 0),
+    localStorageAuth: await page.evaluate(() => localStorage.getItem('auth')),
+    localStorageKeys: await page.evaluate(() => Object.keys(localStorage)),
+    bodyText: safe(await page.evaluate(() => document.body?.innerText || '')),
+  }
+  return diagnostics
+}
+
+function printDiagnostics(diagnostics) {
+  console.error('--- verify:byok diagnostics ---')
+  console.error(JSON.stringify(diagnostics, null, 2))
+}
+
+async function saveFailureScreenshot(page, label) {
+  try {
+    fs.mkdirSync(screenshotDir, { recursive: true })
+    const filePath = path.join(screenshotDir, 'byok-failure.png')
+    await page.screenshot({ path: filePath, fullPage: true })
+    console.error(`Saved failure screenshot to ${filePath}`)
+  } catch (screenshotError) {
+    console.error(`Failed to capture screenshot (${label}):`, screenshotError.message)
+  }
+}
+
+async function waitForWorkspaceReady(page, port) {
+  await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'domcontentloaded', timeout: WORKSPACE_READY_TIMEOUT_MS })
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('#app')?.children?.length),
+    null,
+    { timeout: WORKSPACE_READY_TIMEOUT_MS }
+  )
+
+  if (page.url().includes('/login')) {
+    const diagnostics = await captureDiagnostics(page, 'workspace-redirected-to-login')
+    throw new Error(`Workspace redirect to /login — auth seed not honored by Pinia persistedstate. Diagnostics: ${JSON.stringify(diagnostics)}`)
+  }
+
+  await page.locator(SETTINGS_BUTTON_SELECTOR).waitFor({ state: 'visible', timeout: WORKSPACE_READY_TIMEOUT_MS })
+
+  const ariaLabel = await page.locator(SETTINGS_BUTTON_SELECTOR).getAttribute('aria-label')
+  if (ariaLabel !== '设置') {
+    throw new Error(`Settings button aria-label must remain '设置' for accessibility, got: ${ariaLabel}`)
+  }
+}
+
 async function verifyBrowserFlow(port) {
   const executablePath = findBrowserExecutable()
   const launchOptions = executablePath ? { headless: true, executablePath } : { headless: true }
@@ -123,6 +177,15 @@ async function verifyBrowserFlow(port) {
     test: [],
     save: [],
   }
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      console.error(`[browser console error] ${message.text()}`)
+    }
+  })
+  page.on('pageerror', (err) => {
+    console.error(`[page error] ${err.message}`)
+  })
 
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url())
@@ -202,8 +265,7 @@ async function verifyBrowserFlow(port) {
   })
 
   try {
-    await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'domcontentloaded' })
-    await page.getByRole('button', { name: '设置' }).waitFor({ state: 'visible', timeout: 30000 })
+    await waitForWorkspaceReady(page, port)
 
     await page.locator('button').filter({ has: page.locator('.lucide-briefcase') }).first().click()
     const positionOptionText = await page.getByRole('menuitem', { name: 'Java 后端工程师' }).innerText()
@@ -325,6 +387,11 @@ async function verifyBrowserFlow(port) {
     if (Math.abs(itemBox.height - expectedControlHeight) > 1) {
       throw new Error(`Dropdown item height is not standard, got ${itemBox.height}`)
     }
+  } catch (error) {
+    const diagnostics = await captureDiagnostics(page, 'flow-failure')
+    printDiagnostics(diagnostics)
+    await saveFailureScreenshot(page, diagnostics.label)
+    throw error
   } finally {
     await browser.close()
   }
