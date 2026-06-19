@@ -70,6 +70,7 @@ class VoiceInterviewTurnServiceTest {
             interviewSummaryService,
             voiceInterviewSessionService,
             interviewMessageService,
+            directExecutor,
             directExecutor
         );
     }
