@@ -83,7 +83,8 @@ class InterviewServiceImplChatListenTest {
             directExecutor,
             sessionRagService,
             sseEmitterRegistry,
-            rabbitTemplate
+            rabbitTemplate,
+            new InterviewResponseAssembler()
         );
         UserContext.setCurrentUserId(42L);
     }

@@ -7,10 +7,8 @@ import com.interview.config.RabbitMqConfig;
 import com.interview.config.SseEmitterRegistry;
 import com.interview.dto.InterviewChatRequest;
 import com.interview.dto.InterviewFinishResponse;
-import com.interview.dto.InterviewMessageItemResponse;
 import com.interview.dto.InterviewMessagesResponse;
 import com.interview.dto.InterviewSessionItemResponse;
-import com.interview.dto.InterviewStageItemResponse;
 import com.interview.dto.InterviewStageUpdateRequest;
 import com.interview.dto.InterviewStageUpdateResponse;
 import com.interview.dto.InterviewStartRequest;
@@ -72,6 +70,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final SessionRagService sessionRagService;
     private final SseEmitterRegistry sseEmitterRegistry;
     private final RabbitTemplate rabbitTemplate;
+    private final InterviewResponseAssembler interviewResponseAssembler;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -132,16 +131,8 @@ public class InterviewServiceImpl implements InterviewService {
                 .eq(InterviewSession::getUserId, currentUserId())
                 .orderByDesc(InterviewSession::getCreatedAt))
             .stream()
-            .map(session -> new InterviewSessionItemResponse(
-                session.getId(),
-                session.getTargetPosition(),
-                session.getStatus(),
-                session.getCreatedAt(),
-                interviewStageManager.currentStageName(session.getId()),
-                session.getLlmProvider(),
-                session.getLlmModel(),
-                session.getSummaryReport()
-            ))
+            .map(session -> interviewResponseAssembler.toSessionItem(
+                session, interviewStageManager.currentStageName(session.getId())))
             .toList();
     }
 
@@ -150,31 +141,7 @@ public class InterviewServiceImpl implements InterviewService {
         InterviewSession session = requireOwnedSession(sessionId, currentUserId());
         List<InterviewStage> stages = interviewStageManager.listStages(sessionId);
         List<InterviewMessage> messages = listMessages(sessionId);
-
-        return new InterviewMessagesResponse(
-            session.getId(),
-            session.getTargetPosition(),
-            session.getStatus(),
-            stages.isEmpty() ? InterviewStageManager.STAGE_WARMUP : stages.get(stages.size() - 1).getStageName(),
-            session.getSummaryReport(),
-            stages.stream()
-                .map(stage -> new InterviewStageItemResponse(stage.getStageName(), stage.getStartedAt(), stage.getEndedAt()))
-                .toList(),
-            messages.stream()
-                .map(message -> new InterviewMessageItemResponse(
-                    message.getId(),
-                    message.getRole(),
-                    message.getContent(),
-                    message.getSeqNum(),
-                    message.getCreatedAt(),
-                    message.getScore(),
-                    message.getHint()
-                ))
-                .toList(),
-            session.getResumeId(),
-            session.getPositionId(),
-            session.getJdText()
-        );
+        return interviewResponseAssembler.toMessagesResponse(session, stages, messages);
     }
 
     @Override
