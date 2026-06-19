@@ -12,7 +12,8 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 审查基线 | `main` 最新提交 `57eba82` |
+| 代码审查基线 | `57eba82`（本轮论文资产同步前的最新业务/验证脚本提交） |
+| 论文资产同步范围 | `57eba82..07e4ce1`（仅 thesis-assets 文档，不改 `chapters/*.md` 与业务代码） |
 | 最近治理范围 | 约最近 20 次提交，重点覆盖 UI token 收敛、dev fixture 收敛、语音链路硬化、消息序号串行化、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁 |
 | 运行入口口径 | `start-dev` + `start-docker`；旧 Demo Twin / start-real / start-demo 均为历史状态 |
 | 论文状态 | 仅补齐 evidence，不修改 `chapters/*.md`；阶段 3 仍需用户和审查官确认后才能启动 |
