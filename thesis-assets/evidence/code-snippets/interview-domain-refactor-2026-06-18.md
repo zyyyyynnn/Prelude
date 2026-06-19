@@ -17,7 +17,11 @@
 - `backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
   - 保留文本面试 start/list/get/updateStage/chat/finish/listen 编排职责。
 - `backend/src/main/java/com/interview/config/VoiceWebSocketHandler.java`
-  - 保留 WebSocket session 管理、音频 buffer、消息收发和语音链路编排职责。
+  - 保留 WebSocket session 管理、音频 buffer、消息收发和语音协议映射职责。
+- `backend/src/main/java/com/interview/service/impl/VoiceInterviewTurnService.java`
+  - 承接语音链路的 STT、LLM、TTS、消息、阶段、评分和摘要编排职责。
+- `backend/src/main/java/com/interview/service/impl/InterviewResponseAssembler.java`
+  - 统一封装会话列表和会话详情的 DTO 映射，不承载数据库、队列、SSE 或状态更新副作用。
 
 ## 前端源码索引
 
@@ -39,7 +43,7 @@
 后端共享阶段逻辑入口：
 
 ```java
-public Optional<InterviewStage> advanceStage(Long sessionId, boolean insertSystemPrompt)
+public void advanceStage(Long sessionId, boolean completionPrompt)
 ```
 
 后端共享上下文入口：
@@ -52,6 +56,13 @@ public List<Map<String, String>> buildContextMessages(Long sessionId)
 
 ```java
 public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg, boolean voiceMode)
+```
+
+后端 DTO 映射入口：
+
+```java
+public InterviewSessionItemResponse toSessionItem(InterviewSession session, String currentStage)
+public InterviewMessagesResponse toMessagesResponse(InterviewSession session, List<InterviewStage> stages, List<InterviewMessage> messages)
 ```
 
 前端文本流入口：

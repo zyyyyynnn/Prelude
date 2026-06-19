@@ -70,7 +70,7 @@ public class DevFixtureCatalog {
         return List.of(
             new QnaPair("warmup", TECHNICAL_STAGE_PROMPT,
                 "你好，我看你简历上写了负责高并发电商秒杀系统。我们单刀直入，在流量洪峰打过来的时候，你的 Redis 预扣减是怎么保证原子性的？",
-                "为了抗住秒杀瞬间的 10 万并发，我们核心采用了 Redis + Lua 脚本进行预扣减。由于 Lua 脚本在 Redis 内部是单线程执行的，所以能够天然保证扣减判断与操作的原子性。扣减成功后，再异步投递事务消息给 RocketMQ 让 MySQL慢慢消化。"),
+                "为了抗住秒杀瞬间的 10 万并发，我们核心采用了 Redis + Lua 脚本进行预扣减。由于 Lua 脚本在 Redis 内部是单线程执行的，所以能够天然保证扣减判断与操作的原子性。扣减成功后，再异步投递事务消息给 RocketMQ 让 MySQL 慢慢消化。"),
             new QnaPair("warmup", null,
                 "使用 Lua 脚本确实能保证单机原子性。但如果秒杀库存分片在了多个 Redis 节点上，单个 Lua 脚本还能搞定吗？",
                 "如果是集群架构，我们会通过 Hash Tag 将同一个商品的所有库存分片路由到同一个 Redis 节点，这样 Lua 脚本依然可以保证局部原子性。如果要做全局库存聚合，则会利用 Redisson 的分布式锁做更粗粒度的控制。"),

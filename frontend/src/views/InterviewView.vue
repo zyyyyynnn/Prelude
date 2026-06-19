@@ -352,13 +352,6 @@ async function handleExportPdf() {
   }
 }
 
-watch(activeSessionId, (newId, oldId) => {
-  if (newId !== oldId) {
-    showingReport.value = false
-    answer.value = ''
-  }
-})
-
 onMounted(() => {
   void loadDashboard()
 })
