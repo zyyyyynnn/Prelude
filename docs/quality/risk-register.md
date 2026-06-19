@@ -16,7 +16,7 @@
 |---|---|
 | Audit base | 31272bc（在该 commit 上完成 npm audit 复核） |
 | Recorded in | b39eee1（首次登记） |
-| Closed in | <本轮 commit>（通过 npm overrides 升级至 4.0.6，audit 0 vulnerabilities） |
+| Closed in | 588bf73（通过 npm overrides 升级至 4.0.6，audit 0 vulnerabilities） |
 | CVE / Advisory | GHSA-hmw2-7cc7-3qxx |
 | Severity | high |
 | Affected range | form-data `4.0.0` – `4.0.5` |
@@ -54,7 +54,7 @@ frontend
 |---|---|
 | Audit base | 31272bc（在该 commit 上完成 npm audit 复核） |
 | Recorded in | b39eee1（首次登记） |
-| Closed in | <本轮 commit>（通过 npm overrides 升级至 3.4.11，audit 0 vulnerabilities） |
+| Closed in | 588bf73（通过 npm overrides 升级至 3.4.11，audit 0 vulnerabilities） |
 | Advisories | GHSA-vxr8-fq34-vvx9, GHSA-gvmj-g25r-r7wr, GHSA-cmwh-pvjr-275q, GHSA-cmwh-pvxp-8882 |
 | Severity | moderate (聚合) |
 | Affected range | dompurify `<= 3.4.10` |
@@ -96,7 +96,7 @@ optional dompurify@"^3.3.1" from jspdf@4.2.1
 | 字段 | 内容 |
 |---|---|
 | Audit base | b39eee1（首次登记时的 review commit） |
-| Recorded in | <本轮 commit> |
+| Recorded in | 588bf73（首次登记），本轮仅做口径更新 |
 | Status | 保留观察，需 session-level queue 设计后处理 |
 | Severity | P3 (functional performance, not security) |
 | Location | `backend/src/main/java/com/interview/config/ThreadPoolConfig.java#ttsTaskExecutor` |
@@ -116,10 +116,17 @@ public Executor ttsTaskExecutor() {
 }
 ```
 
+`VoiceInterviewTurnService` 已通过 `@Qualifier("ttsTaskExecutor")` 注入该 bean，
+TTS 合成与 `CompletableFuture.allOf(...).get(TTS_AWAIT_SECONDS, TimeUnit.SECONDS)`
+统一走该池；不再有 per-turn executor 生命周期管理。
+
 ### Trigger path
 
-- `VoiceInterviewTurnService.processTurn` 在 LLM 流式输出期间，对每个完整 sentence 提交一次 `synthesizeSentence` 到 `ttsTaskExecutor`，最后 `CompletableFuture.allOf(...).join()` 等待全部完成。
-- 同一 turn 内多 sentence **提交顺序确定**，但 sink.audio 推送顺序必须与 sentence 顺序一致。
+- `VoiceInterviewTurnService.processTurn` 在 LLM 流式输出期间，对每个完整 sentence 提交一次
+  `synthesizeSentence` 到 `ttsTaskExecutor`，最后 `CompletableFuture.allOf(...).get(...)` 等待全部完成。
+- 同一 turn 内多 sentence **提交顺序确定**，single-thread FIFO 保证 `sink.audio` 推送顺序与 sentence 顺序一致。
+- `synthesizeSentence` 在调用 `sink.audio` 前再次检查 `ttsFailed` / `ttsTimedOut` flag，避免等待超时后迟到 audio 推给客户端。
+- 30 秒 `TTS_AWAIT_SECONDS` 超时后置位 `ttsTimedOut`，`synthesizeSentence` 后续 sentence 跳过 `sink.audio` 调用。
 
 ### Why we are NOT bumping core/max here
 
@@ -130,8 +137,9 @@ public Executor ttsTaskExecutor() {
 
 ### Current mitigation
 
-- 单线程 FIFO 池保证 turn 内音频顺序正确。
+- Spring-managed `ttsTaskExecutor` 单线程 FIFO 池保证 turn 内音频顺序正确。
 - queue=64 足够容纳单 turn 的 LLM 累积 sentence。
+- `synthesizeSentence` 入口 + `sink.audio` 前双重 flag 检查，避免 timeout 后迟到 audio 推送给客户端。
 - 跨 session 串行是已知 trade-off；当前并发量下未观察到明显卡顿。
 
 ### Next review condition
