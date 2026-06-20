@@ -477,11 +477,17 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .interview-workspace {
+  /* 页面级语义变量：把本视图独有的尺寸集中声明，便于审查与未来重构。 */
+  --workspace-content-max-inline-size: var(--layout-workspace-content-max-inline-size);
+  --workspace-generating-card-max-inline-size: 480px;
+  --workspace-generating-title-font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
+  --workspace-generating-rose-size: calc(var(--ui-height-base) * 2);
+
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  block-size: 100%;
+  min-block-size: 0;
 }
 .workspace-empty {
   flex: 1;
@@ -491,8 +497,8 @@ onBeforeUnmount(() => {
   padding: var(--spacing-2xl);
 }
 .workspace-empty__content {
-  width: 100%;
-  max-width: 800px;
+  inline-size: 100%;
+  max-inline-size: var(--workspace-content-max-inline-size);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -500,7 +506,7 @@ onBeforeUnmount(() => {
 }
 .workspace-empty__title {
   font-family: var(--font-serif);
-  font-size: 32px;
+  font-size: clamp(var(--font-size-lg), 3vw, var(--font-size-xl));
   font-weight: 500;
   color: var(--color-text-primary);
   margin: 0;
@@ -526,16 +532,17 @@ onBeforeUnmount(() => {
 .workspace-report {
   flex: 1;
   display: flex;
-  padding: 64px var(--spacing-2xl);
+  padding-block: calc(var(--spacing-2xl) + var(--spacing-lg));
+  padding-inline: var(--spacing-2xl);
   overflow-y: auto;
   scrollbar-gutter: stable;
   align-items: flex-start;
   justify-content: center;
-  min-height: 0;
+  min-block-size: 0;
 }
 .report-content {
   flex: 1;
-  max-width: 800px;
+  max-inline-size: var(--workspace-content-max-inline-size);
 }
 .markdown-surface--paper {
   background: var(--color-surface);
@@ -551,7 +558,7 @@ onBeforeUnmount(() => {
   right: 0;
   padding: var(--spacing-md) var(--spacing-2xl) var(--spacing-lg);
   background: transparent;
-  z-index: 10;
+  z-index: var(--z-index-workspace-composer);
   pointer-events: none;
 }
 .workspace-composer-fixed > * {
@@ -599,7 +606,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 480px;
+  max-inline-size: var(--workspace-generating-card-max-inline-size);
   padding: var(--spacing-2xl);
   background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
@@ -608,14 +615,14 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 .generating-rose {
-  width: calc(var(--ui-height-base) * 2);
-  height: calc(var(--ui-height-base) * 2);
+  inline-size: var(--workspace-generating-rose-size);
+  block-size: var(--workspace-generating-rose-size);
   color: var(--rose-three-color);
   margin-bottom: var(--spacing-lg);
 }
 .generating-title {
   font-family: var(--font-serif);
-  font-size: 20px;
+  font-size: var(--workspace-generating-title-font-size);
   font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-xs);
@@ -627,18 +634,18 @@ onBeforeUnmount(() => {
   line-height: 1.6;
 }
 .generating-progress {
-  width: 100%;
-  height: 4px;
+  inline-size: 100%;
+  block-size: var(--progress-track-block-size);
   background: var(--color-border);
-  border-radius: 2px;
+  border-radius: var(--progress-track-radius);
   overflow: hidden;
   position: relative;
 }
 .progress-bar-ind {
-  width: 50%;
-  height: 100%;
+  inline-size: 50%;
+  block-size: 100%;
   background: var(--color-brand);
-  border-radius: 2px;
+  border-radius: var(--progress-track-radius);
   position: absolute;
   left: -50%;
   animation: progress-ind-anim var(--motion-duration-slow) infinite var(--motion-ease-standard);

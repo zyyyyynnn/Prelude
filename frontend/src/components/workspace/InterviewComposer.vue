@@ -230,7 +230,7 @@ onMounted(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[calc(var(--ui-height-compact)*4+var(--spacing-lg))]" align="start">
+                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[var(--composer-toolbar-select-inline-size)]" align="start">
                   <DropdownMenuItem 
                     v-for="r in resumes" 
                     :key="r.id" 
@@ -274,7 +274,7 @@ onMounted(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[calc(var(--ui-height-compact)*4+var(--spacing-lg))]" align="start">
+                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[var(--composer-toolbar-select-inline-size)]" align="start">
                   <DropdownMenuItem 
                     v-for="p in positions" 
                     :key="p.id" 
@@ -461,23 +461,30 @@ onMounted(() => {
 
 <style scoped>
 .interview-composer {
-  /* 组件级几何变量：集中声明 toolbar 控件尺寸与输入区高度，避免 calc 散落在属性里 */
-  --composer-input-min-height: calc(var(--ui-height-base) * 2 + var(--spacing-md));
-  --composer-toolbar-min-width: calc(var(--ui-height-compact) * 3);
-  --composer-toolbar-max-width: calc(var(--ui-height-compact) * 6);
-  --composer-toolbar-width: calc(var(--ui-height-compact) * 4 + var(--spacing-lg));
+  /* 组件级几何变量：集中声明 composer 各区块的尺寸语义，
+     避免在属性侧出现裸 px 与 magic height ratio。 */
+  --composer-max-inline-size: var(--layout-workspace-content-max-inline-size);
+  --composer-input-min-block-size: calc(var(--ui-height-base) * 2 + var(--spacing-md));
+  --composer-actions-min-block-size: calc(var(--ui-height-base) + var(--spacing-1-5));
+  --composer-toolbar-control-min-inline-size: calc(var(--ui-height-compact) * 3);
+  --composer-toolbar-control-max-inline-size: calc(var(--ui-height-compact) * 6);
+  --composer-toolbar-select-inline-size: calc(var(--ui-height-compact) * 4 + var(--spacing-lg));
+  --composer-voice-area-block-size: 88px;
+  --composer-voice-wave-block-size: 60px;
+  --composer-voice-wave-max-inline-size: 300px;
+  --composer-status-dot-size: var(--spacing-sm);
   transition:
     transform var(--motion-duration-base) var(--motion-ease-standard),
     border-color var(--motion-duration-base) var(--motion-ease-standard),
     box-shadow var(--motion-duration-base) var(--motion-ease-standard);
-  width: 100%;
+  inline-size: 100%;
 }
 .interview-composer.is-centered {
-  max-width: 800px;
+  max-inline-size: var(--composer-max-inline-size);
   margin: 0 auto;
 }
 .interview-composer.is-bottom {
-  max-width: 800px;
+  max-inline-size: var(--composer-max-inline-size);
   margin: 0 auto;
   position: relative;
 }
@@ -501,28 +508,28 @@ onMounted(() => {
   gap: var(--spacing-md);
 }
 .composer-input-area {
-  min-height: var(--composer-input-min-height);
+  min-block-size: var(--composer-input-min-block-size);
   display: flex;
   align-items: flex-start;
   position: relative;
 }
 .composer-mode-text,
 .composer-mode-voice {
-  width: 100%;
+  inline-size: 100%;
 }
 
 .composer-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 40px;
+  min-block-size: var(--composer-actions-min-block-size);
   margin-top: auto;
-  min-width: 0;
+  min-inline-size: 0;
 }
 .composer-actions__left {
   display: flex;
   align-items: center;
-  min-width: 0;
+  min-inline-size: 0;
 }
 .composer-actions__right {
   display: flex;
@@ -531,28 +538,28 @@ onMounted(() => {
 }
 .composer-actions__hint {
   color: var(--color-text-tertiary);
-  padding-left: var(--spacing-xs);
+  padding-inline-start: var(--spacing-xs);
 }
 .composer-toolbar {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  min-width: 0;
+  min-inline-size: 0;
 }
 .composer-toolbar-control {
-  height: var(--ui-height-compact);
-  min-width: var(--composer-toolbar-min-width);
-  max-width: var(--composer-toolbar-max-width);
+  block-size: var(--ui-height-compact);
+  min-inline-size: var(--composer-toolbar-control-min-inline-size);
+  max-inline-size: var(--composer-toolbar-control-max-inline-size);
   padding: 0 var(--spacing-sm);
   gap: var(--spacing-xs);
   font-family: var(--font-serif);
 }
 .composer-toolbar-select {
-  width: var(--composer-toolbar-width);
+  inline-size: var(--composer-toolbar-select-inline-size);
 }
 /* Voice Integration Styles */
 .composer-voice-area {
-  height: 88px;
+  block-size: var(--composer-voice-area-block-size);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -567,8 +574,8 @@ onMounted(() => {
   gap: var(--spacing-sm);
 }
 .status-indicator {
-  width: 8px;
-  height: 8px;
+  inline-size: var(--composer-status-dot-size);
+  block-size: var(--composer-status-dot-size);
   border-radius: 50%;
   background-color: var(--color-ring);
 }
@@ -594,12 +601,12 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 60px;
-  max-width: 300px;
+  block-size: var(--composer-voice-wave-block-size);
+  max-inline-size: var(--composer-voice-wave-max-inline-size);
 }
 .voice-canvas {
-  width: 100%;
-  height: 100%;
+  inline-size: 100%;
+  block-size: 100%;
 }
 .voice-press-btn {
   padding: 0 var(--spacing-lg);

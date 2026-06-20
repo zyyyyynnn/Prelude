@@ -241,7 +241,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
-  min-width: 200px;
+  min-inline-size: var(--layout-list-title-min-inline-size);
 }
 .resume-item__title {
   margin: 0;

@@ -207,6 +207,34 @@
   --header-height: 72px;
   --composer-height: 260px;
 
+  /* ── Layout Semantics ── */
+  --layout-sidebar-inline-size: 260px;
+  --layout-sidebar-collapsed-inline-size: 51px;
+  --layout-sidebar-brand-inline-size: 180px;
+  --layout-sidebar-header-block-size: 60px;
+  --layout-settings-sidebar-inline-size: 220px;
+  --layout-settings-dialog-max-inline-size: 960px;
+  --layout-settings-dialog-min-block-size: 500px;
+  --layout-workspace-content-max-inline-size: 800px;
+  --layout-dashboard-card-min-inline-size: 400px;
+  --layout-form-field-min-inline-size: 260px;
+  --layout-list-title-min-inline-size: 200px;
+
+  /* ── Content Semantics ── */
+  --content-message-max-inline-size: 72ch;
+  --content-judge-max-inline-size: 42ch;
+  --content-judge-hint-max-inline-size: 32ch;
+
+  /* ── Component Semantics ── */
+  --ui-segmented-item-min-inline-size: 80px;
+  --avatar-size-profile: 82px;
+  --progress-track-block-size: var(--spacing-xs);
+  --progress-track-radius: var(--spacing-0-5);
+
+  /* ── Layer Semantics ── */
+  --z-index-workspace-composer: 10;
+  --z-index-app-header: 40;
+  --z-index-sidebar: 100;
 
 }
 

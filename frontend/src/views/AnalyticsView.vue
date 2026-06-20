@@ -149,7 +149,12 @@ function renderCharts() {
           return html
         }
       },
-      grid: { left: 44, right: 18, top: 30, bottom: 30 },
+      grid: {
+        left: cssVarNumber('--analytics-chart-grid-left', 44),
+        right: cssVarNumber('--analytics-chart-grid-right', 18),
+        top: cssVarNumber('--analytics-chart-grid-top', 30),
+        bottom: cssVarNumber('--analytics-chart-grid-bottom', 30),
+      },
       xAxis: {
         type: 'category',
         boundaryGap: false,
@@ -254,7 +259,7 @@ onBeforeUnmount(() => {
               </div>
               <Badge variant="secondary">{{ radar.sessionCount }} 场</Badge>
             </div>
-            <div ref="radarRef" class="chart-surface chart-surface--tall h-64" />
+            <div ref="radarRef" class="chart-surface chart-surface--tall analytics-chart" />
           </Card>
 
           <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
@@ -265,7 +270,7 @@ onBeforeUnmount(() => {
                 <p class="text-sm text-muted-foreground">按时间查看技术、表达与逻辑评分变化。</p>
               </div>
             </div>
-            <div ref="trendRef" class="chart-surface chart-surface--tall h-64" />
+            <div ref="trendRef" class="chart-surface chart-surface--tall analytics-chart" />
           </Card>
         </div>
 
@@ -307,9 +312,19 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .page-grid--dashboard {
+  /* ECharts grid 与图表块尺寸的局部语义变量，从此处读出。 */
+  --analytics-chart-block-size: 256px;
+  --analytics-chart-grid-left: 44;
+  --analytics-chart-grid-right: 18;
+  --analytics-chart-grid-top: 30;
+  --analytics-chart-grid-bottom: 30;
+
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--layout-dashboard-card-min-inline-size), 1fr));
   gap: var(--spacing-lg);
+}
+.analytics-chart {
+  block-size: var(--analytics-chart-block-size);
 }
 .weakness-list {
   display: flex;

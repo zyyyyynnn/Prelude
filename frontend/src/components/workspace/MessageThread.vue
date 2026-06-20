@@ -91,6 +91,12 @@ onMounted(() => {
 
 <style scoped>
 .message-thread {
+  /* 消息流的几何约束：bubble 与 judge 都按"内容宽度"控制，不再用控件高度倍数。 */
+  --message-bubble-gap: var(--spacing-sm);
+  --message-bubble-max-inline-size: min(80%, var(--content-message-max-inline-size));
+  --judge-feedback-max-inline-size: min(100%, var(--content-judge-max-inline-size));
+  --judge-hint-max-inline-size: var(--content-judge-hint-max-inline-size);
+
   flex: 1;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -98,20 +104,20 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  min-height: 0;
+  min-block-size: 0;
 }
 .message-thread__empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  block-size: 100%;
   color: var(--color-text-tertiary);
 }
 .message-bubble {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: min(80%, 760px);
+  gap: var(--message-bubble-gap);
+  max-inline-size: var(--message-bubble-max-inline-size);
 }
 .message-bubble--user {
   align-self: flex-end;
@@ -181,7 +187,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  max-width: min(100%, calc(var(--ui-height-base) * 15));
+  max-inline-size: var(--judge-feedback-max-inline-size);
   color: var(--color-text-secondary);
   font-family: var(--font-serif);
   letter-spacing: 0.05em;
@@ -196,8 +202,8 @@ onMounted(() => {
   color: var(--color-brand);
 }
 .judge-badge__hint {
-  min-width: 0;
-  max-width: calc(var(--ui-height-base) * 10);
+  min-inline-size: 0;
+  max-inline-size: var(--judge-hint-max-inline-size);
   padding: var(--spacing-xs) var(--spacing-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
