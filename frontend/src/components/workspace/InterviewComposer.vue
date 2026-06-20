@@ -461,6 +461,11 @@ onMounted(() => {
 
 <style scoped>
 .interview-composer {
+  /* 组件级几何变量：集中声明 toolbar 控件尺寸与输入区高度，避免 calc 散落在属性里 */
+  --composer-input-min-height: calc(var(--ui-height-base) * 2 + var(--spacing-md));
+  --composer-toolbar-min-width: calc(var(--ui-height-compact) * 3);
+  --composer-toolbar-max-width: calc(var(--ui-height-compact) * 6);
+  --composer-toolbar-width: calc(var(--ui-height-compact) * 4 + var(--spacing-lg));
   transition:
     transform var(--motion-duration-base) var(--motion-ease-standard),
     border-color var(--motion-duration-base) var(--motion-ease-standard),
@@ -496,7 +501,7 @@ onMounted(() => {
   gap: var(--spacing-md);
 }
 .composer-input-area {
-  min-height: calc(var(--ui-height-base) * 2 + var(--spacing-md));
+  min-height: var(--composer-input-min-height);
   display: flex;
   align-items: flex-start;
   position: relative;
@@ -536,14 +541,14 @@ onMounted(() => {
 }
 .composer-toolbar-control {
   height: var(--ui-height-compact);
-  min-width: calc(var(--ui-height-compact) * 3);
-  max-width: calc(var(--ui-height-compact) * 6);
+  min-width: var(--composer-toolbar-min-width);
+  max-width: var(--composer-toolbar-max-width);
   padding: 0 var(--spacing-sm);
   gap: var(--spacing-xs);
   font-family: var(--font-serif);
 }
 .composer-toolbar-select {
-  width: calc(var(--ui-height-compact) * 4 + var(--spacing-lg));
+  width: var(--composer-toolbar-width);
 }
 /* Voice Integration Styles */
 .composer-voice-area {
@@ -619,7 +624,7 @@ onMounted(() => {
 }
 .jd-fade-float-leave-to {
   opacity: 0;
-  transform: translateY(calc(var(--spacing-xs) * -1));
+  transform: translateY(var(--spacing-neg-xs));
 }
 .jd-fade-float-leave-active {
   pointer-events: none; /* 绝对保留：离场防遮挡 */
@@ -639,7 +644,7 @@ onMounted(() => {
 }
 .mode-switch-leave-to {
   opacity: 0;
-  transform: translateY(calc(var(--spacing-xs) * -1));
+  transform: translateY(var(--spacing-neg-xs));
 }
 
 @keyframes pulse {
