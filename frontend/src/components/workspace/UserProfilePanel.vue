@@ -185,6 +185,7 @@ defineExpose({ submit: saveProfile, saving, loading })
 
 <style scoped>
 .panel-content-wrapper {
+  --profile-avatar-size: 82px;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
@@ -199,8 +200,8 @@ defineExpose({ submit: saveProfile, saving, loading })
 .profile-avatar {
   display: grid;
   place-items: center;
-  inline-size: var(--avatar-size-profile);
-  block-size: var(--avatar-size-profile);
+  inline-size: var(--profile-avatar-size);
+  block-size: var(--profile-avatar-size);
   border-radius: var(--radius-full);
   background: var(--color-surface-muted);
   color: var(--color-brand);
@@ -249,6 +250,6 @@ defineExpose({ submit: saveProfile, saving, loading })
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
   outline: none;
-  box-shadow: inset 0 0 0 1px var(--color-focus);
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-focus);
 }
 </style>

@@ -227,9 +227,6 @@
 
   /* ── Component Semantics ── */
   --ui-segmented-item-min-inline-size: 80px;
-  --avatar-size-profile: 82px;
-  --progress-track-block-size: var(--spacing-xs);
-  --progress-track-radius: var(--spacing-0-5);
 
   /* ── Layer Semantics ── */
   --z-index-workspace-composer: 10;
@@ -330,7 +327,7 @@ a {
   gap: var(--spacing-md);
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: var(--z-index-app-header);
   width: 100%;
   margin: 0 auto;
   border: 1px solid color-mix(in srgb, var(--color-surface) 52%, transparent);
@@ -478,7 +475,7 @@ a {
   position: absolute;
   top: calc(100% + var(--spacing-2-5));
   right: var(--app-shell-menu-frame-offset);
-  z-index: 20;
+  z-index: var(--z-index-app-header);
   transform: none;
   border: 0 !important;
   border-radius: 0 !important;
@@ -1473,8 +1470,9 @@ label,
 
 
 .login-card__content {
+  --login-card-content-layer: 1;
   position: relative;
-  z-index: 1;
+  z-index: var(--login-card-content-layer);
   display: grid;
   grid-template-columns: minmax(320px, 3fr) minmax(0, 2fr);
   gap: var(--spacing-2xl);
@@ -1751,7 +1749,7 @@ label,
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-index-sidebar);
   flex-shrink: 0;
   box-sizing: border-box;
 }

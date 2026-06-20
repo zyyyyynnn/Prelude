@@ -482,6 +482,8 @@ onBeforeUnmount(() => {
   --workspace-generating-card-max-inline-size: 480px;
   --workspace-generating-title-font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
   --workspace-generating-rose-size: calc(var(--ui-height-base) * 2);
+  --workspace-progress-track-block-size: var(--spacing-xs);
+  --workspace-progress-track-radius: var(--spacing-0-5);
 
   flex: 1;
   display: flex;
@@ -611,7 +613,7 @@ onBeforeUnmount(() => {
   background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 30px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  box-shadow: var(--shadow-whisper);
   text-align: center;
 }
 .generating-rose {
@@ -635,9 +637,9 @@ onBeforeUnmount(() => {
 }
 .generating-progress {
   inline-size: 100%;
-  block-size: var(--progress-track-block-size);
+  block-size: var(--workspace-progress-track-block-size);
   background: var(--color-border);
-  border-radius: var(--progress-track-radius);
+  border-radius: var(--workspace-progress-track-radius);
   overflow: hidden;
   position: relative;
 }
@@ -645,7 +647,7 @@ onBeforeUnmount(() => {
   inline-size: 50%;
   block-size: 100%;
   background: var(--color-brand);
-  border-radius: var(--progress-track-radius);
+  border-radius: var(--workspace-progress-track-radius);
   position: absolute;
   left: -50%;
   animation: progress-ind-anim var(--motion-duration-slow) infinite var(--motion-ease-standard);
