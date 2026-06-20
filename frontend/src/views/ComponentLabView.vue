@@ -396,4 +396,3 @@ const dialogOpen = ref(false)
   border-color: var(--color-brand);
 }
 </style>
-
