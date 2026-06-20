@@ -103,6 +103,10 @@ git diff --check "$baseSha...HEAD"
 - `npm audit --omit=dev` 已作为前端生产依赖门禁。
 - `verify:byok` 与 `verify:dark` 已对 Vite cold-start 做等待与失败诊断加固。
 - `verify:ui` 已落地为 Node 内置脚本（不引入依赖），覆盖 transition-all / window.confirm / shadow-md / shadow-lg / border-border / h-[30-34px] / Tailwind arbitrary px / 业务组件裸 px / magic height ratio / 简单 spacing calc。
+- `verify:tokens` 已落地为 Node 内置脚本（不引入依赖），校验 token schema 完整性 / shadow 原始值位置 / z-index 唯一性 / design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）。
+- `verify:a11y` 已在 CI 作为 blocking gate（@axe-core/playwright，Node 内置 determinism）。
+- `capture:visual` 已在 CI 作为 artifact-only gate（continue-on-error），产物上传为 `ui-visual-baseline` artifact。
+- Playwright chromium 在 CI 中通过 `npx playwright install --with-deps chromium` 显式安装。
 
 ## 使用约定
 

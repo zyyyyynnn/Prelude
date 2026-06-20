@@ -95,6 +95,14 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Verify UI guardrails (static token + raw px / shadow audit)
+        working-directory: frontend
+        run: npm run verify:ui
+
+      - name: Verify token schema (categories / shadow rules / design-lock values)
+        working-directory: frontend
+        run: npm run verify:tokens
+
       - name: Verify BYOK settings flow
         working-directory: frontend
         run: npm run verify:byok
@@ -102,3 +110,48 @@ jobs:
       - name: Verify dark theme flow
         working-directory: frontend
         run: npm run verify:dark
+
+      # Playwright UI verification harness (visual regression + a11y).
+      # Bundled with @playwright/test; uses the same node_modules cache from
+      # `npm ci` above. Browsers are installed explicitly because the
+      # windows-latest runner does NOT ship with chromium pre-installed.
+      - name: Install Playwright chromium browser
+        working-directory: frontend
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Verify UI accessibility (axe + keyboard paths)
+        working-directory: frontend
+        # Phase 5 starts this as a blocking gate because @axe-core/playwright is
+        # deterministic against the mocked /api/** routes. Promote visual
+        # capture to blocking only after at least one release cycle of green
+        # in main; see docs/quality/ui-visual-regression.md and ui-a11y.md.
+        run: npm run verify:a11y
+
+      - name: Capture UI visual baseline (artifact only)
+        if: always()
+        working-directory: frontend
+        # Continue on error: visual baselines are noisy in CI. Artifacts are
+        # uploaded for human review and Phase 6 follow-up; failures here
+        # never block the PR.
+        continue-on-error: true
+        run: npm run capture:visual
+
+      - name: Upload UI visual artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-visual-baseline
+          path: |
+            frontend/tests/visual/__screenshots__/
+            output/screenshots/visual/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload Playwright test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-artifacts
+          path: frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
