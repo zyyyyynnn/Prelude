@@ -33,9 +33,7 @@ function handleLogout() {
 
 <template>
   <Dialog v-model:open="visible">
-    <DialogContent
-      class="max-w-[min(960px,90vw)] p-0 h-[60vh] min-h-[500px] !flex !flex-col overflow-hidden bg-background border-none dialog-no-close"
-    >
+    <DialogContent class="settings-dialog p-0 overflow-hidden bg-background border-none dialog-no-close !flex !flex-col">
       <DialogHeader class="hidden">
         <DialogTitle>全局设置</DialogTitle>
         <DialogDescription>全局设置面板</DialogDescription>
@@ -124,6 +122,19 @@ function handleLogout() {
   </Dialog>
 </template>
 
+<style>
+/*
+ * 注意：本块使用非 scoped，因为 .settings-dialog 要作用于
+ * <DialogContent> 渲染出的子组件根节点（跨组件边界，scoped 不会穿透）。
+ */
+.settings-dialog {
+  /* 组件级几何：弹窗最大宽度与最小高度集中声明，便于审计与对齐 DESIGN.md 数值。 */
+  max-inline-size: min(var(--layout-settings-dialog-max-inline-size), 90vw);
+  block-size: 60vh;
+  min-block-size: var(--layout-settings-dialog-min-block-size);
+}
+</style>
+
 <style scoped>
 /* 双栏布局 */
 .settings-layout {
@@ -136,7 +147,7 @@ function handleLogout() {
   box-shadow: var(--shadow-modal);
 }
 .settings-sidebar {
-  width: 220px;
+  inline-size: var(--layout-settings-sidebar-inline-size);
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
@@ -179,7 +190,7 @@ function handleLogout() {
 .menu-item.is-active {
   background: var(--color-surface-muted);
   color: var(--color-brand);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  box-shadow: var(--shadow-ring);
 }
 .menu-item--danger {
   color: var(--color-error);
