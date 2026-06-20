@@ -107,18 +107,20 @@
 
 ## 9. a11y 覆盖场景（Phase 2）
 
-8 个 scenario 全部 PASS：
+8 个 scenario 全部 PASS（**critical only** gate）：
 
 | # | 场景 | 类型 |
 | --- | --- | --- |
-| 1 | login page — no serious axe violations | axe-core wcag2a/aa/21a/21aa |
-| 2 | workspace shell — no serious axe violations | axe-core |
+| 1 | login page — no **critical** axe violations | axe-core wcag2a/aa/21a/21aa |
+| 2 | workspace shell — no **critical** axe violations | axe-core |
 | 3 | settings modal — opens, focus inside, Esc closes | keyboard path + axe |
 | 4 | position dropdown — click + Esc | keyboard path |
 | 5 | settings LLM tab — Combobox ArrowDown + Esc | keyboard path + axe |
 | 6 | sidebar collapse button — Enter | keyboard path |
 | 7 | composer textarea — Ctrl+Enter / Meta+Enter | keyboard path |
 | 8 | no native `title=` attribute | guardrail integration |
+
+> **口径说明**：`verify:a11y` 只 fail **critical** axe violations；serious violations（主要是 color-contrast 5+ 处命中）记录到 console + docs/quality/ui-a11y.md backlog 作为 P2 项，由 UI token 团队 + DESIGN.md 协调 brand-tone 后再升级为严格模式。"verify:a11y PASS" ≠ "a11y 无严重问题"。详见 `ui-a11y.md` Severity policy 段落。
 
 ## 10. Component Lab 覆盖（Phase 3）
 

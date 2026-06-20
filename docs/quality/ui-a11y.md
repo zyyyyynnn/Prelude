@@ -27,13 +27,15 @@ The spec combines `@axe-core/playwright` (axe-core 4.11 under the hood) with exp
 
 ## Severity policy
 
-`expectNoCriticalViolations` is the primary axe gate. The harness fails only on `critical` axe violations. `serious` violations are surfaced in the test log and tracked as backlog:
+`expectNoCriticalViolations` is the only axe gate. The spec fails ONLY on `critical` axe violations. `serious` violations are surfaced in the test log and tracked as backlog:
 
 | Rule | Why not failing Phase 2 | Backlog owner |
 | --- | --- | --- |
 | `color-contrast` (5+ hits across login, workspace, LLM tab) | Coordinated UI token adjustments; not appropriate for "建立基础可访问性验证" scope. Many of the hits involve brand-tone colors whose adjustments would change visual identity — out of `DESIGN.md` change scope. | UI token team (Phase 4+) |
 
-The spec logs the `serious` list on every axe call so the backlog is always visible in CI output. Promote `serious` to `critical` once the contrast backlog is cleared.
+> **Important — read this carefully.** A green `npm run verify:a11y` run does NOT mean "no a11y issues". It means "no axe critical violations are blocking the PR right now". Serious violations remain on the backlog and must be addressed before promoting a11y to a strict mode gate. See `ui-phase2-final-report.md` "P2 backlog" for the active list.
+
+The spec also keeps a backward-compatible `expectNoSeriousViolations` alias that maps to the same gate so historical references stay valid. The test names use the explicit `no critical axe violations` wording.
 
 ## Critical violations fixed in Phase 2
 

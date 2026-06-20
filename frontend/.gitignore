@@ -28,3 +28,4 @@ dist-ssr
 # to keep the working tree small and avoid noisy diffs.
 tests/visual/__screenshots__/
 output/screenshots/visual/
+frontend/test-results/
