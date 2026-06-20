@@ -38,13 +38,18 @@ rg -n "calc\(var\(--ui-height-[^)]+\)\s*\*\s*[0-9.]+" frontend/src
 # 6. 业务组件中的 calc(var(--spacing-*)...)：本轮已收敛大部分命中，剩余仅允许几何计算
 rg -n "calc\(var\(--spacing-" frontend/src
 
+# 7. raw shadow / outline px / radius px / translate px / z-index utility
+rg --pcre2 -n "box-shadow:\s+(?!var\()" frontend/src
+rg -n "outline(-offset)?:\s*-?\d+px|border-radius:\s*\d+px|transform:\s*translate[XY]?\(-?\d+px\)" frontend/src
+rg -n "\bz-\d+\b" frontend/src
+
 # 一键运行（推荐）
 npm --prefix frontend run verify:ui
 ```
 
 命中分类与处理约定：
 
-- **扫描 1 / 2 / 3 / 4 / 5**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与组件 scoped 变量声明；命中仅出现在 `index.css` 中、且行以 `--xxx:` 起始的 CSS 变量定义，不算违规。`npm run verify:ui` 是 Node 内置脚本，可替代本节 5 条 rg 命令。
+- **扫描 1 / 2 / 3 / 4 / 5 / 7**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与全局 token 定义；组件 scoped CSS 变量必须使用约定前缀和语义命名，不允许任意 `--bad-size: 999px` 绕过。`npm run verify:ui` 是 Node 内置脚本，可替代本节扫描命令。
 - **扫描 6**：`calc(var(--spacing-*)...)` 不一定全部禁止。
   - 简单半阶 / 负向 spacing（`/ 2`、`* -1`）必须替换为 `var(--spacing-0-5)` / `var(--spacing-neg-xs)` 等已有 token。
   - 组件几何布局（toolbar 宽高、pill 宽 = `(100% - spacing) / N` 等）保留为 calc，但必须集中为组件 scoped CSS 变量（如 `--composer-toolbar-width`、`--segmented-pill-radius`）并在组件根 class 上声明，便于审查。
@@ -61,8 +66,10 @@ rg -n "start-real|start-demo|DemoModeService|/api/demo|8081|5174" README.md docs
 ### 禁改区守卫
 
 ```powershell
-git diff --name-only | rg "controller|dto|schema.sql|data.sql|data-dev.sql|DESIGN.md|frontend/src/styles/index.css"
+git diff --name-only | rg "controller|dto|schema.sql|data.sql|data-dev.sql|DESIGN.md"
 ```
+
+`frontend/src/styles/index.css` 是 token 维护入口；修改时必须在报告中说明新增/删除 token 的 DESIGN.md 对齐依据，不作为禁改区。
 
 ### CI YAML 语法
 

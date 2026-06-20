@@ -257,7 +257,10 @@ function navigateTo(path: string) {
 <style scoped>
 .app-sidebar {
   /* 组件级几何变量：折叠时按钮水平内边距与 sessions 容器宽度集中声明，便于审计。 */
-  --sidebar-collapsed-btn-padding-inline: calc((var(--ui-height-md) - 20px) / 2);
+  --sidebar-icon-glyph-size: 20px;
+  --sidebar-collapsed-btn-padding-inline: calc(
+    (var(--ui-height-md) - var(--sidebar-icon-glyph-size)) / 2
+  );
   --sidebar-sessions-inline-size: calc(
     var(--layout-sidebar-inline-size) - var(--spacing-sm) * 2
   );
@@ -349,8 +352,8 @@ function navigateTo(path: string) {
   background-color: var(--color-surface-hover);
 }
 .app-sidebar__toggle:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .app-sidebar__main {
   flex: 1;
@@ -387,7 +390,7 @@ function navigateTo(path: string) {
   font-family: var(--font-serif);
   background-color: var(--color-brand);
   color: var(--color-surface);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand) 30%, transparent);
+  box-shadow: var(--shadow-ring);
 }
 .app-sidebar__btn--primary:hover {
   background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
@@ -404,8 +407,8 @@ function navigateTo(path: string) {
   font-weight: 600;
 }
 .app-sidebar__btn:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
   padding: 0 var(--sidebar-collapsed-btn-padding-inline);
@@ -474,8 +477,8 @@ function navigateTo(path: string) {
   font-weight: 500;
 }
 .session-item-btn:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .session-group__empty {
   font-size: var(--font-size-xs);
@@ -546,8 +549,8 @@ function navigateTo(path: string) {
   transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
 }
 .action-btn:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .action-btn:hover {
   color: var(--color-text-primary);

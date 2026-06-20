@@ -19,9 +19,56 @@ const repoRoot = path.resolve(__dirname, '..', '..')
 const frontendSrc = path.join(repoRoot, 'frontend', 'src')
 const stylesIndex = path.join(frontendSrc, 'styles', 'index.css')
 
-function isCssVariableDeclaration(text) {
-  // matches a line that declares a CSS custom property like `  --foo: 12px;`
-  return /^\s*--[\w-]+\s*:/.test(text)
+const semanticVarPrefixByFile = new Map([
+  ['frontend/src/components/ui/segmented-control/SegmentedControl.vue', ['--segmented-']],
+  ['frontend/src/components/workspace/AppSidebar.vue', ['--sidebar-']],
+  ['frontend/src/components/workspace/InterviewComposer.vue', ['--composer-']],
+  ['frontend/src/views/InterviewView.vue', ['--workspace-']],
+  ['frontend/src/views/AnalyticsView.vue', ['--analytics-']],
+  ['frontend/src/components/workspace/MessageThread.vue', ['--message-', '--judge-']],
+  ['frontend/src/components/workspace/UserProfilePanel.vue', ['--profile-']],
+])
+
+const semanticVarTerms = [
+  'size',
+  'inline-size',
+  'block-size',
+  'width',
+  'height',
+  'offset',
+  'radius',
+  'inset',
+  'layer',
+  'shadow',
+  'grid',
+  'padding',
+]
+
+function cssVariableName(text) {
+  const match = text.match(/^\s*(--[\w-]+)\s*:/)
+  return match?.[1] || null
+}
+
+function relativeFile(file) {
+  return path.relative(repoRoot, path.resolve(file)).replace(/\\/g, '/')
+}
+
+function isAllowedSemanticVariable(hit) {
+  const name = cssVariableName(hit.text)
+  if (!name) return false
+  const rel = relativeFile(hit.file)
+  const prefixes = semanticVarPrefixByFile.get(rel)
+  if (!prefixes || !prefixes.some((prefix) => name.startsWith(prefix))) return false
+  return semanticVarTerms.some((term) => name.includes(term))
+}
+
+function isAllowedBoxShadow(hit) {
+  const normalized = hit.text.trim()
+  if (isAllowed(hit, new Set([stylesIndex]))) return true
+  if (/box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
+  if (/box-shadow:\s*var\(--shadow-[\w-]+\),\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
+  if (/box-shadow:\s*inset\s+0\s+0\s+0\s+var\(--spacing-0-5\)\s+var\(--color-[\w-]+\)/.test(normalized)) return true
+  return normalized === 'box-shadow: none;' || normalized === 'box-shadow: none !important;'
 }
 
 const checks = [
@@ -63,6 +110,42 @@ const checks = [
     paths: [frontendSrc],
     allowPaths: new Set([stylesIndex]),
     isVariableLine: true,
+  },
+  {
+    id: 'raw-box-shadow',
+    description: '业务组件 raw box-shadow（必须使用 shadow token 或明确的 token 化 focus ring）',
+    pattern: 'box-shadow:',
+    paths: [frontendSrc],
+    allowPaths: new Set([stylesIndex]),
+    allowHit: isAllowedBoxShadow,
+  },
+  {
+    id: 'raw-outline-px',
+    description: '业务组件 raw outline px / outline-offset px',
+    pattern: 'outline(-offset)?:\\s*-?\\d+px',
+    paths: [frontendSrc],
+    allowPaths: new Set([stylesIndex]),
+  },
+  {
+    id: 'raw-border-radius-px',
+    description: '业务组件 raw border-radius px',
+    pattern: 'border-radius:\\s*\\d+px',
+    paths: [frontendSrc],
+    allowPaths: new Set([stylesIndex]),
+  },
+  {
+    id: 'raw-translate-px',
+    description: '业务组件 raw translate px',
+    pattern: 'transform:\\s*translate[XY]?\\(-?\\d+px\\)',
+    paths: [frontendSrc],
+    allowPaths: new Set([stylesIndex]),
+  },
+  {
+    id: 'tailwind-raw-z-index',
+    description: 'Tailwind raw z-index utility（使用 tokenized arbitrary z-index 或受控浮层 token）',
+    pattern: '\\bz-\\d+\\b',
+    paths: [frontendSrc],
+    allowPaths: new Set([]),
   },
   {
     id: 'magic-height-ratio',
@@ -192,8 +275,12 @@ for (const check of checks) {
       allowed.push({ id: check.id, hit })
       continue
     }
-    if (check.isVariableLine && isCssVariableDeclaration(hit.text)) {
-      allowed.push({ id: check.id, hit, reason: 'css-variable-declaration' })
+    if (check.allowHit?.(hit)) {
+      allowed.push({ id: check.id, hit, reason: 'explicit-allow-rule' })
+      continue
+    }
+    if (check.isVariableLine && isAllowedSemanticVariable(hit)) {
+      allowed.push({ id: check.id, hit, reason: 'semantic-variable-declaration' })
       continue
     }
     failures.push({ id: check.id, description: check.description, hit })
@@ -201,9 +288,14 @@ for (const check of checks) {
 }
 
 if (allowed.length > 0) {
-  console.log('--- ALLOWED HITS (token file) ---')
-  for (const { id, hit } of allowed) {
-    console.log(`  [${id}] ${hit.file}:${hit.line}`)
+  console.log('--- ALLOWED HITS ---')
+  for (const { id, hit, reason } of allowed) {
+    const label = reason === 'semantic-variable-declaration'
+      ? 'ALLOWED SEMANTIC VARIABLE'
+      : reason === 'explicit-allow-rule'
+        ? 'ALLOWED STANDARD UTILITY'
+        : 'ALLOWED TOKEN'
+    console.log(`  [${id}] ${label}: ${hit.file}:${hit.line}`)
   }
 }
 

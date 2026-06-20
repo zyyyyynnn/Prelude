@@ -182,7 +182,7 @@ onMounted(() => {
               @keydown.meta.enter="canSend && emit('send')"
             />
             <transition name="jd-fade-float">
-              <div v-if="!activeSessionId && showJdInput" class="absolute inset-0 z-10 bg-surface">
+              <div v-if="!activeSessionId && showJdInput" class="absolute inset-0 z-[var(--z-index-workspace-composer)] bg-surface">
                 <Textarea
                   v-model="localJdText"
                   :rows="3"
@@ -473,6 +473,7 @@ onMounted(() => {
   --composer-voice-wave-block-size: 60px;
   --composer-voice-wave-max-inline-size: 300px;
   --composer-status-dot-size: var(--spacing-sm);
+  --composer-press-offset: var(--spacing-0-5);
   transition:
     transform var(--motion-duration-base) var(--motion-ease-standard),
     border-color var(--motion-duration-base) var(--motion-ease-standard),
@@ -590,7 +591,7 @@ onMounted(() => {
 }
 .status-indicator.speaking {
   background-color: var(--color-brand);
-  box-shadow: 0 0 var(--spacing-sm) var(--color-brand);
+  box-shadow: var(--shadow-ring-deep);
 }
 .status-text {
   color: var(--color-text-secondary);
@@ -614,7 +615,7 @@ onMounted(() => {
   user-select: none;
 }
 .voice-press-btn.is-pressed {
-  transform: translateY(1px);
+  transform: translateY(var(--composer-press-offset));
   box-shadow: var(--shadow-ring-deep);
 }
 
