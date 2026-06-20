@@ -15,7 +15,16 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+// This helper lives at frontend/tests/_helpers/playwright-base.ts. Resolve
+// the canonical anchor directories so the shared webServer + outputDir work
+// regardless of which config imports this file.
+//
+// helperDir    = frontend/tests/_helpers
+// frontendRoot = frontend            (npm scripts + vite config live here)
+// repoRoot     = Prelude             (cross-stack output dir lives here)
+const helperDir = path.dirname(__filename)
+const frontendRoot = path.resolve(helperDir, '..', '..')
+const repoRoot = path.resolve(frontendRoot, '..')
 
 /**
  * Standard `use` block shared by every Phase 2 config.
@@ -38,15 +47,19 @@ export const baseUse = {
 } as const
 
 /**
- * Standard webServer block. CI forces `reuseExistingServer: false` so
- * each job starts from a known-clean state; locally the dev server is
- * reused when present to keep iteration tight.
+ * Standard webServer block. `cwd` is the FRONTEND root (not the helper
+ * directory) so `npm run dev` resolves to frontend/package.json — without
+ * this fix the dev server is launched from frontend/tests/_helpers and
+ * fails with "Could not read package.json". CI forces
+ * `reuseExistingServer: false` so each job starts from a known-clean
+ * state; locally the dev server is reused when present to keep iteration
+ * tight.
  */
 export const baseWebServer = {
   command: 'npm run dev -- --host 127.0.0.1 --port 5173',
   port: 5173,
   reuseExistingServer: !process.env.CI,
-  cwd: __dirname,
+  cwd: frontendRoot,
   timeout: 120000,
 } as const
 
@@ -64,10 +77,13 @@ export const baseTimeouts = {
 /**
  * Resolve the canonical output dir for a Phase 2 config.
  *
- * Each config writes to its own sub-directory under `output/` so that
+ * Writes to `<repoRoot>/output/<subdir>` so that
  * `output/screenshots/visual/`, `output/screenshots/a11y/` and
- * `output/screenshots/dev/.artifacts/` never collide.
+ * `output/screenshots/dev/.artifacts/` never collide AND so the output
+ * sits at the repo level (not under frontend/tests/). The root-level
+ * `output/` is also covered by the repo's existing `.gitignore`
+ * (`output/runtime/`, `output/screenshots/dev/`, etc.).
  */
 export function baseOutputDir(subdir: string): string {
-  return path.resolve(__dirname, '..', 'output', subdir)
+  return path.resolve(repoRoot, 'output', subdir)
 }
