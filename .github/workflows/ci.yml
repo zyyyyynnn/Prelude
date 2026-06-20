@@ -115,9 +115,15 @@ jobs:
       # Bundled with @playwright/test; uses the same node_modules cache from
       # `npm ci` above. Browsers are installed explicitly because the
       # windows-latest runner does NOT ship with chromium pre-installed.
-      - name: Install Playwright chromium browser
+      # We install BOTH the headed chromium browser and the headless-shell
+      # variant because @playwright/test 1.59.x defaults to the headless
+      # shell for `headless: true` (see
+      # frontend/node_modules/playwright-core/browsers.json). Installing
+      # only `chromium` leaves `chromium_headless_shell-<rev>/.../*.exe`
+      # missing and the run fails with "Executable doesn't exist at ...".
+      - name: Install Playwright chromium + headless shell browsers
         working-directory: frontend
-        run: npx --no-install playwright install --with-deps chromium
+        run: npx --no-install playwright install --with-deps chromium chromium-headless-shell
 
       - name: Verify UI accessibility (axe + keyboard paths)
         working-directory: frontend
