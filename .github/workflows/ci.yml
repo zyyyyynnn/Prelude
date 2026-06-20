@@ -8,6 +8,13 @@ jobs:
   build:
     runs-on: windows-latest
 
+    # Pin Playwright's browser install path to the workspace cache dir so
+    # the `actions/cache` step below can actually hit on subsequent runs.
+    # The default location (C:\Users\<runner>\AppData\Local\ms-playwright)
+    # is outside the runner's cacheable workspace.
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -121,9 +128,27 @@ jobs:
       # frontend/node_modules/playwright-core/browsers.json). Installing
       # only `chromium` leaves `chromium_headless_shell-<rev>/.../*.exe`
       # missing and the run fails with "Executable doesn't exist at ...".
+      #
+      # We pin PLAYWRIGHT_BROWSERS_PATH to the workspace cache dir so the
+      # `actions/cache` step below can hit on subsequent runs — the
+      # default path (C:\Users\<runner>\AppData\Local\ms-playwright) is
+      # not in the runner's cacheable workspace. We also drop
+      # `--with-deps`: it is a no-op on windows-latest and was previously
+      # a small extra attack surface for transient download stalls. The
+      # 15-minute timeout prevents a single bad download from holding the
+      # whole job open indefinitely.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright chromium + headless shell browsers
         working-directory: frontend
-        run: npx --no-install playwright install --with-deps chromium chromium-headless-shell
+        run: npx --no-install playwright install chromium chromium-headless-shell
+        timeout-minutes: 15
 
       - name: Verify UI accessibility (axe + keyboard paths)
         working-directory: frontend
