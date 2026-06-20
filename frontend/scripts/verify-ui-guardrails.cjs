@@ -62,13 +62,21 @@ function isAllowedSemanticVariable(hit) {
   return semanticVarTerms.some((term) => name.includes(term))
 }
 
+function isStylesTokenDeclaration(hit) {
+  return isAllowed(hit, new Set([stylesIndex])) && Boolean(cssVariableName(hit.text))
+}
+
 function isAllowedBoxShadow(hit) {
   const normalized = hit.text.trim()
-  if (isAllowed(hit, new Set([stylesIndex]))) return true
+  if (isStylesTokenDeclaration(hit)) return true
+  if (/-?webkit-?box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
   if (/box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
   if (/box-shadow:\s*var\(--shadow-[\w-]+\),\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
   if (/box-shadow:\s*inset\s+0\s+0\s+0\s+var\(--spacing-0-5\)\s+var\(--color-[\w-]+\)/.test(normalized)) return true
-  return normalized === 'box-shadow: none;' || normalized === 'box-shadow: none !important;'
+  return normalized === 'box-shadow: none;'
+    || normalized === 'box-shadow: none !important;'
+    || normalized === '-webkit-box-shadow: none;'
+    || normalized === '-webkit-box-shadow: none !important;'
 }
 
 const checks = [
@@ -116,7 +124,7 @@ const checks = [
     description: '业务组件 raw box-shadow（必须使用 shadow token 或明确的 token 化 focus ring）',
     pattern: 'box-shadow:',
     paths: [frontendSrc],
-    allowPaths: new Set([stylesIndex]),
+    allowPaths: new Set(),
     allowHit: isAllowedBoxShadow,
   },
   {
@@ -293,7 +301,7 @@ if (allowed.length > 0) {
     const label = reason === 'semantic-variable-declaration'
       ? 'ALLOWED SEMANTIC VARIABLE'
       : reason === 'explicit-allow-rule'
-        ? 'ALLOWED STANDARD UTILITY'
+        ? 'ALLOWED EXPLICIT RULE'
         : 'ALLOWED TOKEN'
     console.log(`  [${id}] ${label}: ${hit.file}:${hit.line}`)
   }

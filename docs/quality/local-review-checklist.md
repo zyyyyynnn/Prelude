@@ -49,7 +49,7 @@ npm --prefix frontend run verify:ui
 
 命中分类与处理约定：
 
-- **扫描 1 / 2 / 3 / 4 / 5 / 7**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与全局 token 定义；组件 scoped CSS 变量必须使用约定前缀和语义命名，不允许任意 `--bad-size: 999px` 绕过。`npm run verify:ui` 是 Node 内置脚本，可替代本节扫描命令。
+- **扫描 1 / 2 / 3 / 4 / 5 / 7**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与全局 token 定义；组件 scoped CSS 变量必须使用约定前缀和语义命名，不允许任意 `--bad-size: 999px` 绕过。`frontend/src/styles/index.css` 仅允许 shadow token 定义承载原始阴影值；普通 selector 中的 `box-shadow:` 必须使用 `var(--shadow-*)` 或明确 token 化 focus ring。`npm run verify:ui` 是 Node 内置脚本，可替代本节扫描命令。
 - **扫描 6**：`calc(var(--spacing-*)...)` 不一定全部禁止。
   - 简单半阶 / 负向 spacing（`/ 2`、`* -1`）必须替换为 `var(--spacing-0-5)` / `var(--spacing-neg-xs)` 等已有 token。
   - 组件几何布局（toolbar 宽高、pill 宽 = `(100% - spacing) / N` 等）保留为 calc，但必须集中为组件 scoped CSS 变量（如 `--composer-toolbar-width`、`--segmented-pill-radius`）并在组件根 class 上声明，便于审查。

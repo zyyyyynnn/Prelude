@@ -148,6 +148,21 @@
   --shadow-whisper: 0 4px 24px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
   --shadow-inset: inset 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   --shadow-modal: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+  --shadow-app-header:
+    0 10px 30px color-mix(in srgb, var(--color-text-primary) 3.5%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-surface) 26%, transparent) inset,
+    inset 0 -1px 0 color-mix(in srgb, var(--color-surface) 14%, transparent);
+  --shadow-app-menu:
+    0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
+  --shadow-app-menu-active: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
+  --shadow-brand-logo: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+  --shadow-login-card:
+    0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
+  --shadow-login-logo: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
+  --shadow-icon-action-focus: 0 0 0 2px var(--color-brand);
+  --shadow-autofill-surface: 0 0 0px 1000px var(--color-surface) inset;
   --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   --chart-technical: var(--color-brand);
@@ -336,10 +351,7 @@ a {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 42%, transparent), color-mix(in srgb, var(--color-surface) 12%, transparent)),
     color-mix(in srgb, var(--color-surface) 54%, transparent);
-  box-shadow:
-    0 10px 30px color-mix(in srgb, var(--color-text-primary) 3.5%, transparent),
-    0 1px 0 color-mix(in srgb, var(--color-surface) 26%, transparent) inset,
-    inset 0 -1px 0 color-mix(in srgb, var(--color-surface) 14%, transparent);
+  box-shadow: var(--shadow-app-header);
   backdrop-filter: blur(20px) saturate(108%);
   -webkit-backdrop-filter: blur(20px) saturate(108%);
 }
@@ -387,7 +399,7 @@ a {
   height: 46px;
   flex: 0 0 auto;
   border-radius: 50%;
-  box-shadow: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+  box-shadow: var(--shadow-brand-logo);
 }
 
 .app-shell__actions {
@@ -493,9 +505,7 @@ a {
   border: 1px solid var(--color-border-warm);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-surface) 96%, transparent);
-  box-shadow:
-    0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
+  box-shadow: var(--shadow-app-menu);
   white-space: nowrap;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -556,7 +566,7 @@ a {
   border-color: var(--color-ring);
   background: var(--color-surface-muted);
   color: var(--color-text-primary);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
+  box-shadow: var(--shadow-app-menu-active);
 }
 
 .app-shell__action-menu-item:disabled {
@@ -1461,9 +1471,7 @@ label,
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 36%, transparent), color-mix(in srgb, var(--color-surface) 8%, transparent)),
     color-mix(in srgb, var(--color-surface) 82%, transparent);
-  box-shadow:
-    0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
+  box-shadow: var(--shadow-login-card);
   transform: scale(1);
 }
 
@@ -1496,7 +1504,7 @@ label,
   max-width: 500px;
   aspect-ratio: 1;
   border-radius: 999px;
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
+  box-shadow: var(--shadow-login-logo);
   animation: brand-awaken var(--motion-duration-slow) var(--motion-ease-standard) both;
 }
 
@@ -1846,7 +1854,7 @@ label,
 .icon-action-btn:focus-visible {
   color: var(--color-error) !important;
   background: var(--color-surface-hover);
-  box-shadow: 0 0 0 2px var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
   outline: none;
 }
 
@@ -1858,7 +1866,7 @@ input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset !important;
+  -webkit-box-shadow: var(--shadow-autofill-surface) !important;
   -webkit-text-fill-color: var(--color-text-primary) !important;
   transition: none;
 }
