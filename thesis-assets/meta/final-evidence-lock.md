@@ -18,7 +18,7 @@
 | 测试证据矩阵 | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试数据与章节可写性映射 | 可用 | 当前主口径为 start-dev / start-docker / dev fixture；旧 Demo 数据仅作历史对照 |
 | 功能用例 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 表 5.2 功能测试用例 | 可用 | 语音、压测和公网性能必须限制性描述 |
 | 环境与构建记录 | `thesis-assets/evidence/test-data/env-2026-06.md` | 表 5.1 测试环境与第五章构建记录补充证据 | 可用 | 代表本地阶段性采集，不等同生产环境 |
-| 质量门禁证据 | `thesis-assets/evidence/test-data/quality-gates-2026-06-19.md` | CI / 本地质量门禁与小重构验证证据 | 可用 | JaCoCo report-only；BYOK/dark verify 为自动化流程验证；verify:ui 为 UI 静态 guardrail |
+| 质量门禁证据 | `thesis-assets/evidence/test-data/quality-gates-2026-06-19.md` | CI 门禁与本地预检质量门禁（含 `verify:ui` 本地 UI guardrail） | 可用 | JaCoCo report-only；BYOK/dark verify 为 CI 自动化流程验证；`verify:ui` 仅本地预检，未进 CI |
 | 数据库表字典 | `thesis-assets/evidence/test-data/database-table-dictionary-2026-06.md` | 数据库表结构参考 | 可用 | 补充 E-R 图字段细节 |
 | 代码片段证据 | `thesis-assets/evidence/code-snippets/` | 系统实现依据 | 可用 | 旧正则评分证据已被 Structured Output 证据替代 |
 | Bug 与修复证据 | `thesis-assets/evidence/bug-evidence/` | 精选问题复盘与答辩依据 | 可用 | 仅保留可直接引用证据，不夸大为系统能力证明 |
@@ -40,7 +40,7 @@
 - 报告生成：RabbitMQ 已承担报告异步任务队列；`/finish` 将 session 置为 `generating` 并发布 `ReportJobMessage`，`ReportJobWorker` 消费后通过 SSE 推送 `report_ready`。
 - BYOK：OpenAI-compatible 支持用户级 endpoint、API Key、模型发现与运行模型选择；API Key 加密保存，具体运行模型不作为默认配置或论文推荐依据。
 - Redis：承担限流、缓存和状态辅助职责。
-- 质量门禁：CI 包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify 与 UI guardrail（`verify:ui`）。
+- 质量门禁：CI 包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify；本地预检另包含 `verify:ui` UI 静态 guardrail（`verify:ui` 仅本地 npm script，未进 CI）。
 
 ## 写作限制
 
@@ -50,4 +50,4 @@
 - TTS 单元测试覆盖容错、顺序和 timeout，不得写成真实 ASR/TTS 低延迟性能基准。
 - openai-compatible 失败必须显式暴露，不写成无感 fallback 到系统 provider。
 - seqNum、ReportJobWorker 幂等和阶段系统消息测试可作为一致性证据，不得写成并发绝对无冲突。
-- `verify:ui` 只能写成 UI 静态 guardrail 与 semantic sizing 红线扫描，不得写成全量视觉回归或 UI 完全无缺陷。
+- `verify:ui` 只能写成 UI 静态 guardrail 与 semantic sizing 红线扫描，不得写成全量视觉回归或 UI 完全无缺陷；`verify:ui` 是 `frontend/package.json` 中的本地 npm script，未在 `.github/workflows/ci.yml` 中执行。

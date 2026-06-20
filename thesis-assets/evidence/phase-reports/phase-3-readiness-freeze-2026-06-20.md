@@ -13,7 +13,7 @@
 | 冻结审查基线提交信息 | `docs(thesis): compress historical phase 2.10 report` |
 | CI 状态 | GitHub Actions CI run `27815679764` 在 `4b2e967` 上通过 |
 | 当前同步基线 | `e8fa5378b9eab4cd2e2512b3844dbbed6c7f0827`（`origin/main` HEAD） |
-| UI 同步说明 | UI semantic sizing 与 `verify:ui` UI drift guardrail 已进入 `main`；本同步只更新证据口径，不修改 `thesis-assets/chapters/*.md` 正文 |
+| UI 同步说明 | UI semantic sizing 与 `verify:ui` UI drift guardrail 已进入 `main`（`verify:ui` 为 `frontend/package.json` 中 npm script，当前仅本地预检，未进 `.github/workflows/ci.yml`）；本同步只更新证据口径，不修改 `thesis-assets/chapters/*.md` 正文 |
 | npm audit | `npm --prefix frontend audit --omit=dev` 返回 `found 0 vulnerabilities` |
 | 正文处理 | 本轮未修改 `thesis-assets/chapters/*.md` |
 | 冻结范围 | evidence、图表登记、质量门禁证据、答辩材料入口 |
@@ -40,8 +40,8 @@
 - RabbitMQ 已用于报告生成异步任务队列；可描述 `/finish -> generating -> RabbitMQ -> ReportJobWorker -> summary_report -> finished -> report_ready` 闭环。
 - Redis 职责为限流、缓存、评分锁和状态辅助，不承担报告任务队列职责。
 - BYOK 支持 OpenAI-compatible endpoint root、API Key、模型发现、配置保存、配置测试和链路复用；API Key 加密保存，前端不回显明文。
-- 自动化质量门禁包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify 与 UI guardrail（`verify:ui`）。
-- JaCoCo 是 report-only；Sentrux 是有限规则边界检查；BYOK verify 和 dark verify 是自动化流程 sanity check；`verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归。
+- 自动化质量门禁分两层：CI 包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify；本地预检另包含 `verify:ui` UI 静态 guardrail（`verify:ui` 仅本地 npm script，未进 CI）。
+- JaCoCo 是 report-only；Sentrux 是有限规则边界检查；BYOK verify 和 dark verify 是 CI 自动化流程 sanity check；`verify:ui` 是本地预检 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归。
 
 ## 不可写入正文的夸大表述
 
