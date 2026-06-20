@@ -33,7 +33,7 @@
 | 表5.7 | Redis、限流与状态辅助测试表 | `functional-cases-2026-06.md` | 限流、缓存、评分锁、状态辅助 | 限制性可写 |
 | 表5.8 | Structured Output 与报告解析测试表 | `functional-cases-2026-06.md`、`code-snippets/structured-output-resilience-2026-06-02.md` | 结构化报告、字段校验、分数边界处理 | 限制性可写 |
 | 表5.9 | 权限与数据隔离测试表 | `functional-cases-2026-06.md`、`dev-fixture-2026-06.md` | JWT、跨用户资源访问、dev fixture 边界 | 可进入正文候选 |
-| 补充证据 | 构建与自动化验证记录 | `quality-gates-2026-06-19.md` | 构建、CI、质量门禁（含 `verify:ui` UI guardrail） | active evidence / 未作为当前正文编号表 |
+| 补充证据 | 构建与自动化验证记录 | `quality-gates-2026-06-19.md` | 构建、CI 质量门禁；本地预检另含 `verify:ui` UI guardrail（`verify:ui` 仅为本地 UI 静态 guardrail，不等同全量视觉回归，当前未进 `.github/workflows/ci.yml`） | active evidence / 未作为当前正文编号表 |
 
 ## UI 截图候选
 

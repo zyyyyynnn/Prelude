@@ -13,7 +13,7 @@
 | `env-2026-06.md` | 环境与构建记录 | 表 5.1 测试环境、基础构建记录、一次 BYOK/RabbitMQ 功能链路 | active | 本地阶段性采集，不代表生产部署 |
 | `functional-cases-2026-06.md` | 功能测试用例 | TC-01 ~ TC-12 功能、BYOK、fallback、质量门禁、seqNum | active | 语音和并发指标必须限制性描述 |
 | `dev-fixture-2026-06.md` | dev fixture 与历史 API 对照 | 本地验收数据夹具与未实测性能边界 | active | 多数真实性能指标未实测 |
-| `quality-gates-2026-06-19.md` | 自动化质量门禁（含 `verify:ui` UI guardrail） | CI / 本地质量门禁、小重构后验证口径、UI 静态扫描与 semantic sizing 红线 | active | JaCoCo 为 report-only；`verify:ui` 不等同全量视觉回归 |
+| `quality-gates-2026-06-19.md` | CI 自动化质量门禁与本地预检（含 `verify:ui` 本地 UI guardrail） | CI / 本地质量门禁、小重构后验证口径、UI 静态扫描与 semantic sizing 红线 | active | JaCoCo 为 report-only；`verify:ui` 仅本地预检，未进 CI，不等同全量视觉回归 |
 | `database-table-dictionary-2026-06.md` | 数据库表字典 | E-R 图字段细节与表结构说明 | active | 补充图 3.2，不替代 DDL |
 | `real-llm-api-2026-05-27-redacted.md` | 历史真实 API 记录 | 单次真实公网模型链路对照 | historical supplement | 不作为当前默认模型、性能基准或推荐依据 |
 | `archive/demo-2026-04-25.md` | 历史 Demo Twin 数据 | 旧本机回环数据对照 | archive | 不代表当前运行模式 |
@@ -42,7 +42,7 @@
 | BYOK / Provider | `quality-gates`、`docs/byok-capability.md`、LlmRouter 测试 | 可写 | 支持用户级 OpenAI-compatible endpoint、API Key、模型发现与加密保存 | 任意模型故障都可无感切换 |
 | fallback 边界 | LlmRouter 测试 | 可写 | 内置 provider 可 fallback；openai-compatible 失败显式暴露 | 用户 BYOK 失败后静默改用系统 Key |
 | 语音 / TTS | `functional-cases`、VoiceInterviewTurnService 测试 | 限制性可写 | 语音链路具备容错、顺序保护和 timeout 单元测试 | 真实 ASR/TTS 低延迟性能已通过 |
-| 质量门禁 | `quality-gates`、CI workflow | 可写 | 后端测试、前端 build、audit、BYOK/dark verify、Sentrux、diff check、`verify:ui` UI guardrail 已纳入验证 | coverage threshold 已达标、架构完全正确、UI 全量视觉回归通过 |
+| 质量门禁 | `quality-gates`、CI workflow | 可写 | CI 覆盖后端测试、前端 build、audit、BYOK/dark verify、Sentrux、diff check；`verify:ui` UI guardrail 作为本地预检可写 | coverage threshold 已达标、架构完全正确、UI 全量视觉回归通过 |
 | 消息序号 / 阶段系统消息 | InterviewMessage/Stage/Judge 测试 | 可写 | seqNum 基于 latest max+1，系统消息统一入口，降低稀疏序列风险 | 并发场景绝对无冲突 |
 
 ## 性能与边界矩阵
@@ -65,7 +65,7 @@
 | 可写内容 | 必须降调 | 禁止写入 |
 | --- | --- | --- |
 | 功能测试覆盖核心业务链路，TC-01 ~ TC-12 具备当前证据支撑 | 语音、限流、熔断、RabbitMQ 可靠性只写实现机制与本地验证 | 已完成生产环境、高并发、招聘效果或公网模型性能验证 |
-| CI / 本地质量门禁可重复执行（含 `verify:ui`） | JaCoCo 只生成覆盖率报告，不设置阈值；`verify:ui` 只证明 UI 静态扫描通过 | 覆盖率已达标、架构已被完全证明、UI 全量视觉回归通过 |
+| CI 门禁与本地预检可重复执行（`verify:ui` 仅本地预检） | JaCoCo 只生成覆盖率报告，不设置阈值；`verify:ui` 只证明 UI 静态扫描通过 | 覆盖率已达标、架构已被完全证明、UI 全量视觉回归通过 |
 | BYOK 设置流程可自动化验证 | verify 脚本使用 mock API | BYOK 真实公网性能稳定 |
 | RabbitMQ 报告链路具备异步解耦和幂等保护测试 | 本地 Docker Compose 与单元测试范围 | 生产级可靠投递、消息绝不丢失 |
 

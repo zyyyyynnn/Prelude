@@ -17,7 +17,7 @@
 | 第 7 页 | 核心实现一：SSE 流式面试 | `fig-4.x-sse-streaming-flow.png`、SSE 代码片段 | 第四章 | 说明后端 SseEmitter 流式推送、前端 rAF 缓冲渲染和结束收口。 | 候选图4.x，正文采用前再冻结图号 |
 | 第 8 页 | 核心实现二：Structured Output | JSON Schema / 解析降级代码片段 | 第四章 | 说明旧正则评分风险，当前使用结构化输出、反序列化和分数降级。 | 对比新旧方案 |
 | 第 9 页 | 核心实现三：可靠性保护 | Redis 限流、Resilience4j、fallback 测试 | 第四章 | 说明限流、熔断、SSE 恢复，以及 openai-compatible 不静默 fallback 的边界。 | 限缩为机制与测试保护，不写高并发通过 |
-| 第 10 页 | 测试验证 | `functional-cases-2026-06.md`、`quality-gates-2026-06-19.md`、`test-evidence-matrix-2026-06.md` | 第五章 | 展示 TC-01 到 TC-12、后端测试、前端 build、audit、BYOK verify、dark verify、UI guardrail（`verify:ui`）、Sentrux、JaCoCo report。 | 强调 JaCoCo report-only；`verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归 |
+| 第 10 页 | 测试验证 | `functional-cases-2026-06.md`、`quality-gates-2026-06-19.md`、`test-evidence-matrix-2026-06.md` | 第五章 | 展示 TC-01 到 TC-12、后端测试、前端 build、audit、CI 门禁包括 BYOK verify、dark verify、Sentrux、JaCoCo report；本地预检另含 UI guardrail（`verify:ui`）。 | 强调 JaCoCo report-only；`verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归，当前未进 CI |
 | 第 11 页 | Bug 复盘 | `01-demo-proxy.md`、`02-mysql-preflight.md` | 第四章、第五章 | 讲历史代理错连和 MySQL 未就绪两个真实问题，突出配置契约和启动前置校验。 | 只讲 1-2 个重点，不作为当前运行入口 |
 | 第 12 页 | 系统展示路线 | `start-dev.bat`、当前 README / setup | 全文 | 按登录、主工作台、简历、面试、报告、看板、LLM 配置、设置展示。 | 准备离线截图兜底 |
 | 第 13 页 | 总结与不足 | 第六章总结、局限与改进方向 | 第六章 | 总结闭环、SSE、Structured Output、可靠性保护、Docker 编排和证据化测试；说明语音和并发压测不足。 | 收束到可扩展方向 |
@@ -29,6 +29,6 @@
 - 语音交互只能写成工程容错、顺序保护和待实测能力，不得写成真实公网低延迟已完成。
 - RabbitMQ 已用于报告生成异步链路，但当前证据不证明生产级可靠投递或消息绝不丢失。
 - JaCoCo 只生成 report artifact，无覆盖率阈值。
-- `verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归，不能用来宣称 UI 完全无缺陷。
+- `verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归，不能用来宣称 UI 完全无缺陷；`verify:ui` 仅本地预检，当前未进 CI。
 - fig-4.x 为候选图号，仅在正文实际引用时转为正式图号。
 - 每页讲解控制在 30 到 45 秒，现场展示页可适当延长。
