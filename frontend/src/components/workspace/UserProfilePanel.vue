@@ -199,8 +199,8 @@ defineExpose({ submit: saveProfile, saving, loading })
 .profile-avatar {
   display: grid;
   place-items: center;
-  width: calc(var(--ui-height-base) * 2.4);
-  height: calc(var(--ui-height-base) * 2.4);
+  inline-size: var(--avatar-size-profile);
+  block-size: var(--avatar-size-profile);
   border-radius: var(--radius-full);
   background: var(--color-surface-muted);
   color: var(--color-brand);
