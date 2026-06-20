@@ -26,8 +26,14 @@
 | 候选图4.x | SSE 流式问答处理流程图 | `evidence/diagrams/fig-4.x-sse-streaming-flow.png` | `fig-4.x-sse-streaming-flow.mmd` | 候选 / 未冻结图号 |
 | 表5.1 | 测试环境表 | `evidence/test-data/env-2026-06.md` | 本地环境采集记录 | 可进入正文候选 |
 | 表5.2 | 功能测试用例表 | `evidence/test-data/functional-cases-2026-06.md` | TC-01 ~ TC-12 | 可进入正文候选 |
-| 表5.3 | 构建与自动化验证记录表 | `env-2026-06.md`、`quality-gates-2026-06-19.md` | 构建、CI、质量门禁 | 可进入正文候选 |
-| 表5.4 | 业务性能采集记录表 | `dev-fixture-2026-06.md`、`test-evidence-matrix-2026-06.md` | dev fixture、历史 API 对照与未实测边界 | 限制性可写 |
+| 表5.3 | 简历解析与岗位匹配测试表 | `evidence/test-data/functional-cases-2026-06.md` | PDF 校验、文本提取、结构化字段、岗位匹配 | 可进入正文候选 |
+| 表5.4 | 模拟面试与 SSE 流式交互测试表 | `functional-cases-2026-06.md`、`test-evidence-matrix-2026-06.md` | SSE 分片、前端缓冲、请求中止、状态恢复 | 限制性可写 |
+| 表5.5 | RabbitMQ 异步报告生成链路测试表 | `functional-cases-2026-06.md`、`code-snippets/rabbitmq-report-queue-2026-06-13.md` | 报告生成异步任务队列闭环 | 限制性可写 |
+| 表5.6 | BYOK 用户级模型配置测试表 | `functional-cases-2026-06.md`、`quality-gates-2026-06-19.md` | 模型发现、配置保存、配置测试、链路复用 | 限制性可写 |
+| 表5.7 | Redis、限流与状态辅助测试表 | `functional-cases-2026-06.md` | 限流、缓存、评分锁、状态辅助 | 限制性可写 |
+| 表5.8 | Structured Output 与报告解析测试表 | `functional-cases-2026-06.md`、`code-snippets/structured-output-resilience-2026-06-02.md` | 结构化报告、字段校验、分数边界处理 | 限制性可写 |
+| 表5.9 | 权限与数据隔离测试表 | `functional-cases-2026-06.md`、`dev-fixture-2026-06.md` | JWT、跨用户资源访问、dev fixture 边界 | 可进入正文候选 |
+| 补充证据 | 构建与自动化验证记录 | `quality-gates-2026-06-19.md` | 构建、CI、质量门禁 | active evidence / 未作为当前正文编号表 |
 
 ## UI 截图候选
 

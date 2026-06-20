@@ -30,6 +30,7 @@
 | --- | --- | --- |
 | 治理规范 | `meta/workflow-governance.md` | 阶段、红线和工具边界 |
 | 证据锁定 | `meta/final-evidence-lock.md` | 当前有效证据索引 |
+| 阶段 3 准备冻结 | `evidence/phase-reports/phase-3-readiness-freeze-2026-06-20.md` | Final Evidence Freeze、图表表格一致性和答辩材料核对 |
 | 测试证据矩阵 | `evidence/test-data/test-evidence-matrix-2026-06.md` | 章节可写性与测试边界 |
 | 质量门禁证据 | `evidence/test-data/quality-gates-2026-06-19.md` | CI / 本地质量门禁快照 |
 | 功能用例 | `evidence/test-data/functional-cases-2026-06.md` | TC-01 ~ TC-12 功能边界 |

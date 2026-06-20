@@ -15,18 +15,19 @@
 | 绘图与模型资产 | `thesis-assets/evidence/diagrams/` | 图表源文件与导出图 | 可用 | 候选图 4.x 未冻结图号 |
 | 测试证据矩阵 | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试数据与章节可写性映射 | 可用 | 当前主口径为 start-dev / start-docker / dev fixture；旧 Demo 数据仅作历史对照 |
 | 功能用例 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | 表 5.2 功能测试用例 | 可用 | 语音、压测和公网性能必须限制性描述 |
-| 环境与构建记录 | `thesis-assets/evidence/test-data/env-2026-06.md` | 表 5.1 / 表 5.3 基础环境与历史构建记录 | 可用 | 代表本地阶段性采集，不等同生产环境 |
+| 环境与构建记录 | `thesis-assets/evidence/test-data/env-2026-06.md` | 表 5.1 测试环境与第五章构建记录补充证据 | 可用 | 代表本地阶段性采集，不等同生产环境 |
 | 质量门禁证据 | `thesis-assets/evidence/test-data/quality-gates-2026-06-19.md` | CI / 本地质量门禁与小重构验证证据 | 可用 | JaCoCo report-only；BYOK/dark verify 为自动化流程验证 |
 | 数据库表字典 | `thesis-assets/evidence/test-data/database-table-dictionary-2026-06.md` | 数据库表结构参考 | 可用 | 补充 E-R 图字段细节 |
 | 代码片段证据 | `thesis-assets/evidence/code-snippets/` | 系统实现依据 | 可用 | 旧正则评分证据已被 Structured Output 证据替代 |
 | Bug 与修复证据 | `thesis-assets/evidence/bug-evidence/` | 精选问题复盘与答辩依据 | 可用 | 仅保留可直接引用证据，不夸大为系统能力证明 |
 | 阶段过程记录 | `thesis-assets/evidence/phase-reports/` | 审计和追溯 | 降权保留 | 不直接作为正文事实依据 |
 | 答辩材料 | `thesis-assets/defense/` | PPT 映射与讲稿 | 可用 | 使用前仍需人工核对最新口径 |
+| 阶段 3 准备冻结报告 | `thesis-assets/evidence/phase-reports/phase-3-readiness-freeze-2026-06-20.md` | Final Evidence Freeze 与答辩准备核对 | 当前冻结入口 | 只冻结证据口径，不代表正文已修改 |
 
 ## 当前锁定边界
 
 - 当前证据索引只确认资产位置与用途，不代表正文已经完成同步。
-- 阶段 2.12 项目漂移同步已完成 evidence 层补齐；阶段 3 尚未开始。
+- 当前冻结基线为 `4b2e967`；阶段 3 准备工作只完成 evidence、图表登记和答辩材料口径核对。
 - 正文未修改，引用编号未冻结，DOCX/PDF 未生成。
 - 新增证据必须先进入 active evidence 路径，再由用户和审查官复核。
 - 不允许通过临时输出或外部生成物反向覆盖 `chapters/*.md`。

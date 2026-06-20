@@ -21,7 +21,7 @@
 | 第 11 页 | Bug 复盘 | `01-demo-proxy.md`、`02-mysql-preflight.md` | 第四章、第五章 | 讲历史代理错连和 MySQL 未就绪两个真实问题，突出配置契约和启动前置校验。 | 只讲 1-2 个重点，不作为当前运行入口 |
 | 第 12 页 | 系统展示路线 | `start-dev.bat`、当前 README / setup | 全文 | 按登录、主工作台、简历、面试、报告、看板、LLM 配置、设置展示。 | 准备离线截图兜底 |
 | 第 13 页 | 总结与不足 | 第六章总结、局限与改进方向 | 第六章 | 总结闭环、SSE、Structured Output、可靠性保护、Docker 编排和证据化测试；说明语音和并发压测不足。 | 收束到可扩展方向 |
-| 第 14 页 | Q&A 准备 | `script.md`、`final-evidence-lock.md` | — | 准备 SSE vs WS、fallback、RabbitMQ、BYOK、语音待实测、coverage report-only 等问答。 | 可选页 |
+| 第 14 页 | Q&A 准备 | `script.md`、`final-evidence-lock.md`、`phase-3-readiness-freeze-2026-06-20.md` | — | 准备 SSE vs WS、fallback、RabbitMQ、BYOK、语音待实测、coverage report-only 等问答。 | 可选页 |
 
 ## 关键提示
 
