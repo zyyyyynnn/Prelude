@@ -12,6 +12,7 @@ npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:ui
 npm --prefix frontend run capture:visual
 npm --prefix frontend run verify:a11y
+npm --prefix frontend run verify:tokens
 npm --prefix frontend audit --omit=dev
 sentrux check E:\Prelude
 git diff --check
@@ -22,6 +23,8 @@ git diff --check
 > `verify:a11y` 执行 `playwright test -c playwright.a11y.config.ts`，跑 8 个 axe + 键盘路径场景，仅 fail critical axe violations（serious 作为 backlog）。详见 `docs/quality/ui-a11y.md`。
 >
 > Phase 3 引入 dev-only `/components-lab` 路由（`import.meta.env.DEV` 时注册，生产构建被 Vite tree-shake 掉），详见 `docs/quality/ui-component-lab.md`。
+>
+> `verify:tokens` 跑 `frontend/scripts/verify-ui-tokens.cjs`：Node 内置、读 `frontend/tokens/ui-tokens.json` schema + `frontend/src/styles/index.css` 实际声明，做 schema 完整性、shadow raw-on-selector、z-index 唯一性、design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）四类校验。详见 `docs/quality/ui-token-schema.md`。
 
 ## 红线扫描
 
