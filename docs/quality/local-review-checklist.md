@@ -17,9 +17,11 @@ sentrux check E:\Prelude
 git diff --check
 ```
 
-> `capture:visual` 与 `verify:visual` 当前等价：均执行 `playwright test -c playwright.visual.config.ts`，仅产出 15 个 UI 场景的 PNG artifact（输出到 `frontend/tests/visual/__screenshots__/`，已 gitignore）。Phase 1 阶段不引入像素级 diff；Phase 5/6 再决定是否升级为 blocking gate。详见 `docs/quality/ui-visual-regression.md`。
+> `capture:visual` 与 `verify:visual` 当前等价：均执行 `playwright test -c playwright.visual.config.ts`，产出 17 个 UI 场景的 PNG artifact（输出到 `frontend/tests/visual/__screenshots__/`，已 gitignore）。Phase 1 阶段不引入像素级 diff；Phase 5/6 再决定是否升级为 blocking gate。详见 `docs/quality/ui-visual-regression.md`。
 >
 > `verify:a11y` 执行 `playwright test -c playwright.a11y.config.ts`，跑 8 个 axe + 键盘路径场景，仅 fail critical axe violations（serious 作为 backlog）。详见 `docs/quality/ui-a11y.md`。
+>
+> Phase 3 引入 dev-only `/components-lab` 路由（`import.meta.env.DEV` 时注册，生产构建被 Vite tree-shake 掉），详见 `docs/quality/ui-component-lab.md`。
 
 ## 红线扫描
 
