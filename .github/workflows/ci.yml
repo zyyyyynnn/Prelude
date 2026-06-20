@@ -32,8 +32,16 @@ jobs:
             if ([string]::IsNullOrWhiteSpace($baseSha)) {
               git diff --check HEAD~1
             } else {
+              # IMPORTANT: do NOT use the 3-dot `A...B` form here. PowerShell
+              # treats `...` as a range operator (same as `1..5`) and rewrites
+              # it before git ever sees it, so the resulting `git diff` is
+              # called with broken args and prints its usage. `merge-base`
+              # computes the same semantic target as `A...B` but uses a
+              # plain space between two commit args that PowerShell leaves
+              # alone.
               git fetch origin "$baseSha" --depth=1
-              git diff --check "$baseSha"...HEAD
+              $mergeBase = git merge-base "$baseSha" HEAD
+              git diff --check "$mergeBase" HEAD
             }
           } else {
             git diff --check HEAD~1
