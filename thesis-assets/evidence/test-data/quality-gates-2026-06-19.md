@@ -12,7 +12,7 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 代码行为事实基线 | `4b2e967`（当前 `main` HEAD；CI run `27815679764` 已通过） |
+| 代码行为事实基线 | `4b2e967`（最近 CI 通过代码基线；CI run `27815679764` 已通过） |
 | 文档收口基线 | `4b2e967`（历史阶段报告压缩完成后，active evidence 以 `final-evidence-lock.md`、本文件、测试证据矩阵和图表登记为入口） |
 | 最近治理范围 | 约最近 20 次提交，覆盖 UI token 收敛、dev fixture 收敛、语音链路硬化、消息序号一致性、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁，以及阶段 2 历史文档降噪收口 |
 | 运行入口口径 | `start-dev` + `start-docker`；旧 Demo Twin / start-real / start-demo 均为历史状态 |
