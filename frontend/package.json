@@ -14,9 +14,14 @@
     "capture:local": "playwright test -c playwright.local.config.ts",
     "verify:byok": "node scripts/verify-byok-settings-flow.cjs",
     "verify:dark": "node scripts/verify-dark-theme-flow.cjs",
-    "verify:ui": "node scripts/verify-ui-guardrails.cjs"
+    "verify:ui": "node scripts/verify-ui-guardrails.cjs",
+    "capture:visual": "playwright test -c playwright.visual.config.ts",
+    "verify:visual": "playwright test -c playwright.visual.config.ts",
+    "verify:a11y": "playwright test -c playwright.a11y.config.ts",
+    "verify:tokens": "node scripts/verify-ui-tokens.cjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@playwright/test": "^1.56.1",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.14",

@@ -175,6 +175,11 @@ const checks = [
 
 function runRipgrep(args) {
   // Use rg if available; fall back to a tiny Node walker otherwise.
+  // CI runners (windows-latest) do NOT ship with ripgrep, so we must
+  // gracefully degrade: any spawnSync failure (ENOENT, status 2, 127)
+  // falls through to the in-process walker. Previously only status 2
+  // and 127 were caught, leaving ENOENT (status === null) to crash the
+  // entire verify:ui step.
   try {
     const out = execFileSync('rg', ['--no-heading', '--line-number', '--color', 'never', ...args], {
       cwd: repoRoot,
@@ -187,8 +192,10 @@ function runRipgrep(args) {
       // rg exit 1 means "no matches" — treat as empty
       return ''
     }
-    if (error.status === 2 || error.status === 127) {
-      // rg missing or syntax error — fall through to fallback
+    if (error.status === 2 || error.status === 127 || error.code === 'ENOENT') {
+      // rg missing, syntax error, or binary not on PATH — fall through
+      // to the in-process walker so the step still produces results on
+      // environments without ripgrep (CI runners, fresh devcontainers).
       return walkFallback(args)
     }
     throw error

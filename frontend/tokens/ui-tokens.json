@@ -1,0 +1,288 @@
+{
+  "$schema": "ui-tokens/v1",
+  "description": "Prelude UI token schema. Source of truth for token naming and classification. Values live in frontend/src/styles/index.css; this file indexes them so the verify-ui-tokens script can detect drift, missing declarations, or category reclassification without diffing the CSS by hand.",
+  "categories": {
+    "color": {
+      "prefix": "color",
+      "description": "品牌与语义颜色（含暗色模式映射）。",
+      "tokens": [
+        "color-bg",
+        "color-surface",
+        "color-surface-hover",
+        "color-surface-muted",
+        "color-sand",
+        "color-text-primary",
+        "color-text-secondary",
+        "color-text-tertiary",
+        "color-text-button",
+        "color-border",
+        "color-border-warm",
+        "color-ring",
+        "color-ring-deep",
+        "color-line-decor",
+        "color-line-decor-light",
+        "color-brand",
+        "color-brand-light",
+        "color-coral",
+        "color-error",
+        "color-focus",
+        "color-mask-overlay"
+      ]
+    },
+    "spacing": {
+      "prefix": "spacing",
+      "description": "间距阶梯（基于 4 / 8 / 16 / 24 / 32 / 40 + 异常值）。",
+      "tokens": [
+        "spacing-xs",
+        "spacing-sm",
+        "spacing-md",
+        "spacing-lg",
+        "spacing-xl",
+        "spacing-2xl",
+        "spacing-1-5",
+        "spacing-2-5",
+        "spacing-3-5",
+        "spacing-4-5",
+        "spacing-5-5",
+        "spacing-0-5",
+        "spacing-neg-xs"
+      ]
+    },
+    "radius": {
+      "prefix": "radius",
+      "description": "圆角阶梯。",
+      "tokens": [
+        "radius-sm",
+        "radius-md",
+        "radius-lg",
+        "radius-xl",
+        "radius-2xl",
+        "radius-3xl",
+        "radius-full"
+      ]
+    },
+    "shadow": {
+      "prefix": "shadow",
+      "description": "阴影 token。原始阴影值只允许出现在 token 定义行，selector 中的 box-shadow 必须使用 var(--shadow-*) 引用。",
+      "tokens": [
+        "shadow-ring",
+        "shadow-ring-deep",
+        "shadow-whisper",
+        "shadow-modal",
+        "shadow-app-header",
+        "shadow-app-menu",
+        "shadow-app-menu-active",
+        "shadow-inset",
+        "shadow-brand-logo",
+        "shadow-login-card",
+        "shadow-login-logo",
+        "shadow-icon-action-focus",
+        "shadow-autofill-surface"
+      ],
+      "rules": {
+        "raw-only-in-token-definitions": true
+      }
+    },
+    "motion": {
+      "prefix": "motion",
+      "description": "动效 token（时长、缓动、过渡组合）。",
+      "tokens": [
+        "motion-duration-base",
+        "motion-duration-slow",
+        "motion-duration-thinking",
+        "motion-ease-standard",
+        "motion-delay-min",
+        "motion-transition-color",
+        "motion-transition-surface",
+        "motion-transition-opacity",
+        "motion-transition-transform",
+        "animate-duration-base"
+      ]
+    },
+    "font": {
+      "prefix": "font",
+      "description": "字体族与字号阶梯。",
+      "tokens": [
+        "font-serif",
+        "font-sans",
+        "font-mono",
+        "font-size-xs",
+        "font-size-sm",
+        "font-size-meta",
+        "font-size-md",
+        "font-size-lg",
+        "font-size-xl",
+        "font-size-2xl"
+      ]
+    },
+    "ui-height": {
+      "prefix": "ui-height",
+      "description": "控件高度。base 34 / compact 30 由 DESIGN.md 锁定。",
+      "tokens": [
+        "ui-height-base",
+        "ui-height-compact",
+        "ui-height-sm",
+        "ui-height-md"
+      ],
+      "rules": {
+        "design-locked": ["ui-height-base", "ui-height-compact"]
+      }
+    },
+    "layout": {
+      "prefix": "layout",
+      "description": "跨页面布局语义尺寸（Sidebar / Settings dialog / Workspace content）。",
+      "tokens": [
+        "layout-sidebar-inline-size",
+        "layout-sidebar-collapsed-inline-size",
+        "layout-sidebar-brand-inline-size",
+        "layout-sidebar-header-block-size",
+        "layout-settings-sidebar-inline-size",
+        "layout-settings-dialog-max-inline-size",
+        "layout-settings-dialog-min-block-size",
+        "layout-workspace-content-max-inline-size",
+        "layout-dashboard-card-min-inline-size",
+        "layout-form-field-min-inline-size",
+        "layout-list-title-min-inline-size"
+      ],
+      "rules": {
+        "design-locked": [
+          "layout-sidebar-inline-size",
+          "layout-sidebar-collapsed-inline-size",
+          "layout-workspace-content-max-inline-size",
+          "layout-settings-dialog-max-inline-size",
+          "layout-settings-dialog-min-block-size"
+        ]
+      }
+    },
+    "content": {
+      "prefix": "content",
+      "description": "可读内容宽度（消息气泡、judge feedback）。",
+      "tokens": [
+        "content-message-max-inline-size",
+        "content-judge-max-inline-size",
+        "content-judge-hint-max-inline-size"
+      ]
+    },
+    "z-index": {
+      "prefix": "z-index",
+      "description": "层级 token。值必须唯一（layer 语义不重叠）。",
+      "tokens": [
+        "z-index-workspace-composer",
+        "z-index-app-header",
+        "z-index-sidebar"
+      ],
+      "rules": {
+        "values-must-be-unique": true
+      }
+    },
+    "header-composer": {
+      "prefix": "header|composer",
+      "description": "布局相关辅助 token（顶部高度、composer 总高），非通用尺寸。",
+      "tokens": [
+        "header-height",
+        "composer-height"
+      ]
+    },
+    "chart-brand": {
+      "prefix": "chart|brand|rose",
+      "description": "图表与品牌图案使用的语义色（与 color-* 解耦，便于图表与背景独立调色）。",
+      "tokens": [
+        "chart-technical",
+        "chart-expression",
+        "chart-logic",
+        "brand-metaballs-1",
+        "brand-metaballs-2",
+        "brand-metaballs-3",
+        "brand-metaballs-4",
+        "brand-metaballs-5",
+        "brand-metaballs-bg",
+        "brand-metaballs-shadow",
+        "rose-three-color",
+        "rose-three-muted",
+        "rose-three-stroke",
+        "rose-three-speed"
+      ]
+    },
+    "shadcn-tailwind-theme": {
+      "prefix": null,
+      "description": "Tailwind v4 + shadcn-vue 默认 @theme block 的语义 token。这些 token 在 index.css 的 @theme { ... } 块里声明，用于 shadcn-vue 组件 (Button, Dialog, Card 等) 的 variant 系统。不在 Prelude 自己的业务 token 命名空间下，但需要与 index.css 中的实际声明保持一致。",
+      "tokens": [
+        "background",
+        "foreground",
+        "card",
+        "card-foreground",
+        "popover",
+        "popover-foreground",
+        "primary",
+        "primary-foreground",
+        "secondary",
+        "secondary-foreground",
+        "muted",
+        "muted-foreground",
+        "accent",
+        "accent-foreground",
+        "destructive",
+        "destructive-foreground",
+        "border",
+        "input",
+        "ring",
+        "ease-standard",
+        "animate-duration-base",
+        "color-background",
+        "color-foreground",
+        "color-card",
+        "color-card-foreground",
+        "color-popover",
+        "color-popover-foreground",
+        "color-primary",
+        "color-primary-foreground",
+        "color-secondary",
+        "color-secondary-foreground",
+        "color-muted",
+        "color-muted-foreground",
+        "color-accent",
+        "color-accent-foreground",
+        "color-destructive",
+        "color-destructive-foreground",
+        "color-border",
+        "color-input",
+        "color-ring"
+      ]
+    },
+    "legacy-utility": {
+      "prefix": null,
+      "description": "项目早期遗留的 utility token：bg-paper-filter（登录背景纹理）、mask-overlay（dialog 背景遮罩）、--radius（基础圆角别名）、--ui-segmented-item-min-inline-size（Phase 1 SegmentedControl 单一阈值）、--app-shell-*（app-shell 布局辅助）、--session-item-action-width（侧边栏动作）、--login-card-content-layer（登录卡片 z-index）。这些 token 在 Phase 4 之后会被逐步整合到统一 namespace。",
+      "tokens": [
+        "radius",
+        "bg-paper-filter",
+        "mask-overlay",
+        "ui-segmented-item-min-inline-size",
+        "app-shell-menu-width",
+        "app-shell-menu-frame-extra",
+        "app-shell-menu-frame-offset",
+        "session-item-action-width",
+        "login-card-content-layer"
+      ]
+    },
+    "scoped-component-private": {
+      "prefix": null,
+      "description": "组件 scoped 私有变量，定义在组件 <style scoped> 块内，不在本 schema 集中管理。脚本会跳过这些 token 的全局校验，但要求组件属性侧只引用命名语义变量。",
+      "tokens": []
+    }
+  },
+  "rules": {
+    "shadow-raw-only-in-definitions": "selector 中的 box-shadow 必须使用 var(--shadow-*)，不允许裸阴影值。",
+    "z-index-values-unique": "任意 --z-index-* token 的值互不相等；如果发现重复说明层级冲突。",
+    "design-locked-values": "design-locked 列表中的 token 值不得随意变更（受 DESIGN.md 约束）；脚本会断言当前值与 DESIGN.md 描述一致。",
+    "no-shadow-raw-in-selector": "selector 中的 box-shadow 值若不是 var(--shadow-*)，则视为 raw shadow violation。"
+  },
+  "design_lock_values": {
+    "ui-height-base": "34px",
+    "ui-height-compact": "30px",
+    "layout-sidebar-inline-size": "260px",
+    "layout-sidebar-collapsed-inline-size": "51px",
+    "layout-workspace-content-max-inline-size": "800px",
+    "layout-settings-dialog-max-inline-size": "960px",
+    "layout-settings-dialog-min-block-size": "500px"
+  }
+}

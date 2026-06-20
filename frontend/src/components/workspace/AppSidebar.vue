@@ -120,6 +120,7 @@ function navigateTo(path: string) {
             <li v-for="session in primarySessionList" :key="session.sessionId" class="session-item-wrapper">
               <button
                 :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
+                :aria-label="`打开会话 ${session.targetPosition || '未命名岗位'}`"
                 @click="handleSessionClick(session.sessionId)"
               >
                 <TooltipText class="session-item__name" :text="session.targetPosition || '未命名岗位'" />
@@ -162,6 +163,7 @@ function navigateTo(path: string) {
             <li v-for="session in finishedSessionList" :key="session.sessionId" class="session-item-wrapper">
               <button
                 :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
+                :aria-label="`打开已结束会话 ${session.targetPosition || '未命名岗位'}`"
                 @click="handleSessionClick(session.sessionId)"
               >
                 <TooltipText class="session-item__name" :text="session.targetPosition || '未命名岗位'" />

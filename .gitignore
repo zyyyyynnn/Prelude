@@ -39,3 +39,14 @@ backend/.classpath
 backend/.factorypath
 backend/.project
 backend/.settings/
+output/screenshots/dev/
+
+# sentrux structural-gate baseline (regenerated locally with
+# `sentrux gate --save`; not part of the canonical repo state).
+.sentrux/baseline.json
+
+# Workspace-local Playwright browser cache. Mirrors the
+# `PLAYWRIGHT_BROWSERS_PATH=${{ github.workspace }}/.cache/ms-playwright`
+# setting in .github/workflows/ci.yml — local devs who copy that env var
+# for parity with CI get a gitignored, ephemeral cache directory.
+.cache/

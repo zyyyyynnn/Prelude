@@ -44,6 +44,27 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    // Component Lab is a dev-only route used by Phase 3 visual + a11y
+    // exploration. It is NOT registered in production builds because
+    // `import.meta.env.DEV` is false at build time, so Vite tree-shakes
+    // both the route entry and the lazy import. Production deployments
+    // therefore do not expose `/components-lab` at all.
+    ...(import.meta.env.DEV
+      ? [
+          {
+            path: '/components-lab',
+            name: 'components-lab',
+            component: () => import('../views/ComponentLabView.vue'),
+            meta: {
+              // The route is intentionally public so QA / devs can poke
+              // at component states without going through the auth flow.
+              // In production the route does not exist.
+              public: true,
+              devOnly: true,
+            },
+          },
+        ]
+      : []),
     {
       path: '/:pathMatch(.*)*',
       redirect: '/interview',

@@ -1,36 +1,32 @@
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+/**
+ * Playwright config dedicated to local screenshot capture (developer only,
+ * NOT part of CI). Reuses the same Vite dev server as the visual / a11y
+ * configs but writes to output/screenshots/dev/.artifacts/ and uses the
+ * system browser (msedge) at 2x DPR with zh-CN locale. Tests stub /api
+ * routes via page.route.
+ *
+ * The base Playwright settings live in `tests/_helpers/playwright-base.ts`
+ * and are spread in below. This config only owns the developer-machine
+ * overrides (channel / viewport height / locale / deviceScaleFactor).
+ */
 import { defineConfig } from '@playwright/test'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { baseOutputDir, baseTimeouts, baseUse, baseWebServer } from './tests/_helpers/playwright-base'
 
 export default defineConfig({
+  ...baseTimeouts,
   testDir: './tests',
   testMatch: 'local-screenshots.spec.ts',
   timeout: 180000,
-  fullyParallel: false,
-  workers: 1,
-  outputDir: path.resolve(__dirname, '../output/screenshots/dev/.artifacts'),
+  outputDir: baseOutputDir('screenshots/dev/.artifacts'),
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    ...baseUse,
     channel: 'msedge',
-    headless: true,
     screenshot: 'off',
     trace: 'off',
-    viewport: {
-      width: 1440,
-      height: 1200,
-    },
+    viewport: { width: 1440, height: 1200 },
     deviceScaleFactor: 2,
     locale: 'zh-CN',
   },
-  webServer: {
-    command: 'npm run dev -- --host 127.0.0.1',
-    port: 5173,
-    reuseExistingServer: true,
-    cwd: __dirname,
-    timeout: 120000,
-  },
+  webServer: { ...baseWebServer, command: 'npm run dev -- --host 127.0.0.1' },
 })
