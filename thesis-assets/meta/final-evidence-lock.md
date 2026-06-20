@@ -11,6 +11,7 @@
 | 参考文献主库 | `thesis-assets/literature/references.bib` | 参考文献数据库 | 已收口 | 由 Zotero / Better BibTeX 管理 |
 | 文献质量复核表 | `thesis-assets/literature/quality-review.md` | 文献质量审查依据 | 已收口 | 不冻结正文引用编号 |
 | 文献证据映射表 | `thesis-assets/literature/evidence-map.md` | 文献到章节的证据映射 | 已收口 | 不等同正文引用顺序 |
+| 最终参考文献编号锁定 | `thesis-assets/literature/final-reference-lock.md` | DOCX 整合前参考文献编号与正文引用闭环 | 待人工终审 / 可用 | 不等同 references.bib 全量候选 |
 | 图表登记表 | `thesis-assets/evidence/figure-table-register.md` | 图表资产索引 | 已更新 | 图表进入正文前必须登记 |
 | 绘图与模型资产 | `thesis-assets/evidence/diagrams/` | 图表源文件与导出图 | 可用 | 候选图 4.x 未冻结图号 |
 | 测试证据矩阵 | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试数据与章节可写性映射 | 可用 | 当前主口径为 start-dev / start-docker / dev fixture；旧 Demo 数据仅作历史对照 |
