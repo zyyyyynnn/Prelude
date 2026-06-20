@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "capture:local": "playwright test -c playwright.local.config.ts",
     "verify:byok": "node scripts/verify-byok-settings-flow.cjs",
-    "verify:dark": "node scripts/verify-dark-theme-flow.cjs"
+    "verify:dark": "node scripts/verify-dark-theme-flow.cjs",
+    "verify:ui": "node scripts/verify-ui-guardrails.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
