@@ -36,6 +36,9 @@ const activeIndex = computed(() => {
 
 <style scoped>
 .segmented-control {
+  /* 组件级几何变量：pill 几何集中声明，避免 calc 散落在属性里 */
+  --segmented-pill-radius: calc(var(--radius-md) - var(--spacing-0-5));
+  --segmented-pill-width: calc((100% - var(--spacing-xs)) / v-bind('items.length'));
   position: relative;
   display: flex;
   height: var(--ui-height-base);
@@ -43,17 +46,17 @@ const activeIndex = computed(() => {
   background-color: var(--color-surface-muted);
   border: 1px solid var(--color-border-warm);
   border-radius: var(--radius-md);
-  padding: calc(var(--spacing-xs) / 2);
+  padding: var(--spacing-0-5);
 }
 
 .segmented-control__pill {
   position: absolute;
-  top: calc(var(--spacing-xs) / 2);
-  bottom: calc(var(--spacing-xs) / 2);
-  left: calc(var(--spacing-xs) / 2);
-  width: calc((100% - var(--spacing-xs)) / v-bind('items.length'));
+  top: var(--spacing-0-5);
+  bottom: var(--spacing-0-5);
+  left: var(--spacing-0-5);
+  width: var(--segmented-pill-width);
   background-color: var(--color-surface);
-  border-radius: calc(var(--radius-md) - calc(var(--spacing-xs) / 2));
+  border-radius: var(--segmented-pill-radius);
   box-shadow: var(--shadow-ring);
   transition: transform var(--motion-duration-base) var(--motion-ease-standard);
   z-index: 1;
@@ -71,7 +74,7 @@ const activeIndex = computed(() => {
   font-weight: 500;
   font-family: var(--font-serif);
   color: var(--color-text-secondary);
-  border-radius: calc(var(--radius-md) - calc(var(--spacing-xs) / 2));
+  border-radius: var(--segmented-pill-radius);
   transition:
     color var(--motion-duration-base) var(--motion-ease-standard),
     background-color var(--motion-duration-base) var(--motion-ease-standard);
@@ -85,6 +88,6 @@ const activeIndex = computed(() => {
 
 .segmented-control__item:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 calc(var(--spacing-xs) / 2) var(--color-brand);
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 </style>

@@ -165,7 +165,7 @@ defineExpose({ submit: saveTheme, saving, loading })
 
 .theme-option__copy {
   display: grid;
-  gap: calc(var(--spacing-xs) / 2);
+  gap: var(--spacing-0-5);
 }
 
 .theme-option__label {

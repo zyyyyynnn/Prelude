@@ -19,9 +19,29 @@ git diff --check
 ### UI 硬编码 / 错误样式
 
 ```powershell
+# 1. 禁止写法：transition-all / window.confirm / 原生 title=
 rg -n "transition-all|window\.confirm|title=" frontend/src
-rg -n "shadow-md|border-border|h-\[30px\]|h-\[32px\]|h-\[34px\]|font-size:\s*15px|gap:\s*10px|padding:\s*0\s+8px" frontend/src
+
+# 2. 阴影与硬高度：shadow-md/lg、border-border 边框、h-[30/32/34px] 硬高度
+rg -n "shadow-md|shadow-lg|border-border|h-\[30px\]|h-\[32px\]|h-\[34px\]" frontend/src
+
+# 3. 颜色 token 旁路：原生 rgba、白/黑/暗色背景与硬编码十六进制色值
+rg -n "rgba\(|dark:bg-|bg-white|text-white|bg-black|text-black|#[0-9a-fA-F]{3,8}" frontend/src
+
+# 4. 裸 px 数值：z-index / height / width / font-size 直写
+rg -n "z-index:\s*\d+|height:\s*\d+px|width:\s*\d+px|font-size:\s*\d+px" frontend/src
+
+# 5. 业务组件中的 calc(var(--spacing-*)...)：本轮已收敛大部分命中，剩余仅允许几何计算
+rg -n "calc\(var\(--spacing-" frontend/src
 ```
+
+命中分类与处理约定：
+
+- **扫描 1 / 2 / 3**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值与 spacing 数值；命中仅出现在 `index.css` 时不算违规。
+- **扫描 4**：业务组件中 `z-index: <num>`、裸 `height/width/font-size: Npx` 多为既有命中。**本轮不追溯修复**，仅在新增文件中不允许出现；既有命中应在下一次组件重构时引入 token 化。
+- **扫描 5**：`calc(var(--spacing-*)...)` 不一定全部禁止。
+  - 简单半阶 / 负向 spacing（`/ 2`、`* -1`）必须替换为 `var(--spacing-0-5)` / `var(--spacing-neg-xs)` 等已有 token。
+  - 组件几何布局（toolbar 宽高、pill 宽 = `(100% - spacing) / N` 等）保留为 calc，但必须集中为组件 scoped CSS 变量（如 `--composer-toolbar-width`、`--segmented-pill-radius`）并在组件根 class 上声明，便于审查。
 
 ### 当前文档中的旧运行口径
 
