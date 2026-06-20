@@ -20,7 +20,6 @@
 | `evidence/code-snippets/` | 可回溯到源码的实现证据 | active |
 | `evidence/bug-evidence/` | 精选问题复盘证据 | active / 只保留可直接引用项 |
 | `evidence/phase-reports/` | 阶段过程记录 | archived trace / 不直接作为正文事实依据 |
-| `evidence/review-notes/` | 早期审查笔记 | archived trace / 不作为当前入口 |
 | `literature/` | `references.bib`、文献质量复核和证据映射 | active |
 | `defense/` | 答辩讲稿与 PPT 映射 | active |
 

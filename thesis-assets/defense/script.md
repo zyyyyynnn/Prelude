@@ -12,7 +12,7 @@
 
 本系统的核心实现主要有四点。第一是 Structured Output 报告解析。旧版方案使用正则提取评分，容易因模型输出格式波动而失败；当前方案采用结构化输出、Jackson 反序列化和分数 clamp 降级，降低格式波动导致解析失败的概率。第二是流式面试链路。后端将模型返回内容按片段通过 SSE 推送给前端，前端通过 `requestAnimationFrame` 缓冲渲染，减少流式展示时的视觉卡顿。第三是可靠性保护。系统引入 Redis 限流、Resilience4j 熔断降级和 SSE 异常恢复机制；其中 openai-compatible BYOK 失败会显式暴露，不会静默切换到系统 Key。第四是异步报告生成。`/finish` 接口快速返回生成中状态，报告生成任务通过 RabbitMQ 队列异步处理，worker 完成后通过 SSE 推送 `report_ready` 事件。
 
-测试方面，当前证据覆盖功能用例 TC-01 到 TC-12，包括 PDF 简历解析、SSE 文本流式响应、语音链路容错、报告生成、BYOK 设置、fallback 边界、质量门禁、消息序号与阶段系统消息一致性。工程门禁方面，CI 已包含 whitespace diff check、Sentrux 架构规则、后端测试、JaCoCo report artifact、npm audit、前端构建、BYOK verify 和 dark verify。需要说明的是，JaCoCo 当前只生成覆盖率报告，不设置阈值；BYOK verify 使用 mock API 验证设置流程，不代表真实公网模型性能。
+测试方面，当前证据覆盖功能用例 TC-01 到 TC-12，包括 PDF 简历解析、SSE 文本流式响应、语音链路容错、报告生成、BYOK 设置、fallback 边界、质量门禁、消息序号与阶段系统消息一致性。工程门禁方面，CI 已包含 whitespace diff check、Sentrux 架构规则、后端测试、JaCoCo report artifact、npm audit、前端构建、BYOK verify、dark verify 与 UI guardrail（`verify:ui`，UI 静态扫描与 semantic sizing 红线）。需要说明的是，JaCoCo 当前只生成覆盖率报告，不设置阈值；BYOK verify 使用 mock API 验证设置流程，不代表真实公网模型性能；`verify:ui` 是 UI 静态 guardrail，不等同全量视觉回归，不能据此宣称 UI 完全无缺陷。
 
 近期也完成过一次 Docker Compose 容器环境下的真实 BYOK 功能链路验证：通过用户级 OpenAI-compatible 配置完成模型发现、配置保存、配置测试，并跑通一次 `/finish → RabbitMQ → ReportJobWorker → 真实 LLM 调用 → report_ready`。这说明功能链路可用，但不代表公网性能基准、高并发压测、生产级可靠投递或消息零丢失。
 

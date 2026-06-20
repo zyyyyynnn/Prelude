@@ -12,12 +12,14 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 代码行为事实基线 | `4b2e967`（最近 CI 通过代码基线；CI run `27815679764` 已通过） |
-| 文档收口基线 | `4b2e967`（历史阶段报告压缩完成后，active evidence 以 `final-evidence-lock.md`、本文件、测试证据矩阵和图表登记为入口） |
-| 最近治理范围 | 约最近 20 次提交，覆盖 UI token 收敛、dev fixture 收敛、语音链路硬化、消息序号一致性、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁，以及阶段 2 历史文档降噪收口 |
+| 当前同步基线（`origin/main` HEAD） | `e8fa5378b9eab4cd2e2512b3844dbbed6c7f0827` |
+| 代码行为事实基线（最近 CI 通过） | `4b2e967`（CI run `27815679764` 已通过） |
+| 文档收口基线 | `4b2e967` 为阶段 3 原始 freeze 审查基线；当前 active evidence 入口同步基线为 `e8fa5378`（见 `final-evidence-lock.md`） |
+| 最近治理范围 | 约最近 20 次提交，覆盖 UI token 收敛、UI semantic sizing 与 drift guardrail、dev fixture 收敛、语音链路硬化、消息序号一致性、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁，以及阶段 2 历史文档降噪收口 |
 | 运行入口口径 | `start-dev` + `start-docker`；旧 Demo Twin / start-real / start-demo 均为历史状态 |
 | npm audit | `npm --prefix frontend audit --omit=dev` 返回 `found 0 vulnerabilities` |
 | BYOK / dark verify | 已进入 CI 和本地质量门禁，并完成 cold-start 等待与失败诊断加固 |
+| UI guardrail | `verify:ui`（UI 静态扫描与 semantic sizing 红线）已进入 main；当前为前端 npm script 形态 |
 | 论文状态 | 阶段 3 执行准备仅冻结 evidence 与答辩材料口径，不修改 `chapters/*.md`；正文修订仍需用户和审查官确认 |
 
 ## CI 与本地质量门禁
@@ -32,6 +34,7 @@
 | 前端构建 | `npm run build` | 类型检查与 Vite 生产构建通过 | 不代表真实浏览器兼容矩阵 |
 | BYOK 浏览器验证 | `npm run verify:byok`，cold-start 等待与失败诊断已加固 | OpenAI-compatible 设置流程可自动化验证 | mock API，不代表公网模型性能 |
 | 暗色主题验证 | `npm run verify:dark`，cold-start 等待与失败截图已加固 | 主题切换与关键 canvas 渲染具备 sanity check | 不等同全量视觉回归 |
+| UI guardrail | `npm --prefix frontend run verify:ui`（UI 静态扫描与 semantic sizing 红线） | UI 红线静态扫描与 semantic sizing guardrail 可重复执行 | 不等同全量视觉回归，不证明所有页面无样式缺陷 |
 
 ## 最近小重构带来的证据变化
 
@@ -44,6 +47,7 @@
 | 依赖治理 | `31272bc`、`588bf73`、`1cd55d2` | audit 清零并进入 CI | npm advisory 范围内的结论 |
 | 架构/覆盖率门禁 | `b821bf7`、`6098ca0`、`9ab9465` | Sentrux 进入 CI；JaCoCo report-only；冗余 report goal 已消除 | 不得写成 coverage threshold gate |
 | 自动化稳定性 | `57eba82`、`d23ec54`、`4b2e967` | BYOK 与 dark verify cold-start 等待、诊断、截图加固，最近 main CI 通过 | 证明脚本稳定性，不证明 UI 全量无缺陷 |
+| UI semantic sizing / drift guardrail | `b114707`、`a23476a`、`975fbbe`、`1536947`、`e8fa5378` | semantic sizing token 引入、shadow guardrail 收紧、`verify:ui` 进入 main | 可写 UI 静态扫描与红线约束，不可写全量视觉回归 |
 | 运行口径 | `51304d7`、`41b27b1`、`c974508` | Demo Twin 退役，收敛为 `start-dev` + `start-docker` | 旧 Demo 数据只能作为历史对照 |
 
 ## 仍需限制的论文表述
@@ -57,4 +61,4 @@
 
 ## 可进入第五章的稳妥写法
 
-> 项目在 2026-06-20 冻结基线下已形成自动化质量门禁：后端单元测试可生成 JaCoCo 覆盖率报告，前端构建、生产依赖审计、BYOK 设置流程验证和暗色主题验证均纳入本地/CI 检查；同时通过 Sentrux 维护基础架构边界约束。最近 `main` CI run `27815679764` 在 `4b2e967` 上通过，`npm audit --omit=dev` 当前返回 0 vulnerabilities。上述结果用于说明系统具备可重复的工程验证流程，但不等同于生产环境高并发性能测试或模型服务稳定性证明。
+> 项目在 `origin/main` 当前同步基线下已形成自动化质量门禁：后端单元测试可生成 JaCoCo 覆盖率报告，前端构建、生产依赖审计、BYOK 设置流程验证、暗色主题验证与 UI guardrail（`verify:ui`，UI 静态扫描与 semantic sizing 红线）均纳入本地/CI 检查；同时通过 Sentrux 维护基础架构边界约束。`verify:ui` 只证明 UI 静态扫描与红线约束通过，不等同全量视觉回归。最近 `main` CI run `27815679764` 在 `4b2e967` 上通过，`npm audit --omit=dev` 当前返回 0 vulnerabilities。上述结果用于说明系统具备可重复的工程验证流程，但不等同于生产环境高并发性能测试或模型服务稳定性证明。
