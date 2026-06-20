@@ -8,7 +8,8 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 当前 HEAD | `4b2e967d92b737d332b5651d102543137e6adba7` |
+| 冻结审查基线 | `4b2e967d92b737d332b5651d102543137e6adba7` |
+| 冻结记录提交 | `2bf27b728bd9f08f4b897f88ceb65a752d5a33e0` |
 | 当前提交 | `docs(thesis): compress historical phase 2.10 report` |
 | CI 状态 | GitHub Actions CI run `27815679764` 在 `4b2e967` 上通过 |
 | npm audit | `npm --prefix frontend audit --omit=dev` 返回 `found 0 vulnerabilities` |
