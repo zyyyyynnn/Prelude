@@ -40,3 +40,7 @@ backend/.factorypath
 backend/.project
 backend/.settings/
 output/screenshots/dev/
+
+# sentrux structural-gate baseline (regenerated locally with
+# `sentrux gate --save`; not part of the canonical repo state).
+.sentrux/baseline.json

@@ -1,0 +1,73 @@
+/**
+ * Shared Playwright config base. All Phase 2 configs (visual, a11y, local)
+ * import `basePlaywrightConfig` and only override the testDir / testMatch /
+ * reporter / outputDir fields. The base contains the canonical webServer
+ * command, viewport, locale, timezone and CI retry policy.
+ *
+ * Why this exists: Phase 2 originally shipped three near-identical
+ * playwright.*.config.ts files (visual, a11y, local). sentrux counts each
+ * near-duplicate as a low-diversity module pair, which pushed the
+ * min_equality score below the 0.48 gate. Extracting the shared base
+ * brings equality back above the floor without changing behaviour — every
+ * setting still propagates via defineConfig's spread.
+ */
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+/**
+ * Standard `use` block shared by every Phase 2 config.
+ *
+ * Exported as a plain object (not a defineConfig) so consumers can spread
+ * it into their own `use: { ...baseUse, ...overrides }` block.
+ */
+export const baseUse = {
+  baseURL: 'http://127.0.0.1:5173',
+  headless: true,
+  screenshot: 'only-on-failure',
+  trace: 'retain-on-failure',
+  viewport: {
+    width: 1440,
+    height: 900,
+  },
+  deviceScaleFactor: 1,
+  locale: 'en-US',
+  timezoneId: 'UTC',
+} as const
+
+/**
+ * Standard webServer block. CI forces `reuseExistingServer: false` so
+ * each job starts from a known-clean state; locally the dev server is
+ * reused when present to keep iteration tight.
+ */
+export const baseWebServer = {
+  command: 'npm run dev -- --host 127.0.0.1 --port 5173',
+  port: 5173,
+  reuseExistingServer: !process.env.CI,
+  cwd: __dirname,
+  timeout: 120000,
+} as const
+
+/**
+ * Standard timeout + worker + retry policy.
+ */
+export const baseTimeouts = {
+  timeout: 120000,
+  fullyParallel: false,
+  workers: 1,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+} as const
+
+/**
+ * Resolve the canonical output dir for a Phase 2 config.
+ *
+ * Each config writes to its own sub-directory under `output/` so that
+ * `output/screenshots/visual/`, `output/screenshots/a11y/` and
+ * `output/screenshots/dev/.artifacts/` never collide.
+ */
+export function baseOutputDir(subdir: string): string {
+  return path.resolve(__dirname, '..', 'output', subdir)
+}
