@@ -395,14 +395,14 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 }
 .form-section__title {
   margin: var(--spacing-xs) 0 var(--spacing-md);
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: 500;
   color: var(--color-text-primary);
   font-family: var(--font-serif);
 }
 .advanced-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--layout-form-field-min-inline-size), 1fr));
   gap: var(--spacing-md);
 }
 .endpoint-row {

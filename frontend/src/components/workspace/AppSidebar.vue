@@ -256,10 +256,19 @@ function navigateTo(path: string) {
 
 <style scoped>
 .app-sidebar {
+  /* 组件级几何变量：折叠时按钮水平内边距与 sessions 容器宽度集中声明，便于审计。 */
+  --sidebar-icon-glyph-size: 20px;
+  --sidebar-collapsed-btn-padding-inline: calc(
+    (var(--ui-height-md) - var(--sidebar-icon-glyph-size)) / 2
+  );
+  --sidebar-sessions-inline-size: calc(
+    var(--layout-sidebar-inline-size) - var(--spacing-sm) * 2
+  );
+
   display: flex;
   flex-direction: column;
-  width: 260px;
-  height: 100vh;
+  inline-size: var(--layout-sidebar-inline-size);
+  block-size: 100vh;
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
   overflow-x: hidden;
@@ -269,18 +278,18 @@ function navigateTo(path: string) {
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-index-sidebar);
   font-family: var(--font-serif);
 }
 .app-sidebar.is-collapsed {
-  width: calc(var(--ui-height-md) + var(--spacing-sm) * 2 + 1px); /* 34 + 16 + 1 = 51px. 内部可用 34px 形成绝对正方形 */
+  inline-size: var(--layout-sidebar-collapsed-inline-size);
 }
 .app-sidebar__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-sm);
-  height: 60px;
+  block-size: var(--layout-sidebar-header-block-size);
 }
 .app-sidebar__brand {
   display: flex;
@@ -289,7 +298,7 @@ function navigateTo(path: string) {
   overflow: hidden;
   white-space: nowrap;
   transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
-  width: 180px;
+  inline-size: var(--layout-sidebar-brand-inline-size);
   opacity: 1;
   transform: translateZ(0);
   -webkit-font-smoothing: antialiased;
@@ -300,8 +309,8 @@ function navigateTo(path: string) {
   pointer-events: none;
 }
 .app-sidebar__logo {
-  width: 32px;
-  height: 32px;
+  inline-size: var(--ui-height-md);
+  block-size: var(--ui-height-md);
   flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
@@ -309,7 +318,7 @@ function navigateTo(path: string) {
 .app-sidebar__title {
   font-family: var(--font-serif);
   font-weight: 500;
-  font-size: 16px;
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
 .sidebar-label {
@@ -343,8 +352,8 @@ function navigateTo(path: string) {
   background-color: var(--color-surface-hover);
 }
 .app-sidebar__toggle:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .app-sidebar__main {
   flex: 1;
@@ -381,7 +390,7 @@ function navigateTo(path: string) {
   font-family: var(--font-serif);
   background-color: var(--color-brand);
   color: var(--color-surface);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand) 30%, transparent);
+  box-shadow: var(--shadow-ring);
 }
 .app-sidebar__btn--primary:hover {
   background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
@@ -398,17 +407,17 @@ function navigateTo(path: string) {
   font-weight: 600;
 }
 .app-sidebar__btn:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .app-sidebar.is-collapsed .app-sidebar__btn {
-  padding: 0 7px; /* (34 - 20) / 2 = 7px，精准居中 20px 图标 */
+  padding: 0 var(--sidebar-collapsed-btn-padding-inline);
   gap: 0;
 }
 .app-sidebar__sessions {
   flex: 1;
   min-height: 0;
-  width: calc(260px - var(--spacing-sm) * 2); /* 244px */
+  inline-size: var(--sidebar-sessions-inline-size);
   flex-shrink: 0;
   contain: strict; /* 绝对封锁：告诉浏览器内部元素完全独立，不再参与外层 Layout 挤压计算 */
   transform: translateZ(0); /* 提升渲染层 */
@@ -468,8 +477,8 @@ function navigateTo(path: string) {
   font-weight: 500;
 }
 .session-item-btn:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .session-group__empty {
   font-size: var(--font-size-xs);
@@ -494,12 +503,12 @@ function navigateTo(path: string) {
 }
 .session-item-actions {
   position: absolute;
-  right: 6px;
+  right: var(--spacing-1-5);
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   opacity: 0;
   transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
   background: linear-gradient(90deg, transparent 0%, var(--color-surface) 25%, var(--color-surface) 100%);
@@ -540,8 +549,8 @@ function navigateTo(path: string) {
   transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
 }
 .action-btn:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
 }
 .action-btn:hover {
   color: var(--color-text-primary);

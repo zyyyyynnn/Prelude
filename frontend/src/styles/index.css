@@ -148,6 +148,21 @@
   --shadow-whisper: 0 4px 24px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
   --shadow-inset: inset 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   --shadow-modal: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+  --shadow-app-header:
+    0 10px 30px color-mix(in srgb, var(--color-text-primary) 3.5%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-surface) 26%, transparent) inset,
+    inset 0 -1px 0 color-mix(in srgb, var(--color-surface) 14%, transparent);
+  --shadow-app-menu:
+    0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
+  --shadow-app-menu-active: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
+  --shadow-brand-logo: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+  --shadow-login-card:
+    0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
+  --shadow-login-logo: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
+  --shadow-icon-action-focus: 0 0 0 2px var(--color-brand);
+  --shadow-autofill-surface: 0 0 0px 1000px var(--color-surface) inset;
   --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   --chart-technical: var(--color-brand);
@@ -207,6 +222,31 @@
   --header-height: 72px;
   --composer-height: 260px;
 
+  /* ── Layout Semantics ── */
+  --layout-sidebar-inline-size: 260px;
+  --layout-sidebar-collapsed-inline-size: 51px;
+  --layout-sidebar-brand-inline-size: 180px;
+  --layout-sidebar-header-block-size: 60px;
+  --layout-settings-sidebar-inline-size: 220px;
+  --layout-settings-dialog-max-inline-size: 960px;
+  --layout-settings-dialog-min-block-size: 500px;
+  --layout-workspace-content-max-inline-size: 800px;
+  --layout-dashboard-card-min-inline-size: 400px;
+  --layout-form-field-min-inline-size: 260px;
+  --layout-list-title-min-inline-size: 200px;
+
+  /* ── Content Semantics ── */
+  --content-message-max-inline-size: 72ch;
+  --content-judge-max-inline-size: 42ch;
+  --content-judge-hint-max-inline-size: 32ch;
+
+  /* ── Component Semantics ── */
+  --ui-segmented-item-min-inline-size: 80px;
+
+  /* ── Layer Semantics ── */
+  --z-index-workspace-composer: 10;
+  --z-index-app-header: 40;
+  --z-index-sidebar: 100;
 
 }
 
@@ -302,7 +342,7 @@ a {
   gap: var(--spacing-md);
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: var(--z-index-app-header);
   width: 100%;
   margin: 0 auto;
   border: 1px solid color-mix(in srgb, var(--color-surface) 52%, transparent);
@@ -311,10 +351,7 @@ a {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 42%, transparent), color-mix(in srgb, var(--color-surface) 12%, transparent)),
     color-mix(in srgb, var(--color-surface) 54%, transparent);
-  box-shadow:
-    0 10px 30px color-mix(in srgb, var(--color-text-primary) 3.5%, transparent),
-    0 1px 0 color-mix(in srgb, var(--color-surface) 26%, transparent) inset,
-    inset 0 -1px 0 color-mix(in srgb, var(--color-surface) 14%, transparent);
+  box-shadow: var(--shadow-app-header);
   backdrop-filter: blur(20px) saturate(108%);
   -webkit-backdrop-filter: blur(20px) saturate(108%);
 }
@@ -362,7 +399,7 @@ a {
   height: 46px;
   flex: 0 0 auto;
   border-radius: 50%;
-  box-shadow: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+  box-shadow: var(--shadow-brand-logo);
 }
 
 .app-shell__actions {
@@ -450,7 +487,7 @@ a {
   position: absolute;
   top: calc(100% + var(--spacing-2-5));
   right: var(--app-shell-menu-frame-offset);
-  z-index: 20;
+  z-index: var(--z-index-app-header);
   transform: none;
   border: 0 !important;
   border-radius: 0 !important;
@@ -468,9 +505,7 @@ a {
   border: 1px solid var(--color-border-warm);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-surface) 96%, transparent);
-  box-shadow:
-    0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
+  box-shadow: var(--shadow-app-menu);
   white-space: nowrap;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -531,7 +566,7 @@ a {
   border-color: var(--color-ring);
   background: var(--color-surface-muted);
   color: var(--color-text-primary);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
+  box-shadow: var(--shadow-app-menu-active);
 }
 
 .app-shell__action-menu-item:disabled {
@@ -1436,17 +1471,16 @@ label,
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 36%, transparent), color-mix(in srgb, var(--color-surface) 8%, transparent)),
     color-mix(in srgb, var(--color-surface) 82%, transparent);
-  box-shadow:
-    0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
+  box-shadow: var(--shadow-login-card);
   transform: scale(1);
 }
 
 
 
 .login-card__content {
+  --login-card-content-layer: 1;
   position: relative;
-  z-index: 1;
+  z-index: var(--login-card-content-layer);
   display: grid;
   grid-template-columns: minmax(320px, 3fr) minmax(0, 2fr);
   gap: var(--spacing-2xl);
@@ -1470,7 +1504,7 @@ label,
   max-width: 500px;
   aspect-ratio: 1;
   border-radius: 999px;
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
+  box-shadow: var(--shadow-login-logo);
   animation: brand-awaken var(--motion-duration-slow) var(--motion-ease-standard) both;
 }
 
@@ -1723,7 +1757,7 @@ label,
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-index-sidebar);
   flex-shrink: 0;
   box-sizing: border-box;
 }
@@ -1820,7 +1854,7 @@ label,
 .icon-action-btn:focus-visible {
   color: var(--color-error) !important;
   background: var(--color-surface-hover);
-  box-shadow: 0 0 0 2px var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
   outline: none;
 }
 
@@ -1832,7 +1866,7 @@ input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset !important;
+  -webkit-box-shadow: var(--shadow-autofill-surface) !important;
   -webkit-text-fill-color: var(--color-text-primary) !important;
   transition: none;
 }

@@ -182,7 +182,7 @@ onMounted(() => {
               @keydown.meta.enter="canSend && emit('send')"
             />
             <transition name="jd-fade-float">
-              <div v-if="!activeSessionId && showJdInput" class="absolute inset-0 z-10 bg-surface">
+              <div v-if="!activeSessionId && showJdInput" class="absolute inset-0 z-[var(--z-index-workspace-composer)] bg-surface">
                 <Textarea
                   v-model="localJdText"
                   :rows="3"
@@ -230,7 +230,7 @@ onMounted(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[calc(var(--ui-height-compact)*4+var(--spacing-lg))]" align="start">
+                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[var(--composer-toolbar-select-inline-size)]" align="start">
                   <DropdownMenuItem 
                     v-for="r in resumes" 
                     :key="r.id" 
@@ -274,7 +274,7 @@ onMounted(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-50 ml-1"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[calc(var(--ui-height-compact)*4+var(--spacing-lg))]" align="start">
+                <DropdownMenuContent class="min-w-[var(--reka-dropdown-menu-trigger-width)] w-[var(--composer-toolbar-select-inline-size)]" align="start">
                   <DropdownMenuItem 
                     v-for="p in positions" 
                     :key="p.id" 
@@ -461,18 +461,31 @@ onMounted(() => {
 
 <style scoped>
 .interview-composer {
+  /* 组件级几何变量：集中声明 composer 各区块的尺寸语义，
+     避免在属性侧出现裸 px 与 magic height ratio。 */
+  --composer-max-inline-size: var(--layout-workspace-content-max-inline-size);
+  --composer-input-min-block-size: calc(var(--ui-height-base) * 2 + var(--spacing-md));
+  --composer-actions-min-block-size: calc(var(--ui-height-base) + var(--spacing-1-5));
+  --composer-toolbar-control-min-inline-size: calc(var(--ui-height-compact) * 3);
+  --composer-toolbar-control-max-inline-size: calc(var(--ui-height-compact) * 6);
+  --composer-toolbar-select-inline-size: calc(var(--ui-height-compact) * 4 + var(--spacing-lg));
+  --composer-voice-area-block-size: 88px;
+  --composer-voice-wave-block-size: 60px;
+  --composer-voice-wave-max-inline-size: 300px;
+  --composer-status-dot-size: var(--spacing-sm);
+  --composer-press-offset: var(--spacing-0-5);
   transition:
     transform var(--motion-duration-base) var(--motion-ease-standard),
     border-color var(--motion-duration-base) var(--motion-ease-standard),
     box-shadow var(--motion-duration-base) var(--motion-ease-standard);
-  width: 100%;
+  inline-size: 100%;
 }
 .interview-composer.is-centered {
-  max-width: 800px;
+  max-inline-size: var(--composer-max-inline-size);
   margin: 0 auto;
 }
 .interview-composer.is-bottom {
-  max-width: 800px;
+  max-inline-size: var(--composer-max-inline-size);
   margin: 0 auto;
   position: relative;
 }
@@ -496,28 +509,28 @@ onMounted(() => {
   gap: var(--spacing-md);
 }
 .composer-input-area {
-  min-height: calc(var(--ui-height-base) * 2 + var(--spacing-md));
+  min-block-size: var(--composer-input-min-block-size);
   display: flex;
   align-items: flex-start;
   position: relative;
 }
 .composer-mode-text,
 .composer-mode-voice {
-  width: 100%;
+  inline-size: 100%;
 }
 
 .composer-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 40px;
+  min-block-size: var(--composer-actions-min-block-size);
   margin-top: auto;
-  min-width: 0;
+  min-inline-size: 0;
 }
 .composer-actions__left {
   display: flex;
   align-items: center;
-  min-width: 0;
+  min-inline-size: 0;
 }
 .composer-actions__right {
   display: flex;
@@ -526,28 +539,28 @@ onMounted(() => {
 }
 .composer-actions__hint {
   color: var(--color-text-tertiary);
-  padding-left: var(--spacing-xs);
+  padding-inline-start: var(--spacing-xs);
 }
 .composer-toolbar {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  min-width: 0;
+  min-inline-size: 0;
 }
 .composer-toolbar-control {
-  height: var(--ui-height-compact);
-  min-width: calc(var(--ui-height-compact) * 3);
-  max-width: calc(var(--ui-height-compact) * 6);
+  block-size: var(--ui-height-compact);
+  min-inline-size: var(--composer-toolbar-control-min-inline-size);
+  max-inline-size: var(--composer-toolbar-control-max-inline-size);
   padding: 0 var(--spacing-sm);
   gap: var(--spacing-xs);
   font-family: var(--font-serif);
 }
 .composer-toolbar-select {
-  width: calc(var(--ui-height-compact) * 4 + var(--spacing-lg));
+  inline-size: var(--composer-toolbar-select-inline-size);
 }
 /* Voice Integration Styles */
 .composer-voice-area {
-  height: 88px;
+  block-size: var(--composer-voice-area-block-size);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -562,8 +575,8 @@ onMounted(() => {
   gap: var(--spacing-sm);
 }
 .status-indicator {
-  width: 8px;
-  height: 8px;
+  inline-size: var(--composer-status-dot-size);
+  block-size: var(--composer-status-dot-size);
   border-radius: 50%;
   background-color: var(--color-ring);
 }
@@ -578,7 +591,7 @@ onMounted(() => {
 }
 .status-indicator.speaking {
   background-color: var(--color-brand);
-  box-shadow: 0 0 var(--spacing-sm) var(--color-brand);
+  box-shadow: var(--shadow-ring-deep);
 }
 .status-text {
   color: var(--color-text-secondary);
@@ -589,12 +602,12 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 60px;
-  max-width: 300px;
+  block-size: var(--composer-voice-wave-block-size);
+  max-inline-size: var(--composer-voice-wave-max-inline-size);
 }
 .voice-canvas {
-  width: 100%;
-  height: 100%;
+  inline-size: 100%;
+  block-size: 100%;
 }
 .voice-press-btn {
   padding: 0 var(--spacing-lg);
@@ -602,7 +615,7 @@ onMounted(() => {
   user-select: none;
 }
 .voice-press-btn.is-pressed {
-  transform: translateY(1px);
+  transform: translateY(var(--composer-press-offset));
   box-shadow: var(--shadow-ring-deep);
 }
 
@@ -619,7 +632,7 @@ onMounted(() => {
 }
 .jd-fade-float-leave-to {
   opacity: 0;
-  transform: translateY(calc(var(--spacing-xs) * -1));
+  transform: translateY(var(--spacing-neg-xs));
 }
 .jd-fade-float-leave-active {
   pointer-events: none; /* 绝对保留：离场防遮挡 */
@@ -639,7 +652,7 @@ onMounted(() => {
 }
 .mode-switch-leave-to {
   opacity: 0;
-  transform: translateY(calc(var(--spacing-xs) * -1));
+  transform: translateY(var(--spacing-neg-xs));
 }
 
 @keyframes pulse {
