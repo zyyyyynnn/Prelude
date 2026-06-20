@@ -164,7 +164,12 @@ public class VoiceInterviewTurnService {
                 sink.audio(base64);
             }
         } catch (Exception e) {
-            log.error("TTS generation failed, fallback to text-only: {}", e.getMessage());
+            // TTS failures are recovered by the text-only fallback (sink.error below);
+            // demoting to WARN keeps expected-failure test paths out of the ERROR
+            // signal channel without losing observability. The full stack is still
+            // available at DEBUG for local triage.
+            log.warn("TTS generation failed, fallback to text-only: {}", e.getMessage());
+            log.debug("TTS generation failure detail", e);
             ttsFailed.set(true);
             sink.error("网络状况不佳，已为您切回文字模式");
         }
@@ -186,7 +191,17 @@ public class VoiceInterviewTurnService {
         } catch (TimeoutException timeout) {
             ttsTimedOut.set(true);
             ttsFailed.set(true);
-            log.warn("TTS await timed out after {}s for session {}", timeoutSeconds, sessionId);
+            // timeoutSeconds <= 0 is the synthetic "immediate timeout" path used
+            // only by awaitTtsFuturesTimesOutAndTripsStopFlags (see the Javadoc on
+            // awaitTtsFutures). Demote to DEBUG so the test's expected-timeout log
+            // line does not pollute the WARN channel. The real production timeout
+            // (TTS_AWAIT_SECONDS = 30) still surfaces as WARN so operators see
+            // genuine end-user stalls.
+            if (timeoutSeconds <= 0) {
+                log.debug("TTS await timed out immediately for session {}", sessionId);
+            } else {
+                log.warn("TTS await timed out after {}s for session {}", timeoutSeconds, sessionId);
+            }
             sink.error("网络状况不佳，已为您切回文字模式");
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();

@@ -6,32 +6,35 @@
 
 - 对应位置：第五章构建与自动化验证补充证据；当前正文未单列“构建与自动化验证记录表”。
 - 证据性质：工程质量门禁与自动化验证链路记录。
-- 适用边界：证明当前项目具备可重复的本地/CI 验证基础，不证明生产环境高并发性能、模型质量稳定性或消息队列零丢失。
+- 适用边界：证明当前项目具备可重复的 CI 门禁与本地预检分层验证基础（`verify:ui` 仅本地预检，未进 CI），不证明生产环境高并发性能、模型质量稳定性或消息队列零丢失。
 
 ## 当前基线
 
 | 项 | 内容 |
 | --- | --- |
-| 代码行为事实基线 | `4b2e967`（最近 CI 通过代码基线；CI run `27815679764` 已通过） |
-| 文档收口基线 | `4b2e967`（历史阶段报告压缩完成后，active evidence 以 `final-evidence-lock.md`、本文件、测试证据矩阵和图表登记为入口） |
-| 最近治理范围 | 约最近 20 次提交，覆盖 UI token 收敛、dev fixture 收敛、语音链路硬化、消息序号一致性、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁，以及阶段 2 历史文档降噪收口 |
+| 当前同步基线（`origin/main` HEAD） | `e8fa5378b9eab4cd2e2512b3844dbbed6c7f0827` |
+| 代码行为事实基线（最近 CI 通过） | `4b2e967`（CI run `27815679764` 已通过） |
+| 文档收口基线 | `4b2e967` 为阶段 3 原始 freeze 审查基线；当前 active evidence 入口同步基线为 `e8fa5378`（见 `final-evidence-lock.md`） |
+| 最近治理范围 | 约最近 20 次提交，覆盖 UI token 收敛、UI semantic sizing 与 drift guardrail、dev fixture 收敛、语音链路硬化、消息序号一致性、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁，以及阶段 2 历史文档降噪收口 |
 | 运行入口口径 | `start-dev` + `start-docker`；旧 Demo Twin / start-real / start-demo 均为历史状态 |
 | npm audit | `npm --prefix frontend audit --omit=dev` 返回 `found 0 vulnerabilities` |
 | BYOK / dark verify | 已进入 CI 和本地质量门禁，并完成 cold-start 等待与失败诊断加固 |
+| UI guardrail | `verify:ui`（`frontend/package.json` 中 npm script）已进入 main；当前仅本地预检，未在 `.github/workflows/ci.yml` 中执行 |
 | 论文状态 | 阶段 3 执行准备仅冻结 evidence 与答辩材料口径，不修改 `chapters/*.md`；正文修订仍需用户和审查官确认 |
 
-## CI 与本地质量门禁
+## CI 门禁与本地预检质量门禁
 
-| 门禁项 | 当前实现 | 可支撑结论 | 限制 |
-| --- | --- | --- | --- |
-| whitespace diff check | push 使用 `HEAD~1`，PR 使用 `base.sha...HEAD` | 可阻断新增 whitespace 错误 | 不等同全量格式化 |
-| Sentrux 架构规则 | CI 下载固定版本并校验 SHA256，执行 `sentrux check .` | 架构边界规则进入 CI | 当前规则数量有限 |
-| 后端测试 | `mvn -q test`；JaCoCo report 绑定 test phase | 单元测试通过并生成覆盖率报告 | coverage report-only，无阈值 |
-| JaCoCo artifact | CI 上传 `backend-jacoco-report` | 可供审查覆盖率明细 | 不阻塞构建 |
-| npm audit | CI 执行 `npm audit --omit=dev` | 生产依赖漏洞回潮会阻断 CI | 仅覆盖 npm advisory 范围 |
-| 前端构建 | `npm run build` | 类型检查与 Vite 生产构建通过 | 不代表真实浏览器兼容矩阵 |
-| BYOK 浏览器验证 | `npm run verify:byok`，cold-start 等待与失败诊断已加固 | OpenAI-compatible 设置流程可自动化验证 | mock API，不代表公网模型性能 |
-| 暗色主题验证 | `npm run verify:dark`，cold-start 等待与失败截图已加固 | 主题切换与关键 canvas 渲染具备 sanity check | 不等同全量视觉回归 |
+| 门禁项 | 范围 | 当前实现 | 可支撑结论 | 限制 |
+| --- | --- | --- | --- | --- |
+| whitespace diff check | CI | push 使用 `HEAD~1`，PR 使用 `base.sha...HEAD` | 可阻断新增 whitespace 错误 | 不等同全量格式化 |
+| Sentrux 架构规则 | CI | CI 下载固定版本并校验 SHA256，执行 `sentrux check .` | 架构边界规则进入 CI | 当前规则数量有限 |
+| 后端测试 | CI | `mvn -q test`；JaCoCo report 绑定 test phase | 单元测试通过并生成覆盖率报告 | coverage report-only，无阈值 |
+| JaCoCo artifact | CI | CI 上传 `backend-jacoco-report` | 可供审查覆盖率明细 | 不阻塞构建 |
+| npm audit | CI | CI 执行 `npm audit --omit=dev` | 生产依赖漏洞回潮会阻断 CI | 仅覆盖 npm advisory 范围 |
+| 前端构建 | CI | `npm run build` | 类型检查与 Vite 生产构建通过 | 不代表真实浏览器兼容矩阵 |
+| BYOK 浏览器验证 | CI | `npm run verify:byok`，cold-start 等待与失败诊断已加固 | OpenAI-compatible 设置流程可自动化验证 | mock API，不代表公网模型性能 |
+| 暗色主题验证 | CI | `npm run verify:dark`，cold-start 等待与失败截图已加固 | 主题切换与关键 canvas 渲染具备 sanity check | 不等同全量视觉回归 |
+| UI guardrail | 本地预检 | `npm --prefix frontend run verify:ui`（UI 静态扫描与 semantic sizing 红线） | UI 红线静态扫描与 semantic sizing guardrail 可重复执行 | 仅本地预检，未进 CI；不等同全量视觉回归，不证明所有页面无样式缺陷 |
 
 ## 最近小重构带来的证据变化
 
@@ -44,6 +47,7 @@
 | 依赖治理 | `31272bc`、`588bf73`、`1cd55d2` | audit 清零并进入 CI | npm advisory 范围内的结论 |
 | 架构/覆盖率门禁 | `b821bf7`、`6098ca0`、`9ab9465` | Sentrux 进入 CI；JaCoCo report-only；冗余 report goal 已消除 | 不得写成 coverage threshold gate |
 | 自动化稳定性 | `57eba82`、`d23ec54`、`4b2e967` | BYOK 与 dark verify cold-start 等待、诊断、截图加固，最近 main CI 通过 | 证明脚本稳定性，不证明 UI 全量无缺陷 |
+| UI semantic sizing / drift guardrail | `b114707`、`a23476a`、`975fbbe`、`1536947`、`e8fa5378` | semantic sizing token 引入、shadow guardrail 收紧、`verify:ui` 作为本地预检 npm script 进入 main | 可写 UI 静态扫描与红线约束，不可写全量视觉回归；`verify:ui` 未进 CI |
 | 运行口径 | `51304d7`、`41b27b1`、`c974508` | Demo Twin 退役，收敛为 `start-dev` + `start-docker` | 旧 Demo 数据只能作为历史对照 |
 
 ## 仍需限制的论文表述
@@ -57,4 +61,4 @@
 
 ## 可进入第五章的稳妥写法
 
-> 项目在 2026-06-20 冻结基线下已形成自动化质量门禁：后端单元测试可生成 JaCoCo 覆盖率报告，前端构建、生产依赖审计、BYOK 设置流程验证和暗色主题验证均纳入本地/CI 检查；同时通过 Sentrux 维护基础架构边界约束。最近 `main` CI run `27815679764` 在 `4b2e967` 上通过，`npm audit --omit=dev` 当前返回 0 vulnerabilities。上述结果用于说明系统具备可重复的工程验证流程，但不等同于生产环境高并发性能测试或模型服务稳定性证明。
+> 项目在 `origin/main` 当前同步基线下已形成分层自动化质量门禁：CI 包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify；本地预检另包含 `verify:ui` UI 静态 guardrail（`verify:ui` 为 `frontend/package.json` 中 npm script，当前仅本地预检，未进 `.github/workflows/ci.yml`）。Sentrux 维护基础架构边界约束。`verify:ui` 只证明 UI 静态扫描与红线约束通过，不等同全量视觉回归。最近 `main` CI run `27815679764` 在 `4b2e967` 上通过，`npm audit --omit=dev` 当前返回 0 vulnerabilities。上述结果用于说明系统具备可重复的工程验证流程，但不等同于生产环境高并发性能测试或模型服务稳定性证明。

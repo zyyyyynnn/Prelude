@@ -10,10 +10,21 @@ npm --prefix frontend run build
 npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:ui
+npm --prefix frontend run capture:visual
+npm --prefix frontend run verify:a11y
+npm --prefix frontend run verify:tokens
 npm --prefix frontend audit --omit=dev
 sentrux check E:\Prelude
 git diff --check
 ```
+
+> `capture:visual` 与 `verify:visual` 当前等价：均执行 `playwright test -c playwright.visual.config.ts`，产出 17 个 UI 场景的 PNG artifact（输出到 `frontend/tests/visual/__screenshots__/`，已 gitignore）。Phase 1 阶段不引入像素级 diff；Phase 5/6 再决定是否升级为 blocking gate。详见 `docs/quality/ui-visual-regression.md`。
+>
+> `verify:a11y` 执行 `playwright test -c playwright.a11y.config.ts`，跑 8 个 axe + 键盘路径场景，仅 fail critical axe violations（serious 作为 backlog）。详见 `docs/quality/ui-a11y.md`。
+>
+> Phase 3 引入 dev-only `/components-lab` 路由（`import.meta.env.DEV` 时注册，生产构建被 Vite tree-shake 掉），详见 `docs/quality/ui-component-lab.md`。
+>
+> `verify:tokens` 跑 `frontend/scripts/verify-ui-tokens.cjs`：Node 内置、读 `frontend/tokens/ui-tokens.json` schema + `frontend/src/styles/index.css` 实际声明，做 schema 完整性、shadow raw-on-selector、z-index 唯一性、design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）四类校验。详见 `docs/quality/ui-token-schema.md`。
 
 ## 红线扫描
 
@@ -92,6 +103,12 @@ git diff --check "$baseSha...HEAD"
 - `npm audit --omit=dev` 已作为前端生产依赖门禁。
 - `verify:byok` 与 `verify:dark` 已对 Vite cold-start 做等待与失败诊断加固。
 - `verify:ui` 已落地为 Node 内置脚本（不引入依赖），覆盖 transition-all / window.confirm / shadow-md / shadow-lg / border-border / h-[30-34px] / Tailwind arbitrary px / 业务组件裸 px / magic height ratio / 简单 spacing calc。
+- `verify:tokens` 已落地为 Node 内置脚本（不引入依赖），校验 token schema 完整性 / shadow 原始值位置 / z-index 唯一性 / design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）。
+- `verify:a11y` 已在 CI 作为 blocking gate（@axe-core/playwright，Node 内置 determinism）。
+- `capture:visual` 已在 CI 作为 artifact-only gate（continue-on-error），产物上传为 `ui-visual-baseline` artifact。
+- Playwright chromium 在 CI 中通过 `npx playwright install --with-deps chromium` 显式安装。  ~~保留以备回滚参考~~
+- **CI 改为复用系统 Microsoft Edge**：`jobs.build.env` 注入 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`，`frontend/tests/_helpers/playwright-base.ts` 在 `process.env.CI` 为真时给 `baseUse` 注入 `channel: 'msedge'`，`npx playwright install` 步骤被整体移除。该切换消除了 windows-latest 上反复出现的 Chromium + headless-shell CDN 下载 stall（每次新 push 重下 ~500 MB，最坏卡到 job-level 6h 超时）。CI 上的 Playwright UI 检查由此不再触发 Playwright 的浏览器下载。**本地 dev 不受影响**：`process.env.CI` 未设置时保留默认 Playwright Chromium；`frontend/playwright.local.config.ts` 显式 `channel: 'msedge'`，行为与此前一致。capture:visual 仍为 `continue-on-error: true`（artifact-only），不升级 blocking。
+  CI Playwright UI checks use the system Microsoft Edge channel (via `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` plus `channel: 'msedge'` injected by `frontend/tests/_helpers/playwright-base.ts` when `CI=true`) to avoid repeated Chromium downloads on windows-latest. Local runs are unaffected and keep the default Playwright Chromium.
 
 ## 使用约定
 

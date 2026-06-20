@@ -158,16 +158,16 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
     <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
 
       <div class="field-grid">
-        <FormField name="providerKey">
-          <FormItem>
-            <FormLabel>接入方式</FormLabel>
-            <Select
-              :model-value="selectedProviderKey"
-              @update:model-value="(value) => { selectedProviderKey = String(value) }"
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="请选择接入方式" />
-              </SelectTrigger>
+          <FormField name="providerKey">
+            <FormItem>
+              <FormLabel>接入方式</FormLabel>
+              <Select
+                :model-value="selectedProviderKey"
+                @update:model-value="(value) => { selectedProviderKey = String(value) }"
+              >
+                <SelectTrigger aria-label="接入方式">
+                  <SelectValue placeholder="请选择接入方式" />
+                </SelectTrigger>
               <SelectContent>
                 <SelectItem
                   v-for="provider in providerOptions"
@@ -185,15 +185,15 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         <FormField name="model" v-slot="{ componentField }">
           <FormItem>
             <FormLabel>模型</FormLabel>
-            <Select
-              v-if="!isOpenAiCompatible"
-              :disabled="modelOptions.length === 0"
-              :model-value="selectedModel"
-              @update:model-value="(value) => { selectedModel = String(value) }"
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="请选择模型" />
-              </SelectTrigger>
+              <Select
+                v-if="!isOpenAiCompatible"
+                :disabled="modelOptions.length === 0"
+                :model-value="selectedModel"
+                @update:model-value="(value) => { selectedModel = String(value) }"
+              >
+                <SelectTrigger aria-label="模型">
+                  <SelectValue placeholder="请选择模型" />
+                </SelectTrigger>
               <SelectContent>
                 <SelectItem
                   v-for="model in modelOptions"
@@ -337,7 +337,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   :model-value="maxTokens ? String(maxTokens) : 'auto'"
                   @update:model-value="(value) => { maxTokens = value === 'auto' ? undefined : Number(value) }"
                 >
-                  <SelectTrigger class="w-full">
+                  <SelectTrigger class="w-full" aria-label="最大回复 Token">
                     <SelectValue placeholder="模型默认 (Auto)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -359,7 +359,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 :model-value="thinkingDepth || 'default'"
                 @update:model-value="(value) => { thinkingDepth = String(value) === 'default' ? undefined : String(value) }"
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="思考深度">
                   <SelectValue placeholder="默认 (Default)" />
                 </SelectTrigger>
                 <SelectContent>
