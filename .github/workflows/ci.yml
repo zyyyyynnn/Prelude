@@ -8,12 +8,14 @@ jobs:
   build:
     runs-on: windows-latest
 
-    # Pin Playwright's browser install path to the workspace cache dir so
-    # the `actions/cache` step below can actually hit on subsequent runs.
-    # The default location (C:\Users\<runner>\AppData\Local\ms-playwright)
-    # is outside the runner's cacheable workspace.
+    # Playwright UI checks use the system Microsoft Edge channel instead of
+    # downloading Playwright's bundled Chromium. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+    # tells `npm ci` / `npx playwright install` to skip the CDN download, and
+    # the Playwright configs opt into `channel: 'msedge'` when CI=true. This
+    # eliminates the dominant CI flake source (Chromium + headless-shell CDN
+    # download stalls on windows-latest) without changing any test logic.
     env:
-      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
     steps:
       - name: Checkout
@@ -119,36 +121,15 @@ jobs:
         run: npm run verify:dark
 
       # Playwright UI verification harness (visual regression + a11y).
-      # Bundled with @playwright/test; uses the same node_modules cache from
-      # `npm ci` above. Browsers are installed explicitly because the
-      # windows-latest runner does NOT ship with chromium pre-installed.
-      # We install BOTH the headed chromium browser and the headless-shell
-      # variant because @playwright/test 1.59.x defaults to the headless
-      # shell for `headless: true` (see
-      # frontend/node_modules/playwright-core/browsers.json). Installing
-      # only `chromium` leaves `chromium_headless_shell-<rev>/.../*.exe`
-      # missing and the run fails with "Executable doesn't exist at ...".
-      #
-      # We pin PLAYWRIGHT_BROWSERS_PATH to the workspace cache dir so the
-      # `actions/cache` step below can hit on subsequent runs — the
-      # default path (C:\Users\<runner>\AppData\Local\ms-playwright) is
-      # not in the runner's cacheable workspace. We also drop
-      # `--with-deps`: it is a no-op on windows-latest and was previously
-      # a small extra attack surface for transient download stalls. The
-      # 15-minute timeout prevents a single bad download from holding the
-      # whole job open indefinitely.
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
-          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright chromium + headless shell browsers
-        working-directory: frontend
-        run: npx --no-install playwright install chromium chromium-headless-shell
-        timeout-minutes: 15
+      # Bundled with @playwright/test. We do NOT install Playwright's
+      # bundled Chromium on the windows-latest runner — the CDN download
+      # repeatedly stalls and dominates CI time. Instead, the configs
+      # use the system Microsoft Edge channel (see
+      # frontend/tests/_helpers/playwright-base.ts) and
+      # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 tells `npm ci` not to fetch
+      # the Playwright browser tarball. capture:visual stays
+      # continue-on-error: true (artifact-only); verify:a11y is the
+      # blocking gate.
 
       - name: Verify UI accessibility (axe + keyboard paths)
         working-directory: frontend

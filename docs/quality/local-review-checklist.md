@@ -106,7 +106,9 @@ git diff --check "$baseSha...HEAD"
 - `verify:tokens` 已落地为 Node 内置脚本（不引入依赖），校验 token schema 完整性 / shadow 原始值位置 / z-index 唯一性 / design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）。
 - `verify:a11y` 已在 CI 作为 blocking gate（@axe-core/playwright，Node 内置 determinism）。
 - `capture:visual` 已在 CI 作为 artifact-only gate（continue-on-error），产物上传为 `ui-visual-baseline` artifact。
-- Playwright chromium 在 CI 中通过 `npx playwright install --with-deps chromium` 显式安装。
+- Playwright chromium 在 CI 中通过 `npx playwright install --with-deps chromium` 显式安装。  ~~保留以备回滚参考~~
+- **CI 改为复用系统 Microsoft Edge**：`jobs.build.env` 注入 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`，`frontend/tests/_helpers/playwright-base.ts` 在 `process.env.CI` 为真时给 `baseUse` 注入 `channel: 'msedge'`，`npx playwright install` 步骤被整体移除。该切换消除了 windows-latest 上反复出现的 Chromium + headless-shell CDN 下载 stall（每次新 push 重下 ~500 MB，最坏卡到 job-level 6h 超时）。CI 上的 Playwright UI 检查由此不再触发 Playwright 的浏览器下载。**本地 dev 不受影响**：`process.env.CI` 未设置时保留默认 Playwright Chromium；`frontend/playwright.local.config.ts` 显式 `channel: 'msedge'`，行为与此前一致。capture:visual 仍为 `continue-on-error: true`（artifact-only），不升级 blocking。
+  CI Playwright UI checks use the system Microsoft Edge channel (via `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` plus `channel: 'msedge'` injected by `frontend/tests/_helpers/playwright-base.ts` when `CI=true`) to avoid repeated Chromium downloads on windows-latest. Local runs are unaffected and keep the default Playwright Chromium.
 
 ## 使用约定
 

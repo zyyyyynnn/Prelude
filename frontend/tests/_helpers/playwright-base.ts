@@ -27,6 +27,20 @@ const frontendRoot = path.resolve(helperDir, '..', '..')
 const repoRoot = path.resolve(frontendRoot, '..')
 
 /**
+ * CI-only browser overrides. When CI=true (set by .github/workflows/ci.yml),
+ * Playwright specs use the system Microsoft Edge channel instead of the
+ * bundled Chromium. This avoids the ~500 MB Chromium download on
+ * windows-latest runners, which was the dominant CI flake source. The
+ * corresponding `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` env var in CI stops
+ * `npm ci` from pulling the Playwright browser tarball at install time.
+ *
+ * Local runs (CI unset) keep the default Playwright Chromium so dev loops
+ * stay self-contained — the local-screenshots config additionally pins
+ * `channel: 'msedge'` itself for parity.
+ */
+const ciBrowserUse = process.env.CI ? { channel: 'msedge' as const } : {}
+
+/**
  * Standard `use` block shared by every Phase 2 config.
  *
  * Exported as a plain object (not a defineConfig) so consumers can spread
@@ -35,6 +49,7 @@ const repoRoot = path.resolve(frontendRoot, '..')
 export const baseUse = {
   baseURL: 'http://127.0.0.1:5173',
   headless: true,
+  ...ciBrowserUse,
   screenshot: 'only-on-failure',
   trace: 'retain-on-failure',
   viewport: {
