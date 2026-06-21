@@ -13,8 +13,8 @@
 | 项 | 内容 |
 | --- | --- |
 | 当前同步基线（`origin/main` HEAD） | `ffb617a6efdcd88975c9985020eb81776a984375` |
-| 代码行为事实基线（最近 CI 通过） | `4b2e967`（CI run `27815679764` 已通过） |
-| 文档收口基线 | `4b2e967` 为阶段 3 原始 freeze 审查基线；当前 active evidence 入口同步基线为 `ffb617a`（见 `final-evidence-lock.md`） |
+| 代码行为事实基线（最近 CI 通过） | `ffb617a`（CI run `27878325552` 在该基线上通过；21 steps success） |
+| 文档收口基线 | `4b2e967` 仅作为阶段 3 原始 freeze 审查基线保留，**不是**当前最近 CI 通过事实；当前 active evidence 入口同步基线为 `ffb617a`（见 `final-evidence-lock.md`） |
 | 最近治理范围 | 约最近 30 次提交，覆盖 UI token 收敛、UI semantic sizing 与 drift guardrail、verify:ui / verify:tokens / verify:a11y / capture:visual 自动化门禁、dev fixture 收敛、语音链路硬化、消息序号一致性、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁、CI whitespace diff merge-base 口径修复，以及阶段 2 历史文档降噪收口 |
 | 运行入口口径 | `start-dev` + `start-docker`；旧 Demo Twin / start-real / start-demo 均为历史状态 |
 | npm audit | `npm --prefix frontend audit --omit=dev` 返回 `found 0 vulnerabilities` |
@@ -74,4 +74,4 @@
 
 ## 可进入第五章的稳妥写法
 
-> 项目在 `origin/main` 当前同步基线下已形成分层自动化质量门禁：CI（blocking）包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、`verify:ui` 静态红线扫描、`verify:tokens` token schema、`verify:a11y` 仅 critical axe violations、`verify:byok`、`verify:dark`；`capture:visual` 作为 artifact-only（`continue-on-error: true`）上传 17 个场景的 PNG 供人工 review。Playwright 在 CI 复用系统 Microsoft Edge channel（`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`），不下载 Chromium。CI 并不证明生产环境高并发性能、模型质量稳定性或消息队列零丢失。最近 `main` CI run `27815679764` 在 `4b2e967` 上通过，`npm audit --omit=dev` 当前返回 0 vulnerabilities。
+> 项目在 `origin/main` 当前同步基线下已形成分层自动化质量门禁：CI（blocking）包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、`verify:ui` 静态红线扫描、`verify:tokens` token schema、`verify:a11y` 仅 critical axe violations、`verify:byok`、`verify:dark`；`capture:visual` 作为 artifact-only（`continue-on-error: true`）上传 17 个场景的 PNG 供人工 review。Playwright 在 CI 复用系统 Microsoft Edge channel（`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`），不下载 Chromium。CI 并不证明生产环境高并发性能、模型质量稳定性或消息队列零丢失。当前 `origin/main` 在 `ffb617a` 基线上的 CI run `27878325552`（21 steps success）已通过；`npm audit --omit=dev` 当前返回 0 vulnerabilities。`4b2e967` 与 `27815679764` 仅作为阶段 3 原始 freeze 审查历史保留，run id 不作为正文事实引用。
