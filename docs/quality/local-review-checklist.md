@@ -10,21 +10,15 @@ npm --prefix frontend run build
 npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:ui
-npm --prefix frontend run capture:visual
-npm --prefix frontend run verify:a11y
 npm --prefix frontend run verify:tokens
+npm --prefix frontend run verify:a11y
+npm --prefix frontend run capture:visual
 npm --prefix frontend audit --omit=dev
 sentrux check E:\Prelude
 git diff --check
 ```
 
-> `capture:visual` 与 `verify:visual` 当前等价：均执行 `playwright test -c playwright.visual.config.ts`，产出 17 个 UI 场景的 PNG artifact（输出到 `frontend/tests/visual/__screenshots__/`，已 gitignore）。Phase 1 阶段不引入像素级 diff；Phase 5/6 再决定是否升级为 blocking gate。详见 `docs/quality/ui-visual-regression.md`。
->
-> `verify:a11y` 执行 `playwright test -c playwright.a11y.config.ts`，跑 8 个 axe + 键盘路径场景，仅 fail critical axe violations（serious 作为 backlog）。详见 `docs/quality/ui-a11y.md`。
->
-> Phase 3 引入 dev-only `/components-lab` 路由（`import.meta.env.DEV` 时注册，生产构建被 Vite tree-shake 掉），详见 `docs/quality/ui-component-lab.md`。
->
-> `verify:tokens` 跑 `frontend/scripts/verify-ui-tokens.cjs`：Node 内置、读 `frontend/tokens/ui-tokens.json` schema + `frontend/src/styles/index.css` 实际声明，做 schema 完整性、shadow raw-on-selector、z-index 唯一性、design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）四类校验。详见 `docs/quality/ui-token-schema.md`。
+各命令的范围与限制见 `docs/quality/ui-quality-system.md`。
 
 ## 红线扫描
 
@@ -60,19 +54,17 @@ npm --prefix frontend run verify:ui
 
 命中分类与处理约定：
 
-- **扫描 1 / 2 / 3 / 4 / 5 / 7**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与全局 token 定义；组件 scoped CSS 变量必须使用约定前缀和语义命名，不允许任意 `--bad-size: 999px` 绕过。`frontend/src/styles/index.css` 仅允许 shadow token 定义承载原始阴影值；普通 selector 中的 `box-shadow:` 必须使用 `var(--shadow-*)` 或明确 token 化 focus ring。`npm run verify:ui` 是 Node 内置脚本，可替代本节扫描命令。
-- **扫描 6**：`calc(var(--spacing-*)...)` 不一定全部禁止。
-  - 简单半阶 / 负向 spacing（`/ 2`、`* -1`）必须替换为 `var(--spacing-0-5)` / `var(--spacing-neg-xs)` 等已有 token。
-  - 组件几何布局（toolbar 宽高、pill 宽 = `(100% - spacing) / N` 等）保留为 calc，但必须集中为组件 scoped CSS 变量（如 `--composer-toolbar-width`、`--segmented-pill-radius`）并在组件根 class 上声明，便于审查。
+- **扫描 1 / 2 / 3 / 4 / 5 / 7**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与全局 token 定义；组件 scoped CSS 变量必须使用约定前缀和语义命名。`npm run verify:ui` 是 Node 内置脚本，可替代本节扫描命令。
+- **扫描 6**：`calc(var(--spacing-*)...)` 不一定全部禁止。简单半阶 / 负向 spacing（`/ 2`、`* -1`）必须替换为已有 token；组件几何布局保留为 calc，但必须集中为组件 scoped CSS 变量。
 - **新增或修改行不允许引入新的裸 px；既有未触碰命中不追溯。**
 
-### 当前文档中的旧运行口径
+### 文档旧运行口径
 
 ```powershell
 rg -n "start-real|start-demo|DemoModeService|/api/demo|8081|5174" README.md docs thesis-assets --glob "*.md" --glob "!thesis-assets/evidence/test-data/archive/**"
 ```
 
-说明：历史归档或阶段过程报告中出现 Demo Twin、8081、5174 不必直接修；active 文档命中时必须判断是否应降权、归档或改写。
+历史归档或阶段过程报告中出现 Demo Twin、8081、5174 不必直接修；active 文档命中时必须判断是否应降权、归档或改写。
 
 ### 禁改区守卫
 
@@ -92,9 +84,11 @@ npx --yes js-yaml .github/workflows/ci.yml
 
 ```powershell
 $baseSha = "<上一轮 merge commit>"
-git fetch origin $baseSha --depth=1
-git diff --check "$baseSha...HEAD"
+$mergeBase = git merge-base "$baseSha" HEAD
+git diff --check "$mergeBase" HEAD
 ```
+
+`git diff --check` 在 PowerShell 中不接受三引号形式，必须用 merge-base 拿到 diff 起点。
 
 ## CI 接入说明
 
@@ -102,13 +96,8 @@ git diff --check "$baseSha...HEAD"
 - JaCoCo 只生成 report artifact，不设置 coverage threshold。
 - `npm audit --omit=dev` 已作为前端生产依赖门禁。
 - `verify:byok` 与 `verify:dark` 已对 Vite cold-start 做等待与失败诊断加固。
-- `verify:ui` 已落地为 Node 内置脚本（不引入依赖），覆盖 transition-all / window.confirm / shadow-md / shadow-lg / border-border / h-[30-34px] / Tailwind arbitrary px / 业务组件裸 px / magic height ratio / 简单 spacing calc。
-- `verify:tokens` 已落地为 Node 内置脚本（不引入依赖），校验 token schema 完整性 / shadow 原始值位置 / z-index 唯一性 / design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）。
-- `verify:a11y` 已在 CI 作为 blocking gate（@axe-core/playwright，Node 内置 determinism）。
-- `capture:visual` 已在 CI 作为 artifact-only gate（continue-on-error），产物上传为 `ui-visual-baseline` artifact。
-- Playwright chromium 在 CI 中通过 `npx playwright install --with-deps chromium` 显式安装。  ~~保留以备回滚参考~~
-- **CI 改为复用系统 Microsoft Edge**：`jobs.build.env` 注入 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`，`frontend/tests/_helpers/playwright-base.ts` 在 `process.env.CI` 为真时给 `baseUse` 注入 `channel: 'msedge'`，`npx playwright install` 步骤被整体移除。该切换消除了 windows-latest 上反复出现的 Chromium + headless-shell CDN 下载 stall（每次新 push 重下 ~500 MB，最坏卡到 job-level 6h 超时）。CI 上的 Playwright UI 检查由此不再触发 Playwright 的浏览器下载。**本地 dev 不受影响**：`process.env.CI` 未设置时保留默认 Playwright Chromium；`frontend/playwright.local.config.ts` 显式 `channel: 'msedge'`，行为与此前一致。capture:visual 仍为 `continue-on-error: true`（artifact-only），不升级 blocking。
-  CI Playwright UI checks use the system Microsoft Edge channel (via `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` plus `channel: 'msedge'` injected by `frontend/tests/_helpers/playwright-base.ts` when `CI=true`) to avoid repeated Chromium downloads on windows-latest. Local runs are unaffected and keep the default Playwright Chromium.
+- UI 自动化门禁（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual`）已接入 CI；详细策略与限制见 `docs/quality/ui-quality-system.md`。
+- CI 复用系统 Microsoft Edge channel：`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` + `channel: 'msedge'`；不再下载 Playwright Chromium。本地 dev 不受影响。
 
 ## 使用约定
 

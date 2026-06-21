@@ -42,11 +42,13 @@
 - 每一处改动都必须直接对应请求。
 
 ### 前端 UI 与动效纪律 (详见 DESIGN.md)
-本项目具有极高的 UI 洁癖，任何前端组件与样式的修改必须严格遵守 `DESIGN.md` 的强制红线：
-- **色彩 Token 化**：绝对禁止硬编码 `#hex`、原生 `rgba`、`white` 或 `black`。必须使用 `var(--color-xxx)` 体系。处理透明度时强制使用 `color-mix` 桥接，以保证暗黑模式下的无损漂移。
-- **动效 GPU 红线**：全局严禁使用 `transition-all`。只允许过渡 `opacity`、`transform`、`color`、`background-color` 等具体属性，绝不允许 Layout 属性（如宽/高/内边距）参与动画。动效曲线必须咬死 `duration-300 ease-in-out`。
-- **空间与 Z 轴管控**：必须严格遵守预设层级（Dialog `z-[101]` < Dropdown `z-[105]` < Tooltip `z-[110]`）。绝对禁止在同一 Z 轴高度发生背景色重叠导致的“空间粘连”或“层级塌陷”。
-- **交互防抽搐**：按钮 Loading 态必须采用绝对居中+文本透明度交叉溶解的方案，严禁宽度突变。常规异步操作必须包裹 `withMinDelay(300)` 防闪烁。
+
+本项目具有极高的 UI 洁癖，任何前端组件与样式的修改必须严格遵守 `DESIGN.md` 的强制红线。
+
+- **UI 规范入口**：`DESIGN.md` 是 UI 规范唯一最高入口；本文件不复述 `DESIGN.md` 的样式与组件约束。
+- **色彩 Token 化、动效 GPU 红线、空间与 Z 轴管控、交互防抽搐**等具体红线以 `DESIGN.md` 为准。
+- UI 自动化质量体系（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual` / Component Lab）的当前态见 `docs/quality/ui-quality-system.md`。
+- UI 修改后必须跑 `npm --prefix frontend run verify:ui` 与 `verify:tokens`；视觉相关改动需同步更新 `docs/quality/ui-quality-system.md`。
 
 ## 5. 产出与输出规范
 - **方案选择**：默认提供最稳妥、兼容性好的方案。除非被明确要求，不引入新依赖、不增加新框架、不大改结构。
