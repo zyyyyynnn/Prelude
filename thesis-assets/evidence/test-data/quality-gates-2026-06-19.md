@@ -13,7 +13,7 @@
 | 项 | 内容 |
 | --- | --- |
 | 当前同步基线（`origin/main` HEAD） | `ffb617a6efdcd88975c9985020eb81776a984375` |
-| 代码行为事实基线（最近 CI 通过） | `ffb617a`（CI run `27878325552` 在该基线上通过；21 steps success） |
+| 代码行为事实基线（最近 CI 通过） | `ffb617a`（CI run `27878325552`，21 steps success） |
 | 文档收口基线 | `4b2e967` 仅作为阶段 3 原始 freeze 审查基线保留，**不是**当前最近 CI 通过事实；当前 active evidence 入口同步基线为 `ffb617a`（见 `final-evidence-lock.md`） |
 | 最近治理范围 | 约最近 30 次提交，覆盖 UI token 收敛、UI semantic sizing 与 drift guardrail、verify:ui / verify:tokens / verify:a11y / capture:visual 自动化门禁、dev fixture 收敛、语音链路硬化、消息序号一致性、报告任务幂等、BYOK 验证、Sentrux/JaCoCo/npm audit 门禁、CI whitespace diff merge-base 口径修复，以及阶段 2 历史文档降噪收口 |
 | 运行入口口径 | `start-dev` + `start-docker`；旧 Demo Twin / start-real / start-demo 均为历史状态 |
@@ -54,7 +54,7 @@
 | 语音链路 | `25ab32f`、`1cd55d2`、`b821bf7` | TTS executor、30s timeout、双 flag 与顺序测试 | 不可写真实 ASR/TTS 延迟基准 |
 | 依赖治理 | `31272bc`、`588bf73`、`1cd55d2` | audit 清零并进入 CI | npm advisory 范围内的结论 |
 | 架构/覆盖率门禁 | `b821bf7`、`6098ca0`、`9ab9465` | Sentrux 进入 CI；JaCoCo report-only；冗余 report goal 已消除 | 不得写成 coverage threshold gate |
-| 自动化稳定性 | `57eba82`、`d23ec54`、`4b2e967` | BYOK 与 dark verify cold-start 等待、诊断、截图加固，最近 main CI 通过 | 证明脚本稳定性 |
+| 自动化稳定性 | `57eba82`、`d23ec54`、`4b2e967` | BYOK 与 dark verify cold-start 等待、诊断、截图加固；该阶段 main CI 在 `4b2e967` 上通过（run `27815679764`） | 证明脚本稳定性 |
 | UI semantic sizing / drift guardrail | `b114707`、`a23476a`、`975fbbe`、`1536947` | semantic sizing token 引入、shadow guardrail 收紧 | 可写 UI 静态扫描与红线约束，不可写全量视觉回归 |
 | UI 自动化门禁（verify:ui / tokens / a11y / capture:visual） | `a87e35c`、`19d931c`、`96fa9d8`、`d3f0d59`、`b579625` | `verify:tokens` / `verify:a11y` / `verify:ui` 在 CI 作为 blocking gate；`capture:visual` 作为 artifact-only；Playwright 改用系统 Microsoft Edge | 可写静态扫描、token schema、critical-only a11y、artifact-only capture；不可写全量视觉回归或完整 WCAG 达标 |
 | whitespace PR diff merge-base | `ffb617a` | PR 路径用 `git merge-base $baseSha HEAD` 替换三引号形式，避开 PowerShell range operator | 修正后行为可证明；旧形式不应再被引用 |

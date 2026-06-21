@@ -1,5 +1,5 @@
 /**
- * UI accessibility verification — Phase 2.
+ * UI accessibility verification.
  *
  * Combines axe-core scanning with explicit keyboard-path assertions for the
  * surfaces that the guardrail layer cannot validate statically: Dialog focus
@@ -11,12 +11,13 @@
  *
  * The `installMockApi` helper is shared with `tests/visual/ui-visual.spec.ts`
  * via `tests/_helpers/mock-api.ts` to keep the sentrux `min_equality` gate
- * above the 0.48 floor.
+ * healthy (current floor lives in .sentrux/rules.toml).
  *
- * Severity policy (see docs/quality/ui-a11y.md): only CRITICAL axe violations
- * fail the run. SERIOUS violations (notably color-contrast) are reported to
- * the console + tracked as P2 backlog; do NOT read a green run as "no a11y
- * issues" — read it as "no critical axe violations are blocking the PR".
+ * Severity policy (see docs/quality/ui-quality-system.md §5 A11y coverage):
+ * only CRITICAL axe violations fail the run. SERIOUS violations (notably
+ * color-contrast) are reported to the console + tracked as backlog; do NOT
+ * read a green run as "no a11y issues" — read it as "no critical axe
+ * violations are blocking the PR".
  */
 import { AxeBuilder } from '@axe-core/playwright'
 import { test, expect, type Page } from '@playwright/test'
