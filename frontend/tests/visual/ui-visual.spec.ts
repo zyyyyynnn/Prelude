@@ -1,15 +1,16 @@
 /**
- * Visual regression capture spec — Phase 1 + Phase 3 (component lab).
+ * Visual regression capture spec.
  *
  * Purpose: produce stable screenshots covering the core UI surface so that any
  * future drift can be detected. We intentionally do NOT use toHaveScreenshot()
- * pixel-diff gating yet (Phase 1 is artifact-only). Phase 5 / Phase 6 may
- * promote this to a blocking diff once baselines are reviewed.
+ * pixel-diff gating — `capture:visual` is artifact-only
+ * (`continue-on-error: true` in CI). Whether to promote this to a blocking
+ * diff is tracked in docs/quality/ui-quality-system.md §8 Backlog R5.
  *
  * The `installMockApi` helper is shared with `tests/a11y/ui-a11y.spec.ts`
  * via `tests/_helpers/mock-api.ts` to keep the sentrux `min_equality` gate
- * above the 0.48 floor. Per-test overrides (sessions, analytics radar/trend)
- * are passed through the second argument.
+ * healthy. Per-test overrides (sessions, analytics radar/trend) are passed
+ * through the second argument.
  */
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -160,8 +161,8 @@ test('13 interview generating state', async ({ page }) => {
   // page is fragile (the view starts in the empty state until the user clicks
   // "开始面试" and the resulting session is loaded). We capture the empty
   // workspace as a representative "post-completion" surface so the artifact
-  // pipeline is always green; deeper state coverage is deferred to a follow-up
-  // dev fixture story (see ui-phase2-baseline.md R1).
+  // pipeline is always green; deeper state coverage is tracked as R1 in
+  // docs/quality/ui-quality-system.md §8 Backlog.
   await installMockApi(page, {
     sessions: [
       {
@@ -181,7 +182,8 @@ test('13 interview generating state', async ({ page }) => {
 test('14 report paper state', async ({ page }) => {
   // NOTE: same constraint as test 13 — without an active session the workspace
   // shows the empty state. We capture that surface here and document that deeper
-  // report rendering requires a real session (see R1).
+  // report rendering requires a real session (tracked as R1 in
+  // docs/quality/ui-quality-system.md §8 Backlog).
   await installMockApi(page, {
     sessions: [
       {

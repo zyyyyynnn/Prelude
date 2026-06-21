@@ -1,14 +1,19 @@
 /**
  * Playwright config dedicated to UI accessibility verification.
  *
- * Goals (see docs/quality/ui-a11y.md):
+ * Goals (see docs/quality/ui-quality-system.md §5 A11y coverage):
  *  - Run axe-core via @axe-core/playwright on key UI surfaces (login,
  *    workspace shell, settings modal, BYOK panel, composer, analytics).
  *  - Exercise keyboard paths for Dialog / Combobox / Dropdown / Tooltip /
  *    Sidebar / Composer via real key events.
+ *  - Severity policy: only CRITICAL axe violations block the run. SERIOUS
+ *    violations (notably color-contrast) are reported to the console and
+ *    tracked as backlog; a green run means "no critical axe violations
+ *    are blocking", not "no a11y issues".
  *
  * Like the visual config, this one does NOT start a backend. Tests stub
- * /api/** routes via page.route. CI runs are gated by `npm run verify:a11y`.
+ * /api/** routes via page.route. CI runs are gated by `npm run verify:a11y`
+ * (blocking).
  *
  * The base Playwright settings (viewport / webServer / retry policy) live
  * in `tests/_helpers/playwright-base.ts` and are spread in below. This
