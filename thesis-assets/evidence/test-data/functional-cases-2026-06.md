@@ -27,7 +27,7 @@
 | TC-08 | Provider / BYOK 设置流程 | 用户已登录 | 1. 打开设置页 LLM 配置<br>2. 切换 OpenAI-compatible<br>3. 填写 Base URL / API Key<br>4. 检测模型、测试连接、保存设置 | payload 中 baseUrl、apiKey、model 与用户输入一致；模型发现不自动强选首个模型；下拉样式保持统一。 | `npm run verify:byok` 覆盖 provider 切换、模型发现、草稿测试、保存设置、payload 与 combobox 样式；cold-start 等待已加诊断。 | 通过 |
 | TC-09 | Provider fallback 与 Key 边界 | 内置 provider 或 openai-compatible 调用失败 | 1. 模拟内置 provider 失败<br>2. 模拟 openai-compatible 失败 | 内置 provider 可 fallback 到已启用内置备用通道并使用系统 Key；openai-compatible 失败必须显式报错，不静默切换系统通道。 | `LlmRouterTest` 覆盖 openai-compatible 不 fallback、fallback 使用系统 Key、不把 openai-compatible 纳入 fallback 列表。 | 通过 |
 | TC-10 | 账号鉴权与 JWT | 用户登录后访问受保护路由 | 1. 使用 token 访问工作区<br>2. token 失效时触发拦截器 | 未登录跳转登录页；401 时清理会话并跳转登录。 | 具备基础路由守卫与 HTTP 拦截逻辑。多端登录强制下线、续签压力场景仍未形成实测记录。 | 部分验证 |
-| TC-11 | 自动化质量门禁（CI + 本地预检） | CI 或本地预检执行 | 1. CI：后端测试、前端构建、BYOK verify、dark verify、npm audit、Sentrux、diff check<br>2. 本地预检：UI guardrail（`verify:ui`，`frontend/package.json` 中 npm script，当前未进 CI） | 关键工程门禁可重复执行，失败时阻断或输出诊断。 | CI 包含 Sentrux、JaCoCo report artifact、npm audit 与前端验证；本地预检另含 `verify:ui` UI 静态扫描。`verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归。 | 通过 |
+| TC-11 | 自动化质量门禁（CI + 本地预检） | CI 或本地预检执行 | 1. CI blocking：后端测试、前端构建、`verify:byok`、`verify:dark`、`verify:ui` 静态 guardrail、`verify:tokens` token schema、`verify:a11y` 仅 critical axe violations、npm audit、Sentrux、diff check（PR 路径用 merge-base 取得 diff 起点）<br>2. CI artifact-only：`capture:visual`（17 个场景 PNG） | 关键工程门禁可重复执行，失败时阻断或输出诊断。 | CI 已包含 `verify:ui` / `verify:tokens` / `verify:a11y` / BYOK / dark verify / Sentrux / JaCoCo report artifact / npm audit / 前端构建与 diff check；`capture:visual` 作为 artifact-only。Playwright 在 CI 复用系统 Microsoft Edge（`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`）。 | 通过 |
 | TC-12 | 消息序号与阶段系统消息一致性 | 面试阶段推进或语音评分写入 | 1. 阶段推进写入 system message<br>2. 用户/助手/评分消息写入 | 系统消息统一走 message service；seqNum 基于 latest max+1，避免稀疏序列下重复。 | `InterviewStageManagerTest`、`InterviewMessageServiceTest`、`InterviewJudgeServiceTest` 覆盖相关契约。 | 通过 |
 
 ## 写作限制
@@ -37,4 +37,6 @@
 - TC-08 不能写成“真实公网模型性能验证”，`verify:byok` 是 mock API 浏览器自动化流程验证。
 - TC-09 不能写成“所有 Provider 故障都可无感切换”；openai-compatible 失败必须显式暴露。
 - TC-11 不能写成“覆盖率达标”，JaCoCo 当前仅生成 report，不设置阈值。
-- TC-11 中的 `verify:ui` 不能写成全量视觉回归或 UI 完全无缺陷，只能写成 UI 静态扫描与 semantic sizing 红线扫描。
+- TC-11 中的 `verify:ui` 是 CI blocking 的 UI 静态 guardrail 与 semantic sizing 红线扫描，不能写成全量视觉回归或 UI 完全无缺陷。
+- TC-11 中的 `verify:a11y` 是 CI critical-only gate，不能写成完整 WCAG 2 AA 达标。
+- TC-11 中的 `capture:visual` 是 CI artifact-only（`continue-on-error: true`），不能写成像素 diff blocking gate 或视觉回归全覆盖。

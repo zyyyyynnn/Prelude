@@ -12,8 +12,8 @@
 | 冻结记录提交 | `2bf27b728bd9f08f4b897f88ceb65a752d5a33e0` |
 | 冻结审查基线提交信息 | `docs(thesis): compress historical phase 2.10 report` |
 | CI 状态 | GitHub Actions CI run `27815679764` 在 `4b2e967` 上通过 |
-| 当前同步基线 | `e8fa5378b9eab4cd2e2512b3844dbbed6c7f0827`（`origin/main` HEAD） |
-| UI 同步说明 | UI semantic sizing 与 `verify:ui` UI drift guardrail 已进入 `main`（`verify:ui` 为 `frontend/package.json` 中 npm script，当前仅本地预检，未进 `.github/workflows/ci.yml`）；本同步只更新证据口径，不修改 `thesis-assets/chapters/*.md` 正文 |
+| 当前同步基线 | `ffb617a6efdcd88975c9985020eb81776a984375`（`origin/main` HEAD） |
+| UI 同步说明 | UI semantic sizing 与 `verify:ui` / `verify:tokens` / `verify:a11y` 已进入 `main` 作为 CI blocking gate；`capture:visual` 作为 CI artifact-only（`continue-on-error: true`）；Playwright 在 CI 复用系统 Microsoft Edge channel（`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`）；whitespace PR diff 改用 `git merge-base` 取得 diff 起点。本同步只更新证据口径，不修改 `thesis-assets/chapters/*.md` 正文 |
 | npm audit | `npm --prefix frontend audit --omit=dev` 返回 `found 0 vulnerabilities` |
 | 正文处理 | 本轮未修改 `thesis-assets/chapters/*.md` |
 | 冻结范围 | evidence、图表登记、质量门禁证据、答辩材料入口 |
@@ -40,8 +40,8 @@
 - RabbitMQ 已用于报告生成异步任务队列；可描述 `/finish -> generating -> RabbitMQ -> ReportJobWorker -> summary_report -> finished -> report_ready` 闭环。
 - Redis 职责为限流、缓存、评分锁和状态辅助，不承担报告任务队列职责。
 - BYOK 支持 OpenAI-compatible endpoint root、API Key、模型发现、配置保存、配置测试和链路复用；API Key 加密保存，前端不回显明文。
-- 自动化质量门禁分两层：CI 包含 whitespace diff check、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify；本地预检另包含 `verify:ui` UI 静态 guardrail（`verify:ui` 仅本地 npm script，未进 CI）。
-- JaCoCo 是 report-only；Sentrux 是有限规则边界检查；BYOK verify 和 dark verify 是 CI 自动化流程 sanity check；`verify:ui` 是本地预检 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归。
+- 自动化质量门禁分两层：CI blocking 包含 whitespace diff check（PR 路径用 `git merge-base` 取得 diff 起点，避开 PowerShell 三引号 range operator）、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify、`verify:ui` UI 静态 guardrail、`verify:tokens` token schema、`verify:a11y` 仅 critical axe violations；CI artifact-only 含 `capture:visual`（17 个场景 PNG）。
+- JaCoCo 是 report-only；Sentrux 是有限规则边界检查；BYOK verify 和 dark verify 是 CI 自动化流程 sanity check；`verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归；`verify:a11y` 只 fail critical axe violations，serious 仍记入 backlog；`capture:visual` 不做像素 diff，不作为 blocking gate。
 
 ## 不可写入正文的夸大表述
 
