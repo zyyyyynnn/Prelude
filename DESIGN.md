@@ -93,8 +93,15 @@
 阴影：
 
 - `--shadow-ring`、`--shadow-ring-deep`：轻轮廓。
+- `--shadow-icon-action-focus`：业务组件自定义 CSS `:focus-visible` 的共享焦点阴影。
 - `--shadow-whisper`：Dropdown、Select、Combobox、Tooltip、Toast 的低浮层阴影。
 - `--shadow-modal`：Dialog、Confirm。
+
+Focus 规则：
+
+- shadcn-vue primitive 使用 `focus-visible:ring-*`，颜色必须映射到 `--color-focus`。
+- 业务组件在 scoped CSS 中自行定义 `:focus-visible` 且使用 `box-shadow` 时，只能写 `box-shadow: var(--shadow-icon-action-focus)`。
+- 禁止业务组件手写 `inset 0 0 0 ...`、裸像素或其他临时 focus shadow；`verify:ui` 必须阻断此类漂移。
 
 层级：
 
@@ -180,7 +187,7 @@
 - `compact`、`icon-compact` 使用 `--ui-height-compact`，只用于 send 左侧元信息控件。
 - 删除 `lg`、`icon-lg` 业务可用大号按钮体系。
 - 默认按钮宽度按内容自适应；登录 submit 可 `w-full`；Sidebar 主操作可 full width；Icon button 保持正方形。
-- Focus 必须使用暖色 focus ring；图标按钮必须有 `aria-label`。
+- Focus 必须使用 2.5 节定义的统一暖色 focus ring；图标按钮必须有 `aria-label`。
 
 ### 5.2 Input / Textarea / Select
 
@@ -379,5 +386,6 @@
 - 分散 fixed duration / easing
 - `dark:bg-*`
 - 内联硬编码颜色、背景、边框、阴影
+- 业务组件手写 focus shadow，或在 scoped CSS 的 `:focus-visible` 使用非 `--shadow-icon-action-focus` 阴影
 
 token 定义文件中的基础色值允许集中存在，但必须人工确认不泄漏到业务组件。
