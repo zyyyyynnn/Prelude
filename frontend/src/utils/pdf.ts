@@ -23,15 +23,31 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
   clone.style.width = originalElement.offsetWidth + 'px'
   clone.style.height = 'auto'
   clone.style.backgroundColor = surfaceColor
-  
+  clone.classList.add('pdf-export-clone')
+
+  // html2canvas 1.x cannot parse modern `color()` values emitted by Chromium
+  // for color-mix(). Override only the detached export clone with equivalent
+  // semantic colors so the live UI and theme tokens stay untouched.
+  const rootStyle = getComputedStyle(document.documentElement)
+  const exportTokens: Record<string, string> = {
+    '--color-surface-hover': rootStyle.getPropertyValue('--color-surface').trim(),
+    '--color-surface-muted': rootStyle.getPropertyValue('--color-bg').trim(),
+    '--color-brand-light': rootStyle.getPropertyValue('--color-surface').trim(),
+    '--shadow-whisper': 'none',
+    '--shadow-ring': 'none',
+    '--shadow-ring-deep': 'none',
+  }
+  Object.entries(exportTokens).forEach(([name, value]) => clone.style.setProperty(name, value))
+
   document.body.appendChild(clone)
+  normalizeExportColors(clone)
 
   const elementWidth = originalElement.offsetWidth
   // The target page height in terms of DOM element pixels
   const pageHeight = elementWidth * (pdfHeight / pdfWidth)
 
   // Selector for elements that must NOT be cut in the middle of a page
-  const avoidSelector = '.panel, .weakness-item, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body pre, .markdown-body blockquote'
+  const avoidSelector = '.panel, .weakness-item, .report-section__header, .report-score-item, .stage-performance, .question-review, .training-plan__group, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body pre, .markdown-body blockquote'
 
   let hasChanges = true
   let safetyCounter = 0
@@ -135,4 +151,43 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
   }
 
   pdf.save(filename)
+}
+
+const exportColorProperties = [
+  'color',
+  'background-color',
+  'border-top-color',
+  'border-right-color',
+  'border-bottom-color',
+  'border-left-color',
+  'outline-color',
+  'text-decoration-color',
+  'box-shadow',
+  'text-shadow',
+  'fill',
+  'stroke',
+] as const
+
+function normalizeExportColors(root: HTMLElement) {
+  const elements = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))]
+  for (const element of elements) {
+    const computed = getComputedStyle(element)
+    for (const property of exportColorProperties) {
+      const value = computed.getPropertyValue(property)
+      if (value.includes('color(')) {
+        element.style.setProperty(property, modernColorToRgba(value), 'important')
+      }
+    }
+  }
+}
+
+function modernColorToRgba(value: string) {
+  return value.replace(
+    /color\((?:srgb|display-p3)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)(?:\s*\/\s*([\d.-]+))?\)/g,
+    (_match, red: string, green: string, blue: string, alpha?: string) => {
+      const channel = (input: string) => Math.round(Math.max(0, Math.min(1, Number(input))) * 255)
+      const opacity = alpha == null ? 1 : Math.max(0, Math.min(1, Number(alpha)))
+      return `rgb(${channel(red)}, ${channel(green)}, ${channel(blue)}, ${opacity})`
+    },
+  )
 }

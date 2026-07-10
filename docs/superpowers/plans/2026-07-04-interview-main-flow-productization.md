@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 增加 Interview Preflight、后台评分驱动的结构化训练报告和同步升级的 dev fixture，同时保留现有运行链路与旧报告兼容。
+**Goal:** 增加后台评分驱动的结构化训练报告并同步升级 dev fixture，同时保留现有运行链路与旧报告兼容。
 
-**Architecture:** `InterviewReportParser` 解析不含派生分数和 weaknesses 的叙述草稿，`InterviewReportAssembler` 统一从消息、阶段和 `UserWeakness` 合并最终 JSON；`ReportJobWorker` 与 `DevFixtureService` 共用该组件。前端以结构化 JSON 为主、Markdown 为 fallback，并在空工作台非阻塞展示 Preflight。
+**Architecture:** `InterviewReportParser` 解析不含派生分数和 weaknesses 的叙述草稿，`InterviewReportAssembler` 统一从消息、阶段和 `UserWeakness` 合并最终 JSON；`ReportJobWorker` 与 `DevFixtureService` 共用该组件。前端以结构化 JSON 为主、Markdown 为 fallback。
 
 **Tech Stack:** Java 21、Spring Boot 3.2、MyBatis-Plus、JUnit 5/Mockito、Vue 3、TypeScript、shadcn-vue、Tailwind CSS、Playwright。
 
@@ -167,48 +167,7 @@ Run: `mvn -f backend/pom.xml -Dtest=DevFixtureCatalogTest,DevFixtureServiceTest 
 
 Expected: PASS。
 
-### Task 5: Interview Preflight 后端契约
-
-**Files:**
-- Create: `backend/src/main/java/com/interview/dto/InterviewPreflightRequest.java`
-- Create: `backend/src/main/java/com/interview/dto/InterviewPreflightResponse.java`
-- Create: `backend/src/main/java/com/interview/service/impl/InterviewPreflightService.java`
-- Modify: `backend/src/main/java/com/interview/service/InterviewService.java`
-- Modify: `backend/src/main/java/com/interview/service/impl/InterviewServiceImpl.java`
-- Modify: `backend/src/main/java/com/interview/controller/InterviewController.java`
-- Create: `backend/src/test/java/com/interview/service/impl/InterviewPreflightServiceTest.java`
-- Modify: `backend/src/test/java/com/interview/controller/InterviewControllerWebMvcTest.java`
-
-- [ ] **Step 1: 写失败测试**
-
-覆盖本人简历、非本人简历、岗位缺失、JD 为空、rawText 为空、LLM 非 JSON、自然等级白名单、dev fixture 和 Controller validation/service 参数。
-
-```java
-mockMvc.perform(post("/api/interview/preflight")
-        .header("Authorization", "Bearer token")
-        .contentType(APPLICATION_JSON)
-        .content("{\"resumeId\":1,\"positionId\":2,\"jdText\":\"JD\"}"))
-    .andExpect(status().isOk())
-    .andExpect(jsonPath("$.data.fitLevel").value("中等偏高"));
-```
-
-- [ ] **Step 2: 运行并确认 RED**
-
-Run: `mvn -f backend/pom.xml -Dtest=InterviewPreflightServiceTest,InterviewControllerWebMvcTest test`
-
-Expected: endpoint/service 不存在。
-
-- [ ] **Step 3: 最小实现**
-
-Service 复用 mappers、UserContext、LlmRouter 与 DevFixtureService；LLM prompt 不要求百分比分数。异常时返回保守 fallback，验证错误仍抛业务异常。
-
-- [ ] **Step 4: 运行并确认 GREEN**
-
-Run: `mvn -f backend/pom.xml -Dtest=InterviewPreflightServiceTest,InterviewControllerWebMvcTest test`
-
-Expected: PASS。
-
-### Task 6: 前端 contract 与报告解析
+### Task 5: 前端 contract 与报告解析
 
 **Files:**
 - Modify: `frontend/src/api/contracts.ts`
@@ -218,7 +177,7 @@ Expected: PASS。
 
 - [ ] **Step 1: 增加可执行 contract 验证场景**
 
-在 Playwright mock 中返回 preflight 和结构化 summaryReport，并保留纯 Markdown session。先让后续 UI spec 因缺少类型/API/解析器失败。
+在 Playwright mock 中返回结构化 summaryReport，并保留纯 Markdown session。先让后续 UI spec 因缺少类型/API/解析器失败。
 
 - [ ] **Step 2: 运行并确认 RED**
 
@@ -228,7 +187,7 @@ Expected: 新 mock 类型引用缺失。
 
 - [ ] **Step 3: 最小实现**
 
-新增 `InterviewPreflight*`、`StructuredInterviewReport` TypeScript 类型、`fetchInterviewPreflight` 和 `parseInterviewReport`。解析器仅对外部数据做 runtime guard，失败返回 `{ kind: 'markdown', markdown }`。
+新增 `StructuredInterviewReport` TypeScript 类型和 `parseInterviewReport`。解析器仅对外部数据做 runtime guard，失败返回 `{ kind: 'markdown', markdown }`。
 
 - [ ] **Step 4: 运行并确认 GREEN**
 
@@ -236,7 +195,7 @@ Run: `npm --prefix frontend run build`
 
 Expected: PASS。
 
-### Task 7: 删除面试中实时评分 UI 并补 DESIGN
+### Task 6: 删除面试中实时评分 UI 并补 DESIGN
 
 **Files:**
 - Modify: `frontend/src/components/workspace/MessageThread.vue`
@@ -266,37 +225,7 @@ Expected: 仍显示评分 pill。
 
 重复 Playwright grep，Expected: PASS。
 
-### Task 8: Preflight 面板
-
-**Files:**
-- Create: `frontend/src/components/workspace/InterviewPreflightPanel.vue`
-- Modify: `frontend/src/components/workspace/InterviewComposer.vue`
-- Modify: `frontend/src/views/InterviewView.vue`
-- Modify: `DESIGN.md`
-- Modify: `frontend/tests/visual/ui-visual.spec.ts`
-- Modify: `frontend/tests/a11y/ui-a11y.spec.ts`
-
-- [ ] **Step 1: 写失败 Playwright 测试**
-
-断言选择数据后出现 loading→自然等级、命中能力、缺口、风险、重点和四阶段计划；模拟 500 时出现重试且开始按钮仍启用；测试 390px 不溢出。
-
-- [ ] **Step 2: 运行并确认 RED**
-
-Run: `npm --prefix frontend run capture:visual -- --grep "preflight"`
-
-Expected: 面板不存在。
-
-- [ ] **Step 3: 最小实现**
-
-在 `InterviewView` 维护 debounce、abort、loading/error/data；Composer 暴露 JD 变化；面板复用 Card/Badge/Button 和语义 token。DESIGN 增加状态与响应式规则。
-
-- [ ] **Step 4: 运行并确认 GREEN**
-
-Run: `npm --prefix frontend run capture:visual -- --grep "preflight"`
-
-Expected: PASS。
-
-### Task 9: 结构化报告组件与 PDF
+### Task 7: 结构化报告组件与 PDF
 
 **Files:**
 - Create: `frontend/src/components/report/StructuredReportPanel.vue`
@@ -330,18 +259,17 @@ Run: `npm --prefix frontend run capture:visual -- --grep "structured report"`
 
 Expected: PASS。
 
-### Task 10: 产品文档、全量静态验证与 CodeGraph
+### Task 8: 产品文档、全量静态验证与 CodeGraph
 
 **Files:**
 - Create: `docs/product/interview-main-flow.md`
 - Modify: `docs/quality/ui-quality-system.md`
-- Create/update: `frontend/tests/visual/__screenshots__/18-interview-preflight.png`
-- Create/update: `frontend/tests/visual/__screenshots__/19-structured-report.png`
-- Create/update: `frontend/tests/visual/__screenshots__/20-structured-report-mobile.png`
+- Create/update: `frontend/tests/visual/__screenshots__/18-structured-report.png`
+- Create/update: `frontend/tests/visual/__screenshots__/19-structured-report-mobile.png`
 
 - [ ] **Step 1: 写产品边界文档**
 
-覆盖定位、主链路、Preflight 字段、阶段、后台评分策略、报告 schema、能力画像、无 MCP 原因、service 边界和 fixture 同步约束。
+覆盖定位、主链路、阶段、后台评分策略、报告 schema、能力画像、无 MCP 原因、service 边界和 fixture 同步约束。
 
 - [ ] **Step 2: 同步 UI 质量文档与视觉状态**
 
@@ -361,9 +289,9 @@ codegraph sync
 git diff --check
 ```
 
-Expected: 全部 PASS；视觉变化仅限新 preflight/report 与实时评分移除。
+Expected: 全部 PASS；视觉变化仅限结构化报告与实时评分移除。
 
-### Task 11: local/dev 端到端验收
+### Task 9: local/dev 端到端验收
 
 **Files:**
 - No source changes unless a test exposes an in-scope defect.
@@ -386,7 +314,7 @@ Expected: 200；三个 finished session 的 summaryReport 为结构化 JSON，us
 
 - [ ] **Step 3: 浏览器验收**
 
-验证历史 fixture 报告、新创建文字报告、旧 Markdown fallback、语音数据层报告兼容、Preflight 失败仍可开始、PDF 下载非空、桌面与 390px 无溢出。
+验证历史 fixture 报告、新创建文字报告、旧 Markdown fallback、语音数据层报告兼容、PDF 下载非空、桌面与 390px 无溢出。
 
 - [ ] **Step 4: 最终完成审计**
 

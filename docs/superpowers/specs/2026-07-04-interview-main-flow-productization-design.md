@@ -2,23 +2,16 @@
 
 ## 目标
 
-将现有“选择简历与岗位后直接聊天”的流程扩展为：面试前校准、阶段化面试、后台评分、结构化训练报告和能力画像沉淀。保留现有 BYOK、SSE、RabbitMQ、阶段状态机、语音链路与旧 Markdown 报告兼容。
+将现有“选择简历与岗位后直接聊天”的流程扩展为：阶段化面试、后台评分、结构化训练报告和能力画像沉淀。保留现有 BYOK、SSE、RabbitMQ、阶段状态机、语音链路与旧 Markdown 报告兼容。
 
 ## 范围边界
 
-- 新增 `POST /api/interview/preflight`，不增加岗位推荐、薪资预测或伪精确匹配分。
 - 不修改 `[STAGE_COMPLETE]` 驱动的阶段推进机制。
 - 不新增数据库表或报告专用短板数据源。
 - 不引入外部依赖，不引入 MCP。
 - 面试过程继续保存 `score`/`hint`，但前端不展示实时评分或建议。
 
 ## 后端设计
-
-### Interview Preflight
-
-`InterviewPreflightService` 校验当前用户对简历的所有权及岗位模板存在性，读取简历原文、岗位名称/提示词和可选 JD，通过现有 `LlmRouter.chatCurrentUser` 生成自然等级及五类摘要：命中能力、缺口、风险、面试重点、阶段计划。
-
-解析器仅接受白名单自然等级并对数组长度、空字段和异常 JSON 做归一化。LLM 或解析失败时返回基于现有简历技能、岗位模板和 JD 是否存在生成的保守 fallback；接口失败或 fallback 均不影响 `/start`。dev fixture 使用固定、可复现的结构化摘要，不调用外部模型。
 
 ### 结构化报告模型
 
@@ -65,10 +58,6 @@
 
 ## 前端设计
 
-### Preflight
-
-空工作台保留现有 composer，并增加安静的 Preflight 面板。简历、岗位或 JD 改变后防抖请求；展示 loading、ready、fallback/error 四种状态。面板使用现有 Card、Badge、Button、EmptyState 及 token，开始按钮不受请求失败影响。匹配等级只显示自然语言。
-
 ### 面试过程
 
 从 `MessageThread.vue` 删除 score pill、hint tooltip、相关 import、transition 和样式。语音与文字共用 messages，因此两条链路同时生效；后端 judge 与消息字段保持不变。
@@ -81,20 +70,18 @@
 
 ## 设计系统
 
-`DESIGN.md` 6.3 删除实时评分规范；6.5 增加 Preflight 与结构化报告的布局、Card/Badge、状态和响应式约束。新增 UI 只使用现有语义 token、弱边界和低阴影，不修改 shared-dropdown，不增加内联颜色。
+`DESIGN.md` 6.3 删除实时评分规范；6.5 增加结构化报告的布局、状态和响应式约束。新增 UI 只使用现有语义 token、弱边界和低阴影，不修改 shared-dropdown，不增加内联颜色。
 
 ## 测试与验收
 
-- 后端按 TDD 覆盖 preflight 所有权、JD 为空、rawText 为空、非法 JSON、分数钳制、共享 assembler 评分来源、阶段均分、question 数量补齐、weakness 格式化、fixture 合并及 RabbitMQ 成功/失败。
-- Controller slice 覆盖 `/api/interview/preflight` contract。
-- Playwright mock API 增加 preflight 与结构化报告，覆盖桌面和小屏、不显示实时评分、旧 Markdown fallback、PDF 导出非空。
+- 后端按 TDD 覆盖非法 JSON、分数钳制、共享 assembler 评分来源、阶段均分、question 数量补齐、weakness 格式化、fixture 合并及 RabbitMQ 成功/失败。
+- Playwright mock API 增加结构化报告，覆盖桌面和小屏、不显示实时评分、旧 Markdown fallback、PDF 导出非空。
 - 运行后端测试/打包、前端 build、UI/tokens/a11y/visual 门禁并更新预期视觉资产。
 - local/dev 启动后调用 fixture reset，登录 demo 检查历史报告和新报告；验证文字报告、语音数据兼容和 PDF 导出。
 
 ## 兼容与失败策略
 
 - LLM 非 JSON、字段缺失、越界分数：parser/assembler 归一化并保留 fallback 文案。
-- preflight 失败：展示可重试错误，开始面试不阻塞。
 - 旧 Markdown 报告：继续 Markdown 渲染。
 - 报告任务失败：保留现有 error SSE 与状态恢复。
 - 语音消息缺字段：逐题复盘以“暂无评分/建议”兼容，但新 demo fixture 必须补齐真实 mock judge 分数。

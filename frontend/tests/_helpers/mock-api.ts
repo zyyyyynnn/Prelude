@@ -59,6 +59,34 @@ const ANALYTICS_WEAKNESSES = [
   },
 ]
 
+export const STRUCTURED_REPORT = JSON.stringify({
+  summary: {
+    fitAssessment: '候选人具备较完整的前端工程化和页面性能意识，适合继续深入评估。',
+    actionRecommendation: '完成专项训练后进行下一轮模拟。',
+    overallRisk: '项目指标量化不足。',
+  },
+  scores: { technical: 8, expression: 7, logic: 9, overall: 8 },
+  stagePerformances: [
+    { stageName: 'warmup', score: 8, summary: '项目背景表达清楚。', positiveSignals: ['职责明确'], negativeSignals: [], improvementSuggestions: ['补充业务规模'] },
+    { stageName: 'technical', score: 7, summary: '技术基础稳定。', positiveSignals: ['实现路径清楚'], negativeSignals: ['量化不足'], improvementSuggestions: ['补充性能指标'] },
+    { stageName: 'deep_dive', score: 8, summary: '能够继续推导边界。', positiveSignals: ['逻辑完整'], negativeSignals: [], improvementSuggestions: ['说明失败场景'] },
+    { stageName: 'closing', score: 9, summary: '总结简洁。', positiveSignals: ['表达清楚'], negativeSignals: [], improvementSuggestions: ['明确后续计划'] },
+  ],
+  questionReviews: [
+    { stageName: 'technical', question: '如何优化虚拟列表？', answerSummary: '通过缓冲区与 rAF 合并更新。', score: 8, scoringReason: '方案完整但缺少量化。', improvementSuggestion: '补充帧率和数据规模。' },
+    { stageName: 'deep_dive', question: '如何定位复杂状态更新问题？', answerSummary: '从数据流、组件边界与异步链路逐层排查。', score: 7, scoringReason: '排查路径清楚，异常兜底说明不足。', improvementSuggestion: '补充失败场景和恢复策略。' },
+  ],
+  strengths: ['工程化思路完整', '表达结构清楚'],
+  weaknesses: ['性能量化：缺少压测指标'],
+  trainingPlan: {
+    threeDay: ['复盘逐题回答'],
+    sevenDay: ['完成性能专项训练'],
+    nextInterviewFocus: ['量化表达与异常兜底'],
+  },
+  finalAdvice: '继续投递，并在下一轮前完成量化表达训练。',
+  markdownFallback: '# 面试评估报告\n\n结构化报告兼容文本。',
+})
+
 const ok = <T,>(data: T) => ({ code: 200, message: 'ok', data })
 
 export type MockOverrides = {
@@ -71,6 +99,7 @@ export type MockOverrides = {
   analyticsRadar?: typeof ANALYTICS_RADAR
   analyticsTrend?: typeof ANALYTICS_TREND
   analyticsWeaknesses?: typeof ANALYTICS_WEAKNESSES
+  interviewDetail?: unknown
 }
 
 export async function installMockApi(page: Page, overrides: MockOverrides = {}): Promise<void> {
@@ -121,14 +150,20 @@ export async function installMockApi(page: Page, overrides: MockOverrides = {}):
     if (method === 'GET' && pathname === '/interview/sessions') {
       return route.fulfill({ json: ok(overrides.sessions ?? []) })
     }
+    if (method === 'POST' && pathname === '/interview/start') {
+      return route.fulfill({ json: ok({ sessionId: 101, targetPosition: 'Java 后端工程师', currentStage: 'warmup' }) })
+    }
     if (method === 'GET' && pathname === '/interview/101/messages') {
+      if (overrides.interviewDetail) {
+        return route.fulfill({ json: ok(overrides.interviewDetail) })
+      }
       return route.fulfill({
         json: ok({
           sessionId: 101,
           status: 'ongoing',
           positionName: 'Java 后端工程师',
-          stageName: 'intro',
-          currentStage: 'intro',
+          stageName: 'warmup',
+          currentStage: 'warmup',
           question: '请先做 1 分钟自我介绍。',
           messages: [],
         }),

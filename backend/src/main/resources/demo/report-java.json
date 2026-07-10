@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "fitAssessment": "候选人具备可继续深入面试的基础能力，项目表达较完整。",
+    "actionRecommendation": "具备继续进入下一轮技术评估的基础。",
+    "overallRisk": "JVM、并发、连接管理、数据库优化与异常边界仍需补强。"
+  },
+  "scores": {
+    "technical": 7,
+    "expression": 8,
+    "logic": 7
+  },
+  "stagePerformances": [
+    {
+      "stageName": "warmup",
+      "summary": "能够围绕项目链路说明实现思路。",
+      "positiveSignals": ["回答结构较完整，表达较清晰"],
+      "negativeSignals": [],
+      "improvementSuggestions": ["继续保持项目背景与个人职责的清晰表达"]
+    },
+    {
+      "stageName": "technical",
+      "summary": "对常见后端技术栈有较稳定的实践经验。",
+      "positiveSignals": ["能够说明接口、鉴权与会话记录的实现思路"],
+      "negativeSignals": ["数据库优化与缓存策略缺少量化依据"],
+      "improvementSuggestions": ["在数据库优化与缓存策略上给出更具体的量化依据"]
+    },
+    {
+      "stageName": "deep_dive",
+      "summary": "并发与连接管理的底层细节仍需加强。",
+      "positiveSignals": ["能够围绕异常场景继续推导"],
+      "negativeSignals": ["JVM、并发与连接管理的细节表达不足"],
+      "improvementSuggestions": ["补强 JVM、并发与连接管理的细节表达"]
+    },
+    {
+      "stageName": "closing",
+      "summary": "整体表现稳定。",
+      "positiveSignals": ["具备继续评估的基础"],
+      "negativeSignals": ["边界条件说明仍可更严谨"],
+      "improvementSuggestions": ["对异常场景、幂等控制和边界条件说明更加严谨"]
+    }
+  ],
+  "strengths": [
+    "能够围绕项目链路说明接口、鉴权与会话记录的实现思路",
+    "对常见后端技术栈有较稳定的实践经验",
+    "回答结构较完整，表达较清晰"
+  ],
+  "trainingPlan": {
+    "threeDay": ["补强 JVM、并发与连接管理的细节表达"],
+    "sevenDay": ["在数据库优化与缓存策略上给出更具体的量化依据"],
+    "nextInterviewFocus": ["异常场景、幂等控制和边界条件"]
+  },
+  "finalAdvice": "整体表现稳定，具备继续进入下一轮技术评估的基础。",
+  "reportMarkdown": "# 面试评估报告\n\n## 面试概览\n- 目标岗位：{{position}}\n- 结论：候选人具备可继续深入面试的基础能力，项目表达较完整。\n\n## 三维评分\n- 技术能力：7/10\n- 表达清晰度：8/10\n- 逻辑思维：7/10\n\n## 优势总结\n- 能够围绕项目链路说明接口、鉴权与会话记录的实现思路\n- 对常见后端技术栈有较稳定的实践经验\n- 回答结构较完整，表达较清晰\n\n## 改进建议\n1. 补强 JVM、并发与连接管理的细节表达\n2. 在数据库优化与缓存策略上给出更具体的量化依据\n3. 对异常场景、幂等控制和边界条件说明可以更严谨\n\n## 总结\n整体表现稳定，具备继续进入下一轮技术评估的基础。"
+}

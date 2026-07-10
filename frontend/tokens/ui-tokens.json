@@ -156,11 +156,9 @@
     },
     "content": {
       "prefix": "content",
-      "description": "可读内容宽度（消息气泡、judge feedback）。",
+      "description": "可读内容宽度（消息气泡）。",
       "tokens": [
-        "content-message-max-inline-size",
-        "content-judge-max-inline-size",
-        "content-judge-hint-max-inline-size"
+        "content-message-max-inline-size"
       ]
     },
     "z-index": {
