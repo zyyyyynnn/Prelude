@@ -6,8 +6,8 @@
 
 - 静态 guardrail：`verify:ui`，覆盖 transition-all / window.confirm / 原生 title= / shadow-md / shadow-lg / border-border / h-[30-34px] / Tailwind arbitrary px / 业务组件裸 px / magic height ratio / spacing calc 等硬编码与禁用写法。
 - Token schema：`verify:tokens`，校验 `frontend/tokens/ui-tokens.json` schema 完整性、`--shadow-*` 原始值仅在 token 定义块、`--z-index-*` 唯一性、design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）。
-- 可访问性：`verify:a11y`，Playwright + axe-core 10 个场景，仅 fail **critical** axe violations；serious 作为 backlog。
-- 视觉回归：`capture:visual` / `verify:visual`，24 个 scenario 抓图为 PNG artifact；当前 **artifact-only + continue-on-error**，不作为 blocking diff gate。
+- 可访问性：`verify:a11y`，Playwright + axe-core 9 个场景，仅 fail **critical** axe violations；serious 作为 backlog。
+- 视觉回归：`capture:visual` / `verify:visual`，22 个 scenario 抓图为 PNG artifact；当前 **artifact-only + continue-on-error**，不作为 blocking diff gate。
 - Component Lab：dev-only `/components-lab` 路由，`import.meta.env.DEV` 条件注册，生产构建被 Vite tree-shake 掉。
 
 ## 2. Commands
@@ -37,7 +37,7 @@ npm --prefix frontend run capture:visual
 | `verify:a11y` | axe-core critical only | blocking |
 | `verify:byok` | BYOK 设置流程 mock API 验证 | blocking |
 | `verify:dark` | 暗色主题 sanity check | blocking |
-| `capture:visual` | 24 scenario 抓图 | artifact-only (`continue-on-error: true`) |
+| `capture:visual` | 22 scenario 抓图 | artifact-only (`continue-on-error: true`) |
 
 CI 浏览器策略：复用系统 Microsoft Edge channel，不再下载 Playwright Chromium。
 
