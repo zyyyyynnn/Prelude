@@ -250,6 +250,6 @@ defineExpose({ submit: saveProfile, saving, loading })
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-focus);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 </style>
