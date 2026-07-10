@@ -72,6 +72,7 @@ function isAllowedBoxShadow(hit) {
   if (/-?webkit-?box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
   if (/box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
   if (/box-shadow:\s*var\(--shadow-[\w-]+\),\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
+  if (/box-shadow:\s*inset\s+0\s+0\s+0\s+var\(--spacing-0-5\)\s+var\(--color-[\w-]+\)/.test(normalized)) return true
   return normalized === 'box-shadow: none;'
     || normalized === 'box-shadow: none !important;'
     || normalized === '-webkit-box-shadow: none;'
@@ -120,7 +121,7 @@ const checks = [
   },
   {
     id: 'raw-box-shadow',
-    description: '业务组件 raw box-shadow（必须使用 shadow token）',
+    description: '业务组件 raw box-shadow（必须使用 shadow token 或明确的 token 化 focus ring）',
     pattern: 'box-shadow:',
     paths: [frontendSrc],
     allowPaths: new Set(),
