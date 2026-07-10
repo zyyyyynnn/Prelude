@@ -4,7 +4,7 @@
 
 ## 1. Scope
 
-- 静态 guardrail：`verify:ui`，覆盖 transition-all / window.confirm / 原生 title= / shadow-md / shadow-lg / border-border / h-[30-34px] / Tailwind arbitrary px / 业务组件裸 px / magic height ratio / spacing calc 等硬编码与禁用写法。
+- 静态 guardrail：`verify:ui`，覆盖 transition-all / window.confirm / 原生 title= / shadow-md / shadow-lg / border-border / h-[30-34px] / Tailwind arbitrary px / 业务组件裸 px / magic height ratio / spacing calc，以及业务组件 `:focus-visible` 的共享 shadow token 约束。
 - Token schema：`verify:tokens`，校验 `frontend/tokens/ui-tokens.json` schema 完整性、`--shadow-*` 原始值仅在 token 定义块、`--z-index-*` 唯一性、design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）。
 - 可访问性：`verify:a11y`，Playwright + axe-core 9 个场景，仅 fail **critical** axe violations；serious 作为 backlog。
 - 视觉回归：`capture:visual` / `verify:visual`，22 个 scenario 抓图为 PNG artifact；当前 **artifact-only + continue-on-error**，不作为 blocking diff gate。
@@ -32,7 +32,7 @@ npm --prefix frontend run capture:visual
 
 | Gate | 范围 | 类型 |
 | --- | --- | --- |
-| `verify:ui` | 静态 guardrail | blocking |
+| `verify:ui` | 静态 guardrail（含 component focus shadow token） | blocking |
 | `verify:tokens` | token schema | blocking |
 | `verify:a11y` | axe-core critical only | blocking |
 | `verify:byok` | BYOK 设置流程 mock API 验证 | blocking |
@@ -138,6 +138,7 @@ voice-mode / generating 当前为 fallback capture（依赖 active session）。
 | Rule key | 行为 |
 | --- | --- |
 | `raw-only-in-token-definitions` | shadow 原始值必须仅出现在 `:root` / `:root.dark` / `.dark` / `@theme` 中 |
+| component focus shadow | 业务组件 scoped CSS 的 `:focus-visible` 使用 `box-shadow` 时必须引用 `--shadow-icon-action-focus` |
 | `values-must-be-unique` | `--z-index-*` token 数值必须唯一 |
 | `design-locked` | 列出的 token 数值必须与 schema `design_lock_values` 块一致 |
 
