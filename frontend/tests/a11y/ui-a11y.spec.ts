@@ -21,7 +21,7 @@
  */
 import { AxeBuilder } from '@axe-core/playwright'
 import { test, expect, type Page } from '@playwright/test'
-import { installMockApi } from '../_helpers/mock-api'
+import { installMockApi, STRUCTURED_REPORT } from '../_helpers/mock-api'
 
 async function axe(page: Page, label: string) {
   const results = await new AxeBuilder({ page })
@@ -198,4 +198,20 @@ test('tooltip uses provider primitive (not native title attribute)', async ({ pa
     () => document.querySelectorAll('[title]').length,
   )
   expect(nativeTitleCount).toBe(0)
+})
+
+test('structured report — semantic review lists and no critical axe violations', async ({ page }) => {
+  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+  await installMockApi(page, {
+    sessions: [session],
+    interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },
+  })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '打开已结束会话 Java 后端工程师' }).click()
+  await page.getByRole('button', { name: '报告', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '逐题复盘' })).toBeVisible()
+  await expect(page.locator('.question-review-list')).toHaveJSProperty('tagName', 'OL')
+  await expect(page.getByRole('button', { name: '上一题' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '下一题' })).toBeEnabled()
+  await expectNoCriticalViolations(page, 'structured-report')
 })

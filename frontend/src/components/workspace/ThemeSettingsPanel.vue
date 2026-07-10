@@ -131,11 +131,16 @@ defineExpose({ submit: saveTheme, saving, loading })
 }
 
 .theme-option:hover,
-.theme-option:focus-visible,
 .theme-option.is-active {
   background: var(--color-surface-hover);
   border-color: var(--color-ring);
   box-shadow: var(--shadow-ring-deep);
+}
+
+.theme-option:focus-visible {
+  background: var(--color-surface-hover);
+  border-color: var(--color-ring);
+  box-shadow: var(--shadow-icon-action-focus);
   outline: none;
 }
 

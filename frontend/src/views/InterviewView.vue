@@ -9,6 +9,7 @@ import { usePageNotice } from '../composables/usePageNotice'
 import { fetchResumes, uploadResume } from '../api/resume'
 import { useAuthStore } from '../stores/auth'
 import { renderMarkdown } from '../utils/markdown'
+import { parseInterviewReport } from '../utils/interviewReport'
 import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
 import { useInterviewTextStream } from '../composables/useInterviewTextStream'
 import { useReportListener } from '../composables/useReportListener'
@@ -16,6 +17,7 @@ import { useVoiceInterviewSocket } from '../composables/useVoiceInterviewSocket'
 import WorkspaceHeader from '../components/workspace/WorkspaceHeader.vue'
 import MessageThread from '../components/workspace/MessageThread.vue'
 import InterviewComposer from '../components/workspace/InterviewComposer.vue'
+import StructuredReportPanel from '../components/report/StructuredReportPanel.vue'
 import { exportToPdf } from '../utils/pdf'
 import { withMinDelay } from '../lib/utils'
 import { useConfirmDialog } from '../composables/useConfirmDialog'
@@ -70,7 +72,10 @@ const isFinished = computed(() => activeSession.value?.status === 'finished' || 
 const isGenerating = computed(() => activeSession.value?.status === 'generating' || replay.value?.status === 'generating')
 
 const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
-const renderedReport = computed(() => renderMarkdown(reportMarkdown.value || replay.value?.summaryReport || ''))
+const parsedReport = computed(() => parseInterviewReport(reportMarkdown.value || replay.value?.summaryReport || ''))
+const renderedReport = computed(() => parsedReport.value.kind === 'markdown'
+  ? renderMarkdown(parsedReport.value.markdown)
+  : '')
 
 const {
   appendMessage,
@@ -423,8 +428,14 @@ onBeforeUnmount(() => {
 
         <div v-else-if="showingReport" class="workspace-report scrollable">
           <div class="report-content">
-            <div class="markdown-surface markdown-surface--paper" ref="reportRef">
-              <div class="markdown-body" v-html="renderedReport" />
+            <div class="report-export-surface" ref="reportRef">
+              <StructuredReportPanel
+                v-if="parsedReport.kind === 'structured'"
+                :report="parsedReport.report"
+              />
+              <div v-else class="markdown-surface markdown-surface--paper">
+                <div class="markdown-body" v-html="renderedReport" />
+              </div>
             </div>
           </div>
         </div>
@@ -494,9 +505,10 @@ onBeforeUnmount(() => {
 .workspace-empty {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   padding: var(--spacing-2xl);
+  overflow-y: auto;
 }
 .workspace-empty__content {
   inline-size: 100%;
@@ -504,7 +516,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-2xl);
+  gap: var(--spacing-lg);
 }
 .workspace-empty__title {
   font-family: var(--font-serif);
@@ -545,6 +557,10 @@ onBeforeUnmount(() => {
 .report-content {
   flex: 1;
   max-inline-size: var(--workspace-content-max-inline-size);
+}
+.report-export-surface {
+  inline-size: 100%;
+  background: var(--color-surface);
 }
 .markdown-surface--paper {
   background: var(--color-surface);

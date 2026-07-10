@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.BusinessException;
 import com.interview.config.DevFixtureProperties;
+import com.interview.dto.InterviewReportDraft;
 import com.interview.dto.ResumeUploadResponse;
+import com.interview.dto.StructuredInterviewReport;
 import com.interview.entity.InterviewMessage;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.InterviewStage;
@@ -21,13 +23,17 @@ import com.interview.mapper.ResumeMapper;
 import com.interview.mapper.ScoreHistoryMapper;
 import com.interview.mapper.UserMapper;
 import com.interview.mapper.UserWeaknessMapper;
+import com.interview.service.impl.InterviewReportAssembler;
+import com.interview.service.impl.InterviewReportParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 @Service
@@ -62,6 +68,8 @@ public class DevFixtureService {
     private final InterviewStageMapper interviewStageMapper;
     private final ScoreHistoryMapper scoreHistoryMapper;
     private final UserWeaknessMapper userWeaknessMapper;
+    private final InterviewReportParser interviewReportParser;
+    private final InterviewReportAssembler interviewReportAssembler;
 
     public boolean isEnabled() {
         return devFixtureProperties.isEnabled();
@@ -192,19 +200,16 @@ public class DevFixtureService {
         createOngoingSession(user.getId(), javaResume, javaPosition);
         createFinishedSession(
             user.getId(), javaResume, javaPosition, LocalDateTime.of(2026, 4, 22, 10, 0),
-            devFixtureCatalog.javaScore(),
             devFixtureCatalog.javaStorylineWeaknesses(),
             devFixtureCatalog.javaScript()
         );
         createFinishedSession(
             user.getId(), frontendResume, frontendPosition, LocalDateTime.of(2026, 4, 20, 16, 10),
-            devFixtureCatalog.frontendScore(),
             devFixtureCatalog.frontendStorylineWeaknesses(),
             devFixtureCatalog.frontendScript()
         );
         createFinishedSession(
             user.getId(), algoResume, algorithmPosition, LocalDateTime.of(2026, 4, 18, 15, 30),
-            devFixtureCatalog.algorithmScore(),
             devFixtureCatalog.algorithmStorylineWeaknesses(),
             devFixtureCatalog.algorithmScript()
         );
@@ -219,12 +224,15 @@ public class DevFixtureService {
 
         insertMessage(session.getId(), ROLE_SYSTEM, position.getSystemPrompt(), 0, createdAt);
         insertMessage(session.getId(), ROLE_ASSISTANT, resolveScriptedReply("warmup", 0), 1, createdAt.plusMinutes(1));
+        MockJudgeResult judge = readMockJudge(resolveMockJudge("warmup", 0));
         insertMessage(
             session.getId(),
             ROLE_USER,
             devFixtureCatalog.javaOngoingUserAnswer(),
             2,
-            createdAt.plusMinutes(4)
+            createdAt.plusMinutes(4),
+            judge.score(),
+            judge.hint()
         );
         insertMessage(session.getId(), ROLE_SYSTEM, TECHNICAL_STAGE_PROMPT, 3, createdAt.plusMinutes(12));
         insertMessage(session.getId(), ROLE_ASSISTANT, resolveScriptedReply("technical", 0), 4, createdAt.plusMinutes(13));
@@ -232,33 +240,51 @@ public class DevFixtureService {
 
     private void createFinishedSession(
         Long userId, Resume resume, PositionTemplate position, LocalDateTime createdAt,
-        DevFixtureCatalog.ScoreSeed score, List<DevFixtureCatalog.WeaknessSeed> weaknesses, List<DevFixtureCatalog.QnaPair> script
+        List<DevFixtureCatalog.WeaknessSeed> weaknesses, List<DevFixtureCatalog.QnaPair> script
     ) {
-        InterviewSession session = buildSession(userId, resume, position, STATUS_FINISHED, createdAt, resolveReport(position.getName()));
+        InterviewSession session = buildSession(userId, resume, position, STATUS_FINISHED, createdAt, null);
 
-        insertStage(session.getId(), "warmup", createdAt, createdAt.plusMinutes(8));
-        insertStage(session.getId(), "technical", createdAt.plusMinutes(8), createdAt.plusMinutes(18));
-        insertStage(session.getId(), "deep_dive", createdAt.plusMinutes(18), createdAt.plusMinutes(28));
-        insertStage(session.getId(), "closing", createdAt.plusMinutes(28), createdAt.plusMinutes(34));
+        Map<String, StageWindow> stageWindows = Map.of(
+            "warmup", new StageWindow(createdAt, createdAt.plusMinutes(8)),
+            "technical", new StageWindow(createdAt.plusMinutes(8), createdAt.plusMinutes(18)),
+            "deep_dive", new StageWindow(createdAt.plusMinutes(18), createdAt.plusMinutes(28)),
+            "closing", new StageWindow(createdAt.plusMinutes(28), createdAt.plusMinutes(34))
+        );
+        stageWindows.forEach((stageName, window) ->
+            insertStage(session.getId(), stageName, window.startedAt(), window.endedAt())
+        );
 
         int seq = 0;
         insertMessage(session.getId(), ROLE_SYSTEM, position.getSystemPrompt(), seq++, createdAt);
-        
-        for (int i = 0; i < script.size(); i++) {
-            DevFixtureCatalog.QnaPair pair = script.get(i);
-            if (pair.systemPrompt() != null) {
-                insertMessage(session.getId(), ROLE_SYSTEM, pair.systemPrompt(), seq++, createdAt.plusMinutes(1 + i * 2));
+        Map<String, Integer> stageQuestionIndexes = new HashMap<>();
+        for (DevFixtureCatalog.QnaPair pair : script) {
+            StageWindow window = stageWindows.getOrDefault(pair.stageName(), stageWindows.get("warmup"));
+            int stageQuestionIndex = stageQuestionIndexes.getOrDefault(pair.stageName(), 0);
+            LocalDateTime questionAt = window.startedAt().plusMinutes(1L + stageQuestionIndex * 2L);
+            LocalDateTime answerAt = questionAt.plusMinutes(1);
+            if (!answerAt.isBefore(window.endedAt())) {
+                answerAt = window.endedAt().minusSeconds(1);
+                questionAt = answerAt.minusMinutes(1);
             }
-            insertMessage(session.getId(), ROLE_ASSISTANT, pair.aiQuestion(), seq++, createdAt.plusMinutes(2 + i * 2));
-            insertMessage(session.getId(), ROLE_USER, pair.userAnswer(), seq++, createdAt.plusMinutes(3 + i * 2));
+            if (pair.systemPrompt() != null) {
+                insertMessage(session.getId(), ROLE_SYSTEM, pair.systemPrompt(), seq++, window.startedAt().plusSeconds(5));
+            }
+            insertMessage(session.getId(), ROLE_ASSISTANT, pair.aiQuestion(), seq++, questionAt);
+            MockJudgeResult judge = readMockJudge(resolveMockJudge(pair.stageName(), stageQuestionIndex));
+            insertMessage(
+                session.getId(), ROLE_USER, pair.userAnswer(), seq++, answerAt, judge.score(), judge.hint()
+            );
+            stageQuestionIndexes.put(pair.stageName(), stageQuestionIndex + 1);
         }
+
+        InterviewReportDraft reportDraft = interviewReportParser.parseDraft(resolveReport(position.getName()));
 
         ScoreHistory history = new ScoreHistory();
         history.setUserId(userId);
         history.setSessionId(session.getId());
-        history.setTechnicalScore(score.technical());
-        history.setExpressionScore(score.expression());
-        history.setLogicScore(score.logic());
+        history.setTechnicalScore(reportDraft.scores().technical());
+        history.setExpressionScore(reportDraft.scores().expression());
+        history.setLogicScore(reportDraft.scores().logic());
         history.setCreatedAt(createdAt.plusMinutes(35));
         scoreHistoryMapper.insert(history);
 
@@ -268,6 +294,23 @@ public class DevFixtureService {
                 buildWeakness(userId, session.getId(), weakness.category(), weakness.description(), createdAt.plusMinutes(36 + index))
             );
         }
+
+        List<InterviewStage> sessionStages = interviewStageMapper.selectList(new LambdaQueryWrapper<InterviewStage>()
+            .eq(InterviewStage::getSessionId, session.getId())
+            .orderByAsc(InterviewStage::getStartedAt)
+            .orderByAsc(InterviewStage::getId));
+        List<InterviewMessage> sessionMessages = interviewMessageMapper.selectList(new LambdaQueryWrapper<InterviewMessage>()
+            .eq(InterviewMessage::getSessionId, session.getId())
+            .orderByAsc(InterviewMessage::getSeqNum));
+        List<UserWeakness> sessionWeaknesses = userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
+            .eq(UserWeakness::getSessionId, session.getId())
+            .orderByAsc(UserWeakness::getCreatedAt)
+            .orderByAsc(UserWeakness::getId));
+        StructuredInterviewReport report = interviewReportAssembler.assemble(
+            reportDraft, sessionStages, sessionMessages, sessionWeaknesses
+        );
+        session.setSummaryReport(writeJson(report));
+        interviewSessionMapper.updateById(session);
     }
 
     private InterviewSession buildSession(
@@ -316,13 +359,35 @@ public class DevFixtureService {
     }
 
     private void insertMessage(Long sessionId, String role, String content, int seqNum, LocalDateTime createdAt) {
+        insertMessage(sessionId, role, content, seqNum, createdAt, null, null);
+    }
+
+    private void insertMessage(
+        Long sessionId,
+        String role,
+        String content,
+        int seqNum,
+        LocalDateTime createdAt,
+        Integer score,
+        String hint
+    ) {
         InterviewMessage message = new InterviewMessage();
         message.setSessionId(sessionId);
         message.setRole(role);
         message.setContent(content);
         message.setSeqNum(seqNum);
+        message.setScore(score);
+        message.setHint(hint);
         message.setCreatedAt(createdAt);
         interviewMessageMapper.insert(message);
+    }
+
+    private MockJudgeResult readMockJudge(String json) {
+        try {
+            return objectMapper.readValue(json, MockJudgeResult.class);
+        } catch (IOException exception) {
+            throw BusinessException.badRequest("dev fixture 评分夹具解析失败");
+        }
     }
 
     private UserWeakness buildWeakness(Long userId, Long sessionId, String category, String description, LocalDateTime createdAt) {
@@ -376,6 +441,12 @@ public class DevFixtureService {
         } catch (IOException exception) {
             throw BusinessException.badRequest("dev fixture 夹具序列化失败");
         }
+    }
+
+    private record StageWindow(LocalDateTime startedAt, LocalDateTime endedAt) {
+    }
+
+    private record MockJudgeResult(Integer score, String hint) {
     }
 
 }

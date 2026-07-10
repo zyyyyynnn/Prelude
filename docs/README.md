@@ -1,6 +1,6 @@
 # docs 项目文档索引
 
-本目录只放项目开发、运行、接口、UI 质量与维护说明。临时截图、运行日志、论文过程报告和一次性审查材料不要放入 `docs/`。
+本目录只放项目开发、运行、接口、产品能力、UI 质量与维护说明。临时截图、运行日志、论文过程报告和一次性审查材料不要放入 `docs/`。
 
 ## 文档入口
 
@@ -10,6 +10,7 @@
 | `runtime-modes.md` | `start-dev.bat` / `start-docker.bat` / `scripts/dev` 三类运行入口边界 | 启动脚本、Docker profile 或运行口径变化 |
 | `api.md` | REST / SSE 接口清单，覆盖认证、LLM 配置、简历、面试和数据分析接口 | API 路径、鉴权语义或响应字段变化 |
 | `byok-capability.md` | OpenAI-compatible BYOK 能力边界、接口行为与验证方式 | BYOK、模型发现、Key 保存或 fallback 语义变化 |
+| `product/interview-main-flow.md` | 模拟面试主链路的产品定位、结构化报告契约与 service 边界 | 面试阶段、报告结构、评分来源或 fixture 主口径变化 |
 | `quality/ui-quality-system.md` | UI 自动化质量体系当前态（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual` / Component Lab / CI 接入） | UI 自动化命令、Component Lab 范围、CI 接入策略变化 |
 | `quality/local-review-checklist.md` | 本地预检命令与红线扫描 | CI、质量门禁或红线扫描命令变化 |
 | `quality/risk-register.md` | 当前仍需跟踪的工程风险与已关闭风险索引 | 风险状态、触发条件或依赖 overrides 变化 |
@@ -22,7 +23,7 @@
 | `README.md` | 仓库门面、快速开始与项目结构总览 |
 | `DESIGN.md` | UI 设计规范最高入口 |
 | `AGENTS.md` | Agent 协议与论文资产治理入口 |
-| `docs/` | 项目开发与维护文档 |
+| `docs/` | 项目开发、产品能力与维护文档 |
 | `output/` | 可再生成截图、日志和自动化输出，不作为事实源 |
 | `thesis-assets/` | 论文证据、图表、文献、答辩材料与正文治理资产 |
 
@@ -40,6 +41,6 @@
 
 ## 维护原则
 
-- 文档职责单一：接口放 `api.md`，运行放 `setup/runtime`，质量放 `quality/`，UI 规则放 `DESIGN.md`。
+- 文档职责单一：接口放 `api.md`，运行放 `setup/runtime`，产品主链路放 `product/`，质量放 `quality/`，UI 规则放 `DESIGN.md`。
 - 不把历史 Demo Twin 过程材料提升为当前运行说明；历史材料只在 `thesis-assets` 的归档或过程记录中保留。
-- 若 README、接口、运行入口或质量门禁变化，优先更新对应源文档，再更新索引。
+- 若 README、接口、运行入口、产品契约或质量门禁变化，优先更新对应源文档，再更新索引。

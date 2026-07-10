@@ -237,8 +237,6 @@
 
   /* ── Content Semantics ── */
   --content-message-max-inline-size: 72ch;
-  --content-judge-max-inline-size: 42ch;
-  --content-judge-hint-max-inline-size: 32ch;
 
   /* ── Component Semantics ── */
   --ui-segmented-item-min-inline-size: 80px;

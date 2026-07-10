@@ -48,6 +48,10 @@ rg --pcre2 -n "box-shadow:\s+(?!var\()" frontend/src
 rg -n "outline(-offset)?:\s*-?\d+px|border-radius:\s*\d+px|transform:\s*translate[XY]?\(-?\d+px\)" frontend/src
 rg -n "\bz-\d+\b" frontend/src
 
+# 8. 业务组件不得手写 focus shadow；scoped CSS 的 :focus-visible 统一使用共享 token
+rg -n "box-shadow:\s*inset\s+0\s+0\s+0" frontend/src/components
+rg -n "shadow-icon-action-focus" frontend/src/components
+
 # 一键运行（推荐）
 npm --prefix frontend run verify:ui
 ```
@@ -56,6 +60,7 @@ npm --prefix frontend run verify:ui
 
 - **扫描 1 / 2 / 3 / 4 / 5 / 7**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与全局 token 定义；组件 scoped CSS 变量必须使用约定前缀和语义命名。`npm run verify:ui` 是 Node 内置脚本，可替代本节扫描命令。
 - **扫描 6**：`calc(var(--spacing-*)...)` 不一定全部禁止。简单半阶 / 负向 spacing（`/ 2`、`* -1`）必须替换为已有 token；组件几何布局保留为 calc，但必须集中为组件 scoped CSS 变量。
+- **扫描 8**：第一条必须无命中；第二条只用于人工查看共享 focus token 的使用位置。`verify:ui` 会解析业务组件 `<style>` 块，任何带 `box-shadow` 的 `:focus-visible` 若未使用 `var(--shadow-icon-action-focus)` 都会失败。
 - **新增或修改行不允许引入新的裸 px；既有未触碰命中不追溯。**
 
 ### 文档旧运行口径

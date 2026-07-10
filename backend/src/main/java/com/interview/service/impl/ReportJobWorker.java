@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.config.RabbitMqConfig;
 import com.interview.config.SseEmitterRegistry;
 import com.interview.common.UserContext;
+import com.interview.dto.InterviewReportDraft;
+import com.interview.dto.StructuredInterviewReport;
 import com.interview.entity.InterviewMessage;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.InterviewStage;
@@ -47,6 +49,7 @@ public class ReportJobWorker {
     private final LlmRouter llmRouter;
     private final DevFixtureService devFixtureService;
     private final InterviewReportParser interviewReportParser;
+    private final InterviewReportAssembler interviewReportAssembler;
     private final SseEmitterRegistry sseEmitterRegistry;
 
     @RabbitListener(queues = RabbitMqConfig.REPORT_QUEUE)
@@ -98,14 +101,33 @@ public class ReportJobWorker {
                     List.of(
                         Map.of("role", "system", "content", """
                             你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
-                            JSON Schema:
+                            JSON Schema（不得增加 overall、stage score、question score 或 weaknesses）：
                             {
-                              "reportMarkdown": "完整 Markdown 评估报告",
+                              "summary": {
+                                "fitAssessment": "岗位适配判断",
+                                "actionRecommendation": "继续投递或专项训练建议",
+                                "overallRisk": "总体风险"
+                              },
                               "scores": {
                                 "technical": 1-10 的整数,
                                 "expression": 1-10 的整数,
                                 "logic": 1-10 的整数
-                              }
+                              },
+                              "stagePerformances": [{
+                                "stageName": "warmup|technical|deep_dive|closing",
+                                "summary": "阶段总结",
+                                "positiveSignals": ["正向信号"],
+                                "negativeSignals": ["风险信号"],
+                                "improvementSuggestions": ["改进建议"]
+                              }],
+                              "strengths": ["核心优势"],
+                              "trainingPlan": {
+                                "threeDay": ["3 天补强"],
+                                "sevenDay": ["7 天专项"],
+                                "nextInterviewFocus": ["下次模拟重点"]
+                              },
+                              "finalAdvice": "总结建议",
+                              "reportMarkdown": "完整 Markdown 兼容报告"
                             }
                             三个评分必须使用 1-10 整数范围。
                             """),
@@ -115,19 +137,30 @@ public class ReportJobWorker {
                 );
             }
 
-            InterviewReportParser.ParsedReport parsedReport = interviewReportParser.parse(reportContent);
-            String report = parsedReport.reportMarkdown();
+            InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportContent);
+            closeCurrentStage(sessionId);
+            persistScoreHistory(session, reportDraft);
+            persistWeaknesses(session, reportDraft.reportMarkdown());
+
+            List<InterviewStage> stages = interviewStageMapper.selectList(new LambdaQueryWrapper<InterviewStage>()
+                .eq(InterviewStage::getSessionId, sessionId)
+                .orderByAsc(InterviewStage::getStartedAt)
+                .orderByAsc(InterviewStage::getId));
+            List<UserWeakness> weaknesses = userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
+                .eq(UserWeakness::getSessionId, sessionId)
+                .orderByAsc(UserWeakness::getCreatedAt)
+                .orderByAsc(UserWeakness::getId));
+            StructuredInterviewReport structuredReport = interviewReportAssembler.assemble(
+                reportDraft, stages, messages, weaknesses
+            );
+            String reportJson = objectMapper.writeValueAsString(structuredReport);
 
             session.setStatus(STATUS_FINISHED);
-            session.setSummaryReport(report);
+            session.setSummaryReport(reportJson);
             interviewSessionMapper.updateById(session);
 
-            closeCurrentStage(sessionId);
-            persistScoreHistory(session, parsedReport);
-            persistWeaknesses(session, report);
-
             // Broadcast report ready event
-            sseEmitterRegistry.broadcast(sessionId, "report_ready", report);
+            sseEmitterRegistry.broadcast(sessionId, "report_ready", reportJson);
             log.info("Successfully finished report generation and broadcasted for session {}", sessionId);
 
         } catch (Exception e) {
@@ -187,14 +220,14 @@ public class ReportJobWorker {
         }
     }
 
-    private void persistScoreHistory(InterviewSession session, InterviewReportParser.ParsedReport report) {
+    private void persistScoreHistory(InterviewSession session, InterviewReportDraft report) {
         try {
             ScoreHistory score = new ScoreHistory();
             score.setUserId(session.getUserId());
             score.setSessionId(session.getId());
-            score.setTechnicalScore(report.technicalScore());
-            score.setExpressionScore(report.expressionScore());
-            score.setLogicScore(report.logicScore());
+            score.setTechnicalScore(report.scores().technical());
+            score.setExpressionScore(report.scores().expression());
+            score.setLogicScore(report.scores().logic());
 
             scoreHistoryMapper.delete(new LambdaQueryWrapper<ScoreHistory>()
                 .eq(ScoreHistory::getSessionId, session.getId()));

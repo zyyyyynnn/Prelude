@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "fitAssessment": "候选人能按数据、模型和评估链路组织回答，但实验复现和误差分析仍需加强。",
+    "actionRecommendation": "具备算法岗继续评估的基础。",
+    "overallRisk": "实验细节、复杂度量化与失败样本复盘仍需提高。"
+  },
+  "scores": {
+    "technical": 7,
+    "expression": 6,
+    "logic": 8
+  },
+  "stagePerformances": [
+    {
+      "stageName": "warmup",
+      "summary": "能够从样本、特征、基线方案和指标口径拆解问题。",
+      "positiveSignals": ["回答结构较清楚"],
+      "negativeSignals": [],
+      "improvementSuggestions": ["继续保持数据、模型与评估链路的结构化表达"]
+    },
+    {
+      "stageName": "technical",
+      "summary": "具备离线评估和线上差异的基本排查路径。",
+      "positiveSignals": ["能说明数据分布变化带来的影响"],
+      "negativeSignals": ["复杂度和边界规模缺少量化"],
+      "improvementSuggestions": ["补强时间复杂度、空间复杂度和边界规模的量化表达"]
+    },
+    {
+      "stageName": "deep_dive",
+      "summary": "实验复现和误差分析仍需加强。",
+      "positiveSignals": ["能够围绕指标选择继续推导"],
+      "negativeSignals": ["验证集划分和误差分析示例不够具体"],
+      "improvementSuggestions": ["在验证集划分、误差分析和指标选择上给出更具体示例"]
+    },
+    {
+      "stageName": "closing",
+      "summary": "整体具备继续评估的基础。",
+      "positiveSignals": ["能够总结数据分布和线上表现差异"],
+      "negativeSignals": ["实验记录和失败样本复盘不够严谨"],
+      "improvementSuggestions": ["严谨说明实验版本、参数记录和失败样本复盘"]
+    }
+  ],
+  "strengths": [
+    "能够从样本、特征、基线方案和指标口径拆解问题",
+    "对离线评估和线上表现差异有基本排查路径",
+    "回答结构较清楚，能说明数据分布变化带来的影响"
+  ],
+  "trainingPlan": {
+    "threeDay": ["补强时间复杂度、空间复杂度和边界规模的量化表达"],
+    "sevenDay": ["训练验证集划分、误差分析和指标选择"],
+    "nextInterviewFocus": ["实验版本、参数记录和失败样本复盘"]
+  },
+  "finalAdvice": "整体具备算法岗继续评估的基础，但需要提高实验细节和表达稳定性。",
+  "reportMarkdown": "# 面试评估报告\n\n## 面试概览\n- 目标岗位：算法工程师\n- 结论：候选人能按数据、模型和评估链路组织回答，但实验复现和误差分析仍需加强。\n\n## 三维评分\n- 技术能力：7/10\n- 表达清晰度：6/10\n- 逻辑思维：8/10\n\n## 优势总结\n- 能够从样本、特征、基线方案和指标口径拆解问题\n- 对离线评估和线上表现差异有基本排查路径\n- 回答结构较清楚，能说明数据分布变化带来的影响\n\n## 改进建议\n1. 补强时间复杂度、空间复杂度和边界规模的量化表达\n2. 在验证集划分、误差分析和指标选择上给出更具体示例\n3. 对实验版本、参数记录和失败样本复盘说明可以更严谨\n\n## 总结\n整体具备算法岗继续评估的基础，但需要提高实验细节和表达稳定性。"
+}

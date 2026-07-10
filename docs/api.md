@@ -250,7 +250,7 @@ warmup -> technical -> deep_dive -> closing
 
 ### `POST /api/interview/{sessionId}/finish`
 
-结束面试并生成 Markdown 评估报告，同时沉淀评分历史和薄弱点数据。
+结束面试并通过 RabbitMQ 异步生成结构化评估报告，同时沉淀评分历史和薄弱点数据。旧会话中的纯 Markdown 报告继续兼容展示。
 
 ## 数据分析
 

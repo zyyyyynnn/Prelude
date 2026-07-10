@@ -39,6 +39,55 @@ export type InterviewStartPayload = {
   llmModel?: string
 }
 
+export type StructuredReportSummary = {
+  fitAssessment: string
+  actionRecommendation: string
+  overallRisk: string
+}
+
+export type StructuredReportScores = {
+  technical: number
+  expression: number
+  logic: number
+  overall: number
+}
+
+export type StructuredStagePerformance = {
+  stageName: InterviewStageName
+  score?: number | null
+  summary: string
+  positiveSignals: string[]
+  negativeSignals: string[]
+  improvementSuggestions: string[]
+}
+
+export type StructuredQuestionReview = {
+  stageName: InterviewStageName
+  question: string
+  answerSummary: string
+  score?: number | null
+  scoringReason: string
+  improvementSuggestion: string
+}
+
+export type StructuredTrainingPlan = {
+  threeDay: string[]
+  sevenDay: string[]
+  nextInterviewFocus: string[]
+}
+
+export type StructuredInterviewReport = {
+  summary: StructuredReportSummary
+  scores: StructuredReportScores
+  stagePerformances: StructuredStagePerformance[]
+  questionReviews: StructuredQuestionReview[]
+  strengths: string[]
+  weaknesses: string[]
+  trainingPlan: StructuredTrainingPlan
+  finalAdvice: string
+  markdownFallback: string
+}
+
 export type InterviewFinishResponse = {
   sessionId?: number
   summaryReport: string

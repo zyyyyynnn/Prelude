@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.UserContext;
 import com.interview.config.SseEmitterRegistry;
+import com.interview.dto.InterviewReportDraft;
+import com.interview.dto.StructuredInterviewReport;
 import com.interview.entity.InterviewMessage;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.InterviewStage;
@@ -35,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -51,14 +54,25 @@ class ReportJobWorkerTest {
     @Mock private LlmRouter llmRouter;
     @Mock private DevFixtureService devFixtureService;
     @Mock private InterviewReportParser interviewReportParser;
+    @Mock private InterviewReportAssembler interviewReportAssembler;
     @Mock private SseEmitterRegistry sseEmitterRegistry;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ReportJobWorker worker;
+    private InterviewReportDraft defaultDraft;
+    private StructuredInterviewReport defaultReport;
+    private String defaultReportJson;
 
     @BeforeEach
     void setUp() {
+        defaultDraft = draft(7, 6, 8, "# Report");
+        defaultReport = report(7, 6, 8, "# Report");
+        try {
+            defaultReportJson = objectMapper.writeValueAsString(defaultReport);
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
         worker = new ReportJobWorker(
             objectMapper,
             interviewSessionMapper,
@@ -69,8 +83,14 @@ class ReportJobWorkerTest {
             llmRouter,
             devFixtureService,
             interviewReportParser,
+            interviewReportAssembler,
             sseEmitterRegistry
         );
+        lenient().when(interviewReportParser.parseDraft(anyString())).thenReturn(defaultDraft);
+        lenient().when(interviewReportAssembler.assemble(any(), anyList(), anyList(), anyList()))
+            .thenReturn(defaultReport);
+        lenient().when(userWeaknessMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.emptyList());
     }
 
     @AfterEach
@@ -99,8 +119,6 @@ class ReportJobWorkerTest {
         when(devFixtureService.isEnabled()).thenReturn(true);
         when(devFixtureService.resolveReport("Backend Engineer"))
             .thenReturn("{\"reportMarkdown\":\"# Report\",\"scores\":{\"technical\":8,\"expression\":7,\"logic\":9}}");
-        when(interviewReportParser.parse(anyString()))
-            .thenReturn(new InterviewReportParser.ParsedReport("# Report", 8, 7, 9));
         when(devFixtureService.buildWeaknesses(42L, 7L)).thenReturn(Collections.<UserWeakness>emptyList());
 
         worker.handleReportJob(job);
@@ -109,14 +127,16 @@ class ReportJobWorkerTest {
         verify(interviewSessionMapper, times(1)).updateById(sessionCaptor.capture());
         InterviewSession persisted = sessionCaptor.getValue();
         assertThat(persisted.getStatus()).isEqualTo("finished");
-        assertThat(persisted.getSummaryReport()).isEqualTo("# Report");
+        assertThat(persisted.getSummaryReport()).isEqualTo(defaultReportJson);
 
         ArgumentCaptor<InterviewStage> stageCaptor = ArgumentCaptor.forClass(InterviewStage.class);
         verify(interviewStageMapper).updateById(stageCaptor.capture());
         assertThat(stageCaptor.getValue().getEndedAt()).isNotNull();
 
         verify(scoreHistoryMapper, times(1)).insert(any(ScoreHistory.class));
-        verify(sseEmitterRegistry).broadcast(eq(7L), eq("report_ready"), eq("# Report"));
+        verify(interviewReportParser).parseDraft(anyString());
+        verify(interviewReportAssembler).assemble(eq(defaultDraft), anyList(), anyList(), anyList());
+        verify(sseEmitterRegistry).broadcast(eq(7L), eq("report_ready"), eq(defaultReportJson));
         verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("error"), anyString());
     }
 
@@ -141,8 +161,6 @@ class ReportJobWorkerTest {
         when(devFixtureService.isEnabled()).thenReturn(true);
         when(devFixtureService.resolveReport("Backend Engineer"))
             .thenReturn("{\"reportMarkdown\":\"# R\",\"scores\":{\"technical\":7,\"expression\":6,\"logic\":8}}");
-        when(interviewReportParser.parse(anyString()))
-            .thenReturn(new InterviewReportParser.ParsedReport("# R", 7, 6, 8));
         when(devFixtureService.buildWeaknesses(42L, 8L)).thenReturn(Collections.<UserWeakness>emptyList());
 
         worker.handleReportJob(job);
@@ -185,9 +203,8 @@ class ReportJobWorkerTest {
         when(devFixtureService.isEnabled()).thenReturn(true);
         when(devFixtureService.resolveReport("Backend Engineer"))
             .thenReturn("{\"reportMarkdown\":\"# R\",\"scores\":{\"technical\":7,\"expression\":6,\"logic\":8}}");
-        when(interviewReportParser.parse(anyString()))
-            .thenReturn(new InterviewReportParser.ParsedReport("# R", 7, 6, 8));
         when(devFixtureService.buildWeaknesses(42L, 9L)).thenReturn(List.of(weakness));
+        when(userWeaknessMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(weakness));
 
         worker.handleReportJob(job);
 
@@ -223,8 +240,6 @@ class ReportJobWorkerTest {
         when(devFixtureService.isEnabled()).thenReturn(true);
         when(devFixtureService.resolveReport("Backend Engineer"))
             .thenReturn("{\"reportMarkdown\":\"# R\",\"scores\":{\"technical\":7,\"expression\":6,\"logic\":8}}");
-        when(interviewReportParser.parse(anyString()))
-            .thenReturn(new InterviewReportParser.ParsedReport("# R", 7, 6, 8));
         when(devFixtureService.buildWeaknesses(42L, 10L)).thenReturn(Collections.<UserWeakness>emptyList());
 
         worker.handleReportJob(job);
@@ -295,7 +310,8 @@ class ReportJobWorkerTest {
 
         verify(interviewMessageMapper, never()).selectList(any(LambdaQueryWrapper.class));
         verify(llmRouter, never()).chatWithSnapshot(anyString(), anyString(), anyList());
-        verify(interviewReportParser, never()).parse(anyString());
+        verify(interviewReportParser, never()).parseDraft(anyString());
+        verify(interviewReportAssembler, never()).assemble(any(), anyList(), anyList(), anyList());
         verify(interviewSessionMapper, never()).updateById(any(InterviewSession.class));
         verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("report_ready"), anyString());
         verify(sseEmitterRegistry, never()).broadcast(anyLong(), eq("error"), anyString());
@@ -338,5 +354,31 @@ class ReportJobWorkerTest {
 
         org.assertj.core.api.Assertions.assertThat(UserContext.getCurrentUserId()).isNull();
         org.assertj.core.api.Assertions.assertThat(UserContext.getCurrentSessionId()).isNull();
+    }
+
+    private InterviewReportDraft draft(int technical, int expression, int logic, String markdown) {
+        return new InterviewReportDraft(
+            new InterviewReportDraft.ReportSummary("中等", "继续训练", "存在短板"),
+            new InterviewReportDraft.DimensionScores(technical, expression, logic),
+            List.of(),
+            List.of("表达清楚"),
+            new InterviewReportDraft.TrainingPlan(List.of("复盘"), List.of("专项"), List.of("量化")),
+            "继续训练",
+            markdown
+        );
+    }
+
+    private StructuredInterviewReport report(int technical, int expression, int logic, String markdown) {
+        return new StructuredInterviewReport(
+            new StructuredInterviewReport.ReportSummary("中等", "继续训练", "存在短板"),
+            new StructuredInterviewReport.ReportScores(technical, expression, logic, 7.0),
+            List.of(),
+            List.of(),
+            List.of("表达清楚"),
+            List.of(),
+            new StructuredInterviewReport.TrainingPlan(List.of("复盘"), List.of("专项"), List.of("量化")),
+            "继续训练",
+            markdown
+        );
     }
 }

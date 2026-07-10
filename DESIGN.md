@@ -93,8 +93,15 @@
 阴影：
 
 - `--shadow-ring`、`--shadow-ring-deep`：轻轮廓。
+- `--shadow-icon-action-focus`：业务组件自定义 CSS `:focus-visible` 的共享焦点阴影。
 - `--shadow-whisper`：Dropdown、Select、Combobox、Tooltip、Toast 的低浮层阴影。
 - `--shadow-modal`：Dialog、Confirm。
+
+Focus 规则：
+
+- shadcn-vue primitive 使用 `focus-visible:ring-*`，颜色必须映射到 `--color-focus`。
+- 业务组件在 scoped CSS 中自行定义 `:focus-visible` 且使用 `box-shadow` 时，只能写 `box-shadow: var(--shadow-icon-action-focus)`。
+- 禁止业务组件手写 `inset 0 0 0 ...`、裸像素或其他临时 focus shadow；`verify:ui` 必须阻断此类漂移。
 
 层级：
 
@@ -180,7 +187,7 @@
 - `compact`、`icon-compact` 使用 `--ui-height-compact`，只用于 send 左侧元信息控件。
 - 删除 `lg`、`icon-lg` 业务可用大号按钮体系。
 - 默认按钮宽度按内容自适应；登录 submit 可 `w-full`；Sidebar 主操作可 full width；Icon button 保持正方形。
-- Focus 必须使用暖色 focus ring；图标按钮必须有 `aria-label`。
+- Focus 必须使用 2.5 节定义的统一暖色 focus ring；图标按钮必须有 `aria-label`。
 
 ### 5.2 Input / Textarea / Select
 
@@ -246,13 +253,14 @@
 
 - 消息区上方滚动，composer 固定底部。
 - 消息正文纯文本，不渲染 Markdown。
-- 对话气泡正文使用 sans；角色、时间、评分、标签使用 serif。
-- 即时评分拆成 score pill 和 hint preview；长 hint 用 Tooltip。
+- 对话气泡正文使用 sans；角色、时间和标签使用 serif。
+- 面试过程不展示逐题数字评分、评分依据或改进 hint；后端评分仅用于结束后的结构化训练报告和能力画像。
+- 不保留实时评分开关、隐藏入口或第二套旧评分 UI。
 - 思考中和重连状态保留，但动效必须符合 motion 规则。
 
 ### 6.4 Composer
 
-- 空状态 composer 居中；欢迎语从多个文案中随机展示。
+- 空状态 composer 在工作区可用高度内水平、垂直居中；内容超高时使用安全居中并允许滚动。
 - 文本/JD textarea 去掉裸高度和裸字号，使用 token。
 - send 左侧元信息控件：简历、岗位、模型、JD 使用 compact 30px。
 - send 右侧主操作：开始面试、发送、按住说话、语音/文字切换使用 base 34px。
@@ -267,6 +275,13 @@
 - 报告正文保留约 800px 纸面容器。
 - Markdown 标题用 serif；正文、列表、表格内容用 sans；code/pre 用 mono。
 - Markdown 必须覆盖 h1-h4、p、ul/ol/li、blockquote、table、code/pre、长报告滚动。
+- 新报告优先渲染结构化 JSON，纯 Markdown 只作为旧报告或非法 JSON 的兼容渲染路径；结构化报告不显示兼容文本切换入口。
+- 结构化报告按总览、三维评分、分阶段表现、逐题复盘、优势、短板、训练计划、总结建议组织；列表必须使用真实 `ul` / `ol`。
+- 三维评分卡只使用现有 chart/brand 语义 token，不新增 one-off 色板；阶段和匹配状态使用 Badge，普通说明文字不得伪装成 Badge。
+- 逐题复盘使用单题左右轮播，支持按钮和方向键切换；当前题显示问题、回答摘要、已落库得分、评分依据和改进建议，无评分时显示明确空态，不伪造分数。
+- 阶段信号、优势/短板和训练计划使用无卡片分隔布局与真实列表，避免重复灰色卡片。桌面端保持单列阅读主轴，评分摘要可使用稳定的三列网格；小屏降为单列且不得水平溢出。
+- loading、empty、error 与 Markdown fallback 状态复用现有 EmptyState、Button 和 markdown surface，不建立独立状态视觉。
+- PDF 导出必须包含结构化报告完整根节点；轮播中的全部逐题条目在导出克隆中展开，分阶段和逐题条目应纳入分页避免选择器，避免关键条目跨页截断或空白导出。
 
 ### 6.6 Settings
 
@@ -371,5 +386,6 @@
 - 分散 fixed duration / easing
 - `dark:bg-*`
 - 内联硬编码颜色、背景、边框、阴影
+- 业务组件手写 focus shadow，或在 scoped CSS 的 `:focus-visible` 使用非 `--shadow-icon-action-focus` 阴影
 
 token 定义文件中的基础色值允许集中存在，但必须人工确认不泄漏到业务组件。

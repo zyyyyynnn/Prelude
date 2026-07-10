@@ -52,12 +52,12 @@ public class DevFixtureCatalog {
 
     public String report(String targetPosition) {
         if (FRONTEND_POSITION_NAME.equals(targetPosition)) {
-            return frontendReport();
+            return readText("demo/report-frontend.json");
         }
         if (ALGORITHM_POSITION_NAME.equals(targetPosition)) {
-            return algorithmReport();
+            return readText("demo/report-algorithm.json");
         }
-        String template = readText("demo/report-template.md");
+        String template = readText("demo/report-java.json");
         return template.replace("{{position}}", targetPosition == null ? "目标岗位" : targetPosition);
     }
 
@@ -138,18 +138,6 @@ public class DevFixtureCatalog {
         );
     }
 
-    public ScoreSeed javaScore() {
-        return new ScoreSeed(8, 9, 8);
-    }
-
-    public ScoreSeed frontendScore() {
-        return new ScoreSeed(7, 7, 7);
-    }
-
-    public ScoreSeed algorithmScore() {
-        return new ScoreSeed(5, 6, 6);
-    }
-
     public List<WeaknessSeed> javaStorylineWeaknesses() {
         return List.of(
             new WeaknessSeed("千亿级并发架构瓶颈", "对于跨数据中心的强一致性容灾方案及底层 Paxos 选主细节掌握不够纯熟。")
@@ -190,62 +178,6 @@ public class DevFixtureCatalog {
         return "demo/resume_java.json";
     }
 
-    private String frontendReport() {
-        return """
-            # 面试评估报告
-
-            ## 面试概览
-            - 目标岗位：前端工程师
-            - 结论：候选人具备较完整的前端工程化和页面性能意识，适合继续深入评估。
-
-            ## 三维评分
-            - 技术能力：8/10
-            - 表达清晰度：7/10
-            - 逻辑思维：7/10
-
-            ## 优势总结
-            - 能够围绕组件拆分、状态管理和页面链路说明实现思路
-            - 对性能排查、接口耗时和渲染边界有基本判断能力
-            - 能将交互细节与真实使用体验关联起来
-
-            ## 改进建议
-            1. 补强浏览器性能指标、资源加载和渲染链路的量化说明
-            2. 在复杂组件状态归属和复用边界上给出更清晰的取舍
-            3. 对移动端适配、键盘焦点和无障碍状态说明可以更完整
-
-            ## 总结
-            整体表现稳定，具备继续进入前端专项面试的基础。
-            """;
-    }
-
-    private String algorithmReport() {
-        return """
-            # 面试评估报告
-
-            ## 面试概览
-            - 目标岗位：算法工程师
-            - 结论：候选人能按数据、模型和评估链路组织回答，但实验复现和误差分析仍需加强。
-
-            ## 三维评分
-            - 技术能力：7/10
-            - 表达清晰度：6/10
-            - 逻辑思维：8/10
-
-            ## 优势总结
-            - 能够从样本、特征、基线方案和指标口径拆解问题
-            - 对离线评估和线上表现差异有基本排查路径
-            - 回答结构较清楚，能说明数据分布变化带来的影响
-
-            ## 改进建议
-            1. 补强时间复杂度、空间复杂度和边界规模的量化表达
-            2. 在验证集划分、误差分析和指标选择上给出更具体示例
-            3. 对实验版本、参数记录和失败样本复盘说明可以更严谨
-
-            ## 总结
-            整体具备算法岗继续评估的基础，但需要提高实验细节和表达稳定性。
-            """;
-    }
-
     private String readText(String path) {
         try (InputStream inputStream = new ClassPathResource(path).getInputStream()) {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
@@ -279,9 +211,6 @@ public class DevFixtureCatalog {
     }
 
     public record QnaPair(String stageName, String systemPrompt, String aiQuestion, String userAnswer) {
-    }
-
-    public record ScoreSeed(int technical, int expression, int logic) {
     }
 
     public record WeaknessSeed(String category, String description) {
