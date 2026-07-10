@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas'
 
 /**
  * High-definition A4 PDF exporter that avoids page-break cutting.
- * 
+ *
  * @param originalElement The DOM element to export
  * @param filename Output filename
  */
@@ -15,7 +15,7 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
   // Clone original element so we can modify its layout without affecting the visible page
   const clone = originalElement.cloneNode(true) as HTMLElement
   const surfaceColor = getComputedStyle(document.documentElement).getPropertyValue('--color-surface').trim()
-  
+
   // Set clone dimensions and move it out of the viewport
   clone.style.position = 'absolute'
   clone.style.left = '-9999px'
@@ -61,7 +61,7 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
       safetyCounter++
 
       const targets = Array.from(clone.querySelectorAll(avoidSelector)) as HTMLElement[]
-      
+
       for (const el of targets) {
         // Find element position relative to clone container
         const top = el.offsetTop
@@ -112,7 +112,7 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
 
   const canvasWidth = canvas.width
   const canvasHeight = canvas.height
-  
+
   // Calculate page height in canvas scale
   const pageHeightInCanvasPx = Math.floor(canvasWidth * (pdfHeight / pdfWidth))
 
@@ -148,7 +148,7 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
 
     const imgData = pageCanvas.toDataURL('image/jpeg', 0.95)
     const printHeight = (sliceHeight / canvasWidth) * pdfWidth
-    
+
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, printHeight)
     renderedHeight += sliceHeight
   }
