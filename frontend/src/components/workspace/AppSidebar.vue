@@ -363,7 +363,7 @@ function navigateTo(path: string) {
 }
 .app-sidebar__toggle:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 .app-sidebar__main {
   flex: 1;
@@ -418,7 +418,7 @@ function navigateTo(path: string) {
 }
 .app-sidebar__btn:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 .app-sidebar__workspace-area {
   flex: 1;
@@ -511,7 +511,7 @@ function navigateTo(path: string) {
 }
 .session-item-btn:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 .session-group__empty {
   font-size: var(--font-size-xs);
@@ -583,7 +583,7 @@ function navigateTo(path: string) {
 }
 .action-btn:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 .action-btn:hover {
   color: var(--color-text-primary);
