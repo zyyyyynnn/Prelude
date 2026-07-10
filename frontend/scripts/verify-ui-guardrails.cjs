@@ -13,11 +13,14 @@
 'use strict'
 
 const { execFileSync } = require('node:child_process')
+const fs = require('node:fs')
 const path = require('node:path')
 
 const repoRoot = path.resolve(__dirname, '..', '..')
 const frontendSrc = path.join(repoRoot, 'frontend', 'src')
+const frontendComponents = path.join(frontendSrc, 'components')
 const stylesIndex = path.join(frontendSrc, 'styles', 'index.css')
+const componentFocusShadowToken = '--shadow-icon-action-focus'
 
 const semanticVarPrefixByFile = new Map([
   ['frontend/src/components/ui/segmented-control/SegmentedControl.vue', ['--segmented-']],
@@ -72,7 +75,6 @@ function isAllowedBoxShadow(hit) {
   if (/-?webkit-?box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
   if (/box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
   if (/box-shadow:\s*var\(--shadow-[\w-]+\),\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
-  if (/box-shadow:\s*inset\s+0\s+0\s+0\s+var\(--spacing-0-5\)\s+var\(--color-[\w-]+\)/.test(normalized)) return true
   return normalized === 'box-shadow: none;'
     || normalized === 'box-shadow: none !important;'
     || normalized === '-webkit-box-shadow: none;'
@@ -121,7 +123,7 @@ const checks = [
   },
   {
     id: 'raw-box-shadow',
-    description: '业务组件 raw box-shadow（必须使用 shadow token 或明确的 token 化 focus ring）',
+    description: '业务组件 raw box-shadow（必须使用 shadow token）',
     pattern: 'box-shadow:',
     paths: [frontendSrc],
     allowPaths: new Set(),
@@ -202,9 +204,6 @@ function runRipgrep(args) {
   }
 }
 
-const fs = require('node:fs')
-const pathModule = require('node:path')
-
 function walkFallback(args) {
   // Minimal fallback: only handles "PATTERN PATH..." style args; for simplicity
   // we just walk frontend/src recursively and apply the pattern in JS.
@@ -217,7 +216,7 @@ function walkFallback(args) {
     let entries
     try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return }
     for (const ent of entries) {
-      const p = pathModule.join(dir, ent.name)
+      const p = path.join(dir, ent.name)
       if (ent.isDirectory()) { walk(p); continue }
       if (!/\.(vue|ts|css|tsx|js)$/.test(ent.name)) continue
       const text = fs.readFileSync(p, 'utf8')
@@ -277,6 +276,51 @@ function debugHit(hit, allowPaths) {
   console.error('debug fail:', JSON.stringify({ file: hit.file, line: hit.line, allowed: [...allowPaths] }))
 }
 
+function collectVueFiles(dir, files = []) {
+  let entries
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return files }
+  for (const entry of entries) {
+    const file = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      collectVueFiles(file, files)
+    } else if (entry.isFile() && entry.name.endsWith('.vue')) {
+      files.push(file)
+    }
+  }
+  return files
+}
+
+function findComponentFocusShadowViolations() {
+  const violations = []
+  const requiredValue = `var(${componentFocusShadowToken})`
+  for (const file of collectVueFiles(frontendComponents)) {
+    const source = fs.readFileSync(file, 'utf8')
+    const stylePattern = /<style\b[^>]*>([\s\S]*?)<\/style>/g
+    let styleMatch
+    while ((styleMatch = stylePattern.exec(source)) !== null) {
+      const styleSource = styleMatch[1]
+      const focusBlockPattern = /([^{}]*:focus-visible[^{}]*)\{([^{}]*)\}/g
+      let focusMatch
+      while ((focusMatch = focusBlockPattern.exec(styleSource)) !== null) {
+        const shadowMatch = focusMatch[2].match(/box-shadow\s*:\s*([^;]+);/)
+        if (!shadowMatch || shadowMatch[1].includes(requiredValue)) continue
+        const sourceOffset = styleMatch.index + styleMatch[0].indexOf(styleSource) + focusMatch.index
+        const line = source.slice(0, sourceOffset).split(/\r?\n/).length
+        violations.push({
+          id: 'component-focus-shadow-token',
+          description: `业务组件 :focus-visible 的 box-shadow 必须使用 ${requiredValue}`,
+          hit: {
+            file,
+            line,
+            text: `${focusMatch[1].trim()} { box-shadow: ${shadowMatch[1].trim()}; }`,
+          },
+        })
+      }
+    }
+  }
+  return violations
+}
+
 const failures = []
 const allowed = []
 
@@ -301,6 +345,8 @@ for (const check of checks) {
     failures.push({ id: check.id, description: check.description, hit })
   }
 }
+
+failures.push(...findComponentFocusShadowViolations())
 
 if (allowed.length > 0) {
   console.log('--- ALLOWED HITS ---')
