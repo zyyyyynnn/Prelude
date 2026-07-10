@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "fitAssessment": "候选人具备较完整的前端工程化和页面性能意识，适合继续深入评估。",
+    "actionRecommendation": "具备继续进入前端专项面试的基础。",
+    "overallRisk": "性能量化、复杂状态边界、移动端适配与无障碍说明仍需加强。"
+  },
+  "scores": {
+    "technical": 8,
+    "expression": 7,
+    "logic": 7
+  },
+  "stagePerformances": [
+    {
+      "stageName": "warmup",
+      "summary": "能够围绕组件拆分和状态管理说明实现思路。",
+      "positiveSignals": ["能将交互细节与真实使用体验关联起来"],
+      "negativeSignals": [],
+      "improvementSuggestions": ["保持项目背景与职责边界的清晰表达"]
+    },
+    {
+      "stageName": "technical",
+      "summary": "具备前端工程化和页面性能意识。",
+      "positiveSignals": ["对性能排查、接口耗时和渲染边界有基本判断能力"],
+      "negativeSignals": ["浏览器性能链路缺少量化说明"],
+      "improvementSuggestions": ["补强浏览器性能指标、资源加载和渲染链路的量化说明"]
+    },
+    {
+      "stageName": "deep_dive",
+      "summary": "复杂组件状态归属和复用边界仍需更清晰。",
+      "positiveSignals": ["能围绕页面链路继续分析"],
+      "negativeSignals": ["复杂状态取舍说明不够完整"],
+      "improvementSuggestions": ["在复杂组件状态归属和复用边界上给出更清晰的取舍"]
+    },
+    {
+      "stageName": "closing",
+      "summary": "整体表现稳定。",
+      "positiveSignals": ["具备继续进入专项面试的基础"],
+      "negativeSignals": ["移动端和无障碍状态说明仍可更完整"],
+      "improvementSuggestions": ["完整说明移动端适配、键盘焦点和无障碍状态"]
+    }
+  ],
+  "strengths": [
+    "能够围绕组件拆分、状态管理和页面链路说明实现思路",
+    "对性能排查、接口耗时和渲染边界有基本判断能力",
+    "能将交互细节与真实使用体验关联起来"
+  ],
+  "trainingPlan": {
+    "threeDay": ["补强浏览器性能指标、资源加载和渲染链路的量化说明"],
+    "sevenDay": ["梳理复杂组件状态归属和复用边界"],
+    "nextInterviewFocus": ["移动端适配、键盘焦点和无障碍状态"]
+  },
+  "finalAdvice": "整体表现稳定，具备继续进入前端专项面试的基础。",
+  "reportMarkdown": "# 面试评估报告\n\n## 面试概览\n- 目标岗位：前端工程师\n- 结论：候选人具备较完整的前端工程化和页面性能意识，适合继续深入评估。\n\n## 三维评分\n- 技术能力：8/10\n- 表达清晰度：7/10\n- 逻辑思维：7/10\n\n## 优势总结\n- 能够围绕组件拆分、状态管理和页面链路说明实现思路\n- 对性能排查、接口耗时和渲染边界有基本判断能力\n- 能将交互细节与真实使用体验关联起来\n\n## 改进建议\n1. 补强浏览器性能指标、资源加载和渲染链路的量化说明\n2. 在复杂组件状态归属和复用边界上给出更清晰的取舍\n3. 对移动端适配、键盘焦点和无障碍状态说明可以更完整\n\n## 总结\n整体表现稳定，具备继续进入前端专项面试的基础。"
+}

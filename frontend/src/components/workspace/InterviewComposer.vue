@@ -89,6 +89,10 @@ const modelDisplay = computed(() => {
 
 const canSelectModel = computed(() => providerModels.value.length > 0)
 
+function toggleJdInput() {
+  showJdInput.value = !showJdInput.value
+}
+
 function normalizeProviderDisplay(provider: LlmProviderOption | undefined, providerKey = '') {
   if (!provider && providerKey === 'openai-compatible') return 'OpenAI 兼容协议'
   return provider?.displayName || providerKey || '未配置'
@@ -290,7 +294,7 @@ onMounted(() => {
               <!-- JD Toggle -->
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <Button variant="ghost" size="compact" class="composer-toolbar-control overflow-hidden" type="button" @click="showJdInput = !showJdInput" :class="{ 'bg-accent text-accent-foreground': showJdInput }">
+                  <Button variant="ghost" size="compact" class="composer-toolbar-control overflow-hidden" type="button" @click="toggleJdInput" :class="{ 'bg-accent text-accent-foreground': showJdInput }">
                     <FileSearch class="w-3.5 h-3.5 shrink-0 opacity-70" />
                     <span class="font-medium truncate">{{ showJdInput ? '已开启' : '未开启' }}</span>
                   </Button>

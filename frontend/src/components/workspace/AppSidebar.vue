@@ -112,8 +112,11 @@ function navigateTo(path: string) {
 
       <Separator class="mx-2 my-2 bg-border/50" />
 
-      <Transition name="sidebar-fade">
-        <div v-show="!collapsed" class="app-sidebar__sessions scrollable">
+      <div class="app-sidebar__workspace-area">
+        <div
+          :class="['app-sidebar__sessions scrollable', { 'is-visible': !collapsed }]"
+          :aria-hidden="collapsed"
+        >
         <div class="session-group">
           <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">进行中</div>
           <ul v-if="primarySessionList.length" class="session-list">
@@ -197,10 +200,11 @@ function navigateTo(path: string) {
           </ul>
           <p v-else class="session-group__empty">暂无</p>
         </div>
-      </div>
-      </Transition>
-            <Transition name="sidebar-fade">
-        <div v-show="collapsed" class="app-sidebar__collapsed-actions">
+        </div>
+        <div
+          :class="['app-sidebar__collapsed-actions', { 'is-visible': collapsed }]"
+          :aria-hidden="!collapsed"
+        >
           <button
             :class="['app-sidebar__btn app-sidebar__btn--icon', { 'is-active': interviewMenuActive }]"
             @click="navigateTo('/interview')"
@@ -212,7 +216,7 @@ function navigateTo(path: string) {
             </svg>
           </button>
         </div>
-      </Transition>
+      </div>
 
       <div class="app-sidebar__tools">
         <button
@@ -260,7 +264,7 @@ function navigateTo(path: string) {
 .app-sidebar {
   /* 组件级几何变量：折叠时按钮水平内边距与 sessions 容器宽度集中声明，便于审计。 */
   --sidebar-icon-glyph-size: 20px;
-  --sidebar-collapsed-btn-padding-inline: calc(
+  --sidebar-btn-padding-inline: calc(
     (var(--ui-height-md) - var(--sidebar-icon-glyph-size)) / 2
   );
   --sidebar-sessions-inline-size: calc(
@@ -274,7 +278,8 @@ function navigateTo(path: string) {
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
   overflow-x: hidden;
-  will-change: transform;
+  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
+  will-change: inline-size;
   transform: translateZ(0); /* 强制开启 GPU 加速，消除卡顿 */
   backface-visibility: hidden; /* 消除某些浏览器在动画期间的字体模糊闪烁 */
   flex-shrink: 0;
@@ -299,15 +304,18 @@ function navigateTo(path: string) {
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  transition:
+    inline-size var(--motion-duration-base) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
   inline-size: var(--layout-sidebar-brand-inline-size);
   opacity: 1;
   transform: translateZ(0);
   -webkit-font-smoothing: antialiased;
 }
 .app-sidebar.is-collapsed .app-sidebar__brand {
-  width: 0;
+  inline-size: 0;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 .app-sidebar__logo {
@@ -334,8 +342,8 @@ function navigateTo(path: string) {
   flex-shrink: 0;
 }
 .app-sidebar.is-collapsed .sidebar-label {
-  width: 0;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 .app-sidebar__toggle {
@@ -355,7 +363,7 @@ function navigateTo(path: string) {
 }
 .app-sidebar__toggle:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 .app-sidebar__main {
   flex: 1;
@@ -374,7 +382,7 @@ function navigateTo(path: string) {
   gap: var(--spacing-sm);
   width: 100%;
   height: var(--ui-height-md);
-  padding: 0 var(--spacing-sm);
+  padding: 0 var(--sidebar-btn-padding-inline);
   border-radius: var(--radius-md);
   font-family: var(--font-serif);
   font-size: var(--font-size-md);
@@ -410,14 +418,35 @@ function navigateTo(path: string) {
 }
 .app-sidebar__btn:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
-.app-sidebar.is-collapsed .app-sidebar__btn {
-  padding: 0 var(--sidebar-collapsed-btn-padding-inline);
-  gap: 0;
+.app-sidebar__workspace-area {
+  flex: 1;
+  min-height: 0;
+  min-inline-size: 0;
+  position: relative;
+  overflow: hidden;
+}
+.app-sidebar__sessions,
+.app-sidebar__collapsed-actions {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--motion-duration-base) var(--motion-ease-standard),
+    visibility 0s linear var(--motion-duration-base);
+}
+.app-sidebar__sessions.is-visible,
+.app-sidebar__collapsed-actions.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
 }
 .app-sidebar__sessions {
-  flex: 1;
   min-height: 0;
   inline-size: var(--sidebar-sessions-inline-size);
   flex-shrink: 0;
@@ -427,13 +456,15 @@ function navigateTo(path: string) {
   overflow-x: hidden;
   /* margin-bottom handled by divider */
   padding-right: 0;
-  opacity: 1;
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
 }
 .app-sidebar__collapsed-actions {
-  margin-top: auto;
-  margin-bottom: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  inline-size: 100%;
+  padding-bottom: var(--spacing-sm);
 }
 
 .session-group {
@@ -480,7 +511,7 @@ function navigateTo(path: string) {
 }
 .session-item-btn:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 .session-group__empty {
   font-size: var(--font-size-xs);
@@ -552,7 +583,7 @@ function navigateTo(path: string) {
 }
 .action-btn:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 .action-btn:hover {
   color: var(--color-text-primary);
@@ -563,13 +594,13 @@ function navigateTo(path: string) {
   background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
 }
 
-/* 侧边栏折叠过度 */
-.sidebar-fade-enter-active,
-.sidebar-fade-leave-active {
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
-}
-.sidebar-fade-enter-from,
-.sidebar-fade-leave-to {
-  opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .app-sidebar__brand,
+  .sidebar-label,
+  .app-sidebar__sessions,
+  .app-sidebar__collapsed-actions {
+    transition-duration: 0.01ms;
+  }
 }
 </style>

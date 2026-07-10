@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { Badge } from '@/components/ui/badge'
-import { TooltipText } from '@/components/ui/tooltip'
 import type { InterviewMessageRecord, InterviewMessageRole } from '../../api/contracts'
 
 const props = defineProps<{
@@ -72,14 +71,6 @@ onMounted(() => {
           <span v-if="message.role === 'assistant' && !message.content" class="thinking-dots">思考中</span>
           <span v-else>{{ message.content }}</span>
         </div>
-        <div v-if="message.role === 'user'" class="message-bubble__judge-container">
-          <transition name="fade">
-            <div v-if="message.score" class="judge-badge text-xs">
-              <span class="judge-badge__score">评分：{{ message.score }}/10</span>
-              <TooltipText v-if="message.hint" class="judge-badge__hint" :text="message.hint" />
-            </div>
-          </transition>
-        </div>
       </article>
 
       <div v-if="reconnectingStatus" class="reconnecting-status">
@@ -91,11 +82,9 @@ onMounted(() => {
 
 <style scoped>
 .message-thread {
-  /* 消息流的几何约束：bubble 与 judge 都按"内容宽度"控制，不再用控件高度倍数。 */
+  /* 消息流的几何约束：bubble 按内容宽度控制，不使用控件高度倍数。 */
   --message-bubble-gap: var(--spacing-sm);
   --message-bubble-max-inline-size: min(80%, var(--content-message-max-inline-size));
-  --judge-feedback-max-inline-size: min(100%, var(--content-judge-max-inline-size));
-  --judge-hint-max-inline-size: var(--content-judge-hint-max-inline-size);
 
   flex: 1;
   overflow-y: auto;
@@ -177,45 +166,4 @@ onMounted(() => {
   animation: thinking-ellipsis var(--motion-duration-thinking) infinite;
 }
 
-.message-bubble__judge-container {
-  margin-top: var(--spacing-xs);
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-.judge-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  max-inline-size: var(--judge-feedback-max-inline-size);
-  color: var(--color-text-secondary);
-  font-family: var(--font-serif);
-  letter-spacing: 0.05em;
-}
-.judge-badge__score {
-  flex-shrink: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
-  font-weight: 600;
-  color: var(--color-brand);
-}
-.judge-badge__hint {
-  min-inline-size: 0;
-  max-inline-size: var(--judge-hint-max-inline-size);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
 </style>

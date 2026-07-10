@@ -16,7 +16,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test, expect, type Page } from '@playwright/test'
-import { installMockApi } from '../_helpers/mock-api'
+import { installMockApi, STRUCTURED_REPORT } from '../_helpers/mock-api'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -79,16 +79,52 @@ test('03 sidebar expanded', async ({ page }) => {
 test('04 sidebar collapsed', async ({ page }) => {
   await installMockApi(page)
   await page.goto('/interview')
+  const sidebar = page.locator('.app-sidebar').first()
   const toggle = page.locator('.app-sidebar__toggle').first()
   await expect(toggle).toBeVisible()
+  const transitionDuration = await sidebar.evaluate((element) => getComputedStyle(element).transitionDuration)
+  const expandedToolIconX = await page.evaluate(() => {
+    const sidebarElement = document.querySelector('.app-sidebar')
+    const icon = document.querySelector('.app-sidebar__btn--tool svg')
+    if (!sidebarElement || !icon) return null
+    return icon.getBoundingClientRect().left - sidebarElement.getBoundingClientRect().left
+  })
+  expect(transitionDuration).not.toBe('0s')
   await toggle.click()
   await page.waitForTimeout(300)
+  const collapsedGeometry = await page.evaluate(() => {
+    const sidebar = document.querySelector('.app-sidebar')
+    const workspaceButton = document.querySelector('.app-sidebar__collapsed-actions .app-sidebar__btn')
+    if (!sidebar || !workspaceButton) return null
+    return {
+      sidebarWidth: sidebar.getBoundingClientRect().width,
+      buttonWidth: workspaceButton.getBoundingClientRect().width,
+    }
+  })
+  expect(collapsedGeometry).not.toBeNull()
+  expect(collapsedGeometry!.buttonWidth).toBeLessThanOrEqual(collapsedGeometry!.sidebarWidth)
+  const collapsedToolIconX = await page.evaluate(() => {
+    const sidebarElement = document.querySelector('.app-sidebar')
+    const icon = document.querySelector('.app-sidebar__btn--tool svg')
+    if (!sidebarElement || !icon) return null
+    return icon.getBoundingClientRect().left - sidebarElement.getBoundingClientRect().left
+  })
+  expect(expandedToolIconX).not.toBeNull()
+  expect(collapsedToolIconX).not.toBeNull()
+  expect(Math.abs(collapsedToolIconX! - expandedToolIconX!)).toBeLessThan(0.25)
   await capture(page, '04-sidebar-collapsed.png', toggle)
 })
 
 test('05 interview empty state', async ({ page }) => {
   await installMockApi(page, { sessions: [] })
   await page.goto('/interview')
+  const content = page.locator('.workspace-empty__content').first()
+  await expect(content).toBeVisible()
+  const box = await content.boundingBox()
+  const viewport = page.viewportSize()
+  expect(box).not.toBeNull()
+  expect(viewport).not.toBeNull()
+  expect(Math.abs((box!.y + box!.height / 2) - viewport!.height / 2)).toBeLessThan(40)
   await capture(page, '05-interview-empty.png', page.getByText('准备开始一场沉浸式模拟面试'))
 })
 
@@ -240,4 +276,113 @@ test('17 components lab (dark)', async ({ page }) => {
   } else {
     await capture(page, '17-components-lab-dark.png', page.locator('body').first())
   }
+})
+
+test('18 interview messages do not expose live score or hint', async ({ page }) => {
+  const detail = {
+    sessionId: 101,
+    status: 'ongoing',
+    targetPosition: 'Java 后端工程师',
+    currentStage: 'technical',
+    summaryReport: null,
+    stages: [],
+    messages: [
+      { id: 1, role: 'assistant', content: '如何保证接口幂等？', seqNum: 1 },
+      { id: 2, role: 'user', content: '使用唯一请求键。', seqNum: 2, score: 8, hint: '缺少量化依据' },
+    ],
+    resumeId: 1,
+    positionId: 1,
+  }
+  await installMockApi(page, { sessions: [{ sessionId: 101, status: 'ongoing', targetPosition: 'Java 后端工程师', currentStage: 'technical' }], interviewDetail: detail })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '开始面试' }).click()
+
+  await expect(page.getByText('使用唯一请求键。')).toBeVisible()
+  await expect(page.getByText(/评分：8\/10/)).toHaveCount(0)
+  await expect(page.getByText('缺少量化依据')).toHaveCount(0)
+})
+
+test('19 structured report carousel keeps compatibility details out of the primary UI', async ({ page }) => {
+  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+  const detail = {
+    ...session,
+    stages: [],
+    messages: [],
+    resumeId: 1,
+    positionId: 1,
+  }
+  await installMockApi(page, { sessions: [session], interviewDetail: detail })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '打开已结束会话 Java 后端工程师' }).click()
+  await page.getByRole('button', { name: '报告', exact: true }).click()
+
+  await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '逐题复盘' })).toBeVisible()
+  await expect(page.getByText('性能量化：缺少压测指标')).toBeVisible()
+  await expect(page.locator('.structured-report ul').first()).toBeVisible()
+  await expect(page.getByText('查看兼容文本报告')).toHaveCount(0)
+  await expect(page.getByText('1 / 2')).toBeVisible()
+  const titleLineCount = await page.getByRole('heading', { name: '求职训练报告' }).evaluate((element) => {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    return range.getClientRects().length
+  })
+  expect(titleLineCount).toBe(1)
+  await page.getByRole('button', { name: '下一题' }).click()
+  await expect(page.getByText('如何定位复杂状态更新问题？')).toBeVisible()
+  await expect(page.getByText('2 / 2')).toBeVisible()
+  await page.locator('.question-review-carousel').focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(page.getByText('如何优化虚拟列表？')).toBeVisible()
+  await capture(page, '18-structured-report.png', page.locator('.structured-report').first())
+})
+
+test('20 old markdown report remains readable', async ({ page }) => {
+  const markdown = '# 旧版面试报告\n\n旧数据仍可查看。'
+  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: markdown }
+  await installMockApi(page, {
+    sessions: [session],
+    interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },
+  })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '打开已结束会话 Java 后端工程师' }).click()
+  await page.getByRole('button', { name: '报告', exact: true }).click()
+
+  await expect(page.getByRole('heading', { name: '旧版面试报告' })).toBeVisible()
+})
+
+test('21 structured report fits mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+  await installMockApi(page, {
+    sessions: [session],
+    interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },
+  })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '打开已结束会话 Java 后端工程师' }).click()
+  await page.getByRole('button', { name: '报告', exact: true }).click()
+
+  await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
+  const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+  expect(hasHorizontalOverflow).toBe(false)
+  await capture(page, '19-structured-report-mobile.png', page.locator('.structured-report').first())
+})
+
+test('22 structured report exports a non-empty PDF', async ({ page }) => {
+  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+  await installMockApi(page, {
+    sessions: [session],
+    interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },
+  })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '打开已结束会话 Java 后端工程师' }).click()
+  await page.getByRole('button', { name: '报告', exact: true }).click()
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出 PDF' }).click()
+  const download = await downloadPromise
+  const path = await download.path()
+  expect(path).toBeTruthy()
+  const stat = await fs.stat(path!)
+  expect(stat.size).toBeGreaterThan(1000)
 })
