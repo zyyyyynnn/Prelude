@@ -40,72 +40,75 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
   Object.entries(exportTokens).forEach(([name, value]) => clone.style.setProperty(name, value))
 
   document.body.appendChild(clone)
-  normalizeExportColors(clone)
 
-  const elementWidth = originalElement.offsetWidth
-  // The target page height in terms of DOM element pixels
-  const pageHeight = elementWidth * (pdfHeight / pdfWidth)
+  let canvas: HTMLCanvasElement
+  try {
+    normalizeExportColors(clone)
 
-  // Selector for elements that must NOT be cut in the middle of a page
-  const avoidSelector = '.panel, .weakness-item, .report-section__header, .report-score-item, .stage-performance, .question-review, .training-plan__group, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body pre, .markdown-body blockquote'
+    const elementWidth = originalElement.offsetWidth
+    // The target page height in terms of DOM element pixels
+    const pageHeight = elementWidth * (pdfHeight / pdfWidth)
 
-  let hasChanges = true
-  let safetyCounter = 0
+    // Selector for elements that must NOT be cut in the middle of a page
+    const avoidSelector = '.panel, .weakness-item, .report-section__header, .report-score-item, .stage-performance, .question-review, .training-plan__group, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body pre, .markdown-body blockquote'
 
-  // Keep recalculating offsets and inserting spacers until no avoid-split elements cross page boundaries
-  while (hasChanges && safetyCounter < 150) {
-    hasChanges = false
-    safetyCounter++
+    let hasChanges = true
+    let safetyCounter = 0
 
-    const targets = Array.from(clone.querySelectorAll(avoidSelector)) as HTMLElement[]
-    
-    for (const el of targets) {
-      // Find element position relative to clone container
-      const top = el.offsetTop
-      const height = el.offsetHeight
+    // Keep recalculating offsets and inserting spacers until no avoid-split elements cross page boundaries
+    while (hasChanges && safetyCounter < 150) {
+      hasChanges = false
+      safetyCounter++
 
-      if (height === 0 || height >= pageHeight) {
-        // Skip hidden elements or elements that are taller than a single page
-        continue
-      }
+      const targets = Array.from(clone.querySelectorAll(avoidSelector)) as HTMLElement[]
+      
+      for (const el of targets) {
+        // Find element position relative to clone container
+        const top = el.offsetTop
+        const height = el.offsetHeight
 
-      const currentPage = Math.floor(top / pageHeight)
-      const endPage = Math.floor((top + height - 2) / pageHeight) // 2px margin to handle float precision
+        if (height === 0 || height >= pageHeight) {
+          // Skip hidden elements or elements that are taller than a single page
+          continue
+        }
 
-      if (currentPage !== endPage) {
-        // This element crosses page boundaries! Insert a spacer before it
-        const spacerHeight = (currentPage + 1) * pageHeight - top
-        const spacer = document.createElement('div')
-        spacer.className = 'pdf-page-spacer'
-        spacer.style.height = spacerHeight + 'px'
-        spacer.style.width = '100%'
-        spacer.style.pointerEvents = 'none'
+        const currentPage = Math.floor(top / pageHeight)
+        const endPage = Math.floor((top + height - 2) / pageHeight) // 2px margin to handle float precision
 
-        el.parentNode?.insertBefore(spacer, el)
-        hasChanges = true
-        break // Break the loop so we can measure elements with the updated offset tops
+        if (currentPage !== endPage) {
+          // This element crosses page boundaries! Insert a spacer before it
+          const spacerHeight = (currentPage + 1) * pageHeight - top
+          const spacer = document.createElement('div')
+          spacer.className = 'pdf-page-spacer'
+          spacer.style.height = spacerHeight + 'px'
+          spacer.style.width = '100%'
+          spacer.style.pointerEvents = 'none'
+
+          el.parentNode?.insertBefore(spacer, el)
+          hasChanges = true
+          break // Break the loop so we can measure elements with the updated offset tops
+        }
       }
     }
-  }
 
-  // Generate high resolution canvas using scale: 2
-  const canvas = await html2canvas(clone, {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    allowTaint: true,
-    backgroundColor: surfaceColor,
-  })
+    // Generate high resolution canvas using scale: 2
+    canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: surfaceColor,
+    })
+  } finally {
+    clone.remove()
+  }
 
   // Optimize image smoothness
   const ctx = canvas.getContext('2d')
   if (ctx) {
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
   }
-
-  // Remove the cloned DOM node
-  document.body.removeChild(clone)
 
   const canvasWidth = canvas.width
   const canvasHeight = canvas.height
