@@ -72,13 +72,16 @@ function isStylesTokenDeclaration(hit) {
 function isAllowedBoxShadow(hit) {
   const normalized = hit.text.trim()
   if (isStylesTokenDeclaration(hit)) return true
-  if (/-?webkit-?box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
-  if (/box-shadow:\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
-  if (/box-shadow:\s*var\(--shadow-[\w-]+\),\s*var\(--shadow-[\w-]+\)/.test(normalized)) return true
-  return normalized === 'box-shadow: none;'
-    || normalized === 'box-shadow: none !important;'
-    || normalized === '-webkit-box-shadow: none;'
-    || normalized === '-webkit-box-shadow: none !important;'
+
+  const declaration = normalized.match(/^(?:-webkit-)?box-shadow:\s*(.+);$/)
+  if (!declaration) return false
+
+  const value = declaration[1].replace(/\s*!important$/, '').trim()
+  if (value === 'none') return true
+
+  return value
+    .split(',')
+    .every((part) => /^var\(--shadow-[\w-]+\)$/.test(part.trim()))
 }
 
 const checks = [
@@ -123,7 +126,7 @@ const checks = [
   },
   {
     id: 'raw-box-shadow',
-    description: '业务组件 raw box-shadow（必须使用 shadow token）',
+    description: '业务组件 raw box-shadow（必须只使用 shadow token）',
     pattern: 'box-shadow:',
     paths: [frontendSrc],
     allowPaths: new Set(),
@@ -303,12 +306,12 @@ function findComponentFocusShadowViolations() {
       let focusMatch
       while ((focusMatch = focusBlockPattern.exec(styleSource)) !== null) {
         const shadowMatch = focusMatch[2].match(/box-shadow\s*:\s*([^;]+);/)
-        if (!shadowMatch || shadowMatch[1].includes(requiredValue)) continue
+        if (!shadowMatch || shadowMatch[1].trim() === requiredValue) continue
         const sourceOffset = styleMatch.index + styleMatch[0].indexOf(styleSource) + focusMatch.index
         const line = source.slice(0, sourceOffset).split(/\r?\n/).length
         violations.push({
           id: 'component-focus-shadow-token',
-          description: `业务组件 :focus-visible 的 box-shadow 必须使用 ${requiredValue}`,
+          description: `业务组件 :focus-visible 的 box-shadow 必须精确使用 ${requiredValue}`,
           hit: {
             file,
             line,
