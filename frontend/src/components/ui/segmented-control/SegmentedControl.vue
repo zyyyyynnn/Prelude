@@ -112,6 +112,6 @@ const segmentedStyle = computed(
 
 .segmented-control__item:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-brand);
+  box-shadow: var(--shadow-icon-action-focus);
 }
 </style>
