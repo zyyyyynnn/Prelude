@@ -11,6 +11,7 @@
 | `api.md` | REST / SSE 接口清单，覆盖认证、LLM 配置、简历、面试和数据分析接口 | API 路径、鉴权语义或响应字段变化 |
 | `byok-capability.md` | OpenAI-compatible BYOK 能力边界、接口行为与验证方式 | BYOK、模型发现、Key 保存或 fallback 语义变化 |
 | `product/interview-main-flow.md` | 模拟面试主链路的产品定位、结构化报告契约与 service 边界 | 面试阶段、报告结构、评分来源或 fixture 主口径变化 |
+| `architecture/ideal-rewrite-plan.md` | 整体架构重写目标态、域边界、数据演进、平台内核与分阶段绞杀迁移 | 域边界、Port 契约、数据真源、Job/Realtime/LLM 抽象或阶段 DoD 变化 |
 | `quality/ui-quality-system.md` | UI 自动化质量体系当前态（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual` / Component Lab / CI 接入） | UI 自动化命令、Component Lab 范围、CI 接入策略变化 |
 | `quality/local-review-checklist.md` | 本地预检命令与红线扫描 | CI、质量门禁或红线扫描命令变化 |
 | `quality/risk-register.md` | 当前仍需跟踪的工程风险与已关闭风险索引 | 风险状态、触发条件或依赖 overrides 变化 |
@@ -41,6 +42,6 @@
 
 ## 维护原则
 
-- 文档职责单一：接口放 `api.md`，运行放 `setup/runtime`，产品主链路放 `product/`，质量放 `quality/`，UI 规则放 `DESIGN.md`。
+- 文档职责单一：接口放 `api.md`，运行放 `setup/runtime`，产品主链路放 `product/`，架构目标态与迁移放 `architecture/`，质量放 `quality/`，UI 规则放 `DESIGN.md`。
 - 不把历史 Demo Twin 过程材料提升为当前运行说明；历史材料只在 `thesis-assets` 的归档或过程记录中保留。
-- 若 README、接口、运行入口、产品契约或质量门禁变化，优先更新对应源文档，再更新索引。
+- 若 README、接口、运行入口、产品契约、架构边界或质量门禁变化，优先更新对应源文档，再更新索引。
