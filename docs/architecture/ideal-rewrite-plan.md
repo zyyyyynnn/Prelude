@@ -446,7 +446,7 @@ WS 入站 adapter 解析事件
 | `embedding` | BLOB/表外存储；或仅存 content，embedding 本地缓存 |
 | `content_hash` | 失效重建 |
 
-进程内索引变为 **缓存**；MySQL（或后续向量扩展）为可重建源。  
+进程内索引变为 **缓存**；MySQL（或后续向量扩展）为可重建源。
 Phase 3 允许先做 R0（增强重建路径、暂不建表），但 DoD 必须写清「重启后可重建」；建表属于 R1 推荐默认目标。
 
 #### `interview_report`（可选拆表）
@@ -597,11 +597,11 @@ RealtimePort
 
 ### 8.3 破坏性变更流程
 
-1. 双写/双读至少经历一个兼容发布版本  
+1. 双写/双读至少经历一个兼容发布版本
 
-2. 更新 `docs/api.md` + 前端 contracts  
-3. 提供 fixture 与 verify 脚本  
-4. 再删除旧字段语义  
+2. 更新 `docs/api.md` + 前端 contracts
+3. 提供 fixture 与 verify 脚本
+4. 再删除旧字段语义
 
 ---
 
@@ -645,7 +645,7 @@ npm --prefix frontend run verify:a11y
 
 ## 10. 分阶段迁移路线图（可落地）
 
-> 每阶段可独立合并到 `main`；阶段出口有明确 DoD。  
+> 每阶段可独立合并到 `main`；阶段出口有明确 DoD。
 > **禁止**并行开启超过 2 条竖切（降低冲突）。
 
 ### Phase 0 — 约定与基线冻结
@@ -671,9 +671,9 @@ npm --prefix frontend run verify:a11y
 
 **DoD：**
 
-- 行为兼容；测试全绿  
-- interview 应用代码无 `ResumeMapper` import  
-- `InterviewServiceImpl` 行数显著下降或职责仅编排  
+- 行为兼容；测试全绿
+- interview 应用代码无 `ResumeMapper` import
+- `InterviewServiceImpl` 行数显著下降或职责仅编排
 
 ### Phase 2 — LLM Gateway 与 Prompt 版本
 
@@ -791,10 +791,10 @@ sentrux check E:\Prelude
 
 ### 11.4 架构测试用例示例（应写成真实测试）
 
-1. `interview.application` 不依赖 `ResumeMapper`  
-2. controller 不依赖 mapper 包  
-3. 报告派生分不读取 LLM 草稿中的 overall 字段覆盖（若已有逻辑则固化）  
-4. Resume 投影纯函数快照测试  
+1. `interview.application` 不依赖 `ResumeMapper`
+2. controller 不依赖 mapper 包
+3. 报告派生分不读取 LLM 草稿中的 overall 字段覆盖（若已有逻辑则固化）
+4. Resume 投影纯函数快照测试
 
 ---
 
@@ -813,8 +813,8 @@ sentrux check E:\Prelude
 
 ### 12.2 回滚策略
 
-- 每个 Phase 独立 PR；git revert 友好。  
-- 数据迁移只加列；回滚应用版本即可忽略新列。  
+- 每个 Phase 独立 PR；git revert 友好。
+- 数据迁移只加列；回滚应用版本即可忽略新列。
 - 双写开关用配置：`resume.projection.source=document|raw`。
 
 ### 12.3 范围取舍
@@ -841,8 +841,8 @@ Insight  ReportReady 事件（可选）    ─┘     Resume Patch 闭环
 
 **约束：**
 
-- 未完成 `ResumeContextPort` 前，不在 `InterviewServiceImpl` 内嵌编辑器逻辑。  
-- 模板渲染属于 Resume 域 `DocumentRenderer`，不属于 Interview。  
+- 未完成 `ResumeContextPort` 前，不在 `InterviewServiceImpl` 内嵌编辑器逻辑。
+- 模板渲染属于 Resume 域 `DocumentRenderer`，不属于 Interview。
 - 设计体系可参考外部作品（如 Kami）的「约束化排版」思想，但模板与字体授权独立治理，不把外部 skill 运行时打进主服务。
 
 ---
@@ -866,14 +866,14 @@ Insight  ReportReady 事件（可选）    ─┘     Resume Patch 闭环
 
 当且仅当以下全部满足，可宣布「整体架构重写达标」：
 
-1. 依赖矩阵被 CI 规则执行（至少 controller→mapper、interview↛ResumeMapper）。  
-2. 面试/简历/报告/分析应用边界清晰，无新的上帝类扩张。  
-3. `ResumeProjection` 为面试唯一简历入口；document 真源已上线，或迁移策略已落地且双写完成。  
-4. LLM/Retrieval/Job/Realtime 均以 Port 使用。  
-5. 报告不变式与主链路产品文档一致，fixture 同步。  
-6. 前端主 feature 目录落地，面试主页面体量受控。  
-7. 核心 application 测试与覆盖率门槛生效。  
-8. `docs/api.md`、本方案、`risk-register` 与实现一致。  
+1. 依赖矩阵被 CI 规则执行（至少 controller→mapper、interview↛ResumeMapper）。
+2. 面试/简历/报告/分析应用边界清晰，无新的上帝类扩张。
+3. `ResumeProjection` 为面试唯一简历入口；document 真源已上线，或迁移策略已落地且双写完成。
+4. LLM/Retrieval/Job/Realtime 均以 Port 使用。
+5. 报告不变式与主链路产品文档一致，fixture 同步。
+6. 前端主 feature 目录落地，面试主页面体量受控。
+7. 核心 application 测试与覆盖率门槛生效。
+8. `docs/api.md`、本方案、`risk-register` 与实现一致。
 
 ---
 
@@ -950,17 +950,15 @@ prelude:
 
 ## 附录 C — 自检清单（实施前/每阶段出口）
 
-- [ ] 是否仍保持单部署单元假设？  
-- [ ] 是否出现跨域直接 mapper 依赖？  
-- [ ] 对外 API/SSE 是否无意破坏？  
-- [ ] dev fixture 是否与报告 schema 同步？  
-- [ ] 失败路径（LLM/检索/TTS）是否降级而非整链路崩溃？  
-- [ ] 测试与 verify 是否全绿？  
-- [ ] 风险台账是否更新？  
-- [ ] 是否把「产品功能」错误塞进平台层？  
+- [ ] 是否仍保持单部署单元假设？
+- [ ] 是否出现跨域直接 mapper 依赖？
+- [ ] 对外 API/SSE 是否无意破坏？
+- [ ] dev fixture 是否与报告 schema 同步？
+- [ ] 失败路径（LLM/检索/TTS）是否降级而非整链路崩溃？
+- [ ] 测试与 verify 是否全绿？
+- [ ] 风险台账是否更新？
+- [ ] 是否把「产品功能」错误塞进平台层？
 
 ---
 
 **文档结束。** 实施时以 Phase DoD 为准绳；本方案是北极星与施工图，不是一次性 PR 的 diff 范围。
-
-
