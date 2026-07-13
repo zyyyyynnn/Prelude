@@ -1,49 +1,40 @@
-# thesis-assets 论文资产索引
+# Prelude 论文资产索引
 
-## 核心原则
+`thesis-assets/` 保存论文正文、证据、文献、学校规范和答辩材料。项目开发文档位于 `docs/`，两者不混放。
 
-- `chapters/*.md` 是论文正文唯一真相源，本轮整理不修改正文。
-- `meta/workflow-governance.md` 是论文资产治理最高规范。
-- `meta/final-evidence-lock.md` 只登记当前有效证据入口，不承载长篇过程说明。
-- Word / DOCX / PDF 不得作为正文来源。
-- 阶段推进必须经用户和审查官复核。
+## 权威入口
 
-## 当前有效目录
-
-| 路径 | 职责 | 当前状态 |
+| 优先级 | 文件 | 职责 |
 | --- | --- | --- |
-| `official/` | 学校格式要求、工作指南等权威源 | active |
-| `meta/` | 治理规范、证据锁定索引、唯一 Word 模板 | active |
-| `chapters/` | 正文 Markdown 唯一真相源 | active / 本轮不触碰 |
-| `evidence/diagrams/` | 图表源文件与导出图 | active |
-| `evidence/test-data/` | 测试、环境、质量门禁和证据矩阵 | active |
-| `evidence/code-snippets/` | 可回溯到源码的实现证据 | active |
-| `evidence/bug-evidence/` | 精选问题复盘证据 | active / 只保留可直接引用项 |
-| `evidence/phase-reports/` | 阶段过程记录 | archived trace / 不直接作为正文事实依据 |
-| `literature/` | `references.bib`、文献质量复核和证据映射 | active |
-| `defense/` | 答辩讲稿与 PPT 映射 | active |
+| 1 | `meta/workflow-governance.md` | 论文工作流、阶段准入和操作红线 |
+| 2 | `meta/final-evidence-lock.md` | 当前实现基线、有效证据和写作边界 |
+| 3 | `evidence/README.md` | 证据目录、当前证据与归档导航 |
+| 4 | `chapters/*.md` | 论文正文唯一真相源 |
 
-## 当前流程入口
+## 目录结构
 
-| 入口 | 路径 | 用途 |
+| 路径 | 内容 | 维护原则 |
 | --- | --- | --- |
-| 治理规范 | `meta/workflow-governance.md` | 阶段、红线和工具边界 |
-| 证据锁定 | `meta/final-evidence-lock.md` | 当前有效证据索引 |
-| 最新漂移同步 | `evidence/phase-reports/phase-2.13-modular-monolith-sync-2026-07-13.md` | 两轮重构的证据、图表与正文影响复核入口 |
-| 阶段 3 准备冻结 | `evidence/phase-reports/phase-3-readiness-freeze-2026-06-20.md` | Final Evidence Freeze、图表表格一致性和答辩材料核对 |
-| 测试证据矩阵 | `evidence/test-data/test-evidence-matrix-2026-06.md` | 章节可写性与测试边界 |
-| 质量门禁证据 | `evidence/test-data/quality-gates-2026-07-13.md` | 两轮重构后的 CI / 本地质量门禁候选快照 |
-| 功能用例 | `evidence/test-data/functional-cases-2026-06.md` | TC-01 ~ TC-12 功能边界 |
-| 图表登记 | `evidence/figure-table-register.md` | 图表与表格资产索引 |
-| 文献资产 | `literature/references.bib`、`literature/quality-review.md`、`literature/evidence-map.md` | 文献依据 |
-| 答辩资产 | `defense/script.md`、`defense/slide-map.md` | 当前答辩口径 |
+| `official/` | 学校格式要求和工作指南 | 只保存权威原件或忠实整理稿 |
+| `meta/` | 治理规范、证据状态索引、Word 模板 | 只保留全局规则和状态入口 |
+| `chapters/` | 摘要、第一至第六章正文 | 正文修改只发生在此目录 |
+| `evidence/` | 代码、测试、图表和历史过程证据 | 当前证据与历史归档分层保存 |
+| `literature/` | 文献主库、质量复核、证据映射和最终编号 | 文献进入正文前必须完成核验 |
+| `defense/` | 答辩讲稿和页级映射 | 与当前正文和证据口径保持一致 |
 
-## 历史材料处理规则
+## 正文顺序
 
-- 旧 Demo Twin、`start-demo`、`start-real`、8081/5174 等材料只作为历史对照或归档追溯，不作为当前运行入口。
-- 阶段报告只回答“当时做过什么”，不覆盖当前证据事实。
-- 若历史文件与当前 active 证据冲突，以 `final-evidence-lock.md` 和对应 active evidence 文件为准。
+1. `chapters/abstract-keywords.md`
+2. `chapters/chapter-01-introduction.md`
+3. `chapters/chapter-02-related-tech.md`
+4. `chapters/chapter-03-analysis-design.md`
+5. `chapters/chapter-04-implementation.md`
+6. `chapters/chapter-05-testing.md`
+7. `chapters/chapter-06-conclusion.md`
 
-## 交付边界
+## 资产边界
 
-提交版 DOCX/PDF 只能由 Word/WPS 人工终审后产生。不使用自动组装脚本；pandoc 自动拼装产出的 docx 格式质量不满足交付要求，已从仓库移除。
+- 当前事实以 `meta/final-evidence-lock.md` 为准，历史过程记录不能覆盖当前口径。
+- 图表必须登记在 `evidence/figure-table-register.md` 后才能进入正文或答辩材料。
+- 阶段推进必须提交差异并经用户和审查官复核。
+- 提交版 DOCX/PDF 由 Word/WPS 人工终审产生，不作为正文修改源。

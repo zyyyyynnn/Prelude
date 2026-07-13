@@ -4,6 +4,22 @@
 
 ## 当前观察项
 
+### R-008 — application 边界仍有过渡依赖 — 保留观察
+
+| 字段 | 内容 |
+| --- | --- |
+| Current status | P2 结构债务 |
+| Location | `insight.application.InsightQueryService`、`insight.application.ReportGenerateHandler` |
+| Current behavior | `InsightQueryService` 仍返回 insight API DTO；`ReportGenerateHandler` 仍直接依赖 `JobExecutionStore` 基础设施类型 |
+| Current mitigation | 面试模块已通过 Command/Result/View 与架构测试完成同类边界收敛；论文证据明确标注当前例外 |
+| Trade-off | 不影响现有功能，但会扩大 application 对适配层和基础设施的编译依赖 |
+| Safe fix | 为 insight 查询引入 application View；为作业状态读写引入 application/platform Port，并由基础设施实现 |
+
+#### Next review condition
+
+- 修改 insight 查询响应或异步报告重试逻辑时同步处理。
+- 新增全局 application 边界测试前处理现有例外。
+
 ### R-007 — 简历文档启动回填随历史数据量增长 — 保留观察
 
 | 字段 | 内容 |
