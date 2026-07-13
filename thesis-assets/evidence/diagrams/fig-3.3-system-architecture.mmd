@@ -16,23 +16,26 @@ title: 图3.3 系统整体架构图
     "nodePadding": "16px"
   },
   "flowchart": {
-    "nodeSpacing": 70,
-    "rankSpacing": 82,
+    "nodeSpacing": 46,
+    "rankSpacing": 58,
     "curve": "basis"
   }
 }}%%
-flowchart LR
+flowchart TB
   user((" &nbsp; 用户 / 浏览器端 &nbsp; "))
 
-  subgraph frontend[" &nbsp; 前端层 &nbsp; "]
+  subgraph frontend[" &nbsp; 前端功能模块 &nbsp; "]
     vue[" &nbsp; Vue 3 / Vite &nbsp; "]
-    view[" &nbsp; 面试 / 报告 / 看板 &nbsp; "]
+    features[" &nbsp; auth / resume / interview / insight / settings &nbsp; "]
   end
 
-  subgraph backend[" &nbsp; 后端层 &nbsp; "]
-    api[" &nbsp; Spring Boot API &nbsp; "]
-    auth[" &nbsp; JWT / 权限校验 &nbsp; "]
-    biz[" &nbsp; 简历解析 / 面试 / BYOK / 报告编排 &nbsp; "]
+  subgraph backend[" &nbsp; Spring Boot 模块化单体 &nbsp; "]
+    direction TB
+    api[" &nbsp; API 适配层 &nbsp; <br/> &nbsp; Controller / Request / Response 映射 &nbsp; "]
+    application[" &nbsp; 应用层 &nbsp; <br/> &nbsp; Use Case / Command / Result / Port &nbsp; "]
+    domain[" &nbsp; 领域模块 &nbsp; <br/> &nbsp; identity / resume / interview / insight / catalog &nbsp; "]
+    platform[" &nbsp; 平台能力 &nbsp; <br/> &nbsp; LLM / retrieval / job / realtime / security &nbsp; "]
+    infrastructure[" &nbsp; 基础设施适配层 &nbsp; <br/> &nbsp; MyBatis / Redis adapter / SSE &nbsp; "]
   end
 
   subgraph async[" &nbsp; 异步报告链路 &nbsp; "]
@@ -50,20 +53,22 @@ flowchart LR
   monitor[" &nbsp; Prometheus / Grafana &nbsp; <br/> &nbsp; 可选观测层 &nbsp; "]
 
   user --> vue
-  vue --> view
-  vue --> api
+  vue --> features
+  features --> api
 
-  api --> auth
-  api --> biz
-  biz --> mysql
-  biz --> redis
-  biz --> llm
-  biz --> rabbit
+  api --> application
+  application --> domain
+  application --> platform
+  application -->|Port / 过渡依赖| infrastructure
+  infrastructure --> mysql
+  infrastructure --> redis
+  platform --> llm
+  platform --> rabbit
   rabbit --> worker
   worker --> mysql
-  worker --> api
+  worker --> application
 
-  fixture -.-> biz
+  fixture -.-> application
   fixture -.-> mysql
   monitor -.-> api
 
@@ -76,7 +81,7 @@ flowchart LR
 
   class user actor
   class frontend,backend,async,data layer
-  class vue,view,api,auth,biz,worker main
+  class vue,features,api,application,domain,platform,infrastructure,worker main
   class mysql,redis,rabbit store
   class llm ext
   class fixture,monitor optional

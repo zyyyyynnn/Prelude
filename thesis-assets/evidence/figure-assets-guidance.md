@@ -22,7 +22,7 @@
 | --- | --- | --- | --- | --- |
 | 图3.1 | 系统核心用例图 | `evidence/diagrams/fig-3.1-core-use-case.png` | `fig-3.1-core-use-case.mmd` | 已复核 / 待正文图号冻结 |
 | 图3.2 | 数据库 E-R 图 | `evidence/diagrams/fig-3.2-database-er.png` | `fig-3.2-database-er.mmd`、`database-table-dictionary-2026-06.md` | 已复核 / 待正文图号冻结 |
-| 图3.3 | 系统整体架构图 | `evidence/diagrams/fig-3.3-system-architecture.png` | `fig-3.3-system-architecture.mmd` | 已复核 / 待正文图号冻结 |
+| 图3.3 | 系统整体架构图 | `evidence/diagrams/fig-3.3-system-architecture.png` | `fig-3.3-system-architecture.mmd`、`code-snippets/modular-monolith-boundary-hardening-2026-07-13.md` | 已刷新至 `851fa5b` / 待复核 |
 | 候选图4.x | SSE 流式问答处理流程图 | `evidence/diagrams/fig-4.x-sse-streaming-flow.png` | `fig-4.x-sse-streaming-flow.mmd` | 候选 / 未冻结图号 |
 | 表5.1 | 测试环境表 | `evidence/test-data/env-2026-06.md` | 本地环境采集记录 | 可进入正文候选 |
 | 表5.2 | 功能测试用例表 | `evidence/test-data/functional-cases-2026-06.md` | TC-01 ~ TC-12 | 可进入正文候选 |
@@ -33,7 +33,7 @@
 | 表5.7 | Redis、限流与状态辅助测试表 | `functional-cases-2026-06.md` | 限流、缓存、评分锁、状态辅助 | 限制性可写 |
 | 表5.8 | Structured Output 与报告解析测试表 | `functional-cases-2026-06.md`、`code-snippets/structured-output-resilience-2026-06-02.md` | 结构化报告、字段校验、分数边界处理 | 限制性可写 |
 | 表5.9 | 权限与数据隔离测试表 | `functional-cases-2026-06.md`、`dev-fixture-2026-06.md` | JWT、跨用户资源访问、dev fixture 边界 | 可进入正文候选 |
-| 补充证据 | 构建与自动化验证记录 | `quality-gates-2026-06-19.md` | 构建、CI 质量门禁；本地预检另含 `verify:ui` UI guardrail（`verify:ui` 仅为本地 UI 静态 guardrail，不等同全量视觉回归，当前未进 `.github/workflows/ci.yml`） | active evidence / 未作为当前正文编号表 |
+| 补充证据 | 构建与自动化验证记录 | `quality-gates-2026-07-13.md` | 两轮重构后的构建、CI 与三个核心 application 包覆盖率门禁；详细限制见证据快照 | 待复核 / 未作为当前正文编号表 |
 
 ## UI 截图候选
 

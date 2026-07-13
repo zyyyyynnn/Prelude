@@ -13,7 +13,8 @@
 | `env-2026-06.md` | 环境与构建记录 | 表 5.1 测试环境、基础构建记录、一次 BYOK/RabbitMQ 功能链路 | active | 本地阶段性采集，不代表生产部署 |
 | `functional-cases-2026-06.md` | 功能测试用例 | TC-01 ~ TC-12 功能、BYOK、fallback、质量门禁、seqNum | active | 语音和并发指标必须限制性描述 |
 | `dev-fixture-2026-06.md` | dev fixture 与历史 API 对照 | 本地验收数据夹具与未实测性能边界 | active | 多数真实性能指标未实测 |
-| `quality-gates-2026-06-19.md` | CI 自动化质量门禁与本地预检（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual`） | CI blocking + 本地可重复执行、UI 静态扫描、token schema、a11y critical-only、capture artifact-only | active | JaCoCo 为 report-only；`verify:ui` 不得等同全量视觉回归；`verify:a11y` 不得等同完整 WCAG 2 AA；`capture:visual` 不得等同像素 diff blocking gate |
+| `quality-gates-2026-07-13.md` | 两轮重构后的 CI、本地验证与应用包覆盖率门禁 | 222 个后端测试、三个核心 application 包 70% instruction coverage 门禁、Sentrux、前端及 UI 自动化门禁 | pending review | 不代表全仓覆盖率达到 70%；不提供性能或生产可用性结论 |
+| `quality-gates-2026-06-19.md` | 重构前 CI 与本地预检快照 | 当时 UI/token/a11y/capture 与 JaCoCo report-only 口径 | historical supplement | 只描述当时基线，不再代表当前 JaCoCo 门禁 |
 | `database-table-dictionary-2026-06.md` | 数据库表字典 | E-R 图字段细节与表结构说明 | active | 补充图 3.2，不替代 DDL |
 | `real-llm-api-2026-05-27-redacted.md` | 历史真实 API 记录 | 单次真实公网模型链路对照 | historical supplement | 不作为当前默认模型、性能基准或推荐依据 |
 | `archive/demo-2026-04-25.md` | 历史 Demo Twin 数据 | 旧本机回环数据对照 | archive | 不代表当前运行模式 |
@@ -27,6 +28,7 @@
 | `evidence/code-snippets/structured-output-resilience-2026-06-02.md` | Structured Output、限流、熔断等实现证据 | 可用；限流/熔断只能写机制，不写压测通过 |
 | `evidence/code-snippets/frontend-streaming-stability-2026-06-05.md` | 前端流式渲染与音频 composable 证据 | 可用；不代表高并发实测 |
 | `evidence/code-snippets/rabbitmq-report-queue-2026-06-13.md` | RabbitMQ 报告任务队列证据 | 可用；不得写成生产级可靠投递 |
+| `evidence/code-snippets/modular-monolith-boundary-hardening-2026-07-13.md` | 模块化单体与面试应用边界证据 | 待复核；不得写成微服务、独立部署或全量框架无关 |
 | `evidence/code-snippets/security-performance-hardening-2026-05-31.md` | 旧正则评分与早期安全优化证据 | 已降权；评分解析以 Structured Output 证据为准 |
 
 ## 功能测试证据矩阵
@@ -42,16 +44,16 @@
 | BYOK / Provider | `quality-gates`、`docs/byok-capability.md`、LlmRouter 测试 | 可写 | 支持用户级 OpenAI-compatible endpoint、API Key、模型发现与加密保存 | 任意模型故障都可无感切换 |
 | fallback 边界 | LlmRouter 测试 | 可写 | 内置 provider 可 fallback；openai-compatible 失败显式暴露 | 用户 BYOK 失败后静默改用系统 Key |
 | 语音 / TTS | `functional-cases`、VoiceInterviewTurnService 测试 | 限制性可写 | 语音链路具备容错、顺序保护和 timeout 单元测试 | 真实 ASR/TTS 低延迟性能已通过 |
-| 质量门禁 | `quality-gates`、CI workflow | 可写 | CI 覆盖后端测试、前端 build、audit、BYOK/dark verify、Sentrux、diff check（PR 路径用 merge-base 取得 diff 起点）、`verify:ui` / `verify:tokens` / `verify:a11y` blocking；`capture:visual` 作为 artifact-only 上传 17 个场景 PNG | coverage threshold 已达标、架构完全正确、UI 全量视觉回归通过、`capture:visual` 像素 diff blocking、完整 WCAG 2 AA 达标 |
+| 质量门禁 | `quality-gates`、CI workflow | 待新快照复核后可写 | CI 覆盖后端测试、前端 build、audit、BYOK/dark verify、Sentrux、diff check、三个核心 application 包 70% instruction coverage、`verify:ui` / `verify:tokens` / `verify:a11y` blocking；`capture:visual` 为 artifact-only | 全仓覆盖率达到 70%、架构完全正确、UI 全量视觉回归通过、`capture:visual` 像素 diff blocking、完整 WCAG 2 AA 达标 |
 | 消息序号 / 阶段系统消息 | InterviewMessage/Stage/Judge 测试 | 可写 | seqNum 基于 latest max+1，系统消息统一入口，降低稀疏序列风险 | 并发场景绝对无冲突 |
 
 ## 性能与边界矩阵
 
 | 测试项 | 当前证据 | 可写程度 | 边界 |
 | --- | --- | --- | --- |
-| 构建验证 | `env-2026-06.md`、`quality-gates-2026-06-19.md` | 可写 | 仅证明本地/CI 构建和测试流程可重复 |
+| 构建验证 | `env-2026-06.md`、`quality-gates-2026-07-13.md` | 待复核后可写 | 仅证明对应提交的本地/CI 构建和测试流程通过 |
 | npm audit | CI 与 `quality-gates` | 可写 | 基于 npm advisory，不等同完整供应链审计 |
-| JaCoCo | CI artifact | 可写 | report-only，无阈值 |
+| JaCoCo | `backend/pom.xml`、CI 与 `quality-gates-2026-07-13.md` | 待复核后可写 | 三个核心 application 包 instruction coverage 最低 70%；不代表全仓覆盖率 |
 | BYOK 浏览器验证 | `verify:byok` | 可写 | mock API 自动化流程，不代表公网模型性能 |
 | 暗色主题验证 | `verify:dark`（CI blocking） | 可写 | UI sanity check，不等同全量视觉回归 |
 | UI guardrail / semantic sizing | `verify:ui`（CI blocking） | 可写 | UI 静态扫描与 semantic sizing 红线，不等同全量视觉回归，不证明所有页面无样式缺陷 |
