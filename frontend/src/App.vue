@@ -2,11 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
-import AppSidebar from './components/workspace/AppSidebar.vue'
-import GlobalSettingsModal from './components/workspace/GlobalSettingsModal.vue'
+import SessionSidebar from '@/features/interview/components/SessionSidebar.vue'
+import GlobalSettingsModal from '@/features/settings/components/GlobalSettingsModal.vue'
 import GlobalConfirmDialog from './components/GlobalConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
-import { fetchUserProfile } from './api/user'
+import { fetchUserProfile } from '@/features/settings/api/user'
 import { applyThemePreference, getStoredThemePreference, resolveThemePreference, storeThemePreference } from './utils/theme'
 
 const authStore = useAuthStore()
@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="app-layout">
-    <AppSidebar
+    <SessionSidebar
       v-if="showSidebar"
       v-model:collapsed="isSidebarCollapsed"
       @open-global-settings="handleOpenSettings"

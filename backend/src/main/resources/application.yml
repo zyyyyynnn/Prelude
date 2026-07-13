@@ -62,6 +62,24 @@ app:
     aes-secret: ${APP_CRYPTO_AES_SECRET:}
   sse-timeout-ms: 120000
 
+prelude:
+  resume:
+    projection-source: document
+    backfill-on-startup: true
+    backfill-batch-size: 100
+  realtime:
+    mode: local
+  jobs:
+    execution-lease-seconds: 300
+    dispatch-recovery-delay-ms: 30000
+    redispatch-after-seconds: 60
+    report:
+      max-attempts: 3
+  retrieval:
+    hybrid:
+      vector-weight: 0.7
+      keyword-weight: 0.3
+
 logging:
   level:
     root: info
