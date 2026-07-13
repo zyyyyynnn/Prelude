@@ -5,7 +5,7 @@ const path = require('node:path')
 const { chromium } = require('playwright')
 
 const rootDir = path.resolve(__dirname, '..')
-const panelPath = path.join(rootDir, 'src', 'components', 'workspace', 'LlmSettingsPanel.vue')
+const panelPath = path.join(rootDir, 'src', 'features', 'settings', 'components', 'LlmSettingsPanel.vue')
 const sharedDropdownPath = path.join(rootDir, 'src', 'components', 'ui', 'shared-dropdown.ts')
 const screenshotDir = path.resolve(rootDir, '..', 'output', 'playwright')
 const baseUrl = 'https://api.tokenrouter.com/v1'

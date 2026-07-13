@@ -156,6 +156,10 @@
 
 更新用户资料或密码。
 
+### `POST /api/user/avatar`
+
+以 `multipart/form-data` 的 `file` 字段上传当前用户头像，返回更新后的用户资料。
+
 ## 简历与面试
 
 ### `POST /api/resume/upload`
@@ -172,6 +176,39 @@
 ### `GET /api/resume/list`
 
 获取当前用户简历列表。
+
+### `POST /api/resume/document`
+
+创建编辑器来源的结构化简历。请求体包含 `fileName` 与 `document`；`document` 遵循
+`schemaVersion = 1` 的 `ResumeDocument` 结构。返回 `resumeId`、`documentVersion`、
+`sourceType` 与完整 `document`。
+
+### `GET /api/resume/{resumeId}/document`
+
+获取当前用户拥有的结构化简历文档及版本。
+
+### `PUT /api/resume/{resumeId}/document`
+
+按乐观版本更新结构化简历。请求体：
+
+```json
+{
+  "expectedVersion": 1,
+  "document": {
+    "schemaVersion": 1,
+    "locale": "zh-CN",
+    "profile": { "fullName": "", "email": "", "phone": "", "targetRole": "" },
+    "summary": "",
+    "skills": [],
+    "experiences": [],
+    "projects": [],
+    "education": [],
+    "extras": []
+  }
+}
+```
+
+`expectedVersion` 不等于当前版本时返回业务错误，客户端应刷新后重试。
 
 ### `DELETE /api/resume/{resumeId}`
 
@@ -250,7 +287,32 @@ warmup -> technical -> deep_dive -> closing
 
 ### `POST /api/interview/{sessionId}/finish`
 
-结束面试并通过 RabbitMQ 异步生成结构化评估报告，同时沉淀评分历史和薄弱点数据。旧会话中的纯 Markdown 报告继续兼容展示。
+结束面试并通过 Job Runtime 异步生成结构化评估报告，同时沉淀评分历史和薄弱点数据。旧会话中的纯 Markdown 报告继续兼容展示。
+
+首次成功投递返回 `status=generating` 与 `jobId`；重复结束正在生成的会话不会重复投递。
+
+### `GET /api/interview/{sessionId}/listen`
+
+订阅当前用户拥有会话的报告 SSE 通道。连接建立后先发送 `ping: connected`；后续事件包括
+`report_ready`、`fallback` 与 `error`。前端在生成报告期间断线会按当前会话状态重连。
+
+### `GET /api/jobs/{jobId}`
+
+查询当前用户拥有的异步任务状态。状态为 `pending | running | succeeded | failed`，`attempts` 表示已执行次数；响应不暴露上游错误或密钥信息。
+
+响应 data 示例：
+
+```json
+{
+  "jobId": "62da5d55-49d1-4ef4-91a6-17e8ee42827d",
+  "type": "report.generate",
+  "subjectId": 7,
+  "status": "running",
+  "attempts": 1,
+  "createdAt": "2026-07-12T11:00:00",
+  "finishedAt": null
+}
+```
 
 ## 数据分析
 

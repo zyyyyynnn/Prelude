@@ -127,11 +127,59 @@ CREATE TABLE IF NOT EXISTS `resume` (
   `parsed_skills` TEXT COMMENT '解析出的技能',
   `parsed_projects` TEXT COMMENT '解析出的项目',
   `raw_text` MEDIUMTEXT COMMENT 'PDF原始文本',
+  `document_json` LONGTEXT COMMENT 'ResumeDocument 结构化真源',
+  `document_version` INT COMMENT '结构化文档版本',
+  `source_type` VARCHAR(32) COMMENT 'pdf_import/editor/fixture',
+  `plain_text_projection` MEDIUMTEXT COMMENT '确定性文本投影缓存',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_resume_user_id` (`user_id`),
   CONSTRAINT `fk_resume_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='简历表';
+
+SET @sql = (
+  SELECT IF(COUNT(*) = 0,
+    'ALTER TABLE `resume` ADD COLUMN `document_json` LONGTEXT NULL COMMENT ''ResumeDocument 结构化真源''',
+    'SELECT 1')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'resume' AND COLUMN_NAME = 'document_json'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(COUNT(*) = 0,
+    'ALTER TABLE `resume` ADD COLUMN `document_version` INT NULL COMMENT ''结构化文档版本''',
+    'SELECT 1')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'resume' AND COLUMN_NAME = 'document_version'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(COUNT(*) = 0,
+    'ALTER TABLE `resume` ADD COLUMN `source_type` VARCHAR(32) NULL COMMENT ''pdf_import/editor/fixture''',
+    'SELECT 1')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'resume' AND COLUMN_NAME = 'source_type'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(COUNT(*) = 0,
+    'ALTER TABLE `resume` ADD COLUMN `plain_text_projection` MEDIUMTEXT NULL COMMENT ''确定性文本投影缓存''',
+    'SELECT 1')
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'resume' AND COLUMN_NAME = 'plain_text_projection'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS `position_template` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -149,6 +197,7 @@ CREATE TABLE IF NOT EXISTS `interview_session` (
   `target_position` VARCHAR(100) NOT NULL COMMENT '目标岗位',
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT '会话使用的 Provider 快照',
   `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-chat' COMMENT '会话使用的模型快照',
+  `prompt_versions_json` VARCHAR(512) DEFAULT NULL COMMENT '会话使用的 Prompt 版本快照',
   `status` ENUM('ongoing','generating','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
   `summary` TEXT COMMENT '上下文压缩摘要',
   `summary_report` TEXT COMMENT '评估报告',
@@ -201,7 +250,20 @@ SET @sql = (
     'SELECT 1'
   )
   FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'llm_model'
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'llm_model'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `interview_session` ADD COLUMN `prompt_versions_json` VARCHAR(512) DEFAULT NULL COMMENT ''会话使用的 Prompt 版本快照''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'prompt_versions_json'
 );
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
@@ -219,6 +281,45 @@ SET @sql = (
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS `retrieval_chunk` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `scope_type` VARCHAR(32) NOT NULL COMMENT '检索作用域类型',
+  `scope_id` BIGINT NOT NULL COMMENT '检索作用域ID',
+  `ordinal` INT NOT NULL COMMENT '作用域内文本块顺序',
+  `content` MEDIUMTEXT NOT NULL COMMENT '可重建文本块',
+  `content_hash` CHAR(64) NOT NULL COMMENT '文本块SHA-256',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_retrieval_chunk_scope_ordinal` (`scope_type`, `scope_id`, `ordinal`),
+  KEY `idx_retrieval_chunk_scope` (`scope_type`, `scope_id`),
+  KEY `idx_retrieval_chunk_hash` (`content_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='检索可重建文本块';
+
+CREATE TABLE IF NOT EXISTS `async_job` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `job_id` CHAR(36) NOT NULL COMMENT '对外任务ID',
+  `type` VARCHAR(64) NOT NULL COMMENT '任务类型',
+  `user_id` BIGINT NOT NULL COMMENT '任务所有者',
+  `subject_id` BIGINT NOT NULL COMMENT '业务对象ID',
+  `idempotency_key` VARCHAR(160) NOT NULL COMMENT '幂等键',
+  `status` ENUM('pending','running','succeeded','failed') NOT NULL DEFAULT 'pending' COMMENT '任务状态',
+  `attempts` INT NOT NULL DEFAULT 0 COMMENT '已执行次数',
+  `payload_json` TEXT NOT NULL COMMENT '任务参数快照',
+  `last_error` TEXT DEFAULT NULL COMMENT '最近一次错误',
+  `dispatched_at` DATETIME DEFAULT NULL COMMENT '最近一次投递时间',
+  `started_at` DATETIME DEFAULT NULL COMMENT '最近一次开始时间',
+  `finished_at` DATETIME DEFAULT NULL COMMENT '终态时间',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_async_job_job_id` (`job_id`),
+  UNIQUE KEY `uk_async_job_idempotency_key` (`idempotency_key`),
+  KEY `idx_async_job_user_created` (`user_id`, `created_at`),
+  KEY `idx_async_job_status_updated` (`status`, `updated_at`),
+  CONSTRAINT `fk_async_job_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='异步任务状态与幂等记录';
 
 CREATE TABLE IF NOT EXISTS `interview_message` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
