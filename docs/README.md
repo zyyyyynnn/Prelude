@@ -31,7 +31,7 @@
 
 - UI 规范最高入口是 `DESIGN.md`，任何样式与组件约束以 `DESIGN.md` 为准。
 - UI 自动化质量体系的当前态、维护方式、CI 接入见 `quality/ui-quality-system.md`。
-- 不在 `docs/` 中保留 UI 过程报告；过程审计记录在 `thesis-assets/evidence/phase-reports/ui-phase2-quality-system-2026-06.md`。
+- 不在 `docs/` 中保留 UI 过程报告；历史审计记录统一归档在 `thesis-assets/evidence/phase-reports/archive/`。
 
 ## 图片放置规则
 

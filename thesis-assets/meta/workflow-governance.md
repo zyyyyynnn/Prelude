@@ -181,7 +181,6 @@ evidence/ 是正文之前的证据缓冲区。
 提交版 DOCX/PDF 只能在 Word/WPS 中人工终审后产生。
 PDF 必须由人工终审后的 DOCX 导出。
 不得在资产未冻结前生成最终 Word 或 PDF。
-不使用自动组装脚本；pandoc 自动拼装产出的 docx 格式质量不满足交付要求，build-docx.ps1 与 current/ 中间产物已从仓库移除。
 
 | 阶段 | 产物 | 是否自动化 | 是否可作为提交版 | 验收人 |
 | --- | --- | --- | --- | --- |
@@ -207,7 +206,7 @@ PDF 必须由人工终审后的 DOCX 导出。
 | E. 正文单章修订或降噪 | 证据确认锁定 | evidence/、单章节 Markdown | paper-spine-rewrite/audit | paper-spine-build、一次性全局改写 | 更新后的单章节 MD | 无异常营销修辞与逻辑事实错乱 | 是 |
 | F. 引用与参考文献整理 | 章节脱水导致引用号错位 | evidence-map.md | 手工文本编辑 | citeproc 自动排版（当前阶段暂缓） | 连续引用的正确编号 | 编号对应事实匹配 | 是 |
 | G. Word 人工终审 | 全部章节及引用内容确认冻结 | chapters/ 下文件集 | Word/WPS | 任何自动化工具操作最终排版 | submitted-thesis.docx | 手工核对排版正确格式无残缺 | 是 |
-| H. PDF 导出与最终验收 | Word 排版结束无误 | 终审的 DOCX | Word/WPS 导出 PDF 功能 | Pandoc | submitted-thesis.pdf | PDF 完美无乱码 | 是 |
+| H. PDF 导出与最终验收 | Word 排版结束无误 | 终审的 DOCX | Word/WPS 导出 PDF 功能 | — | submitted-thesis.pdf | PDF 完美无乱码 | 是 |
 | I. 冻结归档 | PDF 及 DOCX 均验收合格 | submitted-thesis.* 产物 | Git | - | Tag 或 Commit 号归档 | 文档归档提交不可更改 | 是 |
 
 注意：每个阶段完成后，是否需要用户与审查官复核：是。

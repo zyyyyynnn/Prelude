@@ -5,7 +5,7 @@
 - 基线：`main` @ `851fa5bf12c2f3737c30f13632b7e1759932eacd`
 - 关联：`modular-monolith-boundary-hardening-2026-07-13.md`、`quality-gates-2026-07-13.md`
 - 状态：已采集，待用户与审查官复核
-- 替代关系：正文与答辩引用结束面试 / 报告任务发布时，以本文件为准；`rabbitmq-report-queue-2026-06-13.md` 仅 historical
+- 替代关系：正文与答辩引用结束面试 / 报告任务发布时，以本文件为准；旧证据已归档至 `archive/rabbitmq-report-queue-2026-06-13.md`
 
 ## 当前链路
 
