@@ -1,6 +1,6 @@
 # Arch rules executed by CI via `sentrux check .` (pinned v0.5.7 in
 # .github/workflows/ci.yml). Constraints below are hard failures: a violation
-# blocks the build. Coverage reporting stays report-only — see [coverage].
+# blocks the build. Core application coverage is enforced by JaCoCo in backend/pom.xml.
 #
 # Historical note: prior revisions of this comment said the file was not a
 # blocking CI gate until sentrux behavior was proven stable in GitHub Actions.
@@ -25,16 +25,57 @@
 #     but the remaining 0.0050 is structural.
 #   - 0.47 is the new floor: a small relaxation that acknowledges the
 #     expanded test surface while leaving a 0.0050 buffer above current.
-#     Re-tighten to 0.48 once the Component Lab + Phase 4 token work
-#     stabilizes, or once additional dedup (e.g. collapsing 4 .cjs
-#     scripts into a single verifier entry) becomes possible.
+#   - after Phase 8 (2026-07-13): the complete terminal package tree passes
+#     this floor together with all domain boundary rules. Keep 0.47 until
+#     enough post-rewrite history exists to raise it without coupling the
+#     gate to a single large file-move snapshot.
 min_equality = 0.47
 
 [[boundaries]]
-from = "backend/src/main/java/com/interview/controller/*"
-to = "backend/src/main/java/com/interview/mapper/*"
-reason = "Controllers should depend on services, not mappers directly."
+from = "backend/src/main/java/com/interview/identity/api/*"
+to = "backend/src/main/java/com/interview/identity/infrastructure/persistence/*"
+reason = "Identity API adapters depend on application use cases, not persistence mappers."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/resume/api/*"
+to = "backend/src/main/java/com/interview/resume/infrastructure/persistence/*"
+reason = "Resume API adapters depend on application use cases, not persistence mappers."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/interview/application/*"
+to = "backend/src/main/java/com/interview/resume/infrastructure/*"
+reason = "Interview application reads resume data only through ResumeContextPort."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/interview/application/*"
+to = "backend/src/main/java/com/interview/catalog/infrastructure/*"
+reason = "Interview application reads catalog data only through PositionCatalogPort."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/insight/application/*"
+to = "backend/src/main/java/com/interview/interview/infrastructure/*"
+reason = "Insight application reaches interview state only through InterviewReportPort."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/interview/api/*"
+to = "backend/src/main/java/com/interview/interview/infrastructure/persistence/*"
+reason = "Interview API adapters depend on application ports, not persistence mappers."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/interview/api/voice/*"
+to = "backend/src/main/java/com/interview/interview/infrastructure/persistence/*"
+reason = "Voice API adapters depend on application ports, not persistence mappers."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/insight/api/*"
+to = "backend/src/main/java/com/interview/insight/infrastructure/persistence/*"
+reason = "Insight API adapters depend on application use cases, not persistence mappers."
+
+[[boundaries]]
+from = "backend/src/main/java/com/interview/catalog/api/*"
+to = "backend/src/main/java/com/interview/catalog/infrastructure/persistence/*"
+reason = "Catalog API adapters depend on application use cases, not persistence mappers."
 
 [coverage]
-target = "stage-goal"
-blocking = false
+target = "core-application-instruction-70"
+blocking = true

@@ -14,7 +14,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/LoginView.vue'),
+      component: () => import('@/features/auth/pages/LoginPage.vue'),
       meta: {
         public: true,
       },
@@ -22,7 +22,7 @@ const router = createRouter({
     {
       path: '/interview',
       name: 'interview',
-      component: () => import('../views/InterviewView.vue'),
+      component: () => import('@/features/interview/pages/InterviewPage.vue'),
       meta: {
         requiresAuth: true,
       },
@@ -30,7 +30,7 @@ const router = createRouter({
     {
       path: '/resumes',
       name: 'resumes',
-      component: () => import('../views/ResumeManagementView.vue'),
+      component: () => import('@/features/resume/pages/ResumeManagementPage.vue'),
       meta: {
         requiresAuth: true,
       },
@@ -39,7 +39,7 @@ const router = createRouter({
     {
       path: '/analytics',
       name: 'analytics',
-      component: () => import('../views/AnalyticsView.vue'),
+      component: () => import('@/features/insight/pages/AnalyticsPage.vue'),
       meta: {
         requiresAuth: true,
       },
