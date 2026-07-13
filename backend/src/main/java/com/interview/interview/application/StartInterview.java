@@ -4,8 +4,6 @@ import com.interview.catalog.api.port.PositionCatalogPort;
 import com.interview.catalog.api.port.PositionCatalogPort.PositionSnapshot;
 import com.interview.shared.api.BusinessException;
 import com.interview.shared.web.UserContext;
-import com.interview.interview.api.InterviewStartRequest;
-import com.interview.interview.api.InterviewStartResponse;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.platform.llm.LlmSelection;
 import com.interview.interview.application.port.InterviewSessionRepository;
@@ -41,11 +39,11 @@ public class StartInterview {
     private final RetrievalPort retrievalPort;
 
     @Transactional(rollbackFor = Exception.class)
-    public InterviewStartResponse execute(InterviewStartRequest request) {
+    public StartInterviewResult execute(StartInterviewCommand command) {
         Long userId = currentUserId();
-        ResumeProjection resume = resumeContextPort.requireOwnedProjection(userId, request.getResumeId());
+        ResumeProjection resume = resumeContextPort.requireOwnedProjection(userId, command.resumeId());
 
-        PositionSnapshot position = positionCatalogPort.findById(request.getPositionId());
+        PositionSnapshot position = positionCatalogPort.findById(command.positionId());
         if (position == null) {
             throw BusinessException.badRequest("岗位模板不存在");
         }
@@ -56,7 +54,7 @@ public class StartInterview {
         if (existingSession != null) {
             interviewStageManager.ensureInitialStage(existingSession);
             String currentStage = interviewStageManager.currentStageName(existingSession.getId());
-            return new InterviewStartResponse(
+            return new StartInterviewResult(
                 existingSession.getId(),
                 existingSession.getTargetPosition(),
                 currentStage == null ? InterviewStageManager.STAGE_WARMUP : currentStage
@@ -68,17 +66,17 @@ public class StartInterview {
         session.setResumeId(resume.resumeId());
         session.setPositionId(position.id());
         session.setTargetPosition(position.name());
-        LlmSelection selection = llmConfigPort.resolveSelection(userId, request.getLlmModel());
+        LlmSelection selection = llmConfigPort.resolveSelection(userId, command.llmModel());
         session.setLlmProvider(selection.providerKey());
         session.setLlmModel(selection.model());
         session.setPromptVersionsJson(PromptVersions.DEFAULT_SNAPSHOT_JSON);
         session.setStatus(STATUS_ONGOING);
-        session.setJdText(request.getJdText());
+        session.setJdText(command.jdText());
         interviewSessionRepository.add(session);
 
         List<String> retrievalDocuments = new ArrayList<>();
         addIfPresent(retrievalDocuments, resume.plainText());
-        addIfPresent(retrievalDocuments, request.getJdText());
+        addIfPresent(retrievalDocuments, command.jdText());
         sseTaskExecutor.execute(() -> retrievalPort.index(
             RetrievalPort.SCOPE_SESSION,
             session.getId(),
@@ -87,7 +85,7 @@ public class StartInterview {
         interviewMessageService.insertMessage(session.getId(), ROLE_SYSTEM, position.systemPrompt());
         interviewStageManager.ensureInitialStage(session);
 
-        return new InterviewStartResponse(session.getId(), position.name(), InterviewStageManager.STAGE_WARMUP);
+        return new StartInterviewResult(session.getId(), position.name(), InterviewStageManager.STAGE_WARMUP);
     }
 
     private Long currentUserId() {

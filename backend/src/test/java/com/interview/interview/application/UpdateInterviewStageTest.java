@@ -1,6 +1,5 @@
 package com.interview.interview.application;
 
-import com.interview.interview.api.InterviewStageUpdateRequest;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.domain.InterviewStage;
 import com.interview.interview.application.port.InterviewFixturePort;
@@ -32,7 +31,7 @@ class UpdateInterviewStageTest {
         when(devFixtureService.isEnabled()).thenReturn(true);
         when(devFixtureService.resolveScriptedReply("technical", 0)).thenReturn("技术问题");
 
-        var response = useCase().execute(7L, new InterviewStageUpdateRequest("technical"));
+        UpdateInterviewStageResult response = useCase().execute(7L, "technical");
 
         assertThat(response.stageName()).isEqualTo("technical");
         verify(stageManager).ensureInitialStage(session);
@@ -47,7 +46,7 @@ class UpdateInterviewStageTest {
         when(stageManager.moveToStage(7L, "technical", true)).thenReturn(stage("technical"));
         when(devFixtureService.isEnabled()).thenReturn(false);
 
-        useCase().execute(7L, new InterviewStageUpdateRequest("technical"));
+        useCase().execute(7L, "technical");
 
         verify(messageService, never()).insertMessage(org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
