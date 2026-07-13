@@ -1,7 +1,6 @@
 package com.interview.interview.application;
 
 import com.interview.shared.web.UserContext;
-import com.interview.interview.api.InterviewChatRequest;
 import com.interview.interview.domain.InterviewMessage;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.platform.realtime.RealtimePort;
@@ -29,20 +28,20 @@ public class StreamChatTurn {
     private final Executor sseTaskExecutor;
     private final RealtimePort realtimePort;
 
-    public SseEmitter execute(Long sessionId, InterviewChatRequest request, boolean autoStart) {
+    public SseEmitter execute(Long sessionId, String content, boolean autoStart) {
         Long userId = sessionAccess.currentUserId();
         SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
         stream.emitter().onTimeout(() -> completeWithError(stream, "连接超时，请重试"));
         stream.emitter().onError(error -> stream.complete());
 
-        sseTaskExecutor.execute(() -> runTurn(sessionId, userId, request, autoStart, stream));
+        sseTaskExecutor.execute(() -> runTurn(sessionId, userId, content, autoStart, stream));
         return stream.emitter();
     }
 
     private void runTurn(
         Long sessionId,
         Long userId,
-        InterviewChatRequest request,
+        String content,
         boolean autoStart,
         SseSessionStream stream
     ) {
@@ -53,7 +52,7 @@ public class StreamChatTurn {
                 new InterviewTurnCommand(
                     sessionId,
                     userId,
-                    request == null ? null : request.getContent(),
+                    content,
                     autoStart,
                     true
                 ),

@@ -8,8 +8,6 @@ import com.interview.interview.application.InterviewSummaryService;
 
 import com.interview.shared.web.UserContext;
 import com.interview.platform.realtime.RealtimePort;
-import com.interview.interview.api.InterviewStartRequest;
-import com.interview.interview.api.InterviewStartResponse;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.catalog.api.port.PositionCatalogPort;
 import com.interview.catalog.api.port.PositionCatalogPort.PositionSnapshot;
@@ -103,13 +101,11 @@ class StartInterviewTest {
             return 1;
         }).when(interviewSessionMapper).add(any(InterviewSession.class));
 
-        InterviewStartRequest request = new InterviewStartRequest();
-        request.setResumeId(3L);
-        request.setPositionId(5L);
-        request.setLlmModel("model-x");
-        request.setJdText("job description");
+        StartInterviewCommand command = new StartInterviewCommand(
+            3L, 5L, "job description", "model-x"
+        );
 
-        InterviewStartResponse response = startInterview.execute(request);
+        StartInterviewResult response = startInterview.execute(command);
 
         assertThat(response.sessionId()).isEqualTo(7L);
         assertThat(response.targetPosition()).isEqualTo("Java 后端工程师");

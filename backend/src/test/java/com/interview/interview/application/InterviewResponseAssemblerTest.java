@@ -3,10 +3,6 @@ package com.interview.interview.application;
 import com.interview.interview.application.InterviewResponseAssembler;
 import com.interview.interview.application.InterviewStageManager;
 
-import com.interview.interview.api.InterviewMessageItemResponse;
-import com.interview.interview.api.InterviewMessagesResponse;
-import com.interview.interview.api.InterviewSessionItemResponse;
-import com.interview.interview.api.InterviewStageItemResponse;
 import com.interview.interview.domain.InterviewMessage;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.domain.InterviewStage;
@@ -35,7 +31,7 @@ class InterviewResponseAssemblerTest {
         session.setLlmModel("deepseek-chat");
         session.setSummaryReport(null);
 
-        InterviewSessionItemResponse response = assembler.toSessionItem(session, "technical");
+        InterviewSessionSummary response = assembler.toSessionItem(session, "technical");
 
         assertThat(response.sessionId()).isEqualTo(7L);
         assertThat(response.targetPosition()).isEqualTo("Backend Engineer");
@@ -54,7 +50,7 @@ class InterviewResponseAssemblerTest {
         session.setStatus("finished");
         session.setSummaryReport("# Report");
 
-        InterviewSessionItemResponse response = assembler.toSessionItem(session, "wrap_up");
+        InterviewSessionSummary response = assembler.toSessionItem(session, "wrap_up");
 
         assertThat(response.summaryReport()).isEqualTo("# Report");
         assertThat(response.currentStage()).isEqualTo("wrap_up");
@@ -64,7 +60,7 @@ class InterviewResponseAssemblerTest {
     void toMessagesResponseFallsBackToWarmupWhenStagesEmpty() {
         InterviewSession session = sessionBuilder(7L);
 
-        InterviewMessagesResponse response = assembler.toMessagesResponse(
+        InterviewSessionDetails response = assembler.toMessagesResponse(
             session,
             Collections.emptyList(),
             Collections.emptyList()
@@ -100,12 +96,12 @@ class InterviewResponseAssemblerTest {
         messages.add(assistant);
         messages.add(system);
 
-        InterviewMessagesResponse response = assembler.toMessagesResponse(session, stages, messages);
+        InterviewSessionDetails response = assembler.toMessagesResponse(session, stages, messages);
 
         assertThat(response.currentStage()).isEqualTo("technical");
         assertThat(response.stages()).containsExactly(
-            new InterviewStageItemResponse("warmup", stageStart, stageEnd),
-            new InterviewStageItemResponse("technical", stageEnd, null)
+            new InterviewStageView("warmup", stageStart, stageEnd),
+            new InterviewStageView("technical", stageEnd, null)
         );
         assertThat(response.messages()).hasSize(3);
         assertThat(response.messages().get(0).role()).isEqualTo("user");
@@ -122,13 +118,13 @@ class InterviewResponseAssemblerTest {
         InterviewMessage scored = messageEntity(11L, "assistant", "answer", 0, 9);
         scored.setHint("可以补充指标口径");
 
-        InterviewMessagesResponse response = assembler.toMessagesResponse(
+        InterviewSessionDetails response = assembler.toMessagesResponse(
             session,
             List.of(technical),
             List.of(scored)
         );
 
-        InterviewMessageItemResponse item = response.messages().get(0);
+        InterviewMessageView item = response.messages().get(0);
         assertThat(item.id()).isEqualTo(11L);
         assertThat(item.role()).isEqualTo("assistant");
         assertThat(item.content()).isEqualTo("answer");
@@ -144,7 +140,7 @@ class InterviewResponseAssemblerTest {
         session.setPositionId(202L);
         session.setJdText("岗位描述");
 
-        InterviewMessagesResponse response = assembler.toMessagesResponse(
+        InterviewSessionDetails response = assembler.toMessagesResponse(
             session,
             Collections.emptyList(),
             Collections.emptyList()

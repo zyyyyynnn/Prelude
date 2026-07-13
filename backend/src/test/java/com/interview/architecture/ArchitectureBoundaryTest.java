@@ -42,6 +42,15 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void interviewApplicationDoesNotImportItsApiAdapter() throws IOException {
+        String sources = readJavaTree(
+            backendSourceRoot().resolve(Path.of("com", "interview", "interview", "application"))
+        );
+
+        assertThat(sources).doesNotContain("com.interview.interview.api");
+    }
+
+    @Test
     void coreApplicationsDoNotDependOnMybatis() throws IOException {
         Path root = backendSourceRoot().resolve(Path.of("com", "interview"));
         for (String domain : List.of("resume", "interview", "insight")) {
