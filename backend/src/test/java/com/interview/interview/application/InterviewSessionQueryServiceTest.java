@@ -1,7 +1,5 @@
 package com.interview.interview.application;
 
-import com.interview.interview.api.InterviewMessagesResponse;
-import com.interview.interview.api.InterviewSessionItemResponse;
 import com.interview.interview.domain.InterviewMessage;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.domain.InterviewStage;
@@ -29,7 +27,7 @@ class InterviewSessionQueryServiceTest {
     @Test
     void listsCurrentUserSessionsWithCurrentStage() {
         InterviewSession session = session();
-        InterviewSessionItemResponse item = new InterviewSessionItemResponse(
+        InterviewSessionSummary item = new InterviewSessionSummary(
             7L, "Java", "ongoing", session.getCreatedAt(), "technical", "openai", "gpt", null
         );
         when(sessionAccess.currentUserId()).thenReturn(42L);
@@ -45,7 +43,7 @@ class InterviewSessionQueryServiceTest {
         InterviewSession session = session();
         InterviewStage stage = new InterviewStage();
         InterviewMessage message = new InterviewMessage();
-        InterviewMessagesResponse response = new InterviewMessagesResponse(
+        InterviewSessionDetails response = new InterviewSessionDetails(
             7L, "Java", "ongoing", "warmup", null, List.of(), List.of(), 1L, 2L, "JD"
         );
         when(sessionAccess.currentUserId()).thenReturn(42L);

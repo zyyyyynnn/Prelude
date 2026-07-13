@@ -1,7 +1,6 @@
 package com.interview.interview.application;
 
 import com.interview.shared.api.BusinessException;
-import com.interview.interview.api.InterviewFinishResponse;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.application.port.InterviewSessionRepository;
 import com.interview.platform.job.JobRequest;
@@ -25,16 +24,16 @@ public class FinishInterview {
     private final JobSchedulerPort jobSchedulerPort;
     private final InterviewMessageService interviewMessageService;
 
-    public InterviewFinishResponse execute(Long sessionId) {
+    public FinishInterviewResult execute(Long sessionId) {
         Long userId = sessionAccess.currentUserId();
         InterviewSession session = sessionAccess.requireOwned(sessionId, userId);
         String status = session.getStatus();
 
         if (STATUS_GENERATING.equals(status)) {
-            return new InterviewFinishResponse(session.getId(), null, STATUS_GENERATING, null);
+            return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, null);
         }
         if (STATUS_FINISHED.equals(status)) {
-            return new InterviewFinishResponse(session.getId(), session.getSummaryReport(), STATUS_FINISHED, null);
+            return new FinishInterviewResult(session.getId(), session.getSummaryReport(), STATUS_FINISHED, null);
         }
         if (!STATUS_ONGOING.equals(status)) {
             throw BusinessException.badRequest("面试会话状态异常");
@@ -53,7 +52,7 @@ public class FinishInterview {
         }
 
         interviewMessageService.invalidateSessionLock(sessionId);
-        return new InterviewFinishResponse(session.getId(), null, STATUS_GENERATING, job.jobId());
+        return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, job.jobId());
     }
 
     private void restoreOngoingStatus(Long sessionId) {
