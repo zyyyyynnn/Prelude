@@ -12,7 +12,6 @@ import com.interview.shared.web.UserContext;
 import com.interview.platform.realtime.RealtimeConnection;
 import com.interview.platform.realtime.RealtimePort;
 import com.interview.platform.realtime.SessionStreamSink;
-import com.interview.interview.api.InterviewChatRequest;
 import com.interview.interview.domain.InterviewMessage;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.application.FinishInterview;
@@ -156,10 +155,7 @@ class StreamChatTurnTest {
         doThrow(new RuntimeException("llm down"))
             .when(chatPort).stream(any(), any());
 
-        InterviewChatRequest request = new InterviewChatRequest();
-        request.setContent("回答");
-
-        streamChatTurn.execute(7L, request, false);
+        streamChatTurn.execute(7L, "回答", false);
 
         verify(interviewMessageMapper).delete(100L);
         assertThat(UserContext.getCurrentUserId()).isNull();

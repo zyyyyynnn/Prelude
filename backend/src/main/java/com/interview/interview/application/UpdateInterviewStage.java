@@ -1,7 +1,5 @@
 package com.interview.interview.application;
 
-import com.interview.interview.api.InterviewStageUpdateRequest;
-import com.interview.interview.api.InterviewStageUpdateResponse;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.domain.InterviewStage;
 import com.interview.interview.application.port.InterviewFixturePort;
@@ -21,12 +19,12 @@ public class UpdateInterviewStage {
     private final InterviewFixturePort devFixtureService;
 
     @Transactional(rollbackFor = Exception.class)
-    public InterviewStageUpdateResponse execute(Long sessionId, InterviewStageUpdateRequest request) {
+    public UpdateInterviewStageResult execute(Long sessionId, String stageName) {
         InterviewSession session = sessionAccess.requireOngoing(sessionId, sessionAccess.currentUserId());
         if (interviewStageManager.currentOrLatestStage(sessionId) == null) {
             interviewStageManager.ensureInitialStage(session);
         }
-        InterviewStage stage = interviewStageManager.moveToStage(sessionId, request.stageName(), true);
+        InterviewStage stage = interviewStageManager.moveToStage(sessionId, stageName, true);
         if (devFixtureService != null && devFixtureService.isEnabled()) {
             interviewMessageService.insertMessage(
                 sessionId,
@@ -34,6 +32,6 @@ public class UpdateInterviewStage {
                 devFixtureService.resolveScriptedReply(stage.getStageName(), 0)
             );
         }
-        return new InterviewStageUpdateResponse(stage.getStageName(), stage.getStartedAt());
+        return new UpdateInterviewStageResult(stage.getStageName(), stage.getStartedAt());
     }
 }

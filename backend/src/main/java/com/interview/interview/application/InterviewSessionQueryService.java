@@ -1,7 +1,5 @@
 package com.interview.interview.application;
 
-import com.interview.interview.api.InterviewMessagesResponse;
-import com.interview.interview.api.InterviewSessionItemResponse;
 import com.interview.interview.domain.InterviewMessage;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.domain.InterviewStage;
@@ -22,7 +20,7 @@ public class InterviewSessionQueryService {
     private final InterviewResponseAssembler interviewResponseAssembler;
     private final InterviewSessionAccess sessionAccess;
 
-    public List<InterviewSessionItemResponse> listCurrentUserSessions() {
+    public List<InterviewSessionSummary> listCurrentUserSessions() {
         return interviewSessionRepository.listByUser(sessionAccess.currentUserId())
             .stream()
             .map(session -> interviewResponseAssembler.toSessionItem(
@@ -30,7 +28,7 @@ public class InterviewSessionQueryService {
             .toList();
     }
 
-    public InterviewMessagesResponse getSessionMessages(Long sessionId) {
+    public InterviewSessionDetails getSessionMessages(Long sessionId) {
         InterviewSession session = sessionAccess.requireOwned(sessionId, sessionAccess.currentUserId());
         List<InterviewStage> stages = interviewStageManager.listStages(sessionId);
         List<InterviewMessage> messages = interviewMessageRepository.listBySession(sessionId);

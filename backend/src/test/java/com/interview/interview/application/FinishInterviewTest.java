@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.shared.api.BusinessException;
 import com.interview.shared.web.UserContext;
 import com.interview.platform.realtime.RealtimePort;
-import com.interview.interview.api.InterviewFinishResponse;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.application.FinishInterview;
 import com.interview.interview.application.InterviewSessionAccess;
@@ -106,19 +105,19 @@ class FinishInterviewTest {
         session.setStatus("ongoing");
         when(interviewSessionMapper.selectById(7L)).thenReturn(session);
 
-        InterviewFinishResponse response = finishInterview.execute(7L);
+        FinishInterviewResult response = finishInterview.execute(7L);
 
-        assertThat(response.getSessionId()).isEqualTo(7L);
-        assertThat(response.getStatus()).isEqualTo("generating");
-        assertThat(response.getJobId()).isNotBlank();
-        assertThat(response.getSummaryReport()).isNull();
+        assertThat(response.sessionId()).isEqualTo(7L);
+        assertThat(response.status()).isEqualTo("generating");
+        assertThat(response.jobId()).isNotBlank();
+        assertThat(response.summaryReport()).isNull();
 
         ArgumentCaptor<JobRequest> jobCaptor = ArgumentCaptor.forClass(JobRequest.class);
         verify(jobSchedulerPort).enqueue(jobCaptor.capture());
         JobRequest published = jobCaptor.getValue();
         assertThat(published.subjectId()).isEqualTo(7L);
         assertThat(published.userId()).isEqualTo(42L);
-        assertThat(response.getJobId()).isEqualTo("job-1");
+        assertThat(response.jobId()).isEqualTo("job-1");
 
         verify(interviewSessionMapper, times(1)).update(any(InterviewSession.class));
     }
@@ -187,11 +186,11 @@ class FinishInterviewTest {
         session.setStatus("generating");
         when(interviewSessionMapper.selectById(7L)).thenReturn(session);
 
-        InterviewFinishResponse response = finishInterview.execute(7L);
+        FinishInterviewResult response = finishInterview.execute(7L);
 
-        assertThat(response.getStatus()).isEqualTo("generating");
-        assertThat(response.getJobId()).isNull();
-        assertThat(response.getSummaryReport()).isNull();
+        assertThat(response.status()).isEqualTo("generating");
+        assertThat(response.jobId()).isNull();
+        assertThat(response.summaryReport()).isNull();
         verify(jobSchedulerPort, never()).enqueue(any(JobRequest.class));
         verify(interviewSessionMapper, never()).update(any(InterviewSession.class));
     }
@@ -205,11 +204,11 @@ class FinishInterviewTest {
         session.setSummaryReport("# Report");
         when(interviewSessionMapper.selectById(7L)).thenReturn(session);
 
-        InterviewFinishResponse response = finishInterview.execute(7L);
+        FinishInterviewResult response = finishInterview.execute(7L);
 
-        assertThat(response.getStatus()).isEqualTo("finished");
-        assertThat(response.getSummaryReport()).isEqualTo("# Report");
-        assertThat(response.getJobId()).isNull();
+        assertThat(response.status()).isEqualTo("finished");
+        assertThat(response.summaryReport()).isEqualTo("# Report");
+        assertThat(response.jobId()).isNull();
         verify(jobSchedulerPort, never()).enqueue(any(JobRequest.class));
         verify(interviewSessionMapper, never()).update(any(InterviewSession.class));
     }

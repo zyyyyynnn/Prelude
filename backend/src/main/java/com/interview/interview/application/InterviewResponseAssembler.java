@@ -1,9 +1,5 @@
 package com.interview.interview.application;
 
-import com.interview.interview.api.InterviewMessageItemResponse;
-import com.interview.interview.api.InterviewMessagesResponse;
-import com.interview.interview.api.InterviewSessionItemResponse;
-import com.interview.interview.api.InterviewStageItemResponse;
 import com.interview.interview.domain.InterviewMessage;
 import com.interview.interview.domain.InterviewSession;
 import com.interview.interview.domain.InterviewStage;
@@ -12,14 +8,14 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Pure response assembly — maps domain entities to DTOs.
+ * Maps domain entities to application query views.
  * Contains no business logic, no DB access, no side effects.
  */
 @Component
 public class InterviewResponseAssembler {
 
-    public InterviewSessionItemResponse toSessionItem(InterviewSession session, String currentStage) {
-        return new InterviewSessionItemResponse(
+    public InterviewSessionSummary toSessionItem(InterviewSession session, String currentStage) {
+        return new InterviewSessionSummary(
             session.getId(),
             session.getTargetPosition(),
             session.getStatus(),
@@ -31,7 +27,7 @@ public class InterviewResponseAssembler {
         );
     }
 
-    public InterviewMessagesResponse toMessagesResponse(
+    public InterviewSessionDetails toMessagesResponse(
         InterviewSession session,
         List<InterviewStage> stages,
         List<InterviewMessage> messages
@@ -40,7 +36,7 @@ public class InterviewResponseAssembler {
             ? InterviewStageManager.STAGE_WARMUP
             : stages.get(stages.size() - 1).getStageName();
 
-        return new InterviewMessagesResponse(
+        return new InterviewSessionDetails(
             session.getId(),
             session.getTargetPosition(),
             session.getStatus(),
@@ -54,12 +50,12 @@ public class InterviewResponseAssembler {
         );
     }
 
-    private InterviewStageItemResponse toStageItem(InterviewStage stage) {
-        return new InterviewStageItemResponse(stage.getStageName(), stage.getStartedAt(), stage.getEndedAt());
+    private InterviewStageView toStageItem(InterviewStage stage) {
+        return new InterviewStageView(stage.getStageName(), stage.getStartedAt(), stage.getEndedAt());
     }
 
-    private InterviewMessageItemResponse toMessageItem(InterviewMessage message) {
-        return new InterviewMessageItemResponse(
+    private InterviewMessageView toMessageItem(InterviewMessage message) {
+        return new InterviewMessageView(
             message.getId(),
             message.getRole(),
             message.getContent(),

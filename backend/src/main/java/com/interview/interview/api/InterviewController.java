@@ -1,14 +1,6 @@
 package com.interview.interview.api;
 
 import com.interview.shared.api.Result;
-import com.interview.interview.api.InterviewChatRequest;
-import com.interview.interview.api.InterviewFinishResponse;
-import com.interview.interview.api.InterviewMessagesResponse;
-import com.interview.interview.api.InterviewSessionItemResponse;
-import com.interview.interview.api.InterviewStageUpdateRequest;
-import com.interview.interview.api.InterviewStageUpdateResponse;
-import com.interview.interview.api.InterviewStartRequest;
-import com.interview.interview.api.InterviewStartResponse;
 import com.interview.interview.application.FinishInterview;
 import com.interview.interview.application.InterviewSessionQueryService;
 import com.interview.interview.application.ListenInterview;
@@ -43,17 +35,23 @@ public class InterviewController {
 
     @PostMapping("/start")
     public Result<InterviewStartResponse> start(@Valid @RequestBody InterviewStartRequest request) {
-        return Result.success(startInterview.execute(request));
+        return Result.success(InterviewApiMapper.toResponse(
+            startInterview.execute(InterviewApiMapper.toCommand(request))
+        ));
     }
 
     @GetMapping("/sessions")
     public Result<List<InterviewSessionItemResponse>> sessions() {
-        return Result.success(sessionQueryService.listCurrentUserSessions());
+        return Result.success(sessionQueryService.listCurrentUserSessions().stream()
+            .map(InterviewApiMapper::toResponse)
+            .toList());
     }
 
     @GetMapping("/{sessionId}/messages")
     public Result<InterviewMessagesResponse> messages(@PathVariable Long sessionId) {
-        return Result.success(sessionQueryService.getSessionMessages(sessionId));
+        return Result.success(InterviewApiMapper.toResponse(
+            sessionQueryService.getSessionMessages(sessionId)
+        ));
     }
 
     @PostMapping("/{sessionId}/stage")
@@ -61,7 +59,9 @@ public class InterviewController {
         @PathVariable Long sessionId,
         @Valid @RequestBody InterviewStageUpdateRequest request
     ) {
-        return Result.success(updateInterviewStage.execute(sessionId, request));
+        return Result.success(InterviewApiMapper.toResponse(
+            updateInterviewStage.execute(sessionId, request.stageName())
+        ));
     }
 
     @PostMapping("/{sessionId}/chat")
@@ -70,12 +70,12 @@ public class InterviewController {
         @Valid @RequestBody InterviewChatRequest request,
         @RequestParam(defaultValue = "false") boolean autoStart
     ) {
-        return streamChatTurn.execute(sessionId, request, autoStart);
+        return streamChatTurn.execute(sessionId, request.getContent(), autoStart);
     }
 
     @PostMapping("/{sessionId}/finish")
     public Result<InterviewFinishResponse> finish(@PathVariable Long sessionId) {
-        return Result.success(finishInterview.execute(sessionId));
+        return Result.success(InterviewApiMapper.toResponse(finishInterview.execute(sessionId)));
     }
 
     @GetMapping(value = "/{sessionId}/listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
