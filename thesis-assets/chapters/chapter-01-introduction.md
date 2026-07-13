@@ -30,10 +30,10 @@
 
 第三，实现模拟面试与流式交互功能。系统根据用户简历、岗位模板和历史消息构造模型调用上下文，由大语言模型生成面试追问。后端通过 SSE 将模型输出分片推送至前端，前端以流式方式展示面试官回复。为提升基本交互可用性，前端配合缓冲刷新、请求中止和状态核对等机制，处理长文本展示、流程切换和异常恢复等问题。相关机制用于本地和演示环境下的功能链路稳定性设计，不代表大规模长连接能力验证。
 
-第四，实现异步报告生成链路。面试结束后，系统不在 `/finish` 请求中同步等待报告生成，而是使用 RabbitMQ 承担报告生成异步任务队列。用户触发 `/finish` 后，系统将会话状态更新为 `generating`，生成 `jobId`，并发布报告任务。`ReportJobWorker` 通过 `@RabbitListener` 消费任务，完成报告生成、`summary_report` 写入、会话状态更新为 `finished`，并通过 SSE 广播 `report_ready` 事件。该链路为：
+第四，实现异步报告生成链路。面试结束后，系统不在 `/finish` 请求中同步等待报告生成，而是使用 RabbitMQ 承担报告生成异步任务队列。用户触发 `/finish` 后，应用用例 `FinishInterview` 将会话状态更新为 `generating`，并经 `JobSchedulerPort` 发布报告任务，由 `RabbitJobScheduler` 适配 RabbitMQ。`ReportJobWorker` 通过 `@RabbitListener` 监听队列并转交 `ReportGenerateHandler` 完成报告生成、`summary_report` 写入、会话状态更新为 `finished`，并通过 SSE 广播 `report_ready` 事件。该链路为：
 
 ```text
-/finish → generating → RabbitMQ → ReportJobWorker → summary_report → finished → report_ready
+/finish → FinishInterview → generating → JobSchedulerPort → RabbitJobScheduler → ReportJobWorker → ReportGenerateHandler → summary_report → finished → report_ready
 ```
 
 其中，`/finish` 返回 `generating + jobId` 仅表示报告任务已进入异步生成链路，不表示报告已经完成。`interview_session.status` 使用 `ongoing / generating / finished` 三态描述面试进行中、报告生成中和报告已完成。Redis 在当前系统中用于限流、缓存、评分锁和状态辅助，不再承担报告生成任务队列职责。

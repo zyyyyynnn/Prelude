@@ -20,13 +20,16 @@
 | 环境与构建记录 | `thesis-assets/evidence/test-data/env-2026-06.md` | 表 5.1 测试环境与第五章构建记录补充证据 | 可用 | 代表本地阶段性采集，不等同生产环境 |
 | 质量门禁证据 | `thesis-assets/evidence/test-data/quality-gates-2026-07-13.md` | 两轮重构的 CI、本地验证与应用包覆盖率门禁快照 | 待用户与审查官复核 | 70% instruction coverage 只覆盖三个核心 application 包；2026-06-19 文件降为历史快照 |
 | 数据库表字典 | `thesis-assets/evidence/test-data/database-table-dictionary-2026-06.md` | 数据库表结构参考 | 可用 | 补充 E-R 图字段细节 |
-| 代码片段证据 | `thesis-assets/evidence/code-snippets/` | 系统实现依据 | 可用 | 旧正则评分证据已被 Structured Output 证据替代；历史路径使用前需与当前源码核对 |
+| 代码片段证据 | `thesis-assets/evidence/code-snippets/` | 系统实现依据 | 可用 | 旧正则评分证据已被 Structured Output 证据替代；凡引用已删除 `InterviewServiceImpl` 路径的片段（SSE/评分/领域重构/RabbitMQ 旧生产者）仅 historical，正文不得直接引用，须先换 `finish-job-async-report-2026-07-13.md` 等新证据 |
 | 模块化单体边界证据 | `thesis-assets/evidence/code-snippets/modular-monolith-boundary-hardening-2026-07-13.md` | 两轮重构后的模块与面试应用边界实现依据 | 待用户与审查官复核 | 只证明当前源码组织和依赖约束，不证明独立部署或运行时隔离 |
-| Bug 与修复证据 | `thesis-assets/evidence/bug-evidence/` | 精选问题复盘与答辩依据 | 可用 | 仅保留可直接引用证据，不夸大为系统能力证明 |
-| 阶段过程记录 | `thesis-assets/evidence/phase-reports/` | 审计和追溯 | 降权保留 | 不直接作为正文事实依据 |
+| 结束面试与异步报告任务证据 | `thesis-assets/evidence/code-snippets/finish-job-async-report-2026-07-13.md` | `/finish` → `FinishInterview` → `JobSchedulerPort` → `RabbitJobScheduler` → `ReportJobWorker` → `ReportGenerateHandler` 当前链路实现依据 | 待用户与审查官复核 | `ReportGenerateHandler→JobExecutionStore` 仍为过渡依赖；不证明 DLQ、outbox、publisher confirm 或生产可靠投递；旧 `rabbitmq-report-queue-2026-06-13.md` 降为 historical supplement |
+| Bug 与修复证据 | `thesis-assets/evidence/bug-evidence/` | 精选问题复盘与答辩依据 | 可用（historical supplement） | Demo Twin 已退役，两文件均标 historical；仅作工程经验对照，不夸大为系统能力证明 |
+| 阶段过程记录 | `thesis-assets/evidence/phase-reports/` | 审计和追溯 | 降权保留 | 顶层只保留 2.13 与 phase-3；其余历史过程报告归档至 `phase-reports/archive/`，不直接作为正文事实依据 |
 | 答辩材料 | `thesis-assets/defense/` | PPT 映射与讲稿 | 可用 | 使用前仍需人工核对最新口径 |
 | Phase 2.13 漂移同步报告 | `thesis-assets/evidence/phase-reports/phase-2.13-modular-monolith-sync-2026-07-13.md` | 两轮重构影响、资产变更与正文影响评估 | 待用户与审查官复核 | 不代表证据重新冻结或正文已同步 |
-| 阶段 3 准备冻结报告 | `thesis-assets/evidence/phase-reports/phase-3-readiness-freeze-2026-06-20.md` | Final Evidence Freeze 与答辩准备核对 | 当前冻结入口 | 只冻结证据口径，不代表正文已修改 |
+| 阶段 3 准备冻结报告 | `thesis-assets/evidence/phase-reports/phase-3-readiness-freeze-2026-06-20.md` | Final Evidence Freeze 与答辩准备核对 | 上次冻结入口 / 历史口径（已被 2.13 部分取代，质量门禁入口以 07-13 为准） | 只冻结证据口径，不代表正文已修改 |
+| 历史测试数据归档 | `thesis-assets/evidence/test-data/archive/` | Demo Twin 时代与历史真实 API 记录 | historical supplement | 含 demo-2026-04-25、env-2026-04-24、quality-gates-2026-06-19、real-llm-api-2026-05-27；正文不得直接引用作为当前事实 |
+| 历史阶段报告归档 | `thesis-assets/evidence/phase-reports/archive/` | 阶段 2.10 至 2.12、2.11 系列、pre-rewrite、ui-phase2 历史过程 | historical supplement | 含旧 InterviewServiceImpl、JaCoCo report-only、Demo Twin 等已退役口径；正文不得直接引用 |
 
 ## 当前锁定边界
 
@@ -39,13 +42,15 @@
 ## 项目事实口径
 
 - 当前运行入口：`start-dev.bat` 和 `start-docker.bat`。旧 Demo Twin、`start-demo`、`start-real`、8081/5174 仅属于历史归档或过程材料。
-- 报告生成：RabbitMQ 已承担报告异步任务队列；`/finish` 将 session 置为 `generating` 并发布 `ReportJobMessage`，`ReportJobWorker` 消费后通过 SSE 推送 `report_ready`。
+- 报告生成：`/finish` 经 `FinishInterview` 用例校验归属与状态后置 `generating`，再通过 `JobSchedulerPort` 发布任务；`RabbitJobScheduler` 适配 RabbitMQ 发布 `ReportJobMessage`，`ReportJobWorker` 监听并转交 `ReportGenerateHandler` 处理，完成后通过 SSE 推送 `report_ready`。应用层不再直接依赖 `RabbitTemplate` 或已删除的 `InterviewServiceImpl`。
 - BYOK：OpenAI-compatible 支持用户级 endpoint、API Key、模型发现与运行模型选择；API Key 加密保存，具体运行模型不作为默认配置或论文推荐依据。
 - Redis：承担限流、缓存和状态辅助职责。
 - 质量门禁：CI 包含 whitespace diff check（PR 用 merge-base 取得 diff 起点）、Sentrux、后端测试、JaCoCo report 与三个核心 application 包 70% instruction coverage 检查、npm audit、前端 build、`verify:ui`、`verify:tokens`、`verify:byok`、`verify:dark`、`verify:a11y`；`capture:visual` 作为 artifact-only（`continue-on-error: true`）。
 - 架构口径：当前后端是 Spring Boot 模块化单体，业务代码按模块和 API/application/domain/infrastructure 职责组织；面试 application 不导入本模块 API 包。该口径不表示模块可独立部署或应用层已完全框架无关。
 
 ## 写作限制
+
+> 本段是论文写作限制的**唯一真相源**。其余索引文件（matrix / slide-map / register / guidance / phase-report / README）只允许链接到本段，不得复述以下限制清单。重复句（70%、非微服务、artifact-only、过渡依赖等）出现第二次即删，改链到本段。
 
 - RabbitMQ 只能写成本地 Docker Compose 与单元测试支撑的异步报告链路，不得写成生产级可靠投递或消息零丢失。
 - JaCoCo 可写成三个核心 application 包的 70% instruction coverage 阻断门禁，不得扩写为全仓覆盖率达到 70%。

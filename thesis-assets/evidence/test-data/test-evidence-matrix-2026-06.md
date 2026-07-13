@@ -14,9 +14,9 @@
 | `functional-cases-2026-06.md` | 功能测试用例 | TC-01 ~ TC-12 功能、BYOK、fallback、质量门禁、seqNum | active | 语音和并发指标必须限制性描述 |
 | `dev-fixture-2026-06.md` | dev fixture 与历史 API 对照 | 本地验收数据夹具与未实测性能边界 | active | 多数真实性能指标未实测 |
 | `quality-gates-2026-07-13.md` | 两轮重构后的 CI、本地验证与应用包覆盖率门禁 | 222 个后端测试、三个核心 application 包 70% instruction coverage 门禁、Sentrux、前端及 UI 自动化门禁 | pending review | 不代表全仓覆盖率达到 70%；不提供性能或生产可用性结论 |
-| `quality-gates-2026-06-19.md` | 重构前 CI 与本地预检快照 | 当时 UI/token/a11y/capture 与 JaCoCo report-only 口径 | historical supplement | 只描述当时基线，不再代表当前 JaCoCo 门禁 |
+| `archive/quality-gates-2026-06-19.md` | 重构前 CI 与本地预检快照 | 当时 UI/token/a11y/capture 与 JaCoCo report-only 口径 | historical supplement | 只描述当时基线，不再代表当前 JaCoCo 门禁 |
 | `database-table-dictionary-2026-06.md` | 数据库表字典 | E-R 图字段细节与表结构说明 | active | 补充图 3.2，不替代 DDL |
-| `real-llm-api-2026-05-27-redacted.md` | 历史真实 API 记录 | 单次真实公网模型链路对照 | historical supplement | 不作为当前默认模型、性能基准或推荐依据 |
+| `archive/real-llm-api-2026-05-27-redacted.md` | 历史真实 API 记录 | 单次真实公网模型链路对照 | historical supplement | 不作为当前默认模型、性能基准或推荐依据 |
 | `archive/demo-2026-04-25.md` | 历史 Demo Twin 数据 | 旧本机回环数据对照 | archive | 不代表当前运行模式 |
 | `archive/env-2026-04-24.md` | 历史环境记录 | 4 月环境对照 | archive | 不作为当前环境口径 |
 
@@ -24,12 +24,12 @@
 
 | 文件路径 | 证据用途 | 当前判断 |
 | --- | --- | --- |
-| `evidence/code-snippets/interview-sse-resume-context-2026-04-24.md` | SSE 与简历上下文实现证据 | 可用；使用前需与当前源码抽样核对 |
+| `evidence/code-snippets/interview-sse-resume-context-2026-04-24.md` | SSE 与简历上下文实现证据 | historical supplement；`InterviewServiceImpl` 已删除，引用前须与当前源码核对 |
 | `evidence/code-snippets/structured-output-resilience-2026-06-02.md` | Structured Output、限流、熔断等实现证据 | 可用；限流/熔断只能写机制，不写压测通过 |
 | `evidence/code-snippets/frontend-streaming-stability-2026-06-05.md` | 前端流式渲染与音频 composable 证据 | 可用；不代表高并发实测 |
-| `evidence/code-snippets/rabbitmq-report-queue-2026-06-13.md` | RabbitMQ 报告任务队列证据 | 可用；不得写成生产级可靠投递 |
+| `evidence/code-snippets/finish-job-async-report-2026-07-13.md` | 结束面试与异步报告任务当前链路证据 | 待复核；当前 `/finish` → `FinishInterview` → `JobSchedulerPort` → `RabbitJobScheduler` → `ReportJobWorker` → `ReportGenerateHandler` 主口径 |
 | `evidence/code-snippets/modular-monolith-boundary-hardening-2026-07-13.md` | 模块化单体与面试应用边界证据 | 待复核；不得写成微服务、独立部署或全量框架无关 |
-| `evidence/code-snippets/security-performance-hardening-2026-05-31.md` | 旧正则评分与早期安全优化证据 | 已降权；评分解析以 Structured Output 证据为准 |
+| `evidence/code-snippets/security-performance-hardening-2026-05-31.md` | 旧正则评分与早期安全优化证据 | historical supplement；`InterviewServiceImpl` 已删除，评分以 Structured Output 证据为准 |
 
 ## 功能测试证据矩阵
 
@@ -70,7 +70,7 @@
 | 可写内容 | 必须降调 | 禁止写入 |
 | --- | --- | --- |
 | 功能测试覆盖核心业务链路，TC-01 ~ TC-12 具备当前证据支撑 | 语音、限流、熔断、RabbitMQ 可靠性只写实现机制与本地验证 | 已完成生产环境、高并发、招聘效果或公网模型性能验证 |
-| CI 门禁与本地预检可重复执行（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual` 均接入 CI） | JaCoCo 只生成覆盖率报告，不设置阈值；`verify:ui` 只证明 UI 静态扫描通过；`verify:a11y` 只 fail critical axe violations；`capture:visual` 只产出 artifact | 覆盖率已达标、架构已被完全证明、UI 全量视觉回归通过、完整 WCAG 2 AA 达标、`capture:visual` 像素 diff blocking |
+| CI 门禁与本地预检可重复执行（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual` 均接入 CI） | JaCoCo 对三个核心 application 包设置 70% instruction coverage 阻断门禁（不代表全仓覆盖率）；`verify:ui` 只证明 UI 静态扫描通过；`verify:a11y` 只 fail critical axe violations；`capture:visual` 只产出 artifact | 全仓覆盖率达到 70%、架构已被完全证明、UI 全量视觉回归通过、完整 WCAG 2 AA 达标、`capture:visual` 像素 diff blocking |
 | BYOK 设置流程可自动化验证 | verify 脚本使用 mock API | BYOK 真实公网性能稳定 |
 | RabbitMQ 报告链路具备异步解耦和幂等保护测试 | 本地 Docker Compose 与单元测试范围 | 生产级可靠投递、消息绝不丢失 |
 

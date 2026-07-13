@@ -36,7 +36,7 @@
 - TC-06 不能写成“RabbitMQ 生产级可靠投递”，只能写成本地 Docker Compose 与单元测试支撑的异步报告任务链路。
 - TC-08 不能写成“真实公网模型性能验证”，`verify:byok` 是 mock API 浏览器自动化流程验证。
 - TC-09 不能写成“所有 Provider 故障都可无感切换”；openai-compatible 失败必须显式暴露。
-- TC-11 不能写成“覆盖率达标”，JaCoCo 当前仅生成 report，不设置阈值。
+- TC-11 不能写成“全仓覆盖率达标”，JaCoCo 当前对 `interview.application`、`resume.application`、`insight.application` 三个核心 application 包设置 70% instruction coverage 阻断门禁，不代表全仓覆盖率。
 - TC-11 中的 `verify:ui` 是 CI blocking 的 UI 静态 guardrail 与 semantic sizing 红线扫描，不能写成全量视觉回归或 UI 完全无缺陷。
 - TC-11 中的 `verify:a11y` 是 CI critical-only gate，不能写成完整 WCAG 2 AA 达标。
 - TC-11 中的 `capture:visual` 是 CI artifact-only（`continue-on-error: true`），不能写成像素 diff blocking gate 或视觉回归全覆盖。

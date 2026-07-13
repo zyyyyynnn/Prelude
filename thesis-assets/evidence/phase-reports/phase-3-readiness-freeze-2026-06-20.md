@@ -23,7 +23,7 @@
 | 入口 | 路径 | 用途 |
 | --- | --- | --- |
 | 证据锁定索引 | `thesis-assets/meta/final-evidence-lock.md` | 当前有效证据入口 |
-| 质量门禁证据 | `thesis-assets/evidence/test-data/quality-gates-2026-06-19.md` | CI、本地质量门禁、npm audit、BYOK/dark verify 边界 |
+| 质量门禁证据 | `thesis-assets/evidence/test-data/quality-gates-2026-07-13.md` | CI、本地质量门禁、npm audit、BYOK/dark verify 边界、三个 application 包 70% 阻断门禁 |
 | 测试证据矩阵 | `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md` | 测试数据与章节可写性映射 |
 | 功能用例 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md` | TC-01 ~ TC-12 与功能边界 |
 | 图表登记 | `thesis-assets/evidence/figure-table-register.md` | 图 3.x、表 5.x 与证据来源 |
@@ -37,11 +37,11 @@
 - `start-dev.bat` 服务于日常开发、人工验收和答辩演示；Docker 只启动 MySQL、Redis、RabbitMQ，本机运行后端和 Vite 前端。
 - `start-docker.bat` 服务于 Full Docker / 部署验证，使用 Docker Compose 拉起应用与中间件。
 - dev fixture 是 local/dev 本地验收辅助能力，不进入 Full Docker / prod 默认路径。
-- RabbitMQ 已用于报告生成异步任务队列；可描述 `/finish -> generating -> RabbitMQ -> ReportJobWorker -> summary_report -> finished -> report_ready` 闭环。
+- RabbitMQ 已用于报告生成异步任务队列；可描述 `/finish → FinishInterview → generating → JobSchedulerPort → RabbitJobScheduler → ReportJobMessage → ReportJobWorker → ReportGenerateHandler → summary_report → finished → report_ready` 闭环。
 - Redis 职责为限流、缓存、评分锁和状态辅助，不承担报告任务队列职责。
 - BYOK 支持 OpenAI-compatible endpoint root、API Key、模型发现、配置保存、配置测试和链路复用；API Key 加密保存，前端不回显明文。
 - 自动化质量门禁分两层：CI blocking 包含 whitespace diff check（PR 路径用 `git merge-base` 取得 diff 起点，避开 PowerShell 三引号 range operator）、Sentrux、后端测试、JaCoCo report artifact、npm audit、前端 build、BYOK verify、dark verify、`verify:ui` UI 静态 guardrail、`verify:tokens` token schema、`verify:a11y` 仅 critical axe violations；CI artifact-only 含 `capture:visual`（17 个场景 PNG）。
-- JaCoCo 是 report-only；Sentrux 是有限规则边界检查；BYOK verify 和 dark verify 是 CI 自动化流程 sanity check；`verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归；`verify:a11y` 只 fail critical axe violations，serious 仍记入 backlog；`capture:visual` 不做像素 diff，不作为 blocking gate。
+- JaCoCo 对 `interview.application`、`resume.application`、`insight.application` 三个核心 application 包设置 70% instruction coverage 阻断门禁；Sentrux 是有限规则边界检查；BYOK verify 和 dark verify 是 CI 自动化流程 sanity check；`verify:ui` 是 UI 静态 guardrail 与 semantic sizing 红线扫描，不是全量视觉回归；`verify:a11y` 只 fail critical axe violations，serious 仍记入 backlog；`capture:visual` 不做像素 diff，不作为 blocking gate。
 
 ## 不可写入正文的夸大表述
 
@@ -49,7 +49,7 @@
 - 不得写已完成公网高并发压测或复杂部署环境可靠性验证。
 - 不得写真实 ASR/TTS 端到端低延迟性能已完成。
 - 不得写 BYOK 对所有 OpenAI-compatible endpoint 兼容，或 openai-compatible 失败会无感切换到系统 provider。
-- 不得写 JaCoCo 覆盖率已达标或 coverage threshold gate 已启用。
+- 不得写 JaCoCo 覆盖率已达标或 coverage threshold gate 已启用（仅三个核心 application 包 70% 阻断门禁，不代表全仓覆盖率）。
 - 不得写 Sentrux 证明完整架构正确性。
 - 不得写 UI 完全无缺陷；只能写 token/样式约束与自动化 verify 支撑关键路径 sanity check（`verify:ui` 只证明静态红线扫描通过）。
 

@@ -49,13 +49,17 @@ void interviewApplicationDoesNotImportItsApiAdapter() throws IOException {
 }
 ```
 
+## 关联证据
+
+- 结束面试与异步报告任务：`finish-job-async-report-2026-07-13.md`
+- 质量门禁快照：`quality-gates-2026-07-13.md`
+
 ## 证据边界
 
-- 该证据证明当前源码组织、依赖方向和自动化约束，不证明各模块可独立部署；系统仍是模块化单体。
-- 该证据不等同于所有应用代码均与 Spring 解耦；SSE 适配仍存在框架类型，不能扩写为完全框架无关。
-- `insight.application.ReportGenerateHandler` 当前仍直接依赖 `platform.job.infrastructure.JobExecutionStore`，属于待继续收敛的过渡依赖。
-- 该证据不证明所有跨模块依赖已完成最终收敛，也不提供并发、吞吐量或生产可用性结论。
-- PR #20 未改变既有 HTTP 路径与前端调用契约；此结论以控制器映射测试与合并 CI 通过为支撑，不扩写为全量兼容性证明。
+- 只证明当前源码组织、依赖方向和自动化约束；系统仍是模块化单体，不可扩写为独立部署或微服务。
+- SSE 等路径仍含框架类型；`ReportGenerateHandler` 仍直接依赖 `JobExecutionStore`，属过渡依赖。
+- 不提供并发、吞吐量或生产可用性结论。
+- PR #20 未改变既有 HTTP 路径与前端调用契约；不以全量兼容性证明表述。
 
 ## 可追溯验证
 

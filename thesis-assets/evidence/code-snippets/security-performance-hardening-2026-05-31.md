@@ -1,8 +1,8 @@
 # 安全加固与性能优化证据 2026-05-31
 
-> 本文件记录安全加固与性能优化阶段新增的核心实现证据，与 `interview-sse-resume-context-2026-04-24.md` 互补。可直接用于第四章《系统架构与高可用优化》补充或答辩追问。
->
-> **注意**：证据 4（正则评分提取）已废弃，当前有效实现以 `structured-output-resilience-2026-06-02.md` 中的证据 9（Structured Output）为准。证据 5、证据 6 仍有效。
+> 状态：historical supplement。本文记录安全加固与性能优化阶段的核心实现证据，与 `interview-sse-resume-context-2026-04-24.md` 互补。
+> 文中引用的 `InterviewServiceImpl`（含证据 4 已弃用的正则评分、证据 5/6 的安全优化）已在 2026-07-13 两轮重构中随类删除或迁移；评分解析以 `structured-output-resilience-2026-06-02.md` 为准，结束面试链路以 `finish-job-async-report-2026-07-13.md` 为准。
+> 本文仅作历史演进对照，正文不得直接引用 `InterviewServiceImpl` 作为当前事实，须先与当前源码核对或换新证据。
 
 ---
 

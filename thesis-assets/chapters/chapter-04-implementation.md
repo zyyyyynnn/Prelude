@@ -61,12 +61,12 @@
 报告生成链路如下：
 
 ```text
-/finish → generating → RabbitMQ → ReportJobWorker → summary_report → finished → report_ready
+/finish → FinishInterview → generating → JobSchedulerPort → RabbitJobScheduler → ReportJobWorker → ReportGenerateHandler → summary_report → finished → report_ready
 ```
 
-用户触发 `/finish` 后，`InterviewServiceImpl.finish(...)` 首先校验会话归属和当前状态。校验通过后，后端将 `interview_session.status` 更新为 `generating`，生成 `jobId`，并通过 `RabbitTemplate.convertAndSend(...)` 向报告任务交换机发布 `ReportJobMessage`。该消息包含 `sessionId`、`userId` 和 `jobId`，供消费者恢复用户上下文并定位目标会话。
+用户触发 `/finish` 后，`InterviewController` 将请求委派给应用用例 `FinishInterview`。该用例首先校验会话归属和当前状态，校验通过后将 `interview_session.status` 更新为 `generating`，再通过应用层定义的 `JobSchedulerPort` 端口发布报告任务；其基础设施适配 `RabbitJobScheduler` 负责调用 `RabbitTemplate` 向报告任务交换机发布 `ReportJobMessage`。该消息包含 `sessionId`、`userId` 和 `jobId`，供消费者恢复用户上下文并定位目标会话。
 
-`ReportJobWorker` 通过 `@RabbitListener` 监听报告任务队列。消费者收到消息后，会读取目标会话，并检查会话状态是否仍为 `generating`。如果状态已经不是 `generating`，说明该消息可能为重复或过期任务，系统会跳过处理，避免重复调用模型、重复写库或重复广播。若状态有效，消费者继续执行报告生成流程，包括读取面试历史、构造评估提示词、调用模型、解析结构化结果、写入 `summary_report`，并更新会话状态为 `finished`。
+`ReportJobWorker` 通过 `@RabbitListener` 监听报告任务队列，收到消息后转交应用处理组件 `ReportGenerateHandler` 执行报告生成。处理时先检查会话状态是否仍为 `generating`。如果状态已经不是 `generating`，说明该消息可能为重复或过期任务，系统会跳过处理，避免重复调用模型、重复写库或重复广播。若状态有效，则继续执行报告生成流程，包括读取面试历史、构造评估提示词、调用模型、解析结构化结果、写入 `summary_report`，并更新会话状态为 `finished`。
 
 报告完成后，后端通过 SSE 广播 `report_ready` 事件，通知前端报告已生成。前端收到事件后刷新报告展示区域。该设计使用户结束面试的请求能够较快返回 `generating` 状态，同时将外部模型长耗时调用放入异步消费者中执行。
 

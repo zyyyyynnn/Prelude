@@ -1,6 +1,8 @@
 # Bug 1 证据：Demo 登录代理 `ECONNREFUSED`
 
-> 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+> 状态：historical supplement。本文记录 Demo Twin 双轨运行阶段的环境配置 Bug。
+> Demo Twin 已在后续收敛中退役，当前运行入口为 `start-dev.bat` + `start-docker.bat`，演示数据改为 dev fixture。
+> 本文仅作工程经验历史对照（环境变量与代理目标必须作为启动契约显式校验），正文不得直接引用 Demo Twin、8081 端口、`start-demo` 等已退役入口作为当前事实。
 
 ## 主讲定位
 

@@ -18,22 +18,7 @@
 
 ## 当前准入图表清单
 
-| 编号 | 图表名称 | 当前资产 | 事实来源 | 准入状态 |
-| --- | --- | --- | --- | --- |
-| 图3.1 | 系统核心用例图 | `evidence/diagrams/fig-3.1-core-use-case.png` | `fig-3.1-core-use-case.mmd` | 已复核 / 待正文图号冻结 |
-| 图3.2 | 数据库 E-R 图 | `evidence/diagrams/fig-3.2-database-er.png` | `fig-3.2-database-er.mmd`、`database-table-dictionary-2026-06.md` | 已复核 / 待正文图号冻结 |
-| 图3.3 | 系统整体架构图 | `evidence/diagrams/fig-3.3-system-architecture.png` | `fig-3.3-system-architecture.mmd`、`code-snippets/modular-monolith-boundary-hardening-2026-07-13.md` | 已刷新至 `851fa5b` / 待复核 |
-| 候选图4.x | SSE 流式问答处理流程图 | `evidence/diagrams/fig-4.x-sse-streaming-flow.png` | `fig-4.x-sse-streaming-flow.mmd` | 候选 / 未冻结图号 |
-| 表5.1 | 测试环境表 | `evidence/test-data/env-2026-06.md` | 本地环境采集记录 | 可进入正文候选 |
-| 表5.2 | 功能测试用例表 | `evidence/test-data/functional-cases-2026-06.md` | TC-01 ~ TC-12 | 可进入正文候选 |
-| 表5.3 | 简历解析与岗位匹配测试表 | `evidence/test-data/functional-cases-2026-06.md` | PDF 校验、文本提取、结构化字段、岗位匹配 | 可进入正文候选 |
-| 表5.4 | 模拟面试与 SSE 流式交互测试表 | `functional-cases-2026-06.md`、`test-evidence-matrix-2026-06.md` | SSE 分片、前端缓冲、请求中止、状态恢复 | 限制性可写 |
-| 表5.5 | RabbitMQ 异步报告生成链路测试表 | `functional-cases-2026-06.md`、`code-snippets/rabbitmq-report-queue-2026-06-13.md` | 报告生成异步任务队列闭环 | 限制性可写 |
-| 表5.6 | BYOK 用户级模型配置测试表 | `functional-cases-2026-06.md`、`quality-gates-2026-06-19.md` | 模型发现、配置保存、配置测试、链路复用 | 限制性可写 |
-| 表5.7 | Redis、限流与状态辅助测试表 | `functional-cases-2026-06.md` | 限流、缓存、评分锁、状态辅助 | 限制性可写 |
-| 表5.8 | Structured Output 与报告解析测试表 | `functional-cases-2026-06.md`、`code-snippets/structured-output-resilience-2026-06-02.md` | 结构化报告、字段校验、分数边界处理 | 限制性可写 |
-| 表5.9 | 权限与数据隔离测试表 | `functional-cases-2026-06.md`、`dev-fixture-2026-06.md` | JWT、跨用户资源访问、dev fixture 边界 | 可进入正文候选 |
-| 补充证据 | 构建与自动化验证记录 | `quality-gates-2026-07-13.md` | 两轮重构后的构建、CI 与三个核心 application 包覆盖率门禁；详细限制见证据快照 | 待复核 / 未作为当前正文编号表 |
+图表编号、文件路径、事实来源与准入状态以 `figure-table-register.md` 为唯一登记表，本文件不复制该清单。准入状态列引用 register，风险说明见 register 风险列与 `meta/final-evidence-lock.md` 写作限制段。
 
 ## UI 截图候选
 
