@@ -4,13 +4,77 @@
 
 ## 当前观察项
 
+### R-007 — 简历文档启动回填随历史数据量增长 — 保留观察
+
+| 字段 | 内容 |
+| --- | --- |
+| Current status | P7 观察项 |
+| Location | `resume.application.BackfillResumeDocuments`、`prelude.resume.backfill-on-startup` |
+| Current behavior | 启动后按主键游标分批回填空 `document_json`；单行失败继续，输出 total/succeeded/failed/skipped/successRate |
+| Current mitigation | 全部新列可空；回填幂等且原子只更新空文档；可用配置关闭启动执行，读取失败继续 fallback `raw_text` |
+| Trade-off | 历史简历量很大时会增加启动后数据库负载；畸形旧 JSON 会降低迁移成功率但不阻断应用启动 |
+| Safe fix | 数据量达到需限速级别时迁为受控 Job Runtime 任务，保留现有 Port、游标和统计模型 |
+
+#### Next review condition
+
+- 历史简历达到万级，或回填耗时/数据库负载影响启动 SLO。
+- 日志出现 `failed > 0`，或 document fallback 指标持续非零。
+
+### R-006 — Local Realtime Hub 仅保证单实例扇出 — 保留观察
+
+| 字段 | 内容 |
+| --- | --- |
+| Current status | P5 观察项 |
+| Location | `platform.realtime.LocalRealtimeHub`、`prelude.realtime.mode=local` |
+| Current behavior | SSE 连接与 session fan-out 已统一经 `RealtimePort`，默认实现仍为进程内连接表 |
+| Current mitigation | 单实例部署行为完整；Port 与 connection/sink 契约已隔离 transport，SSE 事件名保持兼容 |
+| Trade-off | 多实例且无 sticky session 时，报告事件可能发布到未持有目标连接的实例 |
+| Safe fix | 增加 Redis pub/sub `RealtimePort` adapter，或在生产入口强制 sticky session 并明确容量限制 |
+
+#### Next review condition
+
+- 后端部署副本数大于 1。
+- 报告 ready/fallback 事件出现跨实例丢失迹象。
+
+### R-005 — 异步任务补投依赖数据库轮询 — 保留观察
+
+| 字段 | 内容 |
+| --- | --- |
+| Current status | P4 观察项 |
+| Location | `platform.job.PendingJobRecoveryPublisher`、`async_job` |
+| Current behavior | enqueue 先写 `async_job` 再投 RabbitMQ；pending 超时任务按固定周期补投，consumer 以原子 claim、最大尝试次数和运行租约吸收重复/崩溃恢复 |
+| Current mitigation | jobId/idempotencyKey 唯一约束、状态查询、3 次有限重试、running 租约回收；上游错误不通过 API 暴露 |
+| Trade-off | 补投延迟受轮询周期影响；数据库不可用时调度与恢复同时暂停 |
+| Safe fix | 任务量或 SLO 提升后迁移到事务 outbox + publisher confirm/CDC，保留现有 Job Port 与幂等状态机 |
+
+#### Next review condition
+
+- 报告任务量明显增长，或对 pending 时长建立生产 SLO。
+- 出现数据库/MQ 分区导致的补投延迟告警。
+
+### R-004 — Retrieval 重建依赖 Embedding 可用性 — 保留观察
+
+| 字段 | 内容 |
+| --- | --- |
+| Current status | P3 观察项 |
+| Location | `platform.retrieval.InMemoryRetrievalAdapter`、`retrieval_chunk` |
+| Current behavior | 文本 chunk 持久化，向量为每实例内存缓存；进程重启后可从 chunk 重建 |
+| Current mitigation | source/persisted 双重建路径、结构化日志；Embedding 失败返回空检索结果，不阻断面试 |
+| Trade-off | Embedding 服务不可用期间无法恢复向量检索，相关上下文增强暂时缺失 |
+| Safe fix | 引入可版本化的持久化 embedding 或共享向量存储，并保留 content hash 失效策略 |
+
+#### Next review condition
+
+- 多实例部署或开始对检索命中率设定生产 SLO。
+- Embedding 服务故障导致面试追问质量出现可观察下降。
+
 ### R-003 — TTS 池跨 session 串行吞吐 — 保留观察
 
 | 字段 | 内容 |
 | --- | --- |
 | Recorded in | `588bf73` |
 | Current status | P3 观察项 |
-| Location | `backend/src/main/java/com/interview/config/ThreadPoolConfig.java#ttsTaskExecutor`、`VoiceInterviewTurnService` |
+| Location | `bootstrap.ThreadPoolConfig#ttsTaskExecutor`、`interview.api.voice.VoiceInterviewTurnService` |
 | Current behavior | 全局 `ttsTaskExecutor` 为 single-thread FIFO；同一 turn 内可保证 sentence 与 `sink.audio` 顺序一致 |
 | Current mitigation | 30s timeout、`ttsFailed` / `ttsTimedOut` 双 flag、`sink.audio` 前二次检查、单元测试覆盖顺序/失败/timeout |
 | Trade-off | 跨 session 语音合成会串行，吞吐不是最优 |

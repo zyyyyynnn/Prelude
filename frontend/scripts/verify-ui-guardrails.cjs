@@ -24,12 +24,12 @@ const componentFocusShadowToken = '--shadow-icon-action-focus'
 
 const semanticVarPrefixByFile = new Map([
   ['frontend/src/components/ui/segmented-control/SegmentedControl.vue', ['--segmented-']],
-  ['frontend/src/components/workspace/AppSidebar.vue', ['--sidebar-']],
-  ['frontend/src/components/workspace/InterviewComposer.vue', ['--composer-']],
-  ['frontend/src/views/InterviewView.vue', ['--workspace-']],
-  ['frontend/src/views/AnalyticsView.vue', ['--analytics-']],
-  ['frontend/src/components/workspace/MessageThread.vue', ['--message-', '--judge-']],
-  ['frontend/src/components/workspace/UserProfilePanel.vue', ['--profile-']],
+  ['frontend/src/features/interview/components/SessionSidebar.vue', ['--sidebar-']],
+  ['frontend/src/features/interview/components/InterviewComposer.vue', ['--composer-']],
+  ['frontend/src/features/interview/components/InterviewWorkspace.vue', ['--workspace-']],
+  ['frontend/src/features/insight/pages/AnalyticsPage.vue', ['--analytics-']],
+  ['frontend/src/features/interview/components/MessageThread.vue', ['--message-', '--judge-']],
+  ['frontend/src/features/settings/components/UserProfilePanel.vue', ['--profile-']],
 ])
 
 const semanticVarTerms = [
