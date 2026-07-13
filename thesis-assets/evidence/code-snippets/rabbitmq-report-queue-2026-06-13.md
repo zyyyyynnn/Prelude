@@ -1,10 +1,14 @@
 # RabbitMQ 报告任务队列集成实现证据 2026-06-13
 
+> 状态：historical supplement。记录 2026-06-13 前后的 RabbitMQ 接入与本地联调事实。
+> 当前结束面试与任务发布实现以 `finish-job-async-report-2026-07-13.md` 为准。
+> 本文中的 `InterviewServiceImpl.finish(...)`、旧测试路径与直接 `RabbitTemplate` 生产者表述均已过期，正文不得直接引用。
+
 > 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
 
-> 本文件记录 RabbitMQ 作为报告生成异步任务队列的代码级集成与本地 Docker Compose 基础链路联调证据。
+> 本文件仅保留当时 RabbitMQ 作为报告生成异步任务队列的接入与 Docker Compose 联调证据。
 > 本轮不引入死信队列、outbox、publisher confirm、并发调优。
-> 答辩材料和正文引用前，必须确认 RabbitMQ / MQ 口径限制段。
+> 答辩材料和正文引用前，必须先核对当前 finish/job 证据与 RabbitMQ 口径限制。
 
 ---
 
@@ -13,10 +17,10 @@
 ### 14.1 集成范围
 - **依赖**：`spring-boot-starter-amqp`（与 `spring-boot-starter-data-redis` 并存）。
 - **基础设施**：`docker-compose.yml` 新增 `rabbitmq:3-management` 服务，端口 `5672`（AMQP）与 `15672`（管理端）；数据卷 `rabbitmq-data`；后端 `depends_on` 健康检查。
-- **生产者**：`InterviewServiceImpl.finish(...)` 将 session 状态置为 `generating` 后，通过 `RabbitTemplate.convertAndSend(REPORT_EXCHANGE, REPORT_ROUTING_KEY, ReportJobMessage)` 推送任务。
-- **消费者**：`ReportJobWorker` 移除 `CommandLineRunner` 与 Redis List 轮询，改用 `@RabbitListener(queues = REPORT_QUEUE)`；`/finish` 响应字段（`status="generating"` + `jobId`）保持兼容。
-- **幂等保护**：`STATUS_GENERATING` 常量 + `selectById` 之后状态守卫，重复或过期消息直接 `log.info + return`，不触发 LLM、不写库、不广播。
-- **Redis 角色回归**：限流（Lua 滑动窗口）、评分锁（`setIfAbsent`）等仍保留 `StringRedisTemplate`；报告队列职责完全迁出 Redis。
+- **生产者（历史）**：当时由 `InterviewServiceImpl.finish(...)` 直接 `RabbitTemplate.convertAndSend(...)` 推送任务。当前已改为 `FinishInterview` → `JobSchedulerPort` → `RabbitJobScheduler`。
+- **消费者**：`ReportJobWorker` 使用 `@RabbitListener(queues = REPORT_QUEUE)`；`/finish` 响应字段（`status="generating"` + `jobId`）保持兼容。
+- **幂等保护**：`STATUS_GENERATING` 状态守卫；当前幂等与重试细节见 `JobExecutionStore` / `ReportGenerateHandler`。
+- **Redis 角色回归**：限流、评分锁等仍保留；报告队列职责迁出 Redis。
 
 ### 14.2 关键实现点
 

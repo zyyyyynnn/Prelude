@@ -10,10 +10,10 @@
 
 在模拟面试模块中，系统能够根据岗位模板、简历内容和历史对话构造上下文，支持基于大语言模型的多轮问答。后端通过 SSE 向前端分片推送模型输出，前端结合缓冲刷新、请求中止和状态核对机制完成流式交互展示。该设计改善了面试问答的交互连续性，也为报告生成提供了完整的历史消息记录。
 
-在报告生成模块中，系统将报告生成任务从 `/finish` 请求中解耦。用户结束面试后，后端先将会话状态更新为 `generating`，生成 `jobId`，并通过 RabbitMQ 发布报告任务。`ReportJobWorker` 通过 `@RabbitListener` 消费任务，完成报告生成、`summary_report` 写入、会话状态更新为 `finished`，并通过 SSE 广播 `report_ready` 事件。报告生成链路为：
+在报告生成模块中，系统将报告生成任务从 `/finish` 请求中解耦。用户结束面试后，应用用例 `FinishInterview` 将会话状态更新为 `generating`，并经 `JobSchedulerPort` 发布报告任务，由 `RabbitJobScheduler` 适配 RabbitMQ。`ReportJobWorker` 通过 `@RabbitListener` 监听队列并转交 `ReportGenerateHandler` 完成报告生成、`summary_report` 写入、会话状态更新为 `finished`，并通过 SSE 广播 `report_ready` 事件。报告生成链路为：
 
 ```text
-/finish → generating → RabbitMQ → ReportJobWorker → summary_report → finished → report_ready
+/finish → FinishInterview → generating → JobSchedulerPort → RabbitJobScheduler → ReportJobWorker → ReportGenerateHandler → summary_report → finished → report_ready
 ```
 
 该链路使 `/finish` 返回 `generating + jobId`，表示报告任务已进入异步生成链路，而不是表示报告已经完成。为了配合该流程，`interview_session.status` 使用 `ongoing / generating / finished` 三态表示面试进行中、报告生成中和报告已完成。

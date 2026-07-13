@@ -1,6 +1,8 @@
 # Bug 2 证据：MySQL 未就绪导致后端启动失败
 
-> 历史状态说明：本文记录当时阶段的 Demo Twin / 双轨运行状态。当前版本已收敛为 start-dev + start-docker，并将演示数据改为 dev fixture。
+> 状态：historical supplement。本文记录 Demo Twin 双轨运行阶段的数据库启动前置校验 Bug。
+> Demo Twin 已在后续收敛中退役，当前运行入口为 `start-dev.bat` + `start-docker.bat`，启动脚本校验逻辑已迁移至 `start-dev` / `start-docker` 链路。
+> 本文仅作工程经验历史对照（一键启动脚本应承担中间件、端口和关键密钥的前置检查职责），正文不得直接引用 `start-demo.ps1`、8081 端口等已退役入口作为当前事实。
 
 ## 主讲定位
 

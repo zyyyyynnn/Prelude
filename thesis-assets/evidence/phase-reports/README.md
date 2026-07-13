@@ -1,27 +1,29 @@
-# 阶段性过程记录说明
+# 阶段报告索引
 
-本目录保存阶段性过程记录，只用于审计和追溯，不直接作为正文事实依据。
+## 当前 active 报告
 
-## 当前阅读顺序
-
-| 文件 | 用途 | 当前建议 |
+| 文件 | 用途 | 当前定位 |
 | --- | --- | --- |
-| `phase-3-readiness-freeze-2026-06-20.md` | 阶段 3 Final Evidence Freeze 与答辩准备核对 | 当前优先阅读 |
-| `phase-2.12-project-drift-sync-2026-06-19.md` | 最近一次项目漂移同步报告 | 优先阅读 |
-| `pre-rewrite-final-gate-2026-06-14.md` | 正文改写前历史闸门记录 | 仅追溯 |
-| `phase-2.11C-fix-diagram-readability-review.md` | 核心工程图可读性重构过程 | 仅追溯 |
-| 其他 `phase-*` 报告 | 阶段执行记录 | 仅追溯 |
+| `phase-2.13-modular-monolith-sync-2026-07-13.md` | 两轮模块化重构的项目漂移、证据与正文影响评估 | 最新漂移入口 / 待用户与审查官复核 |
+| `phase-3-readiness-freeze-2026-06-20.md` | 阶段 3 Final Evidence Freeze 与答辩准备核对 | 上次冻结入口 / 历史口径（已被 2.13 部分取代，质量门禁入口以 07-13 为准） |
 
-## 事实入口
+## 历史归档
 
-正文事实依据以以下 active 文件为准：
+`archive/` 子目录保留阶段 2.10 至 2.12、2.11 系列、pre-rewrite-final-gate、ui-phase2-quality-system 等历史过程报告。
 
-- `thesis-assets/meta/final-evidence-lock.md`
-- `thesis-assets/evidence/phase-reports/phase-3-readiness-freeze-2026-06-20.md`
-- `thesis-assets/evidence/test-data/test-evidence-matrix-2026-06.md`
-- `thesis-assets/evidence/test-data/functional-cases-2026-06.md`
-- `thesis-assets/evidence/test-data/quality-gates-2026-06-19.md`
-- `thesis-assets/evidence/figure-table-register.md`
-- `thesis-assets/evidence/code-snippets/`
+历史归档文件仅作阶段演进对照，**不作为当前事实入口**。当前事实入口以 `meta/final-evidence-lock.md` 为准。其中：
 
-若阶段报告与 active evidence 冲突，以 active evidence 为准。
+- 凡引用已删除 `InterviewServiceImpl` 的历史片段，正文不得直接引用，须先与当前源码核对或换新证据。
+- 凡写 JaCoCo report-only 的历史口径，已被 2026-07-13 的三个 application 包 70% 阻断门禁取代。
+- 凡写 Demo Twin / start-demo / start-real / 8081/5174 的历史入口，已被 `start-dev` + `start-docker` 取代。
+
+| 归档文件 | 归档原因 |
+| --- | --- |
+| `phase-2.10-evidence-readiness.md` | 阶段 2.10 历史过程，已被后续 lock + matrix 收口 |
+| `phase-2.11A-test-evidence-review.md` | 阶段 2.11A 历史过程，引用已删 InterviewServiceImpl |
+| `phase-2.11B-figure-plan-review.md` | 阶段 2.11B 历史过程，引用已不存在 figure-assets-plan.md |
+| `phase-2.11C-diagram-refresh-report.md` | 阶段 2.11C 历史过程，引用已删 InterviewServiceImpl |
+| `phase-2.11C-fix-diagram-readability-review.md` | 阶段 2.11C-Fix 可读性重构历史记录 |
+| `phase-2.12-project-drift-sync-2026-06-19.md` | 阶段 2.12 漂移同步历史，含 JaCoCo report-only 旧口径 |
+| `pre-rewrite-final-gate-2026-06-14.md` | 正文改写前闸门历史，引用已退役 start-demo 入口 |
+| `ui-phase2-quality-system-2026-06.md` | UI Phase 2 体系建设过程记录，当前 UI 质量门禁以 quality-gates-2026-07-13.md 为准 |

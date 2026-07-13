@@ -1,5 +1,9 @@
 # 面试流式、简历解析与上下文控制证据 2026-04-24
 
+> 状态：historical supplement。本文记录 2026-04-24 阶段的 SSE 流式与简历上下文实现事实。
+> 文中引用的 `InterviewServiceImpl.chat/streamAssistantReply/sendDelta/stripJsonFence` 等方法已在 2026-07-13 两轮重构中随类删除或迁移；SSE 流式机制仍存在，但具体方法签名与承载类须以当前源码为准。
+> 本文仅作历史演进对照，正文不得直接引用 `InterviewServiceImpl` 作为当前事实；引用 SSE 链路前须先与当前源码核对或换新证据。
+
 ## 证据 1：SSE 流式问答推送
 
 来源文件：
