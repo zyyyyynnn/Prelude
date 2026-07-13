@@ -83,7 +83,7 @@ E:\Prelude
 ├── backend/                   # Spring Boot 后端
 ├── frontend/                  # Vue 前端
 ├── scripts/                   # dev mode 本机启动、重置和截图脚本
-├── thesis-assets/             # 论文材料、证据、交付物与答辩资产
+├── thesis-assets/             # 论文正文、证据、文献与答辩资产
 ├── output/                    # dev 截图、验证产物与可复现输出记录
 ├── start-dev.bat              # 开发与人工验收入口（含 Vite HMR）
 ├── start-docker.bat           # Full Docker / 部署验证入口
