@@ -6,7 +6,11 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
 import { getErrorMessage } from '@/utils/errors'
-import type { AnalyticsRadarResponse, AnalyticsTrendPoint, AnalyticsWeaknessItem } from '@/api/contracts'
+import type {
+  AnalyticsRadarResponse,
+  AnalyticsTrendPoint,
+  AnalyticsWeaknessItem,
+} from '@/api/contracts'
 import { usePageNotice } from '@/composables/usePageNotice'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -72,8 +76,6 @@ function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
   return `${yyyy}/${mm}/${dd}`
 }
 
-
-
 async function loadAnalytics() {
   try {
     const [radarData, trendData, weaknessData] = await Promise.all([
@@ -117,15 +119,19 @@ function renderCharts() {
           { name: '逻辑思维', max: 10 },
         ],
       },
-      series: [{
-        type: 'radar',
-        data: [{
-          value: [radar.value.technical, radar.value.expression, radar.value.logic],
-          areaStyle: { color: brand, opacity: 0.16 },
-          lineStyle: { color: brand, width: 2 },
-          itemStyle: { color: brand },
-        }],
-      }],
+      series: [
+        {
+          type: 'radar',
+          data: [
+            {
+              value: [radar.value.technical, radar.value.expression, radar.value.logic],
+              areaStyle: { color: brand, opacity: 0.16 },
+              lineStyle: { color: brand, width: 2 },
+              itemStyle: { color: brand },
+            },
+          ],
+        },
+      ],
     })
   }
 
@@ -147,7 +153,7 @@ function renderCharts() {
             html += `<div>${param.marker} ${param.seriesName}: ${param.value}</div>`
           }
           return html
-        }
+        },
       },
       grid: {
         left: cssVarNumber('--analytics-chart-grid-left', 44),
@@ -255,7 +261,9 @@ onBeforeUnmount(() => {
               <div>
                 <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">结构</p>
                 <h3 class="text-lg font-medium font-serif">能力雷达</h3>
-                <p class="text-sm text-muted-foreground">展示最近面试在三项核心维度上的平均水平。</p>
+                <p class="text-sm text-muted-foreground">
+                  展示最近面试在三项核心维度上的平均水平。
+                </p>
               </div>
               <Badge variant="secondary">{{ radar.sessionCount }} 场</Badge>
             </div>
@@ -294,7 +302,9 @@ onBeforeUnmount(() => {
                   <Badge variant="secondary">{{ item.count }} 次</Badge>
                 </div>
                 <ul class="weakness-item__descriptions">
-                  <li v-for="description in item.descriptions" :key="description">{{ description }}</li>
+                  <li v-for="description in item.descriptions" :key="description">
+                    {{ description }}
+                  </li>
                 </ul>
               </article>
             </div>
@@ -320,7 +330,10 @@ onBeforeUnmount(() => {
   --analytics-chart-grid-bottom: 30;
 
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--layout-dashboard-card-min-inline-size), 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--layout-dashboard-card-min-inline-size), 1fr)
+  );
   gap: var(--spacing-lg);
 }
 .analytics-chart {

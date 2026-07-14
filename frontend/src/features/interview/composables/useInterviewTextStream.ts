@@ -56,14 +56,20 @@ export function useInterviewTextStream(options: UseInterviewTextStreamOptions) {
   let chunkTargetId: number | null = null
   let chunkRafId: number | null = null
 
-  const saveStreamSnapshot = createThrottle((sessionId: number, messageId: number, content: string) => {
-    sessionStorage.setItem('interview-stream-snapshot', JSON.stringify({
-      sessionId,
-      messageId,
-      content,
-      timestamp: Date.now(),
-    }))
-  }, 3000)
+  const saveStreamSnapshot = createThrottle(
+    (sessionId: number, messageId: number, content: string) => {
+      sessionStorage.setItem(
+        'interview-stream-snapshot',
+        JSON.stringify({
+          sessionId,
+          messageId,
+          content,
+          timestamp: Date.now(),
+        }),
+      )
+    },
+    3000,
+  )
 
   function appendMessage(message: InterviewMessageRecord) {
     if (!options.replay.value) return
@@ -72,11 +78,14 @@ export function useInterviewTextStream(options: UseInterviewTextStreamOptions) {
 
   function removeMessageById(id: number | null) {
     if (!options.replay.value || id == null) return
-    options.replay.value.messages = options.replay.value.messages.filter((message) => message.id !== id)
+    options.replay.value.messages = options.replay.value.messages.filter(
+      (message) => message.id !== id,
+    )
   }
 
   function ensureAssistantPlaceholder(id: number) {
-    if (!options.replay.value || options.replay.value.messages.some((message) => message.id === id)) return
+    if (!options.replay.value || options.replay.value.messages.some((message) => message.id === id))
+      return
     appendMessage({
       id,
       role: 'assistant',

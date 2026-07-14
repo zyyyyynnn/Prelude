@@ -51,11 +51,11 @@ const statusLabel = computed(() => {
         />
         <Badge v-if="activeSessionId" variant="secondary">{{ statusLabel }}</Badge>
       </div>
-      
+
       <div class="workspace-header__right">
         <!-- PDF Export -->
         <div class="workspace-header__actions" v-if="activeSessionId && hasReport && showingReport">
-          <Button 
+          <Button
             variant="secondary"
             size="sm"
             class="!font-serif"
@@ -68,7 +68,7 @@ const statusLabel = computed(() => {
 
         <!-- Stage actions -->
         <div class="workspace-header__stage-wrap" v-if="activeSessionId && !showingReport">
-          <StageBar 
+          <StageBar
             :current-stage="currentStage"
             :active-session-id="activeSessionId"
             :sending="sending"

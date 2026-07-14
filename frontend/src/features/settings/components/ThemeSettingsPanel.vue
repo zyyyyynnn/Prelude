@@ -53,9 +53,11 @@ async function saveTheme() {
 
   saving.value = true
   try {
-    const result = await withMinDelay(updateUserProfile({
-      themePreference: state.themePreference,
-    }))
+    const result = await withMinDelay(
+      updateUserProfile({
+        themePreference: state.themePreference,
+      }),
+    )
     state.themePreference = result.themePreference || state.themePreference
     initial.themePreference = state.themePreference
     storeThemePreference(state.themePreference)
@@ -156,15 +158,15 @@ defineExpose({ submit: saveTheme, saving, loading })
   background: var(--color-surface-muted);
 }
 
-.theme-option__preview[data-theme-preview="dark"] span {
+.theme-option__preview[data-theme-preview='dark'] span {
   background: var(--color-text-secondary);
 }
 
-.theme-option__preview[data-theme-preview="system"] span:first-child {
+.theme-option__preview[data-theme-preview='system'] span:first-child {
   background: var(--color-surface-muted);
 }
 
-.theme-option__preview[data-theme-preview="system"] span:last-child {
+.theme-option__preview[data-theme-preview='system'] span:last-child {
   background: var(--color-text-secondary);
 }
 

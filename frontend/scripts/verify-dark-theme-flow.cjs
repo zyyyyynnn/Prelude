@@ -45,9 +45,23 @@ function waitForPort(port, timeoutMs = 30000) {
 
 async function startVite(port) {
   const command = process.platform === 'win32' ? 'cmd.exe' : 'npm'
-  const args = process.platform === 'win32'
-    ? ['/d', '/s', '/c', 'npm', 'run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort']
-    : ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort']
+  const args =
+    process.platform === 'win32'
+      ? [
+          '/d',
+          '/s',
+          '/c',
+          'npm',
+          'run',
+          'dev',
+          '--',
+          '--host',
+          '127.0.0.1',
+          '--port',
+          String(port),
+          '--strictPort',
+        ]
+      : ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort']
   const child = spawn(command, args, {
     cwd: rootDir,
     env: {
@@ -68,7 +82,10 @@ async function startVite(port) {
 function stopProcess(child) {
   if (!child || child.killed) return
   if (process.platform === 'win32') {
-    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true })
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+      stdio: 'ignore',
+      windowsHide: true,
+    })
     return
   }
   child.kill('SIGTERM')
@@ -86,7 +103,9 @@ async function captureDiagnostics(page, label) {
     title: await page.title().catch(() => ''),
     appChildren: await page.evaluate(() => document.querySelector('#app')?.children.length || 0),
     hasBrandHost: await page.evaluate(() => Boolean(document.querySelector('.brand-metaballs'))),
-    hasBrandCanvas: await page.evaluate(() => Boolean(document.querySelector('.brand-metaballs canvas'))),
+    hasBrandCanvas: await page.evaluate(() =>
+      Boolean(document.querySelector('.brand-metaballs canvas')),
+    ),
     localStorageAuth: await page.evaluate(() => localStorage.getItem('auth')),
     localStorageTheme: await page.evaluate(() => localStorage.getItem('prelude-theme')),
     localStorageKeys: await page.evaluate(() => Object.keys(localStorage)),
@@ -147,8 +166,10 @@ async function installApiMocks(page) {
         }),
       })
     }
-    if (method === 'GET' && pathname === '/interview/sessions') return route.fulfill({ json: ok([]) })
-    if (method === 'POST' && pathname === '/interview/start') return route.fulfill({ json: ok({ sessionId: 100 }) })
+    if (method === 'GET' && pathname === '/interview/sessions')
+      return route.fulfill({ json: ok([]) })
+    if (method === 'POST' && pathname === '/interview/start')
+      return route.fulfill({ json: ok({ sessionId: 100 }) })
     if (method === 'GET' && pathname === '/interview/100/messages') {
       return route.fulfill({
         json: ok({
@@ -164,7 +185,12 @@ async function installApiMocks(page) {
             { stageName: 'technical', status: 'active' },
           ],
           messages: [
-            { id: 1, role: 'assistant', content: '我们先聊一个组件状态同步问题。', createdAt: '2026-04-23T14:00:00' },
+            {
+              id: 1,
+              role: 'assistant',
+              content: '我们先聊一个组件状态同步问题。',
+              createdAt: '2026-04-23T14:00:00',
+            },
           ],
         }),
       })
@@ -186,7 +212,11 @@ async function installApiMocks(page) {
     if (method === 'GET' && pathname === '/llm/providers') {
       return route.fulfill({
         json: ok([
-          { providerKey: 'deepseek', displayName: 'DeepSeek', models: ['deepseek-chat', 'deepseek-reasoner'] },
+          {
+            providerKey: 'deepseek',
+            displayName: 'DeepSeek',
+            models: ['deepseek-chat', 'deepseek-reasoner'],
+          },
         ]),
       })
     }
@@ -203,7 +233,9 @@ async function installApiMocks(page) {
       })
     }
     if (method === 'GET' && pathname === '/analytics/radar') {
-      return route.fulfill({ json: ok({ technical: 7.8, expression: 7.1, logic: 8.2, sessionCount: 4 }) })
+      return route.fulfill({
+        json: ok({ technical: 7.8, expression: 7.1, logic: 8.2, sessionCount: 4 }),
+      })
     }
     if (method === 'GET' && pathname === '/analytics/trend') {
       return route.fulfill({
@@ -246,25 +278,35 @@ async function assertNoDarkConsoleErrors(page, action) {
 
 async function assertCanvasNonBlank(page, selector, timeout = 10000) {
   await page.waitForSelector(selector, { state: 'visible', timeout })
-  const nonBlank = await page.locator(selector).first().evaluate((canvas) => {
-    const webgl = canvas.getContext('webgl2') || canvas.getContext('webgl')
-    if (webgl) {
-      return canvas.getBoundingClientRect().width > 0
-        && canvas.getBoundingClientRect().height > 0
-        && webgl.drawingBufferWidth > 0
-        && webgl.drawingBufferHeight > 0
-    }
-    const context = canvas.getContext('2d')
-    if (!context) return false
-    const { width, height } = canvas
-    const data = context.getImageData(0, 0, width, height).data
-    for (let index = 0; index < data.length; index += 64) {
-      if (data[index + 3] !== 0 || data[index] !== 0 || data[index + 1] !== 0 || data[index + 2] !== 0) {
-        return true
+  const nonBlank = await page
+    .locator(selector)
+    .first()
+    .evaluate((canvas) => {
+      const webgl = canvas.getContext('webgl2') || canvas.getContext('webgl')
+      if (webgl) {
+        return (
+          canvas.getBoundingClientRect().width > 0 &&
+          canvas.getBoundingClientRect().height > 0 &&
+          webgl.drawingBufferWidth > 0 &&
+          webgl.drawingBufferHeight > 0
+        )
       }
-    }
-    return false
-  })
+      const context = canvas.getContext('2d')
+      if (!context) return false
+      const { width, height } = canvas
+      const data = context.getImageData(0, 0, width, height).data
+      for (let index = 0; index < data.length; index += 64) {
+        if (
+          data[index + 3] !== 0 ||
+          data[index] !== 0 ||
+          data[index + 1] !== 0 ||
+          data[index + 2] !== 0
+        ) {
+          return true
+        }
+      }
+      return false
+    })
   if (!nonBlank) throw new Error(`${selector} should render nonblank canvas pixels`)
 }
 
@@ -273,7 +315,10 @@ async function assertDarkInputTextFill(page) {
     const style = window.getComputedStyle(input)
     return {
       fill: style.webkitTextFillColor,
-      primary: window.getComputedStyle(document.documentElement).getPropertyValue('--color-text-primary').trim(),
+      primary: window
+        .getComputedStyle(document.documentElement)
+        .getPropertyValue('--color-text-primary')
+        .trim(),
     }
   })
   if (!inputTextFill.fill || inputTextFill.fill === 'rgb(0, 0, 0)') {
@@ -304,10 +349,14 @@ async function assertBrandMetaballsThemeUpdate(page) {
     window.dispatchEvent(new CustomEvent('prelude-theme-change', { detail: { theme: 'light' } }))
   })
 
-  await page.waitForFunction(() => {
-    const canvas = document.querySelector('.brand-metaballs canvas')
-    return canvas && canvas !== window.__preludeBrandCanvas
-  }, null, { timeout: COLD_START_TIMEOUT_MS })
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector('.brand-metaballs canvas')
+      return canvas && canvas !== window.__preludeBrandCanvas
+    },
+    null,
+    { timeout: COLD_START_TIMEOUT_MS },
+  )
 
   const lightPalette = await page.evaluate(() => {
     const style = window.getComputedStyle(document.documentElement)
@@ -327,13 +376,21 @@ async function assertBrandMetaballsThemeUpdate(page) {
 }
 
 async function chartFrame(page) {
-  return page.locator('.chart-surface canvas').first().evaluate((canvas) => canvas.toDataURL())
+  return page
+    .locator('.chart-surface canvas')
+    .first()
+    .evaluate((canvas) => canvas.toDataURL())
 }
 
 async function verifyDarkFlow(port) {
   const executablePath = findBrowserExecutable()
-  const browser = await chromium.launch(executablePath ? { headless: true, executablePath } : { headless: true })
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 })
+  const browser = await chromium.launch(
+    executablePath ? { headless: true, executablePath } : { headless: true },
+  )
+  const page = await browser.newPage({
+    viewport: { width: 1440, height: 1000 },
+    deviceScaleFactor: 1,
+  })
 
   page.on('pageerror', (err) => {
     console.error(`[page error] ${err.message}`)
@@ -346,7 +403,10 @@ async function verifyDarkFlow(port) {
 
   try {
     await assertNoDarkConsoleErrors(page, async () => {
-      await page.goto(`http://127.0.0.1:${port}/login`, { waitUntil: 'domcontentloaded', timeout: COLD_START_TIMEOUT_MS })
+      await page.goto(`http://127.0.0.1:${port}/login`, {
+        waitUntil: 'domcontentloaded',
+        timeout: COLD_START_TIMEOUT_MS,
+      })
       await waitForAppMounted(page)
       await page.waitForSelector('html.dark', { timeout: COLD_START_TIMEOUT_MS })
       await assertCanvasNonBlank(page, '.brand-metaballs canvas', COLD_START_TIMEOUT_MS)
@@ -359,40 +419,66 @@ async function verifyDarkFlow(port) {
       localStorage.setItem('prelude-theme', 'dark')
     })
     await assertNoDarkConsoleErrors(page, async () => {
-      await page.goto(`http://127.0.0.1:${port}/interview`, { waitUntil: 'domcontentloaded', timeout: COLD_START_TIMEOUT_MS })
+      await page.goto(`http://127.0.0.1:${port}/interview`, {
+        waitUntil: 'domcontentloaded',
+        timeout: COLD_START_TIMEOUT_MS,
+      })
       await waitForAppMounted(page)
-      await page.getByRole('button', { name: '设置' }).waitFor({ state: 'visible', timeout: COLD_START_TIMEOUT_MS })
+      await page
+        .getByRole('button', { name: '设置' })
+        .waitFor({ state: 'visible', timeout: COLD_START_TIMEOUT_MS })
 
       await page.getByRole('button', { name: '设置' }).click()
       await page.getByRole('button', { name: '账号资料' }).click()
-      await page.waitForFunction(() => document.querySelector('input[autocomplete="email"]')?.value === 'demo@example.com')
+      await page.waitForFunction(
+        () => document.querySelector('input[autocomplete="email"]')?.value === 'demo@example.com',
+      )
       await page.getByRole('button', { name: '主题' }).click()
       await page.getByRole('button', { name: '暗色' }).click()
       await page.getByRole('button', { name: '保存主题' }).click()
-      await page.waitForFunction(() => document.body.innerText.includes('未检测到主题变更') || document.body.innerText.includes('主题已保存'))
+      await page.waitForFunction(
+        () =>
+          document.body.innerText.includes('未检测到主题变更') ||
+          document.body.innerText.includes('主题已保存'),
+      )
       await page.getByRole('button', { name: 'LLM 配置' }).click()
       await page.getByText('接入方式').waitFor({ state: 'visible', timeout: 10000 })
       await page.keyboard.press('Escape')
 
-      await page.locator('button').filter({ has: page.locator('.lucide-terminal') }).first().click()
+      await page
+        .locator('button')
+        .filter({ has: page.locator('.lucide-terminal') })
+        .first()
+        .click()
       const modelContent = page.locator('[role="menu"]').filter({ hasText: 'deepseek-chat' }).last()
       await modelContent.waitFor({ state: 'visible', timeout: 10000 })
       const modelBox = await modelContent.boundingBox()
-      const triggerBox = await page.locator('button').filter({ has: page.locator('.lucide-terminal') }).first().boundingBox()
+      const triggerBox = await page
+        .locator('button')
+        .filter({ has: page.locator('.lucide-terminal') })
+        .first()
+        .boundingBox()
       if (modelBox.width + 1 < triggerBox.width) {
-        throw new Error(`Model dropdown width (${modelBox.width}) should not be narrower than trigger (${triggerBox.width})`)
+        throw new Error(
+          `Model dropdown width (${modelBox.width}) should not be narrower than trigger (${triggerBox.width})`,
+        )
       }
       await page.getByRole('menuitem', { name: 'deepseek-reasoner' }).click()
 
       await page.getByRole('button', { name: '开始面试' }).click()
       await page.waitForFunction(() => document.body.innerText.includes('面试已创建'))
       await page.getByRole('button', { name: '切换到语音输入' }).click()
-      await page.getByRole('button', { name: '按住说话' }).waitFor({ state: 'visible', timeout: 10000 })
+      await page
+        .getByRole('button', { name: '按住说话' })
+        .waitFor({ state: 'visible', timeout: 10000 })
       await page.getByRole('button', { name: '切换到文字输入' }).click()
     })
 
     await assertNoDarkConsoleErrors(page, async () => {
-      await page.goto(`http://127.0.0.1:${port}/analytics`, { waitUntil: 'domcontentloaded', timeout: COLD_START_TIMEOUT_MS })
+      await page.goto(`http://127.0.0.1:${port}/analytics`, {
+        waitUntil: 'domcontentloaded',
+        timeout: COLD_START_TIMEOUT_MS,
+      })
       await waitForAppMounted(page)
       await page.getByText('能力雷达').waitFor({ state: 'visible', timeout: 30000 })
       await page.waitForSelector('.chart-surface canvas', { state: 'visible', timeout: 10000 })

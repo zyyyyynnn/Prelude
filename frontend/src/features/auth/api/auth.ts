@@ -1,9 +1,5 @@
 import { http } from '@/api/http'
-import type {
-  ApiResult,
-  LoginResponse,
-  PositionTemplate,
-} from '@/api/contracts'
+import type { ApiResult, LoginResponse, PositionTemplate } from '@/api/contracts'
 import { unwrapResult } from '@/api/contracts'
 
 export async function login(username: string, password: string) {

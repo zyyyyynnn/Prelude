@@ -7,7 +7,12 @@ import GlobalSettingsModal from '@/features/settings/components/GlobalSettingsMo
 import GlobalConfirmDialog from './components/GlobalConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
 import { fetchUserProfile } from '@/features/settings/api/user'
-import { applyThemePreference, getStoredThemePreference, resolveThemePreference, storeThemePreference } from './utils/theme'
+import {
+  applyThemePreference,
+  getStoredThemePreference,
+  resolveThemePreference,
+  storeThemePreference,
+} from './utils/theme'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -64,9 +69,9 @@ onBeforeUnmount(() => {
     <div class="app-layout__main">
       <RouterView @open-global-settings="handleOpenSettings" />
     </div>
-    <GlobalSettingsModal 
-      v-model:visible="showGlobalSettings" 
-      v-model:activeTab="activeSettingsTab" 
+    <GlobalSettingsModal
+      v-model:visible="showGlobalSettings"
+      v-model:activeTab="activeSettingsTab"
     />
     <GlobalConfirmDialog />
     <Toaster position="top-center" />

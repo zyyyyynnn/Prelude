@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import type { PrimitiveProps } from "reka-ui"
-import type { HTMLAttributes } from "vue"
-import type { ButtonVariants } from "."
-import { Primitive } from "reka-ui"
-import { Loader2 } from "@lucide/vue"
-import { cn } from "@/lib/utils"
-import { buttonVariants } from "."
+import type { PrimitiveProps } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
+import type { ButtonVariants } from '.'
+import { Primitive } from 'reka-ui'
+import { Loader2 } from '@lucide/vue'
+import { cn } from '@/lib/utils'
+import { buttonVariants } from '.'
 
 interface Props extends PrimitiveProps {
-  variant?: ButtonVariants["variant"]
-  size?: ButtonVariants["size"]
-  class?: HTMLAttributes["class"]
+  variant?: ButtonVariants['variant']
+  size?: ButtonVariants['size']
+  class?: HTMLAttributes['class']
   loading?: boolean
   disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  as: "button",
+  as: 'button',
 })
 </script>
 
@@ -24,12 +24,23 @@ const props = withDefaults(defineProps<Props>(), {
   <Primitive
     :as="as"
     :as-child="asChild"
-    :class="cn(buttonVariants({ variant, size }), 'relative overflow-hidden transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', props.class)"
+    :class="
+      cn(
+        buttonVariants({ variant, size }),
+        'relative overflow-hidden transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]',
+        props.class,
+      )
+    "
     :disabled="loading || disabled"
   >
-    <span 
-      :class="cn('flex w-full h-full min-w-0 items-center transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', loading ? 'opacity-0' : 'opacity-100')"
-      style="gap: inherit; justify-content: inherit; align-items: inherit; flex-direction: inherit;"
+    <span
+      :class="
+        cn(
+          'flex w-full h-full min-w-0 items-center transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]',
+          loading ? 'opacity-0' : 'opacity-100',
+        )
+      "
+      style="gap: inherit; justify-content: inherit; align-items: inherit; flex-direction: inherit"
     >
       <slot />
     </span>

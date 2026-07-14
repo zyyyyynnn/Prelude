@@ -76,33 +76,39 @@ const dialogOpen = ref(false)
     <header class="lab__header">
       <h1 class="lab__title">Component Lab</h1>
       <p class="lab__subtitle">
-        开发态组件状态矩阵。仅 <code>import.meta.env.DEV</code> 为 true 时注册；生产构建会被 Vite tree-shake 掉。
+        开发态组件状态矩阵。仅 <code>import.meta.env.DEV</code> 为 true 时注册；生产构建会被 Vite
+        tree-shake 掉。
       </p>
       <p class="lab__subtitle">
-        用途：设计师 / 工程师在此 review Button / Input / SegmentedControl / Dropdown / Dialog
-        / Tooltip 等组件在不同状态下的视觉与 a11y 表现。变更需同步通过 <code>verify:visual</code> /
+        用途：设计师 / 工程师在此 review Button / Input / SegmentedControl / Dropdown / Dialog /
+        Tooltip 等组件在不同状态下的视觉与 a11y 表现。变更需同步通过 <code>verify:visual</code> /
         <code>verify:a11y</code> / <code>verify:ui</code>。
       </p>
     </header>
 
-    <ComponentLabSection><template #heading>`Button`</template><template #description>`variant × size × loading × disabled`</template>
+    <ComponentLabSection
+      ><template #heading>`Button`</template
+      ><template #description>`variant × size × loading × disabled`</template>
       <div v-for="variant in buttonVariantChoices" :key="variant" class="lab__row">
         <div class="lab__row-label">{{ variant }}</div>
         <div class="lab__row-cells">
-          <Button v-for="size in buttonSizeChoices" :key="`${variant}-${size}`" :variant="variant" :size="size">
+          <Button
+            v-for="size in buttonSizeChoices"
+            :key="`${variant}-${size}`"
+            :variant="variant"
+            :size="size"
+          >
             {{ size }}
           </Button>
-          <Button :variant="variant" size="compact" loading>
-            loading
-          </Button>
-          <Button :variant="variant" size="compact" disabled>
-            disabled
-          </Button>
+          <Button :variant="variant" size="compact" loading> loading </Button>
+          <Button :variant="variant" size="compact" disabled> disabled </Button>
         </div>
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Input`</template><template #description>`default / focus / disabled / error-like hint`</template>
+    <ComponentLabSection
+      ><template #heading>`Input`</template
+      ><template #description>`default / focus / disabled / error-like hint`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <div class="lab__cell">
@@ -119,14 +125,21 @@ const dialogOpen = ref(false)
           </div>
           <div class="lab__cell">
             <Label for="lab-input-error">error-like hint</Label>
-            <Input id="lab-input-error" v-model="inputErrorLike" placeholder="error style" class="border-error" />
+            <Input
+              id="lab-input-error"
+              v-model="inputErrorLike"
+              placeholder="error style"
+              class="border-error"
+            />
             <span class="lab__hint">hint: API Key 格式不正确</span>
           </div>
         </div>
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Select / DropdownMenu`</template><template #description>`closed / open · compact / default · long label`</template>
+    <ComponentLabSection
+      ><template #heading>`Select / DropdownMenu`</template
+      ><template #description>`closed / open · compact / default · long label`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <div class="lab__cell">
@@ -169,7 +182,9 @@ const dialogOpen = ref(false)
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Dialog`</template><template #description>`settings-like modal · 与 GlobalSettingsModal 同源`</template>
+    <ComponentLabSection
+      ><template #heading>`Dialog`</template
+      ><template #description>`settings-like modal · 与 GlobalSettingsModal 同源`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <Dialog v-model:open="dialogOpen">
@@ -192,7 +207,9 @@ const dialogOpen = ref(false)
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Tooltip`</template><template #description>`hover / focus trigger；不依赖原生 title`</template>
+    <ComponentLabSection
+      ><template #heading>`Tooltip`</template
+      ><template #description>`hover / focus trigger；不依赖原生 title`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <TooltipProvider>
@@ -219,7 +236,9 @@ const dialogOpen = ref(false)
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Badge`</template><template #description>`默认 / destructive / secondary / outline`</template>
+    <ComponentLabSection
+      ><template #heading>`Badge`</template
+      ><template #description>`默认 / destructive / secondary / outline`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <Badge>默认</Badge>
@@ -230,7 +249,9 @@ const dialogOpen = ref(false)
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Card / EmptyState`</template><template #description>`包装容器 + 空态`</template>
+    <ComponentLabSection
+      ><template #heading>`Card / EmptyState`</template
+      ><template #description>`包装容器 + 空态`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <Card class="!w-72">
@@ -248,7 +269,9 @@ const dialogOpen = ref(false)
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`SegmentedControl`</template><template #description>`item-count sizing model · 1 / 2 / 3 / long label`</template>
+    <ComponentLabSection
+      ><template #heading>`SegmentedControl`</template
+      ><template #description>`item-count sizing model · 1 / 2 / 3 / long label`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <div class="lab__cell">
@@ -274,14 +297,14 @@ const dialogOpen = ref(false)
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Workspace excerpt`</template><template #description>`Sidebar expanded · collapsed`</template>
+    <ComponentLabSection
+      ><template #heading>`Workspace excerpt`</template
+      ><template #description>`Sidebar expanded · collapsed`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <div class="lab__cell">
             <Label>expanded</Label>
-            <Button variant="outline" @click="$router.push('/interview')">
-              打开工作区
-            </Button>
+            <Button variant="outline" @click="$router.push('/interview')"> 打开工作区 </Button>
           </div>
           <div class="lab__cell">
             <Label>collapsed</Label>
@@ -291,7 +314,9 @@ const dialogOpen = ref(false)
       </div>
     </ComponentLabSection>
 
-    <ComponentLabSection><template #heading>`Message bubble`</template><template #description>`user · assistant · judge feedback（语义化 token 引用）`</template>
+    <ComponentLabSection
+      ><template #heading>`Message bubble`</template
+      ><template #description>`user · assistant · judge feedback（语义化 token 引用）`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <div class="lab__bubble lab__bubble--user">用户消息</div>

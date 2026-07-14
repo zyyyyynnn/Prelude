@@ -59,6 +59,7 @@ export const baseUse = {
   deviceScaleFactor: 1,
   locale: 'en-US',
   timezoneId: 'UTC',
+  reducedMotion: 'reduce',
 } as const
 
 /**

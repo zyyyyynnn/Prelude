@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, lazyPlugins } from 'vite-plus'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
@@ -10,11 +10,20 @@ export default defineConfig(({ mode }) => {
   const host = env.VITE_HOST || '127.0.0.1'
 
   return {
-    plugins: [vue(), tailwindcss()],
+    fmt: {
+      singleQuote: true,
+      semi: false,
+    },
+    lint: {
+      jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }],
+      rules: { 'vite-plus/prefer-vite-plus-imports': 'error' },
+      options: { typeAware: true, typeCheck: true },
+    },
+    plugins: lazyPlugins(() => [vue(), tailwindcss()]),
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
-      }
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
     },
     build: {
       chunkSizeWarningLimit: 520,

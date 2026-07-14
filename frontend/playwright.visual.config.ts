@@ -20,7 +20,12 @@
  * below. This config only owns the per-scenario overrides.
  */
 import { defineConfig } from '@playwright/test'
-import { baseOutputDir, baseTimeouts, baseUse, baseWebServer } from './tests/_helpers/playwright-base'
+import {
+  baseOutputDir,
+  baseTimeouts,
+  baseUse,
+  baseWebServer,
+} from './tests/_helpers/playwright-base'
 
 export default defineConfig({
   ...baseTimeouts,

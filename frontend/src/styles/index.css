@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @source "../components";
 @source "../views";
 
@@ -78,7 +78,6 @@
   --color-mask-overlay: var(--mask-overlay);
 }
 
-
 :root {
   --font-serif: 'Lora', 'Noto Serif SC', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
@@ -90,8 +89,16 @@
   --color-surface-hover: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-surface));
   --color-surface-muted: color-mix(in srgb, var(--color-text-primary) 8%, var(--color-surface));
   --bg-paper-filter:
-    radial-gradient(circle at 16% 14%, color-mix(in srgb, var(--color-surface) 32%, transparent) 0, transparent 26%),
-    radial-gradient(circle at 80% 72%, color-mix(in srgb, var(--color-text-primary) 4%, transparent) 0, transparent 24%),
+    radial-gradient(
+      circle at 16% 14%,
+      color-mix(in srgb, var(--color-surface) 32%, transparent) 0,
+      transparent 26%
+    ),
+    radial-gradient(
+      circle at 80% 72%,
+      color-mix(in srgb, var(--color-text-primary) 4%, transparent) 0,
+      transparent 24%
+    ),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.12'/%3E%3Cg fill='none' stroke='%23beb7a8' stroke-opacity='0.2' stroke-width='1'%3E%3Cpath d='M18 42c24 11 51 -5 79 7 20 9 42 12 67 -1'/%3E%3Cpath d='M214 34c17 8 31 3 45 9 15 6 27 5 43 -3'/%3E%3Cpath d='M42 120c17 -7 35 6 57 0 18 -5 36 -3 51 5'/%3E%3Cpath d='M176 138c19 5 35 -7 60 -2 15 3 29 4 46 -5'/%3E%3Cpath d='M26 210c22 7 46 -8 72 4 18 8 33 11 56 1'/%3E%3Cpath d='M182 228c17 -6 36 6 60 1 16 -3 32 -1 51 7'/%3E%3Cpath d='M74 286c18 -8 38 4 57 -1 17 -5 31 -3 48 6'/%3E%3Cpath d='M208 284c13 4 29 -6 47 -2 14 3 28 2 40 -5'/%3E%3C/g%3E%3C/svg%3E");
 
   --color-text-primary: #141413;
@@ -155,7 +162,8 @@
   --shadow-app-menu:
     0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
-  --shadow-app-menu-active: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
+  --shadow-app-menu-active:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
   --shadow-brand-logo: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   --shadow-login-card:
     0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
@@ -188,9 +196,15 @@
   --motion-ease-standard: ease-in-out;
   --motion-delay-min: 300ms;
   --motion-transition-color: color var(--motion-duration-base) var(--motion-ease-standard);
-  --motion-transition-surface: background-color var(--motion-duration-base) var(--motion-ease-standard), border-color var(--motion-duration-base) var(--motion-ease-standard), box-shadow var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
+  --motion-transition-surface:
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
   --motion-transition-opacity: opacity var(--motion-duration-base) var(--motion-ease-standard);
-  --motion-transition-transform: transform var(--motion-duration-base) var(--motion-ease-standard), opacity var(--motion-duration-base) var(--motion-ease-standard);
+  --motion-transition-transform:
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
 
   /* ── UI System Tokens ── */
   --font-size-xs: 13px;
@@ -245,7 +259,6 @@
   --z-index-workspace-composer: 10;
   --z-index-app-header: 40;
   --z-index-sidebar: 100;
-
 }
 
 :root.dark,
@@ -293,7 +306,10 @@ body {
   background-image: var(--bg-paper-filter);
   background-attachment: fixed;
   background-repeat: no-repeat, no-repeat, repeat;
-  background-size: auto, auto, 320px 320px;
+  background-size:
+    auto,
+    auto,
+    320px 320px;
   background-blend-mode: normal, normal, multiply;
   color: var(--color-text-primary);
   font: 400 var(--font-size-md)/1.6 var(--font-sans);
@@ -347,7 +363,11 @@ a {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: var(--spacing-md) var(--spacing-lg);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 42%, transparent), color-mix(in srgb, var(--color-surface) 12%, transparent)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface) 42%, transparent),
+      color-mix(in srgb, var(--color-surface) 12%, transparent)
+    ),
     color-mix(in srgb, var(--color-surface) 54%, transparent);
   box-shadow: var(--shadow-app-header);
   backdrop-filter: blur(20px) saturate(108%);
@@ -681,7 +701,6 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-
 .insight-card,
 .detail-card {
   display: grid;
@@ -836,7 +855,7 @@ a {
 
 /* shadcn Label / FormLabel 品牌衬线体 */
 label,
-[data-slot="label"] {
+[data-slot='label'] {
   font-family: var(--font-serif);
   font-weight: 500;
   font-size: var(--font-size-md);
@@ -1317,10 +1336,21 @@ label,
   color: var(--color-text-primary);
 }
 
-.markdown-body h1 { font-size: 1.5em; }
-.markdown-body h2 { font-size: 1.3em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
-.markdown-body h3 { font-size: 1.15em; }
-.markdown-body h4 { font-size: 1.05em; font-weight: 600; }
+.markdown-body h1 {
+  font-size: 1.5em;
+}
+.markdown-body h2 {
+  font-size: 1.3em;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3em;
+}
+.markdown-body h3 {
+  font-size: 1.15em;
+}
+.markdown-body h4 {
+  font-size: 1.05em;
+  font-weight: 600;
+}
 
 .markdown-body p,
 .markdown-body ul,
@@ -1458,8 +1488,6 @@ label,
   color: var(--color-brand);
 }
 
-
-
 .login-card {
   position: relative;
   width: min(100%, 1180px);
@@ -1467,13 +1495,15 @@ label,
   border-radius: var(--radius-xl);
   padding: var(--spacing-2xl);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 36%, transparent), color-mix(in srgb, var(--color-surface) 8%, transparent)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface) 36%, transparent),
+      color-mix(in srgb, var(--color-surface) 8%, transparent)
+    ),
     color-mix(in srgb, var(--color-surface) 82%, transparent);
   box-shadow: var(--shadow-login-card);
   transform: scale(1);
 }
-
-
 
 .login-card__content {
   --login-card-content-layer: 1;
@@ -1507,12 +1537,20 @@ label,
 }
 
 @keyframes brand-awaken {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-card__logo { animation: none; }
+  .login-card__logo {
+    animation: none;
+  }
 }
 
 .login-card__brand-caption {
@@ -1725,7 +1763,8 @@ label,
 .scrollable::-webkit-scrollbar,
 .scrollable::-webkit-scrollbar-track,
 .scrollable::-webkit-scrollbar-thumb,
-.scrollable::-webkit-scrollbar-thumb:hover {}
+.scrollable::-webkit-scrollbar-thumb:hover {
+}
 
 @media print {
   .panel {
@@ -1835,7 +1874,9 @@ label,
 
 /* ── Icon Action Button ── */
 .icon-action-btn {
-  transition: color var(--motion-duration-base) var(--motion-ease-standard), background-color var(--motion-duration-base) var(--motion-ease-standard);
+  transition:
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard);
   border-radius: var(--radius-sm);
   padding: var(--spacing-xs);
   margin: var(--spacing-neg-xs);
@@ -1856,11 +1897,10 @@ label,
   outline: none;
 }
 
-
 /* 彻底消除 Chrome Autofill 亮黄背景污染 (针对纯白输入框) */
 input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
@@ -1870,11 +1910,11 @@ textarea:-webkit-autofill:focus {
 }
 
 /* 彻底隐藏 Edge/Chrome 原生的密码查看眼睛图标，防止与业务 Icon 冲突 */
-input[type="password"]::-ms-reveal,
-input[type="password"]::-ms-clear {
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
   display: none !important;
 }
-input[type="password"]::-webkit-credentials-auto-fill-button {
+input[type='password']::-webkit-credentials-auto-fill-button {
   visibility: hidden !important;
   pointer-events: none !important;
   position: absolute !important;
