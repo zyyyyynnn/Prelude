@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/**
+ /**
  * Component Lab section wrapper — small utility used by ComponentLabView to
  * keep each component family visually grouped.
  *

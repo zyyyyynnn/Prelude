@@ -42,22 +42,24 @@ function renderMetaballs() {
   const bg = resolveShaderColor('--brand-metaballs-bg', 'var(--color-bg)')
   const renderKey = `${bg}:${colors.join(':')}`
 
-  root.render(createElement(Metaballs, {
-    key: renderKey,
-    speed: 1.7,
-    count: 10,
-    size: 1,
-    scale: 1,
-    colors,
-    colorBack: bg,
-    style: {
-      width: '100%',
-      height: '100%',
-      backgroundColor: bg,
-      borderRadius: 'var(--radius-3xl)',
-      boxShadow: 'var(--brand-metaballs-shadow)',
-    },
-  }))
+  root.render(
+    createElement(Metaballs, {
+      key: renderKey,
+      speed: 1.7,
+      count: 10,
+      size: 1,
+      scale: 1,
+      colors,
+      colorBack: bg,
+      style: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: bg,
+        borderRadius: 'var(--radius-3xl)',
+        boxShadow: 'var(--brand-metaballs-shadow)',
+      },
+    }),
+  )
 }
 
 onMounted(() => {

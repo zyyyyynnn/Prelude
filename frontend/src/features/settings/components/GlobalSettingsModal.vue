@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { useAuthStore } from '@/stores/auth'
 import UserProfilePanel from './UserProfilePanel.vue'
 import LlmSettingsPanel from './LlmSettingsPanel.vue'
@@ -33,7 +39,9 @@ function handleLogout() {
 
 <template>
   <Dialog v-model:open="visible">
-    <DialogContent class="settings-dialog p-0 overflow-hidden bg-background border-none dialog-no-close !flex !flex-col">
+    <DialogContent
+      class="settings-dialog p-0 overflow-hidden bg-background border-none dialog-no-close !flex !flex-col"
+    >
       <DialogHeader class="hidden">
         <DialogTitle>全局设置</DialogTitle>
         <DialogDescription>全局设置面板</DialogDescription>
@@ -41,22 +49,71 @@ function handleLogout() {
       <div class="settings-layout">
         <aside class="settings-sidebar">
           <div class="sidebar-menu">
-            <button :class="['menu-item', { 'is-active': activeTab === 'profile' }]" @click="activeTab = 'profile'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <button
+              :class="['menu-item', { 'is-active': activeTab === 'profile' }]"
+              @click="activeTab = 'profile'"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
               账号资料
             </button>
-            <button :class="['menu-item', { 'is-active': activeTab === 'theme' }]" @click="activeTab = 'theme'">
+            <button
+              :class="['menu-item', { 'is-active': activeTab === 'theme' }]"
+              @click="activeTab = 'theme'"
+            >
               <Palette class="h-4 w-4" />
               主题
             </button>
-            <button :class="['menu-item', { 'is-active': activeTab === 'llm' }]" @click="activeTab = 'llm'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            <button
+              :class="['menu-item', { 'is-active': activeTab === 'llm' }]"
+              @click="activeTab = 'llm'"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
               LLM 配置
             </button>
           </div>
           <div class="sidebar-footer">
             <button class="menu-item menu-item--danger" @click="handleLogout">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
               退出登录
             </button>
           </div>
@@ -181,7 +238,10 @@ function handleLogout() {
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard), box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+  transition:
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard);
 }
 .menu-item:hover {
   background: var(--color-surface-hover);

@@ -16,7 +16,9 @@ export function useConfirmDialog() {
   function confirm(opts: ConfirmOptions): Promise<boolean> {
     options.value = { confirmText: '确定', cancelText: '取消', variant: 'default', ...opts }
     isOpen.value = true
-    return new Promise((resolve) => { resolvePromise = resolve })
+    return new Promise((resolve) => {
+      resolvePromise = resolve
+    })
   }
 
   function handleConfirm() {

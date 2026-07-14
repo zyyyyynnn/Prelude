@@ -60,12 +60,12 @@ Once a baseline is reviewed and stable, commit it. Promotion to a blocking pixel
 
 ## Failure interpretation
 
-| Symptom | Likely cause |
-| --- | --- |
-| Capture failed: timed out waiting for `localhost:5173` | Dev server did not start. Run `npm --prefix frontend run dev` manually and inspect output. |
-| Capture OK but image shows a 404 page | `/api/**` route stub is missing for a new endpoint. Add a stub in `installMockApi`. |
-| Capture OK but image is blank | Selector `readyLocator` does not appear. The route stub returned data that the page did not render; check console. |
-| Capture flakes on CI but not locally | Usually font / DPI mismatch. Verify `deviceScaleFactor: 1` and that the system Microsoft Edge channel is available. |
+| Symptom                                                | Likely cause                                                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Capture failed: timed out waiting for `localhost:5173` | Dev server did not start. Run `npm --prefix frontend run dev` manually and inspect output.                          |
+| Capture OK but image shows a 404 page                  | `/api/**` route stub is missing for a new endpoint. Add a stub in `installMockApi`.                                 |
+| Capture OK but image is blank                          | Selector `readyLocator` does not appear. The route stub returned data that the page did not render; check console.  |
+| Capture flakes on CI but not locally                   | Usually font / DPI mismatch. Verify `deviceScaleFactor: 1` and that the system Microsoft Edge channel is available. |
 
 ## Out of scope
 

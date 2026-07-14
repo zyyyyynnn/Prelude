@@ -79,22 +79,23 @@ function isAllowedBoxShadow(hit) {
   const value = declaration[1].replace(/\s*!important$/, '').trim()
   if (value === 'none') return true
 
-  return value
-    .split(',')
-    .every((part) => /^var\(--shadow-[\w-]+\)$/.test(part.trim()))
+  return value.split(',').every((part) => /^var\(--shadow-[\w-]+\)$/.test(part.trim()))
 }
 
 const checks = [
   {
     id: 'forbidden-utility-classes',
-    description: '禁止写法：transition-all / window.confirm / 原生 title= / shadow-md / shadow-lg / border-border / h-[30px] / h-[32px] / h-[34px]',
-    pattern: 'transition-all|window\\.confirm|title=|shadow-md|shadow-lg|border-border|h-\\[30px\\]|h-\\[32px\\]|h-\\[34px\\]',
+    description:
+      '禁止写法：transition-all / window.confirm / 原生 title= / shadow-md / shadow-lg / border-border / h-[30px] / h-[32px] / h-[34px]',
+    pattern:
+      'transition-all|window\\.confirm|title=|shadow-md|shadow-lg|border-border|h-\\[30px\\]|h-\\[32px\\]|h-\\[34px\\]',
     paths: [frontendSrc],
     allowPaths: new Set([stylesIndex]),
   },
   {
     id: 'color-token-bypass',
-    description: '颜色 token 旁路：rgba / dark:bg- / bg-white / text-white / bg-black / text-black / 硬编码十六进制',
+    description:
+      '颜色 token 旁路：rgba / dark:bg- / bg-white / text-white / bg-black / text-black / 硬编码十六进制',
     pattern: 'rgba\\(|dark:bg-|bg-white|text-white|bg-black|text-black|#[0-9a-fA-F]{3,8}',
     paths: [frontendSrc],
     allowPaths: new Set([stylesIndex]),
@@ -108,8 +109,10 @@ const checks = [
   },
   {
     id: 'css-raw-sizing-px',
-    description: '业务组件属性侧 raw px 尺寸（z-index / width / height / inline-size / block-size / font-size）',
-    pattern: '(min-|max-)?(width|height|inline-size|block-size):\\s*\\d+px|font-size:\\s*\\d+px|z-index:\\s*\\d+\\b',
+    description:
+      '业务组件属性侧 raw px 尺寸（z-index / width / height / inline-size / block-size / font-size）',
+    pattern:
+      '(min-|max-)?(width|height|inline-size|block-size):\\s*\\d+px|font-size:\\s*\\d+px|z-index:\\s*\\d+\\b',
     paths: [frontendSrc],
     allowPaths: new Set([stylesIndex]),
     // CSS custom property declarations (e.g. `--foo: 12px;`) inside a component scoped
@@ -155,7 +158,8 @@ const checks = [
   },
   {
     id: 'tailwind-raw-z-index',
-    description: 'Tailwind raw z-index utility（使用 tokenized arbitrary z-index 或受控浮层 token）',
+    description:
+      'Tailwind raw z-index utility（使用 tokenized arbitrary z-index 或受控浮层 token）',
     pattern: '\\bz-\\d+\\b',
     paths: [frontendSrc],
     allowPaths: new Set([]),
@@ -211,16 +215,25 @@ function walkFallback(args) {
   // Minimal fallback: only handles "PATTERN PATH..." style args; for simplicity
   // we just walk frontend/src recursively and apply the pattern in JS.
   const patternStr = args[args.length - 2]
-  const searchRoots = args.slice(args.indexOf('-e') >= 0 ? args.indexOf('-e') + 2 : 0).filter((a) => !a.startsWith('-'))
+  const searchRoots = args
+    .slice(args.indexOf('-e') >= 0 ? args.indexOf('-e') + 2 : 0)
+    .filter((a) => !a.startsWith('-'))
   // The fallback is best-effort; we expect rg to be present in normal setups.
   const regex = new RegExp(patternStr)
   const results = []
   function walk(dir) {
     let entries
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return }
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
     for (const ent of entries) {
       const p = path.join(dir, ent.name)
-      if (ent.isDirectory()) { walk(p); continue }
+      if (ent.isDirectory()) {
+        walk(p)
+        continue
+      }
       if (!/\.(vue|ts|css|tsx|js)$/.test(ent.name)) continue
       const text = fs.readFileSync(p, 'utf8')
       const lines = text.split(/\r?\n/)
@@ -273,15 +286,24 @@ function debugHit(hit, allowPaths) {
     const ok =
       hit.file === allowed ||
       hit.file.startsWith(allowed + path.sep) ||
-      (path.isAbsolute(hit.file) && path.isAbsolute(allowed) && path.normalize(hit.file) === path.normalize(allowed))
+      (path.isAbsolute(hit.file) &&
+        path.isAbsolute(allowed) &&
+        path.normalize(hit.file) === path.normalize(allowed))
     if (ok) return
   }
-  console.error('debug fail:', JSON.stringify({ file: hit.file, line: hit.line, allowed: [...allowPaths] }))
+  console.error(
+    'debug fail:',
+    JSON.stringify({ file: hit.file, line: hit.line, allowed: [...allowPaths] }),
+  )
 }
 
 function collectVueFiles(dir, files = []) {
   let entries
-  try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return files }
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return files
+  }
   for (const entry of entries) {
     const file = path.join(dir, entry.name)
     if (entry.isDirectory()) {
@@ -307,7 +329,8 @@ function findComponentFocusShadowViolations() {
       while ((focusMatch = focusBlockPattern.exec(styleSource)) !== null) {
         const shadowMatch = focusMatch[2].match(/box-shadow\s*:\s*([^;]+);/)
         if (!shadowMatch || shadowMatch[1].trim() === requiredValue) continue
-        const sourceOffset = styleMatch.index + styleMatch[0].indexOf(styleSource) + focusMatch.index
+        const sourceOffset =
+          styleMatch.index + styleMatch[0].indexOf(styleSource) + focusMatch.index
         const line = source.slice(0, sourceOffset).split(/\r?\n/).length
         violations.push({
           id: 'component-focus-shadow-token',
@@ -354,11 +377,12 @@ failures.push(...findComponentFocusShadowViolations())
 if (allowed.length > 0) {
   console.log('--- ALLOWED HITS ---')
   for (const { id, hit, reason } of allowed) {
-    const label = reason === 'semantic-variable-declaration'
-      ? 'ALLOWED SEMANTIC VARIABLE'
-      : reason === 'explicit-allow-rule'
-        ? 'ALLOWED EXPLICIT RULE'
-        : 'ALLOWED TOKEN'
+    const label =
+      reason === 'semantic-variable-declaration'
+        ? 'ALLOWED SEMANTIC VARIABLE'
+        : reason === 'explicit-allow-rule'
+          ? 'ALLOWED EXPLICIT RULE'
+          : 'ALLOWED TOKEN'
     console.log(`  [${id}] ${label}: ${hit.file}:${hit.line}`)
   }
 }

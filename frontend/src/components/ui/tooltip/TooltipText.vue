@@ -10,15 +10,18 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<{
-  text?: string | null
-  fallback?: string
-  as?: string
-  class?: HTMLAttributes['class']
-}>(), {
-  fallback: '',
-  as: 'span',
-})
+const props = withDefaults(
+  defineProps<{
+    text?: string | null
+    fallback?: string
+    as?: string
+    class?: HTMLAttributes['class']
+  }>(),
+  {
+    fallback: '',
+    as: 'span',
+  },
+)
 </script>
 
 <template>

@@ -11,13 +11,7 @@ import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff } from '@lucide/vue'
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { loginSchema, registerSchema } from '@/schemas/auth'
@@ -45,7 +39,9 @@ const authEyebrow = computed(() => (isRegisterMode.value ? '注册' : '登录'))
 const authTitle = computed(() => (isRegisterMode.value ? '创建工作台账号' : '进入面试工作台'))
 const submitLabel = computed(() => (isRegisterMode.value ? '完成注册' : '登录'))
 
-const currentSchema = computed(() => isRegisterMode.value ? toTypedSchema(registerSchema) : toTypedSchema(loginSchema))
+const currentSchema = computed(() =>
+  isRegisterMode.value ? toTypedSchema(registerSchema) : toTypedSchema(loginSchema),
+)
 
 const { handleSubmit, setValues, resetForm } = useForm({
   validationSchema: currentSchema,
@@ -61,8 +57,10 @@ const submitAuth = handleSubmit(async (values) => {
 
   try {
     if (isRegisterMode.value) {
-      const v = values as any;
-      await withMinDelay(registerRequest(v.username.trim(), v.password, v.email?.trim() || undefined))
+      const v = values as any
+      await withMinDelay(
+        registerRequest(v.username.trim(), v.password, v.email?.trim() || undefined),
+      )
       showNotice('注册成功，请继续登录。', 'success')
       authMode.value = 'login'
       setValues({ username: v.username })
@@ -151,7 +149,12 @@ onMounted(() => {
             </FormField>
 
             <div
-              :class="['transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', isRegisterMode ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none']"
+              :class="[
+                'transition-opacity [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]',
+                isRegisterMode
+                  ? 'opacity-100 pointer-events-auto'
+                  : 'opacity-0 pointer-events-none',
+              ]"
               :aria-hidden="!isRegisterMode"
             >
               <FormField name="email" v-slot="{ componentField }">

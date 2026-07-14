@@ -37,7 +37,7 @@ function optionalScore(value: unknown) {
 }
 
 function stageName(value: unknown): InterviewStageName {
-  return stageNames.includes(value as InterviewStageName) ? value as InterviewStageName : 'warmup'
+  return stageNames.includes(value as InterviewStageName) ? (value as InterviewStageName) : 'warmup'
 }
 
 function stagePerformances(value: unknown): StructuredStagePerformance[] {
@@ -81,7 +81,10 @@ export function parseInterviewReport(source: string): ParsedInterviewReport {
     const logic = score(dimensions.logic, 6)
     const plan = isRecord(parsed.trainingPlan) ? parsed.trainingPlan : {}
     const summary = parsed.summary
-    const markdownFallback = text(parsed.markdownFallback, '# 面试训练报告\n\n结构化字段不完整，请查看逐题复盘。')
+    const markdownFallback = text(
+      parsed.markdownFallback,
+      '# 面试训练报告\n\n结构化字段不完整，请查看逐题复盘。',
+    )
     return {
       kind: 'structured',
       report: {

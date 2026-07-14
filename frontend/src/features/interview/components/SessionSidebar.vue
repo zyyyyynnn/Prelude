@@ -29,7 +29,7 @@ const {
   loadSession,
   togglePinSession,
   deleteSessionLocal,
-  isSessionPinned
+  isSessionPinned,
 } = useInterviewWorkspace()
 
 function togglePin(sessionId: number) {
@@ -45,7 +45,7 @@ async function confirmDelete(sessionId: number, targetPosition?: string) {
     cancelText: '取消',
     variant: 'destructive',
   })
-  
+
   if (confirmed) {
     deleteSessionLocal(sessionId)
     showNotice('会话已删除', 'success')
@@ -79,7 +79,6 @@ function navigateTo(path: string) {
     void router.push(path)
   }
 }
-
 </script>
 
 <template>
@@ -87,10 +86,21 @@ function navigateTo(path: string) {
     <div class="app-sidebar__header">
       <div class="app-sidebar__brand">
         <BrandMetaballs class="app-sidebar__logo" />
-          <span class="sidebar-label app-sidebar__title">Prelude</span>
+        <span class="sidebar-label app-sidebar__title">Prelude</span>
       </div>
       <button class="app-sidebar__toggle" @click="toggleCollapse" aria-label="Toggle Sidebar">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" :class="['transition-transform [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]', { 'rotate-180': collapsed }]">
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          :class="[
+            'transition-transform [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]',
+            { 'rotate-180': collapsed },
+          ]"
+        >
           <path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
@@ -103,7 +113,15 @@ function navigateTo(path: string) {
           @click="handleStartNew"
           aria-label="开始新面试"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="flex-shrink: 0"
+          >
             <path d="M12 5v14M5 12h14" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
           <span class="sidebar-label">开始新面试</span>
@@ -117,101 +135,226 @@ function navigateTo(path: string) {
           :class="['app-sidebar__sessions scrollable', { 'is-visible': !collapsed }]"
           :aria-hidden="collapsed"
         >
-        <div class="session-group">
-          <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">进行中</div>
-          <ul v-if="primarySessionList.length" class="session-list">
-            <li v-for="session in primarySessionList" :key="session.sessionId" class="session-item-wrapper">
-              <button
-                :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
-                :aria-label="`打开会话 ${session.targetPosition || '未命名岗位'}`"
-                @click="handleSessionClick(session.sessionId)"
+          <div class="session-group">
+            <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">
+              进行中
+            </div>
+            <ul v-if="primarySessionList.length" class="session-list">
+              <li
+                v-for="session in primarySessionList"
+                :key="session.sessionId"
+                class="session-item-wrapper"
               >
-                <TooltipText class="session-item__name" :text="session.targetPosition || '未命名岗位'" />
-              </button>
-              
-              <!-- Pin indicator when not hovered -->
-              <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
-                </svg>
-              </div>
+                <button
+                  :class="[
+                    'session-item-btn',
+                    { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
+                  ]"
+                  :aria-label="`打开会话 ${session.targetPosition || '未命名岗位'}`"
+                  @click="handleSessionClick(session.sessionId)"
+                >
+                  <TooltipText
+                    class="session-item__name"
+                    :text="session.targetPosition || '未命名岗位'"
+                  />
+                </button>
 
-              <!-- Quick actions on hover -->
-              <div class="session-item-actions">
-                <button class="action-btn" :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'" @click.stop="togglePin(session.sessionId)">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" v-if="isSessionPinned(session.sessionId)">
+                <!-- Pin indicator when not hovered -->
+                <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                   </svg>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" v-else>
-                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-                <button class="action-btn delete-btn" aria-label="删除会话" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
-                </button>
-              </div>
-            </li>
-          </ul>
-          <p v-else class="session-group__empty">暂无</p>
-        </div>
+                </div>
 
-        <Separator class="mx-2 my-2 bg-border/50" />
+                <!-- Quick actions on hover -->
+                <div class="session-item-actions">
+                  <button
+                    class="action-btn"
+                    :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
+                    @click.stop="togglePin(session.sessionId)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="currentColor"
+                      v-if="isSessionPinned(session.sessionId)"
+                    >
+                      <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
+                    </svg>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      v-else
+                    >
+                      <path
+                        d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="action-btn delete-btn"
+                    aria-label="删除会话"
+                    @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline
+                        points="3 6 5 6 21 6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </li>
+            </ul>
+            <p v-else class="session-group__empty">暂无</p>
+          </div>
 
-        <div class="session-group">
-          <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">已完成</div>
-          <ul v-if="finishedSessionList.length" class="session-list">
-            <li v-for="session in finishedSessionList" :key="session.sessionId" class="session-item-wrapper">
-              <button
-                :class="['session-item-btn', { 'is-active': activeSessionId === session.sessionId && interviewMenuActive }]"
-                :aria-label="`打开已结束会话 ${session.targetPosition || '未命名岗位'}`"
-                @click="handleSessionClick(session.sessionId)"
+          <Separator class="mx-2 my-2 bg-border/50" />
+
+          <div class="session-group">
+            <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">
+              已完成
+            </div>
+            <ul v-if="finishedSessionList.length" class="session-list">
+              <li
+                v-for="session in finishedSessionList"
+                :key="session.sessionId"
+                class="session-item-wrapper"
               >
-                <TooltipText class="session-item__name" :text="session.targetPosition || '未命名岗位'" />
-              </button>
+                <button
+                  :class="[
+                    'session-item-btn',
+                    { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
+                  ]"
+                  :aria-label="`打开已结束会话 ${session.targetPosition || '未命名岗位'}`"
+                  @click="handleSessionClick(session.sessionId)"
+                >
+                  <TooltipText
+                    class="session-item__name"
+                    :text="session.targetPosition || '未命名岗位'"
+                  />
+                </button>
 
-              <!-- Pin indicator when not hovered -->
-              <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
-                </svg>
-              </div>
-
-              <!-- Quick actions on hover -->
-              <div class="session-item-actions">
-                <button class="action-btn" :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'" @click.stop="togglePin(session.sessionId)">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" v-if="isSessionPinned(session.sessionId)">
+                <!-- Pin indicator when not hovered -->
+                <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                   </svg>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" v-else>
-                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-                <button class="action-btn delete-btn" aria-label="删除会话" @click.stop="confirmDelete(session.sessionId, session.targetPosition)">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
-                </button>
-              </div>
-            </li>
-          </ul>
-          <p v-else class="session-group__empty">暂无</p>
-        </div>
+                </div>
+
+                <!-- Quick actions on hover -->
+                <div class="session-item-actions">
+                  <button
+                    class="action-btn"
+                    :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
+                    @click.stop="togglePin(session.sessionId)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="currentColor"
+                      v-if="isSessionPinned(session.sessionId)"
+                    >
+                      <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
+                    </svg>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      v-else
+                    >
+                      <path
+                        d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="action-btn delete-btn"
+                    aria-label="删除会话"
+                    @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline
+                        points="3 6 5 6 21 6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </li>
+            </ul>
+            <p v-else class="session-group__empty">暂无</p>
+          </div>
         </div>
         <div
           :class="['app-sidebar__collapsed-actions', { 'is-visible': collapsed }]"
           :aria-hidden="!collapsed"
         >
           <button
-            :class="['app-sidebar__btn app-sidebar__btn--icon', { 'is-active': interviewMenuActive }]"
+            :class="[
+              'app-sidebar__btn app-sidebar__btn--icon',
+              { 'is-active': interviewMenuActive },
+            ]"
             @click="navigateTo('/interview')"
             aria-label="工作区"
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
-              <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="flex-shrink: 0"
+            >
+              <rect
+                x="3"
+                y="3"
+                width="18"
+                height="18"
+                rx="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
               <path d="M3 9h18M9 21V9" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
@@ -224,9 +367,25 @@ function navigateTo(path: string) {
           @click="navigateTo('/resumes')"
           aria-label="简历管理"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-linecap="round" stroke-linejoin="round" />
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="flex-shrink: 0"
+          >
+            <path
+              d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
           <span class="sidebar-label">简历管理</span>
         </button>
@@ -235,7 +394,15 @@ function navigateTo(path: string) {
           @click="navigateTo('/analytics')"
           aria-label="数据看板"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="flex-shrink: 0"
+          >
             <path d="M18 20V10M12 20V4M6 20v-6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
           <span class="sidebar-label">数据看板</span>
@@ -250,9 +417,25 @@ function navigateTo(path: string) {
         @click="emit('open-global-settings')"
         aria-label="设置"
       >
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0">
-          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round" />
+        <svg
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          style="flex-shrink: 0"
+        >
+          <path
+            d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
         <span class="sidebar-label">设置</span>
       </button>
@@ -264,12 +447,8 @@ function navigateTo(path: string) {
 .app-sidebar {
   /* 组件级几何变量：折叠时按钮水平内边距与 sessions 容器宽度集中声明，便于审计。 */
   --sidebar-icon-glyph-size: 20px;
-  --sidebar-btn-padding-inline: calc(
-    (var(--ui-height-md) - var(--sidebar-icon-glyph-size)) / 2
-  );
-  --sidebar-sessions-inline-size: calc(
-    var(--layout-sidebar-inline-size) - var(--spacing-sm) * 2
-  );
+  --sidebar-btn-padding-inline: calc((var(--ui-height-md) - var(--sidebar-icon-glyph-size)) / 2);
+  --sidebar-sessions-inline-size: calc(var(--layout-sidebar-inline-size) - var(--spacing-sm) * 2);
 
   display: flex;
   flex-direction: column;
@@ -495,7 +674,9 @@ function navigateTo(path: string) {
   font-size: var(--font-size-sm);
   font-family: var(--font-serif);
   line-height: 1;
-  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
+  transition:
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -544,17 +725,37 @@ function navigateTo(path: string) {
   gap: var(--spacing-xs);
   opacity: 0;
   transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
-  background: linear-gradient(90deg, transparent 0%, var(--color-surface) 25%, var(--color-surface) 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-surface) 25%,
+    var(--color-surface) 100%
+  );
   padding-left: var(--spacing-sm);
 }
 .session-item-wrapper:has(.session-item-btn.is-active) .session-item-actions {
-  background: linear-gradient(90deg, transparent 0%, var(--color-surface-muted) 25%, var(--color-surface-muted) 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-surface-muted) 25%,
+    var(--color-surface-muted) 100%
+  );
 }
 .session-item-wrapper:hover .session-item-actions {
-  background: linear-gradient(90deg, transparent 0%, var(--color-surface-hover) 25%, var(--color-surface-hover) 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-surface-hover) 25%,
+    var(--color-surface-hover) 100%
+  );
 }
 .session-item-wrapper:hover:has(.session-item-btn.is-active) .session-item-actions {
-  background: linear-gradient(90deg, transparent 0%, var(--color-surface-hover) 25%, var(--color-surface-hover) 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-surface-hover) 25%,
+    var(--color-surface-hover) 100%
+  );
 }
 .session-item-wrapper:hover .pin-indicator {
   display: none;
@@ -579,7 +780,9 @@ function navigateTo(path: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color var(--motion-duration-base) var(--motion-ease-standard), color var(--motion-duration-base) var(--motion-ease-standard);
+  transition:
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
 }
 .action-btn:focus-visible {
   outline: none;

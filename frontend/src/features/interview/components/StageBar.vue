@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const canFinish = computed(
-  () => props.currentStage === 'closing' && !props.isFinished && !props.finishing && !props.sending
+  () => props.currentStage === 'closing' && !props.isFinished && !props.finishing && !props.sending,
 )
 </script>
 

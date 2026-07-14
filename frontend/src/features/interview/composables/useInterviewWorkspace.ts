@@ -9,7 +9,9 @@ const reportMarkdown = ref('')
 const sessionLoading = ref(false)
 
 const pinnedSessionIds = ref<number[]>(JSON.parse(localStorage.getItem('pinnedSessionIds') || '[]'))
-const deletedSessionIds = ref<number[]>(JSON.parse(localStorage.getItem('deletedSessionIds') || '[]'))
+const deletedSessionIds = ref<number[]>(
+  JSON.parse(localStorage.getItem('deletedSessionIds') || '[]'),
+)
 
 let activeAbortController: AbortController | null = null
 
@@ -29,7 +31,9 @@ export function useInterviewWorkspace() {
 
   const primarySessionList = computed(() => {
     return sessions.value
-      .filter((item) => item.status !== 'finished' && !deletedSessionIds.value.includes(item.sessionId))
+      .filter(
+        (item) => item.status !== 'finished' && !deletedSessionIds.value.includes(item.sessionId),
+      )
       .sort((a, b) => {
         const aPinned = pinnedSessionIds.value.includes(a.sessionId)
         const bPinned = pinnedSessionIds.value.includes(b.sessionId)
@@ -41,7 +45,9 @@ export function useInterviewWorkspace() {
 
   const finishedSessionList = computed(() => {
     return sessions.value
-      .filter((item) => item.status === 'finished' && !deletedSessionIds.value.includes(item.sessionId))
+      .filter(
+        (item) => item.status === 'finished' && !deletedSessionIds.value.includes(item.sessionId),
+      )
       .sort((a, b) => {
         const aPinned = pinnedSessionIds.value.includes(a.sessionId)
         const bPinned = pinnedSessionIds.value.includes(b.sessionId)
@@ -64,11 +70,11 @@ export function useInterviewWorkspace() {
       activeSessionId.value = sessionId
       // 清理缓存冲突：如果新创建的 ID 命中了本地删除缓存（常见于后端数据库重置后的自增冲突），将其放行
       if (deletedSessionIds.value.includes(sessionId)) {
-        deletedSessionIds.value = deletedSessionIds.value.filter(id => id !== sessionId)
+        deletedSessionIds.value = deletedSessionIds.value.filter((id) => id !== sessionId)
         localStorage.setItem('deletedSessionIds', JSON.stringify(deletedSessionIds.value))
       }
       // 兜底补齐：避免刚创建的会话因为后端列表同步延迟而无法显示在侧边栏
-      if (!sessions.value.find(s => s.sessionId === sessionId)) {
+      if (!sessions.value.find((s) => s.sessionId === sessionId)) {
         sessions.value = [detail as any, ...sessions.value]
       }
       reportMarkdown.value = detail.summaryReport || ''
@@ -134,6 +140,6 @@ export function useInterviewWorkspace() {
     deleteSessionLocal,
     isSessionPinned,
     abortActiveStream,
-    getNewAbortSignal
+    getNewAbortSignal,
   }
 }

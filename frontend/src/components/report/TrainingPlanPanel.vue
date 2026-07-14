@@ -34,13 +34,35 @@ const groups = [
 </template>
 
 <style scoped>
-.report-section { padding-block: var(--spacing-xl); border-top: 1px solid var(--color-border); }
-.training-plan > header { margin-bottom: var(--spacing-lg); }
-.training-plan > header p { margin: 0 0 var(--spacing-xs); color: var(--color-text-tertiary); font-family: var(--font-serif); font-size: var(--font-size-xs); }
-h2, h3 { margin: 0; color: var(--color-text-primary); font-family: var(--font-serif); }
-h2 { font-size: var(--font-size-lg); }
-h3 { font-size: var(--font-size-md); }
-.training-plan__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.report-section {
+  padding-block: var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+}
+.training-plan > header {
+  margin-bottom: var(--spacing-lg);
+}
+.training-plan > header p {
+  margin: 0 0 var(--spacing-xs);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xs);
+}
+h2,
+h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-serif);
+}
+h2 {
+  font-size: var(--font-size-lg);
+}
+h3 {
+  font-size: var(--font-size-md);
+}
+.training-plan__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .training-plan__group {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -48,8 +70,12 @@ h3 { font-size: var(--font-size-md); }
   min-inline-size: 0;
   padding-inline: var(--spacing-lg);
 }
-.training-plan__group:first-child { padding-inline-start: 0; }
-.training-plan__group + .training-plan__group { border-inline-start: 1px solid var(--color-border); }
+.training-plan__group:first-child {
+  padding-inline-start: 0;
+}
+.training-plan__group + .training-plan__group {
+  border-inline-start: 1px solid var(--color-border);
+}
 .training-plan__step {
   color: var(--color-text-tertiary);
   font-family: var(--font-sans);
@@ -81,9 +107,16 @@ h3 { font-size: var(--font-size-md); }
   content: '';
 }
 @media (max-width: 45rem) {
-  .training-plan__grid { grid-template-columns: 1fr; }
+  .training-plan__grid {
+    grid-template-columns: 1fr;
+  }
   .training-plan__group,
-  .training-plan__group:first-child { padding: var(--spacing-md) 0; }
-  .training-plan__group + .training-plan__group { border-inline-start: 0; border-top: 1px solid var(--color-border); }
+  .training-plan__group:first-child {
+    padding: var(--spacing-md) 0;
+  }
+  .training-plan__group + .training-plan__group {
+    border-inline-start: 0;
+    border-top: 1px solid var(--color-border);
+  }
 }
 </style>

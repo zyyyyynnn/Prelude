@@ -10,7 +10,12 @@
  * overrides (channel / viewport height / locale / deviceScaleFactor).
  */
 import { defineConfig } from '@playwright/test'
-import { baseOutputDir, baseTimeouts, baseUse, baseWebServer } from './tests/_helpers/playwright-base'
+import {
+  baseOutputDir,
+  baseTimeouts,
+  baseUse,
+  baseWebServer,
+} from './tests/_helpers/playwright-base'
 
 export default defineConfig({
   ...baseTimeouts,

@@ -30,7 +30,7 @@ export function useVoiceMedia(options: UseVoiceMediaOptions = {}) {
       mediaRecorder = new MediaRecorder(micStream, { mimeType: 'audio/webm' })
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
-          e.data.arrayBuffer().then((buf) => options.onAudioChunk?.(buf))
+          void e.data.arrayBuffer().then((buf) => options.onAudioChunk?.(buf))
         }
       }
       mediaRecorder.start(250)
