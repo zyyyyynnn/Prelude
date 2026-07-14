@@ -1,4 +1,12 @@
-import { nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance, type Ref } from 'vue'
+import {
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+  type Ref,
+} from 'vue'
 import { useVoiceMedia } from './useVoiceMedia'
 
 type UseComposerVoiceOptions = {
@@ -23,7 +31,11 @@ export function useComposerVoice(options: UseComposerVoiceOptions) {
   let analyser: AnalyserNode | null = null
   let animFrameId: number | null = null
 
-  const { isRecording, startRecording: mediaStart, stopRecording: mediaStop } = useVoiceMedia({
+  const {
+    isRecording,
+    startRecording: mediaStart,
+    stopRecording: mediaStop,
+  } = useVoiceMedia({
     onAudioChunk(chunk) {
       options.onAudioChunk(chunk)
     },
@@ -189,26 +201,30 @@ export function useComposerVoice(options: UseComposerVoiceOptions) {
     }
   })
 
-  watch(options.voiceStatus, (newStatus) => {
-    if (newStatus === 'stt_processing') {
-      displayStatus.value = '正在识别您的发言...'
-    } else if (newStatus === 'tts_processing') {
-      displayStatus.value = 'AI 正在思考...'
-    } else if (newStatus === 'speaking') {
-      displayStatus.value = 'AI 正在发言...'
-    } else if (newStatus === 'listening') {
-      displayStatus.value = '您可以开始说话...'
-    } else {
-      displayStatus.value = '按住说话进行模拟'
-    }
-  }, { immediate: true })
+  watch(
+    options.voiceStatus,
+    (newStatus) => {
+      if (newStatus === 'stt_processing') {
+        displayStatus.value = '正在识别您的发言...'
+      } else if (newStatus === 'tts_processing') {
+        displayStatus.value = 'AI 正在思考...'
+      } else if (newStatus === 'speaking') {
+        displayStatus.value = 'AI 正在发言...'
+      } else if (newStatus === 'listening') {
+        displayStatus.value = '您可以开始说话...'
+      } else {
+        displayStatus.value = '按住说话进行模拟'
+      }
+    },
+    { immediate: true },
+  )
 
   watch(options.isVoiceMode, (newVal) => {
     if (!newVal) {
       stopRecording()
       stopPlayback()
     } else {
-      nextTick(() => {
+      void nextTick(() => {
         drawFlatLine()
       })
     }

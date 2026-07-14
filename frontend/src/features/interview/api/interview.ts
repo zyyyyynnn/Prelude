@@ -54,7 +54,9 @@ export async function fetchInterviewSessions() {
 }
 
 export async function fetchInterviewMessages(sessionId: number) {
-  const response = await http.get<ApiResult<InterviewSessionDetailResponse>>(`/interview/${sessionId}/messages`)
+  const response = await http.get<ApiResult<InterviewSessionDetailResponse>>(
+    `/interview/${sessionId}/messages`,
+  )
   const data = unwrapResult(response.data)
   return {
     ...data,
@@ -63,10 +65,12 @@ export async function fetchInterviewMessages(sessionId: number) {
       ...stage,
       stageName: normalizeStageName(stage.stageName) || 'warmup',
     })),
-    messages: (data.messages || []).map((message): InterviewMessageRecord => ({
-      ...message,
-      role: normalizeMessageRole(message.role),
-    })),
+    messages: (data.messages || []).map(
+      (message): InterviewMessageRecord => ({
+        ...message,
+        role: normalizeMessageRole(message.role),
+      }),
+    ),
   }
 }
 
@@ -79,7 +83,11 @@ export async function finishInterview(sessionId: number) {
 
 function parseSseEvent(rawEvent: string): ChatStreamEvent {
   const lines = rawEvent.split('\n')
-  const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || 'message'
+  const eventName =
+    lines
+      .find((line) => line.startsWith('event:'))
+      ?.slice(6)
+      .trim() || 'message'
   const data = lines
     .filter((line) => line.startsWith('data:'))
     .map((line) => line.slice(5).trimStart())

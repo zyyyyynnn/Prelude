@@ -1,11 +1,18 @@
 ﻿<script lang="ts" setup>
-import type { ToasterProps } from "vue-sonner"
-import { reactiveOmit } from "@vueuse/core"
-import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon, XIcon } from "@lucide/vue"
-import { Toaster as Sonner } from "vue-sonner"
+import type { ToasterProps } from 'vue-sonner'
+import { reactiveOmit } from '@vueuse/core'
+import {
+  CircleCheckIcon,
+  InfoIcon,
+  Loader2Icon,
+  OctagonXIcon,
+  TriangleAlertIcon,
+  XIcon,
+} from '@lucide/vue'
+import { Toaster as Sonner } from 'vue-sonner'
 
 const props = defineProps<ToasterProps>()
-const delegatedProps = reactiveOmit(props, "toastOptions", "theme")
+const delegatedProps = reactiveOmit(props, 'toastOptions', 'theme')
 </script>
 
 <template>
@@ -14,12 +21,11 @@ const delegatedProps = reactiveOmit(props, "toastOptions", "theme")
     class="toaster group"
     :toast-options="{
       classes: {
-        toast: 'group toast group-[.toaster]:!bg-surface group-[.toaster]:!text-foreground group-[.toaster]:!border-transparent group-[.toaster]:!shadow-[var(--shadow-whisper)] !font-serif rounded-md px-[var(--spacing-md)] py-[var(--spacing-sm)] !text-sm',
+        toast:
+          'group toast group-[.toaster]:!bg-surface group-[.toaster]:!text-foreground group-[.toaster]:!border-transparent group-[.toaster]:!shadow-[var(--shadow-whisper)] !font-serif rounded-md px-[var(--spacing-md)] py-[var(--spacing-sm)] !text-sm',
         description: 'group-[.toast]:text-muted-foreground',
-        actionButton:
-          'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
-        cancelButton:
-          'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+        actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+        cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
       },
     }"
     v-bind="delegatedProps"

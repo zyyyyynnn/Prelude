@@ -48,9 +48,7 @@ async function axe(page: Page, label: string) {
   if (serious.length > 0) {
     // eslint-disable-next-line no-console
     console.log(
-      `  serious backlog: ${serious
-        .map((v) => `${v.id} (${v.nodes.length})`)
-        .join(', ')}`,
+      `  serious backlog: ${serious.map((v) => `${v.id} (${v.nodes.length})`).join(', ')}`,
     )
   }
 }
@@ -63,10 +61,6 @@ async function axe(page: Page, label: string) {
 async function expectNoCriticalViolations(page: Page, label: string) {
   return axe(page, label)
 }
-const expectNoSeriousViolations = expectNoCriticalViolations
-
-test.use({ colorScheme: 'light', reducedMotion: 'reduce' })
-
 test.describe.configure({ mode: 'serial' })
 
 test('login page — no critical axe violations', async ({ page }) => {
@@ -108,7 +102,10 @@ test('settings modal — opens, focus stays inside, Esc closes', async ({ page }
 test('position dropdown — opens via click, lists options, closes via Escape', async ({ page }) => {
   await installMockApi(page)
   await page.goto('/interview')
-  const trigger = page.locator('button').filter({ has: page.locator('.lucide-briefcase') }).first()
+  const trigger = page
+    .locator('button')
+    .filter({ has: page.locator('.lucide-briefcase') })
+    .first()
   await trigger.click()
   await expect(page.getByRole('menuitem', { name: 'Java 后端工程师' }).first()).toBeVisible()
   await expect(page.locator('[role="menu"]').first()).toBeVisible()
@@ -194,14 +191,20 @@ test('tooltip uses provider primitive (not native title attribute)', async ({ pa
   // Native title= is forbidden by verify:ui guardrail; tooltips should use a
   // hover/focus provider. Sanity check: no element in the visible shell has
   // a title attribute. (reka-ui's TooltipText uses aria-describedby.)
-  const nativeTitleCount = await page.evaluate(
-    () => document.querySelectorAll('[title]').length,
-  )
+  const nativeTitleCount = await page.evaluate(() => document.querySelectorAll('[title]').length)
   expect(nativeTitleCount).toBe(0)
 })
 
-test('structured report — semantic review lists and no critical axe violations', async ({ page }) => {
-  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+test('structured report — semantic review lists and no critical axe violations', async ({
+  page,
+}) => {
+  const session = {
+    sessionId: 101,
+    status: 'finished',
+    targetPosition: 'Java 后端工程师',
+    currentStage: 'closing',
+    summaryReport: STRUCTURED_REPORT,
+  }
   await installMockApi(page, {
     sessions: [session],
     interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },

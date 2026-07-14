@@ -18,13 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Eye, EyeOff, Trash2 } from '@lucide/vue'
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { llmSettingsSchema } from '@/schemas/llm'
@@ -37,11 +31,26 @@ const DISPLAY_NAME_MAP: Record<string, string> = {
 }
 
 const {
-  loading, saving, testing, discovering,
-  providerOptions, selectedProviderKey, selectedModel,
-  baseUrlInput, apiKeyInput, apiKeyMasked, maxTokens, thinkingDepth,
-  modelOptions, modelDiscoveryHint, isOpenAiCompatible,
-  loadSettings, saveSettings, clearApiKey, testSettings, discoverModels,
+  loading,
+  saving,
+  testing,
+  discovering,
+  providerOptions,
+  selectedProviderKey,
+  selectedModel,
+  baseUrlInput,
+  apiKeyInput,
+  apiKeyMasked,
+  maxTokens,
+  thinkingDepth,
+  modelOptions,
+  modelDiscoveryHint,
+  isOpenAiCompatible,
+  loadSettings,
+  saveSettings,
+  clearApiKey,
+  testSettings,
+  discoverModels,
 } = useLlmSettings()
 
 const showApiKey = ref(false)
@@ -56,8 +65,12 @@ function providerDisplayName(key: string, fallback: string): string {
   return DISPLAY_NAME_MAP[key] ?? fallback
 }
 
-const apiKeyStatusLabel = computed(() => apiKeyMasked.value ? `已保存：${apiKeyMasked.value}` : '未保存')
-const canShowModelCombobox = computed(() => isOpenAiCompatible.value && modelOptions.value.length > 0)
+const apiKeyStatusLabel = computed(() =>
+  apiKeyMasked.value ? `已保存：${apiKeyMasked.value}` : '未保存',
+)
+const canShowModelCombobox = computed(
+  () => isOpenAiCompatible.value && modelOptions.value.length > 0,
+)
 
 function selectModelCandidate(model: string) {
   selectedModel.value = model
@@ -120,16 +133,20 @@ function handleModelCandidateKeydown(event: KeyboardEvent) {
   }
 }
 
-watch([selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth], () => {
-  setValues({
-    providerKey: selectedProviderKey.value,
-    baseUrl: baseUrlInput.value,
-    model: selectedModel.value,
-    apiKey: apiKeyInput.value,
-    maxTokens: maxTokens.value,
-    thinkingDepth: thinkingDepth.value,
-  })
-}, { immediate: true })
+watch(
+  [selectedProviderKey, baseUrlInput, selectedModel, apiKeyInput, maxTokens, thinkingDepth],
+  () => {
+    setValues({
+      providerKey: selectedProviderKey.value,
+      baseUrl: baseUrlInput.value,
+      model: selectedModel.value,
+      apiKey: apiKeyInput.value,
+      maxTokens: maxTokens.value,
+      thinkingDepth: thinkingDepth.value,
+    })
+  },
+  { immediate: true },
+)
 
 watch(canShowModelCombobox, (canShow) => {
   if (!canShow) {
@@ -156,18 +173,21 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
 <template>
   <div class="panel-content-wrapper">
     <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
-
       <div class="field-grid">
-          <FormField name="providerKey">
-            <FormItem>
-              <FormLabel>接入方式</FormLabel>
-              <Select
-                :model-value="selectedProviderKey"
-                @update:model-value="(value) => { selectedProviderKey = String(value) }"
-              >
-                <SelectTrigger aria-label="接入方式">
-                  <SelectValue placeholder="请选择接入方式" />
-                </SelectTrigger>
+        <FormField name="providerKey">
+          <FormItem>
+            <FormLabel>接入方式</FormLabel>
+            <Select
+              :model-value="selectedProviderKey"
+              @update:model-value="
+                (value) => {
+                  selectedProviderKey = String(value)
+                }
+              "
+            >
+              <SelectTrigger aria-label="接入方式">
+                <SelectValue placeholder="请选择接入方式" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem
                   v-for="provider in providerOptions"
@@ -185,21 +205,21 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         <FormField name="model" v-slot="{ componentField }">
           <FormItem>
             <FormLabel>模型</FormLabel>
-              <Select
-                v-if="!isOpenAiCompatible"
-                :disabled="modelOptions.length === 0"
-                :model-value="selectedModel"
-                @update:model-value="(value) => { selectedModel = String(value) }"
-              >
-                <SelectTrigger aria-label="模型">
-                  <SelectValue placeholder="请选择模型" />
-                </SelectTrigger>
+            <Select
+              v-if="!isOpenAiCompatible"
+              :disabled="modelOptions.length === 0"
+              :model-value="selectedModel"
+              @update:model-value="
+                (value) => {
+                  selectedModel = String(value)
+                }
+              "
+            >
+              <SelectTrigger aria-label="模型">
+                <SelectValue placeholder="请选择模型" />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem
-                  v-for="model in modelOptions"
-                  :key="model"
-                  :value="model"
-                >
+                <SelectItem v-for="model in modelOptions" :key="model" :value="model">
                   {{ model }}
                 </SelectItem>
               </SelectContent>
@@ -212,7 +232,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 :open-on-click="canShowModelCombobox"
                 :reset-search-term-on-select="false"
                 ignore-filter
-                @update:model-value="(value) => { selectModelCandidate(String(value)) }"
+                @update:model-value="
+                  (value) => {
+                    selectModelCandidate(String(value))
+                  }
+                "
               >
                 <ComboboxAnchor as-child>
                   <div class="model-combobox">
@@ -221,7 +245,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                         :model-value="selectedModel"
                         autocomplete="off"
                         placeholder="请选择模型"
-                        @update:model-value="(value) => { selectedModel = String(value) }"
+                        @update:model-value="
+                          (value) => {
+                            selectedModel = String(value)
+                          }
+                        "
                         @blur="componentField.onBlur"
                         @keydown.capture="handleModelCandidateKeydown"
                       />
@@ -265,7 +293,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 :model-value="baseUrlInput"
                 autocomplete="off"
                 placeholder="例如：https://api.deepseek.com/v1"
-                @update:model-value="(value) => { baseUrlInput = String(value) }"
+                @update:model-value="
+                  (value) => {
+                    baseUrlInput = String(value)
+                  }
+                "
                 @blur="componentField.onBlur"
               />
             </FormControl>
@@ -280,7 +312,9 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               检测模型
             </Button>
           </div>
-          <p class="helper-text text-sm">填写接口根地址，通常以 /v1 结尾；不要填写 /chat/completions。</p>
+          <p class="helper-text text-sm">
+            填写接口根地址，通常以 /v1 结尾；不要填写 /chat/completions。
+          </p>
           <FormMessage v-if="submitCount > 0" />
         </FormItem>
       </FormField>
@@ -296,7 +330,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 placeholder="留空表示不修改当前 Key"
                 :type="showApiKey ? 'text' : 'password'"
                 class="pr-20"
-                @update:model-value="(value) => { apiKeyInput = String(value) }"
+                @update:model-value="
+                  (value) => {
+                    apiKeyInput = String(value)
+                  }
+                "
                 @blur="componentField.onBlur"
               />
             </FormControl>
@@ -335,7 +373,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               <FormControl>
                 <Select
                   :model-value="maxTokens ? String(maxTokens) : 'auto'"
-                  @update:model-value="(value) => { maxTokens = value === 'auto' ? undefined : Number(value) }"
+                  @update:model-value="
+                    (value) => {
+                      maxTokens = value === 'auto' ? undefined : Number(value)
+                    }
+                  "
                 >
                   <SelectTrigger class="w-full" aria-label="最大回复 Token">
                     <SelectValue placeholder="模型默认 (Auto)" />
@@ -357,7 +399,11 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               <FormLabel>思考深度 (Thinking Depth)</FormLabel>
               <Select
                 :model-value="thinkingDepth || 'default'"
-                @update:model-value="(value) => { thinkingDepth = String(value) === 'default' ? undefined : String(value) }"
+                @update:model-value="
+                  (value) => {
+                    thinkingDepth = String(value) === 'default' ? undefined : String(value)
+                  }
+                "
               >
                 <SelectTrigger aria-label="思考深度">
                   <SelectValue placeholder="默认 (Default)" />
@@ -376,7 +422,6 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
           </FormField>
         </div>
       </div>
-
     </form>
   </div>
 </template>

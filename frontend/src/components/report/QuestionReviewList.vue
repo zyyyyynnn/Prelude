@@ -14,10 +14,16 @@ function showReview(index: number) {
   activeIndex.value = Math.min(Math.max(index, 0), Math.max(props.reviews.length - 1, 0))
 }
 
-watch(() => props.reviews.length, () => showReview(activeIndex.value))
+watch(
+  () => props.reviews.length,
+  () => showReview(activeIndex.value),
+)
 
 const labels: Record<string, string> = {
-  warmup: '破冰', technical: '技术问答', deep_dive: '深度追问', closing: '收尾复盘',
+  warmup: '破冰',
+  technical: '技术问答',
+  deep_dive: '深度追问',
+  closing: '收尾复盘',
 }
 </script>
 
@@ -35,7 +41,9 @@ const labels: Record<string, string> = {
         <h2 id="question-review-title">逐题复盘</h2>
       </div>
       <div v-if="reviews.length" class="question-review-carousel__nav" aria-label="逐题复盘导航">
-        <span class="question-review-carousel__counter" aria-live="polite">{{ activeIndex + 1 }} / {{ reviews.length }}</span>
+        <span class="question-review-carousel__counter" aria-live="polite"
+          >{{ activeIndex + 1 }} / {{ reviews.length }}</span
+        >
         <Button
           variant="ghost"
           size="icon"
@@ -72,14 +80,25 @@ const labels: Record<string, string> = {
         >
           <header>
             <span>第 {{ index + 1 }} 题 · {{ labels[review.stageName] || review.stageName }}</span>
-            <Badge variant="secondary">{{ review.score == null ? '暂无评分' : `${review.score} / 10` }}</Badge>
+            <Badge variant="secondary">{{
+              review.score == null ? '暂无评分' : `${review.score} / 10`
+            }}</Badge>
           </header>
           <div class="question-review__body">
             <h3>{{ review.question }}</h3>
             <dl>
-              <div><dt>回答摘要</dt><dd>{{ review.answerSummary }}</dd></div>
-              <div><dt>评分依据</dt><dd>{{ review.scoringReason }}</dd></div>
-              <div><dt>改进建议</dt><dd>{{ review.improvementSuggestion }}</dd></div>
+              <div>
+                <dt>回答摘要</dt>
+                <dd>{{ review.answerSummary }}</dd>
+              </div>
+              <div>
+                <dt>评分依据</dt>
+                <dd>{{ review.scoringReason }}</dd>
+              </div>
+              <div>
+                <dt>改进建议</dt>
+                <dd>{{ review.improvementSuggestion }}</dd>
+              </div>
             </dl>
           </div>
         </li>
@@ -101,7 +120,9 @@ const labels: Record<string, string> = {
   justify-content: space-between;
   gap: var(--spacing-md);
 }
-.report-section__header { margin-bottom: var(--spacing-lg); }
+.report-section__header {
+  margin-bottom: var(--spacing-lg);
+}
 .question-review-carousel:focus-visible {
   outline: none;
   box-shadow: var(--shadow-icon-action-focus);
@@ -124,9 +145,20 @@ const labels: Record<string, string> = {
   font-family: var(--font-serif);
   font-size: var(--font-size-xs);
 }
-h2, h3 { margin: 0; color: var(--color-text-primary); font-family: var(--font-serif); }
-h2 { font-size: var(--font-size-lg); }
-h3 { margin-top: var(--spacing-md); font-size: var(--font-size-md); line-height: 1.5; }
+h2,
+h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-serif);
+}
+h2 {
+  font-size: var(--font-size-lg);
+}
+h3 {
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+}
 .question-review-carousel__viewport {
   overflow: hidden;
 }
@@ -156,7 +188,9 @@ h3 { margin-top: var(--spacing-md); font-size: var(--font-size-md); line-height:
   overflow-y: auto;
   scrollbar-width: thin;
 }
-.question-review dl { margin: var(--spacing-md) 0 0; }
+.question-review dl {
+  margin: var(--spacing-md) 0 0;
+}
 .question-review dl > div {
   display: grid;
   grid-template-columns: minmax(5rem, 0.25fr) 1fr;
@@ -178,12 +212,21 @@ h3 { margin-top: var(--spacing-md); font-size: var(--font-size-md); line-height:
   line-height: 1.7;
 }
 @media (max-width: 40rem) {
-  .report-section__header { align-items: flex-end; }
-  .question-review { padding: var(--spacing-md); }
-  .question-review dl > div { grid-template-columns: 1fr; gap: var(--spacing-xs); }
+  .report-section__header {
+    align-items: flex-end;
+  }
+  .question-review {
+    padding: var(--spacing-md);
+  }
+  .question-review dl > div {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .question-review-list { transition-duration: 0.01ms; }
+  .question-review-list {
+    transition-duration: 0.01ms;
+  }
 }
 :global(.pdf-export-clone) .question-review-carousel {
   box-shadow: none;

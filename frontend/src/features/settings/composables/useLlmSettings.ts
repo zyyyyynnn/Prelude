@@ -1,5 +1,11 @@
 import { computed, ref, watch } from 'vue'
-import { discoverLlmModels, fetchProviders, fetchUserLlmConfig, saveUserLlmConfig, testUserLlmConfig } from '../api/llm'
+import {
+  discoverLlmModels,
+  fetchProviders,
+  fetchUserLlmConfig,
+  saveUserLlmConfig,
+  testUserLlmConfig,
+} from '../api/llm'
 import { withMinDelay } from '@/lib/utils'
 import type { LlmProviderOption } from '@/api/contracts'
 import { usePageNotice } from '@/composables/usePageNotice'
@@ -25,7 +31,10 @@ export function useLlmSettings() {
   const saving = ref(false)
   const testing = ref(false)
   const discovering = ref(false)
-  const testStatus = ref<{ state: LlmTestState; message: string }>({ state: 'idle', message: '未测试' })
+  const testStatus = ref<{ state: LlmTestState; message: string }>({
+    state: 'idle',
+    message: '未测试',
+  })
   const { showNotice } = usePageNotice()
 
   const providerOptions = ref<LlmProviderOption[]>([])
@@ -40,16 +49,25 @@ export function useLlmSettings() {
   const thinkingDepth = ref<string | undefined>(undefined)
   const changeTrackingReady = ref(false)
   const lastConfirmedDraft = ref('')
-  const discoveredModelScope = ref<{ providerKey: string; baseUrl: string }>({ providerKey: '', baseUrl: '' })
+  const discoveredModelScope = ref<{ providerKey: string; baseUrl: string }>({
+    providerKey: '',
+    baseUrl: '',
+  })
 
   // scope 快照：loadSettings 成功后记录，用于判断「表单 scope 是否相对已保存配置变化」。
-  const initialScope = ref<{ providerKey: string; baseUrl: string }>({ providerKey: '', baseUrl: '' })
+  const initialScope = ref<{ providerKey: string; baseUrl: string }>({
+    providerKey: '',
+    baseUrl: '',
+  })
 
   const currentProvider = computed(
-    () => providerOptions.value.find((item) => item.providerKey === selectedProviderKey.value) ?? null,
+    () =>
+      providerOptions.value.find((item) => item.providerKey === selectedProviderKey.value) ?? null,
   )
 
-  const isOpenAiCompatible = computed(() => selectedProviderKey.value === OPENAI_COMPATIBLE_PROVIDER)
+  const isOpenAiCompatible = computed(
+    () => selectedProviderKey.value === OPENAI_COMPATIBLE_PROVIDER,
+  )
 
   const modelOptions = computed(() => {
     if (!isOpenAiCompatible.value) {
@@ -91,8 +109,10 @@ export function useLlmSettings() {
     if (!isOpenAiCompatible.value) {
       return providerChanged
     }
-    return providerChanged
-      || normalizeBaseUrl(baseUrlInput.value) !== normalizeBaseUrl(initialScope.value.baseUrl)
+    return (
+      providerChanged ||
+      normalizeBaseUrl(baseUrlInput.value) !== normalizeBaseUrl(initialScope.value.baseUrl)
+    )
   }
 
   function applySelection(providerKey: string, model: string) {
@@ -108,7 +128,8 @@ export function useLlmSettings() {
       providerOptions.value = providers
 
       const providerKey = config.providerKey || providers[0]?.providerKey || ''
-      const provider = providers.find((item) => item.providerKey === providerKey) ?? providers[0] ?? null
+      const provider =
+        providers.find((item) => item.providerKey === providerKey) ?? providers[0] ?? null
       applySelection(provider?.providerKey || '', config.model || '')
       baseUrlInput.value = config.baseUrl || ''
       apiKeyMasked.value = config.apiKeyMasked || ''
@@ -143,14 +164,16 @@ export function useLlmSettings() {
     const hasNewApiKey = apiKeyInput.value.trim() !== ''
 
     try {
-      const result = await withMinDelay(saveUserLlmConfig({
-        providerKey: selectedProviderKey.value,
-        baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
-        model: selectedModel.value,
-        apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
-        maxTokens: maxTokens.value ?? undefined,
-        thinkingDepth: thinkingDepth.value ?? undefined,
-      }))
+      const result = await withMinDelay(
+        saveUserLlmConfig({
+          providerKey: selectedProviderKey.value,
+          baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
+          model: selectedModel.value,
+          apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
+          maxTokens: maxTokens.value ?? undefined,
+          thinkingDepth: thinkingDepth.value ?? undefined,
+        }),
+      )
 
       changeTrackingReady.value = false
       selectedProviderKey.value = result.providerKey || selectedProviderKey.value
@@ -187,12 +210,14 @@ export function useLlmSettings() {
   async function clearApiKey() {
     saving.value = true
     try {
-      const result = await withMinDelay(saveUserLlmConfig({
-        providerKey: selectedProviderKey.value,
-        baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
-        model: selectedModel.value,
-        apiKey: '__CLEAR__',
-      }))
+      const result = await withMinDelay(
+        saveUserLlmConfig({
+          providerKey: selectedProviderKey.value,
+          baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
+          model: selectedModel.value,
+          apiKey: '__CLEAR__',
+        }),
+      )
       changeTrackingReady.value = false
       apiKeyMasked.value = result.apiKeyMasked || ''
       apiKeyInput.value = ''
@@ -211,14 +236,16 @@ export function useLlmSettings() {
     testing.value = true
     testStatus.value = { state: 'testing', message: '测试中…' }
     try {
-      const result = await withMinDelay(testUserLlmConfig({
-        providerKey: selectedProviderKey.value,
-        baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
-        model: selectedModel.value,
-        apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
-        maxTokens: maxTokens.value ?? undefined,
-        thinkingDepth: thinkingDepth.value ?? undefined,
-      }))
+      const result = await withMinDelay(
+        testUserLlmConfig({
+          providerKey: selectedProviderKey.value,
+          baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
+          model: selectedModel.value,
+          apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
+          maxTokens: maxTokens.value ?? undefined,
+          thinkingDepth: thinkingDepth.value ?? undefined,
+        }),
+      )
       const message = result.message || '模型配置测试通过'
       markCurrentDraftConfirmed()
       testStatus.value = { state: result.ok ? 'success' : 'error', message }
@@ -251,18 +278,24 @@ export function useLlmSettings() {
 
     discovering.value = true
     try {
-      const result = await withMinDelay(discoverLlmModels({
-        baseUrl: baseUrlInput.value.trim(),
-        apiKey: hasNewKey ? apiKeyInput.value.trim() : undefined,
-      }))
+      const result = await withMinDelay(
+        discoverLlmModels({
+          baseUrl: baseUrlInput.value.trim(),
+          apiKey: hasNewKey ? apiKeyInput.value.trim() : undefined,
+        }),
+      )
       baseUrlInput.value = result.baseUrl
       discoveredModels.value = result.models
       discoveredModelScope.value = {
         providerKey: OPENAI_COMPATIBLE_PROVIDER,
         baseUrl: normalizeBaseUrl(result.baseUrl),
       }
-      modelDiscoveryHint.value = result.models.length === 0 ? '未能读取模型列表，可手动填写模型 ID。' : ''
-      showNotice(result.models.length > 0 ? '模型列表已更新' : modelDiscoveryHint.value, result.models.length > 0 ? 'success' : 'warning')
+      modelDiscoveryHint.value =
+        result.models.length === 0 ? '未能读取模型列表，可手动填写模型 ID。' : ''
+      showNotice(
+        result.models.length > 0 ? '模型列表已更新' : modelDiscoveryHint.value,
+        result.models.length > 0 ? 'success' : 'warning',
+      )
     } catch (error) {
       modelDiscoveryHint.value = '未能读取模型列表，可手动填写模型 ID。'
       showNotice(getErrorMessage(error), 'error')
@@ -271,18 +304,15 @@ export function useLlmSettings() {
     }
   }
 
-  watch(
-    [selectedProviderKey, baseUrlInput],
-    () => {
-      const scope = currentModelDiscoveryScope()
-      if (
-        scope.providerKey !== discoveredModelScope.value.providerKey
-        || scope.baseUrl !== discoveredModelScope.value.baseUrl
-      ) {
-        clearDiscoveredModels()
-      }
-    },
-  )
+  watch([selectedProviderKey, baseUrlInput], () => {
+    const scope = currentModelDiscoveryScope()
+    if (
+      scope.providerKey !== discoveredModelScope.value.providerKey ||
+      scope.baseUrl !== discoveredModelScope.value.baseUrl
+    ) {
+      clearDiscoveredModels()
+    }
+  })
 
   watch(selectedProviderKey, (providerKey, previousProviderKey) => {
     if (!changeTrackingReady.value || providerKey === previousProviderKey) {

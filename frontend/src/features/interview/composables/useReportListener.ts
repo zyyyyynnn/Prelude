@@ -25,7 +25,11 @@ type UseReportListenerOptions = {
 
 function parseSseEvent(rawEvent: string) {
   const lines = rawEvent.split('\n')
-  const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || 'message'
+  const eventName =
+    lines
+      .find((line) => line.startsWith('event:'))
+      ?.slice(6)
+      .trim() || 'message'
   const data = lines
     .filter((line) => line.startsWith('data:'))
     .map((line) => line.slice(5).trimStart())

@@ -7,14 +7,19 @@ import html2canvas from 'html2canvas'
  * @param originalElement The DOM element to export
  * @param filename Output filename
  */
-export async function exportToPdf(originalElement: HTMLElement, filename: string = 'interview-report.pdf'): Promise<void> {
+export async function exportToPdf(
+  originalElement: HTMLElement,
+  filename: string = 'interview-report.pdf',
+): Promise<void> {
   // A4 dimensions in points: 595.28 x 841.89
   const pdfWidth = 595.28
   const pdfHeight = 841.89
 
   // Clone original element so we can modify its layout without affecting the visible page
   const clone = originalElement.cloneNode(true) as HTMLElement
-  const surfaceColor = getComputedStyle(document.documentElement).getPropertyValue('--color-surface').trim()
+  const surfaceColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-surface')
+    .trim()
 
   // Set clone dimensions and move it out of the viewport
   clone.style.position = 'absolute'
@@ -50,7 +55,8 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
     const pageHeight = elementWidth * (pdfHeight / pdfWidth)
 
     // Selector for elements that must NOT be cut in the middle of a page
-    const avoidSelector = '.panel, .weakness-item, .report-section__header, .report-score-item, .stage-performance, .question-review, .training-plan__group, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body pre, .markdown-body blockquote'
+    const avoidSelector =
+      '.panel, .weakness-item, .report-section__header, .report-score-item, .stage-performance, .question-review, .training-plan__group, .markdown-body h2, .markdown-body h3, .markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body pre, .markdown-body blockquote'
 
     let hasChanges = true
     let safetyCounter = 0
@@ -135,8 +141,14 @@ export async function exportToPdf(originalElement: HTMLElement, filename: string
       pageCtx.imageSmoothingQuality = 'high'
       pageCtx.drawImage(
         canvas,
-        0, renderedHeight, canvasWidth, sliceHeight,
-        0, 0, canvasWidth, sliceHeight
+        0,
+        renderedHeight,
+        canvasWidth,
+        sliceHeight,
+        0,
+        0,
+        canvasWidth,
+        sliceHeight,
       )
     }
 

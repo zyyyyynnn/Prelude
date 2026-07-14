@@ -57,18 +57,26 @@ async function appendManifest(item: ManifestItem) {
 }
 
 async function waitForTransientUiToClear(page: Page) {
-  await page.waitForFunction(() => !document.querySelector('.el-message.page-notice'), undefined, {
-    timeout: 5000,
-  }).catch(() => null)
-  await page.waitForFunction(
-    () => !document.querySelector('.el-loading-mask:not(.is-hidden)'),
-    undefined,
-    { timeout: 5000 },
-  ).catch(() => null)
+  await page
+    .waitForFunction(() => !document.querySelector('.el-message.page-notice'), undefined, {
+      timeout: 5000,
+    })
+    .catch(() => null)
+  await page
+    .waitForFunction(() => !document.querySelector('.el-loading-mask:not(.is-hidden)'), undefined, {
+      timeout: 5000,
+    })
+    .catch(() => null)
   await page.waitForTimeout(200)
 }
 
-async function capture(page: Page, file: string, pageName: string, state: string, readyLocator?: Locator) {
+async function capture(
+  page: Page,
+  file: string,
+  pageName: string,
+  state: string,
+  readyLocator?: Locator,
+) {
   await page.waitForLoadState('domcontentloaded')
   if (readyLocator) {
     await expect(readyLocator).toBeVisible()
@@ -109,32 +117,49 @@ async function sendAnswer(page: Page, content: string) {
   await waitForTransientUiToClear(page)
 }
 
-async function advanceStage(request: APIRequestContext, token: string, sessionId: number, stageName: string) {
+async function advanceStage(
+  request: APIRequestContext,
+  token: string,
+  sessionId: number,
+  stageName: string,
+) {
   const response = await request.post(`http://127.0.0.1:8080/api/interview/${sessionId}/stage`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
-    data: { stageName }
+    data: { stageName },
   })
   if (!response.ok()) {
-    console.error(`advanceStage failed! Status: ${response.status()}, Body: ${await response.text()}`)
+    console.error(
+      `advanceStage failed! Status: ${response.status()}, Body: ${await response.text()}`,
+    )
   }
   expect(response.ok()).toBeTruthy()
 }
 
 test('capture local dev full-page screenshots', async ({ page, request }) => {
-
-
   await ensureOutputDir()
 
   await resetDevFixtures(request)
 
   await page.goto('/login')
-  await capture(page, '01-login.png', '登录页', '登录态空白', page.getByRole('button', { name: '登录' }).first())
+  await capture(
+    page,
+    '01-login.png',
+    '登录页',
+    '登录态空白',
+    page.getByRole('button', { name: '登录' }).first(),
+  )
 
   await page.getByRole('button', { name: '注册' }).click()
-  await capture(page, '02-register.png', '注册页', '注册表单', page.getByRole('button', { name: '完成注册' }))
+  await capture(
+    page,
+    '02-register.png',
+    '注册页',
+    '注册表单',
+    page.getByRole('button', { name: '完成注册' }),
+  )
 
   // Register a new user to capture the empty state
   const uniqueEmptyUser = `emptyuser_${Date.now()}`
@@ -152,7 +177,13 @@ test('capture local dev full-page screenshots', async ({ page, request }) => {
   await page.waitForURL('**/interview')
 
   // Capture empty state
-  await capture(page, '03-interview-empty.png', '主工作台', '未开始面试的空状态', page.getByText('准备开始一场沉浸式模拟面试'))
+  await capture(
+    page,
+    '03-interview-empty.png',
+    '主工作台',
+    '未开始面试的空状态',
+    page.getByText('准备开始一场沉浸式模拟面试'),
+  )
 
   // Clear local capture auth state before logging in as the dev test account.
   await page.evaluate(() => localStorage.removeItem('auth'))
@@ -167,39 +198,77 @@ test('capture local dev full-page screenshots', async ({ page, request }) => {
   const token = authState.token
   console.log(`parsed token: "${token}"`)
   const sessionsResponse = await request.get('http://127.0.0.1:8080/api/interview/sessions', {
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}` },
   })
   expect(sessionsResponse.ok()).toBeTruthy()
   const sessionsBody = await sessionsResponse.json()
-  const ongoingSession = sessionsBody.data.find((item: { status: string }) => item.status === 'ongoing')
+  const ongoingSession = sessionsBody.data.find(
+    (item: { status: string }) => item.status === 'ongoing',
+  )
   expect(ongoingSession).toBeTruthy()
   const sessionId = ongoingSession.sessionId as number
   await page.getByRole('button', { name: 'Java 后端工程师' }).first().click()
   const answerInput = page.getByPlaceholder('输入回答...')
   await expect(answerInput).toBeVisible()
 
-  await capture(page, '04-interview-workbench.png', '主工作台', '默认 dev fixture 状态', answerInput)
+  await capture(
+    page,
+    '04-interview-workbench.png',
+    '主工作台',
+    '默认 dev fixture 状态',
+    answerInput,
+  )
 
   await page.goto('/resumes')
-  await capture(page, '07-resumes-filled.png', '简历管理', '已有 dev fixture 简历', page.getByText('Java高级架构.pdf').first())
+  await capture(
+    page,
+    '07-resumes-filled.png',
+    '简历管理',
+    '已有 dev fixture 简历',
+    page.getByText('Java高级架构.pdf').first(),
+  )
 
   await page.getByRole('button', { name: '设置' }).click()
   await page.getByRole('button', { name: 'LLM 配置' }).click()
-  await capture(page, '08-settings-llm.png', 'LLM配置', '默认配置', page.getByRole('heading', { name: 'LLM 配置' }))
+  await capture(
+    page,
+    '08-settings-llm.png',
+    'LLM配置',
+    '默认配置',
+    page.getByRole('heading', { name: 'LLM 配置' }),
+  )
 
   await page.getByRole('button', { name: '账号资料' }).click()
-  await capture(page, '09-settings-profile.png', '用户设置', '默认配置', page.getByRole('heading', { name: '账号资料' }))
+  await capture(
+    page,
+    '09-settings-profile.png',
+    '用户设置',
+    '默认配置',
+    page.getByRole('heading', { name: '账号资料' }),
+  )
   await page.keyboard.press('Escape')
 
   await page.goto('/interview')
   await page.getByRole('button', { name: 'Java 后端工程师' }).first().click()
   await expect(answerInput).toBeVisible()
-  
-  await sendAnswer(page, '这条链路我会先在 Controller 做登录态和参数校验，再进入 service 组装会话上下文。用户回答会先落一条 user 消息，随后通过 SSE 推送面试官回复，最后把 assistant 消息按序号落库，确保回放时顺序稳定。')
-  await sendAnswer(page, '我会先看接口耗时、SQL 执行计划和返回数据量。如果是查询慢，就先确认索引命中、分页边界和排序字段；如果接口本身重复请求多，再考虑缓存或前端请求节流。')
+
+  await sendAnswer(
+    page,
+    '这条链路我会先在 Controller 做登录态和参数校验，再进入 service 组装会话上下文。用户回答会先落一条 user 消息，随后通过 SSE 推送面试官回复，最后把 assistant 消息按序号落库，确保回放时顺序稳定。',
+  )
+  await sendAnswer(
+    page,
+    '我会先看接口耗时、SQL 执行计划和返回数据量。如果是查询慢，就先确认索引命中、分页边界和排序字段；如果接口本身重复请求多，再考虑缓存或前端请求节流。',
+  )
 
   // Capture chat in progress
-  await capture(page, '05-interview-chat.png', '主工作台', 'dev fixture 对话中', page.getByPlaceholder('输入回答...'))
+  await capture(
+    page,
+    '05-interview-chat.png',
+    '主工作台',
+    'dev fixture 对话中',
+    page.getByPlaceholder('输入回答...'),
+  )
 
   // Advance to deep_dive silently (no screenshot)
   await advanceStage(request, token, sessionId, 'deep_dive')
@@ -207,8 +276,14 @@ test('capture local dev full-page screenshots', async ({ page, request }) => {
   await page.getByRole('button', { name: 'Java 后端工程师' }).first().click()
   await expect(page.getByPlaceholder('输入回答...')).toBeVisible()
 
-  await sendAnswer(page, '如果浏览器刷新，我会先让 emitter 的 timeout、error 和 completion 都走同一套清理逻辑，避免连接对象挂在内存里。已经生成但还没完整落库的内容，我会用会话状态和消息序号兜底，宁可重试生成，也不写半截消息。')
-  await sendAnswer(page, '我会把最关键的幂等判断放在接口层和数据库层。前端可以防重复点击，但不能作为最终保障；接口层负责识别重复阶段推进，数据库层用会话状态和阶段记录兜底。')
+  await sendAnswer(
+    page,
+    '如果浏览器刷新，我会先让 emitter 的 timeout、error 和 completion 都走同一套清理逻辑，避免连接对象挂在内存里。已经生成但还没完整落库的内容，我会用会话状态和消息序号兜底，宁可重试生成，也不写半截消息。',
+  )
+  await sendAnswer(
+    page,
+    '我会把最关键的幂等判断放在接口层和数据库层。前端可以防重复点击，但不能作为最终保障；接口层负责识别重复阶段推进，数据库层用会话状态和阶段记录兜底。',
+  )
 
   // Advance to closing silently (no screenshot)
   await advanceStage(request, token, sessionId, 'closing')
@@ -216,7 +291,10 @@ test('capture local dev full-page screenshots', async ({ page, request }) => {
   await page.getByRole('button', { name: 'Java 后端工程师' }).first().click()
   await expect(page.getByPlaceholder('输入回答...')).toBeVisible()
 
-  await sendAnswer(page, '我会优先补评分解释，把每个扣分点关联到具体回答片段。这样用户不只是看到 7 分或 8 分，而是知道哪一句回答不够完整、下一次应该怎么改。')
+  await sendAnswer(
+    page,
+    '我会优先补评分解释，把每个扣分点关联到具体回答片段。这样用户不只是看到 7 分或 8 分，而是知道哪一句回答不够完整、下一次应该怎么改。',
+  )
 
   const finishButton = page.getByRole('button', { name: '生成报告' })
   await expect(finishButton).toBeVisible()
@@ -225,9 +303,21 @@ test('capture local dev full-page screenshots', async ({ page, request }) => {
 
   await expect(page.getByRole('heading', { name: '面试评估报告' })).toBeVisible()
   await expect(page.getByText('技术能力：7/10')).toBeVisible()
-  await capture(page, '06-interview-report.png', '主工作台', '报告已生成', page.getByRole('heading', { name: '面试评估报告' }))
+  await capture(
+    page,
+    '06-interview-report.png',
+    '主工作台',
+    '报告已生成',
+    page.getByRole('heading', { name: '面试评估报告' }),
+  )
 
   await page.goto('/analytics')
   await expect(page.getByText('能力雷达')).toBeVisible()
-  await capture(page, '10-analytics-filled.png', '数据看板', '已有 dev fixture 数据', page.getByRole('heading', { name: '能力雷达' }))
+  await capture(
+    page,
+    '10-analytics-filled.png',
+    '数据看板',
+    '已有 dev fixture 数据',
+    page.getByRole('heading', { name: '能力雷达' }),
+  )
 })

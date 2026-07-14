@@ -12,32 +12,36 @@ const threadRef = ref<HTMLElement | null>(null)
 
 const displayMessages = computed(() => {
   return props.messages
-    .filter(m => m.role !== 'system')
-    .map(m => ({
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({
       ...m,
       content: m.content
         ? m.content
             .replace(/\[STAGE[_\s]?COMPLETE\]?/g, '')
             .replace(/\[STAGE(?:_(?:COM(?:P(?:L(?:E(?:TE?)?)?)?)?)?)?$/, '')
-        : ''
+        : '',
     }))
 })
 
 let scrollRafId: number | null = null
 
-watch(() => props.messages, () => {
-  if (scrollRafId != null) {
-    cancelAnimationFrame(scrollRafId)
-  }
-  nextTick(() => {
-    scrollRafId = requestAnimationFrame(() => {
-      scrollRafId = null
-      if (threadRef.value) {
-        threadRef.value.scrollTop = threadRef.value.scrollHeight
-      }
+watch(
+  () => props.messages,
+  () => {
+    if (scrollRafId != null) {
+      cancelAnimationFrame(scrollRafId)
+    }
+    nextTick(() => {
+      scrollRafId = requestAnimationFrame(() => {
+        scrollRafId = null
+        if (threadRef.value) {
+          threadRef.value.scrollTop = threadRef.value.scrollHeight
+        }
+      })
     })
-  })
-}, { deep: true })
+  },
+  { deep: true },
+)
 
 onMounted(() => {
   nextTick(() => {
@@ -68,7 +72,9 @@ onMounted(() => {
           </Badge>
         </div>
         <div class="message-bubble__content">
-          <span v-if="message.role === 'assistant' && !message.content" class="thinking-dots">思考中</span>
+          <span v-if="message.role === 'assistant' && !message.content" class="thinking-dots"
+            >思考中</span
+          >
           <span v-else>{{ message.content }}</span>
         </div>
       </article>
@@ -146,9 +152,15 @@ onMounted(() => {
   animation: thinking-ellipsis var(--motion-duration-thinking) infinite;
 }
 @keyframes thinking-ellipsis {
-  0% { content: '.'; }
-  33% { content: '..'; }
-  66% { content: '...'; }
+  0% {
+    content: '.';
+  }
+  33% {
+    content: '..';
+  }
+  66% {
+    content: '...';
+  }
 }
 .reconnecting-status {
   align-self: center;
@@ -165,5 +177,4 @@ onMounted(() => {
   content: '';
   animation: thinking-ellipsis var(--motion-duration-thinking) infinite;
 }
-
 </style>

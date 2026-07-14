@@ -1,24 +1,19 @@
 <template>
-  <svg 
-    viewBox="0 0 100 100" 
-    fill="none" 
-    aria-hidden="true" 
+  <svg
+    viewBox="0 0 100 100"
+    fill="none"
+    aria-hidden="true"
     :class="['rose-three-loader', props.class]"
   >
     <g ref="groupRef">
-      <path 
-        ref="pathRef" 
-        stroke="currentColor" 
-        stroke-linecap="round" 
-        stroke-linejoin="round" 
+      <path
+        ref="pathRef"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
         opacity="0.1"
       />
-      <circle 
-        v-for="i in config.particleCount" 
-        :key="i" 
-        ref="particleRefs" 
-        fill="currentColor" 
-      />
+      <circle v-for="i in config.particleCount" :key="i" ref="particleRefs" fill="currentColor" />
     </g>
   </svg>
 </template>
@@ -26,16 +21,19 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 
-const props = withDefaults(defineProps<{
-  class?: string
-  /** * 速度乘数，用于适配统一的 Motion Token。
-   * > 1 更快，< 1 更慢，默认 1
-   */
-  speedMultiplier?: number
-}>(), {
-  class: '',
-  speedMultiplier: 1
-})
+const props = withDefaults(
+  defineProps<{
+    class?: string
+    /** * 速度乘数，用于适配统一的 Motion Token。
+     * > 1 更快，< 1 更慢，默认 1
+     */
+    speedMultiplier?: number
+  }>(),
+  {
+    class: '',
+    speedMultiplier: 1,
+  },
+)
 
 const groupRef = ref<SVGGElement | null>(null)
 const pathRef = ref<SVGPathElement | null>(null)
@@ -113,7 +111,7 @@ function getParticle(index: number, progress: number, detailScale: number) {
 function render(now: number) {
   if (!startedAt) startedAt = now
   const time = now - startedAt
-  
+
   const adjustedDuration = config.durationMs / props.speedMultiplier
   const progress = (time % adjustedDuration) / adjustedDuration
   const detailScale = getDetailScale(time)
@@ -159,6 +157,6 @@ onBeforeUnmount(() => {
   display: inline-block;
   overflow: visible;
   /* 平滑缩放时的抗锯齿处理 */
-  will-change: transform; 
+  will-change: transform;
 }
 </style>

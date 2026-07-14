@@ -14,3 +14,9 @@ declare module 'markdown-it' {
     render(content: string): string
   }
 }
+
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue'
+  const component: DefineComponent<{}, {}, unknown>
+  export default component
+}

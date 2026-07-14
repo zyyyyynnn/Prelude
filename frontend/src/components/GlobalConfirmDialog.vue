@@ -15,7 +15,14 @@ const { isOpen, options, handleConfirm, handleCancel } = useConfirmDialog()
 </script>
 
 <template>
-  <AlertDialog :open="isOpen" @update:open="(val) => { if (!val) handleCancel() }">
+  <AlertDialog
+    :open="isOpen"
+    @update:open="
+      (val) => {
+        if (!val) handleCancel()
+      }
+    "
+  >
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>{{ options.title }}</AlertDialogTitle>
@@ -28,7 +35,8 @@ const { isOpen, options, handleConfirm, handleCancel } = useConfirmDialog()
         <AlertDialogAction
           @click="handleConfirm"
           :class="{
-            'bg-destructive text-destructive-foreground hover:bg-destructive/90': options.variant === 'destructive'
+            'bg-destructive text-destructive-foreground hover:bg-destructive/90':
+              options.variant === 'destructive',
           }"
         >
           {{ options.confirmText || '确定' }}

@@ -27,6 +27,9 @@ export default defineConfig({
   testDir: './tests/a11y',
   testMatch: 'ui-a11y.spec.ts',
   reporter: [['list']],
-  use: { ...baseUse },
+  use: {
+    ...baseUse,
+    colorScheme: 'light',
+  },
   webServer: { ...baseWebServer },
 })

@@ -28,7 +28,7 @@ const authStore = useAuthStore()
 const { showNotice } = usePageNotice()
 const confirmDialog = useConfirmDialog()
 
-const emit = defineEmits<{ 
+const emit = defineEmits<{
   // 该事件会向上冒泡，最终由 App.vue 的 handleOpenSettings 接管处理
   (e: 'open-global-settings', tab?: 'profile' | 'theme' | 'llm'): void
 }>()
@@ -42,7 +42,7 @@ const {
   refreshSessionList,
   loadSession,
   getNewAbortSignal,
-  abortActiveStream
+  abortActiveStream,
 } = useInterviewWorkspace()
 
 const loading = ref(false)
@@ -63,19 +63,29 @@ const answer = ref('')
 
 const messages = computed(() => replay.value?.messages ?? [])
 const currentStage = computed(() => replay.value?.currentStage)
-const activeSession = computed(() => sessions.value.find(s => s.sessionId === activeSessionId.value))
-const targetPosition = computed(() => activeSession.value?.targetPosition || activeSession.value?.positionName || '')
+const activeSession = computed(() =>
+  sessions.value.find((s) => s.sessionId === activeSessionId.value),
+)
+const targetPosition = computed(
+  () => activeSession.value?.targetPosition || activeSession.value?.positionName || '',
+)
 const sessionStatus = computed(() => replay.value?.status || activeSession.value?.status)
 const llmProvider = computed(() => activeSession.value?.llmProvider || 'deepseek')
 const llmModel = computed(() => activeSession.value?.llmModel || 'default')
-const isFinished = computed(() => activeSession.value?.status === 'finished' || replay.value?.status === 'finished')
-const isGenerating = computed(() => activeSession.value?.status === 'generating' || replay.value?.status === 'generating')
+const isFinished = computed(
+  () => activeSession.value?.status === 'finished' || replay.value?.status === 'finished',
+)
+const isGenerating = computed(
+  () => activeSession.value?.status === 'generating' || replay.value?.status === 'generating',
+)
 
 const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
-const parsedReport = computed(() => parseInterviewReport(reportMarkdown.value || replay.value?.summaryReport || ''))
-const renderedReport = computed(() => parsedReport.value.kind === 'markdown'
-  ? renderMarkdown(parsedReport.value.markdown)
-  : '')
+const parsedReport = computed(() =>
+  parseInterviewReport(reportMarkdown.value || replay.value?.summaryReport || ''),
+)
+const renderedReport = computed(() =>
+  parsedReport.value.kind === 'markdown' ? renderMarkdown(parsedReport.value.markdown) : '',
+)
 
 const {
   appendMessage,
@@ -104,10 +114,7 @@ const {
   },
 })
 
-const {
-  startListeningReport,
-  stopListeningReport,
-} = useReportListener({
+const { startListeningReport, stopListeningReport } = useReportListener({
   activeSessionId,
   isGenerating,
   replay,
@@ -139,13 +146,12 @@ const {
   appendAssistantDelta,
 })
 
-
-
 function setResumeDefaults(items: ResumeItem[]) {
   if (!selectedResumeId.value || !items.some((item) => item.id === selectedResumeId.value)) {
     selectedResumeId.value = items[0]?.id ?? null
   }
-  uploadDisplayName.value = items.find((item) => item.id === selectedResumeId.value)?.fileName || '未选择任何文件'
+  uploadDisplayName.value =
+    items.find((item) => item.id === selectedResumeId.value)?.fileName || '未选择任何文件'
 }
 
 function setPositionDefaults(items: PositionTemplate[]) {
@@ -157,13 +163,20 @@ function setPositionDefaults(items: PositionTemplate[]) {
 async function loadDashboard() {
   loading.value = true
   try {
-    const [resumeList, positionList] = await Promise.all([fetchResumes(), fetchPositions(), refreshSessionList()])
+    const [resumeList, positionList] = await Promise.all([
+      fetchResumes(),
+      fetchPositions(),
+      refreshSessionList(),
+    ])
     resumes.value = resumeList
     positions.value = positionList
     setResumeDefaults(resumeList)
     setPositionDefaults(positionList)
 
-    if (activeSessionId.value && sessions.value.some((item) => item.sessionId === activeSessionId.value)) {
+    if (
+      activeSessionId.value &&
+      sessions.value.some((item) => item.sessionId === activeSessionId.value)
+    ) {
       await loadSession(activeSessionId.value, true)
 
       const snapshot = sessionStorage.getItem('interview-stream-snapshot')
@@ -178,7 +191,7 @@ async function loadDashboard() {
               cancelText: '忽略',
             })
             if (doResume && replay.value) {
-              const target = replay.value.messages.find(m => m.id === parsed.messageId)
+              const target = replay.value.messages.find((m) => m.id === parsed.messageId)
               if (target) {
                 target.content = parsed.content
               } else {
@@ -186,7 +199,7 @@ async function loadDashboard() {
                   id: parsed.messageId,
                   role: 'assistant',
                   content: parsed.content,
-                  createdAt: new Date(parsed.timestamp).toISOString()
+                  createdAt: new Date(parsed.timestamp).toISOString(),
                 })
               }
             }
@@ -211,7 +224,8 @@ async function handleUpload(file: File) {
     const updated = await fetchResumes()
     resumes.value = updated
     selectedResumeId.value = result.resumeId
-    uploadDisplayName.value = updated.find((item) => item.id === result.resumeId)?.fileName || file.name
+    uploadDisplayName.value =
+      updated.find((item) => item.id === result.resumeId)?.fileName || file.name
     showNotice('简历已上传', 'success')
   } catch (error) {
     showNotice(getErrorMessage(error), 'error')
@@ -231,12 +245,14 @@ async function createNewInterview(jdText = '', llmModel?: string) {
 
   creating.value = true
   try {
-    const result = await withMinDelay(startInterview({
-      resumeId: selectedResumeId.value,
-      positionId: selectedPositionId.value,
-      jdText: jdText || undefined,
-      llmModel: llmModel || undefined,
-    }))
+    const result = await withMinDelay(
+      startInterview({
+        resumeId: selectedResumeId.value,
+        positionId: selectedPositionId.value,
+        jdText: jdText || undefined,
+        llmModel: llmModel || undefined,
+      }),
+    )
     await refreshSessionList()
     await loadSession(result.sessionId, true)
     answer.value = ''
@@ -263,8 +279,6 @@ async function handleSend() {
     sending.value = false
   }
 }
-
-
 
 async function handleFinish() {
   if (!activeSessionId.value) return
@@ -315,22 +329,29 @@ watch(replay, (newVal) => {
   }
 })
 
-watch(() => replay.value?.summaryReport, (val) => {
-  if (val && !reportMarkdown.value) {
-    reportMarkdown.value = val
-  }
-  if (val) {
-    showingReport.value = true
-  }
-})
+watch(
+  () => replay.value?.summaryReport,
+  (val) => {
+    if (val && !reportMarkdown.value) {
+      reportMarkdown.value = val
+    }
+    if (val) {
+      showingReport.value = true
+    }
+  },
+)
 
-watch(isGenerating, (generating) => {
-  if (generating && activeSessionId.value) {
-    void startListeningReport(activeSessionId.value)
-  } else {
-    stopListeningReport()
-  }
-}, { immediate: true })
+watch(
+  isGenerating,
+  (generating) => {
+    if (generating && activeSessionId.value) {
+      void startListeningReport(activeSessionId.value)
+    } else {
+      stopListeningReport()
+    }
+  },
+  { immediate: true },
+)
 
 watch(activeSessionId, (newId) => {
   stopListeningReport()
@@ -375,7 +396,7 @@ onBeforeUnmount(() => {
     <div v-if="!activeSessionId && !sessionLoading" class="workspace-empty">
       <div class="workspace-empty__content">
         <h1 class="workspace-empty__title">准备开始一场沉浸式模拟面试</h1>
-        <InterviewComposer 
+        <InterviewComposer
           :is-centered="true"
           :resumes="resumes"
           :positions="positions"
@@ -386,8 +407,8 @@ onBeforeUnmount(() => {
           :upload-display-name="uploadDisplayName"
           :sending="sending"
           :creating="creating"
-          @update:selected-resume-id="id => selectedResumeId = id"
-          @update:selected-position-id="id => selectedPositionId = id"
+          @update:selected-resume-id="(id) => (selectedResumeId = id)"
+          @update:selected-position-id="(id) => (selectedPositionId = id)"
           @upload="handleUpload"
           @start="createNewInterview"
           @send="handleSend"
@@ -419,7 +440,9 @@ onBeforeUnmount(() => {
           <div class="generating-card">
             <RoseThree class="generating-rose" :speed-multiplier="0.9" />
             <h3 class="generating-title">AI 评估报告生成中...</h3>
-            <p class="generating-subtitle">我们正在整理您的答题表现，并调用 LLM-as-Judge 进行深度诊断，请稍候（约需 10-15 秒）</p>
+            <p class="generating-subtitle">
+              我们正在整理您的答题表现，并调用 LLM-as-Judge 进行深度诊断，请稍候（约需 10-15 秒）
+            </p>
             <div class="generating-progress">
               <div class="progress-bar-ind"></div>
             </div>
@@ -439,12 +462,12 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
-        
+
         <template v-else>
           <MessageThread :messages="messages" :reconnecting-status="reconnectingStatus" />
-          
+
           <div class="workspace-composer-fixed">
-            <InterviewComposer 
+            <InterviewComposer
               :disabled="isFinished"
               :is-centered="false"
               :active-session-id="activeSessionId"
@@ -463,9 +486,9 @@ onBeforeUnmount(() => {
               :is-voice-mode="isVoiceMode"
               :voice-status="voiceStatus"
               :incoming-audio="incomingAudioChunk"
-              @update:is-voice-mode="v => isVoiceMode = v"
-              @update:selected-resume-id="id => selectedResumeId = id"
-              @update:selected-position-id="id => selectedPositionId = id"
+              @update:is-voice-mode="(v) => (isVoiceMode = v)"
+              @update:selected-resume-id="(id) => (selectedResumeId = id)"
+              @update:selected-position-id="(id) => (selectedPositionId = id)"
               @upload="handleUpload"
               @start="createNewInterview"
               @send="handleSend"
@@ -479,10 +502,8 @@ onBeforeUnmount(() => {
         </template>
       </div>
     </div>
-    
-    <div v-else-if="sessionLoading" class="workspace-loading">
-      加载中...
-    </div>
+
+    <div v-else-if="sessionLoading" class="workspace-loading">加载中...</div>
   </div>
 </template>
 
@@ -669,7 +690,11 @@ onBeforeUnmount(() => {
   animation: progress-ind-anim var(--motion-duration-slow) infinite var(--motion-ease-standard);
 }
 @keyframes progress-ind-anim {
-  0% { left: -50%; }
-  100% { left: 100%; }
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 </style>

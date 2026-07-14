@@ -15,22 +15,25 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { installMockApi, STRUCTURED_REPORT } from '../_helpers/mock-api'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const screenshotDir = path.resolve(__dirname, '__screenshots__')
 
-async function capture(page: Page, file: string, readyLocator?: Parameters<typeof expect>[0]) {
+async function capture(page: Page, file: string, readyLocator?: Locator) {
   await page.waitForLoadState('domcontentloaded')
   if (readyLocator) {
     try {
-      await expect(readyLocator).toBeVisible({ timeout: 15000 })
+      await readyLocator.waitFor({ state: 'visible', timeout: 15000 })
     } catch (error) {
       const diagDir = path.resolve(__dirname, '../../output/screenshots/visual/.diag')
       await fs.mkdir(diagDir, { recursive: true })
-      await page.screenshot({ path: path.join(diagDir, file.replace('.png', '-missing.png')), fullPage: true })
+      await page.screenshot({
+        path: path.join(diagDir, file.replace('.png', '-missing.png')),
+        fullPage: true,
+      })
       throw error
     }
   }
@@ -49,11 +52,6 @@ async function capture(page: Page, file: string, readyLocator?: Parameters<typeo
 
 test.beforeAll(async () => {
   await fs.mkdir(screenshotDir, { recursive: true })
-})
-
-test.use({
-  colorScheme: 'light',
-  reducedMotion: 'reduce',
 })
 
 test.describe.configure({ mode: 'serial' })
@@ -82,7 +80,9 @@ test('04 sidebar collapsed', async ({ page }) => {
   const sidebar = page.locator('.app-sidebar').first()
   const toggle = page.locator('.app-sidebar__toggle').first()
   await expect(toggle).toBeVisible()
-  const transitionDuration = await sidebar.evaluate((element) => getComputedStyle(element).transitionDuration)
+  const transitionDuration = await sidebar.evaluate(
+    (element) => getComputedStyle(element).transitionDuration,
+  )
   const expandedToolIconX = await page.evaluate(() => {
     const sidebarElement = document.querySelector('.app-sidebar')
     const icon = document.querySelector('.app-sidebar__btn--tool svg')
@@ -94,7 +94,9 @@ test('04 sidebar collapsed', async ({ page }) => {
   await page.waitForTimeout(300)
   const collapsedGeometry = await page.evaluate(() => {
     const sidebar = document.querySelector('.app-sidebar')
-    const workspaceButton = document.querySelector('.app-sidebar__collapsed-actions .app-sidebar__btn')
+    const workspaceButton = document.querySelector(
+      '.app-sidebar__collapsed-actions .app-sidebar__btn',
+    )
     if (!sidebar || !workspaceButton) return null
     return {
       sidebarWidth: sidebar.getBoundingClientRect().width,
@@ -124,7 +126,7 @@ test('05 interview empty state', async ({ page }) => {
   const viewport = page.viewportSize()
   expect(box).not.toBeNull()
   expect(viewport).not.toBeNull()
-  expect(Math.abs((box!.y + box!.height / 2) - viewport!.height / 2)).toBeLessThan(40)
+  expect(Math.abs(box!.y + box!.height / 2 - viewport!.height / 2)).toBeLessThan(40)
   await capture(page, '05-interview-empty.png', page.getByText('准备开始一场沉浸式模拟面试'))
 })
 
@@ -175,18 +177,30 @@ test('10 settings modal — LLM tab', async ({ page }) => {
 test('11 position dropdown open', async ({ page }) => {
   await installMockApi(page)
   await page.goto('/interview')
-  const trigger = page.locator('button').filter({ has: page.locator('.lucide-briefcase') }).first()
+  const trigger = page
+    .locator('button')
+    .filter({ has: page.locator('.lucide-briefcase') })
+    .first()
   await trigger.click()
   const menuItem = page.getByRole('menuitem', { name: 'Java 后端工程师' }).first()
   await expect(menuItem).toBeVisible()
-  await capture(page, '11-position-dropdown-open.png', page.getByRole('heading', { name: '能力雷达' }).or(page.locator('.workspace-empty, .workspace-active').first()))
+  await capture(
+    page,
+    '11-position-dropdown-open.png',
+    page
+      .getByRole('heading', { name: '能力雷达' })
+      .or(page.locator('.workspace-empty, .workspace-active').first()),
+  )
 })
 
 test('12 resume dropdown open', async ({ page }) => {
   await installMockApi(page)
   await page.goto('/interview')
   // The composer uses a DropdownMenu (not a Combobox) for resume selection.
-  const trigger = page.locator('button').filter({ has: page.locator('.lucide-file-text') }).first()
+  const trigger = page
+    .locator('button')
+    .filter({ has: page.locator('.lucide-file-text') })
+    .first()
   await trigger.click()
   await page.locator('[role="menu"]').first().waitFor({ state: 'visible', timeout: 10000 })
   await capture(page, '12-resume-dropdown-open.png')
@@ -212,7 +226,11 @@ test('13 interview generating state', async ({ page }) => {
     ],
   })
   await page.goto('/interview')
-  await capture(page, '13-interview-generating.png', page.locator('.workspace-empty, .workspace-active').first())
+  await capture(
+    page,
+    '13-interview-generating.png',
+    page.locator('.workspace-empty, .workspace-active').first(),
+  )
 })
 
 test('14 report paper state', async ({ page }) => {
@@ -233,7 +251,11 @@ test('14 report paper state', async ({ page }) => {
     ],
   })
   await page.goto('/interview')
-  await capture(page, '14-report-paper.png', page.locator('.workspace-empty, .workspace-active').first())
+  await capture(
+    page,
+    '14-report-paper.png',
+    page.locator('.workspace-empty, .workspace-active').first(),
+  )
 })
 
 test('15 analytics dashboard', async ({ page }) => {
@@ -256,7 +278,11 @@ test('16 components lab (light)', async ({ page }) => {
   // Either the lab heading renders, or the catch-all kicks in.
   await page.waitForLoadState('domcontentloaded')
   await page.waitForLoadState('networkidle').catch(() => null)
-  const labVisible = await page.locator('.lab__title').first().isVisible().catch(() => false)
+  const labVisible = await page
+    .locator('.lab__title')
+    .first()
+    .isVisible()
+    .catch(() => false)
   if (labVisible) {
     await capture(page, '16-components-lab-light.png', page.locator('.lab').first())
   } else {
@@ -270,7 +296,11 @@ test('17 components lab (dark)', async ({ page }) => {
   await page.goto('/components-lab')
   await page.waitForLoadState('domcontentloaded')
   await page.waitForLoadState('networkidle').catch(() => null)
-  const labVisible = await page.locator('.lab__title').first().isVisible().catch(() => false)
+  const labVisible = await page
+    .locator('.lab__title')
+    .first()
+    .isVisible()
+    .catch(() => false)
   if (labVisible) {
     await capture(page, '17-components-lab-dark.png', page.locator('.lab').first())
   } else {
@@ -288,12 +318,29 @@ test('18 interview messages do not expose live score or hint', async ({ page }) 
     stages: [],
     messages: [
       { id: 1, role: 'assistant', content: '如何保证接口幂等？', seqNum: 1 },
-      { id: 2, role: 'user', content: '使用唯一请求键。', seqNum: 2, score: 8, hint: '缺少量化依据' },
+      {
+        id: 2,
+        role: 'user',
+        content: '使用唯一请求键。',
+        seqNum: 2,
+        score: 8,
+        hint: '缺少量化依据',
+      },
     ],
     resumeId: 1,
     positionId: 1,
   }
-  await installMockApi(page, { sessions: [{ sessionId: 101, status: 'ongoing', targetPosition: 'Java 后端工程师', currentStage: 'technical' }], interviewDetail: detail })
+  await installMockApi(page, {
+    sessions: [
+      {
+        sessionId: 101,
+        status: 'ongoing',
+        targetPosition: 'Java 后端工程师',
+        currentStage: 'technical',
+      },
+    ],
+    interviewDetail: detail,
+  })
   await page.goto('/interview')
   await page.getByRole('button', { name: '开始面试' }).click()
 
@@ -302,8 +349,16 @@ test('18 interview messages do not expose live score or hint', async ({ page }) 
   await expect(page.getByText('缺少量化依据')).toHaveCount(0)
 })
 
-test('19 structured report carousel keeps compatibility details out of the primary UI', async ({ page }) => {
-  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+test('19 structured report carousel keeps compatibility details out of the primary UI', async ({
+  page,
+}) => {
+  const session = {
+    sessionId: 101,
+    status: 'finished',
+    targetPosition: 'Java 后端工程师',
+    currentStage: 'closing',
+    summaryReport: STRUCTURED_REPORT,
+  }
   const detail = {
     ...session,
     stages: [],
@@ -322,11 +377,13 @@ test('19 structured report carousel keeps compatibility details out of the prima
   await expect(page.locator('.structured-report ul').first()).toBeVisible()
   await expect(page.getByText('查看兼容文本报告')).toHaveCount(0)
   await expect(page.getByText('1 / 2')).toBeVisible()
-  const titleLineCount = await page.getByRole('heading', { name: '求职训练报告' }).evaluate((element) => {
-    const range = document.createRange()
-    range.selectNodeContents(element)
-    return range.getClientRects().length
-  })
+  const titleLineCount = await page
+    .getByRole('heading', { name: '求职训练报告' })
+    .evaluate((element) => {
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      return range.getClientRects().length
+    })
   expect(titleLineCount).toBe(1)
   await page.getByRole('button', { name: '下一题' }).click()
   await expect(page.getByText('如何定位复杂状态更新问题？')).toBeVisible()
@@ -339,7 +396,13 @@ test('19 structured report carousel keeps compatibility details out of the prima
 
 test('20 old markdown report remains readable', async ({ page }) => {
   const markdown = '# 旧版面试报告\n\n旧数据仍可查看。'
-  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: markdown }
+  const session = {
+    sessionId: 101,
+    status: 'finished',
+    targetPosition: 'Java 后端工程师',
+    currentStage: 'closing',
+    summaryReport: markdown,
+  }
   await installMockApi(page, {
     sessions: [session],
     interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },
@@ -353,7 +416,13 @@ test('20 old markdown report remains readable', async ({ page }) => {
 
 test('21 structured report fits mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+  const session = {
+    sessionId: 101,
+    status: 'finished',
+    targetPosition: 'Java 后端工程师',
+    currentStage: 'closing',
+    summaryReport: STRUCTURED_REPORT,
+  }
   await installMockApi(page, {
     sessions: [session],
     interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },
@@ -363,13 +432,21 @@ test('21 structured report fits mobile viewport', async ({ page }) => {
   await page.getByRole('button', { name: '报告', exact: true }).click()
 
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
-  const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  )
   expect(hasHorizontalOverflow).toBe(false)
   await capture(page, '19-structured-report-mobile.png', page.locator('.structured-report').first())
 })
 
 test('22 structured report exports a non-empty PDF', async ({ page }) => {
-  const session = { sessionId: 101, status: 'finished', targetPosition: 'Java 后端工程师', currentStage: 'closing', summaryReport: STRUCTURED_REPORT }
+  const session = {
+    sessionId: 101,
+    status: 'finished',
+    targetPosition: 'Java 后端工程师',
+    currentStage: 'closing',
+    summaryReport: STRUCTURED_REPORT,
+  }
   await installMockApi(page, {
     sessions: [session],
     interviewDetail: { ...session, stages: [], messages: [], resumeId: 1, positionId: 1 },

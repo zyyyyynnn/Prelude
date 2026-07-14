@@ -118,12 +118,7 @@
     "ui-height": {
       "prefix": "ui-height",
       "description": "控件高度。base 34 / compact 30 由 DESIGN.md 锁定。",
-      "tokens": [
-        "ui-height-base",
-        "ui-height-compact",
-        "ui-height-sm",
-        "ui-height-md"
-      ],
+      "tokens": ["ui-height-base", "ui-height-compact", "ui-height-sm", "ui-height-md"],
       "rules": {
         "design-locked": ["ui-height-base", "ui-height-compact"]
       }
@@ -157,18 +152,12 @@
     "content": {
       "prefix": "content",
       "description": "可读内容宽度（消息气泡）。",
-      "tokens": [
-        "content-message-max-inline-size"
-      ]
+      "tokens": ["content-message-max-inline-size"]
     },
     "z-index": {
       "prefix": "z-index",
       "description": "层级 token。值必须唯一（layer 语义不重叠）。",
-      "tokens": [
-        "z-index-workspace-composer",
-        "z-index-app-header",
-        "z-index-sidebar"
-      ],
+      "tokens": ["z-index-workspace-composer", "z-index-app-header", "z-index-sidebar"],
       "rules": {
         "values-must-be-unique": true
       }
@@ -176,10 +165,7 @@
     "header-composer": {
       "prefix": "header|composer",
       "description": "布局相关辅助 token（顶部高度、composer 总高），非通用尺寸。",
-      "tokens": [
-        "header-height",
-        "composer-height"
-      ]
+      "tokens": ["header-height", "composer-height"]
     },
     "chart-brand": {
       "prefix": "chart|brand|rose",
