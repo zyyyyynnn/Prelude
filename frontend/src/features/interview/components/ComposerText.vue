@@ -30,7 +30,10 @@ const emit = defineEmits<{
       @keydown.meta.enter="canSend && emit('send')"
     />
     <transition name="jd-fade-float">
-      <div v-if="!activeSessionId && showJdInput" class="absolute inset-0 z-[var(--z-index-workspace-composer)] bg-surface">
+      <div
+        v-if="!activeSessionId && showJdInput"
+        class="absolute inset-0 z-[var(--z-index-workspace-composer)] bg-surface"
+      >
         <Textarea
           :model-value="jdText"
           @update:model-value="(value: string | number) => emit('update:jdText', String(value))"

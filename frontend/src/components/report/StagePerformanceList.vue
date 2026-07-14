@@ -26,21 +26,29 @@ const labels: Record<string, string> = {
       <article v-for="stage in stages" :key="stage.stageName" class="stage-performance">
         <header>
           <h3>{{ labels[stage.stageName] || stage.stageName }}</h3>
-          <Badge variant="secondary">{{ stage.score == null ? '暂无评分' : `${stage.score.toFixed(1)} / 10` }}</Badge>
+          <Badge variant="secondary">{{
+            stage.score == null ? '暂无评分' : `${stage.score.toFixed(1)} / 10`
+          }}</Badge>
         </header>
         <p>{{ stage.summary }}</p>
         <div class="stage-performance__signals">
           <section v-if="stage.positiveSignals.length" class="stage-performance__signal">
             <h4>正向信号</h4>
-            <ul><li v-for="item in stage.positiveSignals" :key="item">{{ item }}</li></ul>
+            <ul>
+              <li v-for="item in stage.positiveSignals" :key="item">{{ item }}</li>
+            </ul>
           </section>
           <section v-if="stage.negativeSignals.length" class="stage-performance__signal">
             <h4>风险信号</h4>
-            <ul><li v-for="item in stage.negativeSignals" :key="item">{{ item }}</li></ul>
+            <ul>
+              <li v-for="item in stage.negativeSignals" :key="item">{{ item }}</li>
+            </ul>
           </section>
           <section v-if="stage.improvementSuggestions.length" class="stage-performance__signal">
             <h4>改进建议</h4>
-            <ul><li v-for="item in stage.improvementSuggestions" :key="item">{{ item }}</li></ul>
+            <ul>
+              <li v-for="item in stage.improvementSuggestions" :key="item">{{ item }}</li>
+            </ul>
           </section>
         </div>
       </article>
@@ -62,14 +70,22 @@ const labels: Record<string, string> = {
   font-family: var(--font-serif);
   font-size: var(--font-size-xs);
 }
-h2, h3, h4 {
+h2,
+h3,
+h4 {
   margin: 0;
   color: var(--color-text-primary);
   font-family: var(--font-serif);
 }
-h2 { font-size: var(--font-size-lg); }
-h3 { font-size: var(--font-size-md); }
-h4 { font-size: var(--font-size-sm); }
+h2 {
+  font-size: var(--font-size-lg);
+}
+h3 {
+  font-size: var(--font-size-md);
+}
+h4 {
+  font-size: var(--font-size-sm);
+}
 .stage-performance {
   padding-block: var(--spacing-lg);
   border-top: 1px solid var(--color-border);
@@ -116,7 +132,9 @@ h4 { font-size: var(--font-size-sm); }
   grid-template-columns: var(--spacing-sm) minmax(0, 1fr);
   gap: var(--spacing-sm);
 }
-.stage-performance li + li { margin-top: var(--spacing-xs); }
+.stage-performance li + li {
+  margin-top: var(--spacing-xs);
+}
 .stage-performance li::before {
   inline-size: var(--spacing-xs);
   block-size: var(--spacing-xs);
@@ -126,6 +144,8 @@ h4 { font-size: var(--font-size-sm); }
   content: '';
 }
 @media (max-width: 45rem) {
-  .stage-performance__signals { grid-template-columns: 1fr; }
+  .stage-performance__signals {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

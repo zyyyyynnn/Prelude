@@ -44,10 +44,12 @@ export function useVoiceInterviewSocket(options: UseVoiceInterviewSocketOptions)
     voiceSocket = new WebSocket(wsUrl)
 
     voiceSocket.onopen = () => {
-      voiceSocket?.send(JSON.stringify({
-        type: 'start',
-        sessionId: options.activeSessionId.value,
-      }))
+      voiceSocket?.send(
+        JSON.stringify({
+          type: 'start',
+          sessionId: options.activeSessionId.value,
+        }),
+      )
       voiceStatus.value = 'listening'
     }
 
@@ -78,7 +80,7 @@ export function useVoiceInterviewSocket(options: UseVoiceInterviewSocketOptions)
           options.appendAssistantDelta(currentVoiceAssistantMsgId.value, msg.chunk)
         } else if (msg.type === 'audio') {
           incomingAudioChunk.value = msg.data
-          nextTick(() => {
+          void nextTick(() => {
             incomingAudioChunk.value = ''
           })
         } else if (msg.type === 'judge') {

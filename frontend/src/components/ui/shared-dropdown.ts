@@ -1,4 +1,4 @@
-import { cva } from "class-variance-authority"
+import { cva } from 'class-variance-authority'
 
 export const dropdownContentClasses =
   'relative z-[105] overflow-hidden rounded-md border border-transparent bg-surface text-popover-foreground p-0.5 shadow-whisper shadow-[var(--shadow-whisper)] [animation-duration:var(--motion-duration-base)] [animation-timing-function:var(--motion-ease-standard)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2'

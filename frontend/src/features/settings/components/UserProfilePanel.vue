@@ -75,12 +75,14 @@ async function saveProfile() {
 
   saving.value = true
   try {
-    const result = await withMinDelay(updateUserProfile({
-      username: username || undefined,
-      email: email || undefined,
-      oldPassword: oldPassword || undefined,
-      newPassword: newPassword || undefined,
-    }))
+    const result = await withMinDelay(
+      updateUserProfile({
+        username: username || undefined,
+        email: email || undefined,
+        oldPassword: oldPassword || undefined,
+        newPassword: newPassword || undefined,
+      }),
+    )
     profile.username = result.username || profile.username
     profile.email = result.email || profile.email
     profile.avatarUrl = result.avatarUrl || profile.avatarUrl
@@ -124,7 +126,12 @@ defineExpose({ submit: saveProfile, saving, loading })
     <form class="flex flex-col gap-6" @submit.prevent>
       <section class="profile-avatar-row">
         <div class="profile-avatar">
-          <img v-if="profile.avatarUrl" :src="profile.avatarUrl" alt="" class="profile-avatar__image">
+          <img
+            v-if="profile.avatarUrl"
+            :src="profile.avatarUrl"
+            alt=""
+            class="profile-avatar__image"
+          />
           <span v-else>{{ initials }}</span>
         </div>
         <div class="profile-avatar__actions">
@@ -134,8 +141,14 @@ defineExpose({ submit: saveProfile, saving, loading })
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
             @change="handleAvatarChange"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            :loading="uploadingAvatar"
+            @click="avatarInput?.click()"
           >
-          <Button type="button" variant="secondary" size="sm" :loading="uploadingAvatar" @click="avatarInput?.click()">
             上传头像
           </Button>
         </div>
@@ -159,8 +172,19 @@ defineExpose({ submit: saveProfile, saving, loading })
           <div class="flex flex-col gap-2 relative">
             <Label>旧密码</Label>
             <div class="relative w-full">
-              <Input v-model="profile.oldPassword" autocomplete="current-password" placeholder="留空表示不修改密码" :type="showOldPassword ? 'text' : 'password'" class="pr-10" />
-              <button type="button" class="password-toggle" aria-label="切换旧密码可见性" @click="showOldPassword = !showOldPassword">
+              <Input
+                v-model="profile.oldPassword"
+                autocomplete="current-password"
+                placeholder="留空表示不修改密码"
+                :type="showOldPassword ? 'text' : 'password'"
+                class="pr-10"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                aria-label="切换旧密码可见性"
+                @click="showOldPassword = !showOldPassword"
+              >
                 <Eye v-if="showOldPassword" class="h-4 w-4" />
                 <EyeOff v-else class="h-4 w-4" />
               </button>
@@ -170,8 +194,19 @@ defineExpose({ submit: saveProfile, saving, loading })
           <div class="flex flex-col gap-2 relative">
             <Label>新密码</Label>
             <div class="relative w-full">
-              <Input v-model="profile.newPassword" autocomplete="new-password" placeholder="请输入新密码" :type="showNewPassword ? 'text' : 'password'" class="pr-10" />
-              <button type="button" class="password-toggle" aria-label="切换新密码可见性" @click="showNewPassword = !showNewPassword">
+              <Input
+                v-model="profile.newPassword"
+                autocomplete="new-password"
+                placeholder="请输入新密码"
+                :type="showNewPassword ? 'text' : 'password'"
+                class="pr-10"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                aria-label="切换新密码可见性"
+                @click="showNewPassword = !showNewPassword"
+              >
                 <Eye v-if="showNewPassword" class="h-4 w-4" />
                 <EyeOff v-else class="h-4 w-4" />
               </button>

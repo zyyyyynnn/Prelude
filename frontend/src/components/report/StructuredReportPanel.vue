@@ -35,16 +35,23 @@ const props = defineProps<{
     <QuestionReviewList :reviews="report.questionReviews" />
 
     <section class="report-section structured-report__traits" aria-labelledby="traits-title">
-      <header><p>能力沉淀</p><h2 id="traits-title">优势与短板</h2></header>
+      <header>
+        <p>能力沉淀</p>
+        <h2 id="traits-title">优势与短板</h2>
+      </header>
       <div>
         <section class="structured-report__trait">
           <h3>核心优势</h3>
-          <ul><li v-for="item in report.strengths" :key="item">{{ item }}</li></ul>
+          <ul>
+            <li v-for="item in report.strengths" :key="item">{{ item }}</li>
+          </ul>
           <p v-if="!report.strengths.length">暂无可归纳的优势。</p>
         </section>
         <section class="structured-report__trait">
           <h3>主要短板</h3>
-          <ul><li v-for="item in report.weaknesses" :key="item">{{ item }}</li></ul>
+          <ul>
+            <li v-for="item in report.weaknesses" :key="item">{{ item }}</li>
+          </ul>
           <p v-if="!report.weaknesses.length">暂无已沉淀的薄弱点。</p>
         </section>
       </div>
@@ -56,7 +63,6 @@ const props = defineProps<{
       <p>总结建议</p>
       <h2>{{ report.finalAdvice }}</h2>
     </section>
-
   </article>
 </template>
 
@@ -96,8 +102,12 @@ const props = defineProps<{
   font-weight: 600;
   white-space: nowrap;
 }
-.structured-report h2 { font-size: var(--font-size-lg); }
-.structured-report h3 { font-size: var(--font-size-md); }
+.structured-report h2 {
+  font-size: var(--font-size-lg);
+}
+.structured-report h3 {
+  font-size: var(--font-size-md);
+}
 .structured-report__lede {
   max-inline-size: var(--content-reading-max-inline-size);
   margin: var(--spacing-sm) 0 0;
@@ -127,9 +137,18 @@ const props = defineProps<{
   font-size: var(--font-size-sm);
   line-height: 1.7;
 }
-.report-section { padding-block: var(--spacing-xl); border-top: 1px solid var(--color-border); }
-.report-section > header { margin-bottom: var(--spacing-lg); }
-.structured-report__traits > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacing-xl); }
+.report-section {
+  padding-block: var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+}
+.report-section > header {
+  margin-bottom: var(--spacing-lg);
+}
+.structured-report__traits > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-xl);
+}
 .structured-report__trait {
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border);
@@ -153,11 +172,23 @@ const props = defineProps<{
   background: var(--color-text-tertiary);
   content: '';
 }
-.structured-report__advice h2 { max-inline-size: var(--content-reading-max-inline-size); line-height: 1.6; }
+.structured-report__advice h2 {
+  max-inline-size: var(--content-reading-max-inline-size);
+  line-height: 1.6;
+}
 @media (max-width: 45rem) {
-  .structured-report { padding: var(--spacing-lg); }
+  .structured-report {
+    padding: var(--spacing-lg);
+  }
   .structured-report__summary,
-  .structured-report__traits > div { grid-template-columns: 1fr; }
-  .structured-report__summary section + section { padding-inline-start: 0; padding-top: var(--spacing-md); border-inline-start: 0; border-top: 1px solid var(--color-border); }
+  .structured-report__traits > div {
+    grid-template-columns: 1fr;
+  }
+  .structured-report__summary section + section {
+    padding-inline-start: 0;
+    padding-top: var(--spacing-md);
+    border-inline-start: 0;
+    border-top: 1px solid var(--color-border);
+  }
 }
 </style>

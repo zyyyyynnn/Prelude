@@ -66,9 +66,8 @@ export function normalizeProviders(payload: unknown): LlmProviderOption[] {
 
       const record = provider as LlmProviderRecord
       const rawModels = record.models || record.availableModels || []
-      const models = rawModels.map((item) =>
-        normalizeModelValue(item as string | Record<string, unknown>),
-      )
+      const models = rawModels
+        .map((item) => normalizeModelValue(item as string | Record<string, unknown>))
         .filter((item): item is string => Boolean(item))
 
       return {
@@ -96,11 +95,17 @@ export async function saveUserLlmConfig(payload: LlmConfigPayload) {
 }
 
 export async function discoverLlmModels(payload: LlmModelDiscoveryPayload) {
-  const response = await http.post<ApiResult<LlmModelDiscoveryResponse>>('/user/llm-config/discover-models', payload)
+  const response = await http.post<ApiResult<LlmModelDiscoveryResponse>>(
+    '/user/llm-config/discover-models',
+    payload,
+  )
   return unwrapResult(response.data)
 }
 
 export async function testUserLlmConfig(payload?: LlmConfigTestPayload) {
-  const response = await http.post<ApiResult<LlmConfigTestResponse>>('/user/llm-config/test', payload ?? {})
+  const response = await http.post<ApiResult<LlmConfigTestResponse>>(
+    '/user/llm-config/test',
+    payload ?? {},
+  )
   return unwrapResult(response.data)
 }

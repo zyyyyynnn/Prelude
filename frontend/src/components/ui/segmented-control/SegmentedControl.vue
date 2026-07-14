@@ -23,7 +23,7 @@ const segmentedStyle = computed(
   () =>
     ({
       '--segmented-item-count': itemCount.value,
-    }) as CSSProperties
+    }) as CSSProperties,
 )
 </script>
 
@@ -64,8 +64,8 @@ const segmentedStyle = computed(
   );
   block-size: var(--ui-height-base);
   min-inline-size: calc(
-    var(--ui-segmented-item-min-inline-size) * var(--segmented-item-count, 1)
-      + var(--segmented-track-inset) * 2
+    var(--ui-segmented-item-min-inline-size) * var(--segmented-item-count, 1) +
+      var(--segmented-track-inset) * 2
   );
   background-color: var(--color-surface-muted);
   border: 1px solid var(--color-border-warm);

@@ -32,7 +32,6 @@ const schemaPath = path.join(repoRoot, 'frontend', 'tokens', 'ui-tokens.json')
 const stylesPath = path.join(repoRoot, 'frontend', 'src', 'styles', 'index.css')
 
 const ok = (...args) => console.log(...args)
-const warn = (...args) => console.warn(...args)
 const err = (...args) => console.error(...args)
 
 function loadSchema() {
@@ -139,11 +138,12 @@ function parseTokens(css) {
     }
     // Continue tracking block depth on the start line so we know whether the
     // declaration lives in a definition block.
-    const inDefinitionBlock = blockStack.some((b) =>
-      definitionSelectors.includes(b.selector) ||
-      b.selector.startsWith(':root') ||
-      b.selector.startsWith('.dark') ||
-      b.selector.startsWith('@theme'),
+    const inDefinitionBlock = blockStack.some(
+      (b) =>
+        definitionSelectors.includes(b.selector) ||
+        b.selector.startsWith(':root') ||
+        b.selector.startsWith('.dark') ||
+        b.selector.startsWith('@theme'),
     )
     // We only emit the FIRST occurrence of each token. Later occurrences
     // (typically dark-mode overrides) are still tracked by name for the
@@ -216,7 +216,9 @@ function main() {
   // Some tokens are intentionally out of scope (legacy / brand). We list
   // them as notes rather than violations so the team can decide.
   if (uncategorized.length > 0) {
-    notes.push(`found ${uncategorized.length} CSS tokens not in schema: ${uncategorized.slice(0, 10).join(', ')}${uncategorized.length > 10 ? '...' : ''}`)
+    notes.push(
+      `found ${uncategorized.length} CSS tokens not in schema: ${uncategorized.slice(0, 10).join(', ')}${uncategorized.length > 10 ? '...' : ''}`,
+    )
     reportNote('uncategorized', uncategorized.slice(0, 10).join(', '))
   }
 
@@ -292,7 +294,7 @@ function main() {
   // Summary
   ok('')
   ok('=== verify:ui-tokens summary ===')
-  ok(`  schema tokens indexed: ${Array.from(schemaTokens).length}`)
+  ok(`  schema tokens indexed: ${schemaTokens.size}`)
   ok(`  css declarations:      ${tokens.length}`)
   ok(`  notes:                 ${notes.length}`)
   ok(`  violations:            ${violations.length}`)

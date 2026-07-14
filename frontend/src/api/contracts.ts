@@ -145,13 +145,15 @@ export type InterviewChatRequest = {
   messages?: InterviewMessageRecord[]
 }
 
-export type LlmProviderModel = string | {
-  key?: string
-  model?: string
-  id?: string
-  name?: string
-  displayName?: string
-}
+export type LlmProviderModel =
+  | string
+  | {
+      key?: string
+      model?: string
+      id?: string
+      name?: string
+      displayName?: string
+    }
 
 export type LlmProviderRecord = {
   providerKey?: string

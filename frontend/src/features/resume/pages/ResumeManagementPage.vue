@@ -57,10 +57,7 @@ async function handleUpload(event: Event) {
     await loadResumes()
     showNotice('简历已上传', 'success')
   } catch (error) {
-    if (
-      (error instanceof DOMException && error.name === 'AbortError') ||
-      axios.isCancel(error)
-    ) {
+    if ((error instanceof DOMException && error.name === 'AbortError') || axios.isCancel(error)) {
       return // 静默处理主动取消的请求
     }
     showNotice(getErrorMessage(error), 'error')
@@ -179,9 +176,7 @@ onBeforeUnmount(() => {
                   </p>
                 </div>
                 <div class="resume-item__badges">
-                  <Badge variant="secondary">
-                    {{ item.sessionCount || 0 }} 场使用
-                  </Badge>
+                  <Badge variant="secondary"> {{ item.sessionCount || 0 }} 场使用 </Badge>
                   <Badge variant="secondary">
                     {{ item.inUse ? '已占用' : '可删除' }}
                   </Badge>
@@ -201,7 +196,10 @@ onBeforeUnmount(() => {
             </article>
           </div>
 
-          <EmptyState v-else :description="loading ? '正在加载简历列表…' : '暂时还没有上传简历。'" />
+          <EmptyState
+            v-else
+            :description="loading ? '正在加载简历列表…' : '暂时还没有上传简历。'"
+          />
         </Card>
       </div>
     </div>
