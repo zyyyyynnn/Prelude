@@ -5,7 +5,7 @@ const path = require('node:path')
 const { chromium } = require('playwright')
 
 const rootDir = path.resolve(__dirname, '..')
-const screenshotDir = path.resolve(rootDir, '..', 'output', 'playwright')
+const screenshotDir = path.resolve(rootDir, 'test-results', 'verify-dark')
 const COLD_START_TIMEOUT_MS = 60000
 
 function findBrowserExecutable() {
@@ -383,6 +383,30 @@ async function chartFrame(page) {
     .evaluate((canvas) => canvas.toDataURL())
 }
 
+async function waitForStableChartFrameChange(page, previousFrame, themeEventCount) {
+  const handle = await page.waitForFunction(
+    ({ previousFrame, themeEventCount }) => {
+      const canvas = document.querySelector('.chart-surface canvas')
+      if (!canvas || window.__preludeThemeEvents < themeEventCount) return false
+
+      const frame = canvas.toDataURL()
+      if (frame === previousFrame) return false
+
+      const candidate = `${themeEventCount}:${frame}`
+      if (window.__preludeChartFrameCandidate === candidate) return frame
+      window.__preludeChartFrameCandidate = candidate
+      return false
+    },
+    { previousFrame, themeEventCount },
+    { polling: 100, timeout: COLD_START_TIMEOUT_MS },
+  )
+  try {
+    return await handle.jsonValue()
+  } finally {
+    await handle.dispose()
+  }
+}
+
 async function verifyDarkFlow(port) {
   const executablePath = findBrowserExecutable()
   const browser = await chromium.launch(
@@ -496,17 +520,10 @@ async function verifyDarkFlow(port) {
       const darkFrame = await chartFrame(page)
       await page.getByRole('button', { name: '浅色' }).click()
       await page.waitForSelector('html:not(.dark)', { timeout: 10000 })
-      await page.waitForFunction((previous) => {
-        const canvas = document.querySelector('.chart-surface canvas')
-        return window.__preludeThemeEvents >= 1 && canvas && canvas.toDataURL() !== previous
-      }, darkFrame)
-      const lightFrame = await chartFrame(page)
+      const lightFrame = await waitForStableChartFrameChange(page, darkFrame, 1)
       await page.getByRole('button', { name: '暗色' }).click()
       await page.waitForSelector('html.dark', { timeout: 10000 })
-      await page.waitForFunction((previous) => {
-        const canvas = document.querySelector('.chart-surface canvas')
-        return window.__preludeThemeEvents >= 2 && canvas && canvas.toDataURL() !== previous
-      }, lightFrame)
+      await waitForStableChartFrameChange(page, lightFrame, 2)
       await page.keyboard.press('Escape')
       await assertCanvasNonBlank(page, '.chart-surface canvas')
     })
