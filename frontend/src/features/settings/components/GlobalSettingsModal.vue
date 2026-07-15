@@ -7,12 +7,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { useAuthStore } from '@/stores/auth'
+} from '@/shared/ui/dialog'
+import { useAuthStore } from '@/features/auth'
 import UserProfilePanel from './UserProfilePanel.vue'
 import LlmSettingsPanel from './LlmSettingsPanel.vue'
 import ThemeSettingsPanel from './ThemeSettingsPanel.vue'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import { Palette } from '@lucide/vue'
 
 const visible = defineModel<boolean>('visible', { default: false })

@@ -14,6 +14,7 @@ frontend/.env.local
 
 # Playwright
 .playwright-cli/
+output/screenshots/visual/
 
 # Logs
 *.log

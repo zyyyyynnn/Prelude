@@ -1,57 +1,40 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useLlmSettings } from '../composables/useLlmSettings'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
 import {
   Combobox,
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
-} from '@/components/ui/combobox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/ui/combobox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Eye, EyeOff, Trash2 } from '@lucide/vue'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/ui/form'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
-import { llmSettingsSchema } from '@/schemas/llm'
+import { llmSettingsSchema } from '../model/llmSchema'
 
-const OPENAI_COMPATIBLE_PROVIDER = 'openai-compatible'
-
-// 前端展示映射：后端 providerKey 仍为 openai-compatible，仅展示层映射为对普通用户友好的名称。
-const DISPLAY_NAME_MAP: Record<string, string> = {
-  [OPENAI_COMPATIBLE_PROVIDER]: 'OpenAI 兼容协议',
-}
-
+const { draft, view, actions } = useLlmSettings()
+const { selectedProviderKey, selectedModel, baseUrlInput, apiKeyInput, maxTokens, thinkingDepth } =
+  draft
 const {
   loading,
   saving,
   testing,
   discovering,
   providerOptions,
-  selectedProviderKey,
-  selectedModel,
-  baseUrlInput,
-  apiKeyInput,
   apiKeyMasked,
-  maxTokens,
-  thinkingDepth,
   modelOptions,
   modelDiscoveryHint,
-  isOpenAiCompatible,
-  loadSettings,
-  saveSettings,
-  clearApiKey,
-  testSettings,
-  discoverModels,
-} = useLlmSettings()
+  isCustomProviderSelected,
+  canDiscoverModels,
+  endpointPlaceholder,
+  endpointHint,
+} = view
+const { loadSettings, saveSettings, clearApiKey, testSettings, discoverModels } = actions
 
 const showApiKey = ref(false)
 const modelComboboxOpen = ref(false)
@@ -61,15 +44,11 @@ const { handleSubmit, setValues, submitCount } = useForm({
   validationSchema: toTypedSchema(llmSettingsSchema),
 })
 
-function providerDisplayName(key: string, fallback: string): string {
-  return DISPLAY_NAME_MAP[key] ?? fallback
-}
-
 const apiKeyStatusLabel = computed(() =>
   apiKeyMasked.value ? `已保存：${apiKeyMasked.value}` : '未保存',
 )
 const canShowModelCombobox = computed(
-  () => isOpenAiCompatible.value && modelOptions.value.length > 0,
+  () => isCustomProviderSelected.value && modelOptions.value.length > 0,
 )
 
 function selectModelCandidate(model: string) {
@@ -194,7 +173,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                   :key="provider.providerKey"
                   :value="provider.providerKey"
                 >
-                  {{ providerDisplayName(provider.providerKey, provider.displayName) }}
+                  {{ provider.displayName }}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -206,7 +185,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
           <FormItem>
             <FormLabel>模型</FormLabel>
             <Select
-              v-if="!isOpenAiCompatible"
+              v-if="!isCustomProviderSelected"
               :disabled="modelOptions.length === 0"
               :model-value="selectedModel"
               @update:model-value="
@@ -284,7 +263,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
         </FormField>
       </div>
 
-      <FormField v-if="isOpenAiCompatible" name="baseUrl" v-slot="{ componentField }">
+      <FormField v-if="isCustomProviderSelected" name="baseUrl" v-slot="{ componentField }">
         <FormItem>
           <FormLabel>Base URL</FormLabel>
           <div class="endpoint-row">
@@ -292,7 +271,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               <Input
                 :model-value="baseUrlInput"
                 autocomplete="off"
-                placeholder="例如：https://api.deepseek.com/v1"
+                :placeholder="endpointPlaceholder"
                 @update:model-value="
                   (value) => {
                     baseUrlInput = String(value)
@@ -302,6 +281,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               />
             </FormControl>
             <Button
+              v-if="canDiscoverModels"
               type="button"
               variant="secondary"
               class="endpoint-row__button"
@@ -312,9 +292,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               检测模型
             </Button>
           </div>
-          <p class="helper-text text-sm">
-            填写接口根地址，通常以 /v1 结尾；不要填写 /chat/completions。
-          </p>
+          <p class="helper-text text-sm">{{ endpointHint }}</p>
           <FormMessage v-if="submitCount > 0" />
         </FormItem>
       </FormField>

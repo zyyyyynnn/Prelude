@@ -1,6 +1,5 @@
-import { http } from '@/api/http'
-import type { ApiResult, LoginResponse, PositionTemplate } from '@/api/contracts'
-import { unwrapResult } from '@/api/contracts'
+import { http, unwrapResult, type ApiResult } from '@/shared/api'
+import type { LoginResponse } from '../model/types'
 
 export async function login(username: string, password: string) {
   const response = await http.post<ApiResult<LoginResponse>>('/auth/login', {
@@ -16,10 +15,5 @@ export async function register(username: string, password: string, email?: strin
     password,
     email,
   })
-  return unwrapResult(response.data)
-}
-
-export async function fetchPositions() {
-  const response = await http.get<ApiResult<PositionTemplate[]>>('/position/list')
   return unwrapResult(response.data)
 }

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import StageBar from './StageBar.vue'
-import type { InterviewStageName } from '@/api/contracts'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { TooltipText } from '@/components/ui/tooltip'
-import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
+import type { InterviewStageName } from '../model/types'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
+import { TooltipText } from '@/shared/ui/tooltip'
+import SegmentedControl from '@/shared/ui/segmented-control/SegmentedControl.vue'
 
 const props = defineProps<{
   activeSessionId?: number | null

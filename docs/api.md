@@ -59,9 +59,7 @@
 
 ### `GET /api/llm/providers`
 
-获取启用的 Provider 与内置模型列表。
-
-- 当前支持内置 Provider 和 `openai-compatible` 自定义兼容接口。自定义兼容接口的模型列表通过用户 endpoint 自动检测，不依赖固定推荐模型。
+获取启用且存在真实协议实现的 Provider。目录固定为默认 `deepseek`，以及 `openai-responses`、`openai-chat-completions`、`anthropic-messages` 三个用户级 BYOK 协议。
 
 ### `GET /api/user/llm-config`
 
@@ -71,7 +69,7 @@
 
 ```json
 {
-  "providerKey": "openai-compatible",
+  "providerKey": "openai-chat-completions",
   "baseUrl": "https://example.com/v1",
   "model": "model-id",
   "hasApiKey": true,
@@ -81,12 +79,13 @@
 
 ### `POST /api/user/llm-config/discover-models`
 
-检测 OpenAI-compatible endpoint 的可用模型列表。该接口只检测，不保存 API Key 或 endpoint。
+检测 OpenAI Responses 或 Chat Completions 根地址的可用模型列表。该接口只检测，不保存 API Key 或根地址；Anthropic Messages 使用手动模型 ID。
 
 请求示例：
 
 ```json
 {
+  "providerKey": "openai-chat-completions",
   "baseUrl": "https://example.com/v1",
   "apiKey": "sk-xxx"
 }
@@ -96,7 +95,7 @@
 
 ```json
 {
-  "providerKey": "openai-compatible",
+  "providerKey": "openai-chat-completions",
   "baseUrl": "https://example.com/v1",
   "models": ["model-a", "model-b"]
 }
@@ -110,7 +109,7 @@
 
 ```json
 {
-  "providerKey": "openai-compatible",
+  "providerKey": "openai-responses",
   "baseUrl": "https://example.com/v1",
   "model": "model-id",
   "apiKey": "sk-xxx"
@@ -120,7 +119,7 @@
 说明：
 
 - `apiKey` 留空（不传或空字符串）表示不修改现有 Key。主动清空需传 `"__CLEAR__"`。
-- `providerKey` 为 `openai-compatible` 时，`baseUrl` 必填，保存 endpoint root，不保存完整 `/chat/completions`。
+- 三个 BYOK provider 的 `baseUrl` 必填并保存根地址。完整 `/responses`、`/chat/completions` 或 `/messages` 会按所选协议归一化；协议后缀不匹配时拒绝保存。
 - 常规模式下 Key 使用后端加密后保存。
 - dev fixture 开启时不会保存真实 Key，只保存本地夹具占位值。
 
@@ -135,7 +134,7 @@
   "code": 200,
   "message": "success",
   "data": {
-    "providerKey": "openai-compatible",
+    "providerKey": "openai-responses",
     "model": "model-id",
     "ok": true,
     "message": "模型配置测试通过"

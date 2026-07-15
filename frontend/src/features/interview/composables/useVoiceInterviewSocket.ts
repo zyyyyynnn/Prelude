@@ -1,5 +1,5 @@
 import { nextTick, ref, watch, type Ref } from 'vue'
-import type { InterviewMessageRecord } from '@/api/contracts'
+import type { InterviewMessageRecord } from '../model/types'
 
 type ReplayState = {
   messages: InterviewMessageRecord[]

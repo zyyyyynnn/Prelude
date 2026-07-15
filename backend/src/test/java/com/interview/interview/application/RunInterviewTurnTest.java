@@ -116,7 +116,7 @@ class RunInterviewTurnTest {
         session.setId(7L);
         session.setUserId(42L);
         session.setStatus("ongoing");
-        session.setLlmProvider("openai-compatible");
+        session.setLlmProvider("openai-responses");
         session.setLlmModel("model-a");
         return session;
     }

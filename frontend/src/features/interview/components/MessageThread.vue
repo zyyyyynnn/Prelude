@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Badge } from '@/components/ui/badge'
-import type { InterviewMessageRecord, InterviewMessageRole } from '@/api/contracts'
+import { Badge } from '@/shared/ui/badge'
+import type { InterviewMessageRecord, InterviewMessageRole } from '../model/types'
 
 const props = defineProps<{
   messages: InterviewMessageRecord[]

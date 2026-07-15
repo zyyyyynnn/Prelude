@@ -13,7 +13,7 @@ const panelPath = path.join(
   'components',
   'LlmSettingsPanel.vue',
 )
-const sharedDropdownPath = path.join(rootDir, 'src', 'components', 'ui', 'shared-dropdown.ts')
+const sharedDropdownPath = path.join(rootDir, 'src', 'shared', 'ui', 'shared-dropdown.ts')
 const screenshotDir = path.resolve(rootDir, '..', 'output', 'playwright')
 const baseUrl = 'https://api.tokenrouter.com/v1'
 const apiKey = 'sk-tokenrouter-new'
@@ -255,21 +255,38 @@ async function verifyBrowserFlow(port) {
           {
             providerKey: 'deepseek',
             displayName: 'DeepSeek',
-            models: ['deepseek-chat', 'deepseek-reasoner'],
+            availableModels: ['deepseek-chat', 'deepseek-reasoner'],
+            enabled: 1,
           },
-          { providerKey: 'openai-compatible', displayName: 'OpenAI 兼容协议', models: [] },
+          {
+            providerKey: 'openai-responses',
+            displayName: 'OpenAI Responses',
+            availableModels: [],
+            enabled: 1,
+          },
+          {
+            providerKey: 'openai-chat-completions',
+            displayName: 'OpenAI Chat Completions',
+            availableModels: [],
+            enabled: 1,
+          },
+          {
+            providerKey: 'anthropic-messages',
+            displayName: 'Anthropic Messages',
+            availableModels: [],
+            enabled: 1,
+          },
         ]),
       })
     }
     if (method === 'GET' && pathname === '/user/llm-config') {
       return route.fulfill({
         json: ok({
-          providerKey: 'openai-compatible',
+          providerKey: 'openai-chat-completions',
           baseUrl: 'https://old.example/v1',
           model: 'old-model',
           hasApiKey: true,
           apiKeyMasked: 'sk-***old',
-          displayName: 'OpenAI 兼容协议',
         }),
       })
     }
@@ -277,7 +294,7 @@ async function verifyBrowserFlow(port) {
       requests.discover.push(json())
       return route.fulfill({
         json: ok({
-          providerKey: 'openai-compatible',
+          providerKey: 'openai-chat-completions',
           baseUrl,
           models: ['detected-model', 'detected-model-pro'],
         }),
@@ -287,7 +304,7 @@ async function verifyBrowserFlow(port) {
       requests.test.push(json())
       return route.fulfill({
         json: ok({
-          providerKey: 'openai-compatible',
+          providerKey: 'openai-chat-completions',
           model: manualModel,
           ok: true,
           message: '模型配置测试通过',
@@ -298,12 +315,11 @@ async function verifyBrowserFlow(port) {
       requests.save.push(json())
       return route.fulfill({
         json: ok({
-          providerKey: 'openai-compatible',
+          providerKey: 'openai-chat-completions',
           baseUrl,
           model: manualModel,
           hasApiKey: true,
           apiKeyMasked: 'sk-***new',
-          displayName: 'OpenAI 兼容协议',
         }),
       })
     }
@@ -364,13 +380,31 @@ async function verifyBrowserFlow(port) {
     }
 
     await providerSelect.click()
-    await page.getByRole('option', { name: 'OpenAI 兼容协议' }).click()
-    const modelInput = page.getByPlaceholder('请选择模型')
-    if ((await modelInput.inputValue()) !== '') {
-      throw new Error('OpenAI-compatible model input should reset after provider switch')
+    for (const optionName of [
+      'OpenAI Responses',
+      'OpenAI Chat Completions',
+      'Anthropic Messages',
+    ]) {
+      if ((await page.getByRole('option', { name: optionName, exact: true }).count()) !== 1) {
+        throw new Error(`Missing BYOK protocol option: ${optionName}`)
+      }
+    }
+    if ((await page.getByRole('option', { name: 'OpenAI 兼容协议', exact: true }).count()) !== 0) {
+      throw new Error('Legacy openai-compatible option is still exposed')
+    }
+    await page.getByRole('option', { name: 'Anthropic Messages', exact: true }).click()
+    if ((await page.getByRole('button', { name: '检测模型' }).count()) !== 0) {
+      throw new Error('Anthropic Messages must use a manual model ID')
     }
 
-    await page.getByPlaceholder('例如：https://api.deepseek.com/v1').fill(baseUrl)
+    await providerSelect.click()
+    await page.getByRole('option', { name: 'OpenAI Chat Completions', exact: true }).click()
+    const modelInput = page.getByPlaceholder('请选择模型')
+    if ((await modelInput.inputValue()) !== '') {
+      throw new Error('Custom protocol model input should reset after provider switch')
+    }
+
+    await page.getByPlaceholder('例如：https://api.openai.com/v1').fill(baseUrl)
     await page.getByPlaceholder('留空表示不修改当前 Key').fill(apiKey)
     const discoverButtonStyle = await page
       .getByRole('button', { name: '检测模型' })
@@ -504,6 +538,8 @@ async function verifyBrowserFlow(port) {
 
   if (discover?.baseUrl !== baseUrl)
     throw new Error(`discover baseUrl mismatch: ${discover?.baseUrl}`)
+  if (discover?.providerKey !== 'openai-chat-completions')
+    throw new Error(`discover providerKey mismatch: ${discover?.providerKey}`)
   if (discover?.apiKey !== apiKey) throw new Error('discover apiKey mismatch')
   if (test?.baseUrl !== baseUrl) throw new Error(`test baseUrl mismatch: ${test?.baseUrl}`)
   if (test?.model !== manualModel) throw new Error(`test model mismatch: ${test?.model}`)

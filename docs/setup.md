@@ -19,11 +19,10 @@ MYSQL_ROOT_PASSWORD=root_password
 JWT_SECRET=replace-with-at-least-32-bytes-jwt-secret
 APP_CRYPTO_AES_SECRET=replace-with-at-least-32-bytes-aes-secret
 OPENAI_API_KEY=
-OPENAI_BASE_URL=https://api.openai.com/v1/chat/completions
-OPENAI_MODEL=
+OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-`.env` 已被 `.gitignore` 忽略，不要提交真实密钥。内置 Provider 只是兼容路径，日常建议在前端设置中使用用户级 OpenAI-compatible BYOK。
+`.env` 已被 `.gitignore` 忽略，不要提交真实密钥。`OPENAI_*` 仅用于系统语音能力；面试 LLM 的用户级 Key 与根地址在前端设置中按明确协议配置。
 
 ## 2. 启动入口
 

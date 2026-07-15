@@ -11,8 +11,6 @@ import com.interview.platform.llm.api.UserLlmConfigResponse;
 import com.interview.identity.domain.User;
 import com.interview.platform.llm.LlmRouter;
 import com.interview.platform.llm.LlmSelection;
-import com.interview.platform.llm.OpenAiCompatibleProvider;
-import com.interview.platform.llm.OpenAiCompatibleUrl;
 import com.interview.identity.infrastructure.persistence.UserMapper;
 import com.interview.platform.security.AesGcmEncryptor;
 import com.interview.platform.llm.LlmModelDiscoveryService;
@@ -55,12 +53,12 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         User user = requireCurrentUser();
         String providerKey = request.providerKey();
         String baseUrl = null;
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerKey)) {
-            baseUrl = OpenAiCompatibleUrl.normalizeRoot(request.baseUrl());
+        if (CustomLlmProtocol.isCustom(providerKey)) {
+            baseUrl = CustomLlmEndpointUrl.normalizeRoot(request.baseUrl(), CustomLlmProtocol.require(providerKey));
         }
         llmRouter.validateProviderSelection(providerKey, request.model());
 
-        // scope 是否相对旧配置发生变化（provider 或 openai-compatible 的归一化 baseUrl）。
+        // scope 是否相对旧配置发生变化（provider 或自定义接口的归一化 baseUrl）。
         boolean scopeChanged = isScopeChanged(user, providerKey, baseUrl);
 
         String encryptedApiKey = user.getLlmApiKeyEncrypted();
@@ -89,10 +87,12 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     @Override
     public LlmModelDiscoveryResponse discoverModels(LlmModelDiscoveryRequest request) {
         User user = requireCurrentUser();
-        String normalizedBaseUrl = OpenAiCompatibleUrl.normalizeRoot(request.baseUrl());
+        CustomLlmProtocol protocol = CustomLlmProtocol.require(request.providerKey());
+        String normalizedBaseUrl = CustomLlmEndpointUrl.normalizeRoot(request.baseUrl(), protocol);
         // 自动检测按与测试相同的 Key 选择规则处理：表单新 Key > 同 scope 已保存 Key > 否则报错。检测不保存 Key。
-        String apiKey = resolveDraftApiKey(request.apiKey(), user, OpenAiCompatibleProvider.PROVIDER_KEY, normalizedBaseUrl);
-        return llmModelDiscoveryService.discoverModels(new LlmModelDiscoveryRequest(normalizedBaseUrl, apiKey));
+        String apiKey = resolveDraftApiKey(request.apiKey(), user, protocol.providerKey(), normalizedBaseUrl);
+        return llmModelDiscoveryService.discoverModels(
+            new LlmModelDiscoveryRequest(protocol.providerKey(), normalizedBaseUrl, apiKey));
     }
 
     @Override
@@ -132,16 +132,16 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         }
 
         String baseUrl = null;
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerKey)) {
+        if (CustomLlmProtocol.isCustom(providerKey)) {
             String draftBaseUrl = request.baseUrl();
             if (draftBaseUrl == null || draftBaseUrl.isBlank()) {
-                if (!OpenAiCompatibleProvider.PROVIDER_KEY.equals(user.getLlmProvider())
+                if (!providerKey.equals(user.getLlmProvider())
                     || user.getLlmBaseUrl() == null || user.getLlmBaseUrl().isBlank()) {
                     throw BusinessException.badRequest("请填写 Base URL");
                 }
                 draftBaseUrl = user.getLlmBaseUrl();
             }
-            baseUrl = OpenAiCompatibleUrl.normalizeRoot(draftBaseUrl);
+            baseUrl = CustomLlmEndpointUrl.normalizeRoot(draftBaseUrl, CustomLlmProtocol.require(providerKey));
         }
 
         if (isDevFixtureEnabled()) {
@@ -174,13 +174,13 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     }
 
     /**
-     * scope 是否相对旧配置发生变化：provider 变更，或 openai-compatible 的归一化 baseUrl 变更。
+     * scope 是否相对旧配置发生变化：provider 变更，或自定义接口的归一化 baseUrl 变更。
      */
     private boolean isScopeChanged(User user, String newProviderKey, String newBaseUrl) {
         if (newProviderKey == null || !newProviderKey.equals(user.getLlmProvider())) {
             return true;
         }
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(newProviderKey)) {
+        if (CustomLlmProtocol.isCustom(newProviderKey)) {
             String oldBaseUrl = user.getLlmBaseUrl();
             return newBaseUrl == null || !newBaseUrl.equals(oldBaseUrl);
         }
@@ -192,7 +192,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
      * - 表单新 Key 非空 → 用新 Key。
      * - 无新 Key 且 scope 未变 → 解密已保存 BYOK Key。
      * - 无新 Key 且 scope 已变：
-     *   - openai-compatible → 报错（必须重新填 Key）。
+     *   - 自定义接口 → 报错（必须重新填 Key）。
      *   - 内置 provider → 不复用旧 BYOK Key，由 LlmRouter 回退该 provider 系统 Key（传 null）。
      */
     private String resolveDraftApiKey(String draftApiKey, User user, String providerKey, String baseUrl) {
@@ -203,7 +203,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         if (!scopeChanged) {
             return decryptSavedApiKey(user.getLlmApiKeyEncrypted());
         }
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerKey)) {
+        if (CustomLlmProtocol.isCustom(providerKey)) {
             throw BusinessException.badRequest("更换接入方式或 Base URL 后，请重新填写 API Key 再测试。");
         }
         return null;

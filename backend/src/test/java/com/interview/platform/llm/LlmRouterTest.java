@@ -73,8 +73,9 @@ class LlmRouterTest {
     }
 
     @Test
-    void openAiCompatibleProviderUsesUserBaseUrlForChatCompletions() {
-        CapturingProvider customProvider = new CapturingProvider("openai-compatible", "OpenAI-compatible", "");
+    void customChatCompletionsProviderUsesUserBaseUrl() {
+        CapturingProvider customProvider = new CapturingProvider(
+            "openai-chat-completions", "OpenAI Chat Completions", "");
         LlmRouter customRouter = new LlmRouter(
             userMapper,
             llmProviderConfigMapper,
@@ -87,19 +88,21 @@ class LlmRouterTest {
         User user = new User();
         user.setId(9L);
         user.setLlmBaseUrl("https://example.com/v1/");
+        user.setLlmApiKeyEncrypted("cipher");
 
         LlmProviderConfig config = new LlmProviderConfig();
-        config.setProviderKey("openai-compatible");
+        config.setProviderKey("openai-chat-completions");
         config.setBaseUrl("");
         config.setAvailableModels("[]");
         config.setEnabled(1);
 
         when(userMapper.selectById(9L)).thenReturn(user);
+        when(aesGcmEncryptor.decrypt("cipher")).thenReturn("sk-user");
         when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
 
         UserContext.setCurrentUserId(9L);
         String result = customRouter.chatWithSnapshot(
-            "openai-compatible",
+            "openai-chat-completions",
             "model-a",
             List.of(Map.of("role", "user", "content", "hello"))
         );
@@ -111,10 +114,11 @@ class LlmRouterTest {
     }
 
     @Test
-    void openAiCompatibleFailureDoesNotFallback() {
-        // openai-compatible 主调用失败（LlmServerException 属可 fallback 异常）→ 不应 fallback，直接抛明确错误。
+    void customProviderFailureDoesNotFallback() {
+        // 用户 BYOK 主调用失败时不得 fallback 到系统通道。
         FailingProvider failingProvider = new FailingProvider(
-            "openai-compatible", "OpenAI-compatible", "", new com.interview.shared.api.LlmServerException("upstream 500"));
+            "openai-chat-completions", "OpenAI Chat Completions", "",
+            new com.interview.shared.api.LlmServerException("upstream 500"));
         CapturingProvider fallbackProvider = new CapturingProvider("deepseek", "DeepSeek", "deepseek-v4-pro");
         LlmRouter customRouter = new LlmRouter(
             userMapper,
@@ -128,19 +132,21 @@ class LlmRouterTest {
         User user = new User();
         user.setId(9L);
         user.setLlmBaseUrl("https://example.com/v1/");
+        user.setLlmApiKeyEncrypted("cipher");
 
         LlmProviderConfig config = new LlmProviderConfig();
-        config.setProviderKey("openai-compatible");
+        config.setProviderKey("openai-chat-completions");
         config.setBaseUrl("");
         config.setAvailableModels("[]");
         config.setEnabled(1);
 
         when(userMapper.selectById(9L)).thenReturn(user);
+        when(aesGcmEncryptor.decrypt("cipher")).thenReturn("sk-user");
         when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
 
         UserContext.setCurrentUserId(9L);
         assertThatThrownBy(() -> customRouter.chatWithSnapshot(
-            "openai-compatible", "model-a",
+            "openai-chat-completions", "model-a",
             List.of(Map.of("role", "user", "content", "hello"))
         ))
             .isInstanceOf(com.interview.shared.api.BusinessException.class)
@@ -246,8 +252,9 @@ class LlmRouterTest {
     }
 
     @Test
-    void chatWithExplicitRejectsOpenAiCompatibleWhenApiKeyMissing() {
-        CapturingProvider customProvider = new CapturingProvider("openai-compatible", "OpenAI-compatible", "");
+    void chatWithExplicitRejectsCustomProviderWhenApiKeyMissing() {
+        CapturingProvider customProvider = new CapturingProvider(
+            "openai-chat-completions", "OpenAI Chat Completions", "");
         LlmRouter customRouter = new LlmRouter(
             userMapper,
             llmProviderConfigMapper,
@@ -258,7 +265,7 @@ class LlmRouterTest {
         );
 
         LlmProviderConfig config = new LlmProviderConfig();
-        config.setProviderKey("openai-compatible");
+        config.setProviderKey("openai-chat-completions");
         config.setBaseUrl("");
         config.setAvailableModels("[]");
         config.setEnabled(1);
@@ -266,7 +273,7 @@ class LlmRouterTest {
         when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(config);
 
         assertThatThrownBy(() -> customRouter.chatWithExplicit(
-            "openai-compatible",
+            "openai-chat-completions",
             "model-a",
             "https://example.com/v1",
             null,
@@ -304,10 +311,11 @@ class LlmRouterTest {
     }
 
 @Test
-    void fallbackExcludesOpenAiCompatibleProvider() {
+    void fallbackExcludesCustomProviders() {
         FailingProvider failingProvider = new FailingProvider(
             "test", "Test", "model-a", new com.interview.shared.api.LlmServerException("upstream 500"));
-        CapturingProvider customProvider = new CapturingProvider("openai-compatible", "OpenAI-compatible", "");
+        CapturingProvider customProvider = new CapturingProvider(
+            "anthropic-messages", "Anthropic Messages", "");
         LlmRouter customRouter = new LlmRouter(
             userMapper,
             llmProviderConfigMapper,
@@ -327,14 +335,14 @@ class LlmRouterTest {
         mainConfig.setEnabled(1);
 
         LlmProviderConfig customConfig = new LlmProviderConfig();
-        customConfig.setProviderKey("openai-compatible");
+        customConfig.setProviderKey("anthropic-messages");
         customConfig.setBaseUrl("https://attacker.example/v1");
         customConfig.setAvailableModels("[]");
         customConfig.setEnabled(1);
 
         when(userMapper.selectById(9L)).thenReturn(user);
         when(llmProviderConfigMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(mainConfig);
-        // Mapper mock intentionally returns the openai-compatible row, simulating either a
+        // Mapper mock intentionally returns a custom row, simulating either a
         // misconfigured custom mapper or a future regression that drops the SQL .ne(...) guard.
         // The in-memory .filter(...) in listFallbackProviderConfigs must still exclude it.
         when(llmProviderConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(customConfig));

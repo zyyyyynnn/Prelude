@@ -5,9 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.shared.api.BusinessException;
 import com.interview.platform.llm.api.LlmModelDiscoveryRequest;
 import com.interview.platform.llm.api.LlmModelDiscoveryResponse;
-import com.interview.platform.llm.OpenAiCompatibleProvider;
-import com.interview.platform.llm.OpenAiCompatibleUrl;
-import com.interview.platform.llm.LlmModelDiscoveryService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -42,13 +39,17 @@ public class LlmModelDiscoveryServiceImpl implements LlmModelDiscoveryService {
 
     @Override
     public LlmModelDiscoveryResponse discoverModels(LlmModelDiscoveryRequest request) {
-        String baseUrl = OpenAiCompatibleUrl.normalizeRoot(request.baseUrl());
+        CustomLlmProtocol protocol = CustomLlmProtocol.require(request.providerKey());
+        if (!protocol.supportsModelDiscovery()) {
+            throw BusinessException.badRequest("当前协议不支持自动检测模型");
+        }
+        String baseUrl = CustomLlmEndpointUrl.normalizeRoot(request.baseUrl(), protocol);
         if (request.apiKey() == null || request.apiKey().isBlank()) {
             throw BusinessException.badRequest("API Key 不能为空");
         }
 
         Request httpRequest = new Request.Builder()
-            .url(OpenAiCompatibleUrl.toModelsUrl(baseUrl))
+            .url(CustomLlmEndpointUrl.toModelsUrl(baseUrl, protocol))
             .addHeader("Authorization", "Bearer " + request.apiKey())
             .get()
             .build();
@@ -62,7 +63,7 @@ public class LlmModelDiscoveryServiceImpl implements LlmModelDiscoveryService {
                 throw BusinessException.badRequest("Base URL 不可达或模型列表接口返回异常：" + response.code());
             }
             List<String> models = parseModelsResponse(body);
-            return new LlmModelDiscoveryResponse(OpenAiCompatibleProvider.PROVIDER_KEY, baseUrl, models);
+            return new LlmModelDiscoveryResponse(protocol.providerKey(), baseUrl, models);
         } catch (BusinessException exception) {
             throw exception;
         } catch (IOException exception) {

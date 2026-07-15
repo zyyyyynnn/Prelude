@@ -115,7 +115,7 @@ class InterviewSummaryServiceTest {
         InterviewSession session = new InterviewSession();
         session.setId(7L);
         session.setUserId(42L);
-        session.setLlmProvider("openai-compatible");
+        session.setLlmProvider("openai-responses");
         session.setLlmModel("model-a");
         return session;
     }
