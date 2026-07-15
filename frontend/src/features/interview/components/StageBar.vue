@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Button } from '@/components/ui/button'
-import type { InterviewStageName } from '@/api/contracts'
+import { Button } from '@/shared/ui/button'
+import type { InterviewStageName } from '../model/types'
 
 const props = defineProps<{
   currentStage?: InterviewStageName

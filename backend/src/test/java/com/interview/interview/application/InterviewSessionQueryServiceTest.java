@@ -28,7 +28,7 @@ class InterviewSessionQueryServiceTest {
     void listsCurrentUserSessionsWithCurrentStage() {
         InterviewSession session = session();
         InterviewSessionSummary item = new InterviewSessionSummary(
-            7L, "Java", "ongoing", session.getCreatedAt(), "technical", "openai", "gpt", null
+            7L, "Java", "ongoing", session.getCreatedAt(), "technical", "openai-responses", "gpt", null
         );
         when(sessionAccess.currentUserId()).thenReturn(42L);
         when(sessionMapper.listByUser(42L)).thenReturn(List.of(session));

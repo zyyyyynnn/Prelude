@@ -112,7 +112,7 @@ class InterviewControllerWebMvcTest {
         when(sessionQueryService.listCurrentUserSessions()).thenReturn(List.of(
             new InterviewSessionSummary(
                 7L, "Java", "ongoing", LocalDateTime.of(2026, 7, 13, 10, 0),
-                "technical", "openai", "gpt", null
+                "technical", "openai-responses", "gpt", null
             )
         ));
 

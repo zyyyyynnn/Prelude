@@ -1,26 +1,27 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, toRef } from 'vue'
-import type { LlmProviderOption, ResumeItem, PositionTemplate } from '@/api/contracts'
-import { fetchProviders, fetchUserLlmConfig } from '@/features/settings/api/llm'
-import { Button } from '@/components/ui/button'
+import { computed, ref, toRef } from 'vue'
+import type { ResumeItem } from '@/features/resume'
+import type { PositionTemplate } from '../model/types'
+import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
+} from '@/shared/ui/dropdown-menu'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
   TooltipText,
-} from '@/components/ui/tooltip'
+} from '@/shared/ui/tooltip'
 import { FileText, Briefcase, FileSearch, Terminal } from '@lucide/vue'
-import { cn } from '@/lib/utils'
-import { dropdownTriggerVariants } from '@/components/ui/shared-dropdown'
+import { cn } from '@/shared/lib/utils'
+import { dropdownTriggerVariants } from '@/shared/ui/shared-dropdown'
 import { useComposerVoice } from '../composables/useComposerVoice'
+import { useComposerModelOptions } from '../composables/useComposerModelOptions'
 import ComposerText from './ComposerText.vue'
 import ComposerVoice from './ComposerVoice.vue'
 
@@ -65,9 +66,12 @@ const emit = defineEmits<{
 const fileInput = ref<HTMLInputElement | null>(null)
 const showJdInput = ref(false)
 const localJdText = ref('')
-const providerModels = ref<string[]>([])
-const currentProviderName = ref('')
-const selectedComposerModel = ref('')
+const { providerModels, currentProviderName, selectedComposerModel, canSelectModel } =
+  useComposerModelOptions({
+    activeSessionId: toRef(props, 'activeSessionId'),
+    llmProvider: toRef(props, 'llmProvider'),
+    llmModel: toRef(props, 'llmModel'),
+  })
 
 const canStart = computed(
   () => !!props.selectedResumeId && !!props.selectedPositionId && !props.creating,
@@ -92,56 +96,9 @@ const modelDisplay = computed(() => {
   return `${provider || '未配置'} / ${model || '默认'}`
 })
 
-const canSelectModel = computed(() => providerModels.value.length > 0)
-
 function toggleJdInput() {
   showJdInput.value = !showJdInput.value
 }
-
-function normalizeProviderDisplay(provider: LlmProviderOption | undefined, providerKey = '') {
-  if (!provider && providerKey === 'openai-compatible') return 'OpenAI 兼容协议'
-  return provider?.displayName || providerKey || '未配置'
-}
-
-async function loadComposerModels() {
-  try {
-    const [providers, config] = await Promise.all([fetchProviders(), fetchUserLlmConfig()])
-    const provider = providers.find((item) => item.providerKey === config.providerKey)
-    const sessionModel = props.activeSessionId ? props.llmModel : ''
-    const models = provider?.models?.length
-      ? [...provider.models]
-      : config.model
-        ? [config.model]
-        : []
-    if (sessionModel && !models.includes(sessionModel)) {
-      models.unshift(sessionModel)
-    }
-    currentProviderName.value = props.activeSessionId
-      ? props.llmProvider || normalizeProviderDisplay(provider, config.providerKey)
-      : normalizeProviderDisplay(provider, config.providerKey)
-    providerModels.value = models
-    selectedComposerModel.value = sessionModel || config.model || providerModels.value[0] || ''
-  } catch {
-    providerModels.value = props.llmModel ? [props.llmModel] : []
-    selectedComposerModel.value = props.llmModel || ''
-    currentProviderName.value = props.llmProvider || '未配置'
-  }
-}
-
-watch(
-  () => [props.activeSessionId, props.llmModel, props.llmProvider] as const,
-  () => {
-    if (!props.activeSessionId) return
-    if (props.llmModel) {
-      selectedComposerModel.value = props.llmModel
-      if (!providerModels.value.includes(props.llmModel)) {
-        providerModels.value = [props.llmModel, ...providerModels.value]
-      }
-    }
-    currentProviderName.value = props.llmProvider || currentProviderName.value
-  },
-  { immediate: true },
-)
 
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement
@@ -172,10 +129,6 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
     onStopRecording: () => emit('voice-stop-recording'),
     onPlayStatus: (status) => emit('voice-play-status', status),
   })
-
-onMounted(() => {
-  void loadComposerModels()
-})
 </script>
 
 <template>

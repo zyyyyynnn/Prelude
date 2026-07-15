@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
-import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
-import BrandMetaballs from '@/components/BrandMetaballs.vue'
-import { usePageNotice } from '@/composables/usePageNotice'
-import { Separator } from '@/components/ui/separator'
-import { TooltipText } from '@/components/ui/tooltip'
-import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useInterviewSessionStore } from '../stores/sessionStore'
+import BrandMetaballs from '@/shared/brand/BrandMetaballs.vue'
+import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
+import { Separator } from '@/shared/ui/separator'
+import { TooltipText } from '@/shared/ui/tooltip'
+import { useConfirmDialog } from '@/shared/ui/confirm-dialog/useConfirmDialog'
 
 const props = defineProps<{
   collapsed: boolean
@@ -21,19 +22,15 @@ const route = useRoute()
 const router = useRouter()
 const { showNotice } = usePageNotice()
 const confirmDialog = useConfirmDialog()
-const {
-  activeSessionId,
-  primarySessionList,
-  finishedSessionList,
-  startNewInterview,
-  loadSession,
-  togglePinSession,
-  deleteSessionLocal,
-  isSessionPinned,
-} = useInterviewWorkspace()
+const sessionStore = useInterviewSessionStore()
+const { activeSessionId, primarySessionList, finishedSessionList } = storeToRefs(sessionStore)
+const { startNewInterview, loadSession, toggleSessionPin, hideSessionLocally, isSessionPinned } =
+  sessionStore
+
+sessionStore.hydratePreferences()
 
 function togglePin(sessionId: number) {
-  togglePinSession(sessionId)
+  toggleSessionPin(sessionId)
   showNotice(isSessionPinned(sessionId) ? '会话已置顶' : '已取消置顶', 'success')
 }
 
@@ -47,7 +44,7 @@ async function confirmDelete(sessionId: number, targetPosition?: string) {
   })
 
   if (confirmed) {
-    deleteSessionLocal(sessionId)
+    hideSessionLocally(sessionId)
     showNotice('会话已删除', 'success')
   }
 }

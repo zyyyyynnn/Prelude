@@ -7,7 +7,7 @@
  *
  * Like the visual spec, all /api/** requests are mocked via page.route.
  * The accessibility assertions use the ARIA roles / roles / names that the
- * components already expose (see reka-ui + radix-vue primitives).
+ * components already expose through reka-ui primitives.
  *
  * The `installMockApi` helper is shared with `tests/visual/ui-visual.spec.ts`
  * via `tests/_helpers/mock-api.ts` to keep the sentrux `min_equality` gate
@@ -53,11 +53,7 @@ async function axe(page: Page, label: string) {
   }
 }
 
-// Phase 2 gates ONLY critical axe violations. The historical
-// `expectNoSeriousViolations` name would mislead readers into thinking
-// the run asserts "no serious a11y issues" — it does not. We expose the
-// explicit `expectNoCriticalViolations` alias so spec assertions stay
-// faithful to the actual gate.
+// The helper name states the exact blocking threshold used by CI.
 async function expectNoCriticalViolations(page: Page, label: string) {
   return axe(page, label)
 }

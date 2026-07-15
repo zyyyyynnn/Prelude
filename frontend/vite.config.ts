@@ -31,6 +31,19 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
+              const pdfPackages = [
+                'canvg',
+                'dompurify',
+                'fast-png',
+                'fflate',
+                'html2canvas',
+                'jspdf',
+                'rgbcolor',
+                'stackblur-canvas',
+              ]
+              if (pdfPackages.some((packageName) => id.includes(`/node_modules/${packageName}/`))) {
+                return 'vendor-pdf'
+              }
               if (id.includes('echarts') || id.includes('zrender')) {
                 return 'vendor-echarts'
               }

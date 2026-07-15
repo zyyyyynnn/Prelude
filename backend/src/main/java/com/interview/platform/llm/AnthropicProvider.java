@@ -9,7 +9,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -33,20 +32,14 @@ public class AnthropicProvider implements LlmProvider {
     private static final int DEFAULT_MAX_TOKENS = 4096;
 
     private final ObjectMapper objectMapper;
-    private final String defaultModel;
-    private final String systemApiKey;
     private final OkHttpClient client;
     private final LlmMetricsTracker metricsTracker;
 
     public AnthropicProvider(
         ObjectMapper objectMapper,
-        @Value("${anthropic.model}") String defaultModel,
-        @Value("${anthropic.api-key:}") String systemApiKey,
         LlmMetricsTracker metricsTracker
     ) {
         this.objectMapper = objectMapper;
-        this.defaultModel = defaultModel;
-        this.systemApiKey = systemApiKey;
         this.metricsTracker = metricsTracker;
         this.client = new OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(15))
@@ -55,10 +48,10 @@ public class AnthropicProvider implements LlmProvider {
             .build();
     }
 
-    @Override public String providerKey()  { return "anthropic"; }
-    @Override public String providerName() { return "Anthropic"; }
-    @Override public String defaultModel() { return defaultModel; }
-    @Override public String systemApiKey() { return systemApiKey; }
+    @Override public String providerKey()  { return CustomLlmProtocol.ANTHROPIC_MESSAGES.providerKey(); }
+    @Override public String providerName() { return "Anthropic Messages"; }
+    @Override public String defaultModel() { return ""; }
+    @Override public String systemApiKey() { return ""; }
 
     @Override
     public String chat(LlmInvocation invocation) {
@@ -94,9 +87,6 @@ public class AnthropicProvider implements LlmProvider {
             payload.put("system", systemContent);
         }
         payload.put("messages", dialogMessages);
-        if (invocation.extraParams() != null) {
-            payload.putAll(invocation.extraParams());
-        }
 
         long startTime = System.nanoTime();
         try {

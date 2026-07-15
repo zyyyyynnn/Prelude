@@ -30,9 +30,9 @@ class LlmChatGatewayTest {
         UserContext.setCurrentUserId(7L);
         UserContext.setCurrentSessionId(9L);
         List<Map<String, String>> messages = List.of(Map.of("role", "user", "content", "hello"));
-        LlmSelection selection = new LlmSelection("openai-compatible", "model-a");
+        LlmSelection selection = new LlmSelection("openai-responses", "model-a");
         when(llmRouter.chatWithSnapshot(
-            eq("openai-compatible"),
+            eq("openai-responses"),
             eq("model-a"),
             eq(messages),
             eq(Map.of("response_format", Map.of("type", "json_object")))
@@ -52,7 +52,7 @@ class LlmChatGatewayTest {
         assertThat(UserContext.getCurrentUserId()).isEqualTo(7L);
         assertThat(UserContext.getCurrentSessionId()).isEqualTo(9L);
         verify(llmRouter).chatWithSnapshot(
-            "openai-compatible",
+            "openai-responses",
             "model-a",
             messages,
             Map.of("response_format", Map.of("type", "json_object"))

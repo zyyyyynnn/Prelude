@@ -7,7 +7,7 @@
  *
  * Exits 0 on PASS, 1 on any VIOLATION.
  *
- * The token file `frontend/src/styles/index.css` is allowed to keep base
+ * The token file `frontend/src/shared/ui/styles/index.css` is allowed to keep base
  * color values and px numerics as the source of truth for global tokens.
  */
 'use strict'
@@ -18,12 +18,16 @@ const path = require('node:path')
 
 const repoRoot = path.resolve(__dirname, '..', '..')
 const frontendSrc = path.join(repoRoot, 'frontend', 'src')
-const frontendComponents = path.join(frontendSrc, 'components')
-const stylesIndex = path.join(frontendSrc, 'styles', 'index.css')
+const businessComponentRoots = [
+  path.join(frontendSrc, 'features'),
+  path.join(frontendSrc, 'devtools'),
+]
+const stylesIndex = path.join(frontendSrc, 'shared', 'ui', 'styles', 'index.css')
+const tooltipContent = path.join(frontendSrc, 'shared', 'ui', 'tooltip', 'TooltipContent.vue')
 const componentFocusShadowToken = '--shadow-icon-action-focus'
 
 const semanticVarPrefixByFile = new Map([
-  ['frontend/src/components/ui/segmented-control/SegmentedControl.vue', ['--segmented-']],
+  ['frontend/src/shared/ui/segmented-control/SegmentedControl.vue', ['--segmented-']],
   ['frontend/src/features/interview/components/SessionSidebar.vue', ['--sidebar-']],
   ['frontend/src/features/interview/components/InterviewComposer.vue', ['--composer-']],
   ['frontend/src/features/interview/components/InterviewWorkspace.vue', ['--workspace-']],
@@ -318,7 +322,7 @@ function collectVueFiles(dir, files = []) {
 function findComponentFocusShadowViolations() {
   const violations = []
   const requiredValue = `var(${componentFocusShadowToken})`
-  for (const file of collectVueFiles(frontendComponents)) {
+  for (const file of businessComponentRoots.flatMap((root) => collectVueFiles(root))) {
     const source = fs.readFileSync(file, 'utf8')
     const stylePattern = /<style\b[^>]*>([\s\S]*?)<\/style>/g
     let styleMatch
@@ -347,6 +351,26 @@ function findComponentFocusShadowViolations() {
   return violations
 }
 
+function findTooltipContractViolations() {
+  const source = fs.readFileSync(tooltipContent, 'utf8')
+  const requiredClasses = ['bg-foreground', 'text-background', 'max-w-xs', 'break-words']
+  const missing = requiredClasses.filter((className) => !source.includes(className))
+  if (missing.length === 0 && !source.includes('bg-surface')) {
+    return []
+  }
+  return [
+    {
+      id: 'tooltip-surface-contract',
+      description: 'Tooltip 必须使用统一的中性高对比浮层，不得回退到页面 surface',
+      hit: {
+        file: tooltipContent,
+        line: 1,
+        text: missing.length > 0 ? `missing: ${missing.join(', ')}` : 'contains bg-surface',
+      },
+    },
+  ]
+}
+
 const failures = []
 const allowed = []
 
@@ -373,6 +397,7 @@ for (const check of checks) {
 }
 
 failures.push(...findComponentFocusShadowViolations())
+failures.push(...findTooltipContractViolations())
 
 if (allowed.length > 0) {
   console.log('--- ALLOWED HITS ---')

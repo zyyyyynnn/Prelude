@@ -29,18 +29,35 @@ const LLM_PROVIDERS = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
+    availableModels: ['deepseek-chat', 'deepseek-reasoner'],
+    enabled: 1,
   },
-  { providerKey: 'openai-compatible', displayName: 'OpenAI 兼容协议', models: [] },
+  {
+    providerKey: 'openai-responses',
+    displayName: 'OpenAI Responses',
+    availableModels: [],
+    enabled: 1,
+  },
+  {
+    providerKey: 'openai-chat-completions',
+    displayName: 'OpenAI Chat Completions',
+    availableModels: [],
+    enabled: 1,
+  },
+  {
+    providerKey: 'anthropic-messages',
+    displayName: 'Anthropic Messages',
+    availableModels: [],
+    enabled: 1,
+  },
 ]
 
 const LLM_CONFIG = {
-  providerKey: 'openai-compatible',
+  providerKey: 'openai-chat-completions',
   baseUrl: 'https://api.example.com/v1',
   model: 'gpt-4o-mini',
   hasApiKey: true,
   apiKeyMasked: 'sk-***masked',
-  displayName: 'OpenAI 兼容协议',
 }
 
 const USER_PROFILE = { username: 'demo', email: 'demo@example.com' }
@@ -176,7 +193,7 @@ export async function installMockApi(page: Page, overrides: MockOverrides = {}):
       if (method === 'POST' && pathname === '/user/llm-config/discover-models') {
         return route.fulfill({
           json: ok({
-            providerKey: 'openai-compatible',
+            providerKey: 'openai-chat-completions',
             baseUrl: (overrides.llmConfig ?? LLM_CONFIG).baseUrl,
             models: ['detected-model', 'detected-model-pro'],
           }),
@@ -185,7 +202,7 @@ export async function installMockApi(page: Page, overrides: MockOverrides = {}):
       if (method === 'POST' && pathname === '/user/llm-config/test') {
         return route.fulfill({
           json: ok({
-            providerKey: 'openai-compatible',
+            providerKey: 'openai-chat-completions',
             model: (overrides.llmConfig ?? LLM_CONFIG).model,
             ok: true,
             message: '模型配置测试通过',

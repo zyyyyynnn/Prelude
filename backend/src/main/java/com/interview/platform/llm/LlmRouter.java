@@ -112,6 +112,7 @@ public class LlmRouter {
                 .eq(LlmProviderConfig::getEnabled, 1)
                 .orderByAsc(LlmProviderConfig::getId))
             .stream()
+            .filter(config -> providerRegistry.supports(config.getProviderKey()))
             .map(this::toResponse)
             .toList();
     }
@@ -148,7 +149,7 @@ public class LlmRouter {
 
     /**
      * 用显式参数测试草稿配置，不读写用户表、不触发 fallback、不经过熔断器。
-     * openai-compatible 用 baseUrl 归一化后的 chat/completions 地址。
+     * 自定义协议使用用户根地址解析出对应的调用端点。
      */
     public String chatWithExplicit(
         String providerKey,
@@ -233,8 +234,8 @@ public class LlmRouter {
     }
 
     private String executeFallbackChat(String failedProviderKey, String model, List<Map<String, String>> messages, Map<String, Object> extraParams) {
-        // openai-compatible 是用户 BYOK 配置，失败必须显式暴露，不得静默 fallback 到系统通道（否则会用系统 Key 调用户接口或泄露 Key）。
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(failedProviderKey)) {
+        // 用户 BYOK 配置失败必须显式暴露，不得静默 fallback 到系统通道。
+        if (CustomLlmProtocol.isCustom(failedProviderKey)) {
             throw BusinessException.badRequest("自定义接口调用失败，请检查 Base URL、API Key 与模型后重试。");
         }
         List<LlmProviderConfig> configs = listFallbackProviderConfigs(failedProviderKey);
@@ -261,7 +262,7 @@ public class LlmRouter {
     }
 
     private void executeFallbackStream(String failedProviderKey, String model, List<Map<String, String>> messages, Consumer<String> onDelta, Map<String, Object> extraParams) {
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(failedProviderKey)) {
+        if (CustomLlmProtocol.isCustom(failedProviderKey)) {
             throw BusinessException.badRequest("自定义接口调用失败，请检查 Base URL、API Key 与模型后重试。");
         }
         List<LlmProviderConfig> configs = listFallbackProviderConfigs(failedProviderKey);
@@ -287,17 +288,14 @@ public class LlmRouter {
     }
 
     private List<LlmProviderConfig> listFallbackProviderConfigs(String failedProviderKey) {
-        // DB guard is the primary filter: the SQL .ne(..., openai-compatible) clause excludes
-        // user-configured BYOK providers from the fallback list at the data source. The in-memory
-        // filter below is a defensive belt-and-braces guard for mocked or custom mapper paths
-        // where the SQL clause is not actually evaluated.
+        // SQL 与内存双重排除用户 BYOK provider，避免 fallback 复用用户端点或密钥。
         return llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getEnabled, 1)
             .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
-            .ne(LlmProviderConfig::getProviderKey, OpenAiCompatibleProvider.PROVIDER_KEY)
+            .notIn(LlmProviderConfig::getProviderKey, CustomLlmProtocol.providerKeys())
             .orderByAsc(LlmProviderConfig::getId))
             .stream()
-            .filter(config -> !OpenAiCompatibleProvider.PROVIDER_KEY.equals(config.getProviderKey()))
+            .filter(config -> !CustomLlmProtocol.isCustom(config.getProviderKey()))
             .toList();
     }
 
@@ -334,8 +332,9 @@ public class LlmRouter {
             extraParams.putAll(callerExtraParams);
         }
         String baseUrl = providerConfig.getBaseUrl();
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerConfig.getProviderKey())) {
-            baseUrl = OpenAiCompatibleUrl.toChatCompletionsUrl(user.getLlmBaseUrl());
+        if (CustomLlmProtocol.isCustom(providerConfig.getProviderKey())) {
+            CustomLlmProtocol protocol = CustomLlmProtocol.require(providerConfig.getProviderKey());
+            baseUrl = CustomLlmEndpointUrl.toInvocationUrl(user.getLlmBaseUrl(), protocol);
         }
         return new LlmProvider.LlmInvocation(
             baseUrl,
@@ -360,8 +359,9 @@ public class LlmRouter {
         Map<String, Object> callerExtraParams
     ) {
         String resolvedBaseUrl = providerConfig.getBaseUrl();
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerConfig.getProviderKey())) {
-            resolvedBaseUrl = OpenAiCompatibleUrl.toChatCompletionsUrl(baseUrl);
+        if (CustomLlmProtocol.isCustom(providerConfig.getProviderKey())) {
+            CustomLlmProtocol protocol = CustomLlmProtocol.require(providerConfig.getProviderKey());
+            resolvedBaseUrl = CustomLlmEndpointUrl.toInvocationUrl(baseUrl, protocol);
         }
         return new LlmProvider.LlmInvocation(
             resolvedBaseUrl,
@@ -412,6 +412,9 @@ public class LlmRouter {
         if (userKey != null && !userKey.isBlank()) {
             return userKey;
         }
+        if (CustomLlmProtocol.isCustom(provider.providerKey())) {
+            throw BusinessException.badRequest("自定义接口 API Key 不能为空");
+        }
         String systemApiKey = provider.systemApiKey();
         if (systemApiKey != null && !systemApiKey.isBlank()) {
             return systemApiKey;
@@ -434,7 +437,7 @@ public class LlmRouter {
         if (explicitApiKey != null && !explicitApiKey.isBlank()) {
             return explicitApiKey;
         }
-        if (OpenAiCompatibleProvider.PROVIDER_KEY.equals(provider.providerKey())) {
+        if (CustomLlmProtocol.isCustom(provider.providerKey())) {
             throw BusinessException.badRequest("自定义接口 API Key 不能为空");
         }
         String systemApiKey = provider.systemApiKey();
