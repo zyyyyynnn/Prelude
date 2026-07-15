@@ -284,24 +284,19 @@ test('17 components lab (dark)', async ({ page }) => {
 })
 
 test('18 tooltip uses a readable neutral surface', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/components-lab')
   const trigger = page.getByRole('button', { name: '通知' })
   await trigger.hover()
   const tooltip = page
-    .locator('[data-state][data-side].bg-foreground')
+    .locator('[data-dismissable-layer][data-state][data-side]')
     .filter({ hasText: 'hover / focus 触发' })
     .first()
   await expect(tooltip).toBeVisible()
 
-  const colors = await page.evaluate(() => {
-    const probe = document.createElement('div')
-    probe.style.backgroundColor = 'var(--color-text-primary)'
-    probe.style.color = 'var(--color-bg)'
-    document.body.append(probe)
-    const style = getComputedStyle(probe)
-    const result = { background: style.backgroundColor, foreground: style.color }
-    probe.remove()
-    return result
+  const colors = await tooltip.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { background: style.backgroundColor, foreground: style.color }
   })
   const channels = (value: string) =>
     value
@@ -319,6 +314,46 @@ test('18 tooltip uses a readable neutral surface', async ({ page }) => {
   const lighter = Math.max(luminance(colors.background), luminance(colors.foreground))
   const darker = Math.min(luminance(colors.background), luminance(colors.foreground))
   expect((lighter + 0.05) / (darker + 0.05)).toBeGreaterThanOrEqual(7)
+})
+
+test('18b chart tooltip mirrors the neutral tooltip surface', async ({ page }) => {
+  await installMockApi(page)
+  await page.goto('/analytics')
+  const canvas = page.locator('.chart-surface').nth(1).locator('canvas').first()
+  await expect(canvas).toBeVisible()
+  const box = await canvas.boundingBox()
+  expect(box).not.toBeNull()
+
+  for (const ratio of [0.2, 0.35, 0.5, 0.65, 0.8]) {
+    await canvas.hover({ position: { x: box!.width * ratio, y: box!.height * 0.5 } })
+    if (
+      await page
+        .locator('.ui-chart-tooltip')
+        .isVisible()
+        .catch(() => false)
+    )
+      break
+  }
+
+  const tooltip = page.locator('.ui-chart-tooltip')
+  await expect(tooltip).toBeVisible()
+  const matchesTokens = await tooltip.evaluate((element) => {
+    const style = getComputedStyle(element)
+    const root = getComputedStyle(document.documentElement)
+    const normalized = (value: string) => {
+      const probe = document.createElement('span')
+      probe.style.color = value
+      document.body.append(probe)
+      const color = getComputedStyle(probe).color
+      probe.remove()
+      return color
+    }
+    return (
+      style.backgroundColor === normalized(root.getPropertyValue('--color-text-primary')) &&
+      style.color === normalized(root.getPropertyValue('--color-bg'))
+    )
+  })
+  expect(matchesTokens).toBe(true)
 })
 
 test('19 interview messages do not expose live score or hint', async ({ page }) => {

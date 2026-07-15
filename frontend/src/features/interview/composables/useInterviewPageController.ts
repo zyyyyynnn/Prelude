@@ -2,8 +2,19 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
-import { fetchResumes, uploadResume, type ResumeItem } from '@/features/resume'
-import { exportInterviewReportToPdf, parseInterviewReport, renderMarkdown } from '@/features/report'
+import {
+  acceptResumeImprovement,
+  fetchResumes,
+  rejectResumeImprovement,
+  uploadResume,
+  type ResumeItem,
+} from '@/features/resume'
+import {
+  exportInterviewReportToPdf,
+  parseInterviewReport,
+  renderMarkdown,
+  type ReportResumeImprovement,
+} from '@/features/report'
 import { getErrorMessage } from '@/shared/lib/errors'
 import { withMinDelay } from '@/shared/lib/utils'
 import { useConfirmDialog } from '@/shared/ui/confirm-dialog/useConfirmDialog'
@@ -42,6 +53,8 @@ export function useInterviewPageController() {
   const selectedPositionId = ref<number | null>(null)
   const uploadDisplayName = ref('未选择任何文件')
   const answer = ref('')
+  const improvementBusyId = ref<number | null>(null)
+  const improvementOverrides = ref<Record<number, ReportResumeImprovement>>({})
 
   const messages = computed(() => replay.value?.messages ?? [])
   const jdText = computed(() => replay.value?.jdText ?? '')
@@ -62,9 +75,19 @@ export function useInterviewPageController() {
     () => activeSession.value?.status === 'generating' || replay.value?.status === 'generating',
   )
   const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
-  const parsedReport = computed(() =>
-    parseInterviewReport(reportMarkdown.value || replay.value?.summaryReport || ''),
-  )
+  const parsedReport = computed(() => {
+    const parsed = parseInterviewReport(reportMarkdown.value || replay.value?.summaryReport || '')
+    if (parsed.kind !== 'structured') return parsed
+    return {
+      kind: 'structured' as const,
+      report: {
+        ...parsed.report,
+        resumeImprovements: parsed.report.resumeImprovements.map(
+          (item) => improvementOverrides.value[item.id] ?? item,
+        ),
+      },
+    }
+  })
   const renderedReport = computed(() =>
     parsedReport.value.kind === 'markdown' ? renderMarkdown(parsedReport.value.markdown) : '',
   )
@@ -303,10 +326,45 @@ export function useInterviewPageController() {
     }
   }
 
+  async function handleAcceptImprovement(improvement: ReportResumeImprovement) {
+    if (improvementBusyId.value !== null) return
+    improvementBusyId.value = improvement.id
+    try {
+      const result = await acceptResumeImprovement(improvement.id)
+      improvementOverrides.value = {
+        ...improvementOverrides.value,
+        [improvement.id]: result.improvement,
+      }
+      showNotice('建议已写入简历', 'success')
+    } catch (error) {
+      showNotice(getErrorMessage(error), 'error')
+    } finally {
+      improvementBusyId.value = null
+    }
+  }
+
+  async function handleRejectImprovement(improvement: ReportResumeImprovement) {
+    if (improvementBusyId.value !== null) return
+    improvementBusyId.value = improvement.id
+    try {
+      const result = await rejectResumeImprovement(improvement.id)
+      improvementOverrides.value = {
+        ...improvementOverrides.value,
+        [improvement.id]: result,
+      }
+      showNotice('建议已拒绝', 'success')
+    } catch (error) {
+      showNotice(getErrorMessage(error), 'error')
+    } finally {
+      improvementBusyId.value = null
+    }
+  }
+
   watch(activeSessionId, (newId, oldId) => {
     if (newId !== oldId) {
       showingReport.value = false
       answer.value = ''
+      improvementOverrides.value = {}
     }
   })
   watch(replay, (value) => {
@@ -374,11 +432,14 @@ export function useInterviewPageController() {
     voiceStatus,
     incomingAudioChunk,
     exportingPdf,
+    improvementBusyId,
     handleUpload,
     createNewInterview,
     handleSend,
     handleFinish,
     handleExportPdf,
+    handleAcceptImprovement,
+    handleRejectImprovement,
     handleAudioChunk,
     handleStartRecording,
     handleStopRecording,

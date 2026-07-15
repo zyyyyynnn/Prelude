@@ -2,10 +2,12 @@ package com.interview.platform.job.infrastructure;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.interview.platform.job.ReportJobMessage;
-import com.interview.platform.job.AsyncJob;
+import com.interview.platform.job.JobExecutionPort;
 import com.interview.platform.job.JobStatuses;
 import com.interview.platform.job.JobTypes;
+import com.interview.platform.job.ReportJobMessage;
+import com.interview.platform.job.infrastructure.persistence.AsyncJob;
+import com.interview.platform.job.infrastructure.persistence.AsyncJobMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -13,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 @Component
-public class JobExecutionStore {
+public class JobExecutionStore implements JobExecutionPort {
 
     private final AsyncJobMapper asyncJobMapper;
     private final long leaseSeconds;
@@ -44,7 +46,10 @@ public class JobExecutionStore {
                 .eq("status", JobStatuses.PENDING)
                 .or(stale -> stale
                     .eq("status", JobStatuses.RUNNING)
-                    .lt("started_at", staleBefore)))
+                    .and(lease -> lease
+                        .isNull("started_at")
+                        .or()
+                        .lt("started_at", staleBefore))))
             .set("status", JobStatuses.RUNNING)
             .set("started_at", LocalDateTime.now())
             .set("last_error", null)
@@ -94,21 +99,11 @@ public class JobExecutionStore {
         UpdateWrapper<AsyncJob> update = new UpdateWrapper<AsyncJob>()
             .eq("job_id", jobId)
             .set("status", status)
-            .set("last_error", error == null ? null : errorMessage(error));
+            .set("last_error", error == null ? null : JobFailureMessage.sanitize(error));
         if (terminal) {
             update.set("finished_at", LocalDateTime.now());
         }
         asyncJobMapper.update(null, update);
     }
 
-    private String errorMessage(Throwable error) {
-        String message = error.getMessage();
-        return message == null || message.isBlank() ? error.getClass().getSimpleName() : message;
-    }
-
-    public enum ClaimResult {
-        STARTED,
-        EXHAUSTED,
-        TERMINAL_OR_DUPLICATE
-    }
 }

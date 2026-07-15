@@ -1,10 +1,10 @@
 package com.interview.resume.application.port;
 
-import com.interview.resume.api.ResumeUploadResponse;
+import com.interview.resume.application.ImportResumeResult;
 
 public interface ResumeFixturePort {
 
     boolean isEnabled();
 
-    ResumeUploadResponse createDevFixtureResume(Long userId, String fileName);
+    ImportResumeResult createDevFixtureResume(Long userId, String fileName);
 }

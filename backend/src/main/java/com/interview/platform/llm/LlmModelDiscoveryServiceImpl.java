@@ -6,7 +6,6 @@ import com.interview.shared.api.BusinessException;
 import com.interview.platform.llm.api.LlmModelDiscoveryRequest;
 import com.interview.platform.llm.api.LlmModelDiscoveryResponse;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.springframework.stereotype.Service;
@@ -22,19 +21,17 @@ import java.util.List;
 public class LlmModelDiscoveryServiceImpl implements LlmModelDiscoveryService {
 
     private final ObjectMapper objectMapper;
-    private final OkHttpClient client;
+    private final CustomLlmHttpClient httpClient;
+    private final CustomLlmEgressPolicy egressPolicy;
 
-    public LlmModelDiscoveryServiceImpl() {
-        this(new ObjectMapper());
-    }
-
-    public LlmModelDiscoveryServiceImpl(ObjectMapper objectMapper) {
+    public LlmModelDiscoveryServiceImpl(
+        ObjectMapper objectMapper,
+        CustomLlmHttpClient httpClient,
+        CustomLlmEgressPolicy egressPolicy
+    ) {
         this.objectMapper = objectMapper;
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .readTimeout(Duration.ofSeconds(15))
-            .writeTimeout(Duration.ofSeconds(10))
-            .build();
+        this.httpClient = httpClient;
+        this.egressPolicy = egressPolicy;
     }
 
     @Override
@@ -48,14 +45,16 @@ public class LlmModelDiscoveryServiceImpl implements LlmModelDiscoveryService {
             throw BusinessException.badRequest("API Key 不能为空");
         }
 
+        String modelsUrl = CustomLlmEndpointUrl.toModelsUrl(baseUrl, protocol);
+        egressPolicy.validateConfiguredEndpoint(modelsUrl);
         Request httpRequest = new Request.Builder()
-            .url(CustomLlmEndpointUrl.toModelsUrl(baseUrl, protocol))
+            .url(modelsUrl)
             .addHeader("Authorization", "Bearer " + request.apiKey())
             .get()
             .build();
 
-        try (Response response = client.newCall(httpRequest).execute()) {
-            String body = response.body() == null ? "" : response.body().string();
+        try (Response response = httpClient.execute(httpRequest, Duration.ofSeconds(15))) {
+            String body = httpClient.readBody(response.body());
             if (response.code() == 401 || response.code() == 403) {
                 throw BusinessException.badRequest("鉴权失败，请检查 API Key");
             }

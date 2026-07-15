@@ -21,16 +21,27 @@ public class AnalyticsController {
 
     @GetMapping("/radar")
     public Result<AnalyticsRadarResponse> radar() {
-        return Result.success(insightQueryService.getRadar());
+        var view = insightQueryService.getRadar();
+        return Result.success(new AnalyticsRadarResponse(
+            view.technical(), view.expression(), view.logic(), view.sessionCount()
+        ));
     }
 
     @GetMapping("/trend")
     public Result<List<AnalyticsTrendItemResponse>> trend() {
-        return Result.success(insightQueryService.getTrend());
+        return Result.success(insightQueryService.getTrend().stream()
+            .map(view -> new AnalyticsTrendItemResponse(
+                view.sessionId(), view.createdAt(), view.technical(), view.expression(), view.logic()
+            ))
+            .toList());
     }
 
     @GetMapping("/weaknesses")
     public Result<List<AnalyticsWeaknessItemResponse>> weaknesses() {
-        return Result.success(insightQueryService.getWeaknesses());
+        return Result.success(insightQueryService.getWeaknesses().stream()
+            .map(view -> new AnalyticsWeaknessItemResponse(
+                view.category(), view.count(), view.descriptions()
+            ))
+            .toList());
     }
 }

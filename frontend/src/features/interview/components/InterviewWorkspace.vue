@@ -42,11 +42,14 @@ const {
   voiceStatus,
   incomingAudioChunk,
   exportingPdf,
+  improvementBusyId,
   handleUpload,
   createNewInterview,
   handleSend,
   handleFinish,
   handleExportPdf,
+  handleAcceptImprovement,
+  handleRejectImprovement,
   handleAudioChunk,
   handleStartRecording,
   handleStopRecording,
@@ -125,6 +128,9 @@ function exportReport() {
               <StructuredReportPanel
                 v-if="parsedReport.kind === 'structured'"
                 :report="parsedReport.report"
+                :improvement-busy-id="improvementBusyId"
+                @accept-improvement="handleAcceptImprovement"
+                @reject-improvement="handleRejectImprovement"
               />
               <div v-else class="markdown-surface markdown-surface--paper">
                 <div class="markdown-body" v-html="renderedReport" />

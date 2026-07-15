@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.shared.api.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -32,20 +31,17 @@ public class AnthropicProvider implements LlmProvider {
     private static final int DEFAULT_MAX_TOKENS = 4096;
 
     private final ObjectMapper objectMapper;
-    private final OkHttpClient client;
+    private final CustomLlmHttpClient httpClient;
     private final LlmMetricsTracker metricsTracker;
 
     public AnthropicProvider(
         ObjectMapper objectMapper,
-        LlmMetricsTracker metricsTracker
+        LlmMetricsTracker metricsTracker,
+        CustomLlmHttpClient httpClient
     ) {
         this.objectMapper = objectMapper;
         this.metricsTracker = metricsTracker;
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .readTimeout(Duration.ofSeconds(120))
-            .writeTimeout(Duration.ofSeconds(30))
-            .build();
+        this.httpClient = httpClient;
     }
 
     @Override public String providerKey()  { return CustomLlmProtocol.ANTHROPIC_MESSAGES.providerKey(); }
@@ -100,10 +96,9 @@ public class AnthropicProvider implements LlmProvider {
                 .post(RequestBody.create(objectMapper.writeValueAsString(payload), JSON))
                 .build();
 
-            try (Response response = client.newCall(request).execute()) {
+            try (Response response = httpClient.execute(request, Duration.ofSeconds(120))) {
                 if (!response.isSuccessful()) {
-                    String body = response.body() == null ? "" : response.body().string();
-                    log.warn("Anthropic API error {}: {}", response.code(), body);
+                    log.warn("Anthropic API returned status {}", response.code());
                     if (response.code() >= 500) {
                         metricsTracker.recordFailure(providerKey());
                         throw new LlmServerException("Anthropic 服务端错误，状态码：" + response.code());
@@ -115,7 +110,7 @@ public class AnthropicProvider implements LlmProvider {
                 metricsTracker.recordLatency(providerKey(), System.nanoTime() - startTime);
 
                 if (!stream) {
-                    String body = response.body() == null ? "" : response.body().string();
+                    String body = httpClient.readBody(response.body());
                     try {
                         JsonNode root = objectMapper.readTree(body);
                         JsonNode inputTokens = root.at("/usage/input_tokens");
@@ -136,7 +131,7 @@ public class AnthropicProvider implements LlmProvider {
                 if (response.body() == null) {
                     throw BusinessException.badRequest("Anthropic 流式响应为空");
                 }
-                try (BufferedReader reader = new BufferedReader(response.body().charStream())) {
+                try (BufferedReader reader = httpClient.openStreamReader(response.body())) {
                     return readStream(reader, onDelta);
                 }
             }
@@ -151,7 +146,7 @@ public class AnthropicProvider implements LlmProvider {
     private String readStream(BufferedReader reader, Consumer<String> onDelta) throws IOException {
         String currentEvent = null;
         String line;
-        while ((line = reader.readLine()) != null) {
+        while ((line = httpClient.readStreamLine(reader)) != null) {
             String trimmed = line.trim();
             if (trimmed.startsWith("event:")) {
                 currentEvent = trimmed.substring("event:".length()).trim();

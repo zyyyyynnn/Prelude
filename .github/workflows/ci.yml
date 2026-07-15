@@ -5,6 +5,95 @@ on:
   pull_request:
 
 jobs:
+  schema:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: interview_system
+          MYSQL_ROOT_PASSWORD: root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot_password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical MySQL schema and data upgrade
+        shell: bash
+        run: |
+          set -euo pipefail
+          mysql_container="$(docker ps --filter 'ancestor=mysql:8.4' --format '{{.ID}}' | head -n 1)"
+          test -n "$mysql_container"
+
+          mysql_exec() {
+            docker exec "$mysql_container" mysql -uroot -proot_password --batch --skip-column-names "$@"
+          }
+
+          mysql_exec -e 'CREATE DATABASE prelude_clean CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_clean \
+            < backend/src/main/resources/schema.sql
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_clean \
+            < backend/src/main/resources/data.sql
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_clean \
+            < backend/src/main/resources/data.sql
+
+          mysql_exec -e 'CREATE DATABASE prelude_upgrade CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
+            < backend/src/main/resources/schema.sql
+          mysql_exec prelude_upgrade -e "
+            INSERT INTO user (username, password, llm_provider, llm_model, llm_base_url)
+            VALUES ('legacy-openai', 'hash', 'openai-compatible', 'legacy-model', 'https://gateway.example/v1');
+            INSERT INTO position_template (name, system_prompt) VALUES ('legacy-position', 'prompt');
+            INSERT INTO resume (user_id, file_name)
+            SELECT id, 'legacy-resume.pdf' FROM user WHERE username = 'legacy-openai';
+            INSERT INTO interview_session
+              (user_id, resume_id, position_id, target_position, llm_provider, llm_model, status)
+            SELECT u.id, r.id, p.id, p.name, 'anthropic', 'legacy-model', 'ongoing'
+            FROM user u
+            JOIN resume r ON r.user_id = u.id AND r.file_name = 'legacy-resume.pdf'
+            JOIN position_template p ON p.name = 'legacy-position'
+            WHERE u.username = 'legacy-openai';
+            INSERT INTO llm_provider_config
+              (provider_key, display_name, base_url, available_models, enabled)
+            VALUES
+              ('openai-compatible', 'Legacy OpenAI', 'https://gateway.example/v1', '[]', 1),
+              ('anthropic', 'Legacy Anthropic', 'https://api.anthropic.com/v1', '[]', 1);
+            DROP TABLE resume_improvement;
+            ALTER TABLE resume
+              DROP COLUMN document_json,
+              DROP COLUMN document_version,
+              DROP COLUMN source_type,
+              DROP COLUMN plain_text_projection;
+            ALTER TABLE retrieval_chunk
+              DROP COLUMN embedding_model,
+              DROP COLUMN embedding_dimensions,
+              DROP COLUMN embedding_json;
+          "
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
+            < backend/src/main/resources/schema.sql
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
+            < backend/src/main/resources/data.sql
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
+            < backend/src/main/resources/schema.sql
+          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
+            < backend/src/main/resources/data.sql
+
+          test "$(mysql_exec prelude_clean -e "SELECT COUNT(*) FROM user WHERE username = 'demo'")" = '0'
+          test "$(mysql_exec prelude_upgrade -e "SELECT llm_provider FROM user WHERE username = 'legacy-openai'")" = 'openai-chat-completions'
+          test "$(mysql_exec prelude_upgrade -e "SELECT llm_base_url FROM user WHERE username = 'legacy-openai'")" = 'https://gateway.example/v1'
+          test "$(mysql_exec prelude_upgrade -e "SELECT llm_provider FROM interview_session WHERE target_position = 'legacy-position'")" = 'anthropic-messages'
+          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM llm_provider_config WHERE provider_key IN ('deepseek', 'openai-responses', 'openai-chat-completions', 'anthropic-messages')")" = '4'
+          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'prelude_upgrade' AND table_name = 'resume_improvement'")" = '1'
+          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'prelude_upgrade' AND table_name = 'resume' AND column_name IN ('document_json', 'document_version', 'source_type', 'plain_text_projection')")" = '4'
+          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'prelude_upgrade' AND table_name = 'retrieval_chunk' AND column_name IN ('embedding_model', 'embedding_dimensions', 'embedding_json')")" = '3'
+
   build:
     runs-on: windows-latest
 

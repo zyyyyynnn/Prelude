@@ -2,10 +2,10 @@ package com.interview.platform.job;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.interview.platform.job.ReportJobMessage;
-import com.interview.platform.job.infrastructure.AsyncJobMapper;
 import com.interview.platform.job.infrastructure.JobExecutionStore;
-import com.interview.platform.job.infrastructure.JobExecutionStore.ClaimResult;
+import com.interview.platform.job.infrastructure.persistence.AsyncJob;
+import com.interview.platform.job.infrastructure.persistence.AsyncJobMapper;
+import com.interview.platform.job.JobExecutionPort.ClaimResult;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

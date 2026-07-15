@@ -1,8 +1,8 @@
 package com.interview.insight.application;
 
 import com.interview.platform.job.ReportJobMessage;
-import com.interview.platform.job.infrastructure.JobExecutionStore;
-import com.interview.platform.job.infrastructure.JobExecutionStore.ClaimResult;
+import com.interview.platform.job.JobExecutionPort;
+import com.interview.platform.job.JobExecutionPort.ClaimResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,25 +12,25 @@ import org.springframework.stereotype.Service;
 public class ReportGenerateHandler {
 
     private final GenerateInterviewReport generateInterviewReport;
-    private final JobExecutionStore jobExecutionStore;
+    private final JobExecutionPort jobExecutionPort;
     private final int maxAttempts;
 
     public ReportGenerateHandler(
         GenerateInterviewReport generateInterviewReport,
-        JobExecutionStore jobExecutionStore,
+        JobExecutionPort jobExecutionPort,
         @Value("${prelude.jobs.report.max-attempts:3}") int maxAttempts
     ) {
         this.generateInterviewReport = generateInterviewReport;
-        this.jobExecutionStore = jobExecutionStore;
+        this.jobExecutionPort = jobExecutionPort;
         this.maxAttempts = Math.max(1, maxAttempts);
     }
 
     public void handle(ReportJobMessage message) {
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            ClaimResult claim = jobExecutionStore.claimAttempt(message, maxAttempts);
+            ClaimResult claim = jobExecutionPort.claimAttempt(message, maxAttempts);
             if (claim == ClaimResult.EXHAUSTED) {
                 RuntimeException exhausted = new RuntimeException("报告任务已达到最大重试次数");
-                jobExecutionStore.markFailed(message.jobId(), exhausted);
+                jobExecutionPort.markFailed(message.jobId(), exhausted);
                 generateInterviewReport.handleTerminalFailure(message.sessionId(), exhausted);
                 return;
             }
@@ -40,15 +40,15 @@ public class ReportGenerateHandler {
             }
             try {
                 generateInterviewReport.execute(message.sessionId(), message.userId());
-                jobExecutionStore.markSucceeded(message.jobId());
+                jobExecutionPort.markSucceeded(message.jobId());
                 return;
             } catch (RuntimeException error) {
                 if (attempt < maxAttempts) {
-                    jobExecutionStore.markRetry(message.jobId(), error);
+                    jobExecutionPort.markRetry(message.jobId(), error);
                     log.warn("Report job {} failed on attempt {}/{}, retrying", message.jobId(), attempt, maxAttempts);
                     continue;
                 }
-                jobExecutionStore.markFailed(message.jobId(), error);
+                jobExecutionPort.markFailed(message.jobId(), error);
                 generateInterviewReport.handleTerminalFailure(message.sessionId(), error);
             }
         }

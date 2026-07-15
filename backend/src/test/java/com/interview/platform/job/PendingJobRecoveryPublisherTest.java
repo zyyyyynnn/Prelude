@@ -1,10 +1,14 @@
 package com.interview.platform.job;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.interview.platform.job.ReportJobMessage;
-import com.interview.platform.job.infrastructure.AsyncJobMapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.interview.platform.job.infrastructure.PendingJobRecoveryPublisher;
+import com.interview.platform.job.infrastructure.persistence.AsyncJob;
+import com.interview.platform.job.infrastructure.persistence.AsyncJobMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.List;
@@ -28,10 +32,32 @@ class PendingJobRecoveryPublisherTest {
         job.setSubjectId(7L);
         when(mapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(job));
 
-        new PendingJobRecoveryPublisher(mapper, rabbitTemplate, 60).recoverPendingJobs();
+        new PendingJobRecoveryPublisher(mapper, rabbitTemplate, 60, 300).recoverPendingJobs();
 
         verify(rabbitTemplate).convertAndSend(anyString(), anyString(), any(ReportJobMessage.class));
         verify(mapper).updateById(job);
         assertThat(job.getDispatchedAt()).isNotNull();
+    }
+
+    @Test
+    void recoveryQueryIncludesExpiredRunningLeases() {
+        TableInfoHelper.initTableInfo(
+            new MapperBuilderAssistant(new MybatisConfiguration(), "job-recovery-test"),
+            AsyncJob.class
+        );
+        AsyncJobMapper mapper = mock(AsyncJobMapper.class);
+        RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
+        when(mapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        new PendingJobRecoveryPublisher(mapper, rabbitTemplate, 60, 300).recoverPendingJobs();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<LambdaQueryWrapper<AsyncJob>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(mapper).selectList(query.capture());
+        assertThat(query.getValue().getSqlSegment())
+            .contains("status")
+            .contains("started_at")
+            .contains("started_at IS NULL")
+            .contains("dispatched_at");
     }
 }
