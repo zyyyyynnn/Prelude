@@ -30,17 +30,17 @@ class LlmModelDiscoveryServiceImplTest {
     }
 
     @Test
-    void discoversModelsFromOpenAiCompatibleEndpoint() throws Exception {
+    void discoversModelsFromOpenAiProtocolEndpoint() throws Exception {
         startServer(200, """
             {"object":"list","data":[{"id":"model-b"},{"id":"model-a"},{"id":"model-a"}]}
             """);
         LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
 
         LlmModelDiscoveryResponse response = service.discoverModels(
-            new LlmModelDiscoveryRequest(baseUrl(), "sk-test")
+            new LlmModelDiscoveryRequest("openai-responses", baseUrl(), "sk-test")
         );
 
-        assertThat(response.providerKey()).isEqualTo("openai-compatible");
+        assertThat(response.providerKey()).isEqualTo("openai-responses");
         assertThat(response.baseUrl()).isEqualTo(baseUrl());
         assertThat(response.models()).containsExactly("model-b", "model-a");
     }
@@ -50,7 +50,8 @@ class LlmModelDiscoveryServiceImplTest {
         startServer(401, "{\"error\":{\"message\":\"bad key\"}}");
         LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
 
-        assertThatThrownBy(() -> service.discoverModels(new LlmModelDiscoveryRequest(baseUrl(), "sk-test")))
+        assertThatThrownBy(() -> service.discoverModels(
+            new LlmModelDiscoveryRequest("openai-chat-completions", baseUrl(), "sk-test")))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("鉴权失败");
     }
@@ -60,9 +61,20 @@ class LlmModelDiscoveryServiceImplTest {
         startServer(200, "{\"object\":\"list\",\"data\":[]}");
         LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
 
-        assertThatThrownBy(() -> service.discoverModels(new LlmModelDiscoveryRequest(baseUrl(), "sk-test")))
+        assertThatThrownBy(() -> service.discoverModels(
+            new LlmModelDiscoveryRequest("openai-responses", baseUrl(), "sk-test")))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("未检测到模型列表");
+    }
+
+    @Test
+    void rejectsModelDiscoveryForAnthropicMessages() {
+        LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
+
+        assertThatThrownBy(() -> service.discoverModels(
+            new LlmModelDiscoveryRequest("anthropic-messages", "https://example.com/v1", "sk-test")))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("不支持自动检测模型");
     }
 
     private void startServer(int status, String body) throws IOException {

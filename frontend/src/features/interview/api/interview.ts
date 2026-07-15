@@ -1,6 +1,5 @@
-import { http } from '@/api/http'
+import { http, unwrapResult, type ApiResult } from '@/shared/api'
 import type {
-  ApiResult,
   InterviewChatRequest,
   InterviewFinishResponse,
   InterviewMessageRecord,
@@ -10,8 +9,7 @@ import type {
   InterviewStartPayload,
   InterviewStageName,
   InterviewStartResponse,
-} from '@/api/contracts'
-import { unwrapResult } from '@/api/contracts'
+} from '../model/types'
 
 type ChatStreamHandlers = {
   onChunk?: (chunk: string) => void

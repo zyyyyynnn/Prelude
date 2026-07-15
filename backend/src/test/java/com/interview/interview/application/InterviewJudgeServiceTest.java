@@ -209,7 +209,7 @@ class InterviewJudgeServiceTest {
         session.setId(7L);
         session.setUserId(42L);
         session.setTargetPosition("Java 开发");
-        session.setLlmProvider("openai-compatible");
+        session.setLlmProvider("openai-responses");
         session.setLlmModel("model-a");
         return session;
     }

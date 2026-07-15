@@ -144,40 +144,52 @@ SET `available_models` = '["deepseek-v4-pro","deepseek-v4-flash"]'
 WHERE `provider_key` = 'deepseek'
   AND `available_models` != '["deepseek-v4-pro","deepseek-v4-flash"]';
 
+-- 旧 OpenAI-compatible 与内置 OpenAI/Anthropic 选择迁移到明确协议，保留用户 Key 与根地址。
+UPDATE `user`
+SET `llm_base_url` = CASE
+        WHEN `llm_provider` = 'openai' AND (`llm_base_url` IS NULL OR `llm_base_url` = '')
+            THEN 'https://api.openai.com/v1'
+        ELSE `llm_base_url`
+    END,
+    `llm_provider` = 'openai-chat-completions'
+WHERE `llm_provider` IN ('openai', 'openai-compatible');
+
+UPDATE `user`
+SET `llm_base_url` = CASE
+        WHEN `llm_base_url` IS NULL OR `llm_base_url` = '' THEN 'https://api.anthropic.com/v1'
+        ELSE `llm_base_url`
+    END,
+    `llm_provider` = 'anthropic-messages'
+WHERE `llm_provider` = 'anthropic';
+
+UPDATE `interview_session`
+SET `llm_provider` = 'openai-chat-completions'
+WHERE `llm_provider` IN ('openai', 'openai-compatible');
+
+UPDATE `interview_session`
+SET `llm_provider` = 'anthropic-messages'
+WHERE `llm_provider` = 'anthropic';
+
+DELETE FROM `llm_provider_config`
+WHERE `provider_key` IN ('openai', 'openai-compatible', 'anthropic');
+
 INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
-SELECT 'openai',
-       'OpenAI',
-       'https://api.openai.com/v1/chat/completions',
-       '["gpt-5.5","gpt-5.4"]',
-       1
+SELECT 'openai-responses', 'OpenAI Responses', '', '[]', 1
 WHERE NOT EXISTS (
-    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai'
+    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai-responses'
 );
 
 INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
-SELECT 'anthropic',
-       'Anthropic',
-       'https://api.anthropic.com/v1/messages',
-       '["claude-4.7-opus","claude-4.6-opus"]',
-       1
+SELECT 'openai-chat-completions', 'OpenAI Chat Completions', '', '[]', 1
 WHERE NOT EXISTS (
-    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'anthropic'
+    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai-chat-completions'
 );
 
 INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`)
-SELECT 'openai-compatible',
-       'OpenAI 兼容协议',
-       '',
-       '[]',
-       1
+SELECT 'anthropic-messages', 'Anthropic Messages', '', '[]', 1
 WHERE NOT EXISTS (
-    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'openai-compatible'
+    SELECT 1 FROM `llm_provider_config` WHERE `provider_key` = 'anthropic-messages'
 );
-
-UPDATE `llm_provider_config`
-SET `display_name` = 'OpenAI 兼容协议'
-WHERE `provider_key` = 'openai-compatible'
-  AND `display_name` <> 'OpenAI 兼容协议';
 
 
 -- 3. demo 用户、简历等基础 seed

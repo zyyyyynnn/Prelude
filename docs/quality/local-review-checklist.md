@@ -1,111 +1,70 @@
 # Local Quality Review Checklist
 
-本清单用于本地预检，不替代 `.github/workflows/ci.yml`。
+本清单用于本地交付预检，命令与 `.github/workflows/ci.yml` 保持一致。
 
-## 必备命令
+## 前端门禁
 
 ```powershell
-mvn -f backend/pom.xml test
+npm --prefix frontend run check
+npm --prefix frontend run verify:architecture
+npm --prefix frontend run test:contracts
 npm --prefix frontend run build
+npm --prefix frontend run verify:production
 npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
+npm --prefix frontend run verify:flows
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
 npm --prefix frontend run verify:a11y
-npm --prefix frontend run capture:visual
+npm --prefix frontend run verify:visual
 npm --prefix frontend audit --omit=dev
-sentrux check E:\Prelude
+```
+
+`build` 必须保留 `vue-tsc --noEmit && vp build` 语义。`verify:architecture` 必须同时执行规则单测与真实源码扫描。
+
+## 仓库门禁
+
+```powershell
+mvn -f backend/pom.xml test
+sentrux check .
 git diff --check
 ```
 
-各命令的范围与限制见 `docs/quality/ui-quality-system.md`。
+涉及后端协议或持久化语义时，`mvn test` 是必跑门禁；纯前端改动仍用它确认整仓兼容性。
 
-## 红线扫描
-
-### UI 硬编码 / 错误样式
+## 边界确认
 
 ```powershell
-# 1. 禁止写法：transition-all / window.confirm / 原生 title=
-rg -n "transition-all|window\.confirm|title=" frontend/src
+# 仅允许 app / features / shared / devtools 四个源码目录
+Get-ChildItem frontend/src -Directory | Select-Object -ExpandProperty Name
 
-# 2. 阴影与硬高度：shadow-md/lg、border-border 边框、h-[30/32/34px] 硬高度
-rg -n "shadow-md|shadow-lg|border-border|h-\[30px\]|h-\[32px\]|h-\[34px\]" frontend/src
+# 旧顶层路径、反向依赖、跨 feature 深导入由脚本统一检查
+npm --prefix frontend run verify:architecture
 
-# 3. 颜色 token 旁路：原生 rgba、白/黑/暗色背景与硬编码十六进制色值
-rg -n "rgba\(|dark:bg-|bg-white|text-white|bg-black|text-black|#[0-9a-fA-F]{3,8}" frontend/src
+# 论文资产不属于常规工程改动范围
+$mergeBase = git merge-base main HEAD
+git diff --name-only $mergeBase HEAD | rg "^thesis-assets/"
 
-# 4. Tailwind arbitrary px 类
-rg -n "\[[^\]]*\d+px[^\]]*\]" frontend/src
-
-# 5. 属性侧 magic height ratio
-rg -n "calc\(var\(--ui-height-[^)]+\)\s*\*\s*[0-9.]+" frontend/src
-
-# 6. 业务组件中的 calc(var(--spacing-*)...)：本轮已收敛大部分命中，剩余仅允许几何计算
-rg -n "calc\(var\(--spacing-" frontend/src
-
-# 7. raw shadow / outline px / radius px / translate px / z-index utility
-rg --pcre2 -n "box-shadow:\s+(?!var\()" frontend/src
-rg -n "outline(-offset)?:\s*-?\d+px|border-radius:\s*\d+px|transform:\s*translate[XY]?\(-?\d+px\)" frontend/src
-rg -n "\bz-\d+\b" frontend/src
-
-# 8. 业务组件不得手写 focus shadow；scoped CSS 的 :focus-visible 统一使用共享 token
-rg -n "box-shadow:\s*inset\s+0\s+0\s+0" frontend/src/components
-rg -n "shadow-icon-action-focus" frontend/src/components
-
-# 一键运行（推荐）
-npm --prefix frontend run verify:ui
+# 不得残留兼容转发引用和已移除依赖
+rg -n "@/(api|components|composables|lib|router|schemas|stores|styles|utils|views)/|radix-vue" frontend --glob "!package-lock.json"
 ```
 
-命中分类与处理约定：
+第三条和第四条应无输出。源码目录除四层目录外只允许根级类型声明文件。
 
-- **扫描 1 / 2 / 3 / 4 / 5 / 7**：业务组件命中必须修复。token 定义文件 `frontend/src/styles/index.css` 中允许保留基础色值、spacing 数值与全局 token 定义；组件 scoped CSS 变量必须使用约定前缀和语义命名。`npm run verify:ui` 是 Node 内置脚本，可替代本节扫描命令。
-- **扫描 6**：`calc(var(--spacing-*)...)` 不一定全部禁止。简单半阶 / 负向 spacing（`/ 2`、`* -1`）必须替换为已有 token；组件几何布局保留为 calc，但必须集中为组件 scoped CSS 变量。
-- **扫描 8**：第一条必须无命中；第二条只用于人工查看共享 focus token 的使用位置。`verify:ui` 会解析业务组件 `<style>` 块，任何带 `box-shadow` 的 `:focus-visible` 若未使用 `var(--shadow-icon-action-focus)` 都会失败。
-- **新增或修改行不允许引入新的裸 px；既有未触碰命中不追溯。**
+## UI 不变量
 
-### 文档旧运行口径
+- `DESIGN.md` 仍是 UI 唯一最高规范。
+- token 基础值只在 `frontend/src/shared/ui/styles/index.css` 维护。
+- 除明确批准的组件合同调整外，架构重构不得调整品牌色、间距、圆角、阴影、动效或页面布局。
+- `verify:ui` 与 `verify:tokens` 必须同时通过；浏览器可用时还需通过 a11y 与 visual。
+
+## 差异检查
 
 ```powershell
-rg -n "start-real|start-demo|DemoModeService|/api/demo|8081|5174" README.md docs thesis-assets --glob "*.md" --glob "!thesis-assets/evidence/test-data/archive/**"
+$mergeBase = git merge-base main HEAD
+git diff --stat $mergeBase HEAD
+git diff --check $mergeBase HEAD
+git diff --name-status $mergeBase HEAD
 ```
 
-历史归档或阶段过程报告中出现 Demo Twin、8081、5174 不必直接修；active 文档命中时必须判断是否应降权、归档或改写。
-
-### 禁改区守卫
-
-```powershell
-git diff --name-only | rg "controller|dto|schema.sql|data.sql|data-dev.sql|DESIGN.md"
-```
-
-`frontend/src/styles/index.css` 是 token 维护入口；修改时必须在报告中说明新增/删除 token 的 DESIGN.md 对齐依据，不作为禁改区。
-
-### CI YAML 语法
-
-```powershell
-npx --yes js-yaml .github/workflows/ci.yml
-```
-
-## PR 路径本地模拟
-
-```powershell
-$baseSha = "<上一轮 merge commit>"
-$mergeBase = git merge-base "$baseSha" HEAD
-git diff --check "$mergeBase" HEAD
-```
-
-`git diff --check` 在 PowerShell 中不接受三引号形式，必须用 merge-base 拿到 diff 起点。
-
-## CI 接入说明
-
-- `sentrux check .` 已接入 CI，自 commit `b821bf7` 起作为架构规则门禁。
-- JaCoCo 只生成 report artifact，不设置 coverage threshold。
-- `npm audit --omit=dev` 已作为前端生产依赖门禁。
-- `verify:byok` 与 `verify:dark` 已对 Vite cold-start 做等待与失败诊断加固。
-- UI 自动化门禁（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual`）已接入 CI；详细策略与限制见 `docs/quality/ui-quality-system.md`。
-- CI 复用系统 Microsoft Edge channel：`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` + `channel: 'msedge'`；不再下载 Playwright Chromium。本地 dev 不受影响。
-
-## 使用约定
-
-- 命中红线时先定位，再决定修复或豁免。
-- 既有且本轮未触碰的历史命中项需记录原因，不得无说明跳过。
-- 本轮触碰过的文档必须保证 `git diff --check` 干净。
+最终审查以当前终态代码、测试和文档为准，不保留迁移日志或阶段性说明。

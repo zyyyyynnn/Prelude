@@ -59,12 +59,12 @@ class UserControllerWebMvcTest {
     @Test
     void getLlmConfigRequiresAuthorizationAndReturnsConfig() throws Exception {
         when(llmConfigPort.getCurrentUserConfig()).thenReturn(new UserLlmConfigResponse(
-            "openai-compatible", "https://example.com/v1", "model-a", true, "****1234", 1024, "low"
+            "openai-responses", "https://example.com/v1", "model-a", true, "****1234", 1024, "low"
         ));
 
         mockMvc.perform(get("/api/user/llm-config").header("Authorization", "Bearer token"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.providerKey").value("openai-compatible"))
+            .andExpect(jsonPath("$.data.providerKey").value("openai-responses"))
             .andExpect(jsonPath("$.data.model").value("model-a"));
     }
 
@@ -78,13 +78,13 @@ class UserControllerWebMvcTest {
     @Test
     void updateLlmConfigValidatesBodyAndPassesRequestToService() throws Exception {
         when(llmConfigPort.saveCurrentUserConfig(any())).thenReturn(new UserLlmConfigResponse(
-            "openai-compatible", "https://example.com/v1", "model-a", true, "****1234", 1024, null
+            "openai-responses", "https://example.com/v1", "model-a", true, "****1234", 1024, null
         ));
 
         mockMvc.perform(put("/api/user/llm-config")
                 .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"providerKey\":\"openai-compatible\",\"baseUrl\":\"https://example.com/v1\",\"model\":\"model-a\",\"apiKey\":\"sk-new\",\"maxTokens\":1024}"))
+                .content("{\"providerKey\":\"openai-responses\",\"baseUrl\":\"https://example.com/v1\",\"model\":\"model-a\",\"apiKey\":\"sk-new\",\"maxTokens\":1024}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(200));
 
@@ -106,7 +106,8 @@ class UserControllerWebMvcTest {
 
     @Test
     void testLlmConfigAllowsEmptyBodyAndPassesNullRequest() throws Exception {
-        when(llmConfigPort.testConfig(isNull())).thenReturn(new LlmConfigTestResponse("openai", "gpt-4o", true, "ok"));
+        when(llmConfigPort.testConfig(isNull()))
+            .thenReturn(new LlmConfigTestResponse("openai-responses", "gpt-4o", true, "ok"));
 
         mockMvc.perform(post("/api/user/llm-config/test").header("Authorization", "Bearer token"))
             .andExpect(status().isOk())
@@ -118,18 +119,19 @@ class UserControllerWebMvcTest {
     @Test
     void discoverModelsValidatesBaseUrlAndPassesRequestToService() throws Exception {
         when(llmConfigPort.discoverModels(any())).thenReturn(new LlmModelDiscoveryResponse(
-            "https://example.com/v1", "sk-test", List.of("model-a")
+            "openai-responses", "https://example.com/v1", List.of("model-a")
         ));
 
         mockMvc.perform(post("/api/user/llm-config/discover-models")
                 .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"baseUrl\":\"https://example.com/v1\",\"apiKey\":\"sk-test\"}"))
+                .content("{\"providerKey\":\"openai-responses\",\"baseUrl\":\"https://example.com/v1\",\"apiKey\":\"sk-test\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.models[0]").value("model-a"));
 
         ArgumentCaptor<LlmModelDiscoveryRequest> captor = ArgumentCaptor.forClass(LlmModelDiscoveryRequest.class);
         verify(llmConfigPort).discoverModels(captor.capture());
+        assertThat(captor.getValue().providerKey()).isEqualTo("openai-responses");
         assertThat(captor.getValue().baseUrl()).isEqualTo("https://example.com/v1");
         assertThat(captor.getValue().apiKey()).isEqualTo("sk-test");
     }

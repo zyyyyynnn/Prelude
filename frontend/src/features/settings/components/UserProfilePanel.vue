@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { usePageNotice } from '@/composables/usePageNotice'
+import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
 import { fetchUserProfile, updateUserProfile, uploadUserAvatar } from '../api/user'
-import { getErrorMessage } from '@/utils/errors'
-import { withMinDelay } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import { getErrorMessage } from '@/shared/lib/errors'
+import { withMinDelay } from '@/shared/lib/utils'
+import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
+import { Label } from '@/shared/ui/label'
 import { Eye, EyeOff } from '@lucide/vue'
 
 const loading = ref(false)

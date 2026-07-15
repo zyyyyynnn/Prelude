@@ -141,7 +141,7 @@ class StreamChatTurnTest {
     void chatDeletesInsertedUserMessageAndClearsContextWhenLlmStreamingFailsBeforeAssistantPersisted() {
         InterviewSession session = ownedSession(7L, 42L);
         session.setStatus("ongoing");
-        session.setLlmProvider("openai-compatible");
+        session.setLlmProvider("openai-responses");
         session.setLlmModel("model-a");
         when(interviewSessionMapper.selectById(7L)).thenReturn(session);
         when(interviewMessageMapper.findLatest(7L)).thenReturn(null);

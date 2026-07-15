@@ -1,6 +1,6 @@
 {
   "$schema": "ui-tokens/v1",
-  "description": "Prelude UI token schema. Source of truth for token naming and classification. Values live in frontend/src/styles/index.css; this file indexes them so the verify-ui-tokens script can detect drift, missing declarations, or category reclassification without diffing the CSS by hand.",
+  "description": "Prelude UI token schema. Source of truth for token naming and classification. Values live in frontend/src/shared/ui/styles/index.css; this file indexes them so the verify-ui-tokens script can detect drift, missing declarations, or category reclassification without diffing the CSS by hand.",
   "categories": {
     "color": {
       "prefix": "color",

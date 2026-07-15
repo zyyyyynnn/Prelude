@@ -40,6 +40,5 @@ app:
 
 openai:
   base-url: ${OPENAI_BASE_URL:}
-  model: ${OPENAI_MODEL:}
   api-key: ${OPENAI_API_KEY:}
 

@@ -4,7 +4,7 @@
  *
  * Purpose: enforce that:
  *  1. Every token declared in `frontend/tokens/ui-tokens.json` exists as a
- *     `--xxx: value;` declaration somewhere in `frontend/src/styles/index.css`.
+ *     `--xxx: value;` declaration in `frontend/src/shared/ui/styles/index.css`.
  *  2. Every `--shadow-*` token's RAW VALUE appears only inside token-definition
  *     lines (i.e. inside `:root` or `:root.dark, .dark`). Any raw shadow value
  *     on a non-token line is a violation (selector must use var(--shadow-*)).
@@ -29,7 +29,7 @@ const path = require('node:path')
 
 const repoRoot = path.resolve(__dirname, '..', '..')
 const schemaPath = path.join(repoRoot, 'frontend', 'tokens', 'ui-tokens.json')
-const stylesPath = path.join(repoRoot, 'frontend', 'src', 'styles', 'index.css')
+const stylesPath = path.join(repoRoot, 'frontend', 'src', 'shared', 'ui', 'styles', 'index.css')
 
 const ok = (...args) => console.log(...args)
 const err = (...args) => console.error(...args)

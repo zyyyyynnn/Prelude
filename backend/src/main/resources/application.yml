@@ -44,14 +44,8 @@ deepseek:
   api-key: ${DEEPSEEK_API_KEY:}
 
 openai:
-  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1/chat/completions}
-  model: ${OPENAI_MODEL:}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
   api-key: ${OPENAI_API_KEY:}
-
-anthropic:
-  base-url: https://api.anthropic.com/v1/messages
-  model: claude-4.7-opus
-  api-key: ${ANTHROPIC_API_KEY:}
 
 app:
   cors:
