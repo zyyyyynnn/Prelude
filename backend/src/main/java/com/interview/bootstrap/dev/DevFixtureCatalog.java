@@ -3,7 +3,6 @@ package com.interview.bootstrap.dev;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.shared.api.BusinessException;
-import com.interview.resume.api.ResumeProjectDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -199,9 +198,12 @@ public class DevFixtureCatalog {
 
     public record DevResumeFixture(
         List<String> skills,
-        List<ResumeProjectDto> projects,
+        List<DevResumeProject> projects,
         String rawText
     ) {
+    }
+
+    public record DevResumeProject(String name, String description) {
     }
 
     private record DevStageRepliesFixture(Map<String, List<String>> replies) {

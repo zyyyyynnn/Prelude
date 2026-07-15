@@ -346,6 +346,17 @@ a {
   min-height: 100vh;
 }
 
+.ui-chart-tooltip {
+  border: 0 !important;
+  border-radius: var(--radius-md) !important;
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  background: var(--color-text-primary) !important;
+  color: var(--color-bg) !important;
+  box-shadow: var(--shadow-whisper) !important;
+  font-family: var(--font-serif) !important;
+  font-size: var(--font-size-sm) !important;
+}
+
 .app-shell {
   min-height: 100vh;
   background: var(--color-bg);

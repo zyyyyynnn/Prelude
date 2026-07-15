@@ -24,6 +24,8 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 
 `.env` 已被 `.gitignore` 忽略，不要提交真实密钥。`OPENAI_*` 仅用于系统语音能力；面试 LLM 的用户级 Key 与根地址在前端设置中按明确协议配置。
 
+生产默认只允许自定义 LLM 访问 HTTPS 443 公网地址。只有明确受控的本地调试才可通过 `PRELUDE_LLM_EGRESS_ALLOW_HTTP`、`PRELUDE_LLM_EGRESS_ALLOW_PRIVATE_ADDRESSES` 与 `PRELUDE_LLM_EGRESS_ALLOWED_PORTS` 放宽。
+
 ## 2. 启动入口
 
 ```powershell
@@ -51,11 +53,19 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 
 不建议同时运行本机 MySQL / Redis / RabbitMQ 系统服务，以免端口冲突。
 
-## 4. 本地验收账号
+## 4. 数据初始化
+
+- `schema.sql` 是唯一 DDL 与幂等结构升级入口。
+- `data.sql` 只包含生产安全的岗位参考数据、Provider 目录和旧协议值归并。
+- `data-dev.sql` 只创建 local/dev 验收账号；完整会话夹具由 `/api/dev-fixtures/reset` 生成。
+
+后端在启动时重放 `schema.sql` 与 `data.sql`，因此现有数据库会直接完成兼容升级；不要额外创建日期命名迁移 SQL。
+
+## 5. 本地验收账号
 
 `demo / 123456` 由 `data-dev.sql` 与 dev fixture 链路提供，仅用于 local/dev。
 
-## 5. 源码级调试配置
+## 6. 源码级调试配置
 
 需要直接使用 `scripts/dev/start-dev.ps1` 时：
 

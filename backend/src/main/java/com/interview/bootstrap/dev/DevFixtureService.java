@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.shared.api.BusinessException;
 import com.interview.bootstrap.dev.DevFixtureProperties;
 import com.interview.insight.domain.InterviewReportDraft;
-import com.interview.resume.api.ResumeUploadResponse;
+import com.interview.resume.application.ImportResumeResult;
+import com.interview.resume.application.port.ResumeParser;
 import com.interview.insight.domain.StructuredInterviewReport;
 import com.interview.interview.domain.InterviewMessage;
 import com.interview.interview.domain.InterviewSession;
@@ -137,11 +138,17 @@ public class DevFixtureService implements InterviewFixturePort, InsightFixturePo
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public ResumeUploadResponse createDevFixtureResume(Long userId, String fileName) {
+    public ImportResumeResult createDevFixtureResume(Long userId, String fileName) {
         assertEnabled();
         Resume resume = insertResume(userId, fileName, LocalDateTime.now());
         DevFixtureCatalog.DevResumeFixture fixture = devFixtureCatalog.resume(fileName);
-        return new ResumeUploadResponse(resume.getId(), fixture.skills(), fixture.projects());
+        return new ImportResumeResult(
+            resume.getId(),
+            fixture.skills(),
+            fixture.projects().stream()
+                .map(project -> new ResumeParser.ParsedProject(project.name(), project.description()))
+                .toList()
+        );
     }
 
     public String resolveScriptedReply(String stageName, int replyIndex) {
@@ -357,7 +364,7 @@ public class DevFixtureService implements InterviewFixturePort, InsightFixturePo
             fixture.skills(),
             fixture.projects().stream()
                 .map(project -> new ResumeDocumentFactory.ImportedProject(
-                    project.getName(), project.getDescription()
+                    project.name(), project.description()
                 ))
                 .toList()
         );

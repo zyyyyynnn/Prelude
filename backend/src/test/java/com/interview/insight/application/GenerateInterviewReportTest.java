@@ -15,6 +15,7 @@ import com.interview.platform.llm.ChatPort;
 import com.interview.platform.llm.ChatRequest;
 import com.interview.platform.realtime.RealtimePort;
 import com.interview.shared.web.UserContext;
+import com.interview.resume.api.port.ResumeImprovementPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ class GenerateInterviewReportTest {
     @Mock private ReportParser reportParser;
     @Mock private InterviewReportAssembler reportAssembler;
     @Mock private RealtimePort realtimePort;
+    @Mock private ResumeImprovementPort resumeImprovementPort;
 
     private GenerateInterviewReport useCase;
 
@@ -55,8 +57,15 @@ class GenerateInterviewReportTest {
             fixturePort,
             reportParser,
             reportAssembler,
-            realtimePort
+            realtimePort,
+            resumeImprovementPort
         );
+        org.mockito.Mockito.lenient()
+            .when(resumeImprovementPort.requireContext(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong()))
+            .thenReturn(new ResumeImprovementPort.ImprovementContext(5L, 1, List.of()));
+        org.mockito.Mockito.lenient()
+            .when(resumeImprovementPort.storeSuggestions(any(), any(), any(), any()))
+            .thenReturn(List.of());
     }
 
     @AfterEach
@@ -137,7 +146,7 @@ class GenerateInterviewReportTest {
 
         useCase.handleTerminalFailure(7L, failure);
 
-        verify(realtimePort).publish(7L, "error", "报告生成失败: llm down");
+        verify(realtimePort).publish(7L, "error", "报告生成失败，请稍后重试");
         verify(interviewReportPort).restoreOngoing(7L);
     }
 
@@ -145,6 +154,7 @@ class GenerateInterviewReportTest {
         InterviewSession session = new InterviewSession();
         session.setId(7L);
         session.setUserId(42L);
+        session.setResumeId(5L);
         session.setStatus(status);
         session.setTargetPosition("Java 开发");
         session.setLlmProvider("openai-responses");

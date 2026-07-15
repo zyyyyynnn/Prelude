@@ -2,6 +2,7 @@ import type {
   ParsedInterviewReport,
   ReportStageName,
   StructuredQuestionReview,
+  ReportResumeImprovement,
   StructuredStagePerformance,
 } from '../model/types'
 
@@ -9,6 +10,36 @@ const stageNames: ReportStageName[] = ['warmup', 'technical', 'deep_dive', 'clos
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function resumeImprovements(value: unknown): ReportResumeImprovement[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(isRecord).flatMap((item) => {
+    const status = item.status
+    if (
+      typeof item.id !== 'number' ||
+      typeof item.resumeId !== 'number' ||
+      typeof item.sessionId !== 'number' ||
+      (status !== 'pending' && status !== 'accepted' && status !== 'rejected')
+    ) {
+      return []
+    }
+    return [
+      {
+        id: item.id,
+        resumeId: item.resumeId,
+        sessionId: item.sessionId,
+        targetPath: text(item.targetPath, 'summary'),
+        currentText: text(item.currentText, ''),
+        proposedText: text(item.proposedText, ''),
+        rationale: text(item.rationale, '基于本场面试表现完善表述。'),
+        evidence: text(item.evidence, '未提供证据摘录'),
+        baseDocumentVersion:
+          typeof item.baseDocumentVersion === 'number' ? item.baseDocumentVersion : 0,
+        status,
+      },
+    ]
+  })
 }
 
 function text(value: unknown, fallback: string) {
@@ -106,6 +137,7 @@ export function parseInterviewReport(source: string): ParsedInterviewReport {
         },
         finalAdvice: text(parsed.finalAdvice, '保持复盘，并围绕薄弱项继续专项训练。'),
         markdownFallback,
+        resumeImprovements: resumeImprovements(parsed.resumeImprovements),
       },
     }
   } catch {

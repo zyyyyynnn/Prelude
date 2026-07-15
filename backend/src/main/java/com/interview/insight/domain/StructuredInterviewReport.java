@@ -11,8 +11,33 @@ public record StructuredInterviewReport(
     List<String> weaknesses,
     TrainingPlan trainingPlan,
     String finalAdvice,
-    String markdownFallback
+    String markdownFallback,
+    List<ResumeImprovementSuggestion> resumeImprovements
 ) {
+
+    public StructuredInterviewReport(
+        ReportSummary summary,
+        ReportScores scores,
+        List<StagePerformance> stagePerformances,
+        List<QuestionReview> questionReviews,
+        List<String> strengths,
+        List<String> weaknesses,
+        TrainingPlan trainingPlan,
+        String finalAdvice,
+        String markdownFallback
+    ) {
+        this(
+            summary, scores, stagePerformances, questionReviews, strengths, weaknesses,
+            trainingPlan, finalAdvice, markdownFallback, List.of()
+        );
+    }
+
+    public StructuredInterviewReport withResumeImprovements(List<ResumeImprovementSuggestion> suggestions) {
+        return new StructuredInterviewReport(
+            summary, scores, stagePerformances, questionReviews, strengths, weaknesses,
+            trainingPlan, finalAdvice, markdownFallback, suggestions == null ? List.of() : List.copyOf(suggestions)
+        );
+    }
 
     public record ReportSummary(
         String fitAssessment,
@@ -53,6 +78,20 @@ public record StructuredInterviewReport(
         List<String> threeDay,
         List<String> sevenDay,
         List<String> nextInterviewFocus
+    ) {
+    }
+
+    public record ResumeImprovementSuggestion(
+        Long id,
+        Long resumeId,
+        Long sessionId,
+        String targetPath,
+        String currentText,
+        String proposedText,
+        String rationale,
+        String evidence,
+        int baseDocumentVersion,
+        String status
     ) {
     }
 }

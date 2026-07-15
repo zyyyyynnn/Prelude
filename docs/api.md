@@ -209,6 +209,18 @@
 
 `expectedVersion` 不等于当前版本时返回业务错误，客户端应刷新后重试。
 
+### `GET /api/resume/{resumeId}/improvements`
+
+获取当前用户简历的改进建议。可选查询参数 `sessionId` 用于限定来源面试。每条建议包含目标字段路径、原文、建议文本、面试证据、生成时文档版本和处理状态。
+
+### `POST /api/resume/improvements/{improvementId}/accept`
+
+接受一条待处理建议。后端校验用户归属、字段白名单、当前字段原文和简历版本更新结果；成功后返回建议状态及更新后的 `ResumeDocument`。AI 不直接覆盖简历。
+
+### `POST /api/resume/improvements/{improvementId}/reject`
+
+拒绝一条待处理建议。重复拒绝保持幂等；已经接受的建议不能再改为拒绝。
+
 ### `DELETE /api/resume/{resumeId}`
 
 删除当前用户未被面试会话使用的简历。

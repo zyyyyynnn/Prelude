@@ -10,6 +10,9 @@ import com.interview.resume.application.ImportResumeResult;
 import com.interview.resume.application.ListResumes;
 import com.interview.resume.application.ResumeDocumentView;
 import com.interview.resume.application.UpdateResumeDocument;
+import com.interview.resume.application.ResumeImprovementService;
+import com.interview.resume.application.ResumeImprovementDecisionView;
+import com.interview.resume.application.ResumeImprovementView;
 import com.interview.resume.application.port.ResumeParser;
 import com.interview.resume.application.port.ResumeRepository;
 import com.interview.resume.domain.ResumeDocument;
@@ -49,6 +52,7 @@ class ResumeControllerWebMvcTest {
     @Mock private UpdateResumeDocument updateResumeDocument;
     @Mock private ListResumes listResumes;
     @Mock private DeleteResume deleteResume;
+    @Mock private ResumeImprovementService resumeImprovementService;
     @Mock private ResumeFixturePort devFixtureService;
     @Mock private JwtUtil jwtUtil;
 
@@ -68,6 +72,7 @@ class ResumeControllerWebMvcTest {
                 updateResumeDocument,
                 listResumes,
                 deleteResume,
+                resumeImprovementService,
                 devFixtureService
             ))
             .setControllerAdvice(new GlobalExceptionHandler())
@@ -121,6 +126,54 @@ class ResumeControllerWebMvcTest {
             .andExpect(jsonPath("$.data.documentVersion").value(2));
 
         verify(updateResumeDocument).execute(42L, 9L, 1, document);
+    }
+
+    @Test
+    void listsAndDecidesEvidenceBackedImprovements() throws Exception {
+        ResumeImprovementView improvement = new ResumeImprovementView(
+            11L,
+            9L,
+            7L,
+            "projects[0].bullets[0]",
+            "负责接口开发",
+            "将接口 P95 降至 180ms",
+            "补充量化结果",
+            "候选人回答",
+            1,
+            "pending",
+            null
+        );
+        when(resumeImprovementService.list(42L, 9L, 7L)).thenReturn(List.of(improvement));
+        when(resumeImprovementService.accept(42L, 11L)).thenReturn(new ResumeImprovementDecisionView(
+            new ResumeImprovementView(
+                11L, 9L, 7L, improvement.targetPath(), improvement.currentText(),
+                improvement.proposedText(), improvement.rationale(), improvement.evidence(),
+                1, "accepted", 2
+            ),
+            view(9L, 2)
+        ));
+        when(resumeImprovementService.reject(42L, 12L)).thenReturn(new ResumeImprovementView(
+            12L, 9L, 7L, "summary", "", "新摘要", "补全摘要", "候选人回答",
+            1, "rejected", null
+        ));
+
+        mockMvc.perform(get("/api/resume/9/improvements")
+                .param("sessionId", "7")
+                .header("Authorization", "Bearer token"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].evidence").value("候选人回答"))
+            .andExpect(jsonPath("$.data[0].status").value("pending"));
+
+        mockMvc.perform(post("/api/resume/improvements/11/accept")
+                .header("Authorization", "Bearer token"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.improvement.status").value("accepted"))
+            .andExpect(jsonPath("$.data.resume.documentVersion").value(2));
+
+        mockMvc.perform(post("/api/resume/improvements/12/reject")
+                .header("Authorization", "Bearer token"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.status").value("rejected"));
     }
 
     @Test

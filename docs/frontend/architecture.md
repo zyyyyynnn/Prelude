@@ -36,10 +36,10 @@ app ───────► features ───────► shared
 | Feature | 所有权 |
 | --- | --- |
 | `auth` | 登录/注册 API、鉴权状态、认证 schema 与登录页 |
-| `resume` | 简历列表、上传、删除、类型与管理页 |
+| `resume` | 简历列表、上传、结构化编辑、版本更新、改进建议动作与管理页 |
 | `settings` | 用户资料、主题、LLM/BYOK draft、view state 与 actions |
 | `interview` | 岗位资源、会话真源、文字/语音编排、工作区与开面流程 |
-| `report` | 报告类型、解析、Markdown 展示、报告组件与 PDF 导出 |
+| `report` | 报告类型、解析、Markdown 展示、改进建议呈现组件与 PDF 导出；不发起简历写请求 |
 | `insight` | 雷达、趋势、薄弱点数据与分析页 |
 
 `report` 不读取 interview store。interview 只通过 `@/features/report` 传入报告数据、渲染报告或触发导出。PDF 实现通过动态 import 加载，`jspdf/html2canvas` 及其专用依赖位于延迟加载的 `vendor-pdf` chunk，不进入初始工作区主路径。
@@ -57,7 +57,7 @@ Provider 列表严格消费后端现有字段：`providerKey`、`displayName`、
 - auth token 由 `features/auth/model/authStore.ts` 持有，app 只在运行时装配中读取。
 - 会话列表、活动会话、详情、报告文本与流取消句柄由 interview session store 持有。
 - pin/hidden 偏好由独立 store 延迟 hydrate；读取不会发生在模块加载期。旧 `pinnedSessionIds` / `deletedSessionIds` 首次 hydrate 时迁移到 `prelude-interview-session-preferences`。
-- `useInterviewPageController` 是工作区页面的编排接口；网络流、语音和报告监听仍由各自 composable 实现。
+- `useInterviewPageController` 是工作区页面的编排接口；网络流、语音和报告监听仍由各自 composable 实现，简历建议动作通过 resume 公共入口调用。
 - `useLlmSettings` 对组件只暴露 `draft`、`view`、`actions` 三组职责，不把请求细节散落到模板。
 
 ## UI 与开发工具

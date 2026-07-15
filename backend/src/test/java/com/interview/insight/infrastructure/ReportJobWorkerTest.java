@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.shared.web.UserContext;
 import com.interview.platform.realtime.RealtimePort;
+import com.interview.resume.api.port.ResumeImprovementPort;
 import com.interview.insight.domain.InterviewReportDraft;
 import com.interview.insight.domain.StructuredInterviewReport;
 import com.interview.interview.domain.InterviewMessage;
@@ -27,7 +28,7 @@ import com.interview.insight.infrastructure.persistence.ScoreHistoryMapper;
 import com.interview.insight.infrastructure.persistence.UserWeaknessMapper;
 import com.interview.platform.job.ReportJobMessage;
 import com.interview.platform.job.infrastructure.JobExecutionStore;
-import com.interview.platform.job.infrastructure.JobExecutionStore.ClaimResult;
+import com.interview.platform.job.JobExecutionPort.ClaimResult;
 import com.interview.insight.application.port.InsightFixturePort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,6 +69,7 @@ class ReportJobWorkerTest {
     @Mock private InterviewReportAssembler interviewReportAssembler;
     @Mock private RealtimePort sseEmitterRegistry;
     @Mock private JobExecutionStore jobExecutionStore;
+    @Mock private ResumeImprovementPort resumeImprovementPort;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -93,11 +95,16 @@ class ReportJobWorkerTest {
             devFixtureService,
             interviewReportParser,
             interviewReportAssembler,
-            sseEmitterRegistry
+            sseEmitterRegistry,
+            resumeImprovementPort
         );
         worker = new ReportJobWorker(new ReportGenerateHandler(generateInterviewReport, jobExecutionStore, 1));
         lenient().when(jobExecutionStore.claimAttempt(any(ReportJobMessage.class), anyInt())).thenReturn(ClaimResult.STARTED);
         lenient().when(interviewReportParser.parseDraft(anyString())).thenReturn(defaultDraft);
+        lenient().when(resumeImprovementPort.requireContext(anyLong(), anyLong()))
+            .thenReturn(new ResumeImprovementPort.ImprovementContext(5L, 1, List.of()));
+        lenient().when(resumeImprovementPort.storeSuggestions(anyLong(), anyLong(), anyLong(), anyList()))
+            .thenReturn(List.of());
         lenient().when(interviewReportAssembler.assemble(any(), anyList(), anyList(), anyList()))
             .thenReturn(defaultReport);
         lenient().when(userWeaknessMapper.selectList(any(LambdaQueryWrapper.class)))

@@ -5,9 +5,17 @@ import QuestionReviewList from './QuestionReviewList.vue'
 import ReportScoreCard from './ReportScoreCard.vue'
 import StagePerformanceList from './StagePerformanceList.vue'
 import TrainingPlanPanel from './TrainingPlanPanel.vue'
+import ResumeImprovementList from './ResumeImprovementList.vue'
+import type { ReportResumeImprovement } from '../model/types'
 
 const props = defineProps<{
   report: StructuredInterviewReport
+  improvementBusyId?: number | null
+}>()
+
+const emit = defineEmits<{
+  (event: 'accept-improvement', improvement: ReportResumeImprovement): void
+  (event: 'reject-improvement', improvement: ReportResumeImprovement): void
 }>()
 </script>
 
@@ -33,6 +41,13 @@ const props = defineProps<{
     <ReportScoreCard :scores="report.scores" />
     <StagePerformanceList :stages="report.stagePerformances" />
     <QuestionReviewList :reviews="report.questionReviews" />
+
+    <ResumeImprovementList
+      :improvements="report.resumeImprovements"
+      :busy-id="improvementBusyId"
+      @accept="emit('accept-improvement', $event)"
+      @reject="emit('reject-improvement', $event)"
+    />
 
     <section class="report-section structured-report__traits" aria-labelledby="traits-title">
       <header>

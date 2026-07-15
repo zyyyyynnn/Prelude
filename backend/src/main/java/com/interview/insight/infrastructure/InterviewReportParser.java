@@ -89,7 +89,19 @@ public class InterviewReportParser implements ReportParser {
             strings(report.strengths()),
             plan,
             text(report.finalAdvice(), "保持复盘，并围绕薄弱项进行下一轮专项训练。"),
-            text(report.reportMarkdown(), FALLBACK_MARKDOWN)
+            text(report.reportMarkdown(), FALLBACK_MARKDOWN),
+            safeList(report.resumeSuggestions()).stream()
+                .filter(Objects::nonNull)
+                .map(suggestion -> new InterviewReportDraft.ResumeSuggestion(
+                    text(suggestion.targetPath(), ""),
+                    text(suggestion.currentText(), ""),
+                    text(suggestion.proposedText(), ""),
+                    text(suggestion.rationale(), ""),
+                    text(suggestion.evidence(), "")
+                ))
+                .filter(suggestion -> !suggestion.targetPath().isBlank() && !suggestion.proposedText().isBlank())
+                .limit(3)
+                .toList()
         );
     }
 

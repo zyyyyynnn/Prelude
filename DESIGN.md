@@ -207,7 +207,7 @@ Dropdown、Select、Combobox 使用统一低浮层视觉：
 - token padding
 - `font-serif`
 
-Tooltip 使用同一 primitive，但采用 `bg-foreground` + `text-background` 的中性反相表面，保证与页面 surface 清晰分离；不得改用品牌色背景。Tooltip 继续使用 `border-transparent`、`shadow-whisper`、`rounded-md`、token padding 与 `font-serif`，长文本以 `max-w-xs` 换行。
+Tooltip 使用同一 primitive，但采用 `bg-foreground` + `text-background` 的中性反相表面，保证与页面 surface 清晰分离；不得改用品牌色背景。Tooltip 继续使用 `border-transparent`、`shadow-whisper`、`rounded-md`、token padding 与 `font-serif`，长文本以 `max-w-xs` 换行。Canvas 图表等无法挂载 Vue primitive 的浮层也必须等价使用这组现有 token，不得另造主题色气泡。
 
 规则：
 

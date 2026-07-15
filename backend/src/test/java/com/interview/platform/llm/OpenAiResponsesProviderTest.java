@@ -45,7 +45,10 @@ class OpenAiResponsesProviderTest {
         });
 
         OpenAiResponsesProvider provider = new OpenAiResponsesProvider(
-            objectMapper, mock(LlmMetricsTracker.class));
+            objectMapper,
+            mock(LlmMetricsTracker.class),
+            CustomLlmTestClients.localClient(server.getAddress().getPort())
+        );
         String result = provider.chat(new LlmProvider.LlmInvocation(
             endpoint(), "gpt-test", "sk-test",
             List.of(Map.of("role", "user", "content", "hello")),
@@ -82,7 +85,10 @@ class OpenAiResponsesProviderTest {
             """));
 
         OpenAiResponsesProvider provider = new OpenAiResponsesProvider(
-            objectMapper, mock(LlmMetricsTracker.class));
+            objectMapper,
+            mock(LlmMetricsTracker.class),
+            CustomLlmTestClients.localClient(server.getAddress().getPort())
+        );
         List<String> deltas = new ArrayList<>();
         provider.streamChat(new LlmProvider.LlmInvocation(
             endpoint(), "gpt-test", "sk-test",
@@ -100,12 +106,16 @@ class OpenAiResponsesProviderTest {
             """));
 
         OpenAiResponsesProvider provider = new OpenAiResponsesProvider(
-            objectMapper, mock(LlmMetricsTracker.class));
+            objectMapper,
+            mock(LlmMetricsTracker.class),
+            CustomLlmTestClients.localClient(server.getAddress().getPort())
+        );
 
         assertThatThrownBy(() -> provider.streamChat(new LlmProvider.LlmInvocation(
             endpoint(), "gpt-test", "sk-test",
             List.of(Map.of("role", "user", "content", "hello"))), ignored -> { }))
-            .hasMessageContaining("upstream failed");
+            .hasMessageContaining("流式调用失败")
+            .hasMessageNotContaining("upstream failed");
     }
 
     private void startServer(ExchangeHandler handler) throws IOException {

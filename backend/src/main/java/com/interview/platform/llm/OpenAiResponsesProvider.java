@@ -7,7 +7,6 @@ import com.interview.shared.api.LlmServerException;
 import com.interview.shared.api.LlmTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -29,16 +28,16 @@ public class OpenAiResponsesProvider implements LlmProvider {
 
     private final ObjectMapper objectMapper;
     private final LlmMetricsTracker metricsTracker;
-    private final OkHttpClient client;
+    private final CustomLlmHttpClient httpClient;
 
-    public OpenAiResponsesProvider(ObjectMapper objectMapper, LlmMetricsTracker metricsTracker) {
+    public OpenAiResponsesProvider(
+        ObjectMapper objectMapper,
+        LlmMetricsTracker metricsTracker,
+        CustomLlmHttpClient httpClient
+    ) {
         this.objectMapper = objectMapper;
         this.metricsTracker = metricsTracker;
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .readTimeout(Duration.ofSeconds(120))
-            .writeTimeout(Duration.ofSeconds(30))
-            .build();
+        this.httpClient = httpClient;
     }
 
     @Override public String providerKey() { return PROVIDER_KEY; }
@@ -72,10 +71,9 @@ public class OpenAiResponsesProvider implements LlmProvider {
                 .addHeader("Authorization", "Bearer " + invocation.apiKey())
                 .post(RequestBody.create(objectMapper.writeValueAsString(payload), JSON))
                 .build();
-            try (Response response = client.newCall(request).execute()) {
+            try (Response response = httpClient.execute(request, Duration.ofSeconds(120))) {
                 if (!response.isSuccessful()) {
-                    String body = response.body() == null ? "" : response.body().string();
-                    log.warn("OpenAI Responses API error {}: {}", response.code(), body);
+                    log.warn("OpenAI Responses API returned status {}", response.code());
                     if (response.code() >= 500) {
                         metricsTracker.recordFailure(providerKey());
                         throw new LlmServerException("OpenAI Responses 服务端错误，状态码：" + response.code());
@@ -85,14 +83,14 @@ public class OpenAiResponsesProvider implements LlmProvider {
 
                 metricsTracker.recordLatency(providerKey(), System.nanoTime() - startTime);
                 if (!stream) {
-                    String body = response.body() == null ? "" : response.body().string();
+                    String body = httpClient.readBody(response.body());
                     recordUsage(objectMapper.readTree(body).path("usage"));
                     return extractContent(body);
                 }
                 if (response.body() == null) {
                     throw BusinessException.badRequest("OpenAI Responses 流式响应为空");
                 }
-                try (BufferedReader reader = new BufferedReader(response.body().charStream())) {
+                try (BufferedReader reader = httpClient.openStreamReader(response.body())) {
                     readStream(reader, onDelta);
                 }
                 return "";
@@ -160,7 +158,7 @@ public class OpenAiResponsesProvider implements LlmProvider {
 
     private void readStream(BufferedReader reader, Consumer<String> onDelta) throws IOException {
         String line;
-        while ((line = reader.readLine()) != null) {
+        while ((line = httpClient.readStreamLine(reader)) != null) {
             String trimmed = line.trim();
             if (!trimmed.startsWith("data:")) {
                 continue;
@@ -181,13 +179,9 @@ public class OpenAiResponsesProvider implements LlmProvider {
                 recordUsage(event.path("response").path("usage"));
             } else if ("response.failed".equals(type) || "response.incomplete".equals(type)) {
                 JsonNode response = event.path("response");
-                String message = response.at("/error/message").asText();
-                if (message.isBlank()) {
-                    message = response.at("/incomplete_details/reason").asText("未知错误");
-                }
-                throw BusinessException.badRequest("OpenAI Responses 流式调用失败：" + message);
+                throw BusinessException.badRequest("OpenAI Responses 流式调用失败");
             } else if ("error".equals(type)) {
-                throw BusinessException.badRequest("OpenAI Responses 流式调用失败：" + event.path("message").asText("未知错误"));
+                throw BusinessException.badRequest("OpenAI Responses 流式调用失败");
             }
         }
     }

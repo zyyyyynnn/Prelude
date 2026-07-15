@@ -7,7 +7,6 @@ import com.interview.shared.api.LlmServerException;
 import com.interview.shared.api.LlmTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -29,7 +28,7 @@ public abstract class AbstractChatCompletionsProvider implements LlmProvider {
     private final String providerName;
     private final String defaultModel;
     private final String systemApiKey;
-    private final OkHttpClient client;
+    private final CustomLlmHttpClient httpClient;
     protected final LlmMetricsTracker metricsTracker;
 
     protected AbstractChatCompletionsProvider(
@@ -38,7 +37,8 @@ public abstract class AbstractChatCompletionsProvider implements LlmProvider {
         String providerName,
         String defaultModel,
         String systemApiKey,
-        LlmMetricsTracker metricsTracker
+        LlmMetricsTracker metricsTracker,
+        CustomLlmHttpClient httpClient
     ) {
         this.objectMapper = objectMapper;
         this.providerKey = providerKey;
@@ -46,11 +46,7 @@ public abstract class AbstractChatCompletionsProvider implements LlmProvider {
         this.defaultModel = defaultModel;
         this.systemApiKey = systemApiKey;
         this.metricsTracker = metricsTracker;
-        this.client = new OkHttpClient.Builder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .readTimeout(Duration.ofSeconds(60))
-            .writeTimeout(Duration.ofSeconds(30))
-            .build();
+        this.httpClient = httpClient;
     }
 
     @Override public String providerKey() { return providerKey; }
@@ -90,10 +86,9 @@ public abstract class AbstractChatCompletionsProvider implements LlmProvider {
                 applyExtraParams(payload, invocation.extraParams());
             }
             Request request = buildRequest(payload, invocation.baseUrl(), apiKey);
-            try (Response response = client.newCall(request).execute()) {
+            try (Response response = httpClient.execute(request, Duration.ofSeconds(60))) {
                 if (!response.isSuccessful()) {
-                    String body = response.body() == null ? "" : response.body().string();
-                    log.warn("{} API error {}: {}", providerName, response.code(), body);
+                    log.warn("{} API returned status {}", providerName, response.code());
                     if (response.code() >= 500) {
                         metricsTracker.recordFailure(providerKey());
                         throw new LlmServerException(providerName + " 服务端错误，状态码：" + response.code());
@@ -103,16 +98,16 @@ public abstract class AbstractChatCompletionsProvider implements LlmProvider {
 
                 metricsTracker.recordLatency(providerKey(), System.nanoTime() - startTime);
                 if (!stream) {
-                    String body = response.body() == null ? "" : response.body().string();
+                    String body = httpClient.readBody(response.body());
                     recordUsage(body);
                     return extractContent(body);
                 }
                 if (response.body() == null) {
                     throw BusinessException.badRequest(providerName + " 流式响应为空");
                 }
-                try (BufferedReader reader = new BufferedReader(response.body().charStream())) {
+                try (BufferedReader reader = httpClient.openStreamReader(response.body())) {
                     String line;
-                    while ((line = reader.readLine()) != null) {
+                    while ((line = httpClient.readStreamLine(reader)) != null) {
                         String trimmed = line.trim();
                         if (!trimmed.startsWith("data:")) {
                             continue;
