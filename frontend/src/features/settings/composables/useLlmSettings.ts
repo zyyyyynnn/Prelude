@@ -6,25 +6,17 @@ import {
   saveUserLlmConfig,
   testUserLlmConfig,
 } from '../api/llm'
-import { withMinDelay } from '@/lib/utils'
-import type { LlmProviderOption } from '@/api/contracts'
-import { usePageNotice } from '@/composables/usePageNotice'
-import { getErrorMessage } from '@/utils/errors'
-
-const OPENAI_COMPATIBLE_PROVIDER = 'openai-compatible'
+import { withMinDelay } from '@/shared/lib/utils'
+import type { LlmProviderOption } from '../model/types'
+import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
+import { getErrorMessage } from '@/shared/lib/errors'
+import {
+  getCustomProviderMeta,
+  isCustomProvider,
+  normalizeCustomBaseUrl,
+} from '../model/providerProtocol'
 
 export type LlmTestState = 'idle' | 'testing' | 'success' | 'error'
-
-function normalizeBaseUrl(baseUrl: string): string {
-  // 轻量归一化用于 scope 比对：去尾部斜杠，去 /chat/completions 后缀。后端仍会做权威校验。
-  let v = (baseUrl || '').trim()
-  v = v.replace(/\/+$/, '')
-  if (v.endsWith('/chat/completions')) {
-    v = v.slice(0, -'/chat/completions'.length)
-  }
-  v = v.replace(/\/+$/, '')
-  return v
-}
 
 export function useLlmSettings() {
   const loading = ref(false)
@@ -65,12 +57,17 @@ export function useLlmSettings() {
       providerOptions.value.find((item) => item.providerKey === selectedProviderKey.value) ?? null,
   )
 
-  const isOpenAiCompatible = computed(
-    () => selectedProviderKey.value === OPENAI_COMPATIBLE_PROVIDER,
-  )
+  const selectedProtocol = computed(() => getCustomProviderMeta(selectedProviderKey.value))
+  const isCustomProviderSelected = computed(() => isCustomProvider(selectedProviderKey.value))
+  const canDiscoverModels = computed(() => selectedProtocol.value?.modelDiscovery === true)
+  const endpointPlaceholder = computed(() => selectedProtocol.value?.placeholder ?? '')
+  const endpointHint = computed(() => {
+    const suffix = selectedProtocol.value?.endpointSuffix
+    return suffix ? `填写接口根地址，通常以 /v1 结尾；不要填写 ${suffix}。` : ''
+  })
 
   const modelOptions = computed(() => {
-    if (!isOpenAiCompatible.value) {
+    if (!isCustomProviderSelected.value) {
       return currentProvider.value?.models ?? []
     }
     return discoveredModels.value
@@ -79,7 +76,7 @@ export function useLlmSettings() {
   function currentDraftSignature(): string {
     return JSON.stringify({
       providerKey: selectedProviderKey.value,
-      baseUrl: normalizeBaseUrl(baseUrlInput.value),
+      baseUrl: normalizeCustomBaseUrl(baseUrlInput.value, selectedProviderKey.value),
       model: selectedModel.value,
       apiKey: apiKeyInput.value,
       maxTokens: maxTokens.value ?? null,
@@ -94,7 +91,7 @@ export function useLlmSettings() {
   function currentModelDiscoveryScope() {
     return {
       providerKey: selectedProviderKey.value,
-      baseUrl: normalizeBaseUrl(baseUrlInput.value),
+      baseUrl: normalizeCustomBaseUrl(baseUrlInput.value, selectedProviderKey.value),
     }
   }
 
@@ -106,12 +103,13 @@ export function useLlmSettings() {
 
   function isScopeChanged(): boolean {
     const providerChanged = selectedProviderKey.value !== initialScope.value.providerKey
-    if (!isOpenAiCompatible.value) {
+    if (!isCustomProviderSelected.value) {
       return providerChanged
     }
     return (
       providerChanged ||
-      normalizeBaseUrl(baseUrlInput.value) !== normalizeBaseUrl(initialScope.value.baseUrl)
+      normalizeCustomBaseUrl(baseUrlInput.value, selectedProviderKey.value) !==
+        normalizeCustomBaseUrl(initialScope.value.baseUrl, selectedProviderKey.value)
     )
   }
 
@@ -153,7 +151,7 @@ export function useLlmSettings() {
       showNotice('请选择接入方式和模型', 'warning')
       return
     }
-    if (isOpenAiCompatible.value && !baseUrlInput.value.trim()) {
+    if (isCustomProviderSelected.value && !baseUrlInput.value.trim()) {
       showNotice('请填写 Base URL', 'warning')
       return
     }
@@ -167,7 +165,7 @@ export function useLlmSettings() {
       const result = await withMinDelay(
         saveUserLlmConfig({
           providerKey: selectedProviderKey.value,
-          baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
+          baseUrl: isCustomProviderSelected.value ? baseUrlInput.value.trim() : undefined,
           model: selectedModel.value,
           apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
           maxTokens: maxTokens.value ?? undefined,
@@ -213,7 +211,7 @@ export function useLlmSettings() {
       const result = await withMinDelay(
         saveUserLlmConfig({
           providerKey: selectedProviderKey.value,
-          baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
+          baseUrl: isCustomProviderSelected.value ? baseUrlInput.value.trim() : undefined,
           model: selectedModel.value,
           apiKey: '__CLEAR__',
         }),
@@ -239,7 +237,7 @@ export function useLlmSettings() {
       const result = await withMinDelay(
         testUserLlmConfig({
           providerKey: selectedProviderKey.value,
-          baseUrl: isOpenAiCompatible.value ? baseUrlInput.value.trim() : undefined,
+          baseUrl: isCustomProviderSelected.value ? baseUrlInput.value.trim() : undefined,
           model: selectedModel.value,
           apiKey: apiKeyInput.value === '' ? undefined : apiKeyInput.value,
           maxTokens: maxTokens.value ?? undefined,
@@ -261,6 +259,10 @@ export function useLlmSettings() {
   }
 
   async function discoverModels() {
+    if (!canDiscoverModels.value) {
+      showNotice('当前协议不支持自动检测模型', 'warning')
+      return
+    }
     if (!baseUrlInput.value.trim()) {
       showNotice('请填写 Base URL', 'warning')
       return
@@ -280,6 +282,7 @@ export function useLlmSettings() {
     try {
       const result = await withMinDelay(
         discoverLlmModels({
+          providerKey: selectedProviderKey.value,
           baseUrl: baseUrlInput.value.trim(),
           apiKey: hasNewKey ? apiKeyInput.value.trim() : undefined,
         }),
@@ -287,8 +290,8 @@ export function useLlmSettings() {
       baseUrlInput.value = result.baseUrl
       discoveredModels.value = result.models
       discoveredModelScope.value = {
-        providerKey: OPENAI_COMPATIBLE_PROVIDER,
-        baseUrl: normalizeBaseUrl(result.baseUrl),
+        providerKey: selectedProviderKey.value,
+        baseUrl: normalizeCustomBaseUrl(result.baseUrl, selectedProviderKey.value),
       }
       modelDiscoveryHint.value =
         result.models.length === 0 ? '未能读取模型列表，可手动填写模型 ID。' : ''
@@ -335,27 +338,36 @@ export function useLlmSettings() {
   )
 
   return {
-    loading,
-    saving,
-    testing,
-    discovering,
-    testStatus,
-    providerOptions,
-    selectedProviderKey,
-    baseUrlInput,
-    selectedModel,
-    modelDiscoveryHint,
-    apiKeyInput,
-    apiKeyMasked,
-    maxTokens,
-    thinkingDepth,
-    currentProvider,
-    modelOptions,
-    isOpenAiCompatible,
-    loadSettings,
-    saveSettings,
-    clearApiKey,
-    testSettings,
-    discoverModels,
+    draft: {
+      selectedProviderKey,
+      baseUrlInput,
+      selectedModel,
+      apiKeyInput,
+      maxTokens,
+      thinkingDepth,
+    },
+    view: {
+      loading,
+      saving,
+      testing,
+      discovering,
+      testStatus,
+      providerOptions,
+      modelDiscoveryHint,
+      apiKeyMasked,
+      currentProvider,
+      modelOptions,
+      isCustomProviderSelected,
+      canDiscoverModels,
+      endpointPlaceholder,
+      endpointHint,
+    },
+    actions: {
+      loadSettings,
+      saveSettings,
+      clearApiKey,
+      testSettings,
+      discoverModels,
+    },
   }
 }

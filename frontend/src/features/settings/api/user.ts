@@ -1,6 +1,5 @@
-import { http } from '@/api/http'
-import type { ApiResult, UserProfilePayload, UserProfileResponse } from '@/api/contracts'
-import { unwrapResult } from '@/api/contracts'
+import { http, unwrapResult, type ApiResult } from '@/shared/api'
+import type { UserProfilePayload, UserProfileResponse } from '../model/types'
 
 export async function fetchUserProfile() {
   const response = await http.get<ApiResult<UserProfileResponse>>('/user/profile')

@@ -270,45 +270,58 @@ test('15 analytics dashboard', async ({ page }) => {
 
 test('16 components lab (light)', async ({ page }) => {
   // The Component Lab route is registered only when import.meta.env.DEV is
-  // true (see frontend/src/router/index.ts). When the visual config is run
-  // against `npm run dev` the route exists; in production the route returns
-  // the catch-all redirect to /interview. We attempt the navigation and
-  // capture whatever renders.
+  // true (see frontend/src/app/router.ts). The visual config uses the dev server.
   await page.goto('/components-lab')
-  // Either the lab heading renders, or the catch-all kicks in.
-  await page.waitForLoadState('domcontentloaded')
-  await page.waitForLoadState('networkidle').catch(() => null)
-  const labVisible = await page
-    .locator('.lab__title')
-    .first()
-    .isVisible()
-    .catch(() => false)
-  if (labVisible) {
-    await capture(page, '16-components-lab-light.png', page.locator('.lab').first())
-  } else {
-    // In a prod build this is acceptable: route is intentionally absent.
-    await capture(page, '16-components-lab-light.png', page.locator('body').first())
-  }
+  await expect(page.locator('.lab__title').first()).toBeVisible()
+  await capture(page, '16-components-lab-light.png', page.locator('.lab').first())
 })
 
 test('17 components lab (dark)', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.goto('/components-lab')
-  await page.waitForLoadState('domcontentloaded')
-  await page.waitForLoadState('networkidle').catch(() => null)
-  const labVisible = await page
-    .locator('.lab__title')
-    .first()
-    .isVisible()
-    .catch(() => false)
-  if (labVisible) {
-    await capture(page, '17-components-lab-dark.png', page.locator('.lab').first())
-  } else {
-    await capture(page, '17-components-lab-dark.png', page.locator('body').first())
-  }
+  await expect(page.locator('.lab__title').first()).toBeVisible()
+  await capture(page, '17-components-lab-dark.png', page.locator('.lab').first())
 })
 
-test('18 interview messages do not expose live score or hint', async ({ page }) => {
+test('18 tooltip uses a readable neutral surface', async ({ page }) => {
+  await page.goto('/components-lab')
+  const trigger = page.getByRole('button', { name: '通知' })
+  await trigger.hover()
+  const tooltip = page
+    .locator('[data-state][data-side].bg-foreground')
+    .filter({ hasText: 'hover / focus 触发' })
+    .first()
+  await expect(tooltip).toBeVisible()
+
+  const colors = await page.evaluate(() => {
+    const probe = document.createElement('div')
+    probe.style.backgroundColor = 'var(--color-text-primary)'
+    probe.style.color = 'var(--color-bg)'
+    document.body.append(probe)
+    const style = getComputedStyle(probe)
+    const result = { background: style.backgroundColor, foreground: style.color }
+    probe.remove()
+    return result
+  })
+  const channels = (value: string) =>
+    value
+      .match(/[\d.]+/g)!
+      .slice(0, 3)
+      .map(Number)
+      .map((channel) => {
+        const normalized = channel / 255
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+      })
+  const luminance = (value: string) => {
+    const [red, green, blue] = channels(value)
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+  }
+  const lighter = Math.max(luminance(colors.background), luminance(colors.foreground))
+  const darker = Math.min(luminance(colors.background), luminance(colors.foreground))
+  expect((lighter + 0.05) / (darker + 0.05)).toBeGreaterThanOrEqual(7)
+})
+
+test('19 interview messages do not expose live score or hint', async ({ page }) => {
   const detail = {
     sessionId: 101,
     status: 'ongoing',
@@ -349,7 +362,7 @@ test('18 interview messages do not expose live score or hint', async ({ page }) 
   await expect(page.getByText('缺少量化依据')).toHaveCount(0)
 })
 
-test('19 structured report carousel keeps compatibility details out of the primary UI', async ({
+test('20 structured report carousel keeps compatibility details out of the primary UI', async ({
   page,
 }) => {
   const session = {
@@ -394,7 +407,7 @@ test('19 structured report carousel keeps compatibility details out of the prima
   await capture(page, '18-structured-report.png', page.locator('.structured-report').first())
 })
 
-test('20 old markdown report remains readable', async ({ page }) => {
+test('21 old markdown report remains readable', async ({ page }) => {
   const markdown = '# 旧版面试报告\n\n旧数据仍可查看。'
   const session = {
     sessionId: 101,
@@ -414,7 +427,7 @@ test('20 old markdown report remains readable', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '旧版面试报告' })).toBeVisible()
 })
 
-test('21 structured report fits mobile viewport', async ({ page }) => {
+test('22 structured report fits mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   const session = {
     sessionId: 101,
@@ -439,7 +452,7 @@ test('21 structured report fits mobile viewport', async ({ page }) => {
   await capture(page, '19-structured-report-mobile.png', page.locator('.structured-report').first())
 })
 
-test('22 structured report exports a non-empty PDF', async ({ page }) => {
+test('23 structured report exports a non-empty PDF', async ({ page }) => {
   const session = {
     sessionId: 101,
     status: 'finished',

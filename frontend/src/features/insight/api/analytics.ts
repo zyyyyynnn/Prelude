@@ -1,11 +1,9 @@
-import { http } from '@/api/http'
+import { http, unwrapResult, type ApiResult } from '@/shared/api'
 import type {
   AnalyticsRadarResponse,
   AnalyticsTrendPoint,
   AnalyticsWeaknessItem,
-  ApiResult,
-} from '@/api/contracts'
-import { unwrapResult } from '@/api/contracts'
+} from '../model/types'
 
 export async function fetchRadarAnalytics() {
   const response = await http.get<ApiResult<AnalyticsRadarResponse>>('/analytics/radar')

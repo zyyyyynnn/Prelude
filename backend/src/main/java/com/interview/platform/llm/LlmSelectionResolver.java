@@ -9,7 +9,6 @@ import com.interview.platform.llm.persistence.LlmProviderConfig;
 import com.interview.identity.domain.User;
 import com.interview.platform.llm.LlmProvider;
 import com.interview.platform.llm.LlmSelection;
-import com.interview.platform.llm.OpenAiCompatibleProvider;
 import com.interview.platform.llm.persistence.LlmProviderConfigMapper;
 import com.interview.identity.infrastructure.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,7 @@ public class LlmSelectionResolver {
         LlmProvider provider = providerRegistry.require(providerKey);
         String normalizedModel = normalizeModel(model, provider.defaultModel());
         String availableModels = providerConfig.getAvailableModels();
-        if (!OpenAiCompatibleProvider.PROVIDER_KEY.equals(providerKey)
+        if (!CustomLlmProtocol.isCustom(providerKey)
             && availableModels != null
             && !availableModels.isBlank()) {
             List<String> models = parseModels(availableModels);

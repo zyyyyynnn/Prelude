@@ -147,7 +147,7 @@ class GenerateInterviewReportTest {
         session.setUserId(42L);
         session.setStatus(status);
         session.setTargetPosition("Java 开发");
-        session.setLlmProvider("openai-compatible");
+        session.setLlmProvider("openai-responses");
         session.setLlmModel("model-a");
         return session;
     }

@@ -24,4 +24,9 @@ public class LlmProviderRegistry {
             .findFirst()
             .orElseThrow(() -> BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换接入方式"));
     }
+
+    public boolean supports(String providerKey) {
+        return providerKey != null && providers.stream()
+            .anyMatch(provider -> provider.providerKey().equalsIgnoreCase(providerKey));
+    }
 }

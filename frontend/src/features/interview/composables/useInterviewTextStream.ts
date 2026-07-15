@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
-import type { InterviewMessageRecord } from '@/api/contracts'
+import type { InterviewMessageRecord } from '../model/types'
 import { streamInterviewChat } from '../api/interview'
-import { getErrorMessage } from '@/utils/errors'
+import { getErrorMessage } from '@/shared/lib/errors'
 
 type ReplayState = {
   messages: InterviewMessageRecord[]

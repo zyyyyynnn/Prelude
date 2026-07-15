@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
-import { getErrorMessage } from '@/utils/errors'
+import { getErrorMessage } from '@/shared/lib/errors'
 import axios from 'axios'
-import type { ResumeItem } from '@/api/contracts'
-import { usePageNotice } from '@/composables/usePageNotice'
-import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import EmptyState from '@/components/ui/empty-state/EmptyState.vue'
-import { TooltipText } from '@/components/ui/tooltip'
-import { withMinDelay } from '@/lib/utils'
+import type { ResumeItem } from '../model/types'
+import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
+import { useConfirmDialog } from '@/shared/ui/confirm-dialog/useConfirmDialog'
+import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
+import { Badge } from '@/shared/ui/badge'
+import EmptyState from '@/shared/ui/empty-state/EmptyState.vue'
+import { TooltipText } from '@/shared/ui/tooltip'
+import { withMinDelay } from '@/shared/lib/utils'
 
 const { showNotice } = usePageNotice()
 const confirmDialog = useConfirmDialog()

@@ -1,393 +1,63 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { fetchPositions } from '@/features/auth/api/auth'
-import type { PositionTemplate, ResumeItem } from '@/api/contracts'
-import { startInterview, finishInterview } from '../api/interview'
-import { getErrorMessage } from '@/utils/errors'
-import { usePageNotice } from '@/composables/usePageNotice'
-import { fetchResumes, uploadResume } from '@/features/resume/api/resume'
-import { useAuthStore } from '@/stores/auth'
-import { renderMarkdown } from '@/utils/markdown'
-import { parseInterviewReport } from '@/utils/interviewReport'
-import { useInterviewWorkspace } from '../composables/useInterviewWorkspace'
-import { useInterviewTextStream } from '../composables/useInterviewTextStream'
-import { useReportListener } from '../composables/useReportListener'
-import { useVoiceInterviewSocket } from '../composables/useVoiceInterviewSocket'
+import { useTemplateRef } from 'vue'
+import { StructuredReportPanel } from '@/features/report'
+import { useInterviewPageController } from '../composables/useInterviewPageController'
 import WorkspaceHeader from './WorkspaceHeader.vue'
 import MessageThread from './MessageThread.vue'
 import InterviewComposer from './InterviewComposer.vue'
-import StructuredReportPanel from '@/components/report/StructuredReportPanel.vue'
-import { exportToPdf } from '@/utils/pdf'
-import { withMinDelay } from '@/lib/utils'
-import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import RoseThree from '@/components/ui/loader/RoseThree.vue'
-
-const router = useRouter()
-const authStore = useAuthStore()
-const { showNotice } = usePageNotice()
-const confirmDialog = useConfirmDialog()
+import RoseThree from '@/shared/ui/loader/RoseThree.vue'
 
 const emit = defineEmits<{
-  // 该事件会向上冒泡，最终由 App.vue 的 handleOpenSettings 接管处理
-  (e: 'open-global-settings', tab?: 'profile' | 'theme' | 'llm'): void
+  (event: 'open-global-settings', tab?: 'profile' | 'theme' | 'llm'): void
 }>()
 
 const {
-  sessions,
   activeSessionId,
-  replay,
-  reportMarkdown,
   sessionLoading,
-  refreshSessionList,
-  loadSession,
-  getNewAbortSignal,
-  abortActiveStream,
-} = useInterviewWorkspace()
-
-const loading = ref(false)
-const creating = ref(false)
-const uploading = ref(false)
-const sending = ref(false)
-const finishing = ref(false)
-const showingReport = ref(false)
-const streamTimeoutId = ref<ReturnType<typeof setTimeout> | null>(null)
-const reconnectingStatus = ref('')
-
-const resumes = ref<ResumeItem[]>([])
-const positions = ref<PositionTemplate[]>([])
-const selectedResumeId = ref<number | null>(null)
-const selectedPositionId = ref<number | null>(null)
-const uploadDisplayName = ref('未选择任何文件')
-const answer = ref('')
-
-const messages = computed(() => replay.value?.messages ?? [])
-const currentStage = computed(() => replay.value?.currentStage)
-const activeSession = computed(() =>
-  sessions.value.find((s) => s.sessionId === activeSessionId.value),
-)
-const targetPosition = computed(
-  () => activeSession.value?.targetPosition || activeSession.value?.positionName || '',
-)
-const sessionStatus = computed(() => replay.value?.status || activeSession.value?.status)
-const llmProvider = computed(() => activeSession.value?.llmProvider || 'deepseek')
-const llmModel = computed(() => activeSession.value?.llmModel || 'default')
-const isFinished = computed(
-  () => activeSession.value?.status === 'finished' || replay.value?.status === 'finished',
-)
-const isGenerating = computed(
-  () => activeSession.value?.status === 'generating' || replay.value?.status === 'generating',
-)
-
-const hasReport = computed(() => !!reportMarkdown.value || !!replay.value?.summaryReport)
-const parsedReport = computed(() =>
-  parseInterviewReport(reportMarkdown.value || replay.value?.summaryReport || ''),
-)
-const renderedReport = computed(() =>
-  parsedReport.value.kind === 'markdown' ? renderMarkdown(parsedReport.value.markdown) : '',
-)
-
-const {
-  appendMessage,
-  ensureAssistantPlaceholder,
-  appendAssistantDelta,
-  streamReply,
-  cleanupTextStream,
-} = useInterviewTextStream({
-  activeSessionId,
-  replay,
-  reportMarkdown,
-  reconnectingStatus,
-  streamTimeoutId,
-  authToken: () => authStore.token,
-  getNewAbortSignal,
-  abortActiveStream,
-  loadSession,
-  refreshSessionList,
-  showNotice,
-  showReport: () => {
-    showingReport.value = true
-  },
-  async onAuthExpired() {
-    authStore.clearSession()
-    await router.replace('/login?reason=expired')
-  },
-})
-
-const { startListeningReport, stopListeningReport } = useReportListener({
-  activeSessionId,
-  isGenerating,
-  replay,
-  sessions,
-  reportMarkdown,
+  resumes,
+  positions,
+  selectedResumeId,
+  selectedPositionId,
+  answer,
+  uploading,
+  uploadDisplayName,
+  sending,
+  creating,
+  finishing,
   showingReport,
-  authToken: () => authStore.token,
-  loadSession,
-  showNotice,
-})
-
-const isVoiceMode = ref(false)
-const {
+  messages,
+  jdText,
+  reconnectingStatus,
+  currentStage,
+  targetPosition,
+  sessionStatus,
+  hasReport,
+  isFinished,
+  isGenerating,
+  llmProvider,
+  llmModel,
+  parsedReport,
+  renderedReport,
+  isVoiceMode,
   voiceStatus,
   incomingAudioChunk,
-  closeVoiceSocket,
+  exportingPdf,
+  handleUpload,
+  createNewInterview,
+  handleSend,
+  handleFinish,
+  handleExportPdf,
   handleAudioChunk,
   handleStartRecording,
   handleStopRecording,
   handlePlayStatus,
-} = useVoiceInterviewSocket({
-  activeSessionId,
-  isVoiceMode,
-  replay,
-  authToken: () => authStore.token,
-  showNotice,
-  appendMessage,
-  ensureAssistantPlaceholder,
-  appendAssistantDelta,
-})
+} = useInterviewPageController()
 
-function setResumeDefaults(items: ResumeItem[]) {
-  if (!selectedResumeId.value || !items.some((item) => item.id === selectedResumeId.value)) {
-    selectedResumeId.value = items[0]?.id ?? null
-  }
-  uploadDisplayName.value =
-    items.find((item) => item.id === selectedResumeId.value)?.fileName || '未选择任何文件'
+const reportRef = useTemplateRef<HTMLElement>('reportRef')
+
+function exportReport() {
+  return handleExportPdf(reportRef.value)
 }
-
-function setPositionDefaults(items: PositionTemplate[]) {
-  if (!selectedPositionId.value || !items.some((item) => item.id === selectedPositionId.value)) {
-    selectedPositionId.value = items[0]?.id ?? null
-  }
-}
-
-async function loadDashboard() {
-  loading.value = true
-  try {
-    const [resumeList, positionList] = await Promise.all([
-      fetchResumes(),
-      fetchPositions(),
-      refreshSessionList(),
-    ])
-    resumes.value = resumeList
-    positions.value = positionList
-    setResumeDefaults(resumeList)
-    setPositionDefaults(positionList)
-
-    if (
-      activeSessionId.value &&
-      sessions.value.some((item) => item.sessionId === activeSessionId.value)
-    ) {
-      await loadSession(activeSessionId.value, true)
-
-      const snapshot = sessionStorage.getItem('interview-stream-snapshot')
-      if (snapshot) {
-        try {
-          const parsed = JSON.parse(snapshot)
-          if (parsed.sessionId === activeSessionId.value) {
-            const doResume = await confirmDialog.confirm({
-              title: '恢复 AI 回复',
-              message: '检测到上次未完成的 AI 回复，是否恢复？',
-              confirmText: '恢复',
-              cancelText: '忽略',
-            })
-            if (doResume && replay.value) {
-              const target = replay.value.messages.find((m) => m.id === parsed.messageId)
-              if (target) {
-                target.content = parsed.content
-              } else {
-                replay.value.messages.push({
-                  id: parsed.messageId,
-                  role: 'assistant',
-                  content: parsed.content,
-                  createdAt: new Date(parsed.timestamp).toISOString(),
-                })
-              }
-            }
-            sessionStorage.removeItem('interview-stream-snapshot')
-          }
-        } catch (e) {
-          sessionStorage.removeItem('interview-stream-snapshot')
-        }
-      }
-    }
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    loading.value = false
-  }
-}
-
-async function handleUpload(file: File) {
-  uploading.value = true
-  try {
-    const result = await withMinDelay(uploadResume(file))
-    const updated = await fetchResumes()
-    resumes.value = updated
-    selectedResumeId.value = result.resumeId
-    uploadDisplayName.value =
-      updated.find((item) => item.id === result.resumeId)?.fileName || file.name
-    showNotice('简历已上传', 'success')
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    uploading.value = false
-  }
-}
-
-async function createNewInterview(jdText = '', llmModel?: string) {
-  if (!selectedResumeId.value || !selectedPositionId.value) {
-    showNotice('请选择简历和岗位', 'warning')
-    return
-  }
-  if (creating.value || loading.value) {
-    return
-  }
-
-  creating.value = true
-  try {
-    const result = await withMinDelay(
-      startInterview({
-        resumeId: selectedResumeId.value,
-        positionId: selectedPositionId.value,
-        jdText: jdText || undefined,
-        llmModel: llmModel || undefined,
-      }),
-    )
-    await refreshSessionList()
-    await loadSession(result.sessionId, true)
-    answer.value = ''
-    showingReport.value = false
-    showNotice('面试已创建', 'success')
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    creating.value = false
-  }
-}
-
-async function handleSend() {
-  const content = answer.value.trim()
-  if (!content) return
-  sending.value = true
-  try {
-    const success = await streamReply(content, false)
-    if (success) {
-      answer.value = ''
-    }
-  } finally {
-    // 统一清理：无论成功/失败/中止，sending 仅在此处清除
-    sending.value = false
-  }
-}
-
-async function handleFinish() {
-  if (!activeSessionId.value) return
-  if (currentStage.value !== 'closing' || isFinished.value) {
-    showNotice('仅在处于收尾阶段且会话未结束时，才能生成报告', 'warning')
-    return
-  }
-  // 1. 强制中止正在进行的 chat SSE 流，消除并发竞争
-  abortActiveStream()
-  // 2. 清除 watchdog 定时器，防止残留 timeout 干扰
-  if (streamTimeoutId.value !== null) {
-    clearTimeout(streamTimeoutId.value)
-    streamTimeoutId.value = null
-  }
-  // 3. 重置 sending 状态（流已被中止，发送标记失效）
-  sending.value = false
-  reconnectingStatus.value = ''
-
-  finishing.value = true
-  try {
-    const result = await withMinDelay(finishInterview(activeSessionId.value))
-    const target = sessions.value.find((item) => item.sessionId === activeSessionId.value)
-    if (target) {
-      target.status = result.status || 'generating'
-    }
-    if (replay.value) {
-      replay.value.status = result.status || 'generating'
-    }
-    showNotice('已开始生成报告，请稍候', 'success')
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    finishing.value = false
-  }
-}
-
-watch(activeSessionId, (newId, oldId) => {
-  if (newId !== oldId) {
-    showingReport.value = false
-    answer.value = ''
-  }
-})
-
-watch(replay, (newVal) => {
-  if (newVal) {
-    if (newVal.resumeId) selectedResumeId.value = newVal.resumeId
-    if (newVal.positionId) selectedPositionId.value = newVal.positionId
-  }
-})
-
-watch(
-  () => replay.value?.summaryReport,
-  (val) => {
-    if (val && !reportMarkdown.value) {
-      reportMarkdown.value = val
-    }
-    if (val) {
-      showingReport.value = true
-    }
-  },
-)
-
-watch(
-  isGenerating,
-  (generating) => {
-    if (generating && activeSessionId.value) {
-      void startListeningReport(activeSessionId.value)
-    } else {
-      stopListeningReport()
-    }
-  },
-  { immediate: true },
-)
-
-watch(activeSessionId, (newId) => {
-  stopListeningReport()
-  if (isGenerating.value && newId) {
-    void startListeningReport(newId)
-  }
-})
-
-const reportRef = ref<HTMLElement | null>(null)
-const exportingPdf = ref(false)
-
-async function handleExportPdf() {
-  if (!reportRef.value) return
-  exportingPdf.value = true
-  try {
-    const title = targetPosition.value ? `${targetPosition.value}-面试评估报告` : '面试评估报告'
-    await exportToPdf(reportRef.value, `${title}.pdf`)
-    showNotice('PDF 导出成功', 'success')
-  } catch (error) {
-    showNotice('PDF 导出失败，请重试', 'error')
-    console.error(error)
-  } finally {
-    exportingPdf.value = false
-  }
-}
-
-onMounted(() => {
-  void loadDashboard()
-})
-
-onBeforeUnmount(() => {
-  cleanupTextStream()
-  abortActiveStream()
-  closeVoiceSocket()
-  stopListeningReport()
-})
 </script>
 
 <template>
@@ -432,7 +102,7 @@ onBeforeUnmount(() => {
         :exporting="exportingPdf"
         @finish="handleFinish"
         @toggle-report="showingReport = $event"
-        @export-pdf="handleExportPdf"
+        @export-pdf="exportReport"
       />
 
       <div class="workspace-active__main">
@@ -477,7 +147,7 @@ onBeforeUnmount(() => {
               :selected-position-id="selectedPositionId"
               :llm-provider="llmProvider"
               :llm-model="llmModel"
-              :jd-text="replay?.jdText"
+              :jd-text="jdText"
               v-model="answer"
               :uploading="uploading"
               :upload-display-name="uploadDisplayName"

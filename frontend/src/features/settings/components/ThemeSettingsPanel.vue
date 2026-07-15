@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import type { ThemePreference } from '@/api/contracts'
+import type { ThemePreference } from '../model/types'
 import { fetchUserProfile, updateUserProfile } from '../api/user'
-import { usePageNotice } from '@/composables/usePageNotice'
-import { withMinDelay } from '@/lib/utils'
-import { getErrorMessage } from '@/utils/errors'
-import { applyThemePreference, storeThemePreference } from '@/utils/theme'
+import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
+import { withMinDelay } from '@/shared/lib/utils'
+import { getErrorMessage } from '@/shared/lib/errors'
+import { applyThemePreference, storeThemePreference } from '../model/theme'
 
 const loading = ref(false)
 const saving = ref(false)

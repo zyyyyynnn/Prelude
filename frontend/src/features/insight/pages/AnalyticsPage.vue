@@ -5,16 +5,16 @@ import { init, use, type ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
-import { getErrorMessage } from '@/utils/errors'
+import { getErrorMessage } from '@/shared/lib/errors'
 import type {
   AnalyticsRadarResponse,
   AnalyticsTrendPoint,
   AnalyticsWeaknessItem,
-} from '@/api/contracts'
-import { usePageNotice } from '@/composables/usePageNotice'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import EmptyState from '@/components/ui/empty-state/EmptyState.vue'
+} from '../model/types'
+import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
+import { Card } from '@/shared/ui/card'
+import { Badge } from '@/shared/ui/badge'
+import EmptyState from '@/shared/ui/empty-state/EmptyState.vue'
 
 const { showNotice } = usePageNotice()
 

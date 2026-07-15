@@ -60,20 +60,21 @@ class UserLlmConfigServiceImplTest {
     void returnsMaskedCurrentUserConfig() {
         User user = new User();
         user.setId(7L);
-        user.setLlmProvider("openai");
+        user.setLlmProvider("openai-chat-completions");
         user.setLlmModel("gpt-4o");
         user.setLlmBaseUrl("https://example.com/v1");
         user.setLlmApiKeyEncrypted("cipher-text");
 
         when(userMapper.selectById(7L)).thenReturn(user);
         when(devFixtureService.isEnabled()).thenReturn(false);
-        when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai", "gpt-4o"));
+        when(llmRouter.resolveCurrentUserSelection())
+            .thenReturn(new LlmSelection("openai-chat-completions", "gpt-4o"));
         when(aesGcmEncryptor.mask("cipher-text")).thenReturn("****1234");
 
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
         UserLlmConfigResponse response = service.getCurrentUserConfig();
 
-        assertThat(response.providerKey()).isEqualTo("openai");
+        assertThat(response.providerKey()).isEqualTo("openai-chat-completions");
         assertThat(response.model()).isEqualTo("gpt-4o");
         assertThat(response.baseUrl()).isEqualTo("https://example.com/v1");
         assertThat(response.hasApiKey()).isTrue();
@@ -82,7 +83,7 @@ class UserLlmConfigServiceImplTest {
     }
 
     @Test
-    void openAiCompatibleRequiresBaseUrlWhenSaving() {
+    void customProviderRequiresBaseUrlWhenSaving() {
         User user = new User();
         user.setId(7L);
 
@@ -91,7 +92,7 @@ class UserLlmConfigServiceImplTest {
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
 
         assertThatThrownBy(() -> service.updateCurrentUserConfig(new UserLlmConfigRequest(
-            "openai-compatible",
+            "openai-responses",
             "",
             "model-a",
             "sk-test",
@@ -103,18 +104,19 @@ class UserLlmConfigServiceImplTest {
     }
 
     @Test
-    void openAiCompatibleEncryptsKeyAndSavesNormalizedBaseUrl() {
+    void customProviderEncryptsKeyAndSavesNormalizedBaseUrl() {
         User user = new User();
         user.setId(7L);
 
         when(userMapper.selectById(7L)).thenReturn(user);
         when(aesGcmEncryptor.encrypt("sk-test")).thenReturn("cipher-text");
         when(devFixtureService.isEnabled()).thenReturn(false);
-        when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
+        when(llmRouter.resolveCurrentUserSelection())
+            .thenReturn(new LlmSelection("openai-chat-completions", "model-a"));
 
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
         service.updateCurrentUserConfig(new UserLlmConfigRequest(
-            "openai-compatible",
+            "openai-chat-completions",
             "https://example.com/v1/chat/completions",
             "model-a",
             "sk-test",
@@ -128,10 +130,10 @@ class UserLlmConfigServiceImplTest {
 
     @Test
     void clearsOldKeyWhenProviderChangesAndNoNewKeyProvided() {
-        // 旧配置：openai-compatible + 已保存 Key。新请求切换到内置 provider 且不提供新 Key → 旧 Key 必须清空。
+        // 旧配置为用户 BYOK；切换到内置 provider 且不提供新 Key 时必须清空旧 Key。
         User user = new User();
         user.setId(7L);
-        user.setLlmProvider("openai-compatible");
+        user.setLlmProvider("openai-chat-completions");
         user.setLlmBaseUrl("https://example.com/v1");
         user.setLlmApiKeyEncrypted("old-cipher");
 
@@ -152,20 +154,21 @@ class UserLlmConfigServiceImplTest {
 
     @Test
     void clearsOldKeyWhenBaseUrlChangesAndNoNewKeyProvided() {
-        // 旧配置：openai-compatible + baseUrl A + 已保存 Key。新请求 baseUrl 变为 B 且不提供新 Key → 旧 Key 清空。
+        // 自定义接口的 baseUrl 变化且不提供新 Key 时清空旧 Key。
         User user = new User();
         user.setId(7L);
-        user.setLlmProvider("openai-compatible");
+        user.setLlmProvider("openai-chat-completions");
         user.setLlmBaseUrl("https://a.com/v1");
         user.setLlmApiKeyEncrypted("old-cipher");
 
         when(userMapper.selectById(7L)).thenReturn(user);
         when(devFixtureService.isEnabled()).thenReturn(false);
-        when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
+        when(llmRouter.resolveCurrentUserSelection())
+            .thenReturn(new LlmSelection("openai-chat-completions", "model-a"));
 
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
         service.updateCurrentUserConfig(new UserLlmConfigRequest(
-            "openai-compatible", "https://b.com/v1", "model-a", null, null, null
+            "openai-chat-completions", "https://b.com/v1", "model-a", null, null, null
         ));
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
@@ -179,17 +182,18 @@ class UserLlmConfigServiceImplTest {
         // provider 与 baseUrl 均未变、不提供新 Key → 保留旧 Key（不覆盖语义）。
         User user = new User();
         user.setId(7L);
-        user.setLlmProvider("openai-compatible");
+        user.setLlmProvider("openai-chat-completions");
         user.setLlmBaseUrl("https://example.com/v1");
         user.setLlmApiKeyEncrypted("old-cipher");
 
         when(userMapper.selectById(7L)).thenReturn(user);
         when(devFixtureService.isEnabled()).thenReturn(false);
-        when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
+        when(llmRouter.resolveCurrentUserSelection())
+            .thenReturn(new LlmSelection("openai-chat-completions", "model-a"));
 
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
         service.updateCurrentUserConfig(new UserLlmConfigRequest(
-            "openai-compatible", "https://example.com/v1", "model-a", null, null, null
+            "openai-chat-completions", "https://example.com/v1", "model-a", null, null, null
         ));
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
@@ -201,17 +205,18 @@ class UserLlmConfigServiceImplTest {
     void devFixtureClearSentinelClearsStoredApiKeyBeforePlaceholderHandling() {
         User user = new User();
         user.setId(7L);
-        user.setLlmProvider("openai-compatible");
+        user.setLlmProvider("openai-chat-completions");
         user.setLlmBaseUrl("https://example.com/v1");
         user.setLlmApiKeyEncrypted("fixture-placeholder");
 
         when(userMapper.selectById(7L)).thenReturn(user);
         when(devFixtureService.isEnabled()).thenReturn(true);
-        when(llmRouter.resolveCurrentUserSelection()).thenReturn(new LlmSelection("openai-compatible", "model-a"));
+        when(llmRouter.resolveCurrentUserSelection())
+            .thenReturn(new LlmSelection("openai-chat-completions", "model-a"));
 
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
         service.updateCurrentUserConfig(new UserLlmConfigRequest(
-            "openai-compatible", "https://example.com/v1", "model-a", "__CLEAR__", null, null
+            "openai-chat-completions", "https://example.com/v1", "model-a", "__CLEAR__", null, null
         ));
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
@@ -234,11 +239,11 @@ class UserLlmConfigServiceImplTest {
     }
 
     @Test
-    void draftTestRejectsOpenAiCompatibleScopeChangeWithoutNewKey() {
-        // 已保存 openai-compatible + baseUrl A；草稿 baseUrl 变 B 且无新 Key → 明确报错。
+    void draftTestRejectsCustomScopeChangeWithoutNewKey() {
+        // 已保存自定义接口的 baseUrl A；草稿改为 B 且无新 Key时明确报错。
         User user = new User();
         user.setId(7L);
-        user.setLlmProvider("openai-compatible");
+        user.setLlmProvider("openai-responses");
         user.setLlmBaseUrl("https://a.com/v1");
         user.setLlmApiKeyEncrypted("old-cipher");
 
@@ -246,17 +251,17 @@ class UserLlmConfigServiceImplTest {
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
 
         assertThatThrownBy(() -> service.testConfig(new LlmConfigTestRequest(
-            "openai-compatible", "https://b.com/v1", "model-a", null, null, null
+            "openai-responses", "https://b.com/v1", "model-a", null, null, null
         )))
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("重新填写 API Key");
     }
 
     @Test
-    void draftTestUsesSavedBaseUrlWhenOpenAiCompatibleBaseUrlBlank() {
+    void draftTestUsesSavedBaseUrlWhenCustomBaseUrlBlank() {
         User user = new User();
         user.setId(7L);
-        user.setLlmProvider("openai-compatible");
+        user.setLlmProvider("anthropic-messages");
         user.setLlmBaseUrl("https://saved.example/v1");
         user.setLlmModel("model-a");
         user.setLlmApiKeyEncrypted("old-cipher");
@@ -265,7 +270,7 @@ class UserLlmConfigServiceImplTest {
         when(devFixtureService.isEnabled()).thenReturn(false);
         when(aesGcmEncryptor.decrypt("old-cipher")).thenReturn("sk-saved");
         when(llmRouter.chatWithExplicit(
-            eq("openai-compatible"),
+            eq("anthropic-messages"),
             eq("model-a"),
             eq("https://saved.example/v1"),
             eq("sk-saved"),
@@ -276,12 +281,12 @@ class UserLlmConfigServiceImplTest {
 
         com.interview.shared.web.UserContext.setCurrentUserId(7L);
         var response = service.testConfig(new LlmConfigTestRequest(
-            "openai-compatible", "", "model-a", null, null, null
+            "anthropic-messages", "", "model-a", null, null, null
         ));
 
         assertThat(response.ok()).isTrue();
         verify(llmRouter).chatWithExplicit(
-            eq("openai-compatible"),
+            eq("anthropic-messages"),
             eq("model-a"),
             eq("https://saved.example/v1"),
             eq("sk-saved"),

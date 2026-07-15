@@ -1,166 +1,81 @@
 # UI Quality System
 
-`DESIGN.md` 是 UI 规范的唯一最高入口。本文件只描述当前自动化验证、Component Lab、视觉回归、可访问性、token schema 与 Component Lab 的维护方式，不复述 `DESIGN.md` 的样式与组件约束。
+`DESIGN.md` 是 UI 规范的唯一最高入口。本文件只描述当前 UI 代码组织与自动化验证，不重新定义色板、token 数值或视觉语言。
 
-## 1. Scope
+## 代码映射
 
-- 静态 guardrail：`verify:ui`，覆盖 transition-all / window.confirm / 原生 title= / shadow-md / shadow-lg / border-border / h-[30-34px] / Tailwind arbitrary px / 业务组件裸 px / magic height ratio / spacing calc，以及业务组件 `:focus-visible` 的共享 shadow token 约束。
-- Token schema：`verify:tokens`，校验 `frontend/tokens/ui-tokens.json` schema 完整性、`--shadow-*` 原始值仅在 token 定义块、`--z-index-*` 唯一性、design-locked 值（260 / 51 / 800 / 960 / 500 / 34 / 30）。
-- 可访问性：`verify:a11y`，Playwright + axe-core 9 个场景，仅 fail **critical** axe violations；serious 作为 backlog。
-- 视觉回归：`capture:visual` / `verify:visual`，22 个 scenario 抓图为 PNG artifact；当前 **artifact-only + continue-on-error**，不作为 blocking diff gate。
-- Component Lab：dev-only `/components-lab` 路由，`import.meta.env.DEV` 条件注册，生产构建被 Vite tree-shake 掉。
+| 层级 | 路径 | 职责 |
+| --- | --- | --- |
+| Foundations | `frontend/src/shared/ui/styles/index.css`、`frontend/tokens/ui-tokens.json` | token 定义、基础样式与只读 token 索引 |
+| Components | `frontend/src/shared/ui/` | Reka UI 驱动的通用 primitive |
+| Patterns | `frontend/src/features/*/components/` | 由 primitive 组成的业务界面 |
+| Lab | `frontend/src/devtools/component-lab/` | 仅开发态的组件状态检查 |
 
-## 2. Commands
+样式入口移动或模块拆分必须保持现有 token 值和用户可见视觉不变。业务组件不得反向定义 Foundations。
+
+## 命令
 
 ```powershell
-# 静态 guardrail
+npm --prefix frontend run check
 npm --prefix frontend run verify:ui
-
-# token schema
 npm --prefix frontend run verify:tokens
-
-# 可访问性
+npm --prefix frontend run verify:byok
+npm --prefix frontend run verify:dark
+npm --prefix frontend run verify:flows
 npm --prefix frontend run verify:a11y
-
-# 视觉回归（artifact-only）
-npm --prefix frontend run capture:visual
+npm --prefix frontend run verify:visual
 ```
 
-所有脚本使用 Node 内置实现，不引入 Style Dictionary、Storybook 等额外依赖。
+## CI 门禁
 
-## 3. CI status
-
-| Gate | 范围 | 类型 |
+| Gate | 范围 | CI 类型 |
 | --- | --- | --- |
-| `verify:ui` | 静态 guardrail（含 component focus shadow token） | blocking |
-| `verify:tokens` | token schema | blocking |
-| `verify:a11y` | axe-core critical only | blocking |
-| `verify:byok` | BYOK 设置流程 mock API 验证 | blocking |
-| `verify:dark` | 暗色主题 sanity check | blocking |
-| `capture:visual` | 22 scenario 抓图 | artifact-only (`continue-on-error: true`) |
+| `check` | Oxfmt、Oxlint、`vue-tsc --noEmit` | blocking |
+| `verify:architecture` | 四层目录、依赖方向、feature 公共入口、旧目录回流 | blocking |
+| `test:contracts` | 会话偏好迁移与 Provider DTO 精确字段 | blocking |
+| `build` | Vite+ / Rolldown 生产构建 | blocking |
+| `verify:production` | 生产产物不包含 devtools，PDF vendor 不被首屏预加载 | blocking |
+| `verify:ui` | 静态 UI guardrail | blocking |
+| `verify:tokens` | token schema、唯一性与 design-lock 值 | blocking |
+| `verify:byok` | BYOK 设置流程 | blocking |
+| `verify:dark` | 暗色主题基本行为 | blocking |
+| `verify:flows` | 会话偏好迁移、确认/取消、隐藏持久化与刷新恢复 | blocking |
+| `verify:a11y` | axe critical 与键盘路径 | blocking |
+| `capture:visual` | 视觉场景截图 | artifact-only |
 
-CI 浏览器策略：复用系统 Microsoft Edge channel，不再下载 Playwright Chromium。
+CI 浏览器测试复用 Windows runner 的 Microsoft Edge channel，并设置 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`。本地未设置 `CI` 时使用 Playwright 默认浏览器；本地专用配置可显式使用 Edge。
 
-- `jobs.build.env` 注入 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`。
-- `frontend/tests/_helpers/playwright-base.ts` 在 `process.env.CI` 为真时给 `baseUse` 注入 `channel: 'msedge'`。
-- `npx playwright install` 步骤被整体移除，消除 windows-latest 上 Chromium + headless-shell CDN 下载 stall。
+## 静态 Guardrail
 
-本地 dev 不受影响：`process.env.CI` 未设置时保留默认 Playwright Chromium；`frontend/playwright.local.config.ts` 显式 `channel: 'msedge'`，行为一致。
+`verify:ui` 阻断以下回流：
 
-## 4. Visual coverage
+- `transition-all`、`window.confirm`、原生 `title=`；
+- 未批准的阴影、边框、硬高度、arbitrary px 与 magic ratio；
+- 业务组件中的非 token 颜色和裸像素；
+- scoped `:focus-visible` 绕过 `--shadow-icon-action-focus`。
+- Tooltip 回退到页面 surface，或缺少统一的中性反相表面与长文本换行约束。
 
-22 scenarios 抓图输出至 `frontend/tests/visual/__screenshots__/`（已 gitignore）：
+`verify:tokens` 校验：
 
-| # | 场景 |
-| --- | --- |
-| 1 | login page (light) |
-| 2 | login page (dark) |
-| 3 | sidebar expanded |
-| 4 | sidebar collapsed |
-| 5 | interview empty state |
-| 6 | composer text-mode |
-| 7 | composer voice-mode（fallback） |
-| 8 | settings modal — profile tab |
-| 9 | settings modal — theme tab |
-| 10 | settings modal — LLM tab |
-| 11 | position dropdown open |
-| 12 | resume dropdown open |
-| 13 | interview generating state（fallback） |
-| 14 | report paper state（fallback） |
-| 15 | analytics dashboard |
-| 16 | components lab (light) |
-| 17 | components lab (dark) |
-| 18 | interview messages hide live score/hint（assertion only） |
-| 19 | structured report carousel |
-| 20 | old Markdown report fallback（assertion only） |
-| 21 | structured report mobile 390px |
-| 22 | structured report PDF non-empty download（assertion only） |
+- `frontend/tokens/ui-tokens.json` schema 完整性；
+- `--shadow-*` 原始值只位于 token 定义块；
+- `--z-index-*` 数值唯一；
+- 已锁定布局与控件尺寸和 `frontend/src/shared/ui/styles/index.css` 一致。
 
-voice-mode / generating 当前为 fallback capture（依赖 active session）。结构化报告、旧 Markdown fallback、小屏和 PDF 已有独立场景。
+## Component Lab
 
-## 5. A11y coverage
+`/components-lab` 由 `frontend/src/app/router.ts` 在 `import.meta.env.DEV` 为真时条件注册。生产构建不包含该路由或 `frontend/src/devtools/` 模块。
 
-9 scenarios，仅 fail **critical** axe violations：
+Lab 覆盖 Button、Input、Textarea、Select、DropdownMenu、Combobox、Dialog、Tooltip、Badge、Card、EmptyState、SegmentedControl、Workspace、Composer 与 Message 等稳定状态。
 
-| # | 场景 | 类型 |
-| --- | --- | --- |
-| 1 | login page — no critical axe violations | axe-core wcag2a/aa/21a/21aa |
-| 2 | workspace shell — no critical axe violations | axe-core |
-| 3 | settings modal — opens, focus inside, Esc closes | keyboard path + axe |
-| 4 | position dropdown — click + Esc | keyboard path |
-| 5 | settings LLM tab — Combobox ArrowDown + Esc | keyboard path + axe |
-| 6 | sidebar collapse button — Enter | keyboard path |
-| 7 | composer textarea — Ctrl+Enter / Meta+Enter | keyboard path |
-| 8 | no native `title=` attribute | guardrail integration |
-| 9 | structured report carousel controls and semantic review list | keyboard path + axe-core |
+## 浏览器覆盖
 
-"`verify:a11y` PASS" ≠ "无 a11y 问题"。Serious violations（主要是 color-contrast）记录在 backlog，由 UI token 团队协调 brand-tone 后再升级为严格模式。
+`verify:a11y` 使用 mock API 执行登录页、工作区、设置弹窗、下拉控件、侧栏、Composer 和结构化报告的 axe 与键盘路径检查。门禁只阻断 critical violation；绿色结果不代表不存在 serious color-contrast 问题，也不授权修改现有品牌色或 token 值。
 
-## 6. Component Lab
+`verify:visual` 覆盖浅色/暗色登录、侧栏、工作区空态、文字/语音 Composer、设置页、下拉浮层、Tooltip 对比度、报告、数据看板、Component Lab、移动端报告与 PDF 导出。CI 的 `capture:visual` 只上传 artifact，本地 `verify:visual` 用于明确的视觉回归验证。
 
-`/components-lab` 是 dev-only 路由：
+## 相关文档
 
-```ts
-...(import.meta.env.DEV
-  ? [
-      {
-        path: '/components-lab',
-        name: 'components-lab',
-        component: () => import('../views/ComponentLabView.vue'),
-        meta: { public: true, devOnly: true },
-      },
-    ]
-  : []),
-```
-
-- `import.meta.env.DEV === false` 时 Vite/Rolldown tree-shake 路由注册 + lazy import 块。
-- `meta.public: true` 让 dev 环境免鉴权访问。
-- 不在用户侧 sidebar / help / auth redirect 中暴露。
-
-覆盖组件族：Button / Input / Textarea / Select / DropdownMenu / Combobox / Dialog / Tooltip / Badge / Card / EmptyState / SegmentedControl / Workspace excerpt / Composer excerpt / Message bubble。
-
-## 7. Token schema
-
-`frontend/tokens/ui-tokens.json` 是只读 index，不生成 CSS。分类与 design-locked 值：
-
-| 字段 | 值 |
-| --- | --- |
-| `ui-height-base` | `34px` |
-| `ui-height-compact` | `30px` |
-| `layout-sidebar-inline-size` | `260px` |
-| `layout-sidebar-collapsed-inline-size` | `51px` |
-| `layout-workspace-content-max-inline-size` | `800px` |
-| `layout-settings-dialog-max-inline-size` | `960px` |
-| `layout-settings-dialog-min-block-size` | `500px` |
-
-校验规则：
-
-| Rule key | 行为 |
-| --- | --- |
-| `raw-only-in-token-definitions` | shadow 原始值必须仅出现在 `:root` / `:root.dark` / `.dark` / `@theme` 中 |
-| component focus shadow | 业务组件 scoped CSS 的 `:focus-visible` 使用 `box-shadow` 时必须引用 `--shadow-icon-action-focus` |
-| `values-must-be-unique` | `--z-index-*` token 数值必须唯一 |
-| `design-locked` | 列出的 token 数值必须与 schema `design_lock_values` 块一致 |
-
-## 8. Backlog
-
-| ID | 风险 | 状态 |
-| --- | --- | --- |
-| R1 | voice-mode / generating 视觉场景依赖 active session，当前使用 workspace-empty fallback capture | 跟踪 |
-| R2 | a11y serious `color-contrast` 命中 5+ 处（login / workspace / LLM tab / settings closed） | UI token 团队协调 brand-tone |
-| R3 | Component Lab 仅 desktop viewport，响应式 split view 缺位 | 跟踪 |
-| R4 | token migration 到 Style Dictionary（生成式 CSS）作为未来路径 | 本轮不做 |
-| R5 | `capture:visual` 当前 artifact-only，是否升级 blocking 待 1-2 个 release 周期回归 main 验证后再决定 | 跟踪 |
-| R6 | token `legacy-utility` 类别（9 个 token）整合到统一 namespace | 后续 |
-
-## 9. 过程记录
-
-`thesis-assets/evidence/phase-reports/ui-phase2-quality-system-2026-06.md` 保留 Phase 0–6 的 commit 列表、阶段完成情况、修改文件清单与最终验证结果。本文件不再展开过程叙述。
-
-## 10. 相关文档
-
-- `DESIGN.md`：UI 规范最高入口
-- `docs/quality/local-review-checklist.md`：本地预检命令
-- `docs/quality/risk-register.md`：工程风险台账
-- `docs/runtime-modes.md`：运行入口
-- `docs/setup.md`：本地环境配置
+- `DESIGN.md`：视觉、交互与 token 最高规范
+- `docs/frontend/architecture.md`：前端四层架构与模块所有权
+- `docs/quality/local-review-checklist.md`：本地交付检查

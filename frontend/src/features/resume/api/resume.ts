@@ -1,6 +1,5 @@
-import { http } from '@/api/http'
-import type { ApiResult, ResumeItem, ResumeUploadResponse } from '@/api/contracts'
-import { unwrapResult } from '@/api/contracts'
+import { http, unwrapResult, type ApiResult } from '@/shared/api'
+import type { ResumeItem, ResumeUploadResponse } from '../model/types'
 
 export async function fetchResumes() {
   const response = await http.get<ApiResult<ResumeItem[]>>('/resume/list')

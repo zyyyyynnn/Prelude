@@ -215,7 +215,8 @@ async function installApiMocks(page) {
           {
             providerKey: 'deepseek',
             displayName: 'DeepSeek',
-            models: ['deepseek-chat', 'deepseek-reasoner'],
+            availableModels: ['deepseek-chat', 'deepseek-reasoner'],
+            enabled: 1,
           },
         ]),
       })

@@ -21,14 +21,14 @@
 ### 2.1 颜色
 
 - 业务组件只能使用 CSS var、Tailwind token utility、项目语义 token 或 `color-mix()`。
-- token 基础色值只允许集中定义在 `frontend/src/styles/index.css`；其他文件不得写散落基础色。
+- token 基础色值只允许集中定义在 `frontend/src/shared/ui/styles/index.css`；其他文件不得写散落基础色。
 - 透明度必须使用 `color-mix(in srgb, var(--token) X%, transparent)`。
 - 禁止业务组件出现非 token 色值、`rgba()`、`white`、`black`。
 
 必备语义 token：
 
 - `--color-bg`：全局纸感背景。
-- `--color-surface`：卡片、输入区、Dialog、Dropdown、Tooltip、Toast 表面。
+- `--color-surface`：卡片、输入区、Dialog、Dropdown、Toast 表面。
 - `--color-surface-hover`：hover 背景。
 - `--color-surface-muted`：弱底色、selected 背景。
 - `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。
@@ -198,7 +198,7 @@ Focus 规则：
 
 ### 5.3 Dropdown / Select / Combobox / Tooltip
 
-统一低浮层视觉：
+Dropdown、Select、Combobox 使用统一低浮层视觉：
 
 - `bg-surface`
 - `border-transparent` 或极弱 token 边界
@@ -207,9 +207,12 @@ Focus 规则：
 - token padding
 - `font-serif`
 
+Tooltip 使用同一 primitive，但采用 `bg-foreground` + `text-background` 的中性反相表面，保证与页面 surface 清晰分离；不得改用品牌色背景。Tooltip 继续使用 `border-transparent`、`shadow-whisper`、`rounded-md`、token padding 与 `font-serif`，长文本以 `max-w-xs` 换行。
+
 规则：
 
 - Dropdown、Select、Combobox content 使用共享类，不在业务组件单独写一套浮层。
+- Tooltip 必须通过 `shared/ui/tooltip/TooltipContent.vue`，业务组件不得覆盖背景色或文字色。
 - content 层级使用 `z-[105]`，Tooltip 使用 `z-[110]`。
 - item 高度跟 trigger：default 34px，compact 30px。
 - item 使用 nowrap、truncate、token hover、focus-visible。
@@ -291,7 +294,7 @@ Focus 规则：
 - 用户名可编辑；邮箱可编辑；密码区只保留旧密码和新密码。
 - 新增真实头像上传：后端保存头像 URL/路径，未设置时展示用户名首字母。
 - 新增主题切换：浅色、暗色、跟随系统；使用小卡片式 SVG 选项，不做普通按钮。
-- LLM provider 文案统一“OpenAI 兼容协议”；Thinking Depth 增加“默认（Default）”。
+- LLM provider 展示名以接口返回为准；当前协议入口为 OpenAI Responses、OpenAI Chat Completions 与 Anthropic Messages。Thinking Depth 包含“默认（Default）”。
 
 ### 6.7 Resume Management
 
