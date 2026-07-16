@@ -4,51 +4,54 @@ title: 图3.3 系统整体架构图
 %%{init: {
   "theme": "base",
   "themeVariables": {
-    "background": "#FAF8F2",
+    "background": "#FFFFFF",
     "primaryColor": "#EFE6DD",
-    "primaryBorderColor": "#B79A8B",
+    "primaryBorderColor": "#8F766A",
     "primaryTextColor": "#252525",
-    "lineColor": "#A89A90",
+    "lineColor": "#786F68",
     "secondaryColor": "#F6F0E8",
     "tertiaryColor": "#FBFAF6",
     "fontFamily": "system-ui, -apple-system, \"Microsoft YaHei\", sans-serif",
-    "fontSize": "16px",
-    "nodePadding": "16px"
+    "fontSize": "18px",
+    "nodePadding": "18px"
   },
   "flowchart": {
-    "nodeSpacing": 46,
-    "rankSpacing": 58,
-    "curve": "basis"
+    "nodeSpacing": 38,
+    "rankSpacing": 46,
+    "curve": "monotoneY",
+    "subGraphTitleMargin": {
+      "top": 8,
+      "bottom": 24
+    }
   }
 }}%%
 flowchart TB
   user((" &nbsp; 用户 / 浏览器端 &nbsp; "))
 
-  subgraph frontend[" &nbsp; 前端功能模块 &nbsp; "]
+  subgraph frontend["<div style='width: 500px; text-align: left;'>前端功能模块</div>"]
+    direction LR
     vue[" &nbsp; Vue 3 / Vite &nbsp; "]
-    features[" &nbsp; auth / resume / interview / insight / settings &nbsp; "]
+    features[" &nbsp; auth / resume / interview / report / insight / settings &nbsp; "]
   end
 
   subgraph backend[" &nbsp; Spring Boot 模块化单体 &nbsp; "]
     direction TB
     api[" &nbsp; API 适配层 &nbsp; <br/> &nbsp; Controller / Request / Response 映射 &nbsp; "]
-    application[" &nbsp; 应用层 &nbsp; <br/> &nbsp; Use Case / Command / Result / Port &nbsp; "]
+    application[" &nbsp; 应用层 &nbsp; <br/> &nbsp; Use Case / Command / Result / View &nbsp; "]
     domain[" &nbsp; 领域模块 &nbsp; <br/> &nbsp; identity / resume / interview / insight / catalog &nbsp; "]
-    platform[" &nbsp; 平台能力 &nbsp; <br/> &nbsp; LLM / retrieval / job / realtime / security &nbsp; "]
-    infrastructure[" &nbsp; 基础设施适配层 &nbsp; <br/> &nbsp; MyBatis / Redis adapter / SSE &nbsp; "]
+    ports[" &nbsp; 端口边界 &nbsp; <br/> &nbsp; Chat / Retrieval / Job / Realtime / Repository &nbsp; "]
+    infrastructure[" &nbsp; 基础设施适配层 &nbsp; <br/> &nbsp; MyBatis / Redis / HTTP / SSE / WebSocket &nbsp; <br/> &nbsp; ReportJobWorker &nbsp; "]
   end
 
-  subgraph async[" &nbsp; 异步报告链路 &nbsp; "]
-    rabbit[" &nbsp; RabbitMQ &nbsp; <br/> &nbsp; 报告任务队列 &nbsp; "]
-    worker[" &nbsp; ReportJobWorker &nbsp; "]
-  end
-
-  subgraph data[" &nbsp; 数据与中间件层 &nbsp; "]
+  subgraph runtime[" &nbsp; 数据与外部运行依赖 &nbsp; "]
+    direction LR
     mysql[" &nbsp; MySQL &nbsp; <br/> &nbsp; 业务数据 &nbsp; "]
     redis[" &nbsp; Redis &nbsp; <br/> &nbsp; 限流 / 缓存 / 状态辅助 &nbsp; "]
+    rabbit[" &nbsp; RabbitMQ &nbsp; <br/> &nbsp; 报告任务队列 &nbsp; "]
+    llm[" &nbsp; LLM Provider &nbsp; <br/> &nbsp; DeepSeek + 3 BYOK protocols &nbsp; "]
+    mysql ~~~ redis ~~~ rabbit ~~~ llm
   end
 
-  llm[" &nbsp; LLM Provider &nbsp; <br/> &nbsp; OpenAI-compatible / BYOK &nbsp; "]
   fixture[" &nbsp; 本地验收数据夹具 &nbsp; <br/> &nbsp; local/dev only &nbsp; "]
   monitor[" &nbsp; Prometheus / Grafana &nbsp; <br/> &nbsp; 可选观测层 &nbsp; "]
 
@@ -58,31 +61,25 @@ flowchart TB
 
   api --> application
   application --> domain
-  application --> platform
-  application -->|Port / 过渡依赖| infrastructure
-  infrastructure --> mysql
-  infrastructure --> redis
-  platform --> llm
-  platform --> rabbit
-  rabbit --> worker
-  worker --> mysql
-  worker --> application
+  application --> ports
+  infrastructure -->|implements| ports
+  infrastructure --> runtime
 
   fixture -.-> application
-  fixture -.-> mysql
+  fixture -.-> runtime
   monitor -.-> api
 
-  classDef actor fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.5px,color:#252525
-  classDef layer fill:#FBFAF6,stroke:#DED8CD,color:#252525
-  classDef main fill:#F6F0E8,stroke:#C8B7AA,stroke-width:1.2px,color:#252525
-  classDef store fill:#EEE7DC,stroke:#A89183,stroke-width:1.3px,color:#252525
-  classDef ext fill:#F9F9F6,stroke:#CCCCCC,stroke-width:1.2px,color:#555555
-  classDef optional fill:#FBFAF6,stroke:#C8B7AA,stroke-dasharray: 5 5,color:#555555
+  classDef actor fill:#EFE6DD,stroke:#8F766A,stroke-width:1.8px,color:#252525
+  classDef layer fill:#FBFAF6,stroke:#A89A90,stroke-width:1.4px,color:#252525
+  classDef main fill:#F6F0E8,stroke:#A89183,stroke-width:1.4px,color:#252525
+  classDef store fill:#EEE7DC,stroke:#8F766A,stroke-width:1.5px,color:#252525
+  classDef ext fill:#F9F9F6,stroke:#A89A90,stroke-width:1.4px,color:#3F3F3F
+  classDef optional fill:#FBFAF6,stroke:#A89183,stroke-width:1.4px,stroke-dasharray: 5 5,color:#3F3F3F
 
   class user actor
-  class frontend,backend,async,data layer
-  class vue,features,api,application,domain,platform,infrastructure,worker main
+  class frontend,backend,runtime layer
+  class vue,features,api,application,domain,ports,infrastructure main
   class mysql,redis,rabbit store
   class llm ext
   class fixture,monitor optional
-  linkStyle default stroke:#A89A90,stroke-width:1.25px
+  linkStyle default stroke:#786F68,stroke-width:1.5px
