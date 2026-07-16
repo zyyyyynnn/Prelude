@@ -1,4 +1,4 @@
-package com.interview.platform.job;
+package com.interview.platform.job.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;

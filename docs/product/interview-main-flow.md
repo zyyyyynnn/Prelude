@@ -14,6 +14,8 @@ Prelude 的模拟面试主链路是一套真实求职训练流程：用户以自
 4. 后端对每条候选人回答异步评分并保存，不在面试过程中展示分数。
 5. 结束面试后由 RabbitMQ 报告任务生成结构化训练报告。
 6. 报告中的薄弱点进入 `user_weakness`，供 Analytics 按类别聚合。
+7. 基于候选人回答原文生成最多 3 条简历改进建议；无逐字证据、字段不在白名单或原文不匹配的建议不落库。
+8. 用户逐项接受或拒绝建议；接受时通过字段原文检查和 `documentVersion` 乐观更新写回结构化简历，再用于后续面试。
 
 ## 阶段化面试
 
@@ -41,6 +43,7 @@ Prelude 的模拟面试主链路是一套真实求职训练流程：用户以自
 - `weaknesses`：由当前 session 的 `UserWeakness` 行格式化生成。
 - `trainingPlan`：3 天补强、7 天专项和下次模拟重点。
 - `finalAdvice`：总结建议。
+- `resumeImprovements`：目标字段、当前文本、建议文本、理由、候选人回答证据、文档版本与处理状态。
 - `markdownFallback`：旧展示与导出兼容文本。
 
 逐题 `score` 和 `scoringReason` 只读取已落库的 user 消息 `score/hint`。阶段分数只计算该阶段已落库逐题分数均值。总体分只计算三维分数均值。报告生成 LLM 和 dev fixture 草稿都不能提供这些派生字段，避免同一回答出现两套分数。
@@ -55,6 +58,7 @@ Prelude 的模拟面试主链路是一套真实求职训练流程：用户以自
 - `InterviewJudgeService`：逐题评分并写回 user 消息。
 - `InterviewReportParser`：只解析和归一化 LLM/fixture 的叙述草稿。
 - `InterviewReportAssembler`：从草稿、消息、阶段和 weaknesses 生成唯一最终报告。
+- `ResumeImprovementService`：字段白名单、建议状态、用户确认和简历乐观更新。
 - `ReportJobWorker`：RabbitMQ 消费、报告草稿获取、能力数据持久化、最终报告保存与 SSE 通知。
 - `DevFixtureService`：生成可复现数据，但复用相同 parser/assembler，不硬编码最终报告。
 

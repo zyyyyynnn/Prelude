@@ -7,7 +7,7 @@
     "dev": "vp dev",
     "build": "vue-tsc --noEmit && vp build",
     "check": "vp check",
-    "test:contracts": "node --test tests/interview/session-preferences.test.ts tests/settings/provider-contract.test.ts",
+    "test:contracts": "node --test tests/interview/session-preferences.test.ts tests/report/resume-improvement-contract.test.ts tests/settings/provider-contract.test.ts",
     "verify:architecture": "node --test tests/architecture/verify-architecture.test.cjs && node scripts/verify-architecture.cjs",
     "verify:production": "node --test tests/architecture/verify-production-bundle.test.cjs && node scripts/verify-production-bundle.cjs",
     "verify:flows": "playwright test -c playwright.flow.config.ts",

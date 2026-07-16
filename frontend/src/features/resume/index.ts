@@ -1,2 +1,24 @@
-export { deleteResume, fetchResumes, uploadResume } from './api/resume'
-export type { ResumeItem, ResumeUploadResponse } from './model/types'
+export {
+  acceptResumeImprovement,
+  deleteResume,
+  fetchResumeDocument,
+  fetchResumeImprovements,
+  fetchResumes,
+  rejectResumeImprovement,
+  updateResumeDocument,
+  uploadResume,
+} from './api/resume'
+export type {
+  ResumeDocument,
+  ResumeDocumentView,
+  ResumeEducation,
+  ResumeExperience,
+  ResumeImprovement,
+  ResumeImprovementDecision,
+  ResumeImprovementStatus,
+  ResumeItem,
+  ResumeProfile,
+  ResumeProject,
+  ResumeSkill,
+  ResumeUploadResponse,
+} from './model/types'

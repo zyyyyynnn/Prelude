@@ -1,4 +1,4 @@
-package com.interview.platform.retrieval;
+package com.interview.platform.retrieval.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -13,4 +13,7 @@ public class RetrievalChunk {
     private Integer ordinal;
     private String content;
     private String contentHash;
+    private String embeddingModel;
+    private Integer embeddingDimensions;
+    private String embeddingJson;
 }

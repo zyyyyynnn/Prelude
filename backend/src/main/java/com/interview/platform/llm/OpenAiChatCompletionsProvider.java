@@ -10,8 +10,12 @@ public class OpenAiChatCompletionsProvider extends AbstractChatCompletionsProvid
 
     public static final String PROVIDER_KEY = "openai-chat-completions";
 
-    public OpenAiChatCompletionsProvider(ObjectMapper objectMapper, LlmMetricsTracker metricsTracker) {
-        super(objectMapper, PROVIDER_KEY, "OpenAI Chat Completions", "", "", metricsTracker);
+    public OpenAiChatCompletionsProvider(
+        ObjectMapper objectMapper,
+        LlmMetricsTracker metricsTracker,
+        CustomLlmHttpClient httpClient
+    ) {
+        super(objectMapper, PROVIDER_KEY, "OpenAI Chat Completions", "", "", metricsTracker, httpClient);
     }
 
     @Override

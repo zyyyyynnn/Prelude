@@ -1,10 +1,6 @@
 package com.interview.platform.retrieval;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.interview.platform.retrieval.persistence.RetrievalChunkMapper;
 import com.interview.platform.llm.EmbedPort;
-import com.interview.platform.retrieval.InMemoryVectorIndex;
-import com.interview.platform.retrieval.TextSplitter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,8 +11,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Service
@@ -24,36 +22,46 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
 
     private static final int CHUNK_SIZE = 512;
     private static final int CHUNK_OVERLAP = 50;
+    private static final int LOCK_STRIPES = 64;
 
     private final EmbedPort embedPort;
-    private final RetrievalChunkMapper retrievalChunkMapper;
+    private final RetrievalChunkStore chunkStore;
     private final RetrievalSourcePort retrievalSourcePort;
     private final double vectorWeight;
     private final double keywordWeight;
     private final Map<ScopeKey, InMemoryVectorIndex> indices = new ConcurrentHashMap<>();
+    private final ReentrantLock[] scopeLocks = new ReentrantLock[LOCK_STRIPES];
 
     public InMemoryRetrievalAdapter(
         EmbedPort embedPort,
-        RetrievalChunkMapper retrievalChunkMapper,
+        RetrievalChunkStore chunkStore,
         RetrievalSourcePort retrievalSourcePort,
         @Value("${prelude.retrieval.hybrid.vector-weight:0.7}") double vectorWeight,
         @Value("${prelude.retrieval.hybrid.keyword-weight:0.3}") double keywordWeight
     ) {
         this.embedPort = embedPort;
-        this.retrievalChunkMapper = retrievalChunkMapper;
+        this.chunkStore = chunkStore;
         this.retrievalSourcePort = retrievalSourcePort;
         double totalWeight = vectorWeight + keywordWeight;
         this.vectorWeight = totalWeight > 0 ? vectorWeight / totalWeight : 0.7;
         this.keywordWeight = totalWeight > 0 ? keywordWeight / totalWeight : 0.3;
+        for (int index = 0; index < scopeLocks.length; index++) {
+            scopeLocks[index] = new ReentrantLock();
+        }
     }
 
     @Override
-    public synchronized void index(String scopeType, Long scopeId, List<String> documents) {
+    public void index(String scopeType, Long scopeId, List<String> documents) {
         ScopeKey key = new ScopeKey(scopeType, scopeId);
-        List<String> chunks = splitDocuments(documents);
-        persistChunks(key, chunks);
-        indices.put(key, buildIndex(key, chunks));
-        log.info("retrieval_indexed scopeType={} scopeId={} chunks={}", scopeType, scopeId, chunks.size());
+        withScopeLock(key, () -> {
+            List<RetrievalChunkStore.StoredChunk> snapshot = buildSnapshot(key, splitDocuments(documents));
+            persistSnapshot(key, snapshot);
+            indices.put(key, toIndex(snapshot));
+            log.info(
+                "retrieval_indexed scopeType={} scopeId={} chunks={} embedded={}",
+                scopeType, scopeId, snapshot.size(), embeddedCount(snapshot)
+            );
+        });
     }
 
     @Override
@@ -67,84 +75,153 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
             return List.of();
         }
 
-        float[] queryVector;
+        float[] queryVector = null;
         try {
             queryVector = embedPort.embed(query);
-        } catch (Exception exception) {
-            log.warn("retrieval_query_embedding_failed scopeType={} scopeId={}", scopeType, scopeId, exception);
-            return List.of();
+        } catch (RuntimeException exception) {
+            log.warn(
+                "retrieval_query_embedding_failed scopeType={} scopeId={} fallback=keyword",
+                scopeType, scopeId
+            );
         }
 
-        List<InMemoryVectorIndex.Entry> vectorResults = index.search(queryVector, topK * 2);
-        List<ScoredChunk> scoredChunks = new ArrayList<>();
-        String[] queryWords = query.toLowerCase().split("\\s+|\\p{Punct}+");
-        for (InMemoryVectorIndex.Entry entry : vectorResults) {
-            double vectorScore = cosineSimilarity(queryVector, entry.vector());
+        String[] queryWords = tokenize(query);
+        List<ScoredChunk> scored = new ArrayList<>();
+        for (InMemoryVectorIndex.Entry entry : index.entries()) {
             double keywordScore = keywordScore(queryWords, entry.text());
-            scoredChunks.add(new ScoredChunk(
-                entry.text(),
-                vectorWeight * vectorScore + keywordWeight * keywordScore
-            ));
+            double score;
+            if (queryVector == null) {
+                score = keywordScore;
+            } else {
+                double vectorScore = entry.vector() == null
+                    ? 0.0
+                    : normalizeCosine(cosineSimilarity(queryVector, entry.vector()));
+                score = vectorWeight * vectorScore + keywordWeight * keywordScore;
+            }
+            if (score > 0) {
+                scored.add(new ScoredChunk(entry.text(), score, keywordScore));
+            }
         }
-        scoredChunks.sort((left, right) -> Double.compare(right.score(), left.score()));
-        return scoredChunks.stream().limit(topK).map(ScoredChunk::text).toList();
+        scored.sort((left, right) -> {
+            int scoreOrder = Double.compare(right.score(), left.score());
+            return scoreOrder != 0 ? scoreOrder : Double.compare(right.keywordScore(), left.keywordScore());
+        });
+        return scored.stream().limit(topK).map(ScoredChunk::text).toList();
     }
 
     @Override
-    public synchronized void invalidate(String scopeType, Long scopeId) {
+    public void invalidate(String scopeType, Long scopeId) {
         ScopeKey key = new ScopeKey(scopeType, scopeId);
-        indices.remove(key);
-        try {
-            retrievalChunkMapper.delete(scopeQuery(key));
-        } catch (Exception exception) {
-            log.warn("retrieval_invalidate_persistence_failed scopeType={} scopeId={}", scopeType, scopeId, exception);
-        }
+        withScopeLock(key, () -> {
+            try {
+                chunkStore.delete(scopeType, scopeId);
+                indices.remove(key);
+            } catch (RuntimeException exception) {
+                log.warn("retrieval_invalidate_failed scopeType={} scopeId={}", scopeType, scopeId);
+            }
+        });
     }
 
-    private synchronized InMemoryVectorIndex getOrRebuildIndex(ScopeKey key) {
+    private InMemoryVectorIndex getOrRebuildIndex(ScopeKey key) {
         InMemoryVectorIndex cached = indices.get(key);
         if (cached != null) {
             return cached;
         }
 
-        List<String> chunks = loadPersistedChunks(key);
-        String source = "persisted";
-        if (chunks.isEmpty()) {
-            source = "source";
-            try {
-                chunks = splitDocuments(retrievalSourcePort.loadDocuments(key.scopeType(), key.scopeId()));
-                persistChunks(key, chunks);
-            } catch (Exception exception) {
-                log.warn("retrieval_rebuild_failed scopeType={} scopeId={}", key.scopeType(), key.scopeId(), exception);
+        return withScopeLock(key, () -> {
+            InMemoryVectorIndex concurrent = indices.get(key);
+            if (concurrent != null) {
+                return concurrent;
+            }
+
+            List<RetrievalChunkStore.StoredChunk> stored = loadPersistedChunks(key);
+            String source = "persisted";
+            if (stored.isEmpty()) {
+                source = "source";
+                try {
+                    stored = buildSnapshot(
+                        key,
+                        splitDocuments(retrievalSourcePort.loadDocuments(key.scopeType(), key.scopeId()))
+                    );
+                    persistSnapshot(key, stored);
+                } catch (RuntimeException exception) {
+                    log.warn("retrieval_rebuild_failed scopeType={} scopeId={}", key.scopeType(), key.scopeId());
+                    return null;
+                }
+            } else if (requiresEmbeddingRefresh(stored)) {
+                stored = buildSnapshot(key, stored.stream().map(RetrievalChunkStore.StoredChunk::content).toList());
+                persistSnapshot(key, stored);
+                source = "persisted-refreshed";
+            }
+            if (stored.isEmpty()) {
                 return null;
             }
-        }
-        if (chunks.isEmpty()) {
-            return null;
-        }
 
-        InMemoryVectorIndex rebuilt = buildIndex(key, chunks);
-        indices.put(key, rebuilt);
-        log.info(
-            "retrieval_rebuilt scopeType={} scopeId={} source={} chunks={}",
-            key.scopeType(), key.scopeId(), source, chunks.size()
-        );
-        return rebuilt;
+            InMemoryVectorIndex rebuilt = toIndex(stored);
+            indices.put(key, rebuilt);
+            log.info(
+                "retrieval_rebuilt scopeType={} scopeId={} source={} chunks={} embedded={}",
+                key.scopeType(), key.scopeId(), source, stored.size(), embeddedCount(stored)
+            );
+            return rebuilt;
+        });
     }
 
-    private InMemoryVectorIndex buildIndex(ScopeKey key, List<String> chunks) {
-        InMemoryVectorIndex index = new InMemoryVectorIndex();
-        for (String chunk : chunks) {
+    private List<RetrievalChunkStore.StoredChunk> buildSnapshot(ScopeKey key, List<String> chunks) {
+        String modelVersion = currentEmbeddingModel();
+        List<RetrievalChunkStore.StoredChunk> snapshot = new ArrayList<>();
+        for (int ordinal = 0; ordinal < chunks.size(); ordinal++) {
+            String chunk = chunks.get(ordinal);
+            float[] embedding = null;
             try {
-                index.add(chunk, embedPort.embed(chunk));
-            } catch (Exception exception) {
+                embedding = embedPort.embed(chunk);
+            } catch (RuntimeException exception) {
                 log.warn(
-                    "retrieval_chunk_embedding_failed scopeType={} scopeId={} contentHash={}",
-                    key.scopeType(), key.scopeId(), contentHash(chunk), exception
+                    "retrieval_chunk_embedding_failed scopeType={} scopeId={} contentHash={} fallback=keyword",
+                    key.scopeType(), key.scopeId(), contentHash(chunk)
                 );
             }
+            snapshot.add(new RetrievalChunkStore.StoredChunk(
+                ordinal,
+                chunk,
+                contentHash(chunk),
+                embedding == null ? null : modelVersion,
+                embedding
+            ));
         }
+        return List.copyOf(snapshot);
+    }
+
+    private boolean requiresEmbeddingRefresh(List<RetrievalChunkStore.StoredChunk> chunks) {
+        String currentModel = currentEmbeddingModel();
+        return chunks.stream().anyMatch(chunk ->
+            chunk.embedding() == null || !currentModel.equals(chunk.embeddingModel())
+        );
+    }
+
+    private InMemoryVectorIndex toIndex(List<RetrievalChunkStore.StoredChunk> chunks) {
+        InMemoryVectorIndex index = new InMemoryVectorIndex();
+        chunks.forEach(chunk -> index.add(new InMemoryVectorIndex.Entry(
+            chunk.content(), chunk.contentHash(), chunk.embeddingModel(), chunk.embedding()
+        )));
         return index;
+    }
+
+    private List<RetrievalChunkStore.StoredChunk> loadPersistedChunks(ScopeKey key) {
+        try {
+            return chunkStore.load(key.scopeType(), key.scopeId());
+        } catch (RuntimeException exception) {
+            log.warn("retrieval_persistence_read_failed scopeType={} scopeId={}", key.scopeType(), key.scopeId());
+            return List.of();
+        }
+    }
+
+    private void persistSnapshot(ScopeKey key, List<RetrievalChunkStore.StoredChunk> chunks) {
+        try {
+            chunkStore.replace(key.scopeType(), key.scopeId(), chunks);
+        } catch (RuntimeException exception) {
+            log.warn("retrieval_persistence_write_failed scopeType={} scopeId={}", key.scopeType(), key.scopeId());
+        }
     }
 
     private List<String> splitDocuments(List<String> documents) {
@@ -160,54 +237,14 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
         return chunks;
     }
 
-    private List<String> loadPersistedChunks(ScopeKey key) {
-        try {
-            List<RetrievalChunk> chunks = retrievalChunkMapper.selectList(
-                scopeQuery(key).orderByAsc(RetrievalChunk::getOrdinal)
-            );
-            if (chunks == null) {
-                return List.of();
-            }
-            return chunks.stream().map(RetrievalChunk::getContent).toList();
-        } catch (Exception exception) {
-            log.warn(
-                "retrieval_persistence_read_failed scopeType={} scopeId={}",
-                key.scopeType(), key.scopeId(), exception
-            );
-            return List.of();
-        }
-    }
-
-    private void persistChunks(ScopeKey key, List<String> chunks) {
-        try {
-            retrievalChunkMapper.delete(scopeQuery(key));
-            for (int ordinal = 0; ordinal < chunks.size(); ordinal++) {
-                RetrievalChunk chunk = new RetrievalChunk();
-                chunk.setScopeType(key.scopeType());
-                chunk.setScopeId(key.scopeId());
-                chunk.setOrdinal(ordinal);
-                chunk.setContent(chunks.get(ordinal));
-                chunk.setContentHash(contentHash(chunks.get(ordinal)));
-                retrievalChunkMapper.insert(chunk);
-            }
-        } catch (Exception exception) {
-            log.warn(
-                "retrieval_persistence_write_failed scopeType={} scopeId={}",
-                key.scopeType(), key.scopeId(), exception
-            );
-        }
-    }
-
-    private LambdaQueryWrapper<RetrievalChunk> scopeQuery(ScopeKey key) {
-        return new LambdaQueryWrapper<RetrievalChunk>()
-            .eq(RetrievalChunk::getScopeType, key.scopeType())
-            .eq(RetrievalChunk::getScopeId, key.scopeId());
+    private String[] tokenize(String query) {
+        return query.toLowerCase(Locale.ROOT).split("\\s+|\\p{Punct}+");
     }
 
     private double keywordScore(String[] queryWords, String text) {
         int matched = 0;
         int validWords = 0;
-        String normalizedText = text.toLowerCase();
+        String normalizedText = text.toLowerCase(Locale.ROOT);
         for (String word : queryWords) {
             if (word.length() >= 2) {
                 validWords++;
@@ -225,13 +262,17 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
         double rightNorm = 0.0;
         for (int index = 0; index < Math.min(left.length, right.length); index++) {
             dotProduct += left[index] * right[index];
-            leftNorm += Math.pow(left[index], 2);
-            rightNorm += Math.pow(right[index], 2);
+            leftNorm += left[index] * left[index];
+            rightNorm += right[index] * right[index];
         }
         if (leftNorm == 0 || rightNorm == 0) {
             return 0.0;
         }
         return dotProduct / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm));
+    }
+
+    private double normalizeCosine(double value) {
+        return Math.max(0.0, Math.min(1.0, (value + 1.0) / 2.0));
     }
 
     private String contentHash(String content) {
@@ -244,9 +285,42 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
         }
     }
 
+    private long embeddedCount(List<RetrievalChunkStore.StoredChunk> chunks) {
+        return chunks.stream().filter(chunk -> chunk.embedding() != null).count();
+    }
+
+    private String currentEmbeddingModel() {
+        String modelVersion = embedPort.modelVersion();
+        return modelVersion == null || modelVersion.isBlank() ? "unknown" : modelVersion;
+    }
+
+    private ReentrantLock lockFor(ScopeKey key) {
+        return scopeLocks[Math.floorMod(key.hashCode(), scopeLocks.length)];
+    }
+
+    private void withScopeLock(ScopeKey key, Runnable action) {
+        ReentrantLock lock = lockFor(key);
+        lock.lock();
+        try {
+            action.run();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private <T> T withScopeLock(ScopeKey key, java.util.function.Supplier<T> action) {
+        ReentrantLock lock = lockFor(key);
+        lock.lock();
+        try {
+            return action.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private record ScopeKey(String scopeType, Long scopeId) {
     }
 
-    private record ScoredChunk(String text, double score) {
+    private record ScoredChunk(String text, double score, double keywordScore) {
     }
 }

@@ -12,8 +12,21 @@ public record InterviewReportDraft(
     List<String> strengths,
     TrainingPlan trainingPlan,
     String finalAdvice,
-    String reportMarkdown
+    String reportMarkdown,
+    List<ResumeSuggestion> resumeSuggestions
 ) {
+
+    public InterviewReportDraft(
+        ReportSummary summary,
+        DimensionScores scores,
+        List<StageNarrative> stagePerformances,
+        List<String> strengths,
+        TrainingPlan trainingPlan,
+        String finalAdvice,
+        String reportMarkdown
+    ) {
+        this(summary, scores, stagePerformances, strengths, trainingPlan, finalAdvice, reportMarkdown, List.of());
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ReportSummary(
@@ -46,6 +59,16 @@ public record InterviewReportDraft(
         List<String> threeDay,
         List<String> sevenDay,
         List<String> nextInterviewFocus
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ResumeSuggestion(
+        String targetPath,
+        String currentText,
+        String proposedText,
+        String rationale,
+        String evidence
     ) {
     }
 }

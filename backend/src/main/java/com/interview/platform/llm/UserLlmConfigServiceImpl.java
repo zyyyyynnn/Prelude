@@ -32,6 +32,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     private final AesGcmEncryptor aesGcmEncryptor;
     private final LlmFixturePort devFixtureService;
     private final LlmModelDiscoveryService llmModelDiscoveryService;
+    private final CustomLlmEgressPolicy egressPolicy;
 
     @Override
     public UserLlmConfigResponse getCurrentUserConfig() {
@@ -55,6 +56,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         String baseUrl = null;
         if (CustomLlmProtocol.isCustom(providerKey)) {
             baseUrl = CustomLlmEndpointUrl.normalizeRoot(request.baseUrl(), CustomLlmProtocol.require(providerKey));
+            egressPolicy.validateConfiguredEndpoint(baseUrl);
         }
         llmRouter.validateProviderSelection(providerKey, request.model());
 
@@ -142,6 +144,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
                 draftBaseUrl = user.getLlmBaseUrl();
             }
             baseUrl = CustomLlmEndpointUrl.normalizeRoot(draftBaseUrl, CustomLlmProtocol.require(providerKey));
+            egressPolicy.validateConfiguredEndpoint(baseUrl);
         }
 
         if (isDevFixtureEnabled()) {

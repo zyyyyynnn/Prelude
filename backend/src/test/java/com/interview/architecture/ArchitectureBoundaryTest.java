@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ArchitectureBoundaryTest {
 
     @Test
-    void domainPackagesHaveNoSpringDependencies() throws IOException {
+    void domainPackagesHaveNoFrameworkDependencies() throws IOException {
         Path root = backendSourceRoot().resolve(Path.of("com", "interview"));
         try (var files = Files.walk(root)) {
             for (Path file : files
@@ -23,6 +23,8 @@ class ArchitectureBoundaryTest {
                 assertThat(Files.readString(file, StandardCharsets.UTF_8))
                     .as(file.toString())
                     .doesNotContain("org.springframework")
+                    .doesNotContain("com.baomidou.mybatisplus")
+                    .doesNotContain("org.mybatis")
                     .doesNotContain("@Component")
                     .doesNotContain("@Service");
             }
@@ -223,6 +225,61 @@ class ArchitectureBoundaryTest {
             .doesNotContain("InterviewMessageMapper")
             .doesNotContain("InterviewStageMapper")
             .contains("InterviewReportPort");
+    }
+
+    @Test
+    void platformDoesNotImportBootstrap() throws IOException {
+        String sources = readJavaTree(
+            backendSourceRoot().resolve(Path.of("com", "interview", "platform"))
+        );
+
+        assertThat(sources).doesNotContain("com.interview.bootstrap");
+    }
+
+    @Test
+    void jobApiDependsOnQueryPortInsteadOfPersistence() throws IOException {
+        Path jobRoot = backendSourceRoot().resolve(Path.of("com", "interview", "platform", "job"));
+        String apiSources = readJavaTree(jobRoot.resolve("api"));
+
+        assertThat(apiSources)
+            .contains("JobQueryPort")
+            .doesNotContain("com.baomidou.mybatisplus")
+            .doesNotContain("com.interview.platform.job.infrastructure");
+        assertThat(jobRoot.resolve("AsyncJob.java")).doesNotExist();
+    }
+
+    @Test
+    void insightApplicationDoesNotImportApiDtosOrJobInfrastructure() throws IOException {
+        String sources = readJavaTree(
+            backendSourceRoot().resolve(Path.of("com", "interview", "insight", "application"))
+        );
+
+        assertThat(sources)
+            .doesNotContain("com.interview.insight.api")
+            .doesNotContain("com.interview.platform.job.infrastructure")
+            .contains("JobExecutionPort");
+    }
+
+    @Test
+    void businessModulesDoNotImportPlatformInfrastructure() throws IOException {
+        Path root = backendSourceRoot().resolve(Path.of("com", "interview"));
+        for (String module : List.of("identity", "resume", "interview", "insight", "catalog")) {
+            String sources = readJavaTree(root.resolve(module));
+            assertThat(sources)
+                .as(module)
+                .doesNotContain("com.interview.platform.job.infrastructure")
+                .doesNotContain("com.interview.platform.llm.infrastructure")
+                .doesNotContain("com.interview.platform.retrieval.persistence");
+        }
+    }
+
+    @Test
+    void resumeApplicationDoesNotImportResumeApiDtos() throws IOException {
+        String sources = readJavaTree(
+            backendSourceRoot().resolve(Path.of("com", "interview", "resume", "application"))
+        );
+
+        assertThat(sources).doesNotContain("com.interview.resume.api");
     }
 
     @Test

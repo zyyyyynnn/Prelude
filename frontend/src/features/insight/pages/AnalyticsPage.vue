@@ -100,7 +100,6 @@ function renderCharts() {
   const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
   const lineDecor = cssVar('--color-border-warm', 'var(--color-border-warm)')
   const ring = cssVar('--color-ring', 'var(--color-ring)')
-  const surface = cssVar('--color-surface', 'var(--color-surface)')
 
   if (radar.value && radarRef.value && radar.value.sessionCount > 0) {
     radarChart ??= init(radarRef.value)
@@ -141,9 +140,7 @@ function renderCharts() {
       animation: false,
       tooltip: {
         trigger: 'axis',
-        backgroundColor: surface,
-        borderColor: ring,
-        textStyle: { color: secondary, fontFamily: 'var(--font-serif)' },
+        className: 'ui-chart-tooltip',
         formatter: (params: any) => {
           if (!params || !params.length) return ''
           const dataIndex = params[0].dataIndex

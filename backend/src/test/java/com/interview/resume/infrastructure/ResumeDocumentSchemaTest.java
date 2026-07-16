@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ResumeDocumentSchemaTest {
 
     @Test
-    void schemaContainsNullableResumeDocumentExpansionAndIdempotentAlter() throws Exception {
+    void canonicalSchemaContainsResumeDocumentAndImprovementStructures() throws Exception {
         try (var input = getClass().getResourceAsStream("/schema.sql")) {
             assertThat(input).isNotNull();
             String schema = new String(input.readAllBytes(), StandardCharsets.UTF_8);
@@ -21,16 +21,12 @@ class ResumeDocumentSchemaTest {
                 .contains("COLUMN_NAME = 'document_json'")
                 .contains("COLUMN_NAME = 'document_version'")
                 .contains("COLUMN_NAME = 'source_type'")
-                .contains("COLUMN_NAME = 'plain_text_projection'");
-        }
-        try (var input = getClass().getResourceAsStream("/migrations/20260712_resume_document_expand.sql")) {
-            assertThat(input).isNotNull();
-            String migration = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-            assertThat(migration)
-                .contains("ADD COLUMN `document_json` LONGTEXT NULL")
-                .contains("ADD COLUMN `document_version` INT NULL")
-                .contains("ADD COLUMN `source_type` VARCHAR(32) NULL")
-                .contains("ADD COLUMN `plain_text_projection` MEDIUMTEXT NULL");
+                .contains("COLUMN_NAME = 'plain_text_projection'")
+                .contains("CREATE TABLE IF NOT EXISTS `resume_improvement`")
+                .contains("`target_path` VARCHAR(128) NOT NULL")
+                .contains("`base_document_version` INT NOT NULL")
+                .contains("`status` ENUM('pending','accepted','rejected')")
+                .contains("UNIQUE KEY `uk_resume_improvement_session_ordinal`");
         }
     }
 }

@@ -4,25 +4,27 @@ title: 图3.2 数据库核心实体关系图
 %%{init: {
   "theme": "base",
   "themeVariables": {
-    "background": "#FAF8F2",
+    "background": "#FFFFFF",
     "primaryColor": "#EFE6DD",
-    "primaryBorderColor": "#B79A8B",
+    "primaryBorderColor": "#8F766A",
     "primaryTextColor": "#252525",
-    "lineColor": "#A89A90",
+    "lineColor": "#786F68",
     "secondaryColor": "#F6F0E8",
     "tertiaryColor": "#FBFAF6",
     "fontFamily": "system-ui, -apple-system, \"Microsoft YaHei\", sans-serif",
-    "fontSize": "14px",
-    "nodePadding": "15px"
+    "fontSize": "16px",
+    "nodePadding": "17px"
   },
   "flowchart": {
-    "nodeSpacing": 50,
-    "rankSpacing": 60
+    "nodeSpacing": 42,
+    "rankSpacing": 52,
+    "curve": "monotoneY"
   }
 }}%%
 flowchart TB
   user[" &nbsp; user &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • username &nbsp; "]
   resume[" &nbsp; resume &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; "]
+  resume_improvement[" &nbsp; resume_improvement &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id / resume_id / session_id (FK) &nbsp; <br/> &nbsp; • target_path / status &nbsp; "]
   position_template[" &nbsp; position_template &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • name &nbsp; "]
   
   interview_session[" &nbsp; interview_session &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; <br/> &nbsp; • resume_id (FK) &nbsp; <br/> &nbsp; • position_id (FK) &nbsp; <br/> &nbsp; • status &nbsp; "]
@@ -31,24 +33,33 @@ flowchart TB
   interview_stage[" &nbsp; interview_stage &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • session_id (FK) &nbsp; <br/> &nbsp; • stage_name &nbsp; "]
   score_history[" &nbsp; score_history &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; <br/> &nbsp; • session_id (FK) &nbsp; "]
   user_weakness[" &nbsp; user_weakness &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; <br/> &nbsp; • session_id (FK) &nbsp; "]
+  async_job[" &nbsp; async_job &nbsp; <br/> &nbsp; • id (PK) / job_id (UK) &nbsp; <br/> &nbsp; • user_id (FK) &nbsp; <br/> &nbsp; • subject_id / status / attempts &nbsp; "]
+  retrieval_chunk[" &nbsp; retrieval_chunk &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • scope_type / scope_id / ordinal &nbsp; <br/> &nbsp; • content_hash / embedding_model &nbsp; "]
   
   llm_provider_config[" &nbsp; llm_provider_config &nbsp; <br/> &nbsp; 模型提供商配置 &nbsp; <br/> &nbsp; • id (PK) &nbsp; <br/> &nbsp; • provider_key &nbsp; "]
 
   user -->|1:N| resume
   user -->|1:N| interview_session
+  user -->|1:N| async_job
+  user -->|1:N| resume_improvement
   resume -->|1:N| interview_session
+  resume -->|1:N| resume_improvement
   position_template -->|1:N| interview_session
   
   interview_session -->|1:N| interview_message
   interview_session -->|1:N| interview_stage
   interview_session -->|1:1| score_history
   interview_session -->|1:N| user_weakness
+  interview_session -->|1:N| resume_improvement
+  resume -.->|logical scope| retrieval_chunk
+  interview_session -.->|logical scope| retrieval_chunk
 
-  classDef entity fill:#F6F0E8,stroke:#C8B7AA,color:#252525
-  classDef centerEntity fill:#EFE6DD,stroke:#B79A8B,stroke-width:1.5px,color:#252525
-  classDef configEntity fill:#FBFAF6,stroke:#DED8CD,stroke-dasharray: 4 4,color:#555555
+  classDef entity fill:#F6F0E8,stroke:#A89183,stroke-width:1.4px,color:#252525
+  classDef centerEntity fill:#EFE6DD,stroke:#8F766A,stroke-width:1.8px,color:#252525
+  classDef configEntity fill:#FBFAF6,stroke:#A89A90,stroke-width:1.4px,stroke-dasharray: 4 4,color:#3F3F3F
   
   class interview_session centerEntity
   class llm_provider_config configEntity
-  class user,resume,position_template,interview_message,interview_stage,score_history,user_weakness entity
-  linkStyle default stroke:#A89A90,stroke-width:1.2px
+  class user,resume,resume_improvement,position_template,interview_message,interview_stage,score_history,user_weakness,async_job entity
+  class retrieval_chunk configEntity
+  linkStyle default stroke:#786F68,stroke-width:1.5px

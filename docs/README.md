@@ -11,6 +11,7 @@
 | `api.md` | REST / SSE 接口清单，覆盖认证、LLM 配置、简历、面试和数据分析接口 | API 路径、鉴权语义或响应字段变化 |
 | `byok-capability.md` | BYOK 协议目录、端点映射、Key scope 与 fallback 边界 | Provider 协议、模型发现、Key 保存或 fallback 语义变化 |
 | `product/interview-main-flow.md` | 模拟面试主链路的产品定位、结构化报告契约与 service 边界 | 面试阶段、报告结构、评分来源或 fixture 主口径变化 |
+| `backend/architecture.md` | 后端模块化单体、依赖方向、端口、持久化与关键决策 | 后端模块边界、作业、检索、数据初始化或出站策略变化 |
 | `frontend/architecture.md` | 前端四层架构、依赖方向、feature 所有权与状态所有权 | 前端目录、公共入口、HTTP 装配或状态归属变化 |
 | `quality/ui-quality-system.md` | UI 自动化质量体系当前态（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual` / Component Lab / CI 接入） | UI 自动化命令、Component Lab 范围、CI 接入策略变化 |
 | `quality/local-review-checklist.md` | 本地预检命令与红线扫描 | CI、质量门禁或红线扫描命令变化 |
@@ -43,6 +44,6 @@
 
 ## 维护原则
 
-- 文档职责单一：接口放 `api.md`，运行放 `setup/runtime`，产品主链路放 `product/`，质量放 `quality/`，UI 规则放 `DESIGN.md`，前端架构放 `frontend/architecture.md`。
+- 文档职责单一：接口放 `api.md`，运行放 `setup/runtime`，产品主链路放 `product/`，质量放 `quality/`，UI 规则放 `DESIGN.md`，前后端架构分别放 `frontend/architecture.md` 与 `backend/architecture.md`。
 - 不把已完成的迁移或重构过程稿提升为当前运行说明。
 - 若 README、接口、运行入口、产品契约或质量门禁变化，优先更新对应源文档，再更新索引。

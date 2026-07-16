@@ -1,7 +1,6 @@
-package com.interview.platform.job.infrastructure;
+package com.interview.platform.job.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.interview.platform.job.AsyncJob;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

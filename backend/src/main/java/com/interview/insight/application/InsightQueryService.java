@@ -2,9 +2,6 @@ package com.interview.insight.application;
 
 import com.interview.shared.api.BusinessException;
 import com.interview.shared.web.UserContext;
-import com.interview.insight.api.AnalyticsRadarResponse;
-import com.interview.insight.api.AnalyticsTrendItemResponse;
-import com.interview.insight.api.AnalyticsWeaknessItemResponse;
 import com.interview.insight.domain.ScoreHistory;
 import com.interview.insight.domain.UserWeakness;
 import com.interview.insight.application.port.InsightRepository;
@@ -23,10 +20,10 @@ public class InsightQueryService {
 
     private final InsightRepository insightRepository;
 
-    public AnalyticsRadarResponse getRadar() {
+    public InsightRadarView getRadar() {
         List<ScoreHistory> recentScores = insightRepository.recentScores(currentUserId(), 5);
 
-        return new AnalyticsRadarResponse(
+        return new InsightRadarView(
             average(recentScores.stream().map(ScoreHistory::getTechnicalScore).toList()),
             average(recentScores.stream().map(ScoreHistory::getExpressionScore).toList()),
             average(recentScores.stream().map(ScoreHistory::getLogicScore).toList()),
@@ -34,10 +31,10 @@ public class InsightQueryService {
         );
     }
 
-    public List<AnalyticsTrendItemResponse> getTrend() {
-        List<AnalyticsTrendItemResponse> recent = insightRepository.recentScores(currentUserId(), 5)
+    public List<InsightTrendView> getTrend() {
+        List<InsightTrendView> recent = insightRepository.recentScores(currentUserId(), 5)
             .stream()
-            .map(item -> new AnalyticsTrendItemResponse(
+            .map(item -> new InsightTrendView(
                 item.getSessionId(),
                 item.getCreatedAt(),
                 item.getTechnicalScore(),
@@ -48,7 +45,7 @@ public class InsightQueryService {
         return recent.reversed();
     }
 
-    public List<AnalyticsWeaknessItemResponse> getWeaknesses() {
+    public List<InsightWeaknessView> getWeaknesses() {
         List<UserWeakness> weaknesses = insightRepository.listWeaknessesByUser(currentUserId());
 
         Map<String, List<UserWeakness>> grouped = weaknesses.stream()
@@ -56,7 +53,7 @@ public class InsightQueryService {
 
         return grouped.entrySet().stream()
             .sorted((left, right) -> Integer.compare(right.getValue().size(), left.getValue().size()))
-            .map(entry -> new AnalyticsWeaknessItemResponse(
+            .map(entry -> new InsightWeaknessView(
                 entry.getKey(),
                 entry.getValue().size(),
                 entry.getValue().stream()

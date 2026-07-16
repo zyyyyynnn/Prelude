@@ -1,15 +1,16 @@
 package com.interview.platform.job.infrastructure;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.interview.shared.api.BusinessException;
-import com.interview.bootstrap.RabbitMqConfig;
-import com.interview.platform.job.ReportJobMessage;
-import com.interview.platform.job.AsyncJob;
 import com.interview.platform.job.JobRequest;
 import com.interview.platform.job.JobSchedulerPort;
 import com.interview.platform.job.JobStatuses;
 import com.interview.platform.job.JobTicket;
 import com.interview.platform.job.JobTypes;
+import com.interview.platform.job.ReportJobChannel;
+import com.interview.platform.job.ReportJobMessage;
+import com.interview.platform.job.infrastructure.persistence.AsyncJob;
+import com.interview.platform.job.infrastructure.persistence.AsyncJobMapper;
+import com.interview.shared.api.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -44,8 +45,8 @@ public class RabbitJobScheduler implements JobSchedulerPort {
 
         try {
             rabbitTemplate.convertAndSend(
-                RabbitMqConfig.REPORT_EXCHANGE,
-                RabbitMqConfig.REPORT_ROUTING_KEY,
+                ReportJobChannel.EXCHANGE,
+                ReportJobChannel.ROUTING_KEY,
                 new ReportJobMessage(request.subjectId(), request.userId(), job.getJobId())
             );
             job.setDispatchedAt(LocalDateTime.now());
@@ -53,8 +54,10 @@ public class RabbitJobScheduler implements JobSchedulerPort {
             log.info("Published {} job {} for subject {}", request.type(), job.getJobId(), request.subjectId());
             return new JobTicket(job.getJobId(), JobStatuses.PENDING);
         } catch (Exception exception) {
+            log.error("Failed to publish {} job {} for subject {} (type={})",
+                request.type(), job.getJobId(), request.subjectId(), exception.getClass().getSimpleName());
             job.setStatus(JobStatuses.FAILED);
-            job.setLastError(errorMessage(exception));
+            job.setLastError(JobFailureMessage.sanitize(exception));
             job.setFinishedAt(LocalDateTime.now());
             asyncJobMapper.updateById(job);
             throw BusinessException.badRequest("报告生成任务发布失败");
@@ -100,8 +103,4 @@ public class RabbitJobScheduler implements JobSchedulerPort {
             .last("LIMIT 1"));
     }
 
-    private String errorMessage(Exception exception) {
-        String message = exception.getMessage();
-        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
-    }
 }

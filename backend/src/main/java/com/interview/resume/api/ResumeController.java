@@ -13,6 +13,9 @@ import com.interview.resume.application.ImportResumePdf;
 import com.interview.resume.application.ImportResumeResult;
 import com.interview.resume.application.ListResumes;
 import com.interview.resume.application.ResumeDocumentView;
+import com.interview.resume.application.ResumeImprovementDecisionView;
+import com.interview.resume.application.ResumeImprovementService;
+import com.interview.resume.application.ResumeImprovementView;
 import com.interview.resume.application.UpdateResumeDocument;
 import com.interview.resume.application.port.ResumeFixturePort;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +44,7 @@ public class ResumeController {
     private final UpdateResumeDocument updateResumeDocument;
     private final ListResumes listResumes;
     private final DeleteResume deleteResume;
+    private final ResumeImprovementService resumeImprovementService;
     private final ResumeFixturePort devFixtureService;
 
     @PostMapping("/upload")
@@ -48,20 +52,26 @@ public class ResumeController {
         Long userId = currentUserId();
         if (devFixtureService.isEnabled()) {
             validateFixtureFile(file);
-            return Result.success(devFixtureService.createDevFixtureResume(userId, file.getOriginalFilename()));
+            return Result.success(toUploadResponse(
+                devFixtureService.createDevFixtureResume(userId, file.getOriginalFilename())
+            ));
         }
         try {
             ImportResumeResult result = importResumePdf.execute(userId, file.getOriginalFilename(), file.getBytes());
-            List<ResumeProjectDto> projects = result.projects().stream().map(project -> {
+            return Result.success(toUploadResponse(result));
+        } catch (IOException exception) {
+            throw BusinessException.badRequest("文件读取失败");
+        }
+    }
+
+    private ResumeUploadResponse toUploadResponse(ImportResumeResult result) {
+        List<ResumeProjectDto> projects = result.projects().stream().map(project -> {
                 ResumeProjectDto dto = new ResumeProjectDto();
                 dto.setName(project.name());
                 dto.setDescription(project.description());
                 return dto;
             }).toList();
-            return Result.success(new ResumeUploadResponse(result.resumeId(), result.skills(), projects));
-        } catch (IOException exception) {
-            throw BusinessException.badRequest("文件读取失败");
-        }
+        return new ResumeUploadResponse(result.resumeId(), result.skills(), projects);
     }
 
     @PostMapping("/document")
@@ -100,6 +110,24 @@ public class ResumeController {
     public Result<Void> delete(@PathVariable Long resumeId) {
         deleteResume.execute(currentUserId(), resumeId);
         return Result.success();
+    }
+
+    @GetMapping("/{resumeId}/improvements")
+    public Result<List<ResumeImprovementView>> listImprovements(
+        @PathVariable Long resumeId,
+        @RequestParam(value = "sessionId", required = false) Long sessionId
+    ) {
+        return Result.success(resumeImprovementService.list(currentUserId(), resumeId, sessionId));
+    }
+
+    @PostMapping("/improvements/{improvementId}/accept")
+    public Result<ResumeImprovementDecisionView> acceptImprovement(@PathVariable Long improvementId) {
+        return Result.success(resumeImprovementService.accept(currentUserId(), improvementId));
+    }
+
+    @PostMapping("/improvements/{improvementId}/reject")
+    public Result<ResumeImprovementView> rejectImprovement(@PathVariable Long improvementId) {
+        return Result.success(resumeImprovementService.reject(currentUserId(), improvementId));
     }
 
     private Long currentUserId() {

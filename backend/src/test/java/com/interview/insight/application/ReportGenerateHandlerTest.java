@@ -1,8 +1,8 @@
 package com.interview.insight.application;
 
 import com.interview.platform.job.ReportJobMessage;
-import com.interview.platform.job.infrastructure.JobExecutionStore;
-import com.interview.platform.job.infrastructure.JobExecutionStore.ClaimResult;
+import com.interview.platform.job.JobExecutionPort;
+import com.interview.platform.job.JobExecutionPort.ClaimResult;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.never;
@@ -14,7 +14,7 @@ import static org.mockito.Mockito.mock;
 class ReportGenerateHandlerTest {
 
     private final GenerateInterviewReport useCase = mock(GenerateInterviewReport.class);
-    private final JobExecutionStore store = mock(JobExecutionStore.class);
+    private final JobExecutionPort store = mock(JobExecutionPort.class);
     private final ReportJobMessage message = new ReportJobMessage(7L, 42L, "job-1");
 
     @Test
