@@ -21,23 +21,23 @@
 | 字段 | 内容 |
 | --- | --- |
 | Current status | P3 运行观察 |
-| Location | `resume.application.BackfillResumeDocuments`、`prelude.resume.backfill-on-startup` |
-| Current behavior | 按主键游标分批回填空 `document_json`；单行失败继续，读取仍可退回 `raw_text` |
-| Current mitigation | 新列可空、回填幂等、只更新空文档，可配置关闭，输出成功/失败统计 |
-| Trade-off | 万级历史数据可能增加启动后数据库负载 |
+| Location | `resume.application.BackfillResumeDocuments`、`ResumeDocumentBackfillRunner`、`prelude.resume.backfill-on-startup` |
+| Current behavior | 启动时经 `resumeBackfillExecutor` 异步调度按主键游标分批回填空 `document_json`；单行失败继续，读取仍可退回 `raw_text` |
+| Current mitigation | 新列可空、回填幂等、只更新空文档，可配置关闭，输出成功/失败统计；启动线程不再同步阻塞于整批回填（`ResumeDocumentBackfillRunnerTest`） |
+| Trade-off | 万级历史数据仍可能在启动后增加数据库负载；尚未迁入受控 Job Runtime |
 | Safe fix | 达到规模阈值后迁入受控 Job Runtime，保留现有 Port、游标和统计模型 |
 | Next review | 历史简历达到万级、影响启动 SLO，或失败数持续非零 |
 
-### R-006 — Local Realtime Hub 只保证单实例扇出
+### R-006 — Realtime 默认仍是单实例扇出；多实例需显式切换
 
 | 字段 | 内容 |
 | --- | --- |
 | Current status | P2 部署边界 |
-| Location | `platform.realtime.LocalRealtimeHub`、`prelude.realtime.mode=local` |
-| Current behavior | SSE 连接与 session fan-out 经 `RealtimePort`，默认连接表仍在进程内 |
-| Current mitigation | 单实例行为与事件契约完整，transport 已由 Port 隔离 |
-| Trade-off | 多实例且无 sticky session 时，事件可能发布到未持有目标连接的实例 |
-| Safe fix | 增加 Redis pub/sub adapter，或在部署入口强制 sticky session |
+| Location | `LocalRealtimeHub`（`prelude.realtime.mode=local`，默认）、`RedisRealtimeHub`（`mode=redis`） |
+| Current behavior | SSE 连接与 session fan-out 经 `RealtimePort`；默认连接表在进程内；`mode=redis` 时本地投递后经 Redis pub/sub 跨实例广播 |
+| Current mitigation | Port 隔离 + `RealtimeConnectionRegistry` 共享连接表；`RedisRealtimeHub` / `RedisRealtimeHubTest` 覆盖本地投递、对端入站、本实例回环过滤 |
+| Trade-off | 默认 `local` 在多实例且无 sticky session 时仍可能丢跨实例事件；Redis 模式要求 Redis 可用且部署显式切换 |
+| Safe fix | 副本数 > 1 时将 `prelude.realtime.mode` 设为 `redis`，或在入口强制 sticky session；生产前做跨实例联调 |
 | Next review | 后端副本数大于 1，或出现跨实例事件缺失 |
 
 ### R-005 — 异步任务补投依赖数据库轮询
@@ -45,10 +45,10 @@
 | 字段 | 内容 |
 | --- | --- |
 | Current status | P2 可靠性边界 |
-| Location | `platform.job.PendingJobRecoveryPublisher`、`async_job` |
-| Current behavior | enqueue 先写 DB 再投 MQ；超时 PENDING 和租约过期 RUNNING 由轮询补投；consumer 原子 claim、最多 3 次尝试 |
-| Current mitigation | idempotencyKey 唯一、状态可查、重复投递可吸收、错误落库前截断脱敏 |
-| Trade-off | 补投延迟受轮询周期影响，数据库不可用时调度与恢复同时暂停 |
+| Location | `platform.job.RabbitJobScheduler`、`PendingJobRecoveryPublisher`、`async_job` |
+| Current behavior | enqueue 先写 DB 再投 MQ；MQ 发布失败保持 PENDING（记录脱敏 `lastError`，不置 FAILED）；`dispatchedAt` 为空的 PENDING 可被客户端重试立即再投，或由轮询补投超时 PENDING / 租约过期 RUNNING；consumer 原子 claim、最多 3 次尝试 |
+| Current mitigation | idempotencyKey 唯一、状态可查、重复投递可吸收、错误落库前截断脱敏；`RabbitJobSchedulerTest` 覆盖失败保 PENDING 与未投递重试 |
+| Trade-off | 补投延迟仍受轮询周期影响；数据库不可用时调度与恢复同时暂停；尚无事务 outbox / publisher confirm |
 | Safe fix | 建立生产投递 SLO 后迁移到事务 outbox + publisher confirm/CDC |
 | Next review | 任务量显著增长、建立 pending SLO，或出现 DB/MQ 分区告警 |
 
@@ -59,27 +59,16 @@
 | Current status | P2 容量与质量边界 |
 | Location | `platform.retrieval.InMemoryRetrievalAdapter`、`retrieval_chunk` |
 | Current behavior | chunk 和带模型版本的 embedding 持久化；查询融合完整候选的向量/关键词分数，Embedding 故障退化到关键词 |
-| Current mitigation | 64 个 scope 锁条带、内容哈希、原子快照替换、重启恢复测试、5,000 chunk 合成容量实验与 Recall@5 断言 |
-| Trade-off | 合成精确标记查询不代表真实语义相关性；每次搜索复杂度仍为 O(N) |
-| Safe fix | 先建立人工标注的小型真实查询集；规模或 P95 超限后引入近似向量索引/共享存储 |
+| Current mitigation | 64 个 scope 锁条带、内容哈希、原子快照替换、重启恢复测试、5,000 chunk 合成容量实验与 Recall@5 断言；小型标注查询夹具 `HybridRetrievalAnnotatedQueriesTest`（简历域 3 条期望片段） |
+| Trade-off | 标注集仍小且为合成语料，不代表真实语义相关性；每次搜索复杂度仍为 O(N) |
+| Safe fix | 扩充人工标注真实查询集；规模或 P95 超限后引入近似向量索引/共享存储 |
 | Next review | 单 scope 明显超过 5,000 chunk、多实例部署，或开始设定检索质量/延迟 SLO |
-
-### R-003 — TTS 池跨 session 串行
-
-| 字段 | 内容 |
-| --- | --- |
-| Current status | P3 吞吐观察 |
-| Location | `bootstrap.ThreadPoolConfig#ttsTaskExecutor`、`VoiceInterviewTurnService` |
-| Current behavior | 全局 single-thread FIFO 保证同一 turn 的 sentence 与音频下发顺序 |
-| Current mitigation | 30 秒 timeout、失败/超时双标记、发送前检查与顺序测试 |
-| Trade-off | 跨 session 合成串行；直接扩大线程池会破坏同一 turn 顺序 |
-| Safe fix | session 内串行、session 间并行的调度器 |
-| Next review | 真实多用户语音出现排队，或正式验证 ASR/TTS 端到端容量时 |
 
 ## 已关闭风险
 
 | ID | 风险 | 关闭证据 | 重新打开条件 |
 | --- | --- | --- | --- |
+| R-003 | TTS 池跨 session 全局串行 | `SessionKeyedSerialExecutor`（session 内 FIFO、session 间可并行）、`ThreadPoolConfig#ttsTaskExecutor` 池化、`VoiceInterviewTurnService#submitTtsTask`、`SessionKeyedSerialExecutorTest` | 回退为全局单线程池，或去掉 per-session 串行导致同 turn 乱序 |
 | R-008 | insight application 依赖 API DTO / Job infrastructure | application View、`JobExecutionPort`、`ArchitectureBoundaryTest` | application 再次导入 API DTO 或 infrastructure |
 | R-002 | `dompurify` 配置污染 / bypass advisory | `frontend/package.json` override + `npm audit --omit=dev` | 移除 override、升级 PDF 链路或出现新 advisory |
 | R-001 | `form-data` CRLF injection advisory | `frontend/package.json` override + `npm audit --omit=dev` | 移除 override、axios 依赖变化或出现新 advisory |

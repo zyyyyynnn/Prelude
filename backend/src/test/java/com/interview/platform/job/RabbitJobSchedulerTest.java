@@ -44,10 +44,11 @@ class RabbitJobSchedulerTest {
     }
 
     @Test
-    void returnsExistingPendingJobWithoutRepublishing() {
+    void returnsExistingDispatchedPendingJobWithoutRepublishing() {
         AsyncJob existing = new AsyncJob();
         existing.setJobId("job-existing");
         existing.setStatus(JobStatuses.PENDING);
+        existing.setDispatchedAt(java.time.LocalDateTime.now().minusSeconds(5));
         when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
 
         JobTicket ticket = scheduler.enqueue(JobRequest.report(7L, 42L));
@@ -58,7 +59,7 @@ class RabbitJobSchedulerTest {
     }
 
     @Test
-    void sanitizesPublisherFailureBeforePersistingIt() {
+    void keepsPendingAndSanitizesErrorWhenPublisherFails() {
         when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
         doThrow(new IllegalStateException(
             "Authorization: Bearer sk-super-secret https://user:pass@example.com/v1?api_key=hidden"
@@ -68,10 +69,35 @@ class RabbitJobSchedulerTest {
             .isInstanceOf(BusinessException.class)
             .hasMessage("报告生成任务发布失败");
 
-        ArgumentCaptor<AsyncJob> failed = ArgumentCaptor.forClass(AsyncJob.class);
-        verify(mapper).updateById(failed.capture());
-        assertThat(failed.getValue().getLastError())
+        ArgumentCaptor<AsyncJob> pending = ArgumentCaptor.forClass(AsyncJob.class);
+        verify(mapper).updateById(pending.capture());
+        assertThat(pending.getValue().getStatus()).isEqualTo(JobStatuses.PENDING);
+        assertThat(pending.getValue().getDispatchedAt()).isNull();
+        assertThat(pending.getValue().getFinishedAt()).isNull();
+        assertThat(pending.getValue().getLastError())
             .contains("[REDACTED]")
             .doesNotContain("super-secret", "user:pass", "api_key=hidden");
+    }
+
+    @Test
+    void redispatchesUndispatchedPendingJobOnClientRetry() {
+        AsyncJob existing = new AsyncJob();
+        existing.setJobId("job-pending");
+        existing.setStatus(JobStatuses.PENDING);
+        existing.setDispatchedAt(null);
+        when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+
+        JobTicket ticket = scheduler.enqueue(JobRequest.report(7L, 42L));
+
+        assertThat(ticket).isEqualTo(new JobTicket("job-pending", JobStatuses.PENDING));
+        verify(mapper, never()).insert(any(AsyncJob.class));
+        verify(rabbitTemplate).convertAndSend(
+            org.mockito.ArgumentMatchers.eq(ReportJobChannel.EXCHANGE),
+            org.mockito.ArgumentMatchers.eq(ReportJobChannel.ROUTING_KEY),
+            any(ReportJobMessage.class)
+        );
+        ArgumentCaptor<AsyncJob> updated = ArgumentCaptor.forClass(AsyncJob.class);
+        verify(mapper).updateById(updated.capture());
+        assertThat(updated.getValue().getDispatchedAt()).isNotNull();
     }
 }

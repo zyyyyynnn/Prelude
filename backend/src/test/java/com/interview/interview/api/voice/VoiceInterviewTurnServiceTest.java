@@ -5,6 +5,7 @@ import com.interview.interview.application.InterviewJudgeService;
 import com.interview.interview.application.InterviewMessageService;
 import com.interview.interview.application.InterviewStageManager;
 import com.interview.interview.application.InterviewSummaryService;
+import com.interview.bootstrap.SessionKeyedSerialExecutor;
 import com.interview.interview.api.voice.VoiceInterviewSessionService;
 import com.interview.interview.api.voice.VoiceInterviewTurnService;
 import com.interview.interview.api.voice.VoiceTurnEventSink;
@@ -72,6 +73,7 @@ class VoiceInterviewTurnServiceTest {
     @BeforeEach
     void setUp() {
         Executor directExecutor = Runnable::run;
+        SessionKeyedSerialExecutor sessionTtsExecutor = new SessionKeyedSerialExecutor(directExecutor);
         voiceInterviewSessionService = new VoiceInterviewSessionService(interviewSessionMapper);
         InterviewMessageService interviewMessageService = new InterviewMessageService(interviewMessageMapper);
         RunInterviewTurn runInterviewTurn = new RunInterviewTurn(
@@ -90,7 +92,7 @@ class VoiceInterviewTurnServiceTest {
             interviewJudgeService,
             interviewSummaryService,
             directExecutor,
-            directExecutor
+            sessionTtsExecutor
         );
     }
 

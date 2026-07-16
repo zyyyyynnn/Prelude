@@ -37,10 +37,12 @@ public class RabbitJobScheduler implements JobSchedulerPort {
         AsyncJob job = findByIdempotencyKey(request.idempotencyKey());
         if (job == null) {
             job = createPending(request);
-        } else if (!JobStatuses.FAILED.equals(job.getStatus())) {
-            return new JobTicket(job.getJobId(), job.getStatus());
-        } else {
+        } else if (JobStatuses.FAILED.equals(job.getStatus())) {
             resetForRetry(job, request.payloadJson());
+        } else if (JobStatuses.PENDING.equals(job.getStatus()) && job.getDispatchedAt() == null) {
+            // DB row exists but MQ publish never succeeded; fall through and retry dispatch.
+        } else {
+            return new JobTicket(job.getJobId(), job.getStatus());
         }
 
         try {
@@ -50,15 +52,15 @@ public class RabbitJobScheduler implements JobSchedulerPort {
                 new ReportJobMessage(request.subjectId(), request.userId(), job.getJobId())
             );
             job.setDispatchedAt(LocalDateTime.now());
+            job.setLastError(null);
             asyncJobMapper.updateById(job);
             log.info("Published {} job {} for subject {}", request.type(), job.getJobId(), request.subjectId());
             return new JobTicket(job.getJobId(), JobStatuses.PENDING);
         } catch (Exception exception) {
             log.error("Failed to publish {} job {} for subject {} (type={})",
                 request.type(), job.getJobId(), request.subjectId(), exception.getClass().getSimpleName());
-            job.setStatus(JobStatuses.FAILED);
+            // Keep PENDING so recovery polling and client retry can redispatch; do not finish the job.
             job.setLastError(JobFailureMessage.sanitize(exception));
-            job.setFinishedAt(LocalDateTime.now());
             asyncJobMapper.updateById(job);
             throw BusinessException.badRequest("报告生成任务发布失败");
         }
