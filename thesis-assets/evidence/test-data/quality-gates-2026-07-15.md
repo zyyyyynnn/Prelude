@@ -2,8 +2,8 @@
 
 ## 基线
 
-- 代码基线：`95b23d74cd1f887752e9c544aa14f55c6cf8ee69`
-- 审查入口：PR #27 `<https://github.com/zyyyyynnn/Prelude/pull/27>`
+- 代码基线：`391171607d553a059c5aedb6baa69cd6d9148ac8`（PR #27 合并提交）
+- 审查入口：PR #27 `<https://github.com/zyyyyynnn/Prelude/pull/27>`、主线 CI run `29471168463`
 - 证据状态：候选待用户与审查官复核，不构成正式冻结
 
 ## 本地验证
@@ -24,10 +24,11 @@
 
 | 触发 | Run | 提交 | 结果 |
 | --- | --- | --- | --- |
-| push | [29434403952](https://github.com/zyyyyynnn/Prelude/actions/runs/29434403952) | `95b23d7` | `schema`、`build` 全部成功 |
-| pull request | [29434406862](https://github.com/zyyyyynnn/Prelude/actions/runs/29434406862) | `95b23d7` | `schema`、`build` 全部成功 |
+| 最终证据 push | [29470508756](https://github.com/zyyyyynnn/Prelude/actions/runs/29470508756) | `54f531d` | `schema`、`build` 全部成功 |
+| pull request | [29470510655](https://github.com/zyyyyynnn/Prelude/actions/runs/29470510655) | `54f531d` | 第一次 build 因 Maven Central 临时返回 403 失败；同提交重跑后 `schema`、`build` 全部成功 |
+| `main` push | [29471168463](https://github.com/zyyyyynnn/Prelude/actions/runs/29471168463) | `3911716` | 合并态 `schema`、`build` 全部成功 |
 
-两条 build 均执行 Sentrux、后端测试与 JaCoCo、前端依赖审计、check/build、架构/契约、UI/token、BYOK、dark、关键 flows、a11y 和 visual 采集；未通过降低门禁获得绿色结果。
+三条最终成功的 build 均执行 Sentrux、后端测试与 JaCoCo、前端依赖审计、check/build、架构/契约、UI/token、BYOK、dark、关键 flows、a11y 和 visual 采集；未通过降低门禁获得绿色结果。
 
 ## 容量证据
 
