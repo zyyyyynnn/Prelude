@@ -3,17 +3,23 @@ package com.interview.resume.infrastructure;
 import com.interview.resume.application.BackfillResumeDocuments;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.Executor;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class ResumeDocumentBackfillRunnerTest {
 
     @Test
-    void runsConfiguredBackfillUseCaseAtStartup() throws Exception {
+    void schedulesBackfillOnBackgroundExecutorWithoutBlockingStartupThread() throws Exception {
         BackfillResumeDocuments backfill = mock(BackfillResumeDocuments.class);
+        Executor backfillExecutor = mock(Executor.class);
 
-        new ResumeDocumentBackfillRunner(backfill).run(null);
+        new ResumeDocumentBackfillRunner(backfill, backfillExecutor).run(null);
 
-        verify(backfill).execute();
+        verify(backfillExecutor).execute(any());
+        verify(backfill, never()).execute();
     }
 }

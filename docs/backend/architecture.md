@@ -35,7 +35,9 @@ flowchart LR
 
 ### 面试与报告
 
-文字和语音适配器共享 `RunInterviewTurn`，因此会话、阶段、消息和评分真源一致。`FinishInterview` 只通过 `JobSchedulerPort` 创建报告作业；RabbitMQ worker 只把消息交给 `ReportGenerateHandler`。作业状态以 `async_job` 为真源，原子 claim、有限重试、运行租约与启动后恢复吸收重复投递和进程中断。
+文字和语音适配器共享 `RunInterviewTurn`，因此会话、阶段、消息和评分真源一致。语音 TTS 经 `SessionKeyedSerialExecutor` 调度：同一 session 内 sentence 串行保序，不同 session 可并行（`prelude.voice.tts-pool-size`）。`FinishInterview` 只通过 `JobSchedulerPort` 创建报告作业；RabbitMQ worker 只把消息交给 `ReportGenerateHandler`。作业状态以 `async_job` 为真源：先写 PENDING 再投 MQ；发布失败保持 PENDING 并记录脱敏错误，由客户端重试或 `PendingJobRecoveryPublisher` 补投；原子 claim、有限重试、运行租约与启动后恢复吸收重复投递和进程中断。
+
+实时事件经 `RealtimePort`：`prelude.realtime.mode=local`（默认）使用进程内 `LocalRealtimeHub`；`mode=redis` 使用 `RedisRealtimeHub` 在本地扇出后经 Redis pub/sub 跨实例广播。
 
 报告生成通过 `InterviewReportPort` 读取面试数据，通过 `ResumeImprovementPort` 获取简历白名单字段并保存有证据的建议。接受建议属于 resume 用例：校验用户、建议状态、当前字段原文和简历版本后再提交事务。
 
@@ -70,7 +72,9 @@ flowchart LR
 | 决策 | 当前理由 | 未采用方案 | 重新评估条件 |
 | --- | --- | --- | --- |
 | 模块化单体 | 当前体量共享事务与部署更简单 | 微服务 | 团队、发布节奏或独立扩缩需求形成事实证据 |
-| DB 作业真源 + RabbitMQ 投递 | 保留可查询状态、幂等与崩溃恢复 | 只依赖 MQ ack；完整 outbox/CDC | 建立生产投递 SLO 或跨系统事务需求 |
+| DB 作业真源 + RabbitMQ 投递 | 保留可查询状态、幂等与崩溃恢复；发布失败不提前 FAILED | 只依赖 MQ ack；完整 outbox/CDC | 建立生产投递 SLO 或跨系统事务需求 |
+| 默认 local realtime + 可选 Redis 扇出 | 单实例零额外依赖；多实例可显式 `mode=redis` | 强制 sticky session 作为唯一方案 | 副本数 > 1 且跨实例事件缺失 |
+| session 键控 TTS 池 | 保序与多 session 吞吐兼顾 | 全局单线程 FIFO | 端到端语音容量或排队证据出现 |
 | 持久化向量 + 内存融合 | 无新基础设施即可恢复和解释退化 | 专用向量数据库 | scope 规模、实例数或 P95 超出有限容量证据 |
 | 严格 BYOK 出站白名单 | 用户 URL 是服务端 SSRF 高风险入口 | 任意协议/端口透明代理 | 有受控企业网关需求并具备独立网络隔离 |
 | 报告建议需用户确认 | 防止 AI 无证据覆盖用户简历 | 自动改写 | 产品明确要求且具备可审计回滚与更强证据策略 |

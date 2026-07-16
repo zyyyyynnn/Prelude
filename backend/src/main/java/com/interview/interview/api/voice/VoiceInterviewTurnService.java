@@ -9,6 +9,7 @@ import com.interview.interview.application.InterviewTurnCommand;
 import com.interview.interview.application.InterviewTurnResult;
 import com.interview.interview.application.InterviewTurnSink;
 import com.interview.interview.application.RunInterviewTurn;
+import com.interview.bootstrap.SessionKeyedSerialExecutor;
 import com.interview.interview.application.port.VoicePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,7 @@ public class VoiceInterviewTurnService {
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
     @Qualifier("ttsTaskExecutor")
-    private final Executor ttsTaskExecutor;
+    private final SessionKeyedSerialExecutor ttsTaskExecutor;
 
     public void processTurn(Long userId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
         sseTaskExecutor.execute(() -> runTurn(userId, sessionId, audioBytes, sink));
@@ -88,9 +89,9 @@ public class VoiceInterviewTurnService {
                         sentenceBuilder.append(delta);
                         String sentence = extractSentenceIfComplete(sentenceBuilder);
                         if (sentence != null && !sentence.trim().isEmpty() && !ttsFailed.get()) {
-                            ttsFutures.add(CompletableFuture.runAsync(
-                                () -> synthesizeSentence(sentence, sink, ttsFailed, ttsTimedOut),
-                                ttsTaskExecutor
+                            ttsFutures.add(submitTtsTask(
+                                sessionId,
+                                () -> synthesizeSentence(sentence, sink, ttsFailed, ttsTimedOut)
                             ));
                         }
                     }
@@ -99,9 +100,9 @@ public class VoiceInterviewTurnService {
 
             String remaining = sentenceBuilder.toString();
             if (!remaining.trim().isEmpty() && !ttsFailed.get()) {
-                ttsFutures.add(CompletableFuture.runAsync(
-                    () -> synthesizeSentence(remaining, sink, ttsFailed, ttsTimedOut),
-                    ttsTaskExecutor
+                ttsFutures.add(submitTtsTask(
+                    sessionId,
+                    () -> synthesizeSentence(remaining, sink, ttsFailed, ttsTimedOut)
                 ));
             }
             awaitTtsFutures(ttsFutures, TTS_AWAIT_SECONDS, sessionId, sink, ttsFailed, ttsTimedOut);
@@ -115,6 +116,19 @@ public class VoiceInterviewTurnService {
         } finally {
             UserContext.remove();
         }
+    }
+
+    private CompletableFuture<Void> submitTtsTask(Long sessionId, Runnable task) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        ttsTaskExecutor.executeForSession(sessionId, () -> {
+            try {
+                task.run();
+                future.complete(null);
+            } catch (RuntimeException error) {
+                future.completeExceptionally(error);
+            }
+        });
+        return future;
     }
 
     private void synthesizeSentence(

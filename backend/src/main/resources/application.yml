@@ -68,6 +68,8 @@ prelude:
     backfill-batch-size: 100
   realtime:
     mode: local
+  voice:
+    tts-pool-size: 4
   jobs:
     execution-lease-seconds: 300
     dispatch-recovery-delay-ms: 30000

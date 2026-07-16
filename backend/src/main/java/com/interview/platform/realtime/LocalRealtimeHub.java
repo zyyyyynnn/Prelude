@@ -1,53 +1,30 @@
 package com.interview.platform.realtime;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-@Slf4j
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "prelude.realtime", name = "mode", havingValue = "local", matchIfMissing = true)
 public class LocalRealtimeHub implements RealtimePort {
 
-    private final Map<Long, Map<String, SessionStreamSink>> connections = new ConcurrentHashMap<>();
+    private final RealtimeConnectionRegistry registry = new RealtimeConnectionRegistry();
 
     @Override
     public RealtimeConnection register(Long sessionId, String connectionId, SessionStreamSink sink) {
-        connections.computeIfAbsent(sessionId, ignored -> new ConcurrentHashMap<>()).put(connectionId, sink);
-        log.info("Registered realtime connection {} for session {}", connectionId, sessionId);
+        registry.register(sessionId, connectionId, sink);
         return new LocalConnection(sessionId, connectionId, sink);
     }
 
     @Override
     public void unregister(Long sessionId, String connectionId) {
-        Map<String, SessionStreamSink> sessionConnections = connections.get(sessionId);
-        if (sessionConnections == null) {
-            return;
-        }
-        sessionConnections.remove(connectionId);
-        if (sessionConnections.isEmpty()) {
-            connections.remove(sessionId, sessionConnections);
-        }
+        registry.unregister(sessionId, connectionId);
     }
 
     @Override
     public void publish(Long sessionId, String eventName, Object payload) {
-        Map<String, SessionStreamSink> sessionConnections = connections.get(sessionId);
-        if (sessionConnections == null || sessionConnections.isEmpty()) {
-            log.info("No realtime connections for session {} and event '{}'", sessionId, eventName);
-            return;
-        }
-        for (var entry : new ArrayList<>(sessionConnections.entrySet())) {
-            try {
-                entry.getValue().send(eventName, payload);
-            } catch (RuntimeException deliveryFailure) {
-                unregister(sessionId, entry.getKey());
-            }
-        }
+        registry.publish(sessionId, eventName, payload);
     }
 
     private final class LocalConnection implements RealtimeConnection {
