@@ -32,21 +32,38 @@ jobs:
           mysql_container="$(docker ps --filter 'ancestor=mysql:8.4' --format '{{.ID}}' | head -n 1)"
           test -n "$mysql_container"
 
+          mysql_ready=false
+          for attempt in {1..30}; do
+            if docker exec "$mysql_container" mysqladmin ping \
+              --protocol=TCP --host=127.0.0.1 -uroot -proot_password --silent; then
+              mysql_ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$mysql_ready" != true ]]; then
+            docker logs "$mysql_container"
+            exit 1
+          fi
+
           mysql_exec() {
-            docker exec "$mysql_container" mysql -uroot -proot_password --batch --skip-column-names "$@"
+            docker exec "$mysql_container" mysql --protocol=TCP --host=127.0.0.1 \
+              -uroot -proot_password --batch --skip-column-names "$@"
+          }
+
+          mysql_import() {
+            local database="$1"
+            docker exec -i "$mysql_container" mysql --protocol=TCP --host=127.0.0.1 \
+              -uroot -proot_password "$database"
           }
 
           mysql_exec -e 'CREATE DATABASE prelude_clean CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_clean \
-            < backend/src/main/resources/schema.sql
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_clean \
-            < backend/src/main/resources/data.sql
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_clean \
-            < backend/src/main/resources/data.sql
+          mysql_import prelude_clean < backend/src/main/resources/schema.sql
+          mysql_import prelude_clean < backend/src/main/resources/data.sql
+          mysql_import prelude_clean < backend/src/main/resources/data.sql
 
           mysql_exec -e 'CREATE DATABASE prelude_upgrade CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
-            < backend/src/main/resources/schema.sql
+          mysql_import prelude_upgrade < backend/src/main/resources/schema.sql
           mysql_exec prelude_upgrade -e "
             INSERT INTO user (username, password, llm_provider, llm_model, llm_base_url)
             VALUES ('legacy-openai', 'hash', 'openai-compatible', 'legacy-model', 'https://gateway.example/v1');
@@ -76,14 +93,10 @@ jobs:
               DROP COLUMN embedding_dimensions,
               DROP COLUMN embedding_json;
           "
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
-            < backend/src/main/resources/schema.sql
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
-            < backend/src/main/resources/data.sql
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
-            < backend/src/main/resources/schema.sql
-          docker exec -i "$mysql_container" mysql -uroot -proot_password prelude_upgrade \
-            < backend/src/main/resources/data.sql
+          mysql_import prelude_upgrade < backend/src/main/resources/schema.sql
+          mysql_import prelude_upgrade < backend/src/main/resources/data.sql
+          mysql_import prelude_upgrade < backend/src/main/resources/schema.sql
+          mysql_import prelude_upgrade < backend/src/main/resources/data.sql
 
           test "$(mysql_exec prelude_clean -e "SELECT COUNT(*) FROM user WHERE username = 'demo'")" = '0'
           test "$(mysql_exec prelude_upgrade -e "SELECT llm_provider FROM user WHERE username = 'legacy-openai'")" = 'openai-chat-completions'
