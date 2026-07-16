@@ -1,7 +1,7 @@
 spring:
   sql:
     init:
-      mode: never
+      mode: always
 
 app:
   cors:

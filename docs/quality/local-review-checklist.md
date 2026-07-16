@@ -26,11 +26,14 @@ npm --prefix frontend audit --omit=dev
 
 ```powershell
 mvn -f backend/pom.xml test
+mvn -f backend/pom.xml "-Dtest=HybridRetrievalCapacityTest" "-Dprelude.benchmark=true" "-Djacoco.skip=true" test
 sentrux check .
 git diff --check
 ```
 
-涉及后端协议或持久化语义时，`mvn test` 是必跑门禁；纯前端改动仍用它确认整仓兼容性。
+涉及后端协议或持久化语义时，`mvn test` 是必跑门禁；纯前端改动仍用它确认整仓兼容性。容量实验输出 P50/P95 与 Recall@5，但不设置机器相关时延阈值。
+
+CI 的 `schema` job 必须在 MySQL 8.4 上通过全新建库、旧结构/Provider 值升级和重复执行。`schema.sql`、`data.sql`、`data-dev.sql` 之外不得新增日期命名迁移脚本。
 
 ## 边界确认
 
@@ -41,7 +44,7 @@ Get-ChildItem frontend/src -Directory | Select-Object -ExpandProperty Name
 # 旧顶层路径、反向依赖、跨 feature 深导入由脚本统一检查
 npm --prefix frontend run verify:architecture
 
-# 论文资产不属于常规工程改动范围
+# 论文资产有改动时必须能回溯到治理阶段和证据来源
 $mergeBase = git merge-base main HEAD
 git diff --name-only $mergeBase HEAD | rg "^thesis-assets/"
 
@@ -49,7 +52,7 @@ git diff --name-only $mergeBase HEAD | rg "^thesis-assets/"
 rg -n "@/(api|components|composables|lib|router|schemas|stores|styles|utils|views)/|radix-vue" frontend --glob "!package-lock.json"
 ```
 
-第三条和第四条应无输出。源码目录除四层目录外只允许根级类型声明文件。
+第三条仅在论文治理任务中允许有输出；第四条应无输出。源码目录除四层目录外只允许根级类型声明文件。
 
 ## UI 不变量
 

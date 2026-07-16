@@ -11,8 +11,9 @@ public class DeepSeekProvider extends AbstractChatCompletionsProvider {
         ObjectMapper objectMapper,
         @Value("${deepseek.model}") String defaultModel,
         @Value("${deepseek.api-key:}") String systemApiKey,
-        LlmMetricsTracker metricsTracker
+        LlmMetricsTracker metricsTracker,
+        CustomLlmHttpClient httpClient
     ) {
-        super(objectMapper, "deepseek", "DeepSeek", defaultModel, systemApiKey, metricsTracker);
+        super(objectMapper, "deepseek", "DeepSeek", defaultModel, systemApiKey, metricsTracker, httpClient);
     }
 }

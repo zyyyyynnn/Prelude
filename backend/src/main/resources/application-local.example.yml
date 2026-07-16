@@ -42,3 +42,11 @@ openai:
   base-url: ${OPENAI_BASE_URL:}
   api-key: ${OPENAI_API_KEY:}
 
+# 仅 local profile 显式放宽，便于连接本机代理或测试网关；生产默认不允许。
+prelude:
+  llm:
+    egress:
+      allow-http: true
+      allow-private-addresses: true
+      allowed-ports: 80,443,8080,11434
+

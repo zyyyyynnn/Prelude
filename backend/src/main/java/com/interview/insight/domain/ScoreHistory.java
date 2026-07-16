@@ -1,12 +1,10 @@
 package com.interview.insight.domain;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-@TableName("score_history")
 public class ScoreHistory {
 
     private Long id;

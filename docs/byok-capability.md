@@ -24,6 +24,14 @@ Prelude 的面试 LLM 目录固定为一个默认 Provider 与三个用户级 BY
 - Anthropic Messages 将 system 消息提升为 `system` 字段，使用 `x-api-key`、`anthropic-version` 与 `content_block_delta`。
 - 三个 BYOK provider 调用失败时直接返回配置错误，不参与系统 Provider fallback，也不会把用户 Key 转发到其他 Provider。
 
+## 出站安全
+
+- 生产默认只允许 HTTPS 443，拒绝 URL 凭证、query、fragment 和未批准端口。
+- 配置保存和实际连接都会执行 DNS 校验；任一解析结果落入 loopback、私网、link-local、metadata、保留地址或受限 IPv6 过渡网段即拒绝。
+- HTTP 客户端不跟随重定向，设置连接/写入/读取/总调用超时；普通响应与流式响应累计上限均为 2 MiB，单条流事件额外限制为 256 KiB。
+- `application-local.example.yml` 仅为本地代理显式放宽 HTTP、私网与端口；生产默认值不继承该放宽。
+- 上游响应正文和底层异常不会返回给浏览器，服务端日志不得记录 API Key。
+
 ## 接口
 
 - `GET /api/llm/providers`：返回启用且存在真实协议实现的 Provider。
@@ -32,4 +40,4 @@ Prelude 的面试 LLM 目录固定为一个默认 Provider 与三个用户级 BY
 - `POST /api/user/llm-config/discover-models`：按 `providerKey` 检测 OpenAI 协议的 `{root}/models`。
 - `POST /api/user/llm-config/test`：使用草稿或已保存配置发起轻量连通性调用，不持久化草稿。
 
-旧 `openai`、`openai-compatible` 与 `anthropic` 选择由 `data.sql` 的幂等数据维护逻辑分别归并到 `openai-chat-completions` 与 `anthropic-messages`，同时保留可复用的用户根地址和加密 Key。
+生产启动幂等执行 `schema.sql` 与 `data.sql`；旧 `openai`、`openai-compatible` 与 `anthropic` 选择会分别归并到 `openai-chat-completions` 与 `anthropic-messages`，同时保留用户根地址和加密 Key。

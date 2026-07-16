@@ -83,4 +83,12 @@ public class OpenAiEmbeddingAdapter implements EmbedPort {
             throw BusinessException.badRequest("获取 Embedding 失败");
         }
     }
+
+    @Override
+    public String modelVersion() {
+        if (devFixtureEnabled || apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
+            return "mock-character-hash-v1";
+        }
+        return "openai:" + embeddingModel;
+    }
 }

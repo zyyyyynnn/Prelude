@@ -86,6 +86,7 @@ defineExpose({ submit: saveTheme, saving, loading })
         v-for="option in themeOptions"
         :key="option.value"
         type="button"
+        :disabled="loading || saving"
         :class="['theme-option', { 'is-active': state.themePreference === option.value }]"
         @click="selectTheme(option.value)"
       >

@@ -39,7 +39,10 @@ class CustomProviderRequestContractTest {
                 """);
         });
         OpenAiChatCompletionsProvider provider = new OpenAiChatCompletionsProvider(
-            objectMapper, mock(LlmMetricsTracker.class));
+            objectMapper,
+            mock(LlmMetricsTracker.class),
+            CustomLlmTestClients.localClient(server.getAddress().getPort())
+        );
 
         String result = provider.chat(new LlmProvider.LlmInvocation(
             endpoint("/v1/chat/completions"), "gpt-test", "sk-test", messages(), 1024,
@@ -71,7 +74,11 @@ class CustomProviderRequestContractTest {
                  "usage":{"input_tokens":4,"output_tokens":2}}
                 """);
         });
-        AnthropicProvider provider = new AnthropicProvider(objectMapper, mock(LlmMetricsTracker.class));
+        AnthropicProvider provider = new AnthropicProvider(
+            objectMapper,
+            mock(LlmMetricsTracker.class),
+            CustomLlmTestClients.localClient(server.getAddress().getPort())
+        );
 
         String result = provider.chat(new LlmProvider.LlmInvocation(
             endpoint("/v1/messages"), "claude-test", "sk-ant", messages(), 2048,

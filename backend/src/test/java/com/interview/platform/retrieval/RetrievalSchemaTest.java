@@ -23,6 +23,9 @@ class RetrievalSchemaTest {
             .contains("`scope_type` VARCHAR(32) NOT NULL")
             .contains("`scope_id` BIGINT NOT NULL")
             .contains("`content_hash` CHAR(64) NOT NULL")
+            .contains("`embedding_model` VARCHAR(128)")
+            .contains("`embedding_dimensions` INT")
+            .contains("`embedding_json` LONGTEXT")
             .contains("UNIQUE KEY `uk_retrieval_chunk_scope_ordinal`");
     }
 }

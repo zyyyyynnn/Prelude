@@ -48,6 +48,9 @@ class UserLlmConfigServiceImplTest {
     @Mock
     private LlmModelDiscoveryService llmModelDiscoveryService;
 
+    @Mock
+    private CustomLlmEgressPolicy egressPolicy;
+
     @InjectMocks
     private UserLlmConfigServiceImpl service;
 

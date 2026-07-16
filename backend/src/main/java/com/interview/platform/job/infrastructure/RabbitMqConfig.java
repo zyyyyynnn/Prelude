@@ -1,5 +1,6 @@
-package com.interview.bootstrap;
+package com.interview.platform.job.infrastructure;
 
+import com.interview.platform.job.ReportJobChannel;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
@@ -13,25 +14,21 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMqConfig {
 
-    public static final String REPORT_EXCHANGE = "prelude.report.exchange";
-    public static final String REPORT_QUEUE = "prelude.report.generate.queue";
-    public static final String REPORT_ROUTING_KEY = "report.generate";
-
     @Bean
     public DirectExchange reportExchange() {
-        return new DirectExchange(REPORT_EXCHANGE, true, false);
+        return new DirectExchange(ReportJobChannel.EXCHANGE, true, false);
     }
 
     @Bean
     public Queue reportQueue() {
-        return new Queue(REPORT_QUEUE, true);
+        return new Queue(ReportJobChannel.QUEUE, true);
     }
 
     @Bean
     public Binding reportBinding(Queue reportQueue, DirectExchange reportExchange) {
         return BindingBuilder.bind(reportQueue)
             .to(reportExchange)
-            .with(REPORT_ROUTING_KEY);
+            .with(ReportJobChannel.ROUTING_KEY);
     }
 
     @Bean

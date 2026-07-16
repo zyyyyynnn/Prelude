@@ -57,6 +57,11 @@ app:
   sse-timeout-ms: 120000
 
 prelude:
+  llm:
+    egress:
+      allow-http: ${PRELUDE_LLM_EGRESS_ALLOW_HTTP:false}
+      allow-private-addresses: ${PRELUDE_LLM_EGRESS_ALLOW_PRIVATE_ADDRESSES:false}
+      allowed-ports: ${PRELUDE_LLM_EGRESS_ALLOWED_PORTS:443}
   resume:
     projection-source: document
     backfill-on-startup: true

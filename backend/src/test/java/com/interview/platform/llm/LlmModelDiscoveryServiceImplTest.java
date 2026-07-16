@@ -34,7 +34,7 @@ class LlmModelDiscoveryServiceImplTest {
         startServer(200, """
             {"object":"list","data":[{"id":"model-b"},{"id":"model-a"},{"id":"model-a"}]}
             """);
-        LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
+        LlmModelDiscoveryServiceImpl service = service();
 
         LlmModelDiscoveryResponse response = service.discoverModels(
             new LlmModelDiscoveryRequest("openai-responses", baseUrl(), "sk-test")
@@ -48,7 +48,7 @@ class LlmModelDiscoveryServiceImplTest {
     @Test
     void mapsUnauthorizedResponseToReadableError() throws Exception {
         startServer(401, "{\"error\":{\"message\":\"bad key\"}}");
-        LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
+        LlmModelDiscoveryServiceImpl service = service();
 
         assertThatThrownBy(() -> service.discoverModels(
             new LlmModelDiscoveryRequest("openai-chat-completions", baseUrl(), "sk-test")))
@@ -59,7 +59,7 @@ class LlmModelDiscoveryServiceImplTest {
     @Test
     void rejectsEmptyOrIncompatibleModelList() throws Exception {
         startServer(200, "{\"object\":\"list\",\"data\":[]}");
-        LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
+        LlmModelDiscoveryServiceImpl service = service();
 
         assertThatThrownBy(() -> service.discoverModels(
             new LlmModelDiscoveryRequest("openai-responses", baseUrl(), "sk-test")))
@@ -69,7 +69,10 @@ class LlmModelDiscoveryServiceImplTest {
 
     @Test
     void rejectsModelDiscoveryForAnthropicMessages() {
-        LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl();
+        CustomLlmEgressPolicy policy = new CustomLlmEgressPolicy(
+            false, false, java.util.Set.of(443), okhttp3.Dns.SYSTEM);
+        LlmModelDiscoveryServiceImpl service = new LlmModelDiscoveryServiceImpl(
+            new com.fasterxml.jackson.databind.ObjectMapper(), new CustomLlmHttpClient(policy), policy);
 
         assertThatThrownBy(() -> service.discoverModels(
             new LlmModelDiscoveryRequest("anthropic-messages", "https://example.com/v1", "sk-test")))
@@ -81,6 +84,12 @@ class LlmModelDiscoveryServiceImplTest {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/v1/models", exchange -> writeResponse(exchange, status, body));
         server.start();
+    }
+
+    private LlmModelDiscoveryServiceImpl service() {
+        CustomLlmEgressPolicy policy = CustomLlmTestClients.localPolicy(server.getAddress().getPort());
+        return new LlmModelDiscoveryServiceImpl(
+            new com.fasterxml.jackson.databind.ObjectMapper(), new CustomLlmHttpClient(policy), policy);
     }
 
     private String baseUrl() {

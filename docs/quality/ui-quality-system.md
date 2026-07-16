@@ -32,14 +32,14 @@ npm --prefix frontend run verify:visual
 | --- | --- | --- |
 | `check` | Oxfmt、Oxlint、`vue-tsc --noEmit` | blocking |
 | `verify:architecture` | 四层目录、依赖方向、feature 公共入口、旧目录回流 | blocking |
-| `test:contracts` | 会话偏好迁移与 Provider DTO 精确字段 | blocking |
+| `test:contracts` | 会话偏好迁移、Provider DTO 与报告简历建议解析 | blocking |
 | `build` | Vite+ / Rolldown 生产构建 | blocking |
 | `verify:production` | 生产产物不包含 devtools，PDF vendor 不被首屏预加载 | blocking |
 | `verify:ui` | 静态 UI guardrail | blocking |
 | `verify:tokens` | token schema、唯一性与 design-lock 值 | blocking |
 | `verify:byok` | BYOK 设置流程 | blocking |
 | `verify:dark` | 暗色主题基本行为 | blocking |
-| `verify:flows` | 会话偏好迁移、确认/取消、隐藏持久化与刷新恢复 | blocking |
+| `verify:flows` | 会话偏好、隐藏恢复、结构化简历保存与建议接受/拒绝 | blocking |
 | `verify:a11y` | axe critical 与键盘路径 | blocking |
 | `capture:visual` | 视觉场景截图 | artifact-only |
 
@@ -53,7 +53,7 @@ CI 浏览器测试复用 Windows runner 的 Microsoft Edge channel，并设置 `
 - 未批准的阴影、边框、硬高度、arbitrary px 与 magic ratio；
 - 业务组件中的非 token 颜色和裸像素；
 - scoped `:focus-visible` 绕过 `--shadow-icon-action-focus`。
-- Tooltip 回退到页面 surface，或缺少统一的中性反相表面与长文本换行约束。
+- Tooltip 回退到页面 surface，或缺少统一的中性反相表面与长文本换行约束；ECharts 等 Canvas 浮层以浏览器用例验证等价 token。
 
 `verify:tokens` 校验：
 
@@ -72,7 +72,7 @@ Lab 覆盖 Button、Input、Textarea、Select、DropdownMenu、Combobox、Dialog
 
 `verify:a11y` 使用 mock API 执行登录页、工作区、设置弹窗、下拉控件、侧栏、Composer 和结构化报告的 axe 与键盘路径检查。门禁只阻断 critical violation；绿色结果不代表不存在 serious color-contrast 问题，也不授权修改现有品牌色或 token 值。
 
-`verify:visual` 覆盖浅色/暗色登录、侧栏、工作区空态、文字/语音 Composer、设置页、下拉浮层、Tooltip 对比度、报告、数据看板、Component Lab、移动端报告与 PDF 导出。CI 的 `capture:visual` 只上传 artifact，本地 `verify:visual` 用于明确的视觉回归验证。
+`verify:visual` 覆盖浅色/暗色登录、侧栏、工作区空态、文字/语音 Composer、设置页、下拉浮层、Tooltip 与图表浮层对比度、报告、数据看板、Component Lab、移动端报告与 PDF 导出。CI 的 `capture:visual` 只上传 artifact，本地 `verify:visual` 用于明确的视觉回归验证。
 
 ## 相关文档
 
