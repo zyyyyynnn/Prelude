@@ -37,6 +37,8 @@ export function accountScopeForSession(token: string, userId?: number | null) {
   if (!token) return ''
   if (Number.isInteger(userId)) return `user:${userId}`
 
+  // This unverified claim is used only to partition local UI state for sessions
+  // persisted before the login response exposed userId. Authorization remains server-side.
   const subject = jwtSubject(token)
   return subject ? `user:${subject}` : legacyAccountScope(token)
 }
@@ -52,8 +54,10 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     setSession(token: string, userId: number) {
-      this.token = token
+      // Write identity before the token so a synchronous account-scope watcher
+      // never observes a temporary legacy scope for opaque tokens.
       this.userId = userId
+      this.token = token
     },
     clearSession() {
       this.token = ''
