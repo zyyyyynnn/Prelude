@@ -17,21 +17,13 @@ jobs:
           node-version: '24'
 
       - name: Generate deterministic frontend lockfile
-        shell: pwsh
         working-directory: frontend
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          $bytes = [System.IO.File]::ReadAllBytes((Join-Path (Get-Location) 'package-lock.json'))
-          $memory = New-Object System.IO.MemoryStream
-          $gzip = New-Object System.IO.Compression.GZipStream(
-            $memory,
-            [System.IO.Compression.CompressionMode]::Compress,
-            $true
-          )
-          $gzip.Write($bytes, 0, $bytes.Length)
-          $gzip.Dispose()
-          $encoded = [Convert]::ToBase64String($memory.ToArray())
-          $memory.Dispose()
-          Write-Output "LOCKFILE_GZIP_BASE64_BEGIN"
-          Write-Output $encoded
-          Write-Output "LOCKFILE_GZIP_BASE64_END"
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Upload generated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-frontend-lockfile
+          path: frontend/package-lock.json
+          if-no-files-found: error
+          retention-days: 1
