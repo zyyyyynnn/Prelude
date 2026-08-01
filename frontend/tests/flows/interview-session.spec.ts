@@ -92,11 +92,15 @@ test('cancels stale account requests and never renders the previous account sess
 }) => {
   let releaseAccountA!: () => void
   let markAccountAStarted!: () => void
+  let markAccountACompleted!: () => void
   const accountAGate = new Promise<void>((resolve) => {
     releaseAccountA = resolve
   })
   const accountAStarted = new Promise<void>((resolve) => {
     markAccountAStarted = resolve
+  })
+  const accountACompleted = new Promise<void>((resolve) => {
+    markAccountACompleted = resolve
   })
   const requestTokens: string[] = []
   const ok = (data: unknown) => ({ code: 200, message: 'ok', data })
@@ -130,6 +134,8 @@ test('cancels stale account requests and never renders the previous account sess
             })
           } catch {
             // The browser is expected to abort this request during account switching.
+          } finally {
+            markAccountACompleted()
           }
           return
         }
@@ -192,7 +198,7 @@ test('cancels stale account requests and never renders the previous account sess
 
   await expect(page.getByRole('button', { name: '打开已结束会话 账号 B 私有会话' })).toBeVisible()
   releaseAccountA()
-  await page.waitForTimeout(100)
+  await accountACompleted
 
   await expect(page.getByText('账号 A 私有会话')).toHaveCount(0)
   expect(requestTokens).toContain('Bearer token-a')
