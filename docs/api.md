@@ -176,38 +176,7 @@
 
 获取当前用户简历列表。
 
-### `POST /api/resume/document`
-
-创建编辑器来源的结构化简历。请求体包含 `fileName` 与 `document`；`document` 遵循
-`schemaVersion = 1` 的 `ResumeDocument` 结构。返回 `resumeId`、`documentVersion`、
-`sourceType` 与完整 `document`。
-
-### `GET /api/resume/{resumeId}/document`
-
-获取当前用户拥有的结构化简历文档及版本。
-
-### `PUT /api/resume/{resumeId}/document`
-
-按乐观版本更新结构化简历。请求体：
-
-```json
-{
-  "expectedVersion": 1,
-  "document": {
-    "schemaVersion": 1,
-    "locale": "zh-CN",
-    "profile": { "fullName": "", "email": "", "phone": "", "targetRole": "" },
-    "summary": "",
-    "skills": [],
-    "experiences": [],
-    "projects": [],
-    "education": [],
-    "extras": []
-  }
-}
-```
-
-`expectedVersion` 不等于当前版本时返回业务错误，客户端应刷新后重试。
+简历管理当前只提供 PDF 上传、列表和删除，不开放手工创建或编辑接口。
 
 ### `GET /api/resume/{resumeId}/improvements`
 

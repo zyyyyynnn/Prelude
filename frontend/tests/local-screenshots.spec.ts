@@ -9,6 +9,8 @@ const __dirname = path.dirname(__filename)
 const outputDir = path.resolve(__dirname, '../../output/screenshots/dev')
 const manifestPath = path.resolve(__dirname, '../../output/screenshots/dev/manifest.md')
 const devFixtureResetUrl = 'http://127.0.0.1:8080/api/dev-fixtures/reset'
+const destructiveFixtureResetConfirmed =
+  process.env.PRELUDE_ALLOW_DESTRUCTIVE_FIXTURE_RESET === 'true'
 
 type ManifestItem = {
   file: string
@@ -139,6 +141,10 @@ async function advanceStage(
 }
 
 test('capture local dev full-page screenshots', async ({ page, request }) => {
+  expect(
+    destructiveFixtureResetConfirmed,
+    'capture:local 会删除并重建 demo 用户数据；请显式设置 PRELUDE_ALLOW_DESTRUCTIVE_FIXTURE_RESET=true 后再运行。',
+  ).toBeTruthy()
   await ensureOutputDir()
 
   await resetDevFixtures(request)
@@ -193,10 +199,8 @@ test('capture local dev full-page screenshots', async ({ page, request }) => {
   await login(page)
 
   const authStateStr = await page.evaluate(() => localStorage.getItem('auth'))
-  console.log(`authStateStr from localStorage: "${authStateStr}"`)
   const authState = JSON.parse(authStateStr || '{}')
   const token = authState.token
-  console.log(`parsed token: "${token}"`)
   const sessionsResponse = await request.get('http://127.0.0.1:8080/api/interview/sessions', {
     headers: { Authorization: `Bearer ${token}` },
   })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useInterviewSessionStore } from '../stores/sessionStore'
@@ -24,10 +24,22 @@ const { showNotice } = usePageNotice()
 const confirmDialog = useConfirmDialog()
 const sessionStore = useInterviewSessionStore()
 const { activeSessionId, primarySessionList, finishedSessionList } = storeToRefs(sessionStore)
-const { startNewInterview, loadSession, toggleSessionPin, hideSessionLocally, isSessionPinned } =
-  sessionStore
+const {
+  startNewInterview,
+  refreshSessionList,
+  loadSession,
+  toggleSessionPin,
+  hideSessionLocally,
+  isSessionPinned,
+} = sessionStore
 
 sessionStore.hydratePreferences()
+
+onMounted(() => {
+  void refreshSessionList().catch(() => {
+    if (route.path !== '/interview') showNotice('会话列表加载失败', 'error')
+  })
+})
 
 function togglePin(sessionId: number) {
   toggleSessionPin(sessionId)

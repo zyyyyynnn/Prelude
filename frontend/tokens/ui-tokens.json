@@ -151,8 +151,8 @@
     },
     "content": {
       "prefix": "content",
-      "description": "可读内容宽度（消息气泡）。",
-      "tokens": ["content-message-max-inline-size"]
+      "description": "消息与浮层的可读内容宽度。",
+      "tokens": ["content-message-max-inline-size", "content-tooltip-max-inline-size"]
     },
     "z-index": {
       "prefix": "z-index",

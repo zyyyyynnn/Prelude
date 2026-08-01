@@ -1,7 +1,5 @@
 import { http, unwrapResult, type ApiResult } from '@/shared/api'
 import type {
-  ResumeDocument,
-  ResumeDocumentView,
   ResumeImprovement,
   ResumeImprovementDecision,
   ResumeItem,
@@ -25,23 +23,6 @@ export async function uploadResume(file: File, signal?: AbortSignal) {
 
 export async function deleteResume(resumeId: number) {
   const response = await http.delete<ApiResult<void>>(`/resume/${resumeId}`)
-  return unwrapResult(response.data)
-}
-
-export async function fetchResumeDocument(resumeId: number) {
-  const response = await http.get<ApiResult<ResumeDocumentView>>(`/resume/${resumeId}/document`)
-  return unwrapResult(response.data)
-}
-
-export async function updateResumeDocument(
-  resumeId: number,
-  expectedVersion: number,
-  document: ResumeDocument,
-) {
-  const response = await http.put<ApiResult<ResumeDocumentView>>(`/resume/${resumeId}/document`, {
-    expectedVersion,
-    document,
-  })
   return unwrapResult(response.data)
 }
 

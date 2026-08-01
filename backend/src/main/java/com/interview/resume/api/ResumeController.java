@@ -3,28 +3,19 @@ package com.interview.resume.api;
 import com.interview.shared.api.BusinessException;
 import com.interview.shared.api.Result;
 import com.interview.shared.web.UserContext;
-import com.interview.resume.api.ResumeItemResponse;
-import com.interview.resume.api.ResumeProjectDto;
-import com.interview.resume.api.ResumeUploadResponse;
-import com.interview.resume.application.CreateResumeDocument;
 import com.interview.resume.application.DeleteResume;
-import com.interview.resume.application.GetResumeDocument;
 import com.interview.resume.application.ImportResumePdf;
 import com.interview.resume.application.ImportResumeResult;
 import com.interview.resume.application.ListResumes;
-import com.interview.resume.application.ResumeDocumentView;
 import com.interview.resume.application.ResumeImprovementDecisionView;
 import com.interview.resume.application.ResumeImprovementService;
 import com.interview.resume.application.ResumeImprovementView;
-import com.interview.resume.application.UpdateResumeDocument;
 import com.interview.resume.application.port.ResumeFixturePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,9 +30,6 @@ import java.util.List;
 public class ResumeController {
 
     private final ImportResumePdf importResumePdf;
-    private final CreateResumeDocument createResumeDocument;
-    private final GetResumeDocument getResumeDocument;
-    private final UpdateResumeDocument updateResumeDocument;
     private final ListResumes listResumes;
     private final DeleteResume deleteResume;
     private final ResumeImprovementService resumeImprovementService;
@@ -72,28 +60,6 @@ public class ResumeController {
                 return dto;
             }).toList();
         return new ResumeUploadResponse(result.resumeId(), result.skills(), projects);
-    }
-
-    @PostMapping("/document")
-    public Result<ResumeDocumentView> create(@RequestBody CreateResumeDocumentRequest request) {
-        return Result.success(createResumeDocument.execute(
-            currentUserId(), request.fileName(), request.document()
-        ));
-    }
-
-    @GetMapping("/{resumeId}/document")
-    public Result<ResumeDocumentView> getDocument(@PathVariable Long resumeId) {
-        return Result.success(getResumeDocument.execute(currentUserId(), resumeId));
-    }
-
-    @PutMapping("/{resumeId}/document")
-    public Result<ResumeDocumentView> update(
-        @PathVariable Long resumeId,
-        @RequestBody UpdateResumeDocumentRequest request
-    ) {
-        return Result.success(updateResumeDocument.execute(
-            currentUserId(), resumeId, request.expectedVersion(), request.document()
-        ));
     }
 
     @GetMapping("/list")

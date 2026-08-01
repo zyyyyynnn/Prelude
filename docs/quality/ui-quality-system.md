@@ -39,7 +39,7 @@ npm --prefix frontend run verify:visual
 | `verify:tokens` | token schema、唯一性与 design-lock 值 | blocking |
 | `verify:byok` | BYOK 设置流程 | blocking |
 | `verify:dark` | 暗色主题基本行为 | blocking |
-| `verify:flows` | 会话偏好、隐藏恢复、结构化简历保存与建议接受/拒绝 | blocking |
+| `verify:flows` | 会话偏好、隐藏恢复、简历管理边界与建议接受/拒绝 | blocking |
 | `verify:a11y` | axe critical 与键盘路径 | blocking |
 | `capture:visual` | 视觉场景截图 | artifact-only |
 
@@ -53,7 +53,7 @@ CI 浏览器测试复用 Windows runner 的 Microsoft Edge channel，并设置 `
 - 未批准的阴影、边框、硬高度、arbitrary px 与 magic ratio；
 - 业务组件中的非 token 颜色和裸像素；
 - scoped `:focus-visible` 绕过 `--shadow-icon-action-focus`。
-- Tooltip 回退到页面 surface，或缺少统一的中性反相表面与长文本换行约束；ECharts 等 Canvas 浮层以浏览器用例验证等价 token。
+- Tooltip 未使用统一的主题 surface、表单同源 `border-input` 单层边界、`shadow-whisper` 单层浮层阴影、完整交互 trigger 间距、无位移淡入淡出、紧凑字号及长文本换行约束；Dropdown、Select、Combobox 浮层未使用同一表单边界和阴影时同样阻断。ECharts 等 Canvas 浮层以浏览器用例验证等价 token。
 
 `verify:tokens` 校验：
 
@@ -63,6 +63,8 @@ CI 浏览器测试复用 Windows runner 的 Microsoft Edge channel，并设置 `
 - 已锁定布局与控件尺寸和 `frontend/src/shared/ui/styles/index.css` 一致。
 
 ## Component Lab
+
+共享 Toast 默认通过 Sonner 定位变量在右侧内嵌、垂直居中提供无常驻外框的关闭按钮，使用统一的 surface、hover 与 focus token，并通过“关闭系统提示”提供可访问名称。包含 Toast 操作的 Dialog 必须在自身 dismiss 边界保留 Toast 交互，不能由通用 Dialog primitive 猜测业务例外。
 
 `/components-lab` 由 `frontend/src/app/router.ts` 在 `import.meta.env.DEV` 为真时条件注册。生产构建不包含该路由或 `frontend/src/devtools/` 模块。
 

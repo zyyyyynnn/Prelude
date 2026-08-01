@@ -59,6 +59,8 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 - `data.sql` 只包含生产安全的岗位参考数据、Provider 目录和旧协议值归并。
 - `data-dev.sql` 只创建 local/dev 验收账号；完整会话夹具由 `/api/dev-fixtures/reset` 生成。
 
+`/api/dev-fixtures/reset` 会删除并重建 demo 用户数据。`npm run capture:local` 仅在显式设置 `PRELUDE_ALLOW_DESTRUCTIVE_FIXTURE_RESET=true` 后执行，禁止用于需要保留现有 demo 会话的环境。
+
 后端在启动时重放 `schema.sql` 与 `data.sql`，因此现有数据库会直接完成兼容升级；不要额外创建日期命名迁移 SQL。
 
 ## 5. 本地验收账号

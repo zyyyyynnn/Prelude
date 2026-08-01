@@ -59,3 +59,19 @@ test('migrates legacy session preferences and persists local hide behavior', asy
   )
   expect(persisted).toEqual({ pinnedIds: [101], hiddenIds: [101] })
 })
+
+test('loads sidebar sessions after refreshing non-interview routes', async ({ page }) => {
+  const finishedSession = {
+    ...session,
+    status: 'finished',
+  }
+  await installMockApi(page, { sessions: [finishedSession] })
+
+  for (const path of ['/resumes', '/analytics']) {
+    await page.goto(path)
+    await expect(page.getByRole('button', { name: '打开已结束会话 Java 后端工程师' })).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByRole('button', { name: '打开已结束会话 Java 后端工程师' })).toBeVisible()
+  }
+})

@@ -223,9 +223,7 @@ const dialogOpen = ref(false)
               <TooltipTrigger as-child>
                 <span class="lab__link" tabindex="0">长文本悬浮</span>
               </TooltipTrigger>
-              <TooltipContent class="!max-w-xs">
-                Tooltip 用于补充信息；不应承载关键操作。
-              </TooltipContent>
+              <TooltipContent> Tooltip 用于补充信息；不应承载关键操作。 </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>

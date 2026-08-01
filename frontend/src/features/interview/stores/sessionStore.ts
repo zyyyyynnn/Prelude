@@ -13,6 +13,7 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   const reportMarkdown = ref('')
   const sessionLoading = ref(false)
   let activeAbortController: AbortController | null = null
+  let sessionListRequest: Promise<void> | null = null
 
   const groupedSessions = computed(() =>
     groupSessions(sessions.value, {
@@ -39,7 +40,15 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   }
 
   async function refreshSessionList() {
-    sessions.value = await fetchInterviewSessions()
+    if (sessionListRequest) return sessionListRequest
+    sessionListRequest = fetchInterviewSessions().then((items) => {
+      sessions.value = items
+    })
+    try {
+      await sessionListRequest
+    } finally {
+      sessionListRequest = null
+    }
   }
 
   async function loadSession(sessionId: number, silent = false) {

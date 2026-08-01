@@ -109,6 +109,61 @@ class InterviewReportAssemblerTest {
             .isEqualTo("technical");
     }
 
+    @Test
+    void omitsUnreachedStagesAndDoesNotUseNarrativeWithoutAnswerEvidence() {
+        LocalDateTime startedAt = LocalDateTime.of(2026, 7, 4, 10, 0);
+        List<InterviewStage> stages = List.of(
+            stage("warmup", startedAt, startedAt.plusMinutes(10)),
+            stage("technical", startedAt.plusMinutes(10), null)
+        );
+        InterviewReportDraft source = draft();
+        InterviewReportDraft reportDraft = new InterviewReportDraft(
+            source.summary(),
+            source.scores(),
+            List.of(
+                new InterviewReportDraft.StageNarrative(
+                    "warmup", "项目背景表达清楚", List.of("职责明确"), List.of(), List.of("补充规模")
+                ),
+                new InterviewReportDraft.StageNarrative(
+                    "technical", "技术基础稳定", List.of("实现清楚"), List.of(), List.of("补充指标")
+                ),
+                new InterviewReportDraft.StageNarrative(
+                    "deep_dive", "能够深入推导", List.of("边界完整"), List.of(), List.of("补充异常")
+                ),
+                new InterviewReportDraft.StageNarrative(
+                    "closing", "总结简洁", List.of("表达清楚"), List.of(), List.of("明确计划")
+                )
+            ),
+            source.strengths(),
+            source.trainingPlan(),
+            source.finalAdvice(),
+            source.reportMarkdown()
+        );
+
+        StructuredInterviewReport report = assembler.assemble(
+            reportDraft,
+            stages,
+            List.of(
+                message("assistant", "请介绍项目背景", null, null, 1, startedAt.plusMinutes(1)),
+                message("user", "我负责核心链路。", 7, "回答已记录", 2, startedAt.plusMinutes(2)),
+                message("assistant", "如何保证一致性？", null, null, 3, startedAt.plusMinutes(11))
+            ),
+            List.of()
+        );
+
+        assertThat(report.stagePerformances())
+            .extracting(StructuredInterviewReport.StagePerformance::stageName)
+            .containsExactly("warmup", "technical");
+        assertThat(report.stagePerformances().get(0).summary()).isEqualTo("项目背景表达清楚");
+        assertThat(report.stagePerformances().get(1)).satisfies(stage -> {
+            assertThat(stage.score()).isNull();
+            assertThat(stage.summary()).isEqualTo("本阶段暂无补充总结");
+            assertThat(stage.positiveSignals()).isEmpty();
+            assertThat(stage.negativeSignals()).isEmpty();
+            assertThat(stage.improvementSuggestions()).isEmpty();
+        });
+    }
+
     private InterviewReportDraft draft() {
         return new InterviewReportDraft(
             new InterviewReportDraft.ReportSummary("中等偏高", "继续投递", "量化不足"),

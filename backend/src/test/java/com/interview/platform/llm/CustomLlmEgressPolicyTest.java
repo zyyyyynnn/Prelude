@@ -3,15 +3,24 @@ package com.interview.platform.llm;
 import com.interview.shared.api.BusinessException;
 import okhttp3.Dns;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CustomLlmEgressPolicyTest {
+
+    @Test
+    void canBeConstructedBySpring() {
+        new ApplicationContextRunner()
+            .withUserConfiguration(CustomLlmEgressPolicy.class)
+            .run(context -> assertThat(context).hasSingleBean(CustomLlmEgressPolicy.class));
+    }
 
     @Test
     void productionDefaultsRejectUnsafeProtocolPortAndLoopback() {

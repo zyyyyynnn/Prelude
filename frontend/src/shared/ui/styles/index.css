@@ -154,7 +154,7 @@
 
   --shadow-ring: 0 0 0 1px var(--color-ring);
   --shadow-ring-deep: 0 0 0 1px var(--color-ring-deep);
-  --shadow-whisper: 0 4px 24px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  --shadow-whisper: 0 4px 24px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
   --shadow-inset: inset 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   --shadow-modal: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   --shadow-app-header:
@@ -253,6 +253,7 @@
 
   /* ── Content Semantics ── */
   --content-message-max-inline-size: 72ch;
+  --content-tooltip-max-inline-size: 20rem;
 
   /* ── Component Semantics ── */
   --ui-segmented-item-min-inline-size: 80px;
@@ -344,17 +345,6 @@ a {
 
 #app {
   min-height: 100vh;
-}
-
-.ui-chart-tooltip {
-  border: 0 !important;
-  border-radius: var(--radius-md) !important;
-  padding: var(--spacing-xs) var(--spacing-sm) !important;
-  background: var(--color-text-primary) !important;
-  color: var(--color-bg) !important;
-  box-shadow: var(--shadow-whisper) !important;
-  font-family: var(--font-serif) !important;
-  font-size: var(--font-size-sm) !important;
 }
 
 .app-shell {

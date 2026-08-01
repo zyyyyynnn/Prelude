@@ -3,6 +3,7 @@ package com.interview.platform.llm;
 import com.interview.shared.api.BusinessException;
 import okhttp3.Dns;
 import okhttp3.HttpUrl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +29,7 @@ public class CustomLlmEgressPolicy {
     private final Set<Integer> allowedPorts;
     private final Dns delegateDns;
 
+    @Autowired
     public CustomLlmEgressPolicy(
         @Value("${prelude.llm.egress.allow-http:false}") boolean allowHttp,
         @Value("${prelude.llm.egress.allow-private-addresses:false}") boolean allowPrivateAddresses,

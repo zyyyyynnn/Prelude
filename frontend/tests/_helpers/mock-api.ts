@@ -23,7 +23,7 @@ const POSITIONS = [
   { id: 3, name: '算法工程师' },
 ]
 
-const RESUMES = [{ id: 1, name: 'Java高级架构.pdf', uploadedAt: '2026-05-01T10:00:00Z' }]
+const RESUMES = [{ id: 1, fileName: 'Java高级架构.pdf', createdAt: '2026-05-01T10:00:00Z' }]
 
 const LLM_PROVIDERS = [
   {
