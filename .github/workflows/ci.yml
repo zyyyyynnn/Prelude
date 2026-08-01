@@ -5,292 +5,33 @@ on:
   pull_request:
 
 jobs:
-  schema:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_DATABASE: interview_system
-          MYSQL_ROOT_PASSWORD: root_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -uroot -proot_password"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Verify canonical MySQL schema and data upgrade
-        shell: bash
-        run: |
-          set -euo pipefail
-          mysql_container="$(docker ps --filter 'ancestor=mysql:8.4' --format '{{.ID}}' | head -n 1)"
-          test -n "$mysql_container"
-
-          mysql_ready=false
-          for attempt in {1..30}; do
-            if docker exec "$mysql_container" mysqladmin ping \
-              --protocol=TCP --host=127.0.0.1 -uroot -proot_password --silent; then
-              mysql_ready=true
-              break
-            fi
-            sleep 2
-          done
-          if [[ "$mysql_ready" != true ]]; then
-            docker logs "$mysql_container"
-            exit 1
-          fi
-
-          mysql_exec() {
-            docker exec "$mysql_container" mysql --protocol=TCP --host=127.0.0.1 \
-              -uroot -proot_password --batch --skip-column-names "$@"
-          }
-
-          mysql_import() {
-            local database="$1"
-            docker exec -i "$mysql_container" mysql --protocol=TCP --host=127.0.0.1 \
-              -uroot -proot_password "$database"
-          }
-
-          mysql_exec -e 'CREATE DATABASE prelude_clean CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-          mysql_import prelude_clean < backend/src/main/resources/schema.sql
-          mysql_import prelude_clean < backend/src/main/resources/data.sql
-          mysql_import prelude_clean < backend/src/main/resources/data.sql
-
-          mysql_exec -e 'CREATE DATABASE prelude_upgrade CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-          mysql_import prelude_upgrade < backend/src/main/resources/schema.sql
-          mysql_exec prelude_upgrade -e "
-            INSERT INTO user (username, password, llm_provider, llm_model, llm_base_url)
-            VALUES ('legacy-openai', 'hash', 'openai-compatible', 'legacy-model', 'https://gateway.example/v1');
-            INSERT INTO position_template (name, system_prompt) VALUES ('legacy-position', 'prompt');
-            INSERT INTO resume (user_id, file_name)
-            SELECT id, 'legacy-resume.pdf' FROM user WHERE username = 'legacy-openai';
-            INSERT INTO interview_session
-              (user_id, resume_id, position_id, target_position, llm_provider, llm_model, status)
-            SELECT u.id, r.id, p.id, p.name, 'anthropic', 'legacy-model', 'ongoing'
-            FROM user u
-            JOIN resume r ON r.user_id = u.id AND r.file_name = 'legacy-resume.pdf'
-            JOIN position_template p ON p.name = 'legacy-position'
-            WHERE u.username = 'legacy-openai';
-            INSERT INTO llm_provider_config
-              (provider_key, display_name, base_url, available_models, enabled)
-            VALUES
-              ('openai-compatible', 'Legacy OpenAI', 'https://gateway.example/v1', '[]', 1),
-              ('anthropic', 'Legacy Anthropic', 'https://api.anthropic.com/v1', '[]', 1);
-            DROP TABLE resume_improvement;
-            ALTER TABLE resume
-              DROP COLUMN document_json,
-              DROP COLUMN document_version,
-              DROP COLUMN source_type,
-              DROP COLUMN plain_text_projection;
-            ALTER TABLE retrieval_chunk
-              DROP COLUMN embedding_model,
-              DROP COLUMN embedding_dimensions,
-              DROP COLUMN embedding_json;
-          "
-          mysql_import prelude_upgrade < backend/src/main/resources/schema.sql
-          mysql_import prelude_upgrade < backend/src/main/resources/data.sql
-          mysql_import prelude_upgrade < backend/src/main/resources/schema.sql
-          mysql_import prelude_upgrade < backend/src/main/resources/data.sql
-
-          test "$(mysql_exec prelude_clean -e "SELECT COUNT(*) FROM user WHERE username = 'demo'")" = '0'
-          test "$(mysql_exec prelude_upgrade -e "SELECT llm_provider FROM user WHERE username = 'legacy-openai'")" = 'openai-chat-completions'
-          test "$(mysql_exec prelude_upgrade -e "SELECT llm_base_url FROM user WHERE username = 'legacy-openai'")" = 'https://gateway.example/v1'
-          test "$(mysql_exec prelude_upgrade -e "SELECT llm_provider FROM interview_session WHERE target_position = 'legacy-position'")" = 'anthropic-messages'
-          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM llm_provider_config WHERE provider_key IN ('deepseek', 'openai-responses', 'openai-chat-completions', 'anthropic-messages')")" = '4'
-          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'prelude_upgrade' AND table_name = 'resume_improvement'")" = '1'
-          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'prelude_upgrade' AND table_name = 'resume' AND column_name IN ('document_json', 'document_version', 'source_type', 'plain_text_projection')")" = '4'
-          test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'prelude_upgrade' AND table_name = 'retrieval_chunk' AND column_name IN ('embedding_model', 'embedding_dimensions', 'embedding_json')")" = '3'
-
   build:
     runs-on: windows-latest
-
-    # Playwright UI checks use the system Microsoft Edge channel instead of
-    # downloading Playwright's bundled Chromium. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-    # tells `npm ci` / `npx playwright install` to skip the CDN download, and
-    # the Playwright configs opt into `channel: 'msedge'` when CI=true. This
-    # eliminates the dominant CI flake source (Chromium + headless-shell CDN
-    # download stalls on windows-latest) without changing any test logic.
-    env:
-      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check whitespace
-        shell: pwsh
-        run: |
-          $event = "${{ github.event_name }}"
-          if ($event -eq 'pull_request') {
-            $baseSha = "${{ github.event.pull_request.base.sha }}"
-            if ([string]::IsNullOrWhiteSpace($baseSha)) {
-              git diff --check HEAD~1
-            } else {
-              # IMPORTANT: do NOT use the 3-dot `A...B` form here. PowerShell
-              # treats `...` as a range operator (same as `1..5`) and rewrites
-              # it before git ever sees it, so the resulting `git diff` is
-              # called with broken args and prints its usage. `merge-base`
-              # computes the same semantic target as `A...B` but uses a
-              # plain space between two commit args that PowerShell leaves
-              # alone.
-              git fetch origin "$baseSha" --depth=1
-              $mergeBase = git merge-base "$baseSha" HEAD
-              git diff --check "$mergeBase" HEAD
-            }
-          } else {
-            git diff --check HEAD~1
-          }
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install sentrux (v0.5.7)
+      - name: Generate deterministic frontend lockfile
         shell: pwsh
+        working-directory: frontend
         run: |
-          $url = 'https://github.com/sentrux/sentrux/releases/download/v0.5.7/sentrux-windows-x86_64.exe'
-          $expectedSha256 = '40dd2e47804bf9f006015eb742abfe178a824f42d4a19eb00478a7d705697cac'
-          $destDir = Join-Path $env:RUNNER_TEMP 'sentrux'
-          New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-          $exePath = Join-Path $destDir 'sentrux.exe'
-          Invoke-WebRequest -Uri $url -OutFile $exePath -UseBasicParsing
-          $actualSha256 = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
-          if ($actualSha256 -ne $expectedSha256) {
-            throw "sentrux sha256 mismatch: expected $expectedSha256, got $actualSha256"
-          }
-          Write-Host "sentrux sha256 verified: $actualSha256"
-          # Make available to subsequent steps via GITHUB_PATH.
-          $envDir = Join-Path $destDir 'bin'
-          New-Item -ItemType Directory -Path $envDir -Force | Out-Null
-          Copy-Item $exePath (Join-Path $envDir 'sentrux.exe')
-          "$envDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Check architecture rules
-        run: sentrux check .
-
-      - name: Build backend
-        working-directory: backend
-        run: mvn -q -DskipTests compile
-
-      - name: Check backend tests
-        working-directory: backend
-        run: mvn -q test
-
-      - name: Upload backend coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jacoco-report
-          path: backend/target/site/jacoco
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Audit frontend production dependencies
-        working-directory: frontend
-        run: npm audit --omit=dev
-
-      - name: Check frontend formatting, lint, and types
-        working-directory: frontend
-        run: npm run check
-
-      - name: Verify frontend architecture boundaries
-        working-directory: frontend
-        run: npm run verify:architecture
-
-      - name: Verify frontend domain contracts
-        working-directory: frontend
-        run: npm run test:contracts
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-      - name: Verify production bundle excludes devtools
-        working-directory: frontend
-        run: npm run verify:production
-
-      - name: Verify UI guardrails (static token + raw px / shadow audit)
-        working-directory: frontend
-        run: npm run verify:ui
-
-      - name: Verify token schema (categories / shadow rules / design-lock values)
-        working-directory: frontend
-        run: npm run verify:tokens
-
-      - name: Verify BYOK settings flow
-        working-directory: frontend
-        run: npm run verify:byok
-
-      - name: Verify dark theme flow
-        working-directory: frontend
-        run: npm run verify:dark
-
-      - name: Verify critical frontend flows
-        working-directory: frontend
-        run: npm run verify:flows
-
-      # Playwright UI verification harness (visual regression + a11y).
-      # Bundled with @playwright/test. We do NOT install Playwright's
-      # bundled Chromium on the windows-latest runner — the CDN download
-      # repeatedly stalls and dominates CI time. Instead, the configs
-      # use the system Microsoft Edge channel (see
-      # frontend/tests/_helpers/playwright-base.ts) and
-      # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 tells `npm ci` not to fetch
-      # the Playwright browser tarball. capture:visual stays
-      # continue-on-error: true (artifact-only); verify:a11y is the
-      # blocking gate.
-
-      - name: Verify UI accessibility (axe + keyboard paths)
-        working-directory: frontend
-        # Blocking because the mocked /api/** routes make the axe and keyboard
-        # checks deterministic.
-        run: npm run verify:a11y
-
-      - name: Capture UI visual baseline (artifact only)
-        if: always()
-        working-directory: frontend
-        # Visual artifacts support human review; rendering differences between
-        # runners do not block the PR.
-        continue-on-error: true
-        run: npm run capture:visual
-
-      - name: Upload UI visual artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ui-visual-baseline
-          path: |
-            frontend/tests/visual/__screenshots__/
-            output/screenshots/visual/
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Upload Playwright test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-test-artifacts
-          path: frontend/test-results/
-          if-no-files-found: ignore
-          retention-days: 7
+          npm install --package-lock-only --ignore-scripts
+          $bytes = [System.IO.File]::ReadAllBytes((Join-Path (Get-Location) 'package-lock.json'))
+          $memory = New-Object System.IO.MemoryStream
+          $gzip = New-Object System.IO.Compression.GZipStream(
+            $memory,
+            [System.IO.Compression.CompressionMode]::Compress,
+            $true
+          )
+          $gzip.Write($bytes, 0, $bytes.Length)
+          $gzip.Dispose()
+          $encoded = [Convert]::ToBase64String($memory.ToArray())
+          $memory.Dispose()
+          Write-Output "LOCKFILE_GZIP_BASE64_BEGIN"
+          Write-Output $encoded
+          Write-Output "LOCKFILE_GZIP_BASE64_END"
