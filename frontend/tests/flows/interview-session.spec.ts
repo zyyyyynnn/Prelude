@@ -193,7 +193,7 @@ test('cancels stale account requests and never renders the previous account sess
   await expect(page).toHaveURL(/\/login$/)
 
   await page.getByLabel('用户名').fill('account-b')
-  await page.getByLabel('密码').fill('123456')
+  await page.getByPlaceholder('请输入密码').fill('123456')
   await page.locator('form').getByRole('button', { name: '登录' }).click()
 
   await expect(page.getByRole('button', { name: '打开已结束会话 账号 B 私有会话' })).toBeVisible()
