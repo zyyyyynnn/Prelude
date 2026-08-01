@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { accountScopeForSession } from '../../src/features/auth/model/authStore.ts'
 import {
   readSessionPreferences,
   SESSION_PREFERENCES_KEY,
@@ -36,6 +37,16 @@ class MemoryStorage implements Storage {
     this.#values.set(key, value)
   }
 }
+
+void test('derives a stable account scope from explicit and existing JWT identities', () => {
+  const payload = Buffer.from(JSON.stringify({ sub: 42 })).toString('base64url')
+  const token = `eyJhbGciOiJIUzI1NiJ9.${payload}.signature`
+
+  assert.equal(accountScopeForSession(token, 7), 'user:7')
+  assert.equal(accountScopeForSession(token, null), 'user:42')
+  assert.equal(accountScopeForSession('opaque-token', null), accountScopeForSession('opaque-token', null))
+  assert.match(accountScopeForSession('opaque-token', null), /^legacy:[0-9a-f]+$/)
+})
 
 void test('migrates legacy preferences into the active account scope', () => {
   const storage = new MemoryStorage()
