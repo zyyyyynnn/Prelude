@@ -40,8 +40,10 @@ export async function startInterview(payload: InterviewStartPayload) {
   return unwrapResult(response.data)
 }
 
-export async function fetchInterviewSessions() {
-  const response = await http.get<ApiResult<InterviewSessionItem[]>>('/interview/sessions')
+export async function fetchInterviewSessions(signal?: AbortSignal) {
+  const response = await http.get<ApiResult<InterviewSessionItem[]>>('/interview/sessions', {
+    signal,
+  })
   const data = unwrapResult(response.data)
   return data.map((item) => ({
     ...item,
