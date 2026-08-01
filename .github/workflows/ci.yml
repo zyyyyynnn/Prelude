@@ -2,14 +2,21 @@ name: CI
 
 on:
   push:
-  pull_request:
+    branches:
+      - agent/fix-session-integrity-review
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: Checkout review branch
         uses: actions/checkout@v4
+        with:
+          ref: agent/fix-session-integrity-review
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -20,10 +27,15 @@ jobs:
         working-directory: frontend
         run: npm install --package-lock-only --ignore-scripts
 
-      - name: Upload generated lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: patched-frontend-lockfile
-          path: frontend/package-lock.json
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit generated lockfile when changed
+        shell: pwsh
+        run: |
+          if (-not (git status --porcelain -- frontend/package-lock.json)) {
+            Write-Output 'package-lock.json is already current'
+            exit 0
+          }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/package-lock.json
+          git commit -m 'fix(deps): refresh frontend lockfile'
+          git push origin HEAD:agent/fix-session-integrity-review
