@@ -8,12 +8,20 @@ export type SessionPreferences = {
   hiddenIds: number[]
 }
 
+export function sessionPreferencesKey(accountScope: string) {
+  return `${SESSION_PREFERENCES_KEY}:${encodeURIComponent(accountScope)}`
+}
+
 function parseIds(value: string | null): number[] {
   if (!value) return []
   try {
     const parsed: unknown = JSON.parse(value)
     if (!Array.isArray(parsed)) return []
-    return [...new Set(parsed.filter((item): item is number => Number.isInteger(item)))]
+    return [
+      ...new Set(
+        parsed.filter((item): item is number => Number.isInteger(item) && Number(item) > 0),
+      ),
+    ]
   } catch {
     return []
   }
@@ -34,7 +42,15 @@ function parsePreferences(value: string | null): SessionPreferences | null {
   }
 }
 
-export function readSessionPreferences(storage: Storage): SessionPreferences {
+export function readSessionPreferences(
+  storage: Storage,
+  accountScope: string,
+): SessionPreferences {
+  if (!accountScope) return { pinnedIds: [], hiddenIds: [] }
+
+  const scoped = parsePreferences(storage.getItem(sessionPreferencesKey(accountScope)))
+  if (scoped) return scoped
+
   return (
     parsePreferences(storage.getItem(SESSION_PREFERENCES_KEY)) ?? {
       pinnedIds: parseIds(storage.getItem(LEGACY_PINNED_KEY)),
@@ -43,8 +59,14 @@ export function readSessionPreferences(storage: Storage): SessionPreferences {
   )
 }
 
-export function writeSessionPreferences(storage: Storage, preferences: SessionPreferences) {
-  storage.setItem(SESSION_PREFERENCES_KEY, JSON.stringify(preferences))
+export function writeSessionPreferences(
+  storage: Storage,
+  accountScope: string,
+  preferences: SessionPreferences,
+) {
+  if (!accountScope) return
+  storage.setItem(sessionPreferencesKey(accountScope), JSON.stringify(preferences))
+  storage.removeItem(SESSION_PREFERENCES_KEY)
   storage.removeItem(LEGACY_PINNED_KEY)
   storage.removeItem(LEGACY_HIDDEN_KEY)
 }
