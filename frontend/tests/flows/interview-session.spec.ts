@@ -104,77 +104,80 @@ test('cancels stale account requests and never renders the previous account sess
   await page.addInitScript(() => {
     localStorage.setItem('auth', JSON.stringify({ token: 'token-a', userId: 1 }))
   })
-  await page.route(/\/api\/.*/, async (route) => {
-    const request = route.request()
-    const url = new URL(request.url())
-    const pathname = url.pathname.replace(/^\/api/, '')
-    const method = request.method()
+  await page.route(
+    /\/api\/(auth|interview|user|resume|position|llm|analytics)(?:\/|$).*/,
+    async (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      const pathname = url.pathname.replace(/^\/api/, '')
+      const method = request.method()
 
-    if (method === 'GET' && pathname === '/interview/sessions') {
-      const authorization = request.headers().authorization ?? ''
-      requestTokens.push(authorization)
-      if (authorization === 'Bearer token-a') {
-        markAccountAStarted()
-        await accountAGate
-        try {
-          await route.fulfill({
-            json: ok([
-              {
-                sessionId: 1,
-                status: 'finished',
-                targetPosition: '账号 A 私有会话',
-              },
-            ]),
-          })
-        } catch {
-          // The browser is expected to abort this request during account switching.
+      if (method === 'GET' && pathname === '/interview/sessions') {
+        const authorization = request.headers().authorization ?? ''
+        requestTokens.push(authorization)
+        if (authorization === 'Bearer token-a') {
+          markAccountAStarted()
+          await accountAGate
+          try {
+            await route.fulfill({
+              json: ok([
+                {
+                  sessionId: 1,
+                  status: 'finished',
+                  targetPosition: '账号 A 私有会话',
+                },
+              ]),
+            })
+          } catch {
+            // The browser is expected to abort this request during account switching.
+          }
+          return
         }
-        return
+        return route.fulfill({
+          json: ok([
+            {
+              sessionId: 2,
+              status: 'finished',
+              targetPosition: '账号 B 私有会话',
+            },
+          ]),
+        })
       }
-      return route.fulfill({
-        json: ok([
-          {
-            sessionId: 2,
-            status: 'finished',
-            targetPosition: '账号 B 私有会话',
-          },
-        ]),
-      })
-    }
-    if (method === 'POST' && pathname === '/auth/login') {
-      return route.fulfill({ json: ok({ token: 'token-b', userId: 2 }) })
-    }
-    if (method === 'GET' && pathname === '/user/profile') {
-      return route.fulfill({ json: ok({ username: 'account-b', email: 'b@example.com' }) })
-    }
-    if (method === 'GET' && pathname === '/analytics/radar') {
-      return route.fulfill({
-        json: ok({ technical: 0, expression: 0, logic: 0, sessionCount: 0 }),
-      })
-    }
-    if (
-      method === 'GET' &&
-      (pathname === '/analytics/trend' ||
-        pathname === '/analytics/weaknesses' ||
-        pathname === '/resume/list' ||
-        pathname === '/position/list' ||
-        pathname === '/llm/providers')
-    ) {
-      return route.fulfill({ json: ok([]) })
-    }
-    if (method === 'GET' && pathname === '/user/llm-config') {
-      return route.fulfill({
-        json: ok({
-          providerKey: 'openai-chat-completions',
-          baseUrl: 'https://api.example.com/v1',
-          model: 'test-model',
-          hasApiKey: true,
-          apiKeyMasked: 'sk-***',
-        }),
-      })
-    }
-    return route.fulfill({ json: ok(null) })
-  })
+      if (method === 'POST' && pathname === '/auth/login') {
+        return route.fulfill({ json: ok({ token: 'token-b', userId: 2 }) })
+      }
+      if (method === 'GET' && pathname === '/user/profile') {
+        return route.fulfill({ json: ok({ username: 'account-b', email: 'b@example.com' }) })
+      }
+      if (method === 'GET' && pathname === '/analytics/radar') {
+        return route.fulfill({
+          json: ok({ technical: 0, expression: 0, logic: 0, sessionCount: 0 }),
+        })
+      }
+      if (
+        method === 'GET' &&
+        (pathname === '/analytics/trend' ||
+          pathname === '/analytics/weaknesses' ||
+          pathname === '/resume/list' ||
+          pathname === '/position/list' ||
+          pathname === '/llm/providers')
+      ) {
+        return route.fulfill({ json: ok([]) })
+      }
+      if (method === 'GET' && pathname === '/user/llm-config') {
+        return route.fulfill({
+          json: ok({
+            providerKey: 'openai-chat-completions',
+            baseUrl: 'https://api.example.com/v1',
+            model: 'test-model',
+            hasApiKey: true,
+            apiKeyMasked: 'sk-***',
+          }),
+        })
+      }
+      return route.fulfill({ json: ok(null) })
+    },
+  )
 
   await page.goto('/analytics')
   await accountAStarted
