@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
-import { SessionSidebar } from '@/features/interview'
+import { SessionSidebar, useInterviewSessionStore } from '@/features/interview'
 import {
   applyThemePreference,
   fetchUserProfile,
@@ -13,9 +13,12 @@ import {
 } from '@/features/settings'
 import GlobalConfirmDialog from '@/shared/ui/confirm-dialog/GlobalConfirmDialog.vue'
 import { Toaster } from '@/shared/ui/sonner'
+import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
 
 const authStore = useAuthStore()
+const sessionStore = useInterviewSessionStore()
 const route = useRoute()
+const { showNotice } = usePageNotice()
 const isSidebarCollapsed = ref(false)
 const showGlobalSettings = ref(false)
 const activeSettingsTab = ref<'profile' | 'theme' | 'llm'>('profile')
@@ -48,6 +51,27 @@ function handleSystemThemeChange() {
     applyThemePreference('system')
   }
 }
+
+watch(
+  () => authStore.accountScope,
+  async (accountScope) => {
+    sessionStore.activateAccount(accountScope)
+    if (!accountScope) return
+
+    try {
+      await sessionStore.refreshSessionList()
+    } catch {
+      if (
+        authStore.accountScope === accountScope &&
+        route.path !== '/login' &&
+        route.path !== '/interview'
+      ) {
+        showNotice('会话列表加载失败', 'error')
+      }
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   void loadThemePreference()
