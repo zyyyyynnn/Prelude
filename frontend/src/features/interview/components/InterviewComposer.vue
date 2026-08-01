@@ -191,7 +191,7 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                             }}</span>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                        <TooltipContent side="top">
                           {{ selectedResumeName }}
                         </TooltipContent>
                       </Tooltip>
@@ -222,7 +222,11 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                       @click="emit('update:selectedResumeId', r.id)"
                       class="cursor-pointer overflow-hidden whitespace-nowrap"
                     >
-                      <TooltipText class="min-w-0 flex-1 text-foreground" :text="r.fileName" />
+                      <TooltipText
+                        anchor="parent"
+                        class="min-w-0 flex-1 text-foreground"
+                        :text="r.fileName"
+                      />
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -266,7 +270,7 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                             }}</span>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                        <TooltipContent side="top">
                           {{ selectedPositionName }}
                         </TooltipContent>
                       </Tooltip>
@@ -297,7 +301,11 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                       @click="emit('update:selectedPositionId', p.id)"
                       class="cursor-pointer overflow-hidden whitespace-nowrap"
                     >
-                      <TooltipText class="min-w-0 flex-1 text-foreground" :text="p.name" />
+                      <TooltipText
+                        anchor="parent"
+                        class="min-w-0 flex-1 text-foreground"
+                        :text="p.name"
+                      />
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -319,7 +327,7 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                       }}</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                  <TooltipContent side="top">
                     {{ showJdInput ? '已开启' : '未开启' }}
                   </TooltipContent>
                 </Tooltip>
@@ -336,7 +344,7 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                       }}</span>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                  <TooltipContent side="top">
                     {{ selectedResumeName }}
                   </TooltipContent>
                 </Tooltip>
@@ -352,7 +360,7 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                       }}</span>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                  <TooltipContent side="top">
                     {{ selectedPositionName }}
                   </TooltipContent>
                 </Tooltip>
@@ -366,9 +374,7 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                       <span class="font-medium truncate text-foreground">已开启</span>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
-                    已开启
-                  </TooltipContent>
+                  <TooltipContent side="top"> 已开启 </TooltipContent>
                 </Tooltip>
               </template>
 
@@ -384,7 +390,11 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                     "
                   >
                     <Terminal class="w-3.5 h-3.5 shrink-0 opacity-70" />
-                    <TooltipText class="min-w-0 flex-1 text-foreground" :text="modelDisplay" />
+                    <TooltipText
+                      anchor="parent"
+                      class="min-w-0 flex-1 text-foreground"
+                      :text="modelDisplay"
+                    />
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
@@ -409,7 +419,11 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                     @click="selectedComposerModel = model"
                     class="cursor-pointer overflow-hidden whitespace-nowrap"
                   >
-                    <TooltipText class="min-w-0 flex-1 text-foreground" :text="model" />
+                    <TooltipText
+                      anchor="parent"
+                      class="min-w-0 flex-1 text-foreground"
+                      :text="model"
+                    />
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -434,7 +448,7 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
                     <span class="font-medium truncate">{{ modelDisplay }}</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" :side-offset="8" class="z-[110] text-xs">
+                <TooltipContent side="top">
                   {{ modelDisplay }}
                 </TooltipContent>
               </Tooltip>

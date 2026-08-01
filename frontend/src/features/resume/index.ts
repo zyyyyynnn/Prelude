@@ -1,11 +1,9 @@
 export {
   acceptResumeImprovement,
   deleteResume,
-  fetchResumeDocument,
   fetchResumeImprovements,
   fetchResumes,
   rejectResumeImprovement,
-  updateResumeDocument,
   uploadResume,
 } from './api/resume'
 export type {

@@ -50,6 +50,28 @@ async function capture(page: Page, file: string, readyLocator?: Locator) {
   })
 }
 
+async function waitForSharedTooltip(page: Page) {
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('[data-state][data-side]')].some(
+        (element) => getComputedStyle(element).zIndex === '110',
+      ),
+    null,
+    { polling: 10 },
+  )
+}
+
+async function waitForSharedTooltipToClose(page: Page) {
+  await page.waitForFunction(
+    () =>
+      ![...document.querySelectorAll('[data-state][data-side]')].some(
+        (element) => getComputedStyle(element).zIndex === '110',
+      ),
+    null,
+    { polling: 10 },
+  )
+}
+
 test.beforeAll(async () => {
   await fs.mkdir(screenshotDir, { recursive: true })
 })
@@ -286,18 +308,32 @@ test('17 components lab (dark)', async ({ page }) => {
 test('18 tooltip uses a readable neutral surface', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/components-lab')
-  const trigger = page.getByRole('button', { name: '通知' })
+  const trigger = page.locator('.lab__link')
   await trigger.hover()
-  const tooltip = page
-    .locator('[data-dismissable-layer][data-state][data-side]')
-    .filter({ hasText: 'hover / focus 触发' })
-    .first()
-  await expect(tooltip).toBeVisible()
-
-  const colors = await tooltip.evaluate((element) => {
-    const style = getComputedStyle(element)
-    return { background: style.backgroundColor, foreground: style.color }
+  await waitForSharedTooltip(page)
+  const metrics = await page.evaluate(() => {
+    const trigger = document.querySelector('.lab__link')
+    const tooltip = [...document.querySelectorAll('[data-state][data-side]')].find((element) =>
+      element.textContent?.includes('Tooltip 用于补充信息'),
+    )
+    if (!trigger || !tooltip) return null
+    const triggerBox = trigger.getBoundingClientRect()
+    const tooltipBox = tooltip.getBoundingClientRect()
+    const style = getComputedStyle(tooltip)
+    return {
+      background: style.backgroundColor,
+      border: style.borderTopColor,
+      foreground: style.color,
+      inputBorder: getComputedStyle(document.querySelector('input')!).borderTopColor,
+      shadow: style.boxShadow,
+      gap: triggerBox.top - tooltipBox.bottom,
+    }
   })
+  expect(metrics).not.toBeNull()
+  expect(metrics!.gap).toBeGreaterThanOrEqual(5)
+  expect(metrics!.gap).toBeLessThanOrEqual(6)
+  expect(metrics!.border).toBe(metrics!.inputBorder)
+  expect(metrics!.shadow).not.toBe('none')
   const channels = (value: string) =>
     value
       .match(/[\d.]+/g)!
@@ -311,16 +347,118 @@ test('18 tooltip uses a readable neutral surface', async ({ page }) => {
     const [red, green, blue] = channels(value)
     return 0.2126 * red + 0.7152 * green + 0.0722 * blue
   }
-  const lighter = Math.max(luminance(colors.background), luminance(colors.foreground))
-  const darker = Math.min(luminance(colors.background), luminance(colors.foreground))
+  const lighter = Math.max(luminance(metrics!.background), luminance(metrics!.foreground))
+  const darker = Math.min(luminance(metrics!.background), luminance(metrics!.foreground))
   expect((lighter + 0.05) / (darker + 0.05)).toBeGreaterThanOrEqual(7)
 })
 
-test('18b chart tooltip mirrors the neutral tooltip surface', async ({ page }) => {
+test('18a empty-state composer controls and menu items use the shared tooltip geometry', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await installMockApi(page, { sessions: [] })
+  await page.goto('/interview')
+  const modelControl = page.locator('.composer-toolbar-select').filter({ hasText: '/' }).first()
+  const trigger = modelControl.locator('.truncate')
+  await expect(trigger).toBeVisible()
+  await trigger.hover()
+  await waitForSharedTooltip(page)
+
+  const metrics = await page.evaluate(() => {
+    const trigger = document.querySelector('.composer-toolbar-select')
+    const tooltip = document.querySelector('[data-state][data-side]')
+    if (!trigger || !tooltip) return null
+    const triggerBox = trigger.getBoundingClientRect()
+    const tooltipBox = tooltip.getBoundingClientRect()
+    return {
+      gap: triggerBox.top - tooltipBox.bottom,
+      side: tooltip.getAttribute('data-side'),
+    }
+  })
+
+  expect(metrics).not.toBeNull()
+  expect(metrics!.side).toBe('top')
+  expect(metrics!.gap).toBeGreaterThanOrEqual(5)
+  expect(metrics!.gap).toBeLessThanOrEqual(6)
+
+  await page.mouse.move(0, 0)
+  await waitForSharedTooltipToClose(page)
+
+  const controls = page.locator('.composer-toolbar-select')
+  await expect(controls).toHaveCount(3)
+  for (const index of [0, 1, 2]) {
+    const control = controls.nth(index)
+    await control.click()
+    await waitForSharedTooltipToClose(page)
+    const menu = page.locator('[role="menu"]:visible')
+    const menuItem = menu.getByRole('menuitem').first()
+    const menuItemTrigger = menuItem.locator('.truncate')
+    await expect(menuItemTrigger).toBeVisible()
+    await menuItemTrigger.hover()
+    await waitForSharedTooltip(page)
+
+    const menuMetrics = await page.evaluate(() => {
+      const menu = document.querySelector('[role="menu"]')
+      const trigger = menu?.querySelector('[role="menuitem"]')
+      if (!menu || !trigger) return null
+      const tooltip = [...document.querySelectorAll('[data-state][data-side]')].find(
+        (element) => getComputedStyle(element).zIndex === '110',
+      )
+      if (!tooltip) return null
+      const triggerBox = trigger.getBoundingClientRect()
+      const tooltipBox = tooltip.getBoundingClientRect()
+      const side = tooltip.getAttribute('data-side')
+      const gap =
+        side === 'top'
+          ? triggerBox.top - tooltipBox.bottom
+          : side === 'bottom'
+            ? tooltipBox.top - triggerBox.bottom
+            : side === 'left'
+              ? triggerBox.left - tooltipBox.right
+              : tooltipBox.left - triggerBox.right
+      return {
+        gap,
+        menuBorder: getComputedStyle(menu).borderTopColor,
+        menuShadow: getComputedStyle(menu).boxShadow,
+        tooltipBorder: getComputedStyle(tooltip).borderTopColor,
+        tooltipShadow: getComputedStyle(tooltip).boxShadow,
+      }
+    })
+
+    expect(menuMetrics).not.toBeNull()
+    expect(menuMetrics!.gap).toBeGreaterThanOrEqual(5)
+    expect(menuMetrics!.gap).toBeLessThanOrEqual(6)
+    expect(menuMetrics!.tooltipBorder).toBe(menuMetrics!.menuBorder)
+    expect(menuMetrics!.tooltipShadow).toBe(menuMetrics!.menuShadow)
+
+    await page.mouse.move(0, 0)
+    await waitForSharedTooltipToClose(page)
+    await page.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+  }
+})
+
+test('18b chart tooltip stays dormant until hover and mirrors the form surface', async ({
+  page,
+}) => {
   await installMockApi(page)
   await page.goto('/analytics')
-  const canvas = page.locator('.chart-surface').nth(1).locator('canvas').first()
+  const chartSurface = page.locator('.chart-surface').nth(1)
+  const canvas = chartSurface.locator('canvas').first()
   await expect(canvas).toBeVisible()
+  const tooltip = page.locator('.ui-chart-tooltip')
+  await expect(tooltip).toHaveCount(1)
+  const dormantMetrics = await chartSurface.evaluate((element) => {
+    const tooltipElement = element.querySelector<HTMLElement>('.ui-chart-tooltip')
+    return {
+      tooltipHeight: tooltipElement?.getBoundingClientRect().height ?? -1,
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+    }
+  })
+  expect(dormantMetrics.tooltipHeight).toBe(0)
+  expect(dormantMetrics.scrollHeight).toBe(dormantMetrics.clientHeight)
+
   const box = await canvas.boundingBox()
   expect(box).not.toBeNull()
 
@@ -335,7 +473,6 @@ test('18b chart tooltip mirrors the neutral tooltip surface', async ({ page }) =
       break
   }
 
-  const tooltip = page.locator('.ui-chart-tooltip')
   await expect(tooltip).toBeVisible()
   const matchesTokens = await tooltip.evaluate((element) => {
     const style = getComputedStyle(element)
@@ -349,8 +486,10 @@ test('18b chart tooltip mirrors the neutral tooltip surface', async ({ page }) =
       return color
     }
     return (
-      style.backgroundColor === normalized(root.getPropertyValue('--color-text-primary')) &&
-      style.color === normalized(root.getPropertyValue('--color-bg'))
+      style.backgroundColor === normalized(root.getPropertyValue('--color-surface')) &&
+      style.color === normalized(root.getPropertyValue('--color-text-primary')) &&
+      style.borderTopColor === normalized(root.getPropertyValue('--color-input')) &&
+      style.boxShadow !== 'none'
     )
   })
   expect(matchesTokens).toBe(true)

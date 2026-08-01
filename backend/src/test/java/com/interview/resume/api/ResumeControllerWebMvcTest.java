@@ -2,14 +2,11 @@ package com.interview.resume.api;
 
 import com.interview.shared.web.GlobalExceptionHandler;
 import com.interview.shared.web.JwtInterceptor;
-import com.interview.resume.application.CreateResumeDocument;
 import com.interview.resume.application.DeleteResume;
-import com.interview.resume.application.GetResumeDocument;
 import com.interview.resume.application.ImportResumePdf;
 import com.interview.resume.application.ImportResumeResult;
 import com.interview.resume.application.ListResumes;
 import com.interview.resume.application.ResumeDocumentView;
-import com.interview.resume.application.UpdateResumeDocument;
 import com.interview.resume.application.ResumeImprovementService;
 import com.interview.resume.application.ResumeImprovementDecisionView;
 import com.interview.resume.application.ResumeImprovementView;
@@ -23,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -39,7 +35,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,9 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ResumeControllerWebMvcTest {
 
     @Mock private ImportResumePdf importResumePdf;
-    @Mock private CreateResumeDocument createResumeDocument;
-    @Mock private GetResumeDocument getResumeDocument;
-    @Mock private UpdateResumeDocument updateResumeDocument;
     @Mock private ListResumes listResumes;
     @Mock private DeleteResume deleteResume;
     @Mock private ResumeImprovementService resumeImprovementService;
@@ -67,9 +59,6 @@ class ResumeControllerWebMvcTest {
         lenient().when(devFixtureService.isEnabled()).thenReturn(false);
         mockMvc = MockMvcBuilders.standaloneSetup(new ResumeController(
                 importResumePdf,
-                createResumeDocument,
-                getResumeDocument,
-                updateResumeDocument,
                 listResumes,
                 deleteResume,
                 resumeImprovementService,
@@ -95,37 +84,6 @@ class ResumeControllerWebMvcTest {
             .andExpect(jsonPath("$.data.resumeId").value(9))
             .andExpect(jsonPath("$.data.skills[0]").value("Java"))
             .andExpect(jsonPath("$.data.projects[0].name").value("Prelude"));
-    }
-
-    @Test
-    void createsGetsAndUpdatesStructuredDocument() throws Exception {
-        when(createResumeDocument.execute(any(), any(), any())).thenReturn(view(9L, 1));
-        when(getResumeDocument.execute(42L, 9L)).thenReturn(view(9L, 1));
-        when(updateResumeDocument.execute(any(), any(), any(Integer.class), any())).thenReturn(view(9L, 2));
-        String createBody = """
-            {"fileName":"我的简历","document":{"schemaVersion":1,"locale":"zh-CN","summary":"结构化摘要","skills":[],"experiences":[],"projects":[],"education":[],"extras":[]}}
-            """;
-        String updateBody = """
-            {"expectedVersion":1,"document":{"schemaVersion":1,"locale":"zh-CN","summary":"结构化摘要","skills":[],"experiences":[],"projects":[],"education":[],"extras":[]}}
-            """;
-
-        mockMvc.perform(post("/api/resume/document")
-                .header("Authorization", "Bearer token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createBody))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.documentVersion").value(1));
-        mockMvc.perform(get("/api/resume/9/document").header("Authorization", "Bearer token"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.document.summary").value("结构化摘要"));
-        mockMvc.perform(put("/api/resume/9/document")
-                .header("Authorization", "Bearer token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(updateBody))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.documentVersion").value(2));
-
-        verify(updateResumeDocument).execute(42L, 9L, 1, document);
     }
 
     @Test

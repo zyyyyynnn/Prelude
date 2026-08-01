@@ -45,6 +45,7 @@ import java.util.concurrent.Executor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -86,9 +87,11 @@ class FinishInterviewTest {
             sessionAccess,
             interviewSessionMapper,
             jobSchedulerPort,
-            messageService
+            messageService,
+            interviewStageManager
         );
         lenient().when(jobSchedulerPort.enqueue(any(JobRequest.class))).thenReturn(new JobTicket("job-1", "pending"));
+        lenient().when(interviewStageManager.currentStageName(anyLong())).thenReturn("closing");
         UserContext.setCurrentUserId(42L);
     }
 
@@ -163,6 +166,23 @@ class FinishInterviewTest {
         ArgumentCaptor<InterviewSession> sessionCaptor = ArgumentCaptor.forClass(InterviewSession.class);
         verify(interviewSessionMapper, times(1)).update(sessionCaptor.capture());
         assertThat(sessionCaptor.getValue().getStatus()).isEqualTo("generating");
+    }
+
+    @Test
+    void finishRejectsOngoingSessionBeforeClosingStage() {
+        InterviewSession session = new InterviewSession();
+        session.setId(7L);
+        session.setUserId(42L);
+        session.setStatus("ongoing");
+        when(interviewSessionMapper.selectById(7L)).thenReturn(session);
+        when(interviewStageManager.currentStageName(7L)).thenReturn("technical");
+
+        assertThatThrownBy(() -> finishInterview.execute(7L))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("仅在收尾阶段才能生成报告");
+
+        verify(jobSchedulerPort, never()).enqueue(any(JobRequest.class));
+        verify(interviewSessionMapper, never()).update(any(InterviewSession.class));
     }
 
     @Test

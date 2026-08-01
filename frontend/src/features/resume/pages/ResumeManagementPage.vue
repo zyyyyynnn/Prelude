@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import {
-  deleteResume,
-  fetchResumeDocument,
-  fetchResumes,
-  updateResumeDocument,
-  uploadResume,
-} from '../api/resume'
+import { deleteResume, fetchResumes, uploadResume } from '../api/resume'
 import { getErrorMessage } from '@/shared/lib/errors'
 import axios from 'axios'
-import type { ResumeDocument, ResumeDocumentView, ResumeItem } from '../model/types'
-import ResumeDocumentEditor from '../components/ResumeDocumentEditor.vue'
+import type { ResumeItem } from '../model/types'
 import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
 import { useConfirmDialog } from '@/shared/ui/confirm-dialog/useConfirmDialog'
 import { Button } from '@/shared/ui/button'
@@ -28,9 +21,6 @@ const uploading = ref(false)
 const uploadInput = ref<HTMLInputElement | null>(null)
 const items = ref<ResumeItem[]>([])
 const uploadAbortController = ref<AbortController | null>(null)
-const editing = ref<ResumeDocumentView | null>(null)
-const editorLoading = ref(false)
-const saving = ref(false)
 
 const inUseCount = computed(() => items.value.filter((item) => item.inUse).length)
 
@@ -106,33 +96,6 @@ async function removeResume(item: ResumeItem) {
   }
 }
 
-async function openEditor(item: ResumeItem) {
-  if (editorLoading.value) return
-  editorLoading.value = true
-  try {
-    editing.value = await fetchResumeDocument(item.id)
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    editorLoading.value = false
-  }
-}
-
-async function saveDocument(document: ResumeDocument) {
-  if (!editing.value || saving.value) return
-  saving.value = true
-  try {
-    editing.value = await withMinDelay(
-      updateResumeDocument(editing.value.resumeId, editing.value.documentVersion, document),
-    )
-    showNotice('简历已保存', 'success')
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    saving.value = false
-  }
-}
-
 onMounted(() => {
   void loadResumes()
 })
@@ -182,17 +145,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="page-grid page-grid--single">
-        <ResumeDocumentEditor
-          v-if="editing"
-          :file-name="editing.fileName"
-          :document-version="editing.documentVersion"
-          :document="editing.document"
-          :saving="saving"
-          @save="saveDocument"
-          @cancel="editing = null"
-        />
-
-        <Card v-else class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+        <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
           <div class="flex justify-between items-start mb-4">
             <div>
               <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">列表</p>
@@ -231,14 +184,6 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="resume-row__actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  :loading="editorLoading"
-                  @click="openEditor(item)"
-                >
-                  编辑
-                </Button>
                 <Button
                   variant="secondary"
                   size="sm"

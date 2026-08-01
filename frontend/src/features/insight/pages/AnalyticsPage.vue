@@ -67,6 +67,12 @@ function cssVarNumber(name: string, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+function cssDeclarations(declarations: Record<string, string>) {
+  return Object.entries(declarations)
+    .map(([property, value]) => `${property}: ${value}`)
+    .join('; ')
+}
+
 function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
   const d = new Date(dateString)
   const yyyy = d.getFullYear()
@@ -100,6 +106,12 @@ function renderCharts() {
   const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
   const lineDecor = cssVar('--color-border-warm', 'var(--color-border-warm)')
   const ring = cssVar('--color-ring', 'var(--color-ring)')
+  const tooltipSurface = cssVar('--color-surface', 'var(--color-surface)')
+  const tooltipBorder = cssVar('--color-input', 'var(--color-input)')
+  const tooltipText = cssVar('--color-text-primary', 'var(--color-text-primary)')
+  const tooltipFontFamily = getComputedStyle(document.documentElement)
+    .getPropertyValue('--font-serif')
+    .trim()
 
   if (radar.value && radarRef.value && radar.value.sessionCount > 0) {
     radarChart ??= init(radarRef.value)
@@ -141,6 +153,19 @@ function renderCharts() {
       tooltip: {
         trigger: 'axis',
         className: 'ui-chart-tooltip',
+        backgroundColor: tooltipSurface,
+        borderColor: tooltipBorder,
+        borderWidth: 1,
+        padding: [cssVarNumber('--spacing-xs', 4), cssVarNumber('--spacing-sm', 8)],
+        textStyle: {
+          color: tooltipText,
+          fontFamily: tooltipFontFamily,
+          fontSize: cssVarNumber('--font-size-sm', 14),
+        },
+        extraCssText: cssDeclarations({
+          'border-radius': 'var(--radius-md)',
+          'box-shadow': 'var(--shadow-whisper)',
+        }),
         formatter: (params: any) => {
           if (!params || !params.length) return ''
           const dataIndex = params[0].dataIndex

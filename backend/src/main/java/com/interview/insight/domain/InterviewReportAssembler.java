@@ -45,8 +45,23 @@ public class InterviewReportAssembler {
         List<StructuredInterviewReport.QuestionReview> questionReviews = buildQuestionReviews(
             orderedStages, orderedMessages, narratives
         );
-        List<StructuredInterviewReport.StagePerformance> stagePerformances = STAGE_ORDER.stream()
-            .map(stageName -> buildStagePerformance(stageName, narratives.get(stageName), questionReviews))
+        List<String> persistedStageNames = orderedStages.stream()
+            .map(InterviewStage::getStageName)
+            .filter(STAGE_ORDER::contains)
+            .distinct()
+            .toList();
+        List<String> reportStageNames = persistedStageNames.isEmpty()
+            ? questionReviews.stream()
+                .map(StructuredInterviewReport.QuestionReview::stageName)
+                .distinct()
+                .toList()
+            : persistedStageNames;
+        List<StructuredInterviewReport.StagePerformance> stagePerformances = reportStageNames.stream()
+            .map(stageName -> buildStagePerformance(
+                stageName,
+                hasAnswerEvidence(stageName, questionReviews) ? narratives.get(stageName) : null,
+                questionReviews
+            ))
             .toList();
 
         InterviewReportDraft.DimensionScores dimensionScores = safeDraft.scores();
@@ -134,6 +149,13 @@ public class InterviewReportAssembler {
             narrative == null ? List.of() : safeList(narrative.negativeSignals()),
             narrative == null ? List.of() : safeList(narrative.improvementSuggestions())
         );
+    }
+
+    private boolean hasAnswerEvidence(
+        String stageName,
+        List<StructuredInterviewReport.QuestionReview> reviews
+    ) {
+        return reviews.stream().anyMatch(review -> stageName.equals(review.stageName()));
     }
 
     private String resolveStageName(List<InterviewStage> stages, LocalDateTime createdAt) {

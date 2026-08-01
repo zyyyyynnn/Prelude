@@ -35,12 +35,27 @@ function handleLogout() {
   visible.value = false
   void router.replace('/login')
 }
+
+function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent: Event }>) {
+  const isToastInteraction = event.detail.originalEvent
+    .composedPath()
+    .some(
+      (target) =>
+        target instanceof Element &&
+        (target.matches('[data-sonner-toast]') || target.matches('[data-sonner-toaster]')),
+    )
+
+  if (isToastInteraction) {
+    event.preventDefault()
+  }
+}
 </script>
 
 <template>
   <Dialog v-model:open="visible">
     <DialogContent
       class="settings-dialog p-0 overflow-hidden bg-background border-none dialog-no-close !flex !flex-col"
+      @interact-outside="preserveSettingsForToastInteraction"
     >
       <DialogHeader class="hidden">
         <DialogTitle>全局设置</DialogTitle>

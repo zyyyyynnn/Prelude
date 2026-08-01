@@ -201,13 +201,13 @@ Focus 规则：
 Dropdown、Select、Combobox 使用统一低浮层视觉：
 
 - `bg-surface`
-- `border-transparent` 或极弱 token 边界
+- 与表单控件一致的 `border-input` 淡灰棕边界
 - `shadow-whisper`
 - `rounded-md`
 - token padding
 - `font-serif`
 
-Tooltip 使用同一 primitive，但采用 `bg-foreground` + `text-background` 的中性反相表面，保证与页面 surface 清晰分离；不得改用品牌色背景。Tooltip 继续使用 `border-transparent`、`shadow-whisper`、`rounded-md`、token padding 与 `font-serif`，长文本以 `max-w-xs` 换行。Canvas 图表等无法挂载 Vue primitive 的浮层也必须等价使用这组现有 token，不得另造主题色气泡。
+Tooltip 使用同一 primitive，采用 `bg-surface` + `text-popover-foreground` 的主题表面，不使用纯黑或品牌色背景。Tooltip、Dropdown、Select 与 Combobox 浮层统一使用和表单控件相同的 `border-input` 淡灰棕边界，并只叠加一层 `shadow-whisper`；禁止再叠加 ring token 形成双重轮廓。Tooltip 使用 `rounded-md`、token padding、`text-xs` 与 `font-serif`，宽度按内容自然展开，并以 `--content-tooltip-max-inline-size` 限制长文本换行。Tooltip 与完整交互 trigger 的间距由 primitive 统一为 `--spacing-1-5`，业务组件不得另行覆盖；截断文字位于 Button 或菜单项内部时，定位锚点必须提升到完整父交互控件。出现和退出只允许透明度动效，不使用会抵消浮层间距的方向位移。Canvas 图表等无法挂载 Vue primitive 的浮层也必须等价使用这组现有 token，不得另造主题色气泡。
 
 规则：
 

@@ -21,11 +21,9 @@ const resumeDocument = {
   extras: [],
 }
 
-test('loads and saves the structured resume with an explicit document version', async ({
-  page,
-}) => {
+test('resume management exposes upload and cleanup without direct editing', async ({ page }) => {
   await installMockApi(page)
-  let updatePayload: unknown
+  let documentRequestCount = 0
   await page.route(/\/api\/resume(?:\/.*)?$/, async (route) => {
     const url = new URL(route.request().url())
     const method = route.request().method()
@@ -45,50 +43,19 @@ test('loads and saves the structured resume with an explicit document version', 
         },
       })
     }
-    if (method === 'GET' && url.pathname === '/api/resume/1/document') {
-      return route.fulfill({
-        json: {
-          code: 200,
-          data: {
-            resumeId: 1,
-            fileName: 'Java高级架构.pdf',
-            documentVersion: 1,
-            sourceType: 'fixture',
-            document: resumeDocument,
-          },
-        },
-      })
-    }
-    if (method === 'PUT' && url.pathname === '/api/resume/1/document') {
-      updatePayload = route.request().postDataJSON()
-      const body = updatePayload as { document: typeof resumeDocument }
-      return route.fulfill({
-        json: {
-          code: 200,
-          data: {
-            resumeId: 1,
-            fileName: 'Java高级架构.pdf',
-            documentVersion: 2,
-            sourceType: 'editor',
-            document: body.document,
-          },
-        },
-      })
+    if (url.pathname.endsWith('/document')) {
+      documentRequestCount++
+      return route.fulfill({ status: 404 })
     }
     return route.fallback()
   })
 
   await page.goto('/resumes')
-  await page.getByRole('button', { name: '编辑' }).click()
-  await expect(page.getByRole('heading', { name: 'Java高级架构.pdf' })).toBeVisible()
-  await page.getByLabel('个人摘要').fill('具备高并发后端项目经验')
-  await page.getByRole('button', { name: '保存修改' }).click()
-
-  await expect(page.getByText('结构化简历 · v2')).toBeVisible()
-  expect(updatePayload).toMatchObject({
-    expectedVersion: 1,
-    document: { summary: '具备高并发后端项目经验' },
-  })
+  await expect(page.getByRole('button', { name: '上传新简历' })).toBeVisible()
+  await expect(page.getByText('Java高级架构.pdf')).toBeVisible()
+  await expect(page.getByRole('button', { name: '编辑' })).toHaveCount(0)
+  await expect(page.getByText(/结构化简历/)).toHaveCount(0)
+  expect(documentRequestCount).toBe(0)
 })
 
 test('accepts one report suggestion and updates only its decision state', async ({ page }) => {

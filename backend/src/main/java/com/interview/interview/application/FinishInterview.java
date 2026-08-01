@@ -18,11 +18,13 @@ public class FinishInterview {
     private static final String STATUS_ONGOING = "ongoing";
     private static final String STATUS_GENERATING = "generating";
     private static final String STATUS_FINISHED = "finished";
+    private static final String STAGE_CLOSING = "closing";
 
     private final InterviewSessionAccess sessionAccess;
     private final InterviewSessionRepository interviewSessionRepository;
     private final JobSchedulerPort jobSchedulerPort;
     private final InterviewMessageService interviewMessageService;
+    private final InterviewStageManager interviewStageManager;
 
     public FinishInterviewResult execute(Long sessionId) {
         Long userId = sessionAccess.currentUserId();
@@ -37,6 +39,9 @@ public class FinishInterview {
         }
         if (!STATUS_ONGOING.equals(status)) {
             throw BusinessException.badRequest("面试会话状态异常");
+        }
+        if (!STAGE_CLOSING.equals(interviewStageManager.currentStageName(sessionId))) {
+            throw BusinessException.badRequest("仅在收尾阶段才能生成报告");
         }
 
         session.setStatus(STATUS_GENERATING);

@@ -50,8 +50,11 @@ function assertNoLegacyPanelMarkup() {
   if (!dropdownSource.includes('shadow-whisper') || dropdownSource.includes('shadow-md')) {
     throw new Error('Shared dropdown content must keep the low-elevation shadow token')
   }
-  if (!dropdownSource.includes('border-transparent') || dropdownSource.includes('border-border')) {
-    throw new Error('Shared dropdown content must not use a hard border token')
+  if (
+    !dropdownSource.includes('rounded-md border border-input bg-surface') ||
+    dropdownSource.includes('border-border')
+  ) {
+    throw new Error('Shared dropdown content must use the form border-input token')
   }
 }
 
@@ -482,13 +485,13 @@ async function verifyBrowserFlow(port) {
       throw new Error(`Combobox content z-index should be 105, got ${comboboxSurfaceStyle.zIndex}`)
     }
     if (
-      !comboboxSurfaceStyle.className.includes('border-transparent') ||
+      !comboboxSurfaceStyle.className.includes('border-input') ||
       comboboxSurfaceStyle.className.includes('border-border')
     ) {
-      throw new Error('Combobox content should keep the shared low-border dropdown styling')
+      throw new Error('Combobox content should match the shared form-border dropdown styling')
     }
     if (
-      !comboboxSurfaceStyle.className.includes('shadow-whisper') ||
+      !comboboxSurfaceStyle.className.includes('shadow-[var(--shadow-whisper)]') ||
       comboboxSurfaceStyle.className.includes('shadow-md')
     ) {
       throw new Error('Combobox content should keep the shared low-elevation shadow styling')

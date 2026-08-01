@@ -24,6 +24,14 @@ const businessComponentRoots = [
 ]
 const stylesIndex = path.join(frontendSrc, 'shared', 'ui', 'styles', 'index.css')
 const tooltipContent = path.join(frontendSrc, 'shared', 'ui', 'tooltip', 'TooltipContent.vue')
+const sharedDropdown = path.join(frontendSrc, 'shared', 'ui', 'shared-dropdown.ts')
+const interviewComposer = path.join(
+  frontendSrc,
+  'features',
+  'interview',
+  'components',
+  'InterviewComposer.vue',
+)
 const componentFocusShadowToken = '--shadow-icon-action-focus'
 
 const semanticVarPrefixByFile = new Map([
@@ -353,22 +361,83 @@ function findComponentFocusShadowViolations() {
 
 function findTooltipContractViolations() {
   const source = fs.readFileSync(tooltipContent, 'utf8')
-  const requiredClasses = ['bg-foreground', 'text-background', 'max-w-xs', 'break-words']
+  const composerSource = fs.readFileSync(interviewComposer, 'utf8')
+  const dropdownSource = fs.readFileSync(sharedDropdown, 'utf8')
+  const requiredClasses = [
+    'bg-surface',
+    'text-popover-foreground',
+    'border-input',
+    'w-max',
+    'max-w-[var(--content-tooltip-max-inline-size)]',
+    'break-words',
+    'text-xs',
+    'shadow-[var(--shadow-whisper)]',
+    'sideOffset: 6',
+    ':side-offset="props.sideOffset"',
+  ]
   const missing = requiredClasses.filter((className) => !source.includes(className))
-  if (missing.length === 0 && !source.includes('bg-surface')) {
-    return []
-  }
-  return [
-    {
+  const forbiddenClasses = [
+    'bg-foreground',
+    'text-background',
+    'max-w-xs',
+    'text-sm',
+    'slide-in-from-',
+    'shadow-ring-deep',
+  ]
+  const presentForbidden = forbiddenClasses.filter((className) => source.includes(className))
+  const violations = []
+  if (missing.length > 0 || presentForbidden.length > 0) {
+    violations.push({
       id: 'tooltip-surface-contract',
-      description: 'Tooltip 必须使用统一的中性高对比浮层，不得回退到页面 surface',
+      description: 'Tooltip 必须使用统一的主题 surface、尺寸、阴影和 trigger 间距',
       hit: {
         file: tooltipContent,
         line: 1,
-        text: missing.length > 0 ? `missing: ${missing.join(', ')}` : 'contains bg-surface',
+        text:
+          missing.length > 0
+            ? `missing: ${missing.join(', ')}`
+            : presentForbidden.length > 0
+              ? `forbidden: ${presentForbidden.join(', ')}`
+              : 'tooltip contract mismatch',
       },
-    },
-  ]
+    })
+  }
+  if (!dropdownSource.includes('rounded-md border border-input bg-surface')) {
+    violations.push({
+      id: 'dropdown-surface-border-contract',
+      description: 'Dropdown、Select 与 Combobox 浮层必须复用表单 border-input 边界',
+      hit: {
+        file: sharedDropdown,
+        line: 1,
+        text: 'missing: rounded-md border border-input bg-surface',
+      },
+    })
+  }
+  if (composerSource.includes('side-offset=')) {
+    violations.push({
+      id: 'composer-tooltip-offset-contract',
+      description: 'Composer 同层级 Tooltip 必须复用共享 primitive 的 trigger 间距',
+      hit: {
+        file: interviewComposer,
+        line: 1,
+        text: 'forbidden: local side-offset override',
+      },
+    })
+  }
+  const tooltipTextTags = composerSource.match(/<TooltipText\b[^>]*>/g) ?? []
+  const invalidTooltipAnchors = tooltipTextTags.filter((tag) => !tag.includes('anchor="parent"'))
+  if (invalidTooltipAnchors.length > 0) {
+    violations.push({
+      id: 'composer-tooltip-anchor-contract',
+      description: 'Composer 交互控件 Tooltip 必须以完整父 trigger 或 menu item 作为定位锚点',
+      hit: {
+        file: interviewComposer,
+        line: 1,
+        text: `missing anchor="parent": ${invalidTooltipAnchors.length} TooltipText tag(s)`,
+      },
+    })
+  }
+  return violations
 }
 
 const failures = []
