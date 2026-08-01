@@ -71,6 +71,12 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     preferences.activate(normalizedScope, storage)
   }
 
+  function hydratePreferences(storage?: Storage) {
+    if (activeAccountScope) {
+      preferences.activate(activeAccountScope, storage)
+    }
+  }
+
   function refreshSessionList() {
     if (!activeAccountScope) {
       sessions.value = []
@@ -203,6 +209,7 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     primarySessionList,
     finishedSessionList,
     activateAccount,
+    hydratePreferences,
     refreshSessionList,
     loadSession,
     startNewInterview,
