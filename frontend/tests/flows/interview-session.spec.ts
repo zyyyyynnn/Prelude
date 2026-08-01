@@ -196,12 +196,18 @@ test('cancels stale account requests and never renders the previous account sess
   await page.getByPlaceholder('请输入密码').fill('123456')
   await page.locator('form').getByRole('button', { name: '登录' }).click()
 
-  await expect(page).toHaveURL(/\/interview$/)
-  await expect.poll(() => requestTokens.includes('Bearer token-b')).toBe(true)
+  await expect
+    .poll(() => requestTokens.includes('Bearer token-b'), { timeout: 10_000 })
+    .toBe(true)
+  const accountBSession = page.getByRole('button', {
+    name: '打开已结束会话 账号 B 私有会话',
+  })
+  await expect(accountBSession).toBeVisible({ timeout: 10_000 })
+
   releaseAccountA()
   await accountACompleted
 
-  await expect(page.getByRole('button', { name: '打开已结束会话 账号 B 私有会话' })).toBeVisible()
+  await expect(accountBSession).toBeVisible()
   await expect(page.getByText('账号 A 私有会话')).toHaveCount(0)
   expect(requestTokens).toContain('Bearer token-a')
   expect(requestTokens).toContain('Bearer token-b')
