@@ -53,9 +53,10 @@ export async function fetchInterviewSessions(signal?: AbortSignal) {
   }))
 }
 
-export async function fetchInterviewMessages(sessionId: number) {
+export async function fetchInterviewMessages(sessionId: number, signal?: AbortSignal) {
   const response = await http.get<ApiResult<InterviewSessionDetailResponse>>(
     `/interview/${sessionId}/messages`,
+    { signal },
   )
   const data = unwrapResult(response.data)
   return {
