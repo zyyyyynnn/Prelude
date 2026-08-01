@@ -53,7 +53,7 @@ function handleSystemThemeChange() {
 watch(
   () => authStore.accountScope,
   (accountScope) => sessionStore.activateAccount(accountScope),
-  { immediate: true },
+  { immediate: true, flush: 'sync' },
 )
 
 onMounted(() => {
