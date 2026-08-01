@@ -196,9 +196,7 @@ test('cancels stale account requests and never renders the previous account sess
   await page.getByPlaceholder('请输入密码').fill('123456')
   await page.locator('form').getByRole('button', { name: '登录' }).click()
 
-  await expect
-    .poll(() => requestTokens.includes('Bearer token-b'), { timeout: 10_000 })
-    .toBe(true)
+  await expect.poll(() => requestTokens.includes('Bearer token-b'), { timeout: 10_000 }).toBe(true)
   const accountBSession = page.getByRole('button', {
     name: '打开已结束会话 账号 B 私有会话',
   })
