@@ -38,9 +38,9 @@ test('closes a settings toast without dismissing the settings dialog', async ({ 
 
   expect(geometry).not.toBeNull()
   expect(geometry?.centerDelta).toBeLessThanOrEqual(1)
-  expect(Math.abs((geometry?.rightInset ?? 0) - (geometry?.expectedRightInset ?? 0))).toBeLessThanOrEqual(
-    1,
-  )
+  expect(
+    Math.abs((geometry?.rightInset ?? 0) - (geometry?.expectedRightInset ?? 0)),
+  ).toBeLessThanOrEqual(1)
   expect(geometry?.isInRightHalf).toBe(true)
   expect(geometry?.borderWidth).toBe('0px')
   expect(geometry?.boxShadow).toBe('none')

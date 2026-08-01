@@ -42,10 +42,7 @@ function parsePreferences(value: string | null): SessionPreferences | null {
   }
 }
 
-export function readSessionPreferences(
-  storage: Storage,
-  accountScope: string,
-): SessionPreferences {
+export function readSessionPreferences(storage: Storage, accountScope: string): SessionPreferences {
   if (!accountScope) return { pinnedIds: [], hiddenIds: [] }
 
   const scoped = parsePreferences(storage.getItem(sessionPreferencesKey(accountScope)))

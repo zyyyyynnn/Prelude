@@ -44,7 +44,10 @@ void test('derives a stable account scope from explicit and existing JWT identit
 
   assert.equal(accountScopeForSession(token, 7), 'user:7')
   assert.equal(accountScopeForSession(token, null), 'user:42')
-  assert.equal(accountScopeForSession('opaque-token', null), accountScopeForSession('opaque-token', null))
+  assert.equal(
+    accountScopeForSession('opaque-token', null),
+    accountScopeForSession('opaque-token', null),
+  )
   assert.match(accountScopeForSession('opaque-token', null), /^legacy:[0-9a-f]+$/)
 })
 

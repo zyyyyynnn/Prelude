@@ -171,7 +171,8 @@ const checks = [
   },
   {
     id: 'tailwind-raw-z-index',
-    description: 'Tailwind raw z-index utility（使用 tokenized arbitrary z-index 或受控浮层 token）',
+    description:
+      'Tailwind raw z-index utility（使用 tokenized arbitrary z-index 或受控浮层 token）',
     pattern: '\\bz-\\d+\\b',
     paths: [frontendSrc],
     allowPaths: new Set(),
