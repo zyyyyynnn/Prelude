@@ -24,7 +24,7 @@
 
 ### `POST /api/auth/login`
 
-登录并返回 JWT。
+登录并返回 JWT 与当前账号的稳定用户标识。前端使用 `userId` 隔离账号级会话状态与本地偏好，不应从 JWT 字符串推导业务身份。
 
 请求示例：
 
@@ -42,7 +42,8 @@
   "code": 200,
   "message": "success",
   "data": {
-    "token": "jwt-token"
+    "token": "jwt-token",
+    "userId": 1
   }
 }
 ```

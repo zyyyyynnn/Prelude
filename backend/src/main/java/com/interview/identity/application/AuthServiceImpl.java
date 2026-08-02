@@ -46,6 +46,6 @@ public class AuthServiceImpl implements AuthService {
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw BusinessException.badRequest("用户名或密码错误");
         }
-        return new LoginResponse(jwtUtil.generateToken(user.getId()));
+        return new LoginResponse(jwtUtil.generateToken(user.getId()), user.getId());
     }
 }

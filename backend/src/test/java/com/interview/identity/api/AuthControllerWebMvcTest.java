@@ -39,15 +39,16 @@ class AuthControllerWebMvcTest {
     }
 
     @Test
-    void loginReturnsTokenAndCallsService() throws Exception {
-        when(authService.login(any())).thenReturn(new LoginResponse("jwt-token"));
+    void loginReturnsTokenAndStableUserIdentity() throws Exception {
+        when(authService.login(any())).thenReturn(new LoginResponse("jwt-token", 42L));
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"demo\",\"password\":\"123456\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(200))
-            .andExpect(jsonPath("$.data.token").value("jwt-token"));
+            .andExpect(jsonPath("$.data.token").value("jwt-token"))
+            .andExpect(jsonPath("$.data.userId").value(42));
 
         verify(authService).login(any());
     }

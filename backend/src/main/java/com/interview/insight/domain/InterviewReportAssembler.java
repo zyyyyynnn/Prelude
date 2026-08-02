@@ -109,7 +109,7 @@ public class InterviewReportAssembler {
                 pendingQuestion = message.getContent().trim();
                 continue;
             }
-            if (!"user".equals(message.getRole())) {
+            if (!"user".equals(message.getRole()) || isBlank(message.getContent())) {
                 continue;
             }
             String stageName = resolveStageName(stages, message.getCreatedAt());

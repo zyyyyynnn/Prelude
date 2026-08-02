@@ -146,11 +146,16 @@ class InterviewReportAssemblerTest {
             List.of(
                 message("assistant", "请介绍项目背景", null, null, 1, startedAt.plusMinutes(1)),
                 message("user", "我负责核心链路。", 7, "回答已记录", 2, startedAt.plusMinutes(2)),
-                message("assistant", "如何保证一致性？", null, null, 3, startedAt.plusMinutes(11))
+                message("assistant", "如何保证一致性？", null, null, 3, startedAt.plusMinutes(11)),
+                message("user", "   ", 10, "空白回答不应成为证据", 4, startedAt.plusMinutes(12))
             ),
             List.of()
         );
 
+        assertThat(report.questionReviews()).singleElement().satisfies(review -> {
+            assertThat(review.stageName()).isEqualTo("warmup");
+            assertThat(review.answerSummary()).isEqualTo("我负责核心链路。");
+        });
         assertThat(report.stagePerformances())
             .extracting(StructuredInterviewReport.StagePerformance::stageName)
             .containsExactly("warmup", "technical");

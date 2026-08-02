@@ -10,6 +10,7 @@ export const useSessionPreferencesStore = defineStore('interview-session-prefere
   const pinnedIds = ref<number[]>([])
   const hiddenIds = ref<number[]>([])
   const hydrated = ref(false)
+  const activeAccountScope = ref('')
   let storage: Storage | null = null
 
   const snapshot = computed<SessionPreferences>(() => ({
@@ -17,18 +18,35 @@ export const useSessionPreferencesStore = defineStore('interview-session-prefere
     hiddenIds: hiddenIds.value,
   }))
 
-  function hydrate(target: Storage = localStorage) {
-    if (hydrated.value) return
-    storage = target
-    const preferences = readSessionPreferences(target)
+  function clearInMemory() {
+    pinnedIds.value = []
+    hiddenIds.value = []
+    hydrated.value = false
+  }
+
+  function activate(accountScope: string, target?: Storage) {
+    const normalizedScope = accountScope.trim()
+    if (activeAccountScope.value === normalizedScope && hydrated.value) return
+
+    activeAccountScope.value = normalizedScope
+    if (!normalizedScope) {
+      storage = null
+      clearInMemory()
+      return
+    }
+
+    storage = target ?? localStorage
+    const preferences = readSessionPreferences(storage, normalizedScope)
     pinnedIds.value = preferences.pinnedIds
     hiddenIds.value = preferences.hiddenIds
-    writeSessionPreferences(target, preferences)
+    writeSessionPreferences(storage, normalizedScope, preferences)
     hydrated.value = true
   }
 
   function persist() {
-    if (storage) writeSessionPreferences(storage, snapshot.value)
+    if (storage && activeAccountScope.value) {
+      writeSessionPreferences(storage, activeAccountScope.value, snapshot.value)
+    }
   }
 
   function togglePin(sessionId: number) {
@@ -56,5 +74,15 @@ export const useSessionPreferencesStore = defineStore('interview-session-prefere
     return pinnedIds.value.includes(sessionId)
   }
 
-  return { pinnedIds, hiddenIds, hydrated, hydrate, togglePin, hide, unhide, isPinned }
+  return {
+    pinnedIds,
+    hiddenIds,
+    hydrated,
+    activeAccountScope,
+    activate,
+    togglePin,
+    hide,
+    unhide,
+    isPinned,
+  }
 })
