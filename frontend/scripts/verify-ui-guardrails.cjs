@@ -2,13 +2,8 @@
 /**
  * UI guardrail verifier (Node builtin only).
  *
- * Enforces the sizing & color rules in docs/quality/local-review-checklist.md.
- * Does NOT introduce new dependencies.
- *
- * Exits 0 on PASS, 1 on any VIOLATION.
- *
- * The token file `frontend/src/shared/ui/styles/index.css` is allowed to keep base
- * color values and px numerics as the source of truth for global tokens.
+ * Enforces the sizing, color, focus, and shared floating-surface contracts.
+ * Exits 0 on PASS and 1 on any violation.
  */
 'use strict'
 
@@ -25,13 +20,6 @@ const businessComponentRoots = [
 const stylesIndex = path.join(frontendSrc, 'shared', 'ui', 'styles', 'index.css')
 const tooltipContent = path.join(frontendSrc, 'shared', 'ui', 'tooltip', 'TooltipContent.vue')
 const sharedDropdown = path.join(frontendSrc, 'shared', 'ui', 'shared-dropdown.ts')
-const interviewComposer = path.join(
-  frontendSrc,
-  'features',
-  'interview',
-  'components',
-  'InterviewComposer.vue',
-)
 const componentFocusShadowToken = '--shadow-icon-action-focus'
 
 const semanticVarPrefixByFile = new Map([
@@ -71,10 +59,27 @@ function relativeFile(file) {
 function isAllowedSemanticVariable(hit) {
   const name = cssVariableName(hit.text)
   if (!name) return false
-  const rel = relativeFile(hit.file)
-  const prefixes = semanticVarPrefixByFile.get(rel)
+  const prefixes = semanticVarPrefixByFile.get(relativeFile(hit.file))
   if (!prefixes || !prefixes.some((prefix) => name.startsWith(prefix))) return false
   return semanticVarTerms.some((term) => name.includes(term))
+}
+
+function isAllowed(hit, allowPaths) {
+  if (!allowPaths || allowPaths.size === 0) return false
+  for (const allowed of allowPaths) {
+    if (hit.file === allowed || hit.file.startsWith(allowed + path.sep)) return true
+    if (path.isAbsolute(hit.file) && path.isAbsolute(allowed)) {
+      const normalizedHit = path.normalize(hit.file)
+      const normalizedAllowed = path.normalize(allowed)
+      if (
+        normalizedHit === normalizedAllowed ||
+        normalizedHit.startsWith(normalizedAllowed + path.sep)
+      ) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 function isStylesTokenDeclaration(hit) {
@@ -87,10 +92,8 @@ function isAllowedBoxShadow(hit) {
 
   const declaration = normalized.match(/^(?:-webkit-)?box-shadow:\s*(.+);$/)
   if (!declaration) return false
-
   const value = declaration[1].replace(/\s*!important$/, '').trim()
   if (value === 'none') return true
-
   return value.split(',').every((part) => /^var\(--shadow-[\w-]+\)$/.test(part.trim()))
 }
 
@@ -127,8 +130,6 @@ const checks = [
       '(min-|max-)?(width|height|inline-size|block-size):\\s*\\d+px|font-size:\\s*\\d+px|z-index:\\s*\\d+\\b',
     paths: [frontendSrc],
     allowPaths: new Set([stylesIndex]),
-    // CSS custom property declarations (e.g. `--foo: 12px;`) inside a component scoped
-    // block are allowed: they encode the geometric intent at the top of the component.
     isVariableLine: true,
   },
   {
@@ -174,7 +175,7 @@ const checks = [
       'Tailwind raw z-index utility（使用 tokenized arbitrary z-index 或受控浮层 token）',
     pattern: '\\bz-\\d+\\b',
     paths: [frontendSrc],
-    allowPaths: new Set([]),
+    allowPaths: new Set(),
   },
   {
     id: 'magic-height-ratio',
@@ -195,28 +196,15 @@ const checks = [
 ]
 
 function runRipgrep(args) {
-  // Use rg if available; fall back to a tiny Node walker otherwise.
-  // CI runners (windows-latest) do NOT ship with ripgrep, so we must
-  // gracefully degrade: any spawnSync failure (ENOENT, status 2, 127)
-  // falls through to the in-process walker. Previously only status 2
-  // and 127 were caught, leaving ENOENT (status === null) to crash the
-  // entire verify:ui step.
   try {
-    const out = execFileSync('rg', ['--no-heading', '--line-number', '--color', 'never', ...args], {
+    return execFileSync('rg', ['--no-heading', '--line-number', '--color', 'never', ...args], {
       cwd: repoRoot,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     })
-    return out
   } catch (error) {
-    if (error.status === 1) {
-      // rg exit 1 means "no matches" — treat as empty
-      return ''
-    }
+    if (error.status === 1) return ''
     if (error.status === 2 || error.status === 127 || error.code === 'ENOENT') {
-      // rg missing, syntax error, or binary not on PATH — fall through
-      // to the in-process walker so the step still produces results on
-      // environments without ripgrep (CI runners, fresh devcontainers).
       return walkFallback(args)
     }
     throw error
@@ -224,36 +212,33 @@ function runRipgrep(args) {
 }
 
 function walkFallback(args) {
-  // Minimal fallback: only handles "PATTERN PATH..." style args; for simplicity
-  // we just walk frontend/src recursively and apply the pattern in JS.
-  const patternStr = args[args.length - 2]
-  const searchRoots = args
-    .slice(args.indexOf('-e') >= 0 ? args.indexOf('-e') + 2 : 0)
-    .filter((a) => !a.startsWith('-'))
-  // The fallback is best-effort; we expect rg to be present in normal setups.
-  const regex = new RegExp(patternStr)
+  const patternIndex = args.indexOf('-e')
+  const pattern = patternIndex >= 0 ? args[patternIndex + 1] : args[0]
+  const searchRoots = args.slice(patternIndex >= 0 ? patternIndex + 2 : 1)
+  const regex = new RegExp(pattern)
   const results = []
-  function walk(dir) {
+
+  function walk(directory) {
     let entries
     try {
-      entries = fs.readdirSync(dir, { withFileTypes: true })
+      entries = fs.readdirSync(directory, { withFileTypes: true })
     } catch {
       return
     }
-    for (const ent of entries) {
-      const p = path.join(dir, ent.name)
-      if (ent.isDirectory()) {
-        walk(p)
-        continue
-      }
-      if (!/\.(vue|ts|css|tsx|js)$/.test(ent.name)) continue
-      const text = fs.readFileSync(p, 'utf8')
-      const lines = text.split(/\r?\n/)
-      for (let i = 0; i < lines.length; i++) {
-        if (regex.test(lines[i])) results.push(`${p}:${i + 1}:${lines[i]}`)
+    for (const entry of entries) {
+      const file = path.join(directory, entry.name)
+      if (entry.isDirectory()) {
+        walk(file)
+      } else if (/\.(vue|ts|css|tsx|js)$/.test(entry.name)) {
+        const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/)
+        for (let index = 0; index < lines.length; index++) {
+          regex.lastIndex = 0
+          if (regex.test(lines[index])) results.push(`${file}:${index + 1}:${lines[index]}`)
+        }
       }
     }
   }
+
   for (const root of searchRoots) walk(root)
   return results.join('\n')
 }
@@ -262,69 +247,51 @@ function normalizeHits(output) {
   if (!output) return []
   return output
     .split(/\r?\n/)
-    .filter((line) => line.length > 0)
+    .filter(Boolean)
     .map((line) => {
       const match = line.match(/^(.*?):(\d+):(.*)$/)
-      if (!match) return { file: line, line: 0, text: '' }
-      return { file: match[1], line: Number(match[2]), text: match[3] }
+      return match
+        ? { file: match[1], line: Number(match[2]), text: match[3] }
+        : { file: line, line: 0, text: '' }
     })
 }
 
-function isAllowed(hit, allowPaths) {
-  if (!allowPaths || allowPaths.size === 0) return false
-  for (const allowed of allowPaths) {
-    if (hit.file === allowed || hit.file.startsWith(allowed + path.sep)) return true
-    // also try absolute path match in case rg emitted an absolute Windows path
-    if (path.isAbsolute(hit.file) && path.isAbsolute(allowed)) {
-      const normHit = path.normalize(hit.file)
-      const normAllowed = path.normalize(allowed)
-      if (normHit === normAllowed || normHit.startsWith(normAllowed + path.sep)) return true
-    }
-  }
-  return false
-}
-
-function debugAllowed(allowPaths) {
-  if (allowPaths.size === 0) return
-  if (process.env.UI_GUARD_DEBUG !== '1') return
-  for (const a of allowPaths) {
-    console.error(`  raw=${JSON.stringify(a)} isAbsolute=${path.isAbsolute(a)}`)
-  }
-}
-
-function debugHit(hit, allowPaths) {
-  if (process.env.UI_GUARD_DEBUG !== '1') return
-  for (const allowed of allowPaths) {
-    const ok =
-      hit.file === allowed ||
-      hit.file.startsWith(allowed + path.sep) ||
-      (path.isAbsolute(hit.file) &&
-        path.isAbsolute(allowed) &&
-        path.normalize(hit.file) === path.normalize(allowed))
-    if (ok) return
-  }
-  console.error(
-    'debug fail:',
-    JSON.stringify({ file: hit.file, line: hit.line, allowed: [...allowPaths] }),
-  )
-}
-
-function collectVueFiles(dir, files = []) {
+function collectVueFiles(directory, files = []) {
   let entries
   try {
-    entries = fs.readdirSync(dir, { withFileTypes: true })
+    entries = fs.readdirSync(directory, { withFileTypes: true })
   } catch {
     return files
   }
   for (const entry of entries) {
-    const file = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      collectVueFiles(file, files)
-    } else if (entry.isFile() && entry.name.endsWith('.vue')) {
-      files.push(file)
-    }
+    const file = path.join(directory, entry.name)
+    if (entry.isDirectory()) collectVueFiles(file, files)
+    else if (entry.isFile() && entry.name.endsWith('.vue')) files.push(file)
   }
   return files
+}
+
+function sourceLine(source, index) {
+  return source.slice(0, index).split(/\r?\n/).length
+}
+
+function stripNonExecutableComments(source) {
+  return source
+    .replace(/<!--[\s\S]*?-->/g, (comment) => comment.replace(/[^\n]/g, ' '))
+    .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '))
+    .replace(/^\s*\/\/.*$/gm, '')
+}
+
+function classTokens(value) {
+  return new Set(value.trim().split(/\s+/).filter(Boolean))
+}
+
+function requiredTokenViolations(tokens, required) {
+  return required.filter((token) => !tokens.has(token))
+}
+
+function forbiddenTokenViolations(tokens, forbidden) {
+  return forbidden.filter((token) => tokens.has(token))
 }
 
 function findComponentFocusShadowViolations() {
@@ -341,15 +308,13 @@ function findComponentFocusShadowViolations() {
       while ((focusMatch = focusBlockPattern.exec(styleSource)) !== null) {
         const shadowMatch = focusMatch[2].match(/box-shadow\s*:\s*([^;]+);/)
         if (!shadowMatch || shadowMatch[1].trim() === requiredValue) continue
-        const sourceOffset =
-          styleMatch.index + styleMatch[0].indexOf(styleSource) + focusMatch.index
-        const line = source.slice(0, sourceOffset).split(/\r?\n/).length
+        const offset = styleMatch.index + styleMatch[0].indexOf(styleSource) + focusMatch.index
         violations.push({
           id: 'component-focus-shadow-token',
           description: `业务组件 :focus-visible 的 box-shadow 必须精确使用 ${requiredValue}`,
           hit: {
             file,
-            line,
+            line: sourceLine(source, offset),
             text: `${focusMatch[1].trim()} { box-shadow: ${shadowMatch[1].trim()}; }`,
           },
         })
@@ -359,11 +324,51 @@ function findComponentFocusShadowViolations() {
   return violations
 }
 
+function extractSingleQuotedValue(source, pattern, label) {
+  const match = source.match(pattern)
+  if (!match) throw new Error(`Unable to parse ${label}`)
+  return match[1]
+}
+
+function nestedTooltipAnchorViolations(file, source, containerTag) {
+  const violations = []
+  const containerPattern = new RegExp(
+    `<${containerTag}\\b[^>]*>([\\s\\S]*?)<\\/${containerTag}>`,
+    'g',
+  )
+  let containerMatch
+  while ((containerMatch = containerPattern.exec(source)) !== null) {
+    const body = containerMatch[1]
+    const bodyOffset = containerMatch.index + containerMatch[0].indexOf(body)
+    const tooltipPattern = /<TooltipText\b[^>]*>/g
+    let tooltipMatch
+    while ((tooltipMatch = tooltipPattern.exec(body)) !== null) {
+      if (/\banchor\s*=\s*["']parent["']/.test(tooltipMatch[0])) continue
+      violations.push({
+        id: 'business-tooltip-anchor-contract',
+        description: `${containerTag} 内的 TooltipText 必须锚定完整父交互控件`,
+        hit: {
+          file,
+          line: sourceLine(source, bodyOffset + tooltipMatch.index),
+          text: tooltipMatch[0],
+        },
+      })
+    }
+  }
+  return violations
+}
+
 function findTooltipContractViolations() {
-  const source = fs.readFileSync(tooltipContent, 'utf8')
-  const composerSource = fs.readFileSync(interviewComposer, 'utf8')
-  const dropdownSource = fs.readFileSync(sharedDropdown, 'utf8')
-  const requiredClasses = [
+  const violations = []
+  const rawTooltipSource = fs.readFileSync(tooltipContent, 'utf8')
+  const tooltipSource = stripNonExecutableComments(rawTooltipSource)
+  const tooltipClassValue = extractSingleQuotedValue(
+    tooltipSource,
+    /cn\(\s*'([^']+)'/,
+    'TooltipContent class contract',
+  )
+  const tooltipTokens = classTokens(tooltipClassValue)
+  const requiredTooltipTokens = [
     'bg-surface',
     'text-popover-foreground',
     'border-input',
@@ -372,71 +377,100 @@ function findTooltipContractViolations() {
     'break-words',
     'text-xs',
     'shadow-[var(--shadow-whisper)]',
-    'sideOffset: 6',
-    ':side-offset="props.sideOffset"',
   ]
-  const missing = requiredClasses.filter((className) => !source.includes(className))
-  const forbiddenClasses = [
+  const forbiddenTooltipTokens = [
     'bg-foreground',
     'text-background',
     'max-w-xs',
     'text-sm',
-    'slide-in-from-',
     'shadow-ring-deep',
   ]
-  const presentForbidden = forbiddenClasses.filter((className) => source.includes(className))
-  const violations = []
-  if (missing.length > 0 || presentForbidden.length > 0) {
+  const missingTooltipTokens = requiredTokenViolations(tooltipTokens, requiredTooltipTokens)
+  const presentForbiddenTooltipTokens = forbiddenTokenViolations(
+    tooltipTokens,
+    forbiddenTooltipTokens,
+  )
+  const hasDirectionalMotion = [...tooltipTokens].some((token) => token.includes('slide-in-from-'))
+  const hasDefaultOffset = /\bsideOffset:\s*6\b/.test(tooltipSource)
+  const forwardsOffset = /:side-offset=["']props\.sideOffset["']/.test(tooltipSource)
+
+  if (
+    missingTooltipTokens.length > 0 ||
+    presentForbiddenTooltipTokens.length > 0 ||
+    hasDirectionalMotion ||
+    !hasDefaultOffset ||
+    !forwardsOffset
+  ) {
     violations.push({
       id: 'tooltip-surface-contract',
-      description: 'Tooltip 必须使用统一的主题 surface、尺寸、阴影和 trigger 间距',
+      description: 'Tooltip primitive 必须使用统一 surface、边界、阴影、尺寸、间距和纯透明度动效',
       hit: {
         file: tooltipContent,
-        line: 1,
-        text:
-          missing.length > 0
-            ? `missing: ${missing.join(', ')}`
-            : presentForbidden.length > 0
-              ? `forbidden: ${presentForbidden.join(', ')}`
-              : 'tooltip contract mismatch',
+        line: sourceLine(rawTooltipSource, rawTooltipSource.indexOf("cn(\n          '")),
+        text: JSON.stringify({
+          missingTooltipTokens,
+          presentForbiddenTooltipTokens,
+          hasDirectionalMotion,
+          hasDefaultOffset,
+          forwardsOffset,
+        }),
       },
     })
   }
-  if (!dropdownSource.includes('rounded-md border border-input bg-surface')) {
+
+  const rawDropdownSource = fs.readFileSync(sharedDropdown, 'utf8')
+  const dropdownSource = stripNonExecutableComments(rawDropdownSource)
+  const dropdownClassValue = extractSingleQuotedValue(
+    dropdownSource,
+    /dropdownContentClasses\s*=\s*'([^']+)'/,
+    'shared dropdown class contract',
+  )
+  const dropdownTokens = classTokens(dropdownClassValue)
+  const missingDropdownTokens = requiredTokenViolations(dropdownTokens, [
+    'rounded-md',
+    'border',
+    'border-input',
+    'bg-surface',
+    'shadow-[var(--shadow-whisper)]',
+  ])
+  const forbiddenDropdownTokens = forbiddenTokenViolations(dropdownTokens, [
+    'border-border',
+    'border-transparent',
+    'shadow-md',
+    'shadow-ring-deep',
+  ])
+  if (missingDropdownTokens.length > 0 || forbiddenDropdownTokens.length > 0) {
     violations.push({
       id: 'dropdown-surface-border-contract',
-      description: 'Dropdown、Select 与 Combobox 浮层必须复用表单 border-input 边界',
+      description: 'Dropdown、Select 与 Combobox 必须复用表单边界与单层低浮层阴影',
       hit: {
         file: sharedDropdown,
-        line: 1,
-        text: 'missing: rounded-md border border-input bg-surface',
+        line: sourceLine(rawDropdownSource, rawDropdownSource.indexOf('dropdownContentClasses')),
+        text: JSON.stringify({ missingDropdownTokens, forbiddenDropdownTokens }),
       },
     })
   }
-  if (composerSource.includes('side-offset=')) {
-    violations.push({
-      id: 'composer-tooltip-offset-contract',
-      description: 'Composer 同层级 Tooltip 必须复用共享 primitive 的 trigger 间距',
-      hit: {
-        file: interviewComposer,
-        line: 1,
-        text: 'forbidden: local side-offset override',
-      },
-    })
+
+  for (const file of businessComponentRoots.flatMap((root) => collectVueFiles(root))) {
+    const rawSource = fs.readFileSync(file, 'utf8')
+    const source = stripNonExecutableComments(rawSource)
+    const localOffsetPattern = /<TooltipContent\b[^>]*\b:?side-offset\s*=/g
+    let localOffsetMatch
+    while ((localOffsetMatch = localOffsetPattern.exec(source)) !== null) {
+      violations.push({
+        id: 'business-tooltip-offset-contract',
+        description: '业务组件不得覆盖共享 Tooltip primitive 的 trigger 间距',
+        hit: {
+          file,
+          line: sourceLine(rawSource, localOffsetMatch.index),
+          text: localOffsetMatch[0],
+        },
+      })
+    }
+    violations.push(...nestedTooltipAnchorViolations(file, source, 'DropdownMenuItem'))
+    violations.push(...nestedTooltipAnchorViolations(file, source, 'DropdownMenuTrigger'))
   }
-  const tooltipTextTags = composerSource.match(/<TooltipText\b[^>]*>/g) ?? []
-  const invalidTooltipAnchors = tooltipTextTags.filter((tag) => !tag.includes('anchor="parent"'))
-  if (invalidTooltipAnchors.length > 0) {
-    violations.push({
-      id: 'composer-tooltip-anchor-contract',
-      description: 'Composer 交互控件 Tooltip 必须以完整父 trigger 或 menu item 作为定位锚点',
-      hit: {
-        file: interviewComposer,
-        line: 1,
-        text: `missing anchor="parent": ${invalidTooltipAnchors.length} TooltipText tag(s)`,
-      },
-    })
-  }
+
   return violations
 }
 
@@ -444,24 +478,17 @@ const failures = []
 const allowed = []
 
 for (const check of checks) {
-  debugAllowed(check.allowPaths)
-  const output = runRipgrep(['-e', check.pattern, ...check.paths])
-  const hits = normalizeHits(output)
+  const hits = normalizeHits(runRipgrep(['-e', check.pattern, ...check.paths]))
   for (const hit of hits) {
-    debugHit(hit, check.allowPaths)
     if (isAllowed(hit, check.allowPaths)) {
-      allowed.push({ id: check.id, hit })
-      continue
+      allowed.push({ id: check.id, hit, reason: 'token-source' })
+    } else if (check.allowHit?.(hit)) {
+      allowed.push({ id: check.id, hit, reason: 'explicit-rule' })
+    } else if (check.isVariableLine && isAllowedSemanticVariable(hit)) {
+      allowed.push({ id: check.id, hit, reason: 'semantic-variable' })
+    } else {
+      failures.push({ id: check.id, description: check.description, hit })
     }
-    if (check.allowHit?.(hit)) {
-      allowed.push({ id: check.id, hit, reason: 'explicit-allow-rule' })
-      continue
-    }
-    if (check.isVariableLine && isAllowedSemanticVariable(hit)) {
-      allowed.push({ id: check.id, hit, reason: 'semantic-variable-declaration' })
-      continue
-    }
-    failures.push({ id: check.id, description: check.description, hit })
   }
 }
 
@@ -471,13 +498,7 @@ failures.push(...findTooltipContractViolations())
 if (allowed.length > 0) {
   console.log('--- ALLOWED HITS ---')
   for (const { id, hit, reason } of allowed) {
-    const label =
-      reason === 'semantic-variable-declaration'
-        ? 'ALLOWED SEMANTIC VARIABLE'
-        : reason === 'explicit-allow-rule'
-          ? 'ALLOWED EXPLICIT RULE'
-          : 'ALLOWED TOKEN'
-    console.log(`  [${id}] ${label}: ${hit.file}:${hit.line}`)
+    console.log(`  [${id}] ${reason}: ${hit.file}:${hit.line}`)
   }
 }
 
@@ -488,9 +509,11 @@ if (failures.length === 0) {
 
 console.log('--- UI guardrail: VIOLATION ---')
 const grouped = new Map()
-for (const f of failures) {
-  if (!grouped.has(f.id)) grouped.set(f.id, { description: f.description, hits: [] })
-  grouped.get(f.id).hits.push(f.hit)
+for (const failure of failures) {
+  if (!grouped.has(failure.id)) {
+    grouped.set(failure.id, { description: failure.description, hits: [] })
+  }
+  grouped.get(failure.id).hits.push(failure.hit)
 }
 for (const [id, group] of grouped) {
   console.log(`\n[${id}] ${group.description}`)

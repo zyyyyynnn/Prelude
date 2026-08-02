@@ -23,19 +23,38 @@ test('closes a settings toast without dismissing the settings dialog', async ({ 
     const toastRect = toastElement.getBoundingClientRect()
     const closeRect = closeElement.getBoundingClientRect()
     const closeStyle = getComputedStyle(closeElement)
+    const rootStyle = getComputedStyle(document.documentElement)
+    const shadowColors = [...closeStyle.boxShadow.matchAll(/rgba?\(([^)]+)\)/g)]
+    const hasVisibleShadow =
+      closeStyle.boxShadow !== 'none' &&
+      (shadowColors.length === 0 ||
+        shadowColors.some(([, channels]) => {
+          const slashAlpha = channels.match(/\/\s*([\d.]+)/)
+          if (slashAlpha) return Number.parseFloat(slashAlpha[1]) > 0
+          const components = channels.split(',').map((value) => value.trim())
+          return components.length < 4 || Number.parseFloat(components[3]) > 0
+        }))
+
     return {
       centerDelta: Math.abs(
         closeRect.top + closeRect.height / 2 - (toastRect.top + toastRect.height / 2),
       ),
-      isInsideRightEdge: closeRect.right <= toastRect.right && closeRect.left >= toastRect.left,
+      rightInset: toastRect.right - closeRect.right,
+      expectedRightInset: Number.parseFloat(rootStyle.getPropertyValue('--spacing-sm')),
+      isInRightHalf: closeRect.left >= toastRect.left + toastRect.width / 2,
       borderWidth: closeStyle.borderWidth,
+      hasVisibleShadow,
     }
   })
 
   expect(geometry).not.toBeNull()
   expect(geometry?.centerDelta).toBeLessThanOrEqual(1)
-  expect(geometry?.isInsideRightEdge).toBe(true)
+  expect(
+    Math.abs((geometry?.rightInset ?? 0) - (geometry?.expectedRightInset ?? 0)),
+  ).toBeLessThanOrEqual(1)
+  expect(geometry?.isInRightHalf).toBe(true)
   expect(geometry?.borderWidth).toBe('0px')
+  expect(geometry?.hasVisibleShadow).toBe(false)
 
   await closeButton.click()
   await expect(toast).toHaveCount(0)

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/features/auth'
-import { SessionSidebar } from '@/features/interview'
+import { SessionSidebar, useInterviewSessionStore } from '@/features/interview'
 import {
   applyThemePreference,
   fetchUserProfile,
@@ -15,6 +15,7 @@ import GlobalConfirmDialog from '@/shared/ui/confirm-dialog/GlobalConfirmDialog.
 import { Toaster } from '@/shared/ui/sonner'
 
 const authStore = useAuthStore()
+const sessionStore = useInterviewSessionStore()
 const route = useRoute()
 const isSidebarCollapsed = ref(false)
 const showGlobalSettings = ref(false)
@@ -48,6 +49,12 @@ function handleSystemThemeChange() {
     applyThemePreference('system')
   }
 }
+
+watch(
+  () => authStore.accountScope,
+  (accountScope) => sessionStore.activateAccount(accountScope),
+  { immediate: true, flush: 'sync' },
+)
 
 onMounted(() => {
   void loadThemePreference()

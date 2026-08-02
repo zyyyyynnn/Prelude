@@ -16,6 +16,7 @@
 import type { Page, Route } from '@playwright/test'
 
 export const AUTH_TOKEN = 'playwright-test-token'
+export const AUTH_USER_ID = 42
 
 const POSITIONS = [
   { id: 1, name: 'Java 后端工程师' },
@@ -273,10 +274,12 @@ export async function installMockApi(page: Page, overrides: MockOverrides = {}):
     },
   )
 
-  // Inject auth token via localStorage before the SPA hydrates. Mirrors the
-  // pattern used by verify-byok-settings-flow.cjs and friends. The token value
-  // is opaque to the backend (page.route short-circuits it).
-  await page.addInitScript((token: string) => {
-    localStorage.setItem('auth', JSON.stringify({ token }))
-  }, AUTH_TOKEN)
+  // Inject the current authentication contract before the SPA hydrates.
+  // The token remains opaque because page.route short-circuits backend calls.
+  await page.addInitScript(
+    ({ token, userId }: { token: string; userId: number }) => {
+      localStorage.setItem('auth', JSON.stringify({ token, userId }))
+    },
+    { token: AUTH_TOKEN, userId: AUTH_USER_ID },
+  )
 }

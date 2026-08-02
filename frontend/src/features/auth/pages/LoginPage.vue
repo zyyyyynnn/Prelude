@@ -66,7 +66,7 @@ const submitAuth = handleSubmit(async (values) => {
       setValues({ username: v.username })
     } else {
       const response = await withMinDelay(loginRequest(values.username.trim(), values.password))
-      authStore.setToken(response.token)
+      authStore.setSession(response.token, response.userId)
       await router.replace(redirectTarget.value)
     }
   } catch (error) {
