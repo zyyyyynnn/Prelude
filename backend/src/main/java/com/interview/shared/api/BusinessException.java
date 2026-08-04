@@ -19,4 +19,8 @@ public class BusinessException extends RuntimeException {
     public static BusinessException unauthorized(String message) {
         return new BusinessException(401, message);
     }
+
+    public static BusinessException notFound(String message) {
+        return new BusinessException(404, message);
+    }
 }

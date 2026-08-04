@@ -2,7 +2,7 @@ package com.interview.identity.application;
 
 import com.interview.identity.api.UserProfileRequest;
 import com.interview.identity.api.UserProfileResponse;
-import org.springframework.web.multipart.MultipartFile;
+import com.interview.identity.application.port.AvatarUpload;
 
 public interface UserProfileService {
 
@@ -10,5 +10,5 @@ public interface UserProfileService {
 
     UserProfileResponse updateCurrentUserProfile(UserProfileRequest request);
 
-    UserProfileResponse updateAvatar(MultipartFile file);
+    UserProfileResponse updateAvatar(AvatarUpload upload);
 }

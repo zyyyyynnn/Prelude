@@ -38,7 +38,7 @@ SET @sql = (
   FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'llm_model'
 );
-PREPARE stmt FROM @sql;
+  PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
@@ -67,6 +67,12 @@ SET @sql = (
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- 头像 URI 只保存同源 canonical relative URI；历史本地上传路径幂等升级。
+UPDATE `user`
+SET `avatar_url` = CONCAT('/media/avatars/', SUBSTRING_INDEX(`avatar_url`, '/uploads/avatars/', -1))
+WHERE `avatar_url` LIKE '/uploads/avatars/%'
+  AND `avatar_url` NOT LIKE '/media/avatars/%';
 
 SET @sql = (
   SELECT IF(

@@ -11,6 +11,8 @@ import com.interview.identity.api.UserProfileRequest;
 import com.interview.identity.api.UserProfileResponse;
 import com.interview.platform.llm.LlmConfigPort;
 import com.interview.identity.application.UserProfileService;
+import com.interview.identity.application.port.AvatarUpload;
+import com.interview.shared.api.BusinessException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/user")
@@ -62,6 +66,18 @@ public class UserController {
 
     @PostMapping("/avatar")
     public Result<UserProfileResponse> updateAvatar(@RequestParam("file") MultipartFile file) {
-        return Result.success(userProfileService.updateAvatar(file));
+        if (file == null) {
+            throw BusinessException.badRequest("请选择头像文件");
+        }
+        try (var input = file.getInputStream()) {
+            return Result.success(userProfileService.updateAvatar(new AvatarUpload(
+                file.getOriginalFilename(),
+                file.getContentType(),
+                file.getSize(),
+                input
+            )));
+        } catch (IOException exception) {
+            throw BusinessException.badRequest("头像文件读取失败");
+        }
     }
 }

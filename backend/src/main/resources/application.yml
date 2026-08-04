@@ -48,6 +48,13 @@ openai:
   api-key: ${OPENAI_API_KEY:}
 
 app:
+  storage:
+    avatar-root: ${APP_STORAGE_AVATAR_ROOT:./uploads/avatars}
+    avatar-public-prefix: /media/avatars
+    avatar-max-bytes: ${APP_STORAGE_AVATAR_MAX_BYTES:5242880}
+    avatar-max-width: ${APP_STORAGE_AVATAR_MAX_WIDTH:2048}
+    avatar-max-height: ${APP_STORAGE_AVATAR_MAX_HEIGHT:2048}
+    avatar-max-pixels: ${APP_STORAGE_AVATAR_MAX_PIXELS:4194304}
   cors:
     allowed-origins:
       - http://localhost:5173

@@ -95,6 +95,10 @@ services:
       OPENAI_MODEL: ${OPENAI_MODEL:-}
       JWT_SECRET: ${JWT_SECRET:-replace-with-at-least-32-bytes-jwt-secret}
       APP_CRYPTO_AES_SECRET: ${APP_CRYPTO_AES_SECRET:-replace-with-at-least-32-bytes-aes-secret}
+      APP_STORAGE_AVATAR_ROOT: /var/lib/prelude/avatars
+      APP_STORAGE_AVATAR_MAX_BYTES: ${APP_STORAGE_AVATAR_MAX_BYTES:-5242880}
+    volumes:
+      - avatar-data:/var/lib/prelude/avatars
     ports:
       - "8080:8080"
 
@@ -136,4 +140,5 @@ volumes:
   mysql-data:
   redis-data:
   rabbitmq-data:
+  avatar-data:
   grafana-storage:

@@ -8,28 +8,32 @@ import com.interview.identity.api.UserProfileResponse;
 import com.interview.identity.domain.User;
 import com.interview.identity.infrastructure.persistence.UserMapper;
 import com.interview.identity.application.UserProfileService;
+import com.interview.identity.application.port.AvatarContentProcessor;
+import com.interview.identity.application.port.AvatarStoragePort;
+import com.interview.identity.application.port.AvatarUpload;
+import com.interview.identity.application.port.ProcessedAvatar;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserProfileServiceImpl implements UserProfileService {
 
     private static final Set<String> THEME_PREFERENCES = Set.of("light", "dark", "system");
-    private static final Set<String> AVATAR_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
-
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final AvatarContentProcessor avatarContentProcessor;
+    private final AvatarStoragePort avatarStoragePort;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     public UserProfileResponse getCurrentUserProfile() {
@@ -104,32 +108,58 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public UserProfileResponse updateAvatar(MultipartFile file) {
-        User user = requireCurrentUser();
-        if (file == null || file.isEmpty()) {
-            throw BusinessException.badRequest("请选择头像文件");
-        }
-        String extension = extensionOf(file.getOriginalFilename());
-        if (!AVATAR_EXTENSIONS.contains(extension)) {
-            throw BusinessException.badRequest("头像仅支持 JPG、PNG、WebP 或 GIF");
-        }
+    public UserProfileResponse updateAvatar(AvatarUpload upload) {
+        User currentUser = requireCurrentUser();
+        ProcessedAvatar processed = avatarContentProcessor.process(upload);
+        String objectKey = AvatarObjectKeys.forUser(currentUser.getId(), processed.extension());
+        AvatarStoragePort.StoredAvatar stored = avatarStoragePort.store(objectKey, processed);
 
         try {
-            Path directory = Path.of("uploads", "avatars").toAbsolutePath().normalize();
-            Files.createDirectories(directory);
-            String fileName = user.getId() + "-" + UUID.randomUUID() + "." + extension;
-            Path target = directory.resolve(fileName).normalize();
-            if (!target.startsWith(directory)) {
-                throw BusinessException.badRequest("头像文件名不正确");
+            UserProfileResponse response = transactionTemplate.execute(status -> persistAvatar(
+                currentUser.getId(),
+                stored
+            ));
+            if (response == null) {
+                throw new IllegalStateException("头像资料更新未返回结果");
             }
-            file.transferTo(target);
-            user.setAvatarUrl("/uploads/avatars/" + fileName);
-            userMapper.updateById(user);
-            return toResponse(user);
-        } catch (IOException ex) {
-            throw BusinessException.badRequest("头像上传失败");
+            return response;
+        } catch (RuntimeException exception) {
+            deleteQuietly(stored.objectKey(), "rollback");
+            throw exception;
         }
+    }
+
+    private UserProfileResponse persistAvatar(
+        Long userId,
+        AvatarStoragePort.StoredAvatar stored
+    ) {
+        User user = userMapper.selectByIdForUpdate(userId);
+        if (user == null) {
+            throw BusinessException.unauthorized("请先登录");
+        }
+        String oldAvatarUrl = user.getAvatarUrl();
+        user.setAvatarUrl(stored.publicUri());
+        userMapper.updateById(user);
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("头像资料更新必须运行在事务中");
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                AvatarObjectKeys.fromStoredUri(oldAvatarUrl)
+                    .filter(oldObjectKey -> !oldObjectKey.equals(stored.objectKey()))
+                    .ifPresent(oldObjectKey -> deleteQuietly(oldObjectKey, "afterCommit"));
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                    deleteQuietly(stored.objectKey(), "rollback");
+                }
+            }
+        });
+        return toResponse(user);
     }
 
     private User requireCurrentUser() {
@@ -152,19 +182,21 @@ public class UserProfileServiceImpl implements UserProfileService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private String extensionOf(String fileName) {
-        if (fileName == null || !fileName.contains(".")) {
-            return "";
-        }
-        return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
-    }
-
     private UserProfileResponse toResponse(User user) {
         return new UserProfileResponse(
             user.getUsername(),
             user.getEmail(),
-            user.getAvatarUrl(),
+            AvatarObjectKeys.toCanonicalUri(user.getAvatarUrl()),
             user.getThemePreference() == null ? "system" : user.getThemePreference()
         );
+    }
+
+    private void deleteQuietly(String objectKey, String phase) {
+        try {
+            avatarStoragePort.delete(objectKey);
+        } catch (RuntimeException exception) {
+            // Cleanup is compensating work. A committed profile must not be reported as failed.
+            log.warn("avatar file cleanup failed phase={} objectKey={}", phase, objectKey, exception);
+        }
     }
 }

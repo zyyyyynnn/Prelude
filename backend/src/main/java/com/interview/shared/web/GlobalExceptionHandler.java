@@ -19,6 +19,8 @@ public class GlobalExceptionHandler {
         HttpStatus status;
         if (exception.getCode() == 401) {
             status = HttpStatus.UNAUTHORIZED;
+        } else if (exception.getCode() == 404) {
+            status = HttpStatus.NOT_FOUND;
         } else if (exception.getCode() == 429) {
             status = HttpStatus.TOO_MANY_REQUESTS;
         } else {
