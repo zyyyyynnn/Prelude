@@ -121,11 +121,11 @@ new_field_test = """test('fields keep one stable boundary in pointer and keyboar
       expectStableGeometry(before, keyboard)
     }
 
-    const select = page.getByRole('combobox', { name: '实验室 Select' })
+    const select = page.locator('[aria-label="实验室 Select"]')
     await blurWithPointer(page)
     const selectBefore = await styleOf(select)
     await select.click()
-    await expect(select).toHaveAttribute('aria-expanded', 'true')
+    await expect(select).toHaveAttribute('data-state', 'open')
     const pointerOpen = await styleOf(select)
     expect(pointerOpen.backgroundColor).toBe(selectBefore.backgroundColor)
     expectStableGeometry(selectBefore, pointerOpen)
@@ -138,7 +138,7 @@ new_field_test = """test('fields keep one stable boundary in pointer and keyboar
     expect(keyboard.backgroundColor).toBe(selectBefore.backgroundColor)
     expectStableGeometry(selectBefore, keyboard)
     await page.keyboard.press('Enter')
-    await expect(select).toHaveAttribute('aria-expanded', 'true')
+    await expect(select).toHaveAttribute('data-state', 'open')
     await page.keyboard.press('Escape')
   }
 })
@@ -146,6 +146,29 @@ new_field_test = """test('fields keep one stable boundary in pointer and keyboar
 if old_field_test not in focus_test:
     raise RuntimeError('field focus test block missing')
 focus_test = focus_test.replace(old_field_test, new_field_test, 1)
+
+old_button_focus = """    await blurWithPointer(page)
+    await tabTo(page, button)
+    const keyboard = await styleOf(button)
+    expectStableGeometry(before, keyboard)
+"""
+new_button_focus = """    await blurWithPointer(page)
+    await tabTo(page, button)
+    if (['default', 'destructive', 'outline', 'secondary'].includes(variant)) {
+      await expect.poll(async () => (await styleOf(button)).borderColor).not.toBe(before.borderColor)
+    } else if (variant === 'ghost') {
+      await expect
+        .poll(async () => (await styleOf(button)).backgroundColor)
+        .not.toBe(before.backgroundColor)
+    } else {
+      await expect.poll(async () => (await styleOf(button)).textDecorationLine).toContain('underline')
+    }
+    const keyboard = await styleOf(button)
+    expectStableGeometry(before, keyboard)
+"""
+if old_button_focus not in focus_test:
+    raise RuntimeError('button focus synchronization block missing')
+focus_test = focus_test.replace(old_button_focus, new_button_focus, 1)
 focus_test = focus_test.replace(
     "  await expect(actions).toHaveCSS('opacity', '1')\n  await expect(actions).toHaveCSS('pointer-events', 'auto')",
     "  await expect(actions).toHaveCSS('opacity', '1')",

@@ -87,13 +87,16 @@ jobs:
           fi
           git diff --check
 
-      - name: Commit rebuilt focus system
+      - name: Commit rebuilt focus system and remove temporary automation
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add \
+          rm -rf .github/agent-temp .github/workflows/agent-focus-rebuild.yml
+          git add -A \
+            .github/agent-temp \
+            .github/workflows/agent-focus-rebuild.yml \
             DESIGN.md \
             docs/quality/ui-quality-system.md \
             frontend/src/app/App.vue \
@@ -124,9 +127,6 @@ jobs:
             frontend/tests/flows/interview-session.spec.ts \
             frontend/tests/flows/settings-toast.spec.ts \
             frontend/tokens/ui-tokens.json
-          if git diff --cached --quiet; then
-            echo 'No rebuilt changes to commit.'
-            exit 0
-          fi
+          git diff --cached --check
           git commit -m 'fix(ui): rebuild semantic focus system'
           git push origin HEAD:agent/fix-focus-system-final
