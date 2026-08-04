@@ -1,0 +1,112 @@
+name: Agent Focus Rebuild
+
+on:
+  push:
+    branches:
+      - agent/fix-focus-system-final
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/fix-focus-system-final
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Apply deterministic rebuild
+        run: python .github/agent-temp/focus_rebuild.py
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Apply repository formatter
+        working-directory: frontend
+        run: npx --no-install vp check --fix
+
+      - name: Verify static quality gates
+        working-directory: frontend
+        run: |
+          npm run check
+          npm run verify:architecture
+          npm run test:contracts
+          npm run verify:ui
+          npm run verify:tokens
+          npm run build
+          npm run verify:production
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Verify focus and existing flows
+        working-directory: frontend
+        run: npm run verify:flows
+
+      - name: Verify changed-file scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed='^(DESIGN.md|docs/quality/ui-quality-system.md|frontend/src/app/App.vue|frontend/src/shared/lib/input-intent.ts|frontend/src/shared/ui/(button/index.ts|input/Input.vue|textarea/Textarea.vue|shared-dropdown.ts|dropdown-menu/DropdownMenuTrigger.vue|dialog/DialogContent.vue|dialog/DialogScrollContent.vue|sonner/Sonner.vue|segmented-control/SegmentedControl.vue|styles/index.css)|frontend/src/features/(auth/pages/LoginPage.vue|interview/components/(SessionSidebar.vue|ComposerText.vue|InterviewComposer.vue)|settings/components/(GlobalSettingsModal.vue|ThemeSettingsPanel.vue|UserProfilePanel.vue|LlmSettingsPanel.vue)|report/components/QuestionReviewList.vue)|frontend/src/devtools/component-lab/ComponentLabView.vue|frontend/scripts/verify-ui-guardrails.cjs|frontend/tests/flows/(focus-system.spec.ts|settings-toast.spec.ts)|frontend/tokens/ui-tokens.json)$'
+          unexpected=$(git status --short | awk '{print $2}' | grep -Ev "$allowed" || true)
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected changed files:"
+            echo "$unexpected"
+            exit 1
+          fi
+          git diff --check
+
+      - name: Commit rebuilt focus system
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            DESIGN.md \
+            docs/quality/ui-quality-system.md \
+            frontend/src/app/App.vue \
+            frontend/src/shared/lib/input-intent.ts \
+            frontend/src/shared/ui/button/index.ts \
+            frontend/src/shared/ui/input/Input.vue \
+            frontend/src/shared/ui/textarea/Textarea.vue \
+            frontend/src/shared/ui/shared-dropdown.ts \
+            frontend/src/shared/ui/dropdown-menu/DropdownMenuTrigger.vue \
+            frontend/src/shared/ui/dialog/DialogContent.vue \
+            frontend/src/shared/ui/dialog/DialogScrollContent.vue \
+            frontend/src/shared/ui/sonner/Sonner.vue \
+            frontend/src/shared/ui/segmented-control/SegmentedControl.vue \
+            frontend/src/shared/ui/styles/index.css \
+            frontend/src/features/auth/pages/LoginPage.vue \
+            frontend/src/features/interview/components/SessionSidebar.vue \
+            frontend/src/features/interview/components/ComposerText.vue \
+            frontend/src/features/interview/components/InterviewComposer.vue \
+            frontend/src/features/settings/components/GlobalSettingsModal.vue \
+            frontend/src/features/settings/components/ThemeSettingsPanel.vue \
+            frontend/src/features/settings/components/UserProfilePanel.vue \
+            frontend/src/features/settings/components/LlmSettingsPanel.vue \
+            frontend/src/features/report/components/QuestionReviewList.vue \
+            frontend/src/devtools/component-lab/ComponentLabView.vue \
+            frontend/scripts/verify-ui-guardrails.cjs \
+            frontend/tests/flows/focus-system.spec.ts \
+            frontend/tests/flows/settings-toast.spec.ts \
+            frontend/tokens/ui-tokens.json
+          if git diff --cached --quiet; then
+            echo 'No rebuilt changes to commit.'
+            exit 0
+          fi
+          git commit -m 'fix(ui): rebuild semantic focus system'
+          git push origin HEAD:agent/fix-focus-system-final
