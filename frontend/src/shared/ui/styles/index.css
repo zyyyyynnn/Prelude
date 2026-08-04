@@ -22,7 +22,8 @@
   --color-ring: var(--color-ring);
   --color-ring-deep: var(--color-ring-deep);
   --color-error: var(--color-error);
-  --color-focus: var(--color-brand);
+  --color-focus-field: var(--color-focus-field);
+  --color-focus-action: var(--color-focus-action);
   --color-coral: var(--color-coral);
   --color-line-decor: var(--color-line-decor);
   --color-line-decor-light: var(--color-line-decor-light);
@@ -112,7 +113,8 @@
   --color-brand-light: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   --color-coral: #b08878;
   --color-error: #b53333;
-  --color-focus: #b39b8d;
+  --color-focus-field: #7c7469;
+  --color-focus-action: #9e7b6a;
 
   --color-border: #f0eee6;
   --color-border-warm: #e8e6dc;
@@ -142,7 +144,7 @@
   --destructive-foreground: var(--color-surface);
   --border: var(--color-border);
   --input: var(--color-border-warm);
-  --ring: var(--color-brand);
+  --ring: var(--color-focus-action);
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -171,7 +173,6 @@
     0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
   --shadow-login-logo: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
-  --shadow-icon-action-focus: 0 0 0 2px var(--color-brand);
   --shadow-autofill-surface: 0 0 0px 1000px var(--color-surface) inset;
   --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
@@ -276,7 +277,8 @@
   --color-brand: #c7a392;
   --color-coral: #c29988;
   --color-error: #d46a64;
-  --color-focus: #d5b9a9;
+  --color-focus-field: #a09689;
+  --color-focus-action: #c7a392;
   --color-border: #312d27;
   --color-border-warm: #3b352f;
   --color-ring: #655c51;
@@ -338,6 +340,96 @@ textarea {
   color: var(--color-text-primary);
 }
 
+/*
+ * Focus contract
+ * - fields always expose one existing 1px boundary;
+ * - actions expose a semantic keyboard-only state;
+ * - pointer focus and browser chrome function keys never create a residual halo;
+ * - selected/open/active remain component-owned states.
+ */
+.ui-field-control,
+.ui-field-boundary {
+  outline: none;
+  transition: border-color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.ui-field-control:focus,
+.ui-field-control:focus-visible,
+.ui-field-boundary:focus,
+.ui-field-boundary:focus-visible,
+.ui-field-boundary:focus-within {
+  outline: none;
+  border-color: var(--color-focus-field);
+}
+
+.ui-action {
+  border-width: 1px;
+  border-style: solid;
+  outline: none;
+}
+
+html[data-input-intent='pointer'] .ui-action:focus {
+  outline: none;
+}
+
+html:not([data-input-intent]) :is(.ui-action-primary, .ui-action-destructive):focus-visible,
+html[data-input-intent='keyboard'] :is(.ui-action-primary, .ui-action-destructive):focus {
+  outline: none;
+  border-color: currentColor;
+}
+
+html:not([data-input-intent]) :is(.ui-action-outline, .ui-action-secondary):focus-visible,
+html[data-input-intent='keyboard'] :is(.ui-action-outline, .ui-action-secondary):focus {
+  outline: none;
+  border-color: var(--color-focus-field);
+}
+
+html:not([data-input-intent]) .ui-action-ghost:focus-visible,
+html[data-input-intent='keyboard'] .ui-action-ghost:focus {
+  outline: none;
+  border-color: var(--color-focus-action);
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+
+html:not([data-input-intent]) :is(.ui-action-icon, .ui-action-nav):focus-visible,
+html[data-input-intent='keyboard'] :is(.ui-action-icon, .ui-action-nav):focus {
+  outline: none;
+  border-color: var(--color-focus-action);
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+html:not([data-input-intent]) .ui-action-selectable:focus-visible,
+html[data-input-intent='keyboard'] .ui-action-selectable:focus {
+  outline: none;
+  border-color: var(--color-focus-action);
+}
+
+html:not([data-input-intent]) .ui-action-danger:focus-visible,
+html[data-input-intent='keyboard'] .ui-action-danger:focus {
+  outline: none;
+  border-color: var(--color-error);
+  background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+  color: var(--color-error);
+}
+
+html:not([data-input-intent]) .ui-action-link:focus-visible,
+html[data-input-intent='keyboard'] .ui-action-link:focus {
+  outline: none;
+  color: var(--color-primary);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: var(--spacing-0-5);
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid CanvasText !important;
+    outline-offset: 2px !important;
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -345,266 +437,6 @@ a {
 
 #app {
   min-height: 100vh;
-}
-
-.app-shell {
-  min-height: 100vh;
-  background: var(--color-bg);
-}
-
-.app-shell__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  position: sticky;
-  top: 0;
-  z-index: var(--z-index-app-header);
-  width: 100%;
-  margin: 0 auto;
-  border: 1px solid color-mix(in srgb, var(--color-surface) 52%, transparent);
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface) 42%, transparent),
-      color-mix(in srgb, var(--color-surface) 12%, transparent)
-    ),
-    color-mix(in srgb, var(--color-surface) 54%, transparent);
-  box-shadow: var(--shadow-app-header);
-  backdrop-filter: blur(20px) saturate(108%);
-  -webkit-backdrop-filter: blur(20px) saturate(108%);
-}
-
-.app-shell__brand {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2-5);
-  min-width: 0;
-}
-
-.app-shell__eyebrow,
-.page__lead,
-.panel__eyebrow,
-.eyebrow,
-.field__hint {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-.app-shell__eyebrow,
-.eyebrow,
-.panel__eyebrow {
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.app-shell__title,
-.page__title,
-.panel__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  line-height: 1.18;
-}
-
-.app-shell__title {
-  font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
-  line-height: 1.05;
-}
-
-.app-shell__brand-logo {
-  width: 46px;
-  height: 46px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  box-shadow: var(--shadow-brand-logo);
-}
-
-.app-shell__actions {
-  --app-shell-menu-width: 136px;
-  --app-shell-menu-frame-extra: 18px;
-  --app-shell-menu-frame-offset: -9px;
-
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2-5);
-  justify-content: flex-end;
-  min-width: var(--app-shell-menu-width);
-  min-height: 42px;
-  flex: 0 0 auto;
-  overflow: visible;
-}
-
-.app-shell__menu-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  width: var(--app-shell-menu-width);
-  height: 42px;
-  border: 1px solid var(--color-border-warm);
-  border-radius: var(--radius-md);
-  padding: 0 var(--spacing-3-5);
-  background: var(--color-surface);
-  color: var(--color-text-button);
-  box-shadow: var(--shadow-ring);
-  cursor: pointer;
-  transition:
-    border-color var(--motion-duration-base) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
-    background-color var(--motion-duration-base) var(--motion-ease-standard),
-    transform var(--motion-duration-base) var(--motion-ease-standard);
-}
-
-.app-shell__menu-trigger:hover,
-.app-shell__menu-trigger:focus-visible {
-  border-color: var(--color-ring);
-  box-shadow: var(--shadow-ring-deep);
-  transform: translateY(-1px);
-}
-
-.app-shell__menu-trigger.is-open {
-  border-color: var(--color-ring);
-  background: var(--color-surface-muted);
-}
-
-.app-shell__menu-icon {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 auto;
-  display: block;
-}
-
-.app-shell__menu-trigger-label {
-  color: currentColor;
-  font: 500 var(--font-size-md)/1 var(--font-serif);
-  white-space: nowrap;
-}
-
-.app-shell__menu-icon-line {
-  transition:
-    transform var(--motion-duration-base) var(--motion-ease-standard),
-    opacity var(--motion-duration-base) var(--motion-ease-standard);
-  transform-origin: center;
-}
-
-.app-shell__menu-trigger.is-open .app-shell__menu-icon-line--top {
-  transform: translateY(0.2px);
-}
-
-.app-shell__menu-trigger.is-open .app-shell__menu-icon-line--middle {
-  transform: translateX(0.8px);
-}
-
-.app-shell__menu-trigger.is-open .app-shell__menu-icon-line--bottom {
-  transform: translateX(-0.8px);
-}
-
-.app-shell__action-menu-popper {
-  position: absolute;
-  top: calc(100% + var(--spacing-2-5));
-  right: var(--app-shell-menu-frame-offset);
-  z-index: var(--z-index-app-header);
-  transform: none;
-  border: 0 !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
-
-.app-shell__action-menu {
-  display: grid;
-  gap: var(--spacing-2-5);
-  width: calc(var(--app-shell-menu-width) + var(--app-shell-menu-frame-extra));
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-border-warm);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
-  box-shadow: var(--shadow-app-menu);
-  white-space: nowrap;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  animation: app-shell-menu-enter var(--motion-duration-base) var(--motion-ease-standard) both;
-}
-
-.app-shell__action-menu-section {
-  display: grid;
-  gap: var(--spacing-xs);
-}
-
-.app-shell__action-menu-section + .app-shell__action-menu-section {
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--spacing-2-5);
-}
-
-.app-shell__action-menu-heading {
-  margin: 0 0 var(--spacing-0-5);
-  padding: 0;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.app-shell__action-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-width: 0;
-  min-height: 38px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm) var(--spacing-sm);
-  background: transparent;
-  color: var(--color-text-primary);
-  font: 500 var(--font-size-md) var(--font-serif);
-  cursor: pointer;
-  text-align: center;
-  box-shadow: var(--shadow-ring);
-  transition:
-    border-color var(--motion-duration-base) var(--motion-ease-standard),
-    background-color var(--motion-duration-base) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
-    color var(--motion-duration-base) var(--motion-ease-standard);
-}
-
-.app-shell__action-menu-item:hover,
-.app-shell__action-menu-item:focus-visible {
-  border-color: var(--color-ring);
-  background: var(--color-surface-hover);
-  box-shadow: var(--shadow-ring-deep);
-}
-
-.app-shell__action-menu-item.is-active {
-  border-color: var(--color-ring);
-  background: var(--color-surface-muted);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-app-menu-active);
-}
-
-.app-shell__action-menu-item:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.app-shell__action-menu-label {
-  display: block;
-  width: 100%;
-  text-align: center;
-}
-
-.app-shell__content {
-  width: min(1260px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: var(--spacing-xl) 0 var(--spacing-2xl);
 }
 
 .page {
@@ -885,92 +717,6 @@ label,
   background: var(--color-surface);
 }
 
-.ui-button {
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-  outline: none;
-  min-height: var(--ui-height-base);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 0 var(--spacing-4-5);
-  font: 500 var(--font-size-md) var(--font-serif);
-  letter-spacing: 0;
-}
-
-.ui-button:hover,
-.ui-button:focus-visible {
-  transform: translateY(-1px);
-  border-color: transparent;
-  outline: none;
-}
-
-.ui-button--block {
-  width: 100%;
-}
-
-.ui-button--compact {
-  min-width: 64px;
-  min-height: var(--ui-height-sm);
-  padding: 0 var(--spacing-3-5);
-  font-size: var(--font-size-sm);
-}
-
-.ui-button.is-disabled,
-.ui-button:disabled {
-  cursor: not-allowed !important;
-  opacity: 0.5 !important;
-  background: var(--color-surface-muted) !important;
-  color: var(--color-text-tertiary) !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
-  transform: none !important;
-  pointer-events: auto !important;
-}
-
-.ui-button--primary {
-  background: var(--color-brand);
-  color: var(--color-surface);
-}
-
-.ui-button--primary:hover,
-.ui-button--primary:focus-visible {
-  background: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
-  color: var(--color-surface);
-  border-color: transparent;
-}
-
-.ui-button--secondary {
-  background: var(--color-surface-muted);
-  color: var(--color-text-button);
-}
-
-.ui-button--secondary:hover,
-.ui-button--secondary:focus-visible {
-  background: color-mix(in srgb, var(--color-text-primary) 12%, var(--color-surface));
-  color: var(--color-text-button);
-  border-color: transparent;
-}
-
-.ui-button.is-active,
-.ui-button:active {
-  border-color: transparent;
-  background: var(--color-surface-muted);
-  box-shadow: none;
-}
-
-.ui-button--danger {
-  background: var(--color-error);
-  color: var(--color-surface);
-  border: 1px solid transparent;
-}
-
-.ui-button--danger:hover {
-  background: color-mix(in srgb, var(--color-error) 85%, var(--color-surface));
-  color: var(--color-surface);
-  border-color: transparent;
-}
-
 /* ── Composer dropdown ── */
 /* ── Settings select dropdown ── */
 .ui-input,
@@ -1011,28 +757,6 @@ label,
 
 .upload-field__native {
   display: none;
-}
-
-.upload-field__button {
-  min-height: 38px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0 var(--spacing-4-5);
-  background: var(--color-surface-muted);
-  color: var(--color-text-button);
-  font: 500 var(--font-size-md) var(--font-serif);
-  box-shadow: var(--shadow-ring);
-  cursor: pointer;
-}
-
-.upload-field__button:hover,
-.upload-field__button:focus-visible {
-  box-shadow: var(--shadow-ring-deep);
-}
-
-.upload-field__button:disabled {
-  opacity: 0.5;
-  pointer-events: none;
 }
 
 .upload-field__name {
@@ -1476,21 +1200,6 @@ label,
   min-height: 360px;
 }
 
-.text-button {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: var(--color-brand);
-  font: 500 var(--font-size-md) var(--font-serif);
-  cursor: pointer;
-}
-
-.text-button:hover,
-.text-button:focus-visible {
-  background-color: var(--color-surface-hover);
-  color: var(--color-brand);
-}
-
 .login-card {
   position: relative;
   width: min(100%, 1180px);
@@ -1596,30 +1305,6 @@ label,
   margin-top: var(--spacing-xs);
 }
 
-@keyframes app-shell-menu-enter {
-  from {
-    opacity: 0;
-    transform: translateX(4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .app-shell__menu-trigger,
-  .app-shell__menu-icon-line,
-  .app-shell__action-menu,
-  .app-shell__action-menu-item,
-  .ui-button {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
-  }
-}
-
 @media (max-width: 1080px) {
   .workflow-grid,
   .history-grid,
@@ -1633,17 +1318,6 @@ label,
 }
 
 @media (max-width: 820px) {
-  .app-shell__header {
-    gap: var(--spacing-3-5);
-    width: 100%;
-    padding: var(--spacing-3-5) var(--spacing-4-5);
-    top: 0;
-  }
-
-  .app-shell__actions {
-    justify-content: flex-end;
-  }
-
   .page__grid,
   .workflow-grid,
   .history-grid,
@@ -1656,18 +1330,6 @@ label,
 }
 
 @media (max-width: 720px) {
-  .app-shell__actions {
-    --app-shell-menu-width: min(136px, calc(100vw - 46px));
-  }
-
-  .app-shell__action-menu-popper {
-    top: calc(100% + var(--spacing-sm));
-  }
-
-  .app-shell__action-menu-item {
-    padding: var(--spacing-2-5) var(--spacing-sm);
-  }
-
   .page__hero,
   .page__header {
     align-items: flex-start;
@@ -1699,18 +1361,6 @@ label,
 }
 
 @media (max-width: 640px) {
-  .app-shell__header {
-    width: 100%;
-    margin-top: 0;
-    padding: var(--spacing-2-5) var(--spacing-3-5);
-    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    top: 0;
-  }
-
-  .app-shell__content {
-    width: min(100%, calc(100% - 24px));
-  }
-
   .login-card {
     padding: var(--spacing-lg) var(--spacing-5-5);
     transform: none;
@@ -1873,31 +1523,6 @@ label,
   display: flex;
   gap: var(--spacing-md);
   margin-top: var(--spacing-md);
-}
-
-/* ── Icon Action Button ── */
-.icon-action-btn {
-  transition:
-    color var(--motion-duration-base) var(--motion-ease-standard),
-    background-color var(--motion-duration-base) var(--motion-ease-standard);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-xs);
-  margin: var(--spacing-neg-xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-action-btn:hover {
-  color: var(--color-error) !important;
-  background: var(--color-surface-hover);
-}
-
-.icon-action-btn:focus-visible {
-  color: var(--color-error) !important;
-  background: var(--color-surface-hover);
-  box-shadow: var(--shadow-icon-action-focus);
-  outline: none;
 }
 
 /* 彻底消除 Chrome Autofill 亮黄背景污染 (针对纯白输入框) */

@@ -23,7 +23,7 @@ const emit = defineEmits<{
       :model-value="modelValue"
       @update:model-value="(value: string | number) => emit('update:modelValue', String(value))"
       :rows="3"
-      class="composer-textarea resize-none border-0 bg-transparent shadow-none p-[var(--spacing-sm)] text-base focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-default disabled:opacity-50"
+      class="composer-textarea resize-none border-0 bg-transparent shadow-none p-[var(--spacing-sm)] text-base disabled:cursor-default disabled:opacity-50"
       :placeholder="activeSessionId ? '输入回答...' : '请先选择简历与岗位，然后点击「开始面试」'"
       :disabled="disabled || !activeSessionId"
       @keydown.ctrl.enter="canSend && emit('send')"
@@ -38,7 +38,7 @@ const emit = defineEmits<{
           :model-value="jdText"
           @update:model-value="(value: string | number) => emit('update:jdText', String(value))"
           :rows="3"
-          class="composer-textarea h-full w-full resize-none border-0 bg-transparent shadow-none p-[var(--spacing-sm)] text-base focus-visible:ring-0 focus-visible:ring-offset-0"
+          class="composer-textarea h-full w-full resize-none border-0 bg-transparent shadow-none p-[var(--spacing-sm)] text-base"
           placeholder="粘贴目标岗位职责或 JD 文本，系统将通过 RAG 算法进行智能分块和背景匹配发问..."
         />
       </div>

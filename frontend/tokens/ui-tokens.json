@@ -25,7 +25,8 @@
         "color-brand-light",
         "color-coral",
         "color-error",
-        "color-focus",
+        "color-focus-field",
+        "color-focus-action",
         "color-mask-overlay"
       ]
     },
@@ -76,7 +77,6 @@
         "shadow-brand-logo",
         "shadow-login-card",
         "shadow-login-logo",
-        "shadow-icon-action-focus",
         "shadow-autofill-surface"
       ],
       "rules": {
@@ -235,15 +235,12 @@
     },
     "legacy-utility": {
       "prefix": null,
-      "description": "项目早期遗留的 utility token：bg-paper-filter（登录背景纹理）、mask-overlay（dialog 背景遮罩）、--radius（基础圆角别名）、--ui-segmented-item-min-inline-size（Phase 1 SegmentedControl 单一阈值）、--app-shell-*（app-shell 布局辅助）、--session-item-action-width（侧边栏动作）、--login-card-content-layer（登录卡片 z-index）。这些 token 在 Phase 4 之后会被逐步整合到统一 namespace。",
+      "description": "项目早期遗留的 utility token：bg-paper-filter（登录背景纹理）、mask-overlay（dialog 背景遮罩）、--radius（基础圆角别名）、--ui-segmented-item-min-inline-size（Phase 1 SegmentedControl 单一阈值）、--session-item-action-width（侧边栏动作）、--login-card-content-layer（登录卡片 z-index）。这些 token 在 Phase 4 之后会被逐步整合到统一 namespace。",
       "tokens": [
         "radius",
         "bg-paper-filter",
         "mask-overlay",
         "ui-segmented-item-min-inline-size",
-        "app-shell-menu-width",
-        "app-shell-menu-frame-extra",
-        "app-shell-menu-frame-offset",
         "session-item-action-width",
         "login-card-content-layer"
       ]

@@ -93,15 +93,18 @@
 阴影：
 
 - `--shadow-ring`、`--shadow-ring-deep`：轻轮廓。
-- `--shadow-icon-action-focus`：业务组件自定义 CSS `:focus-visible` 的共享焦点阴影。
 - `--shadow-whisper`：Dropdown、Select、Combobox、Tooltip、Toast 的低浮层阴影。
 - `--shadow-modal`：Dialog、Confirm。
 
 Focus 规则：
 
-- shadcn-vue primitive 使用 `focus-visible:ring-*`，颜色必须映射到 `--color-focus`。
-- 业务组件在 scoped CSS 中自行定义 `:focus-visible` 且使用 `box-shadow` 时，只能写 `box-shadow: var(--shadow-icon-action-focus)`。
-- 禁止业务组件手写 `inset 0 0 0 ...`、裸像素或其他临时 focus shadow；`verify:ui` 必须阻断此类漂移。
+- 标准 Input、Textarea、Select 与 Combobox 只改变现有 1px 边框，使用 `--color-focus-field`；不得改变背景、阴影、尺寸或位置。
+- Button 按 default、destructive、outline、secondary、ghost、link 变体分别拥有语义焦点类别；Primary 与 Destructive 必须保持原背景和文字语义。
+- Sidebar、关闭按钮、密码操作、Theme 与 SegmentedControl 使用明确的 action/selectable 类；active、selected、open 与 focus 必须彼此独立。
+- Action 焦点只在键盘输入意图或浏览器初始 `:focus-visible` 下显示；pointer/F12 往返不得留下外框或灰底。Field 焦点不受输入意图区分。
+- 普通主题禁止外部 ring、ring offset、focus box-shadow 与 focus transform；强制高对比度模式使用系统 `CanvasText` outline。
+- Composer compact 控件与标准 Select/Button 使用同等焦点质量，不允许 quiet/no-focus 例外；报告逐题轮播仅让上一题/下一题按钮进入 Tab 顺序。
+- `verify:ui` 必须同时阻断旧焦点样式回流和 `outline: none` 后没有可见替代的实现。
 
 层级：
 

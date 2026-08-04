@@ -53,7 +53,7 @@ test('closes a settings toast without dismissing the settings dialog', async ({ 
     Math.abs((geometry?.rightInset ?? 0) - (geometry?.expectedRightInset ?? 0)),
   ).toBeLessThanOrEqual(1)
   expect(geometry?.isInRightHalf).toBe(true)
-  expect(geometry?.borderWidth).toBe('0px')
+  expect(geometry?.borderWidth).toBe('1px')
   expect(geometry?.hasVisibleShadow).toBe(false)
 
   await closeButton.click()

@@ -11,6 +11,7 @@
 import { ref } from 'vue'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
+import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/shared/ui/card'
@@ -61,6 +62,7 @@ const selectOptions = [
 ]
 
 const inputValue = ref('')
+const textareaValue = ref('')
 const inputDisabled = ref(true)
 const inputErrorLike = ref('')
 
@@ -103,13 +105,21 @@ const dialogOpen = ref(false)
     </ComponentLabSection>
 
     <ComponentLabSection
-      ><template #heading>`Input`</template
+      ><template #heading>`Input / Textarea`</template
       ><template #description>`default / focus / disabled / error-like hint`</template>
       <div class="lab__row">
         <div class="lab__row-cells">
           <div class="lab__cell">
             <Label for="lab-input-default">default</Label>
             <Input id="lab-input-default" v-model="inputValue" placeholder="placeholder text" />
+          </div>
+          <div class="lab__cell">
+            <Label for="lab-textarea-default">textarea</Label>
+            <Textarea
+              id="lab-textarea-default"
+              v-model="textareaValue"
+              placeholder="textarea placeholder"
+            />
           </div>
           <div class="lab__cell">
             <Label for="lab-input-disabled">disabled</Label>
