@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/fix-focus-system-final
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
