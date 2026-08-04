@@ -25,6 +25,7 @@ const __filename = fileURLToPath(import.meta.url)
 const helperDir = path.dirname(__filename)
 const frontendRoot = path.resolve(helperDir, '..', '..')
 const repoRoot = path.resolve(frontendRoot, '..')
+const playwrightPort = Number(process.env.PLAYWRIGHT_PORT || 5173)
 
 /**
  * CI-only browser overrides. When CI=true (set by .github/workflows/ci.yml),
@@ -47,7 +48,7 @@ const ciBrowserUse = process.env.CI ? { channel: 'msedge' as const } : {}
  * it into their own `use: { ...baseUse, ...overrides }` block.
  */
 export const baseUse = {
-  baseURL: 'http://127.0.0.1:5173',
+  baseURL: `http://127.0.0.1:${playwrightPort}`,
   headless: true,
   ...ciBrowserUse,
   screenshot: 'only-on-failure',
@@ -72,8 +73,8 @@ export const baseUse = {
  * tight.
  */
 export const baseWebServer = {
-  command: 'npm run dev -- --host 127.0.0.1 --port 5173',
-  port: 5173,
+  command: `npm run dev -- --host 127.0.0.1 --port ${playwrightPort}`,
+  port: playwrightPort,
   reuseExistingServer: !process.env.CI,
   cwd: frontendRoot,
   timeout: 120000,

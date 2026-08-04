@@ -6,6 +6,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { fetchRadarAnalytics, fetchTrendAnalytics, fetchWeaknessAnalytics } from '../api/analytics'
 import { getErrorMessage } from '@/shared/lib/errors'
+import type { AsyncStatus } from '@/shared/lib/async-status'
 import type {
   AnalyticsRadarResponse,
   AnalyticsTrendPoint,
@@ -15,6 +16,8 @@ import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import EmptyState from '@/shared/ui/empty-state/EmptyState.vue'
+import { InlineAsyncError } from '@/shared/ui/inline-async-error'
+import { Skeleton } from '@/shared/ui/skeleton'
 
 const { showNotice } = usePageNotice()
 
@@ -23,10 +26,15 @@ use([LineChart, RadarChart, GridComponent, RadarComponent, TooltipComponent, Can
 const radar = ref<AnalyticsRadarResponse | null>(null)
 const trend = ref<AnalyticsTrendPoint[]>([])
 const weaknesses = ref<AnalyticsWeaknessItem[]>([])
+const status = ref<AsyncStatus>('idle')
+const error = ref<string | null>(null)
+const refreshing = ref(false)
+const loading = computed(() => status.value === 'idle' || status.value === 'loading')
 const radarRef = ref<HTMLDivElement | null>(null)
 const trendRef = ref<HTMLDivElement | null>(null)
 let radarChart: ECharts | null = null
 let trendChart: ECharts | null = null
+let analyticsAbortController: AbortController | null = null
 
 const scoreCards = computed(() => {
   if (!radar.value || radar.value.sessionCount === 0) {
@@ -83,23 +91,59 @@ function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
 }
 
 async function loadAnalytics() {
+  analyticsAbortController?.abort()
+  const controller = new AbortController()
+  analyticsAbortController = controller
+  if (radar.value || status.value === 'success') {
+    refreshing.value = true
+  } else {
+    status.value = 'loading'
+  }
+  error.value = null
   try {
     const [radarData, trendData, weaknessData] = await Promise.all([
-      fetchRadarAnalytics(),
-      fetchTrendAnalytics(),
-      fetchWeaknessAnalytics(),
+      fetchRadarAnalytics(controller.signal),
+      fetchTrendAnalytics(controller.signal),
+      fetchWeaknessAnalytics(controller.signal),
     ])
+    if (controller.signal.aborted) return
     radar.value = radarData
     trend.value = trendData
     weaknesses.value = weaknessData
+    status.value = 'success'
     await nextTick()
     renderCharts()
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
+  } catch (requestError) {
+    if (controller.signal.aborted) return
+    const message = getErrorMessage(requestError)
+    if (radar.value) {
+      status.value = 'success'
+    } else {
+      status.value = 'error'
+    }
+    // Keep the error inline so a refresh cannot turn existing data into an empty state.
+    error.value = message
+    showNotice(message, 'error')
+  } finally {
+    if (analyticsAbortController === controller) {
+      analyticsAbortController = null
+    }
+    refreshing.value = false
   }
 }
 
+function disposeRadarChart() {
+  radarChart?.dispose()
+  radarChart = null
+}
+
+function disposeTrendChart() {
+  trendChart?.dispose()
+  trendChart = null
+}
+
 function renderCharts() {
+  if (status.value !== 'success') return
   const brand = cssVar('--chart-technical', 'var(--color-brand)')
   const coral = cssVar('--chart-expression', 'var(--color-coral)')
   const logic = cssVar('--chart-logic', 'var(--color-ring-deep)')
@@ -144,6 +188,8 @@ function renderCharts() {
         },
       ],
     })
+  } else {
+    disposeRadarChart()
   }
 
   if (trendRef.value && trend.value.length > 0) {
@@ -224,6 +270,8 @@ function renderCharts() {
         },
       ],
     })
+  } else {
+    disposeTrendChart()
   }
 }
 
@@ -239,6 +287,7 @@ async function handleThemeChange() {
 }
 
 watch([radar, trend], async () => {
+  if (status.value !== 'success') return
   await nextTick()
   renderCharts()
 })
@@ -250,94 +299,111 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  analyticsAbortController?.abort()
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('prelude-theme-change', handleThemeChange)
-  radarChart?.dispose()
-  trendChart?.dispose()
+  disposeRadarChart()
+  disposeTrendChart()
 })
 </script>
 
 <template>
-  <section class="workspace-page">
+  <section class="workspace-page" :aria-busy="loading || refreshing">
     <header class="workspace-header">
       <div class="workspace-header__main">
         <div class="workspace-header__title-area">
           <h2 class="workspace-header__title">数据看板</h2>
+          <span v-if="refreshing" class="workspace-header__status" aria-live="polite"
+            >正在刷新…</span
+          >
         </div>
       </div>
     </header>
 
     <div class="workspace-page__content scrollable flex flex-col gap-6">
-      <template v-if="radar && radar.sessionCount > 0">
+      <div v-if="loading" class="analytics-loading" aria-busy="true">
         <div class="insight-strip insight-strip--compact">
-          <article v-for="item in scoreCards" :key="item.label" class="insight-card">
-            <p class="panel__eyebrow">{{ item.label }}</p>
-            <h3 class="insight-card__value">{{ item.value }}</h3>
-            <p class="insight-card__meta">{{ item.hint }}</p>
-          </article>
+          <Skeleton v-for="index in 3" :key="index" class="analytics-loading__stat" />
         </div>
-
         <div class="page-grid page-grid--dashboard">
-          <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">结构</p>
-                <h3 class="text-lg font-medium font-serif">能力雷达</h3>
-                <p class="text-sm text-muted-foreground">
-                  展示最近面试在三项核心维度上的平均水平。
-                </p>
-              </div>
-              <Badge variant="secondary">{{ radar.sessionCount }} 场</Badge>
-            </div>
-            <div ref="radarRef" class="chart-surface chart-surface--tall analytics-chart" />
-          </Card>
-
-          <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">走势</p>
-                <h3 class="text-lg font-medium font-serif">分数趋势</h3>
-                <p class="text-sm text-muted-foreground">按时间查看技术、表达与逻辑评分变化。</p>
-              </div>
-            </div>
-            <div ref="trendRef" class="chart-surface chart-surface--tall analytics-chart" />
-          </Card>
+          <Skeleton class="analytics-loading__chart" />
+          <Skeleton class="analytics-loading__chart" />
         </div>
+      </div>
+      <InlineAsyncError v-else-if="status === 'error'" :message="error" @retry="loadAnalytics" />
+      <template v-else-if="status === 'success'">
+        <InlineAsyncError v-if="error" :message="error" @retry="loadAnalytics" />
+        <template v-if="radar && radar.sessionCount > 0">
+          <div class="insight-strip insight-strip--compact">
+            <article v-for="item in scoreCards" :key="item.label" class="insight-card">
+              <p class="panel__eyebrow">{{ item.label }}</p>
+              <h3 class="insight-card__value">{{ item.value }}</h3>
+              <p class="insight-card__meta">{{ item.hint }}</p>
+            </article>
+          </div>
 
-        <div class="page-grid page-grid--single">
-          <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">聚合</p>
-                <h3 class="text-lg font-medium font-serif">薄弱点列表</h3>
-                <p class="text-sm text-muted-foreground">按出现频率汇总薄弱点。</p>
-              </div>
-              <Badge variant="secondary">{{ weaknesses.length }} 类问题</Badge>
-            </div>
-
-            <div v-if="weaknesses.length" class="weakness-list">
-              <article v-for="item in weaknesses" :key="item.category" class="weakness-item">
-                <div class="weakness-item__head">
-                  <div>
-                    <h4 class="weakness-item__title">{{ item.category }}</h4>
-                  </div>
-                  <Badge variant="secondary">{{ item.count }} 次</Badge>
+          <div class="page-grid page-grid--dashboard">
+            <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">结构</p>
+                  <h3 class="text-lg font-medium font-serif">能力雷达</h3>
+                  <p class="text-sm text-muted-foreground">
+                    展示最近面试在三项核心维度上的平均水平。
+                  </p>
                 </div>
-                <ul class="weakness-item__descriptions">
-                  <li v-for="description in item.descriptions" :key="description">
-                    {{ description }}
-                  </li>
-                </ul>
-              </article>
-            </div>
-            <EmptyState v-else description="还没有可聚合的薄弱点。" />
-          </Card>
-        </div>
-      </template>
+                <Badge variant="secondary">{{ radar.sessionCount }} 场</Badge>
+              </div>
+              <div ref="radarRef" class="chart-surface chart-surface--tall analytics-chart" />
+            </Card>
 
-      <Card v-else class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
-        <EmptyState description="暂无历史面试数据，完成至少一场面试后再回来查看。" />
-      </Card>
+            <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">走势</p>
+                  <h3 class="text-lg font-medium font-serif">分数趋势</h3>
+                  <p class="text-sm text-muted-foreground">按时间查看技术、表达与逻辑评分变化。</p>
+                </div>
+              </div>
+              <div ref="trendRef" class="chart-surface chart-surface--tall analytics-chart" />
+            </Card>
+          </div>
+
+          <div class="page-grid page-grid--single">
+            <Card class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">聚合</p>
+                  <h3 class="text-lg font-medium font-serif">薄弱点列表</h3>
+                  <p class="text-sm text-muted-foreground">按出现频率汇总薄弱点。</p>
+                </div>
+                <Badge variant="secondary">{{ weaknesses.length }} 类问题</Badge>
+              </div>
+
+              <div v-if="weaknesses.length" class="weakness-list">
+                <article v-for="item in weaknesses" :key="item.category" class="weakness-item">
+                  <div class="weakness-item__head">
+                    <div>
+                      <h4 class="weakness-item__title">{{ item.category }}</h4>
+                    </div>
+                    <Badge variant="secondary">{{ item.count }} 次</Badge>
+                  </div>
+                  <ul class="weakness-item__descriptions">
+                    <li v-for="description in item.descriptions" :key="description">
+                      {{ description }}
+                    </li>
+                  </ul>
+                </article>
+              </div>
+              <EmptyState v-else description="还没有可聚合的薄弱点。" />
+            </Card>
+          </div>
+        </template>
+
+        <Card v-else class="flex flex-col border-none shadow-none bg-surface p-5 rounded-xl">
+          <EmptyState description="暂无历史面试数据，完成至少一场面试后再回来查看。" />
+        </Card>
+      </template>
     </div>
   </section>
 </template>
@@ -360,6 +426,27 @@ onBeforeUnmount(() => {
 }
 .analytics-chart {
   block-size: var(--analytics-chart-block-size);
+}
+.analytics-loading {
+  --analytics-loading-stat-block-size: 96px;
+  --analytics-loading-chart-block-size: 320px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+.analytics-loading__stat {
+  flex: 1;
+  min-block-size: var(--analytics-loading-stat-block-size);
+  border-radius: var(--radius-lg);
+}
+.analytics-loading__chart {
+  min-block-size: var(--analytics-loading-chart-block-size);
+  border-radius: var(--radius-xl);
+}
+.workspace-header__status {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 .weakness-list {
   display: flex;

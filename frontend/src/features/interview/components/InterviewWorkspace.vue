@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 import { StructuredReportPanel } from '@/features/report'
+import { InlineAsyncError } from '@/shared/ui/inline-async-error'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useInterviewPageController } from '../composables/useInterviewPageController'
 import WorkspaceHeader from './WorkspaceHeader.vue'
 import MessageThread from './MessageThread.vue'
@@ -13,7 +15,12 @@ const emit = defineEmits<{
 
 const {
   activeSessionId,
-  sessionLoading,
+  replay,
+  dashboardStatus,
+  dashboardError,
+  sessionDetailStatus,
+  sessionDetailError,
+  sessionDetailRefreshing,
   resumes,
   positions,
   selectedResumeId,
@@ -50,6 +57,8 @@ const {
   handleExportPdf,
   handleAcceptImprovement,
   handleRejectImprovement,
+  retryDashboard,
+  retryActiveSession,
   handleAudioChunk,
   handleStartRecording,
   handleStopRecording,
@@ -64,9 +73,24 @@ function exportReport() {
 </script>
 
 <template>
-  <div class="interview-workspace">
+  <div
+    class="interview-workspace"
+    :aria-busy="dashboardStatus === 'loading' || sessionDetailStatus === 'loading'"
+  >
+    <div v-if="dashboardStatus === 'loading' && !activeSessionId" class="workspace-loading-shell">
+      <Skeleton class="workspace-loading-shell__title" />
+      <Skeleton v-for="index in 4" :key="index" class="workspace-loading-shell__line" />
+    </div>
+
+    <InlineAsyncError
+      v-else-if="dashboardStatus === 'error' && !activeSessionId"
+      class="workspace-page-error"
+      :message="dashboardError || '工作区加载失败，请重试。'"
+      @retry="retryDashboard"
+    />
+
     <!-- Empty State -->
-    <div v-if="!activeSessionId && !sessionLoading" class="workspace-empty">
+    <div v-else-if="dashboardStatus === 'success' && !activeSessionId" class="workspace-empty">
       <div class="workspace-empty__content">
         <h1 class="workspace-empty__title">准备开始一场沉浸式模拟面试</h1>
         <InterviewComposer
@@ -92,6 +116,12 @@ function exportReport() {
 
     <!-- Active Session View -->
     <div v-else-if="activeSessionId" class="workspace-active">
+      <InlineAsyncError
+        v-if="dashboardError"
+        class="workspace-refresh-error"
+        :message="dashboardError"
+        @retry="retryDashboard"
+      />
       <WorkspaceHeader
         :active-session-id="activeSessionId"
         :target-position="targetPosition"
@@ -109,77 +139,99 @@ function exportReport() {
       />
 
       <div class="workspace-active__main">
-        <div v-if="isGenerating" class="workspace-generating scrollable">
-          <div class="generating-card">
-            <RoseThree class="generating-rose" :speed-multiplier="0.9" />
-            <h3 class="generating-title">AI 评估报告生成中...</h3>
-            <p class="generating-subtitle">
-              我们正在整理您的答题表现，并调用 LLM-as-Judge 进行深度诊断，请稍候（约需 10-15 秒）
-            </p>
-            <div class="generating-progress">
-              <div class="progress-bar-ind"></div>
-            </div>
-          </div>
+        <div v-if="sessionDetailStatus === 'loading' && !replay" class="workspace-detail-loading">
+          <Skeleton v-for="index in 6" :key="index" class="workspace-detail-loading__line" />
+        </div>
+        <InlineAsyncError
+          v-else-if="sessionDetailError && !replay"
+          class="workspace-detail-error"
+          :message="sessionDetailError"
+          @retry="retryActiveSession"
+        />
+        <div
+          v-else-if="sessionDetailRefreshing"
+          class="workspace-detail-refreshing"
+          aria-live="polite"
+        >
+          正在刷新会话内容…
         </div>
 
-        <div v-else-if="showingReport" class="workspace-report scrollable">
-          <div class="report-content">
-            <div class="report-export-surface" ref="reportRef">
-              <StructuredReportPanel
-                v-if="parsedReport.kind === 'structured'"
-                :report="parsedReport.report"
-                :improvement-busy-id="improvementBusyId"
-                @accept-improvement="handleAcceptImprovement"
-                @reject-improvement="handleRejectImprovement"
-              />
-              <div v-else class="markdown-surface markdown-surface--paper">
-                <div class="markdown-body" v-html="renderedReport" />
+        <template v-if="sessionDetailStatus === 'success' || replay">
+          <div v-if="isGenerating" class="workspace-generating scrollable">
+            <div class="generating-card">
+              <RoseThree class="generating-rose" :speed-multiplier="0.9" />
+              <h3 class="generating-title">AI 评估报告生成中...</h3>
+              <p class="generating-subtitle">
+                我们正在整理您的答题表现，并调用 LLM-as-Judge 进行深度诊断，请稍候（约需 10-15 秒）
+              </p>
+              <div class="generating-progress">
+                <div class="progress-bar-ind"></div>
               </div>
             </div>
           </div>
-        </div>
 
-        <template v-else>
-          <MessageThread :messages="messages" :reconnecting-status="reconnectingStatus" />
-
-          <div class="workspace-composer-fixed">
-            <InterviewComposer
-              :disabled="isFinished"
-              :is-centered="false"
-              :active-session-id="activeSessionId"
-              :resumes="resumes"
-              :positions="positions"
-              :selected-resume-id="selectedResumeId"
-              :selected-position-id="selectedPositionId"
-              :llm-provider="llmProvider"
-              :llm-model="llmModel"
-              :jd-text="jdText"
-              v-model="answer"
-              :uploading="uploading"
-              :upload-display-name="uploadDisplayName"
-              :sending="sending"
-              :creating="creating"
-              :is-voice-mode="isVoiceMode"
-              :voice-status="voiceStatus"
-              :incoming-audio="incomingAudioChunk"
-              @update:is-voice-mode="(v) => (isVoiceMode = v)"
-              @update:selected-resume-id="(id) => (selectedResumeId = id)"
-              @update:selected-position-id="(id) => (selectedPositionId = id)"
-              @upload="handleUpload"
-              @start="createNewInterview"
-              @send="handleSend"
-              @voice-audio-chunk="handleAudioChunk"
-              @voice-start-recording="handleStartRecording"
-              @voice-stop-recording="handleStopRecording"
-              @voice-play-status="handlePlayStatus"
-              @open-global-settings="(tab) => emit('open-global-settings', tab)"
-            />
+          <div v-else-if="showingReport" class="workspace-report scrollable">
+            <div class="report-content">
+              <div class="report-export-surface" ref="reportRef">
+                <StructuredReportPanel
+                  v-if="parsedReport.kind === 'structured'"
+                  :report="parsedReport.report"
+                  :improvement-busy-id="improvementBusyId"
+                  @accept-improvement="handleAcceptImprovement"
+                  @reject-improvement="handleRejectImprovement"
+                />
+                <div v-else class="markdown-surface markdown-surface--paper">
+                  <div class="markdown-body" v-html="renderedReport" />
+                </div>
+              </div>
+            </div>
           </div>
+
+          <template v-else>
+            <MessageThread :messages="messages" :reconnecting-status="reconnectingStatus" />
+
+            <div class="workspace-composer-fixed">
+              <InterviewComposer
+                :disabled="isFinished"
+                :is-centered="false"
+                :active-session-id="activeSessionId"
+                :resumes="resumes"
+                :positions="positions"
+                :selected-resume-id="selectedResumeId"
+                :selected-position-id="selectedPositionId"
+                :llm-provider="llmProvider"
+                :llm-model="llmModel"
+                :jd-text="jdText"
+                v-model="answer"
+                :uploading="uploading"
+                :upload-display-name="uploadDisplayName"
+                :sending="sending"
+                :creating="creating"
+                :is-voice-mode="isVoiceMode"
+                :voice-status="voiceStatus"
+                :incoming-audio="incomingAudioChunk"
+                @update:is-voice-mode="(v) => (isVoiceMode = v)"
+                @update:selected-resume-id="(id) => (selectedResumeId = id)"
+                @update:selected-position-id="(id) => (selectedPositionId = id)"
+                @upload="handleUpload"
+                @start="createNewInterview"
+                @send="handleSend"
+                @voice-audio-chunk="handleAudioChunk"
+                @voice-start-recording="handleStartRecording"
+                @voice-stop-recording="handleStopRecording"
+                @voice-play-status="handlePlayStatus"
+                @open-global-settings="(tab) => emit('open-global-settings', tab)"
+              />
+            </div>
+          </template>
         </template>
       </div>
     </div>
 
-    <div v-else-if="sessionLoading" class="workspace-loading">加载中...</div>
+    <div v-else class="workspace-loading-shell">
+      <Skeleton class="workspace-loading-shell__title" />
+      <Skeleton v-for="index in 4" :key="index" class="workspace-loading-shell__line" />
+    </div>
   </div>
 </template>
 
@@ -285,6 +337,52 @@ function exportReport() {
   align-items: center;
   justify-content: center;
   color: var(--color-text-tertiary);
+}
+.workspace-loading-shell,
+.workspace-detail-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl);
+}
+.workspace-loading-shell {
+  inline-size: min(100%, var(--workspace-content-max-inline-size));
+  margin: auto;
+}
+.workspace-loading-shell__title {
+  inline-size: 42%;
+  block-size: var(--ui-height-md);
+}
+.workspace-loading-shell__line {
+  inline-size: 100%;
+  block-size: var(--ui-height-sm);
+}
+.workspace-page-error,
+.workspace-refresh-error,
+.workspace-detail-error {
+  margin: var(--spacing-xl) auto;
+  inline-size: min(calc(100% - var(--spacing-2xl) * 2), var(--workspace-content-max-inline-size));
+}
+.workspace-refresh-error {
+  margin-block: var(--spacing-sm);
+}
+.workspace-detail-loading {
+  flex: 1;
+  justify-content: center;
+  inline-size: min(100%, var(--workspace-content-max-inline-size));
+  margin: auto;
+}
+.workspace-detail-loading__line {
+  inline-size: 100%;
+  block-size: var(--ui-height-sm);
+}
+.workspace-detail-refreshing {
+  position: absolute;
+  inset-block-start: var(--spacing-sm);
+  inset-inline-end: var(--spacing-lg);
+  z-index: var(--z-index-workspace-composer);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 .voice-mode-container {
   display: flex;

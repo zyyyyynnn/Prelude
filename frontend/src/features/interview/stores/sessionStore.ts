@@ -1,5 +1,7 @@
 import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
+import type { AsyncStatus } from '@/shared/lib/async-status'
+import { getErrorMessage } from '@/shared/lib/errors'
 import { fetchInterviewMessages, fetchInterviewSessions } from '../api/interview'
 import { groupSessions } from '../model/sessionList'
 import type { InterviewSessionDetailResponse, InterviewSessionItem } from '../model/types'
@@ -18,6 +20,12 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   const replay = shallowRef<InterviewSessionDetailResponse | null>(null)
   const reportMarkdown = ref('')
   const sessionLoading = ref(false)
+  const sessionListStatus = ref<AsyncStatus>('idle')
+  const sessionListError = ref<string | null>(null)
+  const sessionListRefreshing = ref(false)
+  const sessionDetailStatus = ref<AsyncStatus>('idle')
+  const sessionDetailError = ref<string | null>(null)
+  const sessionDetailRefreshing = ref(false)
   let activeAccountScope = ''
   let accountGeneration = 0
   let activeAbortController: AbortController | null = null
@@ -57,6 +65,12 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     replay.value = null
     reportMarkdown.value = ''
     sessionLoading.value = false
+    sessionListStatus.value = 'idle'
+    sessionListError.value = null
+    sessionListRefreshing.value = false
+    sessionDetailStatus.value = 'idle'
+    sessionDetailError.value = null
+    sessionDetailRefreshing.value = false
   }
 
   function activateAccount(accountScope: string, storage?: Storage) {
@@ -80,6 +94,8 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   function refreshSessionList() {
     if (!activeAccountScope) {
       sessions.value = []
+      sessionListStatus.value = 'idle'
+      sessionListError.value = null
       return Promise.resolve()
     }
     if (sessionListRequest?.accountScope === activeAccountScope) {
@@ -95,6 +111,13 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
       promise: Promise.resolve(),
     }
 
+    if (sessions.value.length) {
+      sessionListRefreshing.value = true
+    } else {
+      sessionListStatus.value = 'loading'
+    }
+    sessionListError.value = null
+
     request.promise = (async () => {
       try {
         const items = await fetchInterviewSessions(controller.signal)
@@ -104,6 +127,8 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
           accountGeneration === requestGeneration
         ) {
           sessions.value = items
+          sessionListStatus.value = 'success'
+          sessionListError.value = null
         }
       } catch (error) {
         if (
@@ -113,10 +138,15 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
         ) {
           return
         }
+        sessionListError.value = getErrorMessage(error)
+        sessionListStatus.value = sessions.value.length ? 'success' : 'error'
         throw error
       } finally {
         if (sessionListRequest === request) {
           sessionListRequest = null
+        }
+        if (activeAccountScope === requestScope && accountGeneration === requestGeneration) {
+          sessionListRefreshing.value = false
         }
       }
     })()
@@ -135,6 +165,13 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     const controller = new AbortController()
     detailAbortController = controller
     sessionLoading.value = true
+    const hasExistingDetail = replay.value !== null
+    if (hasExistingDetail) {
+      sessionDetailRefreshing.value = true
+    } else {
+      sessionDetailStatus.value = 'loading'
+    }
+    sessionDetailError.value = null
 
     try {
       const detail = await fetchInterviewMessages(sessionId, controller.signal)
@@ -146,6 +183,8 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
         return
       }
       replay.value = detail
+      sessionDetailStatus.value = 'success'
+      sessionDetailError.value = null
       activeSessionId.value = sessionId
       preferences.unhide(sessionId)
       if (!sessions.value.some((session) => session.sessionId === sessionId)) {
@@ -169,11 +208,14 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
       ) {
         return
       }
+      sessionDetailError.value = getErrorMessage(error)
+      sessionDetailStatus.value = hasExistingDetail ? 'success' : 'error'
       if (!silent) throw error
     } finally {
       if (detailAbortController === controller) {
         detailAbortController = null
         sessionLoading.value = false
+        sessionDetailRefreshing.value = false
       }
     }
   }
@@ -185,6 +227,9 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     replay.value = null
     reportMarkdown.value = ''
     sessionLoading.value = false
+    sessionDetailStatus.value = 'idle'
+    sessionDetailError.value = null
+    sessionDetailRefreshing.value = false
   }
 
   function toggleSessionPin(sessionId: number) {
@@ -206,6 +251,12 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     replay,
     reportMarkdown,
     sessionLoading,
+    sessionListStatus,
+    sessionListError,
+    sessionListRefreshing,
+    sessionDetailStatus,
+    sessionDetailError,
+    sessionDetailRefreshing,
     primarySessionList,
     finishedSessionList,
     activateAccount,

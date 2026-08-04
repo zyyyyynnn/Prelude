@@ -6,8 +6,8 @@ import type {
   ResumeUploadResponse,
 } from '../model/types'
 
-export async function fetchResumes() {
-  const response = await http.get<ApiResult<ResumeItem[]>>('/resume/list')
+export async function fetchResumes(signal?: AbortSignal) {
+  const response = await http.get<ApiResult<ResumeItem[]>>('/resume/list', { signal })
   return unwrapResult(response.data)
 }
 

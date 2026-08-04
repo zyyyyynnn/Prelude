@@ -8,6 +8,8 @@ import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
 import { Separator } from '@/shared/ui/separator'
 import { TooltipText } from '@/shared/ui/tooltip'
 import { useConfirmDialog } from '@/shared/ui/confirm-dialog/useConfirmDialog'
+import { InlineAsyncError } from '@/shared/ui/inline-async-error'
+import { Skeleton } from '@/shared/ui/skeleton'
 
 const props = defineProps<{
   collapsed: boolean
@@ -23,7 +25,14 @@ const router = useRouter()
 const { showNotice } = usePageNotice()
 const confirmDialog = useConfirmDialog()
 const sessionStore = useInterviewSessionStore()
-const { activeSessionId, primarySessionList, finishedSessionList } = storeToRefs(sessionStore)
+const {
+  activeSessionId,
+  primarySessionList,
+  finishedSessionList,
+  sessionListStatus,
+  sessionListError,
+  sessionListRefreshing,
+} = storeToRefs(sessionStore)
 const {
   startNewInterview,
   refreshSessionList,
@@ -36,10 +45,12 @@ const {
 sessionStore.hydratePreferences()
 
 onMounted(() => {
-  void refreshSessionList().catch(() => {
-    if (route.path !== '/interview') showNotice('会话列表加载失败', 'error')
-  })
+  void refreshSessionList().catch(() => undefined)
 })
+
+function retrySessionList() {
+  void refreshSessionList().catch(() => undefined)
+}
 
 function togglePin(sessionId: number) {
   toggleSessionPin(sessionId)
@@ -147,196 +158,208 @@ function navigateTo(path: string) {
         <div
           :class="['app-sidebar__sessions scrollable', { 'is-visible': !collapsed }]"
           :aria-hidden="collapsed"
+          :aria-busy="sessionListStatus === 'loading' || sessionListRefreshing"
         >
-          <div class="session-group">
-            <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">
-              进行中
-            </div>
-            <ul v-if="primarySessionList.length" class="session-list">
-              <li
-                v-for="session in primarySessionList"
-                :key="session.sessionId"
-                class="session-item-wrapper"
-              >
-                <button
-                  :class="[
-                    'session-item-btn ui-action ui-action-nav',
-                    { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
-                  ]"
-                  :aria-label="`打开会话 ${session.targetPosition || '未命名岗位'}`"
-                  @click="handleSessionClick(session.sessionId)"
+          <InlineAsyncError
+            v-if="sessionListError"
+            class="session-list-error"
+            :message="sessionListError"
+            @retry="retrySessionList"
+          />
+          <div v-if="sessionListStatus === 'loading'" class="session-list-loading" aria-busy="true">
+            <Skeleton v-for="index in 5" :key="index" />
+          </div>
+          <template v-else>
+            <div class="session-group">
+              <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">
+                进行中
+              </div>
+              <ul v-if="primarySessionList.length" class="session-list">
+                <li
+                  v-for="session in primarySessionList"
+                  :key="session.sessionId"
+                  class="session-item-wrapper"
                 >
-                  <TooltipText
-                    class="session-item__name"
-                    :text="session.targetPosition || '未命名岗位'"
-                  />
-                </button>
-
-                <!-- Pin indicator when not hovered -->
-                <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
-                  </svg>
-                </div>
-
-                <!-- Quick actions on hover -->
-                <div class="session-item-actions">
                   <button
-                    class="action-btn ui-action ui-action-icon"
-                    :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
-                    @click.stop="togglePin(session.sessionId)"
+                    :class="[
+                      'session-item-btn ui-action ui-action-nav',
+                      { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
+                    ]"
+                    :aria-label="`打开会话 ${session.targetPosition || '未命名岗位'}`"
+                    @click="handleSessionClick(session.sessionId)"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="currentColor"
-                      v-if="isSessionPinned(session.sessionId)"
-                    >
+                    <TooltipText
+                      class="session-item__name"
+                      :text="session.targetPosition || '未命名岗位'"
+                    />
+                  </button>
+
+                  <!-- Pin indicator when not hovered -->
+                  <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                       <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                     </svg>
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      v-else
-                    >
-                      <path
-                        d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    class="action-btn delete-btn ui-action ui-action-danger"
-                    aria-label="删除会话"
-                    @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <polyline
-                        points="3 6 5 6 21 6"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      ></polyline>
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      ></path>
-                    </svg>
-                  </button>
-                </div>
-              </li>
-            </ul>
-            <p v-else class="session-group__empty">暂无</p>
-          </div>
+                  </div>
 
-          <Separator class="mx-2 my-2 bg-border/50" />
-
-          <div class="session-group">
-            <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">
-              已完成
+                  <!-- Quick actions on hover -->
+                  <div class="session-item-actions">
+                    <button
+                      class="action-btn ui-action ui-action-icon"
+                      :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
+                      @click.stop="togglePin(session.sessionId)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="currentColor"
+                        v-if="isSessionPinned(session.sessionId)"
+                      >
+                        <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
+                      </svg>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        v-else
+                      >
+                        <path
+                          d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      class="action-btn delete-btn ui-action ui-action-danger"
+                      aria-label="删除会话"
+                      @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <polyline
+                          points="3 6 5 6 21 6"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></polyline>
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+              <p v-else-if="sessionListStatus === 'success'" class="session-group__empty">暂无</p>
             </div>
-            <ul v-if="finishedSessionList.length" class="session-list">
-              <li
-                v-for="session in finishedSessionList"
-                :key="session.sessionId"
-                class="session-item-wrapper"
-              >
-                <button
-                  :class="[
-                    'session-item-btn ui-action ui-action-nav',
-                    { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
-                  ]"
-                  :aria-label="`打开已结束会话 ${session.targetPosition || '未命名岗位'}`"
-                  @click="handleSessionClick(session.sessionId)"
+
+            <Separator class="mx-2 my-2 bg-border/50" />
+
+            <div class="session-group">
+              <div class="px-2 mb-2 text-xs font-semibold tracking-wider text-muted-foreground/70">
+                已完成
+              </div>
+              <ul v-if="finishedSessionList.length" class="session-list">
+                <li
+                  v-for="session in finishedSessionList"
+                  :key="session.sessionId"
+                  class="session-item-wrapper"
                 >
-                  <TooltipText
-                    class="session-item__name"
-                    :text="session.targetPosition || '未命名岗位'"
-                  />
-                </button>
-
-                <!-- Pin indicator when not hovered -->
-                <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
-                  </svg>
-                </div>
-
-                <!-- Quick actions on hover -->
-                <div class="session-item-actions">
                   <button
-                    class="action-btn ui-action ui-action-icon"
-                    :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
-                    @click.stop="togglePin(session.sessionId)"
+                    :class="[
+                      'session-item-btn ui-action ui-action-nav',
+                      { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
+                    ]"
+                    :aria-label="`打开已结束会话 ${session.targetPosition || '未命名岗位'}`"
+                    @click="handleSessionClick(session.sessionId)"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="currentColor"
-                      v-if="isSessionPinned(session.sessionId)"
-                    >
+                    <TooltipText
+                      class="session-item__name"
+                      :text="session.targetPosition || '未命名岗位'"
+                    />
+                  </button>
+
+                  <!-- Pin indicator when not hovered -->
+                  <div class="pin-indicator" v-if="isSessionPinned(session.sessionId)">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                       <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
                     </svg>
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      v-else
+                  </div>
+
+                  <!-- Quick actions on hover -->
+                  <div class="session-item-actions">
+                    <button
+                      class="action-btn ui-action ui-action-icon"
+                      :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
+                      @click.stop="togglePin(session.sessionId)"
                     >
-                      <path
-                        d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    class="action-btn delete-btn ui-action ui-action-danger"
-                    aria-label="删除会话"
-                    @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="currentColor"
+                        v-if="isSessionPinned(session.sessionId)"
+                      >
+                        <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
+                      </svg>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        v-else
+                      >
+                        <path
+                          d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      class="action-btn delete-btn ui-action ui-action-danger"
+                      aria-label="删除会话"
+                      @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
                     >
-                      <polyline
-                        points="3 6 5 6 21 6"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      ></polyline>
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      ></path>
-                    </svg>
-                  </button>
-                </div>
-              </li>
-            </ul>
-            <p v-else class="session-group__empty">暂无</p>
-          </div>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <polyline
+                          points="3 6 5 6 21 6"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></polyline>
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+              <p v-else-if="sessionListStatus === 'success'" class="session-group__empty">暂无</p>
+            </div>
+          </template>
         </div>
         <div
           :class="['app-sidebar__collapsed-actions', { 'is-visible': collapsed }]"
@@ -650,6 +673,15 @@ function navigateTo(path: string) {
   padding-right: 0;
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
+}
+.session-list-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
+}
+.session-list-error {
+  margin: 0 var(--spacing-sm) var(--spacing-sm);
 }
 .app-sidebar__collapsed-actions {
   display: flex;

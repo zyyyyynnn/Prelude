@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,12 @@ const authStore = useAuthStore()
 const profilePanel = ref<InstanceType<typeof UserProfilePanel> | null>(null)
 const themePanel = ref<InstanceType<typeof ThemeSettingsPanel> | null>(null)
 const llmPanel = ref<InstanceType<typeof LlmSettingsPanel> | null>(null)
+
+watch(visible, (isVisible) => {
+  if (!isVisible) {
+    llmPanel.value?.clearSensitiveDraft()
+  }
+})
 
 const settingsTitle = {
   profile: '账号资料',

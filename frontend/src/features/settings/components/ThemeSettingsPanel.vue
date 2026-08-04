@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { ThemePreference } from '../model/types'
-import { fetchUserProfile, updateUserProfile } from '../api/user'
+import { storeToRefs } from 'pinia'
+import { useUserProfileStore } from '../stores/userProfileStore'
 import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
 import { withMinDelay } from '@/shared/lib/utils'
 import { getErrorMessage } from '@/shared/lib/errors'
 import { applyThemePreference, storeThemePreference } from '../model/theme'
+import { InlineAsyncError } from '@/shared/ui/inline-async-error'
+import { Skeleton } from '@/shared/ui/skeleton'
 
-const loading = ref(false)
+const profileStore = useUserProfileStore()
+const { profile, status, error } = storeToRefs(profileStore)
+const loading = computed(() => status.value === 'idle' || status.value === 'loading')
 const saving = ref(false)
 const { showNotice } = usePageNotice()
 
-const initial = reactive({
-  themePreference: 'system' as ThemePreference,
-})
-
-const state = reactive({
-  themePreference: 'system' as ThemePreference,
-})
+const initial = ref<ThemePreference | null>(null)
+const state = ref<ThemePreference | null>(null)
+const dirty = computed(() => state.value !== null && state.value !== initial.value)
 
 const themeOptions: Array<{ value: ThemePreference; label: string; desc: string }> = [
   { value: 'light', label: '浅色', desc: '暖色纸面' },
@@ -26,82 +27,103 @@ const themeOptions: Array<{ value: ThemePreference; label: string; desc: string 
 ]
 
 async function loadTheme() {
-  loading.value = true
   try {
-    const result = await withMinDelay(fetchUserProfile())
-    state.themePreference = result.themePreference || 'system'
-    initial.themePreference = state.themePreference
-    storeThemePreference(state.themePreference)
-    applyThemePreference(state.themePreference)
-  } catch (error) {
-    showNotice(getErrorMessage(error), 'error')
-  } finally {
-    loading.value = false
+    await profileStore.ensureLoaded()
+  } catch {
+    // The inline error surface owns the initial-load failure.
   }
 }
 
 function selectTheme(value: ThemePreference) {
-  state.themePreference = value
+  if (status.value !== 'success') return
+  state.value = value
   applyThemePreference(value)
 }
 
 async function saveTheme() {
-  if (state.themePreference === initial.themePreference) {
+  if (!state.value || state.value === initial.value) {
     showNotice('未检测到主题变更', 'warning')
     return
   }
 
   saving.value = true
   try {
-    const result = await withMinDelay(
-      updateUserProfile({
-        themePreference: state.themePreference,
-      }),
-    )
-    state.themePreference = result.themePreference || state.themePreference
-    initial.themePreference = state.themePreference
-    storeThemePreference(state.themePreference)
-    applyThemePreference(state.themePreference)
+    const result = await withMinDelay(profileStore.updateProfile({ themePreference: state.value }))
+    state.value = result.themePreference || state.value
+    initial.value = state.value
+    storeThemePreference(state.value)
+    applyThemePreference(state.value)
     showNotice('主题已保存', 'success')
   } catch (error) {
-    state.themePreference = initial.themePreference
-    applyThemePreference(initial.themePreference)
+    state.value = initial.value
+    if (initial.value) applyThemePreference(initial.value)
     showNotice(getErrorMessage(error), 'error')
   } finally {
     saving.value = false
   }
 }
 
+function syncFromStore() {
+  if (status.value === 'success' && profile.value && !dirty.value) {
+    const preference = profile.value.themePreference || 'system'
+    state.value = preference
+    initial.value = preference
+    storeThemePreference(preference)
+    applyThemePreference(preference)
+  } else if (!profile.value && status.value !== 'success') {
+    state.value = null
+    initial.value = null
+  }
+}
+
+function retry() {
+  void profileStore.ensureLoaded(true).catch(() => undefined)
+}
+
+watch([profile, status], syncFromStore, { immediate: true })
+
 onMounted(() => {
   void loadTheme()
 })
 
-defineExpose({ submit: saveTheme, saving, loading })
+defineExpose({ submit: saveTheme, saving, loading, dirty })
 </script>
 
 <template>
-  <div class="panel-content-wrapper">
-    <div class="theme-grid">
-      <button
-        v-for="option in themeOptions"
-        :key="option.value"
-        type="button"
-        :disabled="loading || saving"
-        :class="[
-          'theme-option ui-action ui-action-selectable',
-          { 'is-active': state.themePreference === option.value },
-        ]"
-        @click="selectTheme(option.value)"
-      >
-        <span class="theme-option__preview" :data-theme-preview="option.value">
-          <span />
-          <span />
-        </span>
-        <span class="theme-option__copy">
-          <span class="theme-option__label">{{ option.label }}</span>
-          <span class="theme-option__desc">{{ option.desc }}</span>
-        </span>
-      </button>
+  <div class="panel-content-wrapper" :aria-busy="loading">
+    <div v-if="loading" class="theme-loading" aria-busy="true">
+      <Skeleton class="theme-loading__card" />
+      <Skeleton class="theme-loading__card" />
+      <Skeleton class="theme-loading__card" />
+    </div>
+    <InlineAsyncError v-else-if="status === 'error'" :message="error" @retry="retry" />
+    <div v-else-if="status === 'success' && state">
+      <InlineAsyncError v-if="error" :message="error" @retry="retry" />
+      <div class="theme-grid">
+        <button
+          v-for="option in themeOptions"
+          :key="option.value"
+          type="button"
+          :disabled="loading || saving"
+          :class="[
+            'theme-option ui-action ui-action-selectable',
+            { 'is-active': state === option.value },
+          ]"
+          @click="selectTheme(option.value)"
+        >
+          <span class="theme-option__preview" :data-theme-preview="option.value">
+            <span />
+            <span />
+          </span>
+          <span class="theme-option__copy">
+            <span class="theme-option__label">{{ option.label }}</span>
+            <span class="theme-option__desc">{{ option.desc }}</span>
+          </span>
+        </button>
+      </div>
+    </div>
+    <div v-else class="theme-loading" aria-busy="true">
+      <Skeleton class="theme-loading__card" />
     </div>
   </div>
 </template>
@@ -117,6 +139,17 @@ defineExpose({ submit: saveTheme, saving, loading })
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-sm);
+}
+
+.theme-loading {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.theme-loading__card {
+  min-block-size: calc(var(--layout-settings-dialog-min-block-size) / 4);
+  border-radius: var(--radius-md);
 }
 
 .theme-option {

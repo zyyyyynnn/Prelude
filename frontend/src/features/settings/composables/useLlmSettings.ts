@@ -19,7 +19,8 @@ import {
 export type LlmTestState = 'idle' | 'testing' | 'success' | 'error'
 
 export function useLlmSettings() {
-  const loading = ref(false)
+  const loading = ref(true)
+  const error = ref<string | null>(null)
   const saving = ref(false)
   const testing = ref(false)
   const discovering = ref(false)
@@ -120,6 +121,7 @@ export function useLlmSettings() {
 
   async function loadSettings() {
     loading.value = true
+    error.value = null
     changeTrackingReady.value = false
     try {
       const [providers, config] = await Promise.all([fetchProviders(), fetchUserLlmConfig()])
@@ -137,13 +139,18 @@ export function useLlmSettings() {
       markCurrentDraftConfirmed()
       testStatus.value = { state: 'idle', message: '未测试' }
       changeTrackingReady.value = true
-      showNotice('配置已加载', 'success')
-    } catch (error) {
-      showNotice(getErrorMessage(error), 'error')
+    } catch (requestError) {
+      error.value = getErrorMessage(requestError)
       changeTrackingReady.value = true
     } finally {
       loading.value = false
     }
+  }
+
+  function clearSensitiveDraft() {
+    apiKeyInput.value = ''
+    testStatus.value = { state: 'idle', message: '未测试' }
+    clearDiscoveredModels()
   }
 
   async function saveSettings() {
@@ -348,6 +355,7 @@ export function useLlmSettings() {
     },
     view: {
       loading,
+      error,
       saving,
       testing,
       discovering,
@@ -368,6 +376,7 @@ export function useLlmSettings() {
       clearApiKey,
       testSettings,
       discoverModels,
+      clearSensitiveDraft,
     },
   }
 }

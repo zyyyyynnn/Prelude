@@ -67,6 +67,10 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true,
         },
+        '/media': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
       },
     },
   }

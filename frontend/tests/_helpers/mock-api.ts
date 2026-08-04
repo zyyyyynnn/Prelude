@@ -61,7 +61,12 @@ const LLM_CONFIG = {
   apiKeyMasked: 'sk-***masked',
 }
 
-const USER_PROFILE = { username: 'demo', email: 'demo@example.com' }
+const USER_PROFILE = {
+  username: 'demo',
+  email: 'demo@example.com',
+  avatarUrl: '',
+  themePreference: 'system',
+}
 
 const ANALYTICS_RADAR = { technical: 7, expression: 8, logic: 7, sessionCount: 3 }
 
@@ -156,7 +161,7 @@ export type MockOverrides = {
   resumes?: typeof RESUMES
   llmProviders?: typeof LLM_PROVIDERS
   llmConfig?: typeof LLM_CONFIG
-  userProfile?: typeof USER_PROFILE
+  userProfile?: Partial<typeof USER_PROFILE>
   sessions?: unknown[]
   analyticsRadar?: typeof ANALYTICS_RADAR
   analyticsTrend?: typeof ANALYTICS_TREND
@@ -215,6 +220,15 @@ export async function installMockApi(page: Page, overrides: MockOverrides = {}):
       }
       if (method === 'PUT' && pathname === '/user/profile') {
         return route.fulfill({ json: ok(overrides.userProfile ?? USER_PROFILE) })
+      }
+      if (method === 'POST' && pathname === '/user/avatar') {
+        return route.fulfill({
+          json: ok({
+            ...USER_PROFILE,
+            ...overrides.userProfile,
+            avatarUrl: '/media/avatars/42-playwright-avatar.png',
+          }),
+        })
       }
       if (method === 'GET' && pathname === '/interview/sessions') {
         return route.fulfill({ json: ok(overrides.sessions ?? []) })

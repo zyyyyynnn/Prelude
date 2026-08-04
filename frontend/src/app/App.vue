@@ -5,10 +5,10 @@ import { useAuthStore } from '@/features/auth'
 import { SessionSidebar, useInterviewSessionStore } from '@/features/interview'
 import {
   applyThemePreference,
-  fetchUserProfile,
   getStoredThemePreference,
   GlobalSettingsModal,
   resolveThemePreference,
+  useUserProfileStore,
   storeThemePreference,
 } from '@/features/settings'
 import { cleanupInputIntentListener, initInputIntentListener } from '@/shared/lib/input-intent'
@@ -17,6 +17,7 @@ import { Toaster } from '@/shared/ui/sonner'
 
 const authStore = useAuthStore()
 const sessionStore = useInterviewSessionStore()
+const profileStore = useUserProfileStore()
 const route = useRoute()
 const isSidebarCollapsed = ref(false)
 const showGlobalSettings = ref(false)
@@ -31,17 +32,21 @@ const showSidebar = computed(() => route.path !== '/login' && authStore.isLogged
 
 const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
-async function loadThemePreference() {
+function applyStoredTheme() {
   const stored = getStoredThemePreference()
   applyThemePreference(stored)
-  if (!authStore.isLoggedIn) return
+  return stored
+}
+
+async function synchronizeProfileTheme(scope: string) {
   try {
-    const profile = await fetchUserProfile()
+    const profile = await profileStore.ensureLoaded()
+    if (scope !== authStore.accountScope || !profile) return
     const preference = resolveThemePreference(profile.themePreference)
     storeThemePreference(preference)
     applyThemePreference(preference)
   } catch {
-    applyThemePreference(stored)
+    // The cached theme remains authoritative until the profile can be loaded.
   }
 }
 
@@ -53,13 +58,17 @@ function handleSystemThemeChange() {
 
 watch(
   () => authStore.accountScope,
-  (accountScope) => sessionStore.activateAccount(accountScope),
+  (accountScope) => {
+    sessionStore.activateAccount(accountScope)
+    profileStore.activateAccount(accountScope)
+    applyStoredTheme()
+    if (accountScope) void synchronizeProfileTheme(accountScope)
+  },
   { immediate: true, flush: 'sync' },
 )
 
 onMounted(() => {
   initInputIntentListener()
-  void loadThemePreference()
   mediaQuery.addEventListener('change', handleSystemThemeChange)
 })
 

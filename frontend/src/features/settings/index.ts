@@ -6,6 +6,7 @@ export {
   testUserLlmConfig,
 } from './api/llm'
 export { fetchUserProfile, updateUserProfile, uploadUserAvatar } from './api/user'
+export { useUserProfileStore } from './stores/userProfileStore'
 export { default as GlobalSettingsModal } from './components/GlobalSettingsModal.vue'
 export {
   applyThemePreference,

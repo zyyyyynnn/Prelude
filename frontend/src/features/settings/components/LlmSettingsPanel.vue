@@ -16,12 +16,15 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { llmSettingsSchema } from '../model/llmSchema'
+import { InlineAsyncError } from '@/shared/ui/inline-async-error'
+import { Skeleton } from '@/shared/ui/skeleton'
 
 const { draft, view, actions } = useLlmSettings()
 const { selectedProviderKey, selectedModel, baseUrlInput, apiKeyInput, maxTokens, thinkingDepth } =
   draft
 const {
   loading,
+  error,
   saving,
   testing,
   discovering,
@@ -34,7 +37,14 @@ const {
   endpointPlaceholder,
   endpointHint,
 } = view
-const { loadSettings, saveSettings, clearApiKey, testSettings, discoverModels } = actions
+const {
+  loadSettings,
+  saveSettings,
+  clearApiKey,
+  testSettings,
+  discoverModels,
+  clearSensitiveDraft: clearSensitiveSettings,
+} = actions
 
 const showApiKey = ref(false)
 const modelComboboxOpen = ref(false)
@@ -50,6 +60,13 @@ const apiKeyStatusLabel = computed(() =>
 const canShowModelCombobox = computed(
   () => isCustomProviderSelected.value && modelOptions.value.length > 0,
 )
+
+function clearSensitiveDraft() {
+  clearSensitiveSettings()
+  showApiKey.value = false
+  modelComboboxOpen.value = false
+  modelCandidateIndex.value = -1
+}
 
 function selectModelCandidate(model: string) {
   selectedModel.value = model
@@ -146,12 +163,25 @@ onMounted(() => {
   void loadSettings()
 })
 
-defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
+defineExpose({
+  submit: onSubmit,
+  test: testSettings,
+  saving,
+  testing,
+  loading,
+  clearSensitiveDraft,
+})
 </script>
 
 <template>
   <div class="panel-content-wrapper">
-    <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
+    <div v-if="loading" class="llm-loading" aria-busy="true">
+      <Skeleton />
+      <Skeleton />
+      <Skeleton class="llm-loading__large" />
+    </div>
+    <InlineAsyncError v-else-if="error" :message="error" @retry="loadSettings" />
+    <form v-else class="flex flex-col gap-6" @submit.prevent="onSubmit">
       <div class="field-grid">
         <FormField name="providerKey">
           <FormItem>
@@ -410,6 +440,20 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
   flex-direction: column;
   gap: var(--spacing-md);
   font-family: var(--font-serif);
+}
+
+.llm-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.llm-loading > * {
+  min-block-size: var(--ui-height-md);
+}
+
+.llm-loading__large {
+  min-block-size: calc(var(--layout-settings-dialog-min-block-size) / 2);
 }
 .form-section {
   margin-top: var(--spacing-md);

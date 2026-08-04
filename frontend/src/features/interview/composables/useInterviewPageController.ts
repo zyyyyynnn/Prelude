@@ -16,6 +16,7 @@ import {
   type ReportResumeImprovement,
 } from '@/features/report'
 import { getErrorMessage } from '@/shared/lib/errors'
+import type { AsyncStatus } from '@/shared/lib/async-status'
 import { withMinDelay } from '@/shared/lib/utils'
 import { useConfirmDialog } from '@/shared/ui/confirm-dialog/useConfirmDialog'
 import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
@@ -33,13 +34,25 @@ export function useInterviewPageController() {
   const { showNotice } = usePageNotice()
   const confirmDialog = useConfirmDialog()
   const sessionStore = useInterviewSessionStore()
-  const { sessions, activeSessionId, replay, reportMarkdown, sessionLoading } =
-    storeToRefs(sessionStore)
+  const {
+    sessions,
+    activeSessionId,
+    replay,
+    reportMarkdown,
+    sessionLoading,
+    sessionDetailStatus,
+    sessionDetailError,
+    sessionDetailRefreshing,
+  } = storeToRefs(sessionStore)
   const { refreshSessionList, loadSession, getNewAbortSignal, abortActiveStream } = sessionStore
 
   sessionStore.hydratePreferences()
 
   const loading = ref(false)
+  const dashboardStatus = ref<AsyncStatus>('idle')
+  const dashboardError = ref<string | null>(null)
+  const dashboardRefreshing = ref(false)
+  let dashboardAbortController: AbortController | null = null
   const creating = ref(false)
   const uploading = ref(false)
   const sending = ref(false)
@@ -166,13 +179,21 @@ export function useInterviewPageController() {
   }
 
   async function loadDashboard() {
+    dashboardAbortController?.abort()
+    const controller = new AbortController()
+    dashboardAbortController = controller
+    const hasExistingDashboardData = resumes.value.length > 0 || positions.value.length > 0
     loading.value = true
+    if (hasExistingDashboardData) dashboardRefreshing.value = true
+    else dashboardStatus.value = 'loading'
+    dashboardError.value = null
     try {
       const [resumeList, positionList] = await Promise.all([
-        fetchResumes(),
-        fetchPositions(),
+        fetchResumes(controller.signal),
+        fetchPositions(controller.signal),
         refreshSessionList(),
       ])
+      if (controller.signal.aborted || dashboardAbortController !== controller) return
       resumes.value = resumeList
       positions.value = positionList
       setResumeDefaults(resumeList)
@@ -185,11 +206,28 @@ export function useInterviewPageController() {
         await loadSession(activeSessionId.value, true)
         await restoreInterruptedStream()
       }
+      dashboardStatus.value = 'success'
     } catch (error) {
-      showNotice(getErrorMessage(error), 'error')
+      if (controller.signal.aborted || dashboardAbortController !== controller) return
+      dashboardError.value = getErrorMessage(error)
+      dashboardStatus.value = hasExistingDashboardData ? 'success' : 'error'
+      showNotice(dashboardError.value, 'error')
     } finally {
-      loading.value = false
+      if (dashboardAbortController === controller) {
+        dashboardAbortController = null
+        loading.value = false
+        dashboardRefreshing.value = false
+      }
     }
+  }
+
+  function retryDashboard() {
+    void loadDashboard()
+  }
+
+  function retryActiveSession() {
+    if (!activeSessionId.value) return
+    void loadSession(activeSessionId.value).catch(() => undefined)
   }
 
   async function restoreInterruptedStream() {
@@ -394,6 +432,7 @@ export function useInterviewPageController() {
 
   onMounted(() => void loadDashboard())
   onBeforeUnmount(() => {
+    dashboardAbortController?.abort()
     cleanupTextStream()
     abortActiveStream()
     closeVoiceSocket()
@@ -403,6 +442,13 @@ export function useInterviewPageController() {
   return {
     activeSessionId,
     sessionLoading,
+    replay,
+    dashboardStatus,
+    dashboardError,
+    dashboardRefreshing,
+    sessionDetailStatus,
+    sessionDetailError,
+    sessionDetailRefreshing,
     loading,
     resumes,
     positions,
@@ -440,6 +486,8 @@ export function useInterviewPageController() {
     handleExportPdf,
     handleAcceptImprovement,
     handleRejectImprovement,
+    retryDashboard,
+    retryActiveSession,
     handleAudioChunk,
     handleStartRecording,
     handleStopRecording,

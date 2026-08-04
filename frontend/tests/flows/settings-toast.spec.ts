@@ -10,7 +10,8 @@ test('closes a settings toast without dismissing the settings dialog', async ({ 
   await expect(settingsDialog).toBeVisible()
 
   await page.getByRole('button', { name: 'LLM 配置' }).click()
-  const toast = page.locator('[data-sonner-toast]').filter({ hasText: '配置已加载' })
+  await page.getByRole('button', { name: '测试连接' }).click()
+  const toast = page.locator('[data-sonner-toast]').filter({ hasText: '模型配置测试通过' })
   const closeButton = toast.getByRole('button', { name: '关闭系统提示' })
   await expect(closeButton).toBeVisible()
 
