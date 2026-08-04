@@ -18,6 +18,7 @@ const {
   replay,
   dashboardStatus,
   dashboardError,
+  dashboardRefreshing,
   sessionDetailStatus,
   sessionDetailError,
   sessionDetailRefreshing,
@@ -75,8 +76,13 @@ function exportReport() {
 <template>
   <div
     class="interview-workspace"
-    :aria-busy="dashboardStatus === 'loading' || sessionDetailStatus === 'loading'"
+    :aria-busy="
+      dashboardStatus === 'loading' || dashboardRefreshing || sessionDetailStatus === 'loading'
+    "
   >
+    <div v-if="dashboardRefreshing" class="workspace-dashboard-refreshing" aria-live="polite">
+      正在刷新工作区…
+    </div>
     <div v-if="dashboardStatus === 'loading' && !activeSessionId" class="workspace-loading-shell">
       <Skeleton class="workspace-loading-shell__title" />
       <Skeleton v-for="index in 4" :key="index" class="workspace-loading-shell__line" />
@@ -365,6 +371,11 @@ function exportReport() {
 }
 .workspace-refresh-error {
   margin-block: var(--spacing-sm);
+}
+.workspace-dashboard-refreshing {
+  margin: var(--spacing-sm) var(--spacing-lg) 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 .workspace-detail-loading {
   flex: 1;

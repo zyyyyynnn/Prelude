@@ -139,3 +139,186 @@ test('treats canonical decode failure as an image error instead of a false succe
   await expect(avatar.locator('img')).toHaveCount(0)
   await expect(avatar.locator('.user-avatar__initials')).toHaveText('D')
 })
+
+test('keeps the profile skeleton visible while the profile request is pending', async ({
+  page,
+}) => {
+  await installMockApi(page)
+  let releaseProfile!: () => void
+  const profileGate = new Promise<void>((resolve) => {
+    releaseProfile = resolve
+  })
+  let profileStartedResolve!: () => void
+  const profileStarted = new Promise<void>((resolve) => {
+    profileStartedResolve = resolve
+  })
+  await page.route('**/api/user/profile', async (route) => {
+    profileStartedResolve()
+    await profileGate
+    await route.fulfill({
+      json: {
+        code: 200,
+        message: 'ok',
+        data: { username: 'pending-profile', email: 'pending@example.com', avatarUrl: '' },
+      },
+    })
+  })
+  await page.goto('/interview')
+  await page.locator('.app-sidebar__btn--settings').click()
+  const dialog = page.getByRole('dialog', { name: '全局设置' })
+  await profileStarted
+  await expect(dialog.locator('.profile-loading')).toBeVisible()
+  await expect(dialog.locator('.user-avatar')).toHaveCount(0)
+  releaseProfile()
+  await expect(dialog.locator('#profile-username')).toHaveValue('pending-profile')
+})
+
+test('rejects a local preview decode failure before uploading the file', async ({ page }) => {
+  await installMockApi(page)
+  await page.addInitScript(() => {
+    HTMLImageElement.prototype.decode = () => Promise.reject(new Error('decode failed'))
+  })
+  let uploadRequests = 0
+  page.on('request', (request) => {
+    if (request.url().includes('/api/user/avatar')) uploadRequests += 1
+  })
+  await page.goto('/interview')
+  await page.locator('.app-sidebar__btn--settings').click()
+  const dialog = page.getByRole('dialog', { name: '全局设置' })
+  await dialog.locator('#profile-avatar-input').setInputFiles({
+    name: 'avatar.png',
+    mimeType: 'image/png',
+    buffer: ONE_PIXEL_PNG,
+  })
+  await expect(dialog.getByRole('alert')).toContainText('头像预览无法解码')
+  expect(uploadRequests).toBe(0)
+})
+
+test('revokes a pending local preview when the settings panel unmounts', async ({ page }) => {
+  await installMockApi(page)
+  await page.addInitScript(() => {
+    const revoked = [] as string[]
+    Object.defineProperty(window, '__preludeRevokedAvatarUrls', {
+      configurable: true,
+      value: revoked,
+    })
+    const revoke = URL.revokeObjectURL.bind(URL)
+    URL.revokeObjectURL = (url) => {
+      revoked.push(url)
+      revoke(url)
+    }
+  })
+  let releaseUpload!: () => void
+  const uploadGate = new Promise<void>((resolve) => {
+    releaseUpload = resolve
+  })
+  let uploadStartedResolve!: () => void
+  const uploadStarted = new Promise<void>((resolve) => {
+    uploadStartedResolve = resolve
+  })
+  await page.route('**/api/user/avatar', async (route) => {
+    uploadStartedResolve()
+    await uploadGate
+    await route.fulfill({
+      json: {
+        code: 200,
+        message: 'ok',
+        data: { username: 'demo', email: 'demo@example.com', avatarUrl: '/media/avatars/late.png' },
+      },
+    })
+  })
+  await page.goto('/interview')
+  await page.locator('.app-sidebar__btn--settings').click()
+  const dialog = page.getByRole('dialog', { name: '全局设置' })
+  await dialog.locator('#profile-avatar-input').setInputFiles({
+    name: 'avatar.png',
+    mimeType: 'image/png',
+    buffer: ONE_PIXEL_PNG,
+  })
+  await uploadStarted
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as Window & { __preludeRevokedAvatarUrls?: string[] }).__preludeRevokedAvatarUrls
+            ?.length ?? 0,
+      ),
+    )
+    .toBeGreaterThan(0)
+  expect(
+    await page.evaluate(
+      () =>
+        (window as Window & { __preludeRevokedAvatarUrls?: string[] })
+          .__preludeRevokedAvatarUrls?.[0],
+    ),
+  ).toMatch(/^blob:/)
+  releaseUpload()
+})
+
+test('keeps the latest avatar selection when an earlier upload responds late', async ({ page }) => {
+  await installMockApi(page)
+  let releaseFirstUpload!: () => void
+  const firstUploadGate = new Promise<void>((resolve) => {
+    releaseFirstUpload = resolve
+  })
+  let uploadCount = 0
+  await page.route('**/api/user/avatar', async (route) => {
+    uploadCount += 1
+    if (uploadCount === 1) {
+      await firstUploadGate
+      try {
+        await route.fulfill({
+          json: {
+            code: 200,
+            message: 'ok',
+            data: {
+              username: 'demo',
+              email: 'demo@example.com',
+              avatarUrl: '/media/avatars/avatar-one.png',
+            },
+          },
+        })
+      } catch {
+        // The second upload aborts this request by design.
+      }
+      return
+    }
+    await route.fulfill({
+      json: {
+        code: 200,
+        message: 'ok',
+        data: {
+          username: 'demo',
+          email: 'demo@example.com',
+          avatarUrl: '/media/avatars/avatar-two.png',
+        },
+      },
+    })
+  })
+  await page.route('**/media/avatars/avatar-two.png', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG }),
+  )
+  await page.goto('/interview')
+  await page.locator('.app-sidebar__btn--settings').click()
+  const dialog = page.getByRole('dialog', { name: '全局设置' })
+  const avatarInput = dialog.locator('#profile-avatar-input')
+  await avatarInput.setInputFiles({
+    name: 'first.png',
+    mimeType: 'image/png',
+    buffer: ONE_PIXEL_PNG,
+  })
+  await expect.poll(() => uploadCount).toBe(1)
+  await avatarInput.setInputFiles({
+    name: 'second.png',
+    mimeType: 'image/png',
+    buffer: ONE_PIXEL_PNG,
+  })
+  await expect.poll(() => uploadCount).toBe(2)
+  const avatar = dialog.locator('.user-avatar')
+  await expect(avatar.locator('img')).toHaveAttribute('src', '/media/avatars/avatar-two.png')
+  await expect(avatar).toHaveAttribute('data-avatar-state', 'image-loaded')
+  expect(await dialog.getByRole('alert').count()).toBe(0)
+  releaseFirstUpload()
+})

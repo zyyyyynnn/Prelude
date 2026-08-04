@@ -61,3 +61,31 @@ test('closes a settings toast without dismissing the settings dialog', async ({ 
   await expect(toast).toHaveCount(0)
   await expect(settingsDialog).toBeVisible()
 })
+
+test('keeps the LLM settings request cached while switching settings tabs', async ({ page }) => {
+  await installMockApi(page)
+  let providerRequests = 0
+  let configRequests = 0
+  page.on('request', (request) => {
+    if (request.method() !== 'GET') return
+    if (request.url().endsWith('/api/llm/providers')) providerRequests += 1
+    if (request.url().endsWith('/api/user/llm-config')) configRequests += 1
+  })
+  await page.goto('/interview')
+  await page.locator('.app-sidebar__btn--settings').click()
+  const settingsDialog = page.getByRole('dialog', { name: '全局设置' })
+
+  await expect.poll(() => providerRequests).toBe(1)
+  await expect.poll(() => configRequests).toBe(1)
+  await settingsDialog.getByRole('button', { name: 'LLM 配置' }).click()
+  await expect(settingsDialog.getByRole('button', { name: '测试连接' })).toBeEnabled()
+  await expect.poll(() => providerRequests).toBe(2)
+  await expect.poll(() => configRequests).toBe(2)
+
+  await settingsDialog.getByRole('button', { name: '账号资料' }).click()
+  await expect(settingsDialog.locator('#profile-username')).toHaveValue('demo')
+  await settingsDialog.getByRole('button', { name: 'LLM 配置' }).click()
+  await expect(settingsDialog.getByRole('button', { name: '测试连接' })).toBeEnabled()
+  expect(providerRequests).toBe(2)
+  expect(configRequests).toBe(2)
+})

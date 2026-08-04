@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   Dialog,
   DialogContent,
@@ -20,13 +20,32 @@ const activeTab = defineModel<'profile' | 'theme' | 'llm'>('activeTab', { defaul
 
 const router = useRouter()
 const authStore = useAuthStore()
-const profilePanel = ref<InstanceType<typeof UserProfilePanel> | null>(null)
-const themePanel = ref<InstanceType<typeof ThemeSettingsPanel> | null>(null)
-const llmPanel = ref<InstanceType<typeof LlmSettingsPanel> | null>(null)
+type SettingsPanelInstance = {
+  submit?: () => unknown
+  test?: () => unknown
+  saving?: boolean
+  loading?: boolean
+  testing?: boolean
+  clearSensitiveDraft?: () => void
+}
+
+const activePanel = ref<SettingsPanelInstance | null>(null)
+const activePanelComponent = computed(() => {
+  if (activeTab.value === 'profile') return UserProfilePanel
+  if (activeTab.value === 'theme') return ThemeSettingsPanel
+  return LlmSettingsPanel
+})
+const activePanelSaving = computed(() => Boolean(activePanel.value?.saving))
+const activePanelLoading = computed(() => Boolean(activePanel.value?.loading))
+const activePanelTesting = computed(() => Boolean(activePanel.value?.testing))
 
 watch(visible, (isVisible) => {
-  if (!isVisible) {
-    llmPanel.value?.clearSensitiveDraft()
+  if (!isVisible && activeTab.value === 'llm') activePanel.value?.clearSensitiveDraft?.()
+})
+
+watch(activeTab, (nextTab, previousTab) => {
+  if (previousTab === 'llm' && nextTab !== 'llm') {
+    activePanel.value?.clearSensitiveDraft?.()
   }
 })
 
@@ -155,18 +174,18 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
                   variant="secondary"
                   size="sm"
                   class="!font-serif"
-                  :disabled="llmPanel?.saving || llmPanel?.loading || llmPanel?.testing"
-                  :loading="llmPanel?.testing"
-                  @click="llmPanel?.test()"
+                  :disabled="activePanelSaving || activePanelLoading || activePanelTesting"
+                  :loading="activePanelTesting"
+                  @click="activePanel?.test?.()"
                 >
                   测试连接
                 </Button>
                 <Button
                   size="sm"
                   class="!font-serif"
-                  :disabled="llmPanel?.saving"
-                  :loading="llmPanel?.saving"
-                  @click="llmPanel?.submit()"
+                  :disabled="activePanelSaving"
+                  :loading="activePanelSaving"
+                  @click="activePanel?.submit?.()"
                 >
                   保存设置
                 </Button>
@@ -175,9 +194,9 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
                 <Button
                   size="sm"
                   class="!font-serif"
-                  :disabled="profilePanel?.saving || profilePanel?.loading"
-                  :loading="profilePanel?.saving"
-                  @click="profilePanel?.submit()"
+                  :disabled="activePanelSaving || activePanelLoading"
+                  :loading="activePanelSaving"
+                  @click="activePanel?.submit?.()"
                 >
                   保存设置
                 </Button>
@@ -186,9 +205,9 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
                 <Button
                   size="sm"
                   class="!font-serif"
-                  :disabled="themePanel?.saving || themePanel?.loading"
-                  :loading="themePanel?.saving"
-                  @click="themePanel?.submit()"
+                  :disabled="activePanelSaving || activePanelLoading"
+                  :loading="activePanelSaving"
+                  @click="activePanel?.submit?.()"
                 >
                   保存主题
                 </Button>
@@ -196,9 +215,9 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
             </div>
           </header>
           <div class="settings-content scrollable">
-            <UserProfilePanel v-if="activeTab === 'profile'" ref="profilePanel" />
-            <ThemeSettingsPanel v-else-if="activeTab === 'theme'" ref="themePanel" />
-            <LlmSettingsPanel v-else-if="activeTab === 'llm'" ref="llmPanel" />
+            <KeepAlive>
+              <component :is="activePanelComponent" ref="activePanel" />
+            </KeepAlive>
           </div>
         </main>
       </div>

@@ -32,7 +32,7 @@ export function useAvatarUploadPreview() {
         try {
           await image.decode()
         } catch {
-          // The load event is sufficient for browsers with cached decode quirks.
+          throw new Error('头像预览无法解码')
         }
       }
     } catch (error) {

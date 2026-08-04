@@ -160,6 +160,9 @@ function navigateTo(path: string) {
           :aria-hidden="collapsed"
           :aria-busy="sessionListStatus === 'loading' || sessionListRefreshing"
         >
+          <p v-if="sessionListRefreshing" class="session-list-refreshing" aria-live="polite">
+            正在刷新会话…
+          </p>
           <InlineAsyncError
             v-if="sessionListError"
             class="session-list-error"
@@ -679,6 +682,11 @@ function navigateTo(path: string) {
   flex-direction: column;
   gap: var(--spacing-sm);
   padding: 0 var(--spacing-sm);
+}
+.session-list-refreshing {
+  margin: 0 var(--spacing-sm) var(--spacing-xs);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 .session-list-error {
   margin: 0 var(--spacing-sm) var(--spacing-sm);
