@@ -34,7 +34,8 @@
 - `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。
 - `--color-brand`、`--color-brand-light`：品牌主色及弱强调。
 - `--color-border`、`--color-border-warm`：弱边界。
-- `--color-ring`、`--color-focus`：焦点与选中环。
+- `--color-ring`、`--color-ring-deep`：轻轮廓与选中环。
+- `--color-focus-field`、`--color-focus-action`：字段与动作焦点色。
 - `--color-error`：破坏性和错误状态。
 - `--mask-overlay`：Dialog、Confirm 等遮罩。
 - `--chart-technical`、`--chart-expression`、`--chart-logic`：数据看板三维图表色。
@@ -54,7 +55,7 @@
 - `--destructive` -> `--color-error`
 - `--border` -> `--color-border`
 - `--input` -> `--color-border-warm`
-- `--ring` -> `--color-focus`
+- `--ring` -> `--color-focus-action`
 
 ### 2.3 间距
 
@@ -392,6 +393,6 @@ Tooltip 使用同一 primitive，采用 `bg-surface` + `text-popover-foreground`
 - 分散 fixed duration / easing
 - `dark:bg-*`
 - 内联硬编码颜色、背景、边框、阴影
-- 业务组件手写 focus shadow，或在 scoped CSS 的 `:focus-visible` 使用非 `--shadow-icon-action-focus` 阴影
+- 普通主题下外部 focus ring、ring offset、focus box-shadow 与 focus transform，或无可见替代的 `outline: none`
 
 token 定义文件中的基础色值允许集中存在，但必须人工确认不泄漏到业务组件。
