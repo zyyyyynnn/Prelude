@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import type { ToasterProps } from 'vue-sonner'
 import { reactiveOmit } from '@vueuse/core'
 import {
@@ -30,7 +30,7 @@ const delegatedProps = reactiveOmit(props, 'toastOptions', 'theme', 'closeButton
         actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
         cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
         closeButton:
-          '!size-6 !rounded-md !border-0 !bg-surface !text-muted-foreground !shadow-none hover:!bg-surface-hover hover:!text-foreground focus-visible:!outline-none focus-visible:!shadow-[var(--shadow-icon-action-focus)]',
+          'ui-action ui-action-icon !size-6 !rounded-md !border !bg-surface !text-muted-foreground !shadow-none hover:!bg-surface-hover hover:!text-foreground',
       },
     }"
     v-bind="delegatedProps"
@@ -64,10 +64,21 @@ const delegatedProps = reactiveOmit(props, 'toastOptions', 'theme', 'closeButton
 }
 
 .toaster [data-sonner-toast] [data-close-button] {
+  border-color: transparent !important;
   --toast-close-button-left: auto;
   --toast-close-button-right: var(--spacing-sm);
   --toast-close-button-top: 50%;
   --toast-close-button-bottom: auto;
   --toast-close-button-transform: translateY(-50%);
+}
+
+html:not([data-input-intent]) .toaster [data-sonner-toast] [data-close-button]:focus-visible,
+html[data-input-intent='keyboard'] .toaster [data-sonner-toast] [data-close-button]:focus {
+  border-color: var(--color-focus-action) !important;
+  background-color: var(--color-surface-hover) !important;
+}
+
+html[data-input-intent='pointer'] .toaster [data-sonner-toast] [data-close-button]:focus {
+  border-color: transparent !important;
 }
 </style>

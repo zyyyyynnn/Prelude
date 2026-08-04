@@ -136,7 +136,7 @@ onMounted(() => {
                     <button
                       type="button"
                       :aria-label="showPassword ? '隐藏密码' : '显示密码'"
-                      class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                      class="ui-action ui-action-icon absolute right-0 top-0 flex h-full items-center justify-center border border-transparent px-3 py-2 text-muted-foreground hover:bg-transparent"
                       @click="showPassword = !showPassword"
                     >
                       <Eye v-if="showPassword" class="h-4 w-4" />

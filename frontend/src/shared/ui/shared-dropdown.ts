@@ -19,7 +19,7 @@ export const dropdownItemVariants = cva(
 )
 
 export const dropdownTriggerVariants = cva(
-  'flex w-full items-center justify-between rounded-md border !border-input bg-surface px-3 py-1.5 text-sm font-serif ring-offset-background data-[placeholder]:text-muted-foreground !outline-none focus-within:!outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate text-start',
+  'ui-field-boundary flex w-full items-center justify-between rounded-md border border-input bg-surface px-3 py-1.5 text-sm font-serif data-[placeholder]:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate text-start',
   {
     variants: {
       size: {

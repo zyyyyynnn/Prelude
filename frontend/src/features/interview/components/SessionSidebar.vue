@@ -97,7 +97,11 @@ function navigateTo(path: string) {
         <BrandMetaballs class="app-sidebar__logo" />
         <span class="sidebar-label app-sidebar__title">Prelude</span>
       </div>
-      <button class="app-sidebar__toggle" @click="toggleCollapse" aria-label="Toggle Sidebar">
+      <button
+        class="app-sidebar__toggle ui-action ui-action-icon"
+        @click="toggleCollapse"
+        aria-label="Toggle Sidebar"
+      >
         <svg
           viewBox="0 0 24 24"
           width="20"
@@ -118,7 +122,7 @@ function navigateTo(path: string) {
     <div class="app-sidebar__main">
       <div class="app-sidebar__actions">
         <button
-          class="app-sidebar__btn app-sidebar__btn--primary"
+          class="app-sidebar__btn app-sidebar__btn--primary ui-action ui-action-primary"
           @click="handleStartNew"
           aria-label="开始新面试"
         >
@@ -156,7 +160,7 @@ function navigateTo(path: string) {
               >
                 <button
                   :class="[
-                    'session-item-btn',
+                    'session-item-btn ui-action ui-action-nav',
                     { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
                   ]"
                   :aria-label="`打开会话 ${session.targetPosition || '未命名岗位'}`"
@@ -178,7 +182,7 @@ function navigateTo(path: string) {
                 <!-- Quick actions on hover -->
                 <div class="session-item-actions">
                   <button
-                    class="action-btn"
+                    class="action-btn ui-action ui-action-icon"
                     :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
                     @click.stop="togglePin(session.sessionId)"
                   >
@@ -208,7 +212,7 @@ function navigateTo(path: string) {
                     </svg>
                   </button>
                   <button
-                    class="action-btn delete-btn"
+                    class="action-btn delete-btn ui-action ui-action-danger"
                     aria-label="删除会话"
                     @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
                   >
@@ -252,7 +256,7 @@ function navigateTo(path: string) {
               >
                 <button
                   :class="[
-                    'session-item-btn',
+                    'session-item-btn ui-action ui-action-nav',
                     { 'is-active': activeSessionId === session.sessionId && interviewMenuActive },
                   ]"
                   :aria-label="`打开已结束会话 ${session.targetPosition || '未命名岗位'}`"
@@ -274,7 +278,7 @@ function navigateTo(path: string) {
                 <!-- Quick actions on hover -->
                 <div class="session-item-actions">
                   <button
-                    class="action-btn"
+                    class="action-btn ui-action ui-action-icon"
                     :aria-label="isSessionPinned(session.sessionId) ? '取消置顶' : '置顶会话'"
                     @click.stop="togglePin(session.sessionId)"
                   >
@@ -304,7 +308,7 @@ function navigateTo(path: string) {
                     </svg>
                   </button>
                   <button
-                    class="action-btn delete-btn"
+                    class="action-btn delete-btn ui-action ui-action-danger"
                     aria-label="删除会话"
                     @click.stop="confirmDelete(session.sessionId, session.targetPosition)"
                   >
@@ -340,7 +344,7 @@ function navigateTo(path: string) {
         >
           <button
             :class="[
-              'app-sidebar__btn app-sidebar__btn--icon',
+              'app-sidebar__btn app-sidebar__btn--icon ui-action ui-action-nav',
               { 'is-active': interviewMenuActive },
             ]"
             @click="navigateTo('/interview')"
@@ -372,7 +376,10 @@ function navigateTo(path: string) {
 
       <div class="app-sidebar__tools">
         <button
-          :class="['app-sidebar__btn app-sidebar__btn--tool', { 'is-active': resumesMenuActive }]"
+          :class="[
+            'app-sidebar__btn app-sidebar__btn--tool ui-action ui-action-nav',
+            { 'is-active': resumesMenuActive },
+          ]"
           @click="navigateTo('/resumes')"
           aria-label="简历管理"
         >
@@ -399,7 +406,10 @@ function navigateTo(path: string) {
           <span class="sidebar-label">简历管理</span>
         </button>
         <button
-          :class="['app-sidebar__btn app-sidebar__btn--tool', { 'is-active': analyticsMenuActive }]"
+          :class="[
+            'app-sidebar__btn app-sidebar__btn--tool ui-action ui-action-nav',
+            { 'is-active': analyticsMenuActive },
+          ]"
           @click="navigateTo('/analytics')"
           aria-label="数据看板"
         >
@@ -422,7 +432,7 @@ function navigateTo(path: string) {
     <div class="app-sidebar__footer">
       <Separator class="mx-2 my-0 bg-border/50" />
       <button
-        class="app-sidebar__btn app-sidebar__btn--settings"
+        class="app-sidebar__btn app-sidebar__btn--settings ui-action ui-action-nav"
         @click="emit('open-global-settings')"
         aria-label="设置"
       >
@@ -543,15 +553,12 @@ function navigateTo(path: string) {
   justify-content: center;
   width: var(--ui-height-md);
   height: var(--ui-height-md);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 .app-sidebar__toggle:hover {
   background-color: var(--color-surface-hover);
-}
-.app-sidebar__toggle:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-icon-action-focus);
 }
 .app-sidebar__main {
   flex: 1;
@@ -583,6 +590,7 @@ function navigateTo(path: string) {
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
+  border: 1px solid transparent;
 }
 .app-sidebar__btn--primary {
   font-family: var(--font-serif);
@@ -603,10 +611,6 @@ function navigateTo(path: string) {
   background-color: var(--color-surface-muted);
   color: var(--color-brand);
   font-weight: 600;
-}
-.app-sidebar__btn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-icon-action-focus);
 }
 .app-sidebar__workspace-area {
   flex: 1;
@@ -689,6 +693,7 @@ function navigateTo(path: string) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  border: 1px solid transparent;
 }
 .session-item-btn:hover {
   background-color: var(--color-surface-hover);
@@ -698,10 +703,6 @@ function navigateTo(path: string) {
   background-color: var(--color-surface-muted);
   color: var(--color-brand);
   font-weight: 500;
-}
-.session-item-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-icon-action-focus);
 }
 .session-group__empty {
   font-size: var(--font-size-xs);
@@ -721,7 +722,8 @@ function navigateTo(path: string) {
 .session-item-wrapper {
   position: relative;
 }
-.session-item-wrapper:hover .session-item-actions {
+.session-item-wrapper:hover .session-item-actions,
+.session-item-wrapper:focus-within .session-item-actions {
   opacity: 1;
 }
 .session-item-actions {
@@ -750,7 +752,8 @@ function navigateTo(path: string) {
     var(--color-surface-muted) 100%
   );
 }
-.session-item-wrapper:hover .session-item-actions {
+.session-item-wrapper:hover .session-item-actions,
+.session-item-wrapper:focus-within .session-item-actions {
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -758,7 +761,8 @@ function navigateTo(path: string) {
     var(--color-surface-hover) 100%
   );
 }
-.session-item-wrapper:hover:has(.session-item-btn.is-active) .session-item-actions {
+.session-item-wrapper:hover:has(.session-item-btn.is-active) .session-item-actions,
+.session-item-wrapper:focus-within:has(.session-item-btn.is-active) .session-item-actions {
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -766,7 +770,8 @@ function navigateTo(path: string) {
     var(--color-surface-hover) 100%
   );
 }
-.session-item-wrapper:hover .pin-indicator {
+.session-item-wrapper:hover .pin-indicator,
+.session-item-wrapper:focus-within .pin-indicator {
   display: none;
 }
 .pin-indicator {
@@ -789,13 +794,10 @@ function navigateTo(path: string) {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid transparent;
   transition:
     background-color var(--motion-duration-base) var(--motion-ease-standard),
     color var(--motion-duration-base) var(--motion-ease-standard);
-}
-.action-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-icon-action-focus);
 }
 .action-btn:hover {
   color: var(--color-text-primary);

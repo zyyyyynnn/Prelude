@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
@@ -49,7 +49,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         <slot />
 
         <DialogClose
-          class="absolute top-3 right-3 p-0.5 transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)] rounded-md hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          class="ui-action ui-action-icon absolute top-3 right-3 rounded-md border border-transparent p-0.5 transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)] hover:bg-secondary"
         >
           <X class="w-4 h-4" />
           <span class="sr-only">Close</span>

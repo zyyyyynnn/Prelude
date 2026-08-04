@@ -11,6 +11,7 @@ import {
   resolveThemePreference,
   storeThemePreference,
 } from '@/features/settings'
+import { cleanupInputIntentListener, initInputIntentListener } from '@/shared/lib/input-intent'
 import GlobalConfirmDialog from '@/shared/ui/confirm-dialog/GlobalConfirmDialog.vue'
 import { Toaster } from '@/shared/ui/sonner'
 
@@ -57,11 +58,13 @@ watch(
 )
 
 onMounted(() => {
+  initInputIntentListener()
   void loadThemePreference()
   mediaQuery.addEventListener('change', handleSystemThemeChange)
 })
 
 onBeforeUnmount(() => {
+  cleanupInputIntentListener()
   mediaQuery.removeEventListener('change', handleSystemThemeChange)
 })
 </script>

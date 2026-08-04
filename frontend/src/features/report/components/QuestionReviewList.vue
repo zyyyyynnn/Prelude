@@ -28,13 +28,7 @@ const labels: Record<string, string> = {
 </script>
 
 <template>
-  <section
-    class="report-section question-review-carousel"
-    aria-labelledby="question-review-title"
-    tabindex="0"
-    @keydown.left.prevent="showReview(activeIndex - 1)"
-    @keydown.right.prevent="showReview(activeIndex + 1)"
-  >
+  <section class="report-section question-review-carousel" aria-labelledby="question-review-title">
     <header class="report-section__header">
       <div>
         <p>回答证据</p>
@@ -122,10 +116,6 @@ const labels: Record<string, string> = {
 }
 .report-section__header {
   margin-bottom: var(--spacing-lg);
-}
-.question-review-carousel:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-icon-action-focus);
 }
 .question-review-carousel__nav {
   display: flex;

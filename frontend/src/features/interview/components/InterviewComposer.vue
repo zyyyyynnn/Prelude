@@ -600,6 +600,9 @@ const { setCanvasRef, displayStatus, isRecording, startRecording, stopRecording 
   gap: var(--spacing-sm);
   overflow: hidden;
 }
+.interview-composer__inner:has(.composer-textarea:focus) {
+  border-color: var(--color-focus-field);
+}
 .interview-composer.is-disabled .interview-composer__inner {
   opacity: 0.65;
   pointer-events: none;
