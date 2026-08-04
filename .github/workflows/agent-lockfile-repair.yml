@@ -1,5 +1,6 @@
 name: Agent Lockfile Repair
 
+# One-shot, self-deleting lockfile repair. No product tests run here.
 on:
   push:
     branches:
