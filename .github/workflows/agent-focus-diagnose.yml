@@ -29,6 +29,18 @@ jobs:
         run: |
           sed -i 's/for root in \[ROOT \/ "frontend\/src", ROOT \/ "frontend\/scripts"\]:/for root in [ROOT \/ "frontend\/src"]:/' .github/agent-temp/focus_rebuild.py
           python .github/agent-temp/focus_rebuild.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('frontend/tokens/ui-tokens.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          legacy = data['categories']['legacy-utility']
+          for token in ['app-shell-menu-width', 'app-shell-menu-frame-extra', 'app-shell-menu-frame-offset']:
+              if token in legacy['tokens']:
+                  legacy['tokens'].remove(token)
+          legacy['description'] = legacy['description'].replace('、--app-shell-*（app-shell 布局辅助）', '')
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
@@ -65,5 +77,4 @@ jobs:
         run: npm run verify:production
       - name: Fail if any diagnostic step failed
         shell: bash
-        run: |
-          echo 'Inspect the individual step conclusions above.'
+        run: echo 'Inspect the individual step conclusions above.'
