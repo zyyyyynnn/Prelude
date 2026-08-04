@@ -38,6 +38,11 @@ write(session_test_path, session_test)
 
 focus_test_path = 'frontend/tests/flows/focus-system.spec.ts'
 focus_test = read(focus_test_path)
+focus_test = focus_test.replace(
+    "page.getByRole('button', { name: '实验室 Select' })",
+    "page.getByRole('combobox', { name: '实验室 Select' })",
+    1,
+)
 anchor = "async function setTheme(page: Page, theme: 'light' | 'dark') {"
 helper = """async function resolveTokenColor(page: Page, token: string) {
   return page.evaluate((name) => {
