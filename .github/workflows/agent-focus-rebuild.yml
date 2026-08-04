@@ -45,6 +45,7 @@ jobs:
           legacy['description'] = legacy['description'].replace('、--app-shell-*（app-shell 布局辅助）', '')
           path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
+          python .github/agent-temp/focus_flow_fixes.py
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -77,7 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          allowed='^(DESIGN.md|docs/quality/ui-quality-system.md|frontend/src/app/App.vue|frontend/src/shared/lib/input-intent.ts|frontend/src/shared/ui/(button/index.ts|input/Input.vue|textarea/Textarea.vue|shared-dropdown.ts|dropdown-menu/DropdownMenuTrigger.vue|dialog/DialogContent.vue|dialog/DialogScrollContent.vue|sonner/Sonner.vue|segmented-control/SegmentedControl.vue|styles/index.css)|frontend/src/features/(auth/pages/LoginPage.vue|interview/components/(SessionSidebar.vue|ComposerText.vue|InterviewComposer.vue)|settings/components/(GlobalSettingsModal.vue|ThemeSettingsPanel.vue|UserProfilePanel.vue|LlmSettingsPanel.vue)|report/components/QuestionReviewList.vue)|frontend/src/devtools/component-lab/ComponentLabView.vue|frontend/scripts/verify-ui-guardrails.cjs|frontend/tests/flows/(focus-system.spec.ts|settings-toast.spec.ts)|frontend/tokens/ui-tokens.json)$'
+          allowed='^(DESIGN.md|docs/quality/ui-quality-system.md|frontend/src/app/App.vue|frontend/src/shared/lib/input-intent.ts|frontend/src/shared/ui/(badge/index.ts|button/index.ts|input/Input.vue|textarea/Textarea.vue|shared-dropdown.ts|dropdown-menu/DropdownMenuTrigger.vue|dialog/DialogContent.vue|dialog/DialogScrollContent.vue|sonner/Sonner.vue|segmented-control/SegmentedControl.vue|styles/index.css)|frontend/src/features/(auth/pages/LoginPage.vue|interview/components/(SessionSidebar.vue|ComposerText.vue|InterviewComposer.vue)|settings/components/(GlobalSettingsModal.vue|ThemeSettingsPanel.vue|UserProfilePanel.vue|LlmSettingsPanel.vue)|report/components/QuestionReviewList.vue)|frontend/src/devtools/component-lab/ComponentLabView.vue|frontend/scripts/verify-ui-guardrails.cjs|frontend/tests/flows/(focus-system.spec.ts|interview-session.spec.ts|settings-toast.spec.ts)|frontend/tokens/ui-tokens.json)$'
           unexpected=$(git status --short | awk '{print $2}' | grep -Ev "$allowed" || true)
           if [ -n "$unexpected" ]; then
             echo "Unexpected changed files:"
@@ -97,6 +98,7 @@ jobs:
             docs/quality/ui-quality-system.md \
             frontend/src/app/App.vue \
             frontend/src/shared/lib/input-intent.ts \
+            frontend/src/shared/ui/badge/index.ts \
             frontend/src/shared/ui/button/index.ts \
             frontend/src/shared/ui/input/Input.vue \
             frontend/src/shared/ui/textarea/Textarea.vue \
@@ -119,6 +121,7 @@ jobs:
             frontend/src/devtools/component-lab/ComponentLabView.vue \
             frontend/scripts/verify-ui-guardrails.cjs \
             frontend/tests/flows/focus-system.spec.ts \
+            frontend/tests/flows/interview-session.spec.ts \
             frontend/tests/flows/settings-toast.spec.ts \
             frontend/tokens/ui-tokens.json
           if git diff --cached --quiet; then
