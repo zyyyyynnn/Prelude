@@ -30,7 +30,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Apply deterministic rebuild
-        run: python .github/agent-temp/focus_rebuild.py
+        run: |
+          sed -i 's/for root in \[ROOT \/ "frontend\/src", ROOT \/ "frontend\/scripts"\]:/for root in [ROOT \/ "frontend\/src"]:/' .github/agent-temp/focus_rebuild.py
+          python .github/agent-temp/focus_rebuild.py
 
       - name: Install frontend dependencies
         working-directory: frontend
