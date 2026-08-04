@@ -10,6 +10,7 @@ import { withMinDelay } from '@/shared/lib/utils'
 import type { LlmProviderOption } from '../model/types'
 import { usePageNotice } from '@/shared/ui/sonner/usePageNotice'
 import { getErrorMessage } from '@/shared/lib/errors'
+import type { AsyncStatus } from '@/shared/lib/async-status'
 import {
   getCustomProviderMeta,
   isCustomProvider,
@@ -19,7 +20,8 @@ import {
 export type LlmTestState = 'idle' | 'testing' | 'success' | 'error'
 
 export function useLlmSettings() {
-  const loading = ref(true)
+  const status = ref<AsyncStatus>('idle')
+  const loading = computed(() => status.value === 'idle' || status.value === 'loading')
   const error = ref<string | null>(null)
   const saving = ref(false)
   const testing = ref(false)
@@ -120,7 +122,7 @@ export function useLlmSettings() {
   }
 
   async function loadSettings() {
-    loading.value = true
+    status.value = 'loading'
     error.value = null
     changeTrackingReady.value = false
     try {
@@ -139,11 +141,11 @@ export function useLlmSettings() {
       markCurrentDraftConfirmed()
       testStatus.value = { state: 'idle', message: '未测试' }
       changeTrackingReady.value = true
+      status.value = 'success'
     } catch (requestError) {
       error.value = getErrorMessage(requestError)
       changeTrackingReady.value = true
-    } finally {
-      loading.value = false
+      status.value = 'error'
     }
   }
 
@@ -355,6 +357,7 @@ export function useLlmSettings() {
     },
     view: {
       loading,
+      status,
       error,
       saving,
       testing,

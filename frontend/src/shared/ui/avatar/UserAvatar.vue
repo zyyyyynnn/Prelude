@@ -65,22 +65,7 @@ async function preloadCanonical(src: string, previewSrc: string | null, token: n
 
   const image = new Image()
   activeImage = image
-  image.onload = async () => {
-    if (typeof image.decode === 'function') {
-      try {
-        await image.decode()
-      } catch {
-        // The load event already proves the resource is usable in browsers
-        // that do not decode() successfully for cached images.
-      }
-    }
-    if (token !== generation || activeImage !== image) return
-    loadedCanonicalSrc.value = src
-    visibleSrc.value = src
-    state.value = 'image-loaded'
-    emit('image-loaded', src)
-  }
-  image.onerror = () => {
+  const handleImageFailure = () => {
     if (token !== generation || activeImage !== image) return
     loadedCanonicalSrc.value = null
     if (previewSrc) {
@@ -91,6 +76,22 @@ async function preloadCanonical(src: string, previewSrc: string | null, token: n
     }
     emit('image-error', src)
   }
+  image.onload = async () => {
+    if (typeof image.decode === 'function') {
+      try {
+        await image.decode()
+      } catch {
+        handleImageFailure()
+        return
+      }
+    }
+    if (token !== generation || activeImage !== image) return
+    loadedCanonicalSrc.value = src
+    visibleSrc.value = src
+    state.value = 'image-loaded'
+    emit('image-loaded', src)
+  }
+  image.onerror = handleImageFailure
   state.value = 'image-loading'
   visibleSrc.value = previewSrc
   image.src = src

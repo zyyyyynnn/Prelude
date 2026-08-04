@@ -39,7 +39,6 @@ export function useInterviewPageController() {
     activeSessionId,
     replay,
     reportMarkdown,
-    sessionLoading,
     sessionDetailStatus,
     sessionDetailError,
     sessionDetailRefreshing,
@@ -48,7 +47,6 @@ export function useInterviewPageController() {
 
   sessionStore.hydratePreferences()
 
-  const loading = ref(false)
   const dashboardStatus = ref<AsyncStatus>('idle')
   const dashboardError = ref<string | null>(null)
   const dashboardRefreshing = ref(false)
@@ -183,7 +181,6 @@ export function useInterviewPageController() {
     const controller = new AbortController()
     dashboardAbortController = controller
     const hasExistingDashboardData = resumes.value.length > 0 || positions.value.length > 0
-    loading.value = true
     if (hasExistingDashboardData) dashboardRefreshing.value = true
     else dashboardStatus.value = 'loading'
     dashboardError.value = null
@@ -215,7 +212,6 @@ export function useInterviewPageController() {
     } finally {
       if (dashboardAbortController === controller) {
         dashboardAbortController = null
-        loading.value = false
         dashboardRefreshing.value = false
       }
     }
@@ -284,7 +280,7 @@ export function useInterviewPageController() {
       showNotice('请选择简历和岗位', 'warning')
       return
     }
-    if (creating.value || loading.value) return
+    if (creating.value || dashboardStatus.value === 'loading') return
 
     creating.value = true
     try {
@@ -441,7 +437,6 @@ export function useInterviewPageController() {
 
   return {
     activeSessionId,
-    sessionLoading,
     replay,
     dashboardStatus,
     dashboardError,
@@ -449,7 +444,6 @@ export function useInterviewPageController() {
     sessionDetailStatus,
     sessionDetailError,
     sessionDetailRefreshing,
-    loading,
     resumes,
     positions,
     selectedResumeId,

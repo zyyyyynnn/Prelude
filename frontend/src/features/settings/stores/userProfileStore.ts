@@ -112,7 +112,7 @@ export const useUserProfileStore = defineStore('user-profile', () => {
           inFlightPromise = null
           inFlightScope = ''
         }
-        if (isCurrent(scope, generation, revision)) {
+        if (activeAccountScope.value === scope && requestGeneration.value === generation) {
           refreshing.value = false
         }
       }
@@ -126,7 +126,10 @@ export const useUserProfileStore = defineStore('user-profile', () => {
     return ensureLoaded(true)
   }
 
-  async function updateProfile(payload: UserProfilePayload) {
+  async function runMutation<T>(
+    request: (signal: AbortSignal) => Promise<T>,
+    applyResult: (result: T) => void,
+  ) {
     if (!activeAccountScope.value) throw new Error('未登录')
     const scope = activeAccountScope.value
     const generation = requestGeneration.value
@@ -137,9 +140,9 @@ export const useUserProfileStore = defineStore('user-profile', () => {
     mutationPending.value = true
     error.value = null
     try {
-      const result = await updateUserProfile(payload, controller.signal)
+      const result = await request(controller.signal)
       if (isCurrent(scope, generation, revision) && !controller.signal.aborted) {
-        profile.value = result
+        applyResult(result)
         status.value = 'success'
         lastLoadedAt.value = Date.now()
         error.value = null
@@ -162,40 +165,22 @@ export const useUserProfileStore = defineStore('user-profile', () => {
     }
   }
 
-  async function uploadAvatar(file: File) {
-    if (!activeAccountScope.value) throw new Error('未登录')
-    const scope = activeAccountScope.value
-    const generation = requestGeneration.value
-    const revision = ++mutationRevision.value
-    mutationAbortController?.abort()
-    const controller = new AbortController()
-    mutationAbortController = controller
-    mutationPending.value = true
-    error.value = null
-    try {
-      const result = await uploadUserAvatar(file, controller.signal)
-      if (isCurrent(scope, generation, revision) && !controller.signal.aborted) {
+  async function updateProfile(payload: UserProfilePayload) {
+    return runMutation(
+      (signal) => updateUserProfile(payload, signal),
+      (result) => {
         profile.value = result
-        status.value = 'success'
-        lastLoadedAt.value = Date.now()
-        error.value = null
-      }
-      return result
-    } catch (requestError) {
-      if (
-        !isAbortError(requestError) &&
-        !controller.signal.aborted &&
-        isCurrent(scope, generation, revision)
-      ) {
-        error.value = getErrorMessage(requestError)
-      }
-      throw requestError
-    } finally {
-      if (mutationAbortController === controller) {
-        mutationAbortController = null
-        mutationPending.value = false
-      }
-    }
+      },
+    )
+  }
+
+  async function uploadAvatar(file: File) {
+    return runMutation(
+      (signal) => uploadUserAvatar(file, signal),
+      (result) => {
+        profile.value = result
+      },
+    )
   }
 
   function reset() {

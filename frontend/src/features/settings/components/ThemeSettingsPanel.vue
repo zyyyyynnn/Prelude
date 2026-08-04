@@ -11,7 +11,7 @@ import { InlineAsyncError } from '@/shared/ui/inline-async-error'
 import { Skeleton } from '@/shared/ui/skeleton'
 
 const profileStore = useUserProfileStore()
-const { profile, status, error } = storeToRefs(profileStore)
+const { profile, status, error, refreshing } = storeToRefs(profileStore)
 const loading = computed(() => status.value === 'idle' || status.value === 'loading')
 const saving = ref(false)
 const { showNotice } = usePageNotice()
@@ -90,7 +90,7 @@ defineExpose({ submit: saveTheme, saving, loading, dirty })
 </script>
 
 <template>
-  <div class="panel-content-wrapper" :aria-busy="loading">
+  <div class="panel-content-wrapper" :aria-busy="loading || refreshing">
     <div v-if="loading" class="theme-loading" aria-busy="true">
       <Skeleton class="theme-loading__card" />
       <Skeleton class="theme-loading__card" />
@@ -98,6 +98,7 @@ defineExpose({ submit: saveTheme, saving, loading, dirty })
     </div>
     <InlineAsyncError v-else-if="status === 'error'" :message="error" @retry="retry" />
     <div v-else-if="status === 'success' && state">
+      <p v-if="refreshing" class="theme-refreshing" aria-live="polite">正在刷新主题…</p>
       <InlineAsyncError v-if="error" :message="error" @retry="retry" />
       <div class="theme-grid">
         <button
@@ -139,6 +140,12 @@ defineExpose({ submit: saveTheme, saving, loading, dirty })
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-sm);
+}
+
+.theme-refreshing {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 
 .theme-loading {

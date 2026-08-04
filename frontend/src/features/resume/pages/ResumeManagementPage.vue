@@ -139,6 +139,9 @@ function retry() {
       <div class="workspace-header__main">
         <div class="workspace-header__title-area">
           <h2 class="workspace-header__title">简历管理</h2>
+          <span v-if="refreshing" class="workspace-header__status" aria-live="polite"
+            >正在刷新…</span
+          >
         </div>
         <div class="workspace-header__actions">
           <Button

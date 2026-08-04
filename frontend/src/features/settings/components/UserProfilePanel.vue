@@ -15,7 +15,13 @@ import { useUserProfileStore } from '../stores/userProfileStore'
 import { useAvatarUploadPreview } from '../composables/useAvatarUploadPreview'
 
 const profileStore = useUserProfileStore()
-const { profile: storedProfile, status, error, activeAccountScope } = storeToRefs(profileStore)
+const {
+  profile: storedProfile,
+  status,
+  error,
+  refreshing,
+  activeAccountScope,
+} = storeToRefs(profileStore)
 const { showNotice } = usePageNotice()
 const preview = useAvatarUploadPreview()
 const { previewUrl } = preview
@@ -26,6 +32,8 @@ const uploadingAvatar = ref(false)
 const avatarInput = ref<HTMLInputElement | null>(null)
 const avatarError = ref<string | null>(null)
 const awaitingCanonicalAvatar = ref(false)
+const canonicalAvatarToConfirm = ref<string | null>(null)
+const lastLoadedCanonicalAvatar = ref<string | null>(null)
 const initial = reactive({
   username: '',
   email: '',
@@ -66,6 +74,8 @@ function syncDraftFromStore() {
     initial.revision = 0
     avatarError.value = null
     awaitingCanonicalAvatar.value = false
+    canonicalAvatarToConfirm.value = null
+    lastLoadedCanonicalAvatar.value = null
     preview.clear()
   }
 }
@@ -151,13 +161,24 @@ async function handleAvatarChange(event: Event) {
 
   uploadingAvatar.value = true
   awaitingCanonicalAvatar.value = false
+  canonicalAvatarToConfirm.value = null
   try {
-    await profileStore.uploadAvatar(file)
+    const result = await withMinDelay(profileStore.uploadAvatar(file))
     if (!preview.isCurrent(selection)) return
+    canonicalAvatarToConfirm.value = result.avatarUrl?.trim() || null
     awaitingCanonicalAvatar.value = true
+    avatarError.value = null
+    if (
+      canonicalAvatarToConfirm.value &&
+      lastLoadedCanonicalAvatar.value === canonicalAvatarToConfirm.value
+    ) {
+      confirmCanonicalAvatar()
+    }
   } catch (error) {
     if (preview.isCurrent(selection)) {
       avatarError.value = getErrorMessage(error)
+      canonicalAvatarToConfirm.value = null
+      awaitingCanonicalAvatar.value = false
       preview.clear()
     }
   } finally {
@@ -165,20 +186,28 @@ async function handleAvatarChange(event: Event) {
   }
 }
 
-function handleCanonicalImageLoaded() {
-  if (!awaitingCanonicalAvatar.value) return
+function confirmCanonicalAvatar() {
   awaitingCanonicalAvatar.value = false
+  canonicalAvatarToConfirm.value = null
   preview.clear()
   avatarError.value = null
   uploadingAvatar.value = false
 }
 
-function handleAvatarImageError() {
+function handleCanonicalImageLoaded(src: string) {
+  lastLoadedCanonicalAvatar.value = src
+  if (src !== canonicalAvatarToConfirm.value) return
+  confirmCanonicalAvatar()
+}
+
+function handleAvatarImageError(src: string) {
+  if (awaitingCanonicalAvatar.value && src !== canonicalAvatarToConfirm.value) return
   if (preview.previewUrl.value && !awaitingCanonicalAvatar.value) {
     avatarError.value = '头像原图暂不可用，当前仍显示本地预览。'
     return
   }
   awaitingCanonicalAvatar.value = false
+  canonicalAvatarToConfirm.value = null
   preview.clear()
   uploadingAvatar.value = false
   avatarError.value = storedProfile.value?.avatarUrl
@@ -196,7 +225,7 @@ defineExpose({ submit: saveProfile, saving, loading, dirty })
 </script>
 
 <template>
-  <div class="panel-content-wrapper" :aria-busy="loading">
+  <div class="panel-content-wrapper" :aria-busy="loading || refreshing">
     <div v-if="loading" class="profile-loading" aria-busy="true">
       <Skeleton class="profile-loading__avatar" />
       <div class="profile-loading__fields">
@@ -207,6 +236,7 @@ defineExpose({ submit: saveProfile, saving, loading, dirty })
     </div>
     <InlineAsyncError v-else-if="status === 'error'" :message="error" @retry="retry" />
     <template v-else-if="status === 'success' && storedProfile">
+      <p v-if="refreshing" class="profile-refreshing" aria-live="polite">正在刷新资料…</p>
       <InlineAsyncError v-if="error" :message="error" @retry="retry" />
       <form class="flex flex-col gap-6" @submit.prevent>
         <section class="profile-avatar-row">
@@ -366,6 +396,12 @@ defineExpose({ submit: saveProfile, saving, loading, dirty })
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md) 0;
+}
+
+.profile-refreshing {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 
 .profile-avatar__actions {

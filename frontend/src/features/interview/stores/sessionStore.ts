@@ -19,7 +19,6 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   const activeSessionId = ref<number | null>(null)
   const replay = shallowRef<InterviewSessionDetailResponse | null>(null)
   const reportMarkdown = ref('')
-  const sessionLoading = ref(false)
   const sessionListStatus = ref<AsyncStatus>('idle')
   const sessionListError = ref<string | null>(null)
   const sessionListRefreshing = ref(false)
@@ -64,7 +63,6 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     activeSessionId.value = null
     replay.value = null
     reportMarkdown.value = ''
-    sessionLoading.value = false
     sessionListStatus.value = 'idle'
     sessionListError.value = null
     sessionListRefreshing.value = false
@@ -164,7 +162,6 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     const requestGeneration = accountGeneration
     const controller = new AbortController()
     detailAbortController = controller
-    sessionLoading.value = true
     const hasExistingDetail = replay.value !== null
     if (hasExistingDetail) {
       sessionDetailRefreshing.value = true
@@ -214,7 +211,6 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     } finally {
       if (detailAbortController === controller) {
         detailAbortController = null
-        sessionLoading.value = false
         sessionDetailRefreshing.value = false
       }
     }
@@ -226,7 +222,6 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     activeSessionId.value = null
     replay.value = null
     reportMarkdown.value = ''
-    sessionLoading.value = false
     sessionDetailStatus.value = 'idle'
     sessionDetailError.value = null
     sessionDetailRefreshing.value = false
@@ -250,7 +245,6 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     activeSessionId,
     replay,
     reportMarkdown,
-    sessionLoading,
     sessionListStatus,
     sessionListError,
     sessionListRefreshing,
