@@ -39,6 +39,11 @@ test('migrates legacy session preferences and persists local hide behavior', asy
   expect(migrated.legacyPinned).toBeNull()
   expect(migrated.legacyDeleted).toBeNull()
 
+  const sessionRow = page.locator('.session-item-wrapper').filter({
+    has: page.getByRole('button', { name: '打开会话 Java 后端工程师' }),
+  })
+  await sessionRow.hover()
+  await sessionRow.hover()
   await page.getByRole('button', { name: '删除会话' }).click()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('button', { name: '确定' })).toHaveCount(0)

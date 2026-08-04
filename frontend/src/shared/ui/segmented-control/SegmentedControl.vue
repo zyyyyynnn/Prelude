@@ -36,7 +36,7 @@ const segmentedStyle = computed(
     <button
       v-for="item in items"
       :key="item"
-      class="segmented-control__item text-sm"
+      class="segmented-control__item ui-action ui-action-selectable text-sm"
       :class="{ 'is-active': item === modelValue }"
       @click="emit('update:modelValue', item)"
     >
@@ -98,6 +98,7 @@ const segmentedStyle = computed(
   font-weight: 500;
   font-family: var(--font-serif);
   color: var(--color-text-secondary);
+  border: 1px solid transparent;
   border-radius: var(--segmented-pill-radius);
   transition:
     color var(--motion-duration-base) var(--motion-ease-standard),
@@ -108,10 +109,5 @@ const segmentedStyle = computed(
 
 .segmented-control__item.is-active {
   color: var(--color-text-primary);
-}
-
-.segmented-control__item:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-icon-action-focus);
 }
 </style>

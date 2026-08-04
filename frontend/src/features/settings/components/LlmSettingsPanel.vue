@@ -321,7 +321,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
                 v-if="apiKeyMasked"
                 type="button"
                 aria-label="清除 API Key"
-                class="px-2 py-2 hover:bg-transparent text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]"
+                class="ui-action ui-action-danger border border-transparent px-2 py-2 text-muted-foreground transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)] hover:bg-transparent hover:text-destructive"
                 @click="clearApiKey"
               >
                 <Trash2 class="h-4 w-4" />
@@ -329,7 +329,7 @@ defineExpose({ submit: onSubmit, test: testSettings, saving, testing, loading })
               <button
                 type="button"
                 :aria-label="showApiKey ? '隐藏 API Key' : '显示 API Key'"
-                class="px-2 py-2 hover:bg-transparent text-muted-foreground flex items-center justify-center transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)]"
+                class="ui-action ui-action-icon border border-transparent px-2 py-2 text-muted-foreground transition-colors [transition-duration:var(--motion-duration-base)] [transition-timing-function:var(--motion-ease-standard)] hover:bg-transparent"
                 @click="showApiKey = !showApiKey"
               >
                 <Eye v-if="showApiKey" class="h-4 w-4" />

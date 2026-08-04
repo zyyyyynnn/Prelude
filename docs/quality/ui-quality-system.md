@@ -52,7 +52,9 @@ CI 浏览器测试复用 Windows runner 的 Microsoft Edge channel，并设置 `
 - `transition-all`、`window.confirm`、原生 `title=`；
 - 未批准的阴影、边框、硬高度、arbitrary px 与 magic ratio；
 - 业务组件中的非 token 颜色和裸像素；
-- scoped `:focus-visible` 绕过 `--shadow-icon-action-focus`。
+- 字段未复用 `ui-field-control` / `ui-field-boundary` 单边框契约，或 action 未按 Button variant / icon / nav / selectable 语义分类；
+- `focus-visible:ring-*`、`focus:ring-*`、`ring-offset-*`、focus shadow/transform、`ui-focus-quiet` 以及无可见替代的 `outline: none`；
+- 输入意图没有在 Foundations 层同时处理 pointer、keyboard 与 F12 等非导航功能键。
 - Tooltip 未使用统一的主题 surface、表单同源 `border-input` 单层边界、`shadow-whisper` 单层浮层阴影、完整交互 trigger 间距、无位移淡入淡出、紧凑字号及长文本换行约束；Dropdown、Select、Combobox 浮层未使用同一表单边界和阴影时同样阻断。ECharts 等 Canvas 浮层以浏览器用例验证等价 token。
 
 `verify:tokens` 校验：
@@ -72,7 +74,7 @@ Lab 覆盖 Button、Input、Textarea、Select、DropdownMenu、Combobox、Dialog
 
 ## 浏览器覆盖
 
-`verify:a11y` 使用 mock API 执行登录页、工作区、设置弹窗、下拉控件、侧栏、Composer 和结构化报告的 axe 与键盘路径检查。门禁只阻断 critical violation；绿色结果不代表不存在 serious color-contrast 问题，也不授权修改现有品牌色或 token 值。
+`verify:a11y` 使用 mock API 执行登录页、工作区、设置弹窗、下拉控件、侧栏、Composer 和结构化报告的 axe 与键盘路径检查。门禁只阻断 critical violation；绿色结果不代表不存在 serious color-contrast 问题，也不授权修改现有品牌色或 token 值。`verify:flows` 另外读取真实 computed style，覆盖字段单边框、Button variant、Sidebar F12/pointer/keyboard、快捷操作 focus-within、设置选中态、报告导航和 forced-colors。
 
 `verify:visual` 覆盖浅色/暗色登录、侧栏、工作区空态、文字/语音 Composer、设置页、下拉浮层、Tooltip 与图表浮层对比度、报告、数据看板、Component Lab、移动端报告与 PDF 导出。CI 的 `capture:visual` 只上传 artifact，本地 `verify:visual` 用于明确的视觉回归验证。
 

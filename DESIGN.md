@@ -34,7 +34,8 @@
 - `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。
 - `--color-brand`、`--color-brand-light`：品牌主色及弱强调。
 - `--color-border`、`--color-border-warm`：弱边界。
-- `--color-ring`、`--color-focus`：焦点与选中环。
+- `--color-ring`、`--color-ring-deep`：轻轮廓与选中环。
+- `--color-focus-field`、`--color-focus-action`：字段与动作焦点色。
 - `--color-error`：破坏性和错误状态。
 - `--mask-overlay`：Dialog、Confirm 等遮罩。
 - `--chart-technical`、`--chart-expression`、`--chart-logic`：数据看板三维图表色。
@@ -54,7 +55,7 @@
 - `--destructive` -> `--color-error`
 - `--border` -> `--color-border`
 - `--input` -> `--color-border-warm`
-- `--ring` -> `--color-focus`
+- `--ring` -> `--color-focus-action`
 
 ### 2.3 间距
 
@@ -93,15 +94,18 @@
 阴影：
 
 - `--shadow-ring`、`--shadow-ring-deep`：轻轮廓。
-- `--shadow-icon-action-focus`：业务组件自定义 CSS `:focus-visible` 的共享焦点阴影。
 - `--shadow-whisper`：Dropdown、Select、Combobox、Tooltip、Toast 的低浮层阴影。
 - `--shadow-modal`：Dialog、Confirm。
 
 Focus 规则：
 
-- shadcn-vue primitive 使用 `focus-visible:ring-*`，颜色必须映射到 `--color-focus`。
-- 业务组件在 scoped CSS 中自行定义 `:focus-visible` 且使用 `box-shadow` 时，只能写 `box-shadow: var(--shadow-icon-action-focus)`。
-- 禁止业务组件手写 `inset 0 0 0 ...`、裸像素或其他临时 focus shadow；`verify:ui` 必须阻断此类漂移。
+- 标准 Input、Textarea、Select 与 Combobox 只改变现有 1px 边框，使用 `--color-focus-field`；不得改变背景、阴影、尺寸或位置。
+- Button 按 default、destructive、outline、secondary、ghost、link 变体分别拥有语义焦点类别；Primary 与 Destructive 必须保持原背景和文字语义。
+- Sidebar、关闭按钮、密码操作、Theme 与 SegmentedControl 使用明确的 action/selectable 类；active、selected、open 与 focus 必须彼此独立。
+- Action 焦点只在键盘输入意图或浏览器初始 `:focus-visible` 下显示；pointer/F12 往返不得留下外框或灰底。Field 焦点不受输入意图区分。
+- 普通主题禁止外部 ring、ring offset、focus box-shadow 与 focus transform；强制高对比度模式使用系统 `CanvasText` outline。
+- Composer compact 控件与标准 Select/Button 使用同等焦点质量，不允许 quiet/no-focus 例外；报告逐题轮播仅让上一题/下一题按钮进入 Tab 顺序。
+- `verify:ui` 必须同时阻断旧焦点样式回流和 `outline: none` 后没有可见替代的实现。
 
 层级：
 
@@ -389,6 +393,6 @@ Tooltip 使用同一 primitive，采用 `bg-surface` + `text-popover-foreground`
 - 分散 fixed duration / easing
 - `dark:bg-*`
 - 内联硬编码颜色、背景、边框、阴影
-- 业务组件手写 focus shadow，或在 scoped CSS 的 `:focus-visible` 使用非 `--shadow-icon-action-focus` 阴影
+- 普通主题下外部 focus ring、ring offset、focus box-shadow 与 focus transform，或无可见替代的 `outline: none`
 
 token 定义文件中的基础色值允许集中存在，但必须人工确认不泄漏到业务组件。

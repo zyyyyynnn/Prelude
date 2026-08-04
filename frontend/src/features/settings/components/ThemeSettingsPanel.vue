@@ -87,7 +87,10 @@ defineExpose({ submit: saveTheme, saving, loading })
         :key="option.value"
         type="button"
         :disabled="loading || saving"
-        :class="['theme-option', { 'is-active': state.themePreference === option.value }]"
+        :class="[
+          'theme-option ui-action ui-action-selectable',
+          { 'is-active': state.themePreference === option.value },
+        ]"
         @click="selectTheme(option.value)"
       >
         <span class="theme-option__preview" :data-theme-preview="option.value">
@@ -126,25 +129,15 @@ defineExpose({ submit: saveTheme, saving, loading })
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
-  box-shadow: var(--shadow-ring);
   transition:
     background-color var(--motion-duration-base) var(--motion-ease-standard),
-    border-color var(--motion-duration-base) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+    border-color var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .theme-option:hover,
 .theme-option.is-active {
   background: var(--color-surface-hover);
   border-color: var(--color-ring);
-  box-shadow: var(--shadow-ring-deep);
-}
-
-.theme-option:focus-visible {
-  background: var(--color-surface-hover);
-  border-color: var(--color-ring);
-  box-shadow: var(--shadow-icon-action-focus);
-  outline: none;
 }
 
 .theme-option__preview {

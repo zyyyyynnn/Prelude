@@ -20,7 +20,6 @@ const businessComponentRoots = [
 const stylesIndex = path.join(frontendSrc, 'shared', 'ui', 'styles', 'index.css')
 const tooltipContent = path.join(frontendSrc, 'shared', 'ui', 'tooltip', 'TooltipContent.vue')
 const sharedDropdown = path.join(frontendSrc, 'shared', 'ui', 'shared-dropdown.ts')
-const componentFocusShadowToken = '--shadow-icon-action-focus'
 
 const semanticVarPrefixByFile = new Map([
   ['frontend/src/shared/ui/segmented-control/SegmentedControl.vue', ['--segmented-']],
@@ -294,33 +293,170 @@ function forbiddenTokenViolations(tokens, forbidden) {
   return forbidden.filter((token) => tokens.has(token))
 }
 
-function findComponentFocusShadowViolations() {
+function collectSourceFiles(directory, files = []) {
+  let entries
+  try {
+    entries = fs.readdirSync(directory, { withFileTypes: true })
+  } catch {
+    return files
+  }
+  for (const entry of entries) {
+    const file = path.join(directory, entry.name)
+    if (entry.isDirectory()) collectSourceFiles(file, files)
+    else if (entry.isFile() && /\.(vue|ts|css)$/.test(entry.name)) files.push(file)
+  }
+  return files
+}
+
+function findFocusContractViolations() {
   const violations = []
-  const requiredValue = `var(${componentFocusShadowToken})`
-  for (const file of businessComponentRoots.flatMap((root) => collectVueFiles(root))) {
-    const source = fs.readFileSync(file, 'utf8')
-    const stylePattern = /<style\b[^>]*>([\s\S]*?)<\/style>/g
-    let styleMatch
-    while ((styleMatch = stylePattern.exec(source)) !== null) {
-      const styleSource = styleMatch[1]
-      const focusBlockPattern = /([^{}]*:focus-visible[^{}]*)\{([^{}]*)\}/g
-      let focusMatch
-      while ((focusMatch = focusBlockPattern.exec(styleSource)) !== null) {
-        const shadowMatch = focusMatch[2].match(/box-shadow\s*:\s*([^;]+);/)
-        if (!shadowMatch || shadowMatch[1].trim() === requiredValue) continue
-        const offset = styleMatch.index + styleMatch[0].indexOf(styleSource) + focusMatch.index
+  const forbiddenPatterns = [
+    [/focus-visible:ring-|focus:ring-|ring-offset-/, '旧 Tailwind ring/offset 焦点模式不得回流'],
+    [/focus-visible:shadow-/, '焦点不得通过 Tailwind shadow 绘制外部 halo'],
+    [/shadow-icon-action-focus/, '已废止的外部 action focus shadow 不得回流'],
+    [/ui-focus-quiet/, '交互控件不得通过 quiet 例外隐藏键盘焦点'],
+    [/focus-visible:outline-none/, '焦点 outline 必须由共享语义契约统一管理'],
+  ]
+
+  for (const file of collectSourceFiles(frontendSrc)) {
+    const rawSource = fs.readFileSync(file, 'utf8')
+    const source = stripNonExecutableComments(rawSource)
+    const lines = source.split(/\r?\n/)
+    for (let index = 0; index < lines.length; index++) {
+      for (const [pattern, description] of forbiddenPatterns) {
+        if (!pattern.test(lines[index])) continue
         violations.push({
-          id: 'component-focus-shadow-token',
-          description: `业务组件 :focus-visible 的 box-shadow 必须精确使用 ${requiredValue}`,
-          hit: {
-            file,
-            line: sourceLine(source, offset),
-            text: `${focusMatch[1].trim()} { box-shadow: ${shadowMatch[1].trim()}; }`,
-          },
+          id: 'focus-obsolete-contract',
+          description,
+          hit: { file, line: index + 1, text: lines[index] },
         })
       }
     }
+
+    const styleSources = []
+    if (file.endsWith('.vue')) {
+      const stylePattern = /<style\b[^>]*>([\s\S]*?)<\/style>/g
+      let styleMatch
+      while ((styleMatch = stylePattern.exec(source)) !== null) {
+        styleSources.push({ content: styleMatch[1], offset: styleMatch.index })
+      }
+    } else if (file.endsWith('.css')) {
+      styleSources.push({ content: source, offset: 0 })
+    }
+
+    for (const { content, offset } of styleSources) {
+      const blockPattern = /([^{}]+)\{([^{}]*)\}/g
+      let blockMatch
+      while ((blockMatch = blockPattern.exec(content)) !== null) {
+        const selector = blockMatch[1].trim()
+        const isFocusSelector =
+          /:focus(?:-visible|-within)?\b/.test(selector) ||
+          /data-input-intent=['"]keyboard['"]/.test(selector)
+        if (!isFocusSelector) continue
+        const declarations = blockMatch[2]
+        if (/(?:^|[;\s])box-shadow\s*:/.test(declarations)) {
+          violations.push({
+            id: 'focus-external-shadow-contract',
+            description: '焦点 selector 不得改变 box-shadow',
+            hit: {
+              file,
+              line: sourceLine(rawSource, offset + blockMatch.index),
+              text: `${selector} { ${declarations.trim()} }`,
+            },
+          })
+        }
+        if (/(?:^|[;\s])transform\s*:/.test(declarations)) {
+          violations.push({
+            id: 'focus-transform-contract',
+            description: '焦点 selector 不得改变 transform 或几何位置',
+            hit: {
+              file,
+              line: sourceLine(rawSource, offset + blockMatch.index),
+              text: `${selector} { ${declarations.trim()} }`,
+            },
+          })
+        }
+        const removesOutline = /outline\s*:\s*none/.test(declarations)
+        const pointerSuppression = /data-input-intent=['"]pointer['"]/.test(selector)
+        const hasReplacement =
+          /(border-color|background(?:-color)?|color|text-decoration|outline\s*:\s*2px)/.test(
+            declarations,
+          )
+        if (removesOutline && !pointerSuppression && !hasReplacement) {
+          violations.push({
+            id: 'focus-visible-replacement-contract',
+            description: 'outline: none 必须在同一焦点规则中提供可见的语义替代',
+            hit: {
+              file,
+              line: sourceLine(rawSource, offset + blockMatch.index),
+              text: `${selector} { ${declarations.trim()} }`,
+            },
+          })
+        }
+      }
+    }
   }
+
+  const buttonSource = fs.readFileSync(path.join(frontendSrc, 'shared/ui/button/index.ts'), 'utf8')
+  for (const semanticClass of [
+    'ui-action-primary',
+    'ui-action-destructive',
+    'ui-action-outline',
+    'ui-action-secondary',
+    'ui-action-ghost',
+    'ui-action-link',
+  ]) {
+    if (buttonSource.includes(semanticClass)) continue
+    violations.push({
+      id: 'button-focus-variant-contract',
+      description: '每个 Button variant 必须显式拥有语义焦点类别',
+      hit: {
+        file: path.join(frontendSrc, 'shared/ui/button/index.ts'),
+        line: 1,
+        text: semanticClass,
+      },
+    })
+  }
+
+  for (const [relativePath, marker] of [
+    ['shared/ui/input/Input.vue', 'ui-field-control'],
+    ['shared/ui/textarea/Textarea.vue', 'ui-field-control'],
+    ['shared/ui/shared-dropdown.ts', 'ui-field-boundary'],
+  ]) {
+    const file = path.join(frontendSrc, relativePath)
+    if (fs.readFileSync(file, 'utf8').includes(marker)) continue
+    violations.push({
+      id: 'field-focus-primitive-contract',
+      description: '标准字段必须复用单边框 field focus contract',
+      hit: { file, line: 1, text: marker },
+    })
+  }
+
+  const stylesSource = fs.readFileSync(stylesIndex, 'utf8')
+  for (const marker of [
+    "data-input-intent='pointer'",
+    "data-input-intent='keyboard'",
+    '--color-focus-field',
+    '--color-focus-action',
+  ]) {
+    if (stylesSource.includes(marker)) continue
+    violations.push({
+      id: 'focus-foundation-contract',
+      description: 'Focus Foundations 缺少输入意图或语义 token 消费者',
+      hit: { file: stylesIndex, line: 1, text: marker },
+    })
+  }
+
+  const sidebarFile = path.join(frontendSrc, 'features/interview/components/SessionSidebar.vue')
+  const sidebarSource = fs.readFileSync(sidebarFile, 'utf8')
+  if (!sidebarSource.includes('.session-item-wrapper:focus-within .session-item-actions')) {
+    violations.push({
+      id: 'sidebar-focus-within-contract',
+      description: 'Sidebar 快捷操作必须在内部按钮获得键盘焦点时可见',
+      hit: { file: sidebarFile, line: 1, text: 'missing focus-within visibility' },
+    })
+  }
+
   return violations
 }
 
@@ -492,7 +628,7 @@ for (const check of checks) {
   }
 }
 
-failures.push(...findComponentFocusShadowViolations())
+failures.push(...findFocusContractViolations())
 failures.push(...findTooltipContractViolations())
 
 if (allowed.length > 0) {

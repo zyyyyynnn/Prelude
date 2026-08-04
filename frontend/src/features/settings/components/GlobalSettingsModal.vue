@@ -65,7 +65,10 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
         <aside class="settings-sidebar">
           <div class="sidebar-menu">
             <button
-              :class="['menu-item', { 'is-active': activeTab === 'profile' }]"
+              :class="[
+                'menu-item ui-action ui-action-nav',
+                { 'is-active': activeTab === 'profile' },
+              ]"
               @click="activeTab = 'profile'"
             >
               <svg
@@ -85,14 +88,14 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
               账号资料
             </button>
             <button
-              :class="['menu-item', { 'is-active': activeTab === 'theme' }]"
+              :class="['menu-item ui-action ui-action-nav', { 'is-active': activeTab === 'theme' }]"
               @click="activeTab = 'theme'"
             >
               <Palette class="h-4 w-4" />
               主题
             </button>
             <button
-              :class="['menu-item', { 'is-active': activeTab === 'llm' }]"
+              :class="['menu-item ui-action ui-action-nav', { 'is-active': activeTab === 'llm' }]"
               @click="activeTab = 'llm'"
             >
               <svg
@@ -113,7 +116,10 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
             </button>
           </div>
           <div class="sidebar-footer">
-            <button class="menu-item menu-item--danger" @click="handleLogout">
+            <button
+              class="menu-item menu-item--danger ui-action ui-action-danger"
+              @click="handleLogout"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
@@ -250,7 +256,7 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
   font-weight: 500;
   font-family: var(--font-serif);
   color: var(--color-text-secondary);
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
   transition:
@@ -265,7 +271,7 @@ function preserveSettingsForToastInteraction(event: CustomEvent<{ originalEvent:
 .menu-item.is-active {
   background: var(--color-surface-muted);
   color: var(--color-brand);
-  box-shadow: var(--shadow-ring);
+  border-color: var(--color-ring);
 }
 .menu-item--danger {
   color: var(--color-error);

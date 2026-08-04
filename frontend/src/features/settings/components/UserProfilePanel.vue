@@ -181,7 +181,7 @@ defineExpose({ submit: saveProfile, saving, loading })
               />
               <button
                 type="button"
-                class="password-toggle"
+                class="password-toggle ui-action ui-action-icon"
                 aria-label="切换旧密码可见性"
                 @click="showOldPassword = !showOldPassword"
               >
@@ -203,7 +203,7 @@ defineExpose({ submit: saveProfile, saving, loading })
               />
               <button
                 type="button"
-                class="password-toggle"
+                class="password-toggle ui-action ui-action-icon"
                 aria-label="切换新密码可见性"
                 @click="showNewPassword = !showNewPassword"
               >
@@ -278,13 +278,11 @@ defineExpose({ submit: saveProfile, saving, loading })
   height: 100%;
   padding: 0 var(--spacing-sm);
   color: var(--color-text-tertiary);
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
 }
-.password-toggle:hover,
-.password-toggle:focus-visible {
+.password-toggle:hover {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
-  outline: none;
-  box-shadow: var(--shadow-icon-action-focus);
 }
 </style>
