@@ -56,9 +56,12 @@ Provider 列表严格消费后端现有字段：`providerKey`、`displayName`、
 
 - auth token 由 `features/auth/model/authStore.ts` 持有，app 只在运行时装配中读取。
 - 会话列表、活动会话、详情、报告文本与流取消句柄由 interview session store 持有。
+- 用户资料、头像 canonical URL、资料请求状态与资料 mutation revision 由 `settings` 的 `userProfileStore` 持有；设置面板只持有可丢弃的本地草稿，`UserAvatar` 只负责展示状态。
+- 初始读取和刷新统一使用 `AsyncStatus`；页面在 `loading` 时使用 Skeleton，在 `error` 时使用可重试的 InlineAsyncError，已有数据刷新失败不得伪装成空态。
 - pin/hidden 偏好由独立 store 延迟 hydrate；读取不会发生在模块加载期。旧 `pinnedSessionIds` / `deletedSessionIds` 首次 hydrate 时迁移到 `prelude-interview-session-preferences`。
 - `useInterviewPageController` 是工作区页面的编排接口；网络流、语音和报告监听仍由各自 composable 实现，简历建议动作通过 resume 公共入口调用。
 - `useLlmSettings` 对组件只暴露 `draft`、`view`、`actions` 三组职责，不把请求细节散落到模板。
+- `useAvatarUploadPreview` 只负责当前文件的本地预览、generation 校验和 object URL 回收；上传请求及 canonical 图片切换仍由 profile store / UserProfilePanel 编排。
 
 ## UI 与开发工具
 

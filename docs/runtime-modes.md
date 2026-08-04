@@ -28,6 +28,8 @@ Prelude 当前只维护三类运行入口：`start-dev.bat`、`start-docker.bat`
 docker compose --profile app up -d --build
 ```
 
+应用层后端将头像写入 `/var/lib/prelude/avatars`，由 `avatar-data` 命名卷持久化；验证重建时使用 `down`（不要使用 `down -v`），再按同一 `/media/avatars/...` URL 检查头像仍可读。
+
 ## 3. `scripts/dev`（源码级调试）
 
 适用：需要分步骤控制 Maven、Vite 和日志输出时。

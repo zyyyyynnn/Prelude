@@ -168,7 +168,7 @@ Focus 规则：
 
 - 按钮 loading 使用绝对居中的 spinner 覆盖。
 - 原按钮文本通过 opacity 交叉溶解，不允许 DOM 替换导致宽度抽搐。
-- 普通异步提交使用 `withMinDelay`，流式 LLM 输出不加延迟。
+- 普通异步提交使用 `withMinDelay`，流式 LLM 输出不加延迟；初始资料、简历、看板和会话列表读取不人为延迟，直接表现真实 `loading / success / error` 状态。
 
 ---
 
@@ -296,7 +296,7 @@ Tooltip 使用同一 primitive，采用 `bg-surface` + `text-popover-foreground`
 - 设置页包含账号资料、主题、LLM 配置三个 tab。
 - 退出登录放左侧底部；保存、测试按钮放右上角；内容较长时只滚动右侧内容。
 - 用户名可编辑；邮箱可编辑；密码区只保留旧密码和新密码。
-- 新增真实头像上传：后端保存头像 URL/路径，未设置时展示用户名首字母。
+- 新增真实头像上传：后端保存 canonical relative URI，未设置时展示用户名首字母；上传与 canonical 图片加载期间保持固定头像几何，先显示安全的本地预览，失败时提供明确 fallback。
 - 新增主题切换：浅色、暗色、跟随系统；使用小卡片式 SVG 选项，不做普通按钮。
 - LLM provider 展示名以接口返回为准；当前协议入口为 OpenAI Responses、OpenAI Chat Completions 与 Anthropic Messages。Thinking Depth 包含“默认（Default）”。
 
@@ -350,10 +350,18 @@ Tooltip 使用同一 primitive，采用 `bg-surface` + `text-popover-foreground`
 头像存储：
 
 - 只允许本地文件系统。
-- 上传目录为项目配置的本地 uploads 路径。
-- 通过 Spring WebMvc 静态资源映射暴露。
+- 上传目录为项目配置的本地 `uploads/avatars` 路径；Full Docker 使用持久化命名卷。
+- 数据库只保存 `/media/avatars/{objectKey}` canonical relative URI。
+- 通过受控媒体 Controller 暴露，资源响应固定 MIME、`nosniff`、inline 和 immutable 缓存；不是通用静态目录映射。
+- 服务端按图片内容解码并重新编码为 PNG，不信任文件名和客户端 MIME。
 - 禁止引入云存储依赖。
 - 禁止把图片 Base64 存入数据库。
+
+异步状态：
+
+- 页面初始读取必须显式区分 `idle | loading | success | error`。
+- `loading` 使用共享 Skeleton；`error` 使用共享 InlineAsyncError 与 Retry；刷新已有数据时保留旧内容并单独显示刷新状态。
+- 失败不能渲染误导性的“暂无”；空态只能出现在请求成功且数据确实为空时。
 
 ### 7.3 数据源
 

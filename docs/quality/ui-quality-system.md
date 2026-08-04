@@ -43,6 +43,8 @@ npm --prefix frontend run verify:visual
 | `verify:a11y` | axe critical 与键盘路径 | blocking |
 | `capture:visual` | 视觉场景截图 | artifact-only |
 
+头像与异步状态的回归重点：设置资料首次进入必须先显示稳定几何的 Skeleton；头像上传仅接受图片文件并先显示可回收的本地 object URL，服务端 canonical 图片加载成功后再切换；头像加载失败、资料加载失败、简历/看板/会话列表加载失败都必须提供 inline retry，不能以“暂无”掩盖请求失败。
+
 CI 浏览器测试复用 Windows runner 的 Microsoft Edge channel，并设置 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`。本地未设置 `CI` 时使用 Playwright 默认浏览器；本地专用配置可显式使用 Edge。
 
 ## 静态 Guardrail

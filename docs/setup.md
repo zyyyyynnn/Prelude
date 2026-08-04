@@ -18,6 +18,8 @@ RABBITMQ_MANAGEMENT_HOST_PORT=15672
 MYSQL_ROOT_PASSWORD=root_password
 JWT_SECRET=replace-with-at-least-32-bytes-jwt-secret
 APP_CRYPTO_AES_SECRET=replace-with-at-least-32-bytes-aes-secret
+APP_STORAGE_AVATAR_ROOT=./uploads/avatars
+APP_STORAGE_AVATAR_MAX_BYTES=5242880
 OPENAI_API_KEY=
 OPENAI_BASE_URL=https://api.openai.com/v1
 ```
@@ -25,6 +27,8 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 `.env` 已被 `.gitignore` 忽略，不要提交真实密钥。`OPENAI_*` 仅用于系统语音能力；面试 LLM 的用户级 Key 与根地址在前端设置中按明确协议配置。
 
 生产默认只允许自定义 LLM 访问 HTTPS 443 公网地址。只有明确受控的本地调试才可通过 `PRELUDE_LLM_EGRESS_ALLOW_HTTP`、`PRELUDE_LLM_EGRESS_ALLOW_PRIVATE_ADDRESSES` 与 `PRELUDE_LLM_EGRESS_ALLOWED_PORTS` 放宽。
+
+头像默认落盘到后端工作目录下的 `uploads/avatars`，只通过 `/media/avatars/{objectKey}` 读取；`backend/uploads/` 已加入忽略规则，不得把真实用户上传文件加入 Git。Full Docker 模式会覆盖为 `/var/lib/prelude/avatars` 并挂载命名卷 `avatar-data`。
 
 ## 2. 启动入口
 
@@ -82,3 +86,15 @@ Copy-Item .\frontend\.env.example .\frontend\.env.local
 docker compose up -d mysql redis rabbitmq
 .\scripts\dev\start-dev.ps1
 ```
+
+## 7. Docker 头像持久化验收
+
+Full Docker 的后端挂载 `avatar-data:/var/lib/prelude/avatars`。重建或重启容器时不要使用 `down -v`，否则会删除卷：
+
+```powershell
+docker compose --profile app up -d --build
+docker compose --profile app down
+docker compose --profile app up -d --build
+```
+
+上传头像后记录返回的 `avatarUrl`，重建前后请求同一个 `/media/avatars/...` URL 应继续返回图片；同时确认 `docker volume inspect prelude_avatar-data` 对应卷仍存在。

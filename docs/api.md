@@ -160,6 +160,14 @@
 
 以 `multipart/form-data` 的 `file` 字段上传当前用户头像，返回更新后的用户资料。
 
+服务端按真实图片内容解码，不信任扩展名或客户端 MIME：仅接受 JPEG/PNG，文件上限为 5 MiB，宽高上限为 2048，像素总数上限为 4,194,304。内容会重新编码为 PNG 后再落盘；上传失败不会写入用户资料。
+
+成功响应中的 `avatarUrl` 是同源 canonical relative URI，例如 `/media/avatars/42_<uuid>.png`。
+
+### `GET /media/avatars/{objectKey}`
+
+读取头像媒体。`objectKey` 只能是服务端生成的单层安全对象名；响应使用实际图片 MIME、`Content-Disposition: inline`、`X-Content-Type-Options: nosniff` 和长期 immutable 缓存。资源不存在时返回 JSON `404`，不会回退到前端 SPA HTML。
+
 ## 简历与面试
 
 ### `POST /api/resume/upload`
