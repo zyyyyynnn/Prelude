@@ -31,8 +31,10 @@ jobs:
 
       - name: Apply deterministic rebuild
         run: |
-          sed -i 's/for root in \[ROOT \/ "frontend\/src", ROOT \/ "frontend\/scripts"\]:/for root in [ROOT \/ "frontend\/src"]:/' .github/agent-temp/focus_rebuild.py
-          python .github/agent-temp/focus_rebuild.py
+          cp .github/agent-temp/focus_rebuild.py .github/agent-temp/focus_rebuild.runtime.py
+          sed -i 's/for root in \[ROOT \/ "frontend\/src", ROOT \/ "frontend\/scripts"\]:/for root in [ROOT \/ "frontend\/src"]:/' .github/agent-temp/focus_rebuild.runtime.py
+          python .github/agent-temp/focus_rebuild.runtime.py
+          rm .github/agent-temp/focus_rebuild.runtime.py
           python - <<'PY'
           import json
           from pathlib import Path
