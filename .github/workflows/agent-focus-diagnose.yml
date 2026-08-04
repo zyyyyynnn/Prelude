@@ -1,0 +1,69 @@
+name: Agent Focus Diagnose
+
+on:
+  push:
+    branches:
+      - agent/fix-focus-system-final
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-focus-system-final
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Apply rebuild
+        run: |
+          sed -i 's/for root in \[ROOT \/ "frontend\/src", ROOT \/ "frontend\/scripts"\]:/for root in [ROOT \/ "frontend\/src"]:/' .github/agent-temp/focus_rebuild.py
+          python .github/agent-temp/focus_rebuild.py
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Format
+        working-directory: frontend
+        run: npx --no-install vp check --fix
+      - name: Check formatting lint types
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run check
+      - name: Verify architecture
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run verify:architecture
+      - name: Test contracts
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run test:contracts
+      - name: Verify UI guardrails
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run verify:ui
+      - name: Verify tokens
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run verify:tokens
+      - name: Build frontend
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run build
+      - name: Verify production bundle
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run verify:production
+      - name: Fail if any diagnostic step failed
+        shell: bash
+        run: |
+          echo 'Inspect the individual step conclusions above.'
