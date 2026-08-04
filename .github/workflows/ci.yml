@@ -2,117 +2,10 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
   pull_request:
 
-permissions:
-  contents: read
-
 jobs:
-  lockfile-repair:
-    if: github.event_name == 'pull_request' && github.event.action == 'reopened'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      actions: write
-    steps:
-      - name: Checkout repair branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Regenerate only the PostCSS lock entry
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp frontend/package-lock.json "$RUNNER_TEMP/package-lock.before.json"
-          npm --prefix frontend install --package-lock-only --ignore-scripts --no-audit --no-fund
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          before = json.loads(Path(os.environ['RUNNER_TEMP'], 'package-lock.before.json').read_text(encoding='utf-8'))
-          after_path = Path('frontend/package-lock.json')
-          after = json.loads(after_path.read_text(encoding='utf-8'))
-          before_packages = before['packages']
-          after_packages = after['packages']
-          changed = sorted(
-              key
-              for key in set(before_packages) | set(after_packages)
-              if before_packages.get(key) != after_packages.get(key)
-          )
-          if changed != ['node_modules/postcss']:
-              raise SystemExit(f'unexpected lockfile package changes: {changed}')
-
-          postcss = after_packages['node_modules/postcss']
-          expected = {
-              'version': '8.5.23',
-              'resolved': 'https://registry.npmjs.org/postcss/-/postcss-8.5.23.tgz',
-              'integrity': 'sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==',
-          }
-          for key, value in expected.items():
-              if postcss.get(key) != value:
-                  raise SystemExit(f'postcss {key} mismatch: {postcss.get(key)!r}')
-
-          package = json.loads(Path('frontend/package.json').read_text(encoding='utf-8'))
-          if package['overrides'].get('postcss') != '8.5.23':
-              raise SystemExit('package.json PostCSS override is not 8.5.23')
-          PY
-          git diff --check
-
-      - name: Restore formal CI and commit the audited lockfile
-        shell: bash
-        run: |
-          set -euo pipefail
-          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('.github/workflows/ci.yml')
-          source = path.read_text(encoding='utf-8')
-          old = "on:\n  push:\n  pull_request:\n"
-          new = "on:\n  push:\n    branches:\n      - main\n  pull_request:\n"
-          if old not in source:
-              raise SystemExit('formal CI trigger block not found')
-          path.write_text(source.replace(old, new, 1), encoding='utf-8')
-          PY
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add frontend/package-lock.json .github/workflows/ci.yml
-          git diff --cached --check
-          git commit -m 'fix(deps): refresh postcss lock entry'
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
-
-      - name: Delete redundant failed workflow runs
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          redundant_runs=(
-            30923506482 30923504846 30923639228 30923638199
-            30923744875 30923740270 30923905402 30923905773
-            30923907489 30924169801 30924169981 30924173962
-            30924945517 30924945942 30924942777 30924999025
-            30925000441 30924999197 30927803998
-          )
-          for run_id in "${redundant_runs[@]}"; do
-            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" >/dev/null 2>&1 || true
-          done
-
   schema:
-    if: github.event_name == 'push' || github.event.action != 'reopened'
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -215,9 +108,14 @@ jobs:
           test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'prelude_upgrade' AND table_name = 'retrieval_chunk' AND column_name IN ('embedding_model', 'embedding_dimensions', 'embedding_json')")" = '3'
 
   build:
-    if: github.event_name == 'push' || github.event.action != 'reopened'
     runs-on: windows-latest
 
+    # Playwright UI checks use the system Microsoft Edge channel instead of
+    # downloading Playwright's bundled Chromium. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+    # tells `npm ci` / `npx playwright install` to skip the CDN download, and
+    # the Playwright configs opt into `channel: 'msedge'` when CI=true. This
+    # eliminates the dominant CI flake source (Chromium + headless-shell CDN
+    # download stalls on windows-latest) without changing any test logic.
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
@@ -236,6 +134,13 @@ jobs:
             if ([string]::IsNullOrWhiteSpace($baseSha)) {
               git diff --check HEAD~1
             } else {
+              # IMPORTANT: do NOT use the 3-dot `A...B` form here. PowerShell
+              # treats `...` as a range operator (same as `1..5`) and rewrites
+              # it before git ever sees it, so the resulting `git diff` is
+              # called with broken args and prints its usage. `merge-base`
+              # computes the same semantic target as `A...B` but uses a
+              # plain space between two commit args that PowerShell leaves
+              # alone.
               git fetch origin "$baseSha" --depth=1
               $mergeBase = git merge-base "$baseSha" HEAD
               git diff --check "$mergeBase" HEAD
@@ -271,6 +176,7 @@ jobs:
             throw "sentrux sha256 mismatch: expected $expectedSha256, got $actualSha256"
           }
           Write-Host "sentrux sha256 verified: $actualSha256"
+          # Make available to subsequent steps via GITHUB_PATH.
           $envDir = Join-Path $destDir 'bin'
           New-Item -ItemType Directory -Path $envDir -Force | Out-Null
           Copy-Item $exePath (Join-Path $envDir 'sentrux.exe')
@@ -344,13 +250,28 @@ jobs:
         working-directory: frontend
         run: npm run verify:flows
 
+      # Playwright UI verification harness (visual regression + a11y).
+      # Bundled with @playwright/test. We do NOT install Playwright's
+      # bundled Chromium on the windows-latest runner — the CDN download
+      # repeatedly stalls and dominates CI time. Instead, the configs
+      # use the system Microsoft Edge channel (see
+      # frontend/tests/_helpers/playwright-base.ts) and
+      # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 tells `npm ci` not to fetch
+      # the Playwright browser tarball. capture:visual stays
+      # continue-on-error: true (artifact-only); verify:a11y is the
+      # blocking gate.
+
       - name: Verify UI accessibility (axe + keyboard paths)
         working-directory: frontend
+        # Blocking because the mocked /api/** routes make the axe and keyboard
+        # checks deterministic.
         run: npm run verify:a11y
 
       - name: Capture UI visual baseline (artifact only)
         if: always()
         working-directory: frontend
+        # Visual artifacts support human review; rendering differences between
+        # runners do not block the PR.
         continue-on-error: true
         run: npm run capture:visual
 
