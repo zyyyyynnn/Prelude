@@ -38,11 +38,6 @@ write(session_test_path, session_test)
 
 focus_test_path = 'frontend/tests/flows/focus-system.spec.ts'
 focus_test = read(focus_test_path)
-focus_test = focus_test.replace(
-    "page.getByRole('button', { name: '实验室 Select' })",
-    "page.getByRole('combobox', { name: '实验室 Select' })",
-    1,
-)
 anchor = "async function setTheme(page: Page, theme: 'light' | 'dark') {"
 helper = """async function resolveTokenColor(page: Page, token: string) {
   return page.evaluate((name) => {
@@ -59,28 +54,98 @@ helper = """async function resolveTokenColor(page: Page, token: string) {
 if anchor not in focus_test:
     raise RuntimeError('focus test theme anchor missing')
 focus_test = focus_test.replace(anchor, helper + anchor, 1)
-focus_test = focus_test.replace(
-    "    await setTheme(page, theme)\n\n    for (const field of [",
-    "    await setTheme(page, theme)\n"
-    "    const focusColor = await resolveTokenColor(page, '--color-focus-field')\n\n"
-    "    for (const field of [",
-    1,
-)
-focus_test = focus_test.replace(
-    "      await field.click()\n      await page.mouse.move(0, 0)\n      const pointer = await styleOf(field)",
-    "      await field.click()\n"
-    "      await page.mouse.move(0, 0)\n"
-    "      await expect.poll(async () => (await styleOf(field)).borderColor).toBe(focusColor)\n"
-    "      const pointer = await styleOf(field)",
-    1,
-)
-focus_test = focus_test.replace(
-    "      await tabTo(page, field)\n      const keyboard = await styleOf(field)",
-    "      await tabTo(page, field)\n"
-    "      await expect.poll(async () => (await styleOf(field)).borderColor).toBe(focusColor)\n"
-    "      const keyboard = await styleOf(field)",
-    1,
-)
+
+old_field_test = """test('fields keep one stable boundary in pointer and keyboard paths for light and dark', async ({
+  page,
+}) => {
+  await installMockApi(page)
+
+  for (const theme of ['light', 'dark'] as const) {
+    await page.goto('/components-lab')
+    await setTheme(page, theme)
+
+    for (const field of [
+      page.locator('#lab-input-default'),
+      page.locator('#lab-textarea-default'),
+      page.getByRole('button', { name: '实验室 Select' }),
+    ]) {
+      await blurWithPointer(page)
+      const before = await styleOf(field)
+      await field.click()
+      await page.mouse.move(0, 0)
+      const pointer = await styleOf(field)
+      expect(pointer.borderColor).not.toBe(before.borderColor)
+      expect(pointer.backgroundColor).toBe(before.backgroundColor)
+      expect(pointer.outlineStyle).toBe('none')
+      expectStableGeometry(before, pointer)
+      expect(contrast(pointer.borderColor, pointer.backgroundColor)).toBeGreaterThanOrEqual(3)
+
+      await blurWithPointer(page)
+      await tabTo(page, field)
+      const keyboard = await styleOf(field)
+      expect(keyboard.borderColor).toBe(pointer.borderColor)
+      expect(keyboard.backgroundColor).toBe(before.backgroundColor)
+      expectStableGeometry(before, keyboard)
+      await page.keyboard.press('Escape')
+    }
+  }
+})
+"""
+new_field_test = """test('fields keep one stable boundary in pointer and keyboard paths for light and dark', async ({
+  page,
+}) => {
+  await installMockApi(page)
+
+  for (const theme of ['light', 'dark'] as const) {
+    await page.goto('/components-lab')
+    await setTheme(page, theme)
+    const focusColor = await resolveTokenColor(page, '--color-focus-field')
+
+    for (const field of [page.locator('#lab-input-default'), page.locator('#lab-textarea-default')]) {
+      await blurWithPointer(page)
+      const before = await styleOf(field)
+      await field.click()
+      await page.mouse.move(0, 0)
+      await expect.poll(async () => (await styleOf(field)).borderColor).toBe(focusColor)
+      const pointer = await styleOf(field)
+      expect(pointer.backgroundColor).toBe(before.backgroundColor)
+      expect(pointer.outlineStyle).toBe('none')
+      expectStableGeometry(before, pointer)
+      expect(contrast(pointer.borderColor, pointer.backgroundColor)).toBeGreaterThanOrEqual(3)
+
+      await blurWithPointer(page)
+      await tabTo(page, field)
+      await expect.poll(async () => (await styleOf(field)).borderColor).toBe(focusColor)
+      const keyboard = await styleOf(field)
+      expect(keyboard.backgroundColor).toBe(before.backgroundColor)
+      expectStableGeometry(before, keyboard)
+    }
+
+    const select = page.getByRole('combobox', { name: '实验室 Select' })
+    await blurWithPointer(page)
+    const selectBefore = await styleOf(select)
+    await select.click()
+    await expect(select).toHaveAttribute('aria-expanded', 'true')
+    const pointerOpen = await styleOf(select)
+    expect(pointerOpen.backgroundColor).toBe(selectBefore.backgroundColor)
+    expectStableGeometry(selectBefore, pointerOpen)
+    await page.keyboard.press('Escape')
+
+    await blurWithPointer(page)
+    await tabTo(page, select)
+    await expect.poll(async () => (await styleOf(select)).borderColor).toBe(focusColor)
+    const keyboard = await styleOf(select)
+    expect(keyboard.backgroundColor).toBe(selectBefore.backgroundColor)
+    expectStableGeometry(selectBefore, keyboard)
+    await page.keyboard.press('Enter')
+    await expect(select).toHaveAttribute('aria-expanded', 'true')
+    await page.keyboard.press('Escape')
+  }
+})
+"""
+if old_field_test not in focus_test:
+    raise RuntimeError('field focus test block missing')
+focus_test = focus_test.replace(old_field_test, new_field_test, 1)
 focus_test = focus_test.replace(
     "  await expect(actions).toHaveCSS('opacity', '1')\n  await expect(actions).toHaveCSS('pointer-events', 'auto')",
     "  await expect(actions).toHaveCSS('opacity', '1')",
