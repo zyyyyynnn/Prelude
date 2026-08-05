@@ -122,7 +122,7 @@ jobs:
 
       - name: Run MySQL concurrency integration test
         working-directory: backend
-        run: mvn -q -Dtest=AvatarRevisionMySqlIntegrationTest -DfailIfNoTests=true test
+        run: mvn -q -Djacoco.skip=true -Dtest=AvatarRevisionMySqlIntegrationTest -DfailIfNoTests=true test
 
   build:
     runs-on: windows-latest
