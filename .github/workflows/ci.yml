@@ -107,6 +107,23 @@ jobs:
           test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'prelude_upgrade' AND table_name = 'resume' AND column_name IN ('document_json', 'document_version', 'source_type', 'plain_text_projection')")" = '4'
           test "$(mysql_exec prelude_upgrade -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'prelude_upgrade' AND table_name = 'retrieval_chunk' AND column_name IN ('embedding_model', 'embedding_dimensions', 'embedding_json')")" = '3'
 
+  backend-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Run MySQL concurrency integration test
+        working-directory: backend
+        run: mvn -q -Dtest=AvatarRevisionMySqlIntegrationTest -DfailIfNoTests=true test
+
   build:
     runs-on: windows-latest
 
@@ -191,7 +208,10 @@ jobs:
 
       - name: Check backend tests
         working-directory: backend
-        run: mvn -q test
+        # windows-latest does not provide a Linux Docker daemon for Testcontainers.
+        # The blocking integration test runs in the Ubuntu job above instead of
+        # being conditionally skipped.
+        run: mvn -q '-Dtest=!AvatarRevisionMySqlIntegrationTest' test
 
       - name: Upload backend coverage report
         if: always()
