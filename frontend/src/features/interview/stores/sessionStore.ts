@@ -17,6 +17,8 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   const preferences = useSessionPreferencesStore()
   const sessions = ref<InterviewSessionItem[]>([])
   const activeSessionId = ref<number | null>(null)
+  const requestedSessionId = ref<number | null>(null)
+  const failedSessionId = ref<number | null>(null)
   const replay = shallowRef<InterviewSessionDetailResponse | null>(null)
   const reportMarkdown = ref('')
   const sessionListStatus = ref<AsyncStatus>('idle')
@@ -29,6 +31,7 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   let accountGeneration = 0
   let activeAbortController: AbortController | null = null
   let detailAbortController: AbortController | null = null
+  let detailRequestToken = 0
   let sessionListRequest: SessionListRequest | null = null
 
   const groupedSessions = computed(() =>
@@ -61,6 +64,8 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     abortSessionDetail()
     sessions.value = []
     activeSessionId.value = null
+    requestedSessionId.value = null
+    failedSessionId.value = null
     replay.value = null
     reportMarkdown.value = ''
     sessionListStatus.value = 'idle'
@@ -158,8 +163,11 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
 
     abortActiveStream()
     abortSessionDetail()
+    const requestToken = ++detailRequestToken
     const requestScope = activeAccountScope
     const requestGeneration = accountGeneration
+    requestedSessionId.value = sessionId
+    failedSessionId.value = null
     const controller = new AbortController()
     detailAbortController = controller
     const hasExistingDetail = replay.value !== null
@@ -170,18 +178,21 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
     }
     sessionDetailError.value = null
 
+    const isCurrentRequest = () =>
+      !controller.signal.aborted &&
+      detailAbortController === controller &&
+      detailRequestToken === requestToken &&
+      requestedSessionId.value === sessionId &&
+      activeAccountScope === requestScope &&
+      accountGeneration === requestGeneration
+
     try {
       const detail = await fetchInterviewMessages(sessionId, controller.signal)
-      if (
-        controller.signal.aborted ||
-        activeAccountScope !== requestScope ||
-        accountGeneration !== requestGeneration
-      ) {
-        return
-      }
+      if (!isCurrentRequest()) return
       replay.value = detail
       sessionDetailStatus.value = 'success'
       sessionDetailError.value = null
+      failedSessionId.value = null
       activeSessionId.value = sessionId
       preferences.unhide(sessionId)
       if (!sessions.value.some((session) => session.sessionId === sessionId)) {
@@ -198,18 +209,13 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
       }
       reportMarkdown.value = detail.summaryReport || ''
     } catch (error) {
-      if (
-        controller.signal.aborted ||
-        activeAccountScope !== requestScope ||
-        accountGeneration !== requestGeneration
-      ) {
-        return
-      }
+      if (!isCurrentRequest()) return
       sessionDetailError.value = getErrorMessage(error)
+      failedSessionId.value = sessionId
       sessionDetailStatus.value = hasExistingDetail ? 'success' : 'error'
       if (!silent) throw error
     } finally {
-      if (detailAbortController === controller) {
+      if (detailAbortController === controller && detailRequestToken === requestToken) {
         detailAbortController = null
         sessionDetailRefreshing.value = false
       }
@@ -219,7 +225,10 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   function startNewInterview() {
     abortActiveStream()
     abortSessionDetail()
+    detailRequestToken++
     activeSessionId.value = null
+    requestedSessionId.value = null
+    failedSessionId.value = null
     replay.value = null
     reportMarkdown.value = ''
     sessionDetailStatus.value = 'idle'
@@ -243,6 +252,8 @@ export const useInterviewSessionStore = defineStore('interview-session', () => {
   return {
     sessions,
     activeSessionId,
+    requestedSessionId,
+    failedSessionId,
     replay,
     reportMarkdown,
     sessionListStatus,

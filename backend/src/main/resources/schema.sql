@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `password` VARCHAR(255) NOT NULL COMMENT 'BCrypt加密密码',
   `email` VARCHAR(128) DEFAULT NULL COMMENT '邮箱',
   `avatar_url` VARCHAR(512) DEFAULT NULL COMMENT '头像 URL',
+  `avatar_revision` BIGINT NOT NULL DEFAULT 0 COMMENT '头像更新版本',
   `theme_preference` VARCHAR(16) NOT NULL DEFAULT 'system' COMMENT '主题偏好',
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT 'LLM Provider',
   `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT 'LLM 模型',
@@ -68,11 +69,24 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- 头像 URI 只保存同源 canonical relative URI；历史本地上传路径幂等升级。
+-- Canonicalize persisted legacy URIs without touching null, empty, or already canonical values.
 UPDATE `user`
-SET `avatar_url` = CONCAT('/media/avatars/', SUBSTRING_INDEX(`avatar_url`, '/uploads/avatars/', -1))
+SET `avatar_url` = CONCAT('/media/avatars/', SUBSTRING(`avatar_url`, CHAR_LENGTH('/uploads/avatars/') + 1))
 WHERE `avatar_url` LIKE '/uploads/avatars/%'
-  AND `avatar_url` NOT LIKE '/media/avatars/%';
+  AND CHAR_LENGTH(`avatar_url`) > CHAR_LENGTH('/uploads/avatars/');
+
+SET @sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `user` ADD COLUMN `avatar_revision` BIGINT NOT NULL DEFAULT 0 COMMENT ''头像更新版本''',
+    'SELECT 1'
+  )
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'avatar_revision'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 SET @sql = (
   SELECT IF(

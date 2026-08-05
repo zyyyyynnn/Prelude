@@ -1,6 +1,7 @@
 package com.interview.identity.api;
 
 import com.interview.identity.application.port.AvatarStoragePort;
+import com.interview.identity.application.port.LegacyAvatarSourcePort;
 import com.interview.shared.web.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,12 +25,14 @@ class AvatarMediaControllerWebMvcTest {
 
     @Mock
     private AvatarStoragePort avatarStoragePort;
+    @Mock
+    private LegacyAvatarSourcePort legacyAvatarSource;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AvatarMediaController(avatarStoragePort))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AvatarMediaController(avatarStoragePort, legacyAvatarSource))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
     }
@@ -56,9 +59,29 @@ class AvatarMediaControllerWebMvcTest {
     @Test
     void missingAvatarReturns404InsteadOfSpaHtml() throws Exception {
         when(avatarStoragePort.open("missing.png")).thenReturn(Optional.empty());
+        when(legacyAvatarSource.read("missing.png")).thenReturn(LegacyAvatarSourcePort.ReadResult.missing());
 
         mockMvc.perform(get("/media/avatars/missing.png"))
             .andExpect(status().isNotFound())
             .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("application/json")));
+    }
+
+    @Test
+    void servesLegacyMediaThroughTheCanonicalEndpoint() throws Exception {
+        String objectKey = "legacy.gif";
+        when(avatarStoragePort.open(objectKey)).thenReturn(Optional.empty());
+        when(legacyAvatarSource.read(objectKey)).thenReturn(LegacyAvatarSourcePort.ReadResult.supported(
+            new LegacyAvatarSourcePort.LegacyAvatarResource(
+                objectKey,
+                "image/gif",
+                4,
+                new ByteArrayInputStream(new byte[] {1, 2, 3, 4})
+            )
+        ));
+
+        mockMvc.perform(get("/media/avatars/" + objectKey))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", "image/gif"))
+            .andExpect(header().string("X-Content-Type-Options", "nosniff"));
     }
 }

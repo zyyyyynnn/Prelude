@@ -11,6 +11,9 @@ public final class AvatarObjectKeys {
     private static final String MEDIA_PREFIX = "/media/avatars/";
     private static final String LEGACY_PREFIX = "/uploads/avatars/";
     private static final Pattern SAFE_OBJECT_KEY = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]{0,254}");
+    private static final Pattern CANONICAL_OBJECT_KEY = Pattern.compile(
+        "[0-9]+_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\.(png|jpg)"
+    );
 
     private AvatarObjectKeys() {
     }
@@ -25,6 +28,10 @@ public final class AvatarObjectKeys {
             throw BusinessException.badRequest("头像资源标识不合法");
         }
         return objectKey;
+    }
+
+    public static boolean isCanonical(String objectKey) {
+        return objectKey != null && CANONICAL_OBJECT_KEY.matcher(objectKey).matches();
     }
 
     public static Optional<String> fromStoredUri(String avatarUrl) {

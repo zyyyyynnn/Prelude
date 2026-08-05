@@ -18,7 +18,8 @@ const profileStore = useUserProfileStore()
 const {
   profile: storedProfile,
   status,
-  error,
+  loadError,
+  refreshError,
   refreshing,
   activeAccountScope,
 } = storeToRefs(profileStore)
@@ -28,6 +29,7 @@ const { previewUrl } = preview
 
 const loading = computed(() => status.value === 'idle' || status.value === 'loading')
 const saving = ref(false)
+const profileSaveError = ref<string | null>(null)
 const uploadingAvatar = ref(false)
 const avatarInput = ref<HTMLInputElement | null>(null)
 const avatarError = ref<string | null>(null)
@@ -119,6 +121,7 @@ async function saveProfile() {
   }
 
   saving.value = true
+  profileSaveError.value = null
   try {
     const result = await withMinDelay(
       profileStore.updateProfile({
@@ -137,6 +140,7 @@ async function saveProfile() {
     draft.newPassword = ''
     showNotice('资料已保存', 'success')
   } catch (error) {
+    profileSaveError.value = getErrorMessage(error)
     showNotice(getErrorMessage(error), 'error')
   } finally {
     saving.value = false
@@ -234,10 +238,11 @@ defineExpose({ submit: saveProfile, saving, loading, dirty })
       </div>
       <Skeleton class="profile-loading__passwords" />
     </div>
-    <InlineAsyncError v-else-if="status === 'error'" :message="error" @retry="retry" />
+    <InlineAsyncError v-else-if="status === 'error'" :message="loadError" @retry="retry" />
     <template v-else-if="status === 'success' && storedProfile">
       <p v-if="refreshing" class="profile-refreshing" aria-live="polite">正在刷新资料…</p>
-      <InlineAsyncError v-if="error" :message="error" @retry="retry" />
+      <InlineAsyncError v-if="refreshError" :message="refreshError" @retry="retry" />
+      <InlineAsyncError v-if="profileSaveError" :message="profileSaveError" />
       <form class="flex flex-col gap-6" @submit.prevent>
         <section class="profile-avatar-row">
           <UserAvatar

@@ -10,6 +10,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,6 +38,34 @@ class ImageIoAvatarContentProcessorTest {
 
         assertThat(result.contentType()).isEqualTo("image/png");
         assertThat(ImageIO.read(new ByteArrayInputStream(result.bytes()))).isNotNull();
+    }
+
+    @Test
+    void legacyGifUsesFrameZeroAndIsStillNormalizedToPng() throws Exception {
+        ImageIoAvatarContentProcessor processor = new ImageIoAvatarContentProcessor(properties());
+        byte[] gif = image("gif", 18, 11);
+
+        ProcessedAvatar result = processor.processLegacy(upload(gif, "avatar.gif", "image/gif"));
+
+        assertThat(result.contentType()).isEqualTo("image/png");
+        assertThat(result.extension()).isEqualTo("png");
+        assertThat(ImageIO.read(new ByteArrayInputStream(result.bytes()))).isNotNull();
+        assertThatThrownBy(() -> processor.process(upload(gif, "avatar.gif", "image/gif")))
+            .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void webpIsOnlyRecognizedAsAStrictLegacyContainerWithoutPretendingToDecodeIt() {
+        byte[] validContainer = webpContainer();
+
+        assertThat(LegacyWebpValidator.isValid(validContainer)).isTrue();
+        assertThat(LegacyWebpValidator.isValid(validContainer.clone())).isTrue();
+        byte[] truncated = validContainer.clone();
+        truncated[4] = 0;
+        assertThat(LegacyWebpValidator.isValid(truncated)).isFalse();
+        byte[] corrupted = validContainer.clone();
+        corrupted[23] = 0;
+        assertThat(LegacyWebpValidator.isValid(corrupted)).isFalse();
     }
 
     @Test
@@ -97,5 +126,11 @@ class ImageIoAvatarContentProcessorTest {
             assertThat(ImageIO.write(image, format, output)).isTrue();
             return output.toByteArray();
         }
+    }
+
+    private byte[] webpContainer() {
+        return Base64.getDecoder().decode(
+            "UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoCAAIAAgA0JaACdLoB+AADsAD+8Oj3/yC5YXXI1/8gP+QH/ID/+PIAAAA="
+        );
     }
 }

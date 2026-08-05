@@ -50,6 +50,7 @@ openai:
 app:
   storage:
     avatar-root: ${APP_STORAGE_AVATAR_ROOT:./uploads/avatars}
+    legacy-avatar-root: ${APP_STORAGE_LEGACY_AVATAR_ROOT:${APP_STORAGE_AVATAR_ROOT:./uploads/avatars}}
     avatar-public-prefix: /media/avatars
     avatar-max-bytes: ${APP_STORAGE_AVATAR_MAX_BYTES:5242880}
     avatar-max-width: ${APP_STORAGE_AVATAR_MAX_WIDTH:2048}
@@ -83,6 +84,9 @@ prelude:
     redispatch-after-seconds: 60
     report:
       max-attempts: 3
+  legacy-avatar-migration:
+    enabled: ${PRELUDE_LEGACY_AVATAR_MIGRATION_ENABLED:false}
+    batch-size: ${PRELUDE_LEGACY_AVATAR_MIGRATION_BATCH_SIZE:100}
   retrieval:
     hybrid:
       vector-weight: 0.7

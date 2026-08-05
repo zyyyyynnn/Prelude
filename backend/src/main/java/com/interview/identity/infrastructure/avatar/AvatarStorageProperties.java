@@ -12,6 +12,7 @@ import java.nio.file.Path;
 public class AvatarStorageProperties {
 
     private Path avatarRoot = Path.of("./uploads/avatars");
+    private Path legacyAvatarRoot = Path.of("./uploads/avatars");
     private String avatarPublicPrefix = "/media/avatars";
     private long avatarMaxBytes = 5 * 1024 * 1024;
     private int avatarMaxWidth = 2048;

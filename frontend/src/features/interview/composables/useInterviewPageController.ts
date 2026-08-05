@@ -38,6 +38,8 @@ export function useInterviewPageController() {
     sessions,
     activeSessionId,
     replay,
+    requestedSessionId,
+    failedSessionId,
     reportMarkdown,
     sessionDetailStatus,
     sessionDetailError,
@@ -53,6 +55,7 @@ export function useInterviewPageController() {
   let dashboardAbortController: AbortController | null = null
   const creating = ref(false)
   const uploading = ref(false)
+  let resumeUploadAbortController: AbortController | null = null
   const sending = ref(false)
   const finishing = ref(false)
   const showingReport = ref(false)
@@ -68,6 +71,13 @@ export function useInterviewPageController() {
   const improvementOverrides = ref<Record<number, ReportResumeImprovement>>({})
 
   const messages = computed(() => replay.value?.messages ?? [])
+  const sessionDetailDisplayError = computed(() => {
+    if (!sessionDetailError.value) return null
+    const targetSessionId = failedSessionId.value ?? requestedSessionId.value
+    return targetSessionId
+      ? `无法打开会话 ${targetSessionId}：${sessionDetailError.value}`
+      : sessionDetailError.value
+  })
   const jdText = computed(() => replay.value?.jdText ?? '')
   const currentStage = computed(() => replay.value?.currentStage)
   const activeSession = computed(() =>
@@ -222,8 +232,9 @@ export function useInterviewPageController() {
   }
 
   function retryActiveSession() {
-    if (!activeSessionId.value) return
-    void loadSession(activeSessionId.value).catch(() => undefined)
+    const targetSessionId = failedSessionId.value ?? requestedSessionId.value
+    if (!targetSessionId) return
+    void loadSession(targetSessionId).catch(() => undefined)
   }
 
   async function restoreInterruptedStream() {
@@ -259,19 +270,27 @@ export function useInterviewPageController() {
   }
 
   async function handleUpload(file: File) {
+    resumeUploadAbortController?.abort()
+    const controller = new AbortController()
+    resumeUploadAbortController = controller
     uploading.value = true
     try {
-      const result = await withMinDelay(uploadResume(file))
-      const updated = await fetchResumes()
+      const result = await withMinDelay(uploadResume(file, controller.signal))
+      const updated = await fetchResumes(controller.signal)
+      if (controller.signal.aborted || resumeUploadAbortController !== controller) return
       resumes.value = updated
       selectedResumeId.value = result.resumeId
       uploadDisplayName.value =
         updated.find((item) => item.id === result.resumeId)?.fileName || file.name
       showNotice('简历已上传', 'success')
     } catch (error) {
+      if (controller.signal.aborted || resumeUploadAbortController !== controller) return
       showNotice(getErrorMessage(error), 'error')
     } finally {
-      uploading.value = false
+      if (resumeUploadAbortController === controller) {
+        resumeUploadAbortController = null
+        uploading.value = false
+      }
     }
   }
 
@@ -429,6 +448,7 @@ export function useInterviewPageController() {
   onMounted(() => void loadDashboard())
   onBeforeUnmount(() => {
     dashboardAbortController?.abort()
+    resumeUploadAbortController?.abort()
     cleanupTextStream()
     abortActiveStream()
     closeVoiceSocket()
@@ -443,7 +463,10 @@ export function useInterviewPageController() {
     dashboardRefreshing,
     sessionDetailStatus,
     sessionDetailError,
+    sessionDetailDisplayError,
     sessionDetailRefreshing,
+    requestedSessionId,
+    failedSessionId,
     resumes,
     positions,
     selectedResumeId,

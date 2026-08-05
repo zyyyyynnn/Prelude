@@ -127,8 +127,8 @@ async function loadAnalytics() {
   } finally {
     if (analyticsAbortController === controller) {
       analyticsAbortController = null
+      refreshing.value = false
     }
-    refreshing.value = false
   }
 }
 

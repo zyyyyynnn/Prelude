@@ -91,7 +91,7 @@ async function handleSessionClick(sessionId: number) {
   if (route.path !== '/interview') {
     await router.push('/interview')
   }
-  await loadSession(sessionId)
+  await loadSession(sessionId).catch(() => undefined)
 }
 
 function navigateTo(path: string) {

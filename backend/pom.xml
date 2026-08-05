@@ -24,6 +24,7 @@
         <okhttp.version>4.12.0</okhttp.version>
         <pdfbox.version>3.0.3</pdfbox.version>
         <jacoco.version>0.8.11</jacoco.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
     </properties>
 
     <dependencies>
@@ -100,6 +101,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mysql</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.18.0</version>
             <scope>test</scope>
         </dependency>
         <!-- Resilience4j for gateway rate-limiting and circuit breaker -->

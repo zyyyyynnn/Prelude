@@ -26,6 +26,15 @@ public class ImageIoAvatarContentProcessor implements AvatarContentProcessor {
 
     @Override
     public ProcessedAvatar process(AvatarUpload upload) {
+        return processInternal(upload, false);
+    }
+
+    @Override
+    public ProcessedAvatar processLegacy(AvatarUpload upload) {
+        return processInternal(upload, true);
+    }
+
+    private ProcessedAvatar processInternal(AvatarUpload upload, boolean allowLegacyFormats) {
         if (upload == null || upload.contentLength() == 0) {
             throw BusinessException.badRequest("请选择头像文件");
         }
@@ -40,44 +49,55 @@ public class ImageIoAvatarContentProcessor implements AvatarContentProcessor {
 
         try (ImageInputStream imageInput = ImageIO.createImageInputStream(new ByteArrayInputStream(source))) {
             if (imageInput == null) {
-                throw invalidImage();
+                throw invalidImage(allowLegacyFormats);
             }
             Iterator<ImageReader> readers = ImageIO.getImageReaders(imageInput);
             if (!readers.hasNext()) {
-                throw invalidImage();
+                if (allowLegacyFormats && LegacyWebpValidator.isValid(source)) {
+                    throw BusinessException.badRequest("历史 WebP 头像缺少可靠解码器，保留原资源");
+                }
+                throw invalidImage(allowLegacyFormats);
             }
 
             ImageReader reader = readers.next();
             try {
                 reader.setInput(imageInput, true, true);
                 String format = reader.getFormatName().toLowerCase(Locale.ROOT);
-                if (!format.equals("jpeg") && !format.equals("jpg") && !format.equals("png")) {
-                    throw BusinessException.badRequest("头像仅支持真实 JPEG 或 PNG 图片");
+                if (!isAccepted(format, allowLegacyFormats)) {
+                    throw invalidImage(allowLegacyFormats);
                 }
 
                 int width = reader.getWidth(0);
                 int height = reader.getHeight(0);
                 validateDimensions(width, height);
 
+                // Legacy GIFs deliberately take frame zero. New uploads never enter this branch.
                 BufferedImage image = reader.read(0);
                 if (image == null) {
-                    throw invalidImage();
+                    throw invalidImage(allowLegacyFormats);
                 }
                 ByteArrayOutputStream canonical = new ByteArrayOutputStream();
                 if (!ImageIO.write(image, "png", canonical)) {
-                    throw invalidImage();
+                    throw invalidImage(allowLegacyFormats);
                 }
                 return new ProcessedAvatar(canonical.toByteArray(), "image/png", "png", width, height);
             } catch (BusinessException exception) {
                 throw exception;
             } catch (IOException | RuntimeException exception) {
-                throw invalidImage();
+                throw invalidImage(allowLegacyFormats);
             } finally {
                 reader.dispose();
             }
         } catch (IOException exception) {
-            throw invalidImage();
+            throw invalidImage(allowLegacyFormats);
         }
+    }
+
+    private boolean isAccepted(String format, boolean allowLegacyFormats) {
+        if (format.equals("jpeg") || format.equals("jpg") || format.equals("png")) {
+            return true;
+        }
+        return allowLegacyFormats && format.equals("gif");
     }
 
     private byte[] readBounded(InputStream input) {
@@ -113,7 +133,9 @@ public class ImageIoAvatarContentProcessor implements AvatarContentProcessor {
         }
     }
 
-    private BusinessException invalidImage() {
-        return BusinessException.badRequest("头像不是可识别的 JPEG 或 PNG 图片");
+    private BusinessException invalidImage(boolean allowLegacyFormats) {
+        return BusinessException.badRequest(
+            allowLegacyFormats ? "历史头像不是可识别的图片" : "头像不是可识别的 JPEG 或 PNG 图片"
+        );
     }
 }

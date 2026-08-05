@@ -21,7 +21,9 @@ const {
   dashboardRefreshing,
   sessionDetailStatus,
   sessionDetailError,
+  sessionDetailDisplayError,
   sessionDetailRefreshing,
+  requestedSessionId,
   resumes,
   positions,
   selectedResumeId,
@@ -95,6 +97,19 @@ function exportReport() {
       @retry="retryDashboard"
     />
 
+    <div
+      v-else-if="sessionDetailStatus === 'loading' && requestedSessionId && !replay"
+      class="workspace-detail-loading workspace-detail-loading--page"
+    >
+      <Skeleton v-for="index in 6" :key="index" class="workspace-detail-loading__line" />
+    </div>
+    <InlineAsyncError
+      v-else-if="sessionDetailStatus === 'error' && requestedSessionId && !replay"
+      class="workspace-page-error"
+      :message="sessionDetailDisplayError || '会话加载失败，请重试。'"
+      @retry="retryActiveSession"
+    />
+
     <!-- Empty State -->
     <div v-else-if="dashboardStatus === 'success' && !activeSessionId" class="workspace-empty">
       <div class="workspace-empty__content">
@@ -145,15 +160,15 @@ function exportReport() {
       />
 
       <div class="workspace-active__main">
+        <InlineAsyncError
+          v-if="sessionDetailError"
+          class="workspace-detail-error workspace-detail-error--refresh"
+          :message="sessionDetailDisplayError || sessionDetailError"
+          @retry="retryActiveSession"
+        />
         <div v-if="sessionDetailStatus === 'loading' && !replay" class="workspace-detail-loading">
           <Skeleton v-for="index in 6" :key="index" class="workspace-detail-loading__line" />
         </div>
-        <InlineAsyncError
-          v-else-if="sessionDetailError && !replay"
-          class="workspace-detail-error"
-          :message="sessionDetailError"
-          @retry="retryActiveSession"
-        />
         <div
           v-else-if="sessionDetailRefreshing"
           class="workspace-detail-refreshing"

@@ -1,31 +1,26 @@
 package com.interview.identity.application;
 
+import com.interview.identity.api.UserProfileRequest;
 import com.interview.identity.application.port.AvatarContentProcessor;
 import com.interview.identity.application.port.AvatarStoragePort;
 import com.interview.identity.application.port.AvatarUpload;
+import com.interview.identity.application.port.LegacyAvatarSourcePort;
 import com.interview.identity.application.port.ProcessedAvatar;
 import com.interview.identity.domain.User;
 import com.interview.identity.infrastructure.persistence.UserMapper;
+import com.interview.shared.api.BusinessException;
 import com.interview.shared.web.UserContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -48,24 +43,24 @@ class UserProfileServiceImplTest {
     private AvatarContentProcessor contentProcessor;
     @Mock
     private AvatarStoragePort storage;
+    @Mock
+    private LegacyAvatarSourcePort legacySource;
 
     private TransactionTemplate transactionTemplate;
     private UserProfileServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        transactionTemplate = new TransactionTemplate(new LockingTransactionManager());
+        transactionTemplate = new TransactionTemplate(new TestTransactionManager());
         service = new UserProfileServiceImpl(
             userMapper,
             passwordEncoder,
             contentProcessor,
             storage,
+            legacySource,
             transactionTemplate
         );
         UserContext.setCurrentUserId(42L);
-        when(contentProcessor.process(any())).thenReturn(
-            new ProcessedAvatar(new byte[] {1, 2, 3}, "image/png", "png", 1, 1)
-        );
     }
 
     @AfterEach
@@ -74,110 +69,143 @@ class UserProfileServiceImplTest {
     }
 
     @Test
-    void commitsProfileUpdateAndDeletesOldFileAfterCommit() {
-        User current = user("/uploads/avatars/old.jpg");
-        when(userMapper.selectById(42L)).thenReturn(current);
-        when(userMapper.selectByIdForUpdate(42L)).thenReturn(current);
-        when(storage.store(any(), any())).thenAnswer(invocation -> {
-            String key = invocation.getArgument(0);
-            return new AvatarStoragePort.StoredAvatar(key, "/media/avatars/" + key);
+    void commitsAvatarByRevisionAndDeletesOldFileAfterCommit() {
+        stubProcessor();
+        User current = user("/uploads/avatars/old.jpg", 0L);
+        stubRevisionClaim(current);
+        when(storage.store(any(), any())).thenAnswer(invocation -> stored(invocation.getArgument(0)));
+        when(userMapper.updateAvatarIfRevision(anyLong(), any(), anyLong())).thenAnswer(invocation -> {
+            current.setAvatarUrl(invocation.getArgument(1));
+            return 1;
         });
 
         var response = service.updateAvatar(upload());
 
         assertThat(response.avatarUrl()).startsWith("/media/avatars/42_").endsWith(".png");
-        verify(storage).delete("old.jpg");
-        verify(userMapper).selectByIdForUpdate(42L);
+        verify(userMapper).claimAvatarRevision(42L);
+        verify(userMapper).updateAvatarIfRevision(42L, response.avatarUrl(), 1L);
+        verify(legacySource).delete("old.jpg");
+        verify(userMapper, never()).updateById(any(User.class));
     }
 
     @Test
     void rollbackRemovesNewFileAndDoesNotDeleteOldFile() {
-        User current = user("/media/avatars/old.png");
-        when(userMapper.selectById(42L)).thenReturn(current);
-        when(userMapper.selectByIdForUpdate(42L)).thenReturn(current);
-        when(storage.store(any(), any())).thenAnswer(invocation -> {
-            String key = invocation.getArgument(0);
-            return new AvatarStoragePort.StoredAvatar(key, "/media/avatars/" + key);
-        });
-        doThrow(new IllegalStateException("database failure")).when(userMapper).updateById(any(User.class));
+        stubProcessor();
+        User current = user("/media/avatars/old.png", 0L);
+        stubRevisionClaim(current);
+        when(storage.store(any(), any())).thenAnswer(invocation -> stored(invocation.getArgument(0)));
+        doThrow(new IllegalStateException("database failure"))
+            .when(userMapper).updateAvatarIfRevision(anyLong(), any(), anyLong());
 
         assertThatThrownBy(() -> service.updateAvatar(upload()))
             .isInstanceOf(IllegalStateException.class)
             .hasMessage("database failure");
 
-        ArgumentCaptor<String> deleted = ArgumentCaptor.forClass(String.class);
-        verify(storage, org.mockito.Mockito.atLeastOnce()).delete(deleted.capture());
-        assertThat(deleted.getAllValues()).allMatch(value -> value.startsWith("42_") && value.endsWith(".png"));
+        verify(storage).delete(any());
         verify(storage, never()).delete("old.png");
     }
 
     @Test
-    void concurrentUploadsSerializeLockedRowAndLeaveDatabasePointingAtOneStoredFile() throws Exception {
-        User state = user("/media/avatars/old.png");
-        when(userMapper.selectById(anyLong())).thenAnswer(invocation -> user(state.getAvatarUrl()));
-        when(userMapper.selectByIdForUpdate(42L)).thenReturn(state);
+    void staleAvatarRevisionReturnsConflictAndDeletesOnlyTheNewFile() {
+        stubProcessor();
+        User current = user("/media/avatars/current.png", 0L);
+        stubRevisionClaim(current);
+        when(storage.store(any(), any())).thenAnswer(invocation -> stored(invocation.getArgument(0)));
+        when(userMapper.updateAvatarIfRevision(anyLong(), any(), anyLong())).thenReturn(0);
 
-        CountDownLatch bothStored = new CountDownLatch(2);
-        List<String> storedKeys = new ArrayList<>();
-        when(storage.store(any(), any())).thenAnswer(invocation -> {
-            String key = invocation.getArgument(0);
-            synchronized (storedKeys) {
-                storedKeys.add(key);
-            }
-            bothStored.countDown();
-            assertThat(bothStored.await(5, TimeUnit.SECONDS)).isTrue();
-            return new AvatarStoragePort.StoredAvatar(key, "/media/avatars/" + key);
-        });
-        doAnswer(invocation -> {
-            User update = invocation.getArgument(0);
-            state.setAvatarUrl(update.getAvatarUrl());
+        assertThatThrownBy(() -> service.updateAvatar(upload()))
+            .isInstanceOf(BusinessException.class)
+            .extracting(exception -> ((BusinessException) exception).getCode())
+            .isEqualTo(409);
+
+        verify(storage).delete(any());
+        verify(storage, never()).delete("current.png");
+    }
+
+    @Test
+    void profileMutationUsesFieldLevelWritesAndNeverPersistsAFullUserEntity() {
+        User current = user("/media/avatars/current.png", 0L);
+        current.setUsername("before");
+        current.setEmail("before@example.com");
+        current.setPassword("old-hash");
+        current.setThemePreference("system");
+        when(userMapper.selectById(42L)).thenReturn(current);
+        when(userMapper.updateUsername(42L, "after")).thenAnswer(invocation -> {
+            current.setUsername("after");
             return 1;
-        }).when(userMapper).updateById(any(User.class));
+        });
+        when(userMapper.updateEmail(42L, "after@example.com")).thenAnswer(invocation -> {
+            current.setEmail("after@example.com");
+            return 1;
+        });
+        when(userMapper.updateThemePreference(42L, "dark")).thenAnswer(invocation -> {
+            current.setThemePreference("dark");
+            return 1;
+        });
+        when(passwordEncoder.matches("old", "old-hash")).thenReturn(true);
+        when(passwordEncoder.matches("new", "old-hash")).thenReturn(false);
+        when(passwordEncoder.encode("new")).thenReturn("new-hash");
 
-        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
-            var first = executor.submit(() -> runUploadInThread());
-            var second = executor.submit(() -> runUploadInThread());
-            first.get(10, TimeUnit.SECONDS);
-            second.get(10, TimeUnit.SECONDS);
-        }
+        UserProfileRequest request = new UserProfileRequest();
+        request.setUsername("after");
+        request.setEmail("after@example.com");
+        request.setThemePreference("dark");
+        request.setOldPassword("old");
+        request.setNewPassword("new");
 
-        assertThat(state.getAvatarUrl()).isIn(
-            storedKeys.stream().map(key -> "/media/avatars/" + key).toArray(String[]::new)
+        var response = service.updateCurrentUserProfile(request);
+
+        assertThat(response.username()).isEqualTo("after");
+        assertThat(response.email()).isEqualTo("after@example.com");
+        assertThat(response.themePreference()).isEqualTo("dark");
+        verify(userMapper).updateUsername(42L, "after");
+        verify(userMapper).updateEmail(42L, "after@example.com");
+        verify(userMapper).updateThemePreference(42L, "dark");
+        verify(userMapper).updatePassword(42L, "new-hash");
+        verify(userMapper, never()).updateById(any(User.class));
+    }
+
+    private void stubRevisionClaim(User current) {
+        when(userMapper.selectById(42L)).thenReturn(current);
+        when(userMapper.selectAvatarUrlForUpdate(42L)).thenAnswer(invocation -> current.getAvatarUrl());
+        doAnswer(invocation -> {
+            current.setAvatarRevision(current.getAvatarRevision() + 1);
+            return 1;
+        }).when(userMapper).claimAvatarRevision(42L);
+    }
+
+    private void stubProcessor() {
+        when(contentProcessor.process(any())).thenReturn(
+            new ProcessedAvatar(new byte[] {1, 2, 3}, "image/png", "png", 1, 1)
         );
-        verify(storage).delete("old.png");
-        for (String key : storedKeys) {
-            if (!state.getAvatarUrl().equals("/media/avatars/" + key)) {
-                verify(storage).delete(key);
-            }
-        }
     }
 
-    private void runUploadInThread() {
-        UserContext.setCurrentUserId(42L);
-        try {
-            service.updateAvatar(upload());
-        } finally {
-            UserContext.remove();
-        }
+    private AvatarStoragePort.StoredAvatar stored(String key) {
+        return new AvatarStoragePort.StoredAvatar(key, "/media/avatars/" + key);
     }
 
-    private User user(String avatarUrl) {
+    private User user(String avatarUrl, long revision) {
         User user = new User();
         user.setId(42L);
         user.setUsername("demo");
         user.setEmail("demo@example.com");
         user.setThemePreference("system");
         user.setAvatarUrl(avatarUrl);
+        user.setAvatarRevision(revision);
+        user.setPassword("old-hash");
         return user;
     }
 
     private AvatarUpload upload() {
-        return new AvatarUpload("../../avatar.png", "image/png", 3, new ByteArrayInputStream(new byte[] {1, 2, 3}));
+        return new AvatarUpload(
+            "../../avatar.png",
+            "image/png",
+            3,
+            new ByteArrayInputStream(new byte[] {1, 2, 3})
+        );
     }
 
-    private static final class LockingTransactionManager extends AbstractPlatformTransactionManager {
-
-        private final ReentrantLock lock = new ReentrantLock();
+    private static final class TestTransactionManager extends AbstractPlatformTransactionManager {
 
         @Override
         protected Object doGetTransaction() {
@@ -186,7 +214,6 @@ class UserProfileServiceImplTest {
 
         @Override
         protected void doBegin(Object transaction, org.springframework.transaction.TransactionDefinition definition) {
-            lock.lock();
         }
 
         @Override
@@ -199,7 +226,6 @@ class UserProfileServiceImplTest {
 
         @Override
         protected void doCleanupAfterCompletion(Object transaction) {
-            lock.unlock();
         }
     }
 }

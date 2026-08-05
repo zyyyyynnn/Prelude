@@ -116,6 +116,74 @@ describe('userProfileStore', () => {
     expect(JSON.stringify(store.profile)).not.toContain('blob:')
   })
 
+  it('keeps profile and theme mutation lanes independent and merges only owned fields', async () => {
+    api.fetchUserProfile.mockResolvedValue(profile('before'))
+    const store = useUserProfileStore()
+    store.activateAccount('user:1')
+    await store.ensureLoaded()
+
+    const profileRequest = deferred<UserProfileResponse>()
+    const themeRequest = deferred<UserProfileResponse>()
+    api.updateUserProfile
+      .mockReturnValueOnce(profileRequest.promise)
+      .mockReturnValueOnce(themeRequest.promise)
+
+    const saveProfile = store.updateProfile({ username: 'after-profile' })
+    const saveTheme = store.updateProfile({ themePreference: 'dark' })
+    expect(store.profileMutationPending).toBe(true)
+    expect(store.themeMutationPending).toBe(true)
+
+    themeRequest.resolve({ ...profile('before', 'avatar.png'), themePreference: 'dark' })
+    await saveTheme
+    profileRequest.resolve({ ...profile('after-profile'), themePreference: 'light' })
+    await saveProfile
+
+    expect(store.profile?.username).toBe('after-profile')
+    expect(store.profile?.themePreference).toBe('dark')
+    expect(store.profileMutationPending).toBe(false)
+    expect(store.themeMutationPending).toBe(false)
+    expect(store.avatarMutationPending).toBe(false)
+  })
+
+  it('aborts an older avatar selection but ignores its late response', async () => {
+    api.fetchUserProfile.mockResolvedValue(profile('before'))
+    const store = useUserProfileStore()
+    store.activateAccount('user:1')
+    await store.ensureLoaded()
+
+    const older = deferred<UserProfileResponse>()
+    const signals: AbortSignal[] = []
+    api.uploadUserAvatar.mockImplementation((file: File, signal: AbortSignal) => {
+      signals.push(signal)
+      return signals.length === 1 ? older.promise : Promise.resolve(profile('before', 'new.png'))
+    })
+
+    const first = store.uploadAvatar(new File(['one'], 'one.png', { type: 'image/png' }))
+    const second = store.uploadAvatar(new File(['two'], 'two.png', { type: 'image/png' }))
+    await second
+    older.resolve(profile('before', 'old.png'))
+    await first
+
+    expect(signals[0].aborted).toBe(true)
+    expect(store.profile?.avatarUrl).toBe('new.png')
+    expect(store.avatarMutationPending).toBe(false)
+  })
+
+  it('keeps mutation failures out of load and refresh error state', async () => {
+    api.fetchUserProfile.mockResolvedValue(profile('before'))
+    const store = useUserProfileStore()
+    store.activateAccount('user:1')
+    await store.ensureLoaded()
+
+    api.updateUserProfile.mockRejectedValueOnce(new Error('profile write failed'))
+    await expect(store.updateProfile({ username: 'after' })).rejects.toThrow('profile write failed')
+
+    expect(store.loadError).toBeNull()
+    expect(store.refreshError).toBeNull()
+    expect(store.error).toBeNull()
+    expect(store.profile?.username).toBe('before')
+  })
+
   it('reset aborts pending work and clears account-owned state', async () => {
     const pending = deferred<UserProfileResponse>()
     let signal!: AbortSignal

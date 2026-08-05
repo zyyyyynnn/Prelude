@@ -53,8 +53,8 @@ async function loadResumes(mode: 'initial' | 'refresh' = 'initial') {
   } finally {
     if (loadAbortController.value === controller) {
       loadAbortController.value = null
+      refreshing.value = false
     }
-    refreshing.value = false
   }
 }
 
@@ -78,6 +78,7 @@ async function handleUpload(event: Event) {
   try {
     await withMinDelay(uploadResume(file, controller.signal))
     await loadResumes('refresh')
+    if (controller.signal.aborted || uploadAbortController.value !== controller) return
     if (!error.value) showNotice('简历已上传', 'success')
   } catch (error) {
     if ((error instanceof DOMException && error.name === 'AbortError') || axios.isCancel(error)) {
@@ -85,9 +86,9 @@ async function handleUpload(event: Event) {
     }
     showNotice(getErrorMessage(error), 'error')
   } finally {
-    uploading.value = false
     if (uploadAbortController.value === controller) {
       uploadAbortController.value = null
+      uploading.value = false
     }
   }
 }

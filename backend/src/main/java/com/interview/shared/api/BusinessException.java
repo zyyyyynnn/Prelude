@@ -23,4 +23,8 @@ public class BusinessException extends RuntimeException {
     public static BusinessException notFound(String message) {
         return new BusinessException(404, message);
     }
+
+    public static BusinessException conflict(String message) {
+        return new BusinessException(409, message);
+    }
 }

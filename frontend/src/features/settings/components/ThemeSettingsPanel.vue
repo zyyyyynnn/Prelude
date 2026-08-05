@@ -11,9 +11,11 @@ import { InlineAsyncError } from '@/shared/ui/inline-async-error'
 import { Skeleton } from '@/shared/ui/skeleton'
 
 const profileStore = useUserProfileStore()
-const { profile, status, error, refreshing } = storeToRefs(profileStore)
+const { profile, status, loadError, refreshError } = storeToRefs(profileStore)
+const { refreshing } = storeToRefs(profileStore)
 const loading = computed(() => status.value === 'idle' || status.value === 'loading')
 const saving = ref(false)
+const themeSaveError = ref<string | null>(null)
 const { showNotice } = usePageNotice()
 
 const initial = ref<ThemePreference | null>(null)
@@ -47,6 +49,7 @@ async function saveTheme() {
   }
 
   saving.value = true
+  themeSaveError.value = null
   try {
     const result = await withMinDelay(profileStore.updateProfile({ themePreference: state.value }))
     state.value = result.themePreference || state.value
@@ -55,6 +58,7 @@ async function saveTheme() {
     applyThemePreference(state.value)
     showNotice('主题已保存', 'success')
   } catch (error) {
+    themeSaveError.value = getErrorMessage(error)
     state.value = initial.value
     if (initial.value) applyThemePreference(initial.value)
     showNotice(getErrorMessage(error), 'error')
@@ -96,10 +100,11 @@ defineExpose({ submit: saveTheme, saving, loading, dirty })
       <Skeleton class="theme-loading__card" />
       <Skeleton class="theme-loading__card" />
     </div>
-    <InlineAsyncError v-else-if="status === 'error'" :message="error" @retry="retry" />
+    <InlineAsyncError v-else-if="status === 'error'" :message="loadError" @retry="retry" />
     <div v-else-if="status === 'success' && state">
       <p v-if="refreshing" class="theme-refreshing" aria-live="polite">正在刷新主题…</p>
-      <InlineAsyncError v-if="error" :message="error" @retry="retry" />
+      <InlineAsyncError v-if="refreshError" :message="refreshError" @retry="retry" />
+      <InlineAsyncError v-if="themeSaveError" :message="themeSaveError" />
       <div class="theme-grid">
         <button
           v-for="option in themeOptions"

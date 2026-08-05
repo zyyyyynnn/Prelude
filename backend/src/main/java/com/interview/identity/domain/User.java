@@ -12,6 +12,7 @@ public class User {
     private String password;
     private String email;
     private String avatarUrl;
+    private Long avatarRevision;
     private String themePreference;
     private String llmProvider;
     private String llmModel;

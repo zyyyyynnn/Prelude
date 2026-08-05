@@ -14,24 +14,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AvatarSchemaMaintenanceTest {
 
     @Test
-    void legacyAvatarUrisUpgradeIdempotentlyWithoutChangingEmptyValues() throws Exception {
+    void schemaCanonicalizesLegacyAvatarUrisIdempotently() throws Exception {
         String schema = readSchema();
 
         assertThat(schema)
-            .contains("CONCAT('/media/avatars/', SUBSTRING_INDEX(`avatar_url`, '/uploads/avatars/', -1))")
-            .contains("WHERE `avatar_url` LIKE '/uploads/avatars/%'")
-            .contains("AND `avatar_url` NOT LIKE '/media/avatars/%'")
+            .contains("`avatar_revision` BIGINT NOT NULL DEFAULT 0")
+            .contains("COLUMN_NAME = 'avatar_revision'")
             .contains("CREATE TABLE IF NOT EXISTS `user`")
+            .contains("CONCAT('/media/avatars/'")
+            .contains("WHERE `avatar_url` LIKE '/uploads/avatars/%'")
             .doesNotContain("DROP TABLE `user`");
     }
 
     @Test
-    void canonicalAvatarUriAndLocalStorageContractAreDocumentedInSchemaSource() throws Exception {
+    void avatarUriAndRevisionContractsAreDocumentedInSchemaSource() throws Exception {
         String schema = readSchema();
 
         assertThat(schema).contains("`avatar_url` VARCHAR(512)");
-        assertThat(schema.indexOf("UPDATE `user`"))
-            .isGreaterThan(schema.indexOf("COLUMN_NAME = 'avatar_url'"));
+        assertThat(schema).contains("`avatar_revision` BIGINT NOT NULL DEFAULT 0");
     }
 
     private static String readSchema() throws IOException, URISyntaxException {
