@@ -244,14 +244,18 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
   await expect(page.getByLabel('邮箱')).toBeVisible()
   const registerSubmit = page.getByRole('button', { name: '完成注册' })
   await expect(registerSubmit).toBeVisible()
-  const registerGap = await page.locator('.login-card__form-panel').evaluate((panel) => {
+  const registerGeometry = await page.locator('.login-card__form-panel').evaluate((panel) => {
     const email = panel.querySelector<HTMLElement>('#auth-email')!
     const button = panel.querySelector<HTMLElement>('.login-card__submit')!
-    return button.getBoundingClientRect().top - email.getBoundingClientRect().bottom
+    const buttonRect = button.getBoundingClientRect()
+    return {
+      buttonTop: buttonRect.top,
+      buttonGap: buttonRect.top - email.getBoundingClientRect().bottom,
+    }
   })
-  expect(registerGap).toBeGreaterThanOrEqual(28)
-  expect(registerGap).toBeLessThanOrEqual(40)
-  expect(Math.abs((await registerSubmit.boundingBox())!.y - loginGeometry.buttonTop)).toBeLessThan(1)
+  expect(registerGeometry.buttonGap).toBeGreaterThanOrEqual(28)
+  expect(registerGeometry.buttonGap).toBeLessThanOrEqual(40)
+  expect(Math.abs(registerGeometry.buttonTop - loginGeometry.buttonTop)).toBeLessThan(1)
   await page.evaluate(
     () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
   )
