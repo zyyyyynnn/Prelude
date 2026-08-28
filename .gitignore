@@ -1,6 +1,6 @@
 # Backend
 backend/target/
-backend/src/main/resources/application-local.yml
+backend/uploads/
 
 # Docker Compose local env (do not commit real secrets)
 .env

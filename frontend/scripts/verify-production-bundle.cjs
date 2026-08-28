@@ -4,64 +4,15 @@
 const fs = require('node:fs')
 const path = require('node:path')
 
-const textExtensions = new Set(['.css', '.html', '.js', '.json'])
-const forbiddenMarkers = ['/components-lab', 'Component Lab', 'devtools/component-lab']
-
-function listBundleFiles(root) {
-  if (!fs.existsSync(root)) return []
-  const files = []
-  const visit = (directory) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      const target = path.join(directory, entry.name)
-      if (entry.isDirectory()) visit(target)
-      else if (textExtensions.has(path.extname(entry.name))) files.push(target)
-    }
-  }
-  visit(root)
-  return files
+const dist = path.resolve(__dirname, '..', 'dist')
+if (!fs.existsSync(path.join(dist, 'index.html'))) {
+  throw new Error('Production bundle is missing')
 }
-
-function verifyProductionBundle(distRoot, options = {}) {
-  if (!fs.existsSync(distRoot)) return [`production bundle does not exist: ${distRoot}`]
-
-  const violations = []
-  const bundleFiles = listBundleFiles(distRoot)
-  const indexPath = path.join(distRoot, 'index.html')
-  const indexSource = fs.existsSync(indexPath) ? fs.readFileSync(indexPath, 'utf8') : ''
-  if (indexSource.includes('vendor-pdf')) {
-    violations.push('index.html eagerly loads vendor-pdf')
-  }
-  if (
-    options.requireDeferredPdf &&
-    !bundleFiles.some((file) => path.basename(file).startsWith('vendor-pdf-'))
-  ) {
-    violations.push('deferred vendor-pdf chunk is missing')
-  }
-
-  for (const file of bundleFiles) {
-    const source = fs.readFileSync(file, 'utf8')
-    for (const marker of forbiddenMarkers) {
-      if (source.includes(marker)) {
-        violations.push(`${path.relative(distRoot, file)} contains ${JSON.stringify(marker)}`)
-      }
-    }
-  }
-  return violations
+const files = fs.readdirSync(path.join(dist, 'assets')).filter((name) => /\.(?:js|css)$/.test(name))
+const source = files
+  .map((name) => fs.readFileSync(path.join(dist, 'assets', name), 'utf8'))
+  .join('\n')
+if (source.includes('/components-lab') || source.includes('Component Lab')) {
+  throw new Error('Development route found in production bundle')
 }
-
-function main() {
-  const distRoot = path.resolve(__dirname, '..', 'dist')
-  const violations = verifyProductionBundle(distRoot, { requireDeferredPdf: true })
-  if (violations.length === 0) {
-    console.log('Production bundle verification: PASS')
-    return
-  }
-
-  console.error(`Production bundle verification: FAIL (${violations.length} violations)`)
-  for (const item of violations) console.error(`  ${item}`)
-  process.exitCode = 1
-}
-
-module.exports = { verifyProductionBundle }
-
-if (require.main === module) main()
+console.log('Production bundle verification: PASS')

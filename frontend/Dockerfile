@@ -1,12 +1,11 @@
-# Build stage
 FROM node:24-alpine AS build
 WORKDIR /app
+RUN npm install --global npm@12.0.2
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-# Run stage
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

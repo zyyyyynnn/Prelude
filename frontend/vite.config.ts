@@ -1,71 +1,29 @@
-import { defineConfig, loadEnv, lazyPlugins } from 'vite-plus'
-import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
+import { defineConfig, loadEnv } from 'vite'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const port = Number(env.VITE_PORT || 5173)
-  const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:8080'
-  const host = env.VITE_HOST || '127.0.0.1'
 
   return {
-    fmt: {
-      singleQuote: true,
-      semi: false,
-    },
-    lint: {
-      jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }],
-      rules: { 'vite-plus/prefer-vite-plus-imports': 'error' },
-      options: { typeAware: true, typeCheck: true },
-    },
-    plugins: lazyPlugins(() => [vue(), tailwindcss()]),
+    plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
-    build: {
-      chunkSizeWarningLimit: 520,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              const pdfPackages = [
-                'canvg',
-                'dompurify',
-                'fast-png',
-                'fflate',
-                'html2canvas',
-                'jspdf',
-                'rgbcolor',
-                'stackblur-canvas',
-              ]
-              if (pdfPackages.some((packageName) => id.includes(`/node_modules/${packageName}/`))) {
-                return 'vendor-pdf'
-              }
-              if (id.includes('echarts') || id.includes('zrender')) {
-                return 'vendor-echarts'
-              }
-              if (id.includes('markdown-it') || id.includes('highlight.js')) {
-                return 'vendor-markdown-it'
-              }
-              if (id.includes('vue') || id.includes('vue-router') || id.includes('pinia')) {
-                return 'vendor-brand'
-              }
-              return 'vendor'
-            }
-          },
-        },
-      },
-    },
     server: {
-      host,
-      port,
+      host: env.VITE_HOST || '127.0.0.1',
+      port: Number(env.VITE_PORT || 5173),
       proxy: {
         '/api': {
-          target: proxyTarget,
+          target: env.VITE_PROXY_TARGET || 'http://127.0.0.1:8080',
           changeOrigin: true,
+          ws: true,
+          configure(proxy) {
+            proxy.on('proxyReq', (proxyRequest) => proxyRequest.removeHeader('origin'))
+          },
         },
       },
     },
