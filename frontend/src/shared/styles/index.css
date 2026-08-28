@@ -835,23 +835,36 @@ label,
   word-break: break-word;
 }
 
-.empty-state,
-.report-panel__empty {
+.empty-state {
   display: grid;
   place-items: center;
-  border: 1px dashed var(--color-border-warm);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  gap: var(--spacing-md);
+  min-height: 120px;
+  padding-block: var(--spacing-lg);
+  padding-inline: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   color: var(--color-text-tertiary);
+  font: var(--font-size-sm)/1.65 var(--font-serif);
   text-align: center;
 }
 
-.empty-state {
-  min-height: 120px;
+.empty-state > p {
+  max-inline-size: var(--content-message-max-inline-size);
+  margin: 0;
 }
 
 .report-panel__empty {
+  display: grid;
+  place-items: center;
   min-height: 320px;
+  padding: var(--spacing-lg);
+  border: 1px dashed var(--color-border-warm);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-serif);
+  text-align: center;
 }
 
 .stage-rail {
@@ -1338,13 +1351,6 @@ label,
 .scrollable::-webkit-scrollbar-thumb:hover {
 }
 
-@media print {
-  .panel {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-}
-
 /* ==========================================================================
    Workspace Layout System (全局工作区骨架锁死)
    ========================================================================== */
@@ -1483,6 +1489,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   overflow: hidden;
 }
 .prelude-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1494,10 +1501,19 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   cursor: pointer;
   transition: var(--motion-transition-surface);
 }
-.prelude-button > svg {
+.prelude-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: inherit;
+}
+.prelude-button__content > svg {
   inline-size: var(--spacing-4-5);
   block-size: var(--spacing-4-5);
   flex: 0 0 auto;
+}
+.prelude-button[data-loading] .prelude-button__content {
+  opacity: 0;
 }
 .prelude-button:disabled {
   cursor: not-allowed;
@@ -1804,8 +1820,11 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   padding: 0;
 }
 .button-spinner {
+  position: absolute;
+  inset: 0;
   width: var(--spacing-md);
   height: var(--spacing-md);
+  margin: auto;
   border: 1px solid currentColor;
   border-right-color: transparent;
   border-radius: var(--radius-full);
@@ -1921,13 +1940,6 @@ html[data-input-intent='keyboard']
 .notice--error {
   color: var(--color-error);
   border-color: color-mix(in srgb, var(--color-error) 35%, var(--color-border));
-}
-.empty-state {
-  display: grid;
-  min-height: 180px;
-  place-items: center;
-  color: var(--color-text-tertiary);
-  text-align: center;
 }
 .message-thread {
   flex: 1;

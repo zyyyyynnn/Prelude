@@ -39,6 +39,7 @@ export function Select({
     >
       <BaseSelect.Trigger
         id={id}
+        data-slot="select-trigger"
         aria-label={ariaLabel}
         className={classNames('prelude-select', 'ui-field-control', className)}
       >
@@ -53,13 +54,14 @@ export function Select({
           sideOffset={4}
           alignItemWithTrigger={false}
         >
-          <BaseSelect.Popup className="prelude-menu prelude-select-popup">
-            <BaseSelect.List className="prelude-select__list">
+          <BaseSelect.Popup data-slot="select-content" className="prelude-menu prelude-select-popup">
+            <BaseSelect.List data-slot="select-list" className="prelude-select__list">
               {options.map((option) => (
                 <BaseSelect.Item
                   key={option.value}
                   value={option.value}
                   disabled={option.disabled}
+                  data-slot="select-item"
                   className="prelude-menu__item prelude-select__item"
                 >
                   <BaseSelect.ItemIndicator

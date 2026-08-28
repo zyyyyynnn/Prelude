@@ -15,11 +15,6 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: true
-    baseline-version: 0
-    ignore-migration-patterns:
-      - "*:future"
-      - "repeatable:missing"
     validate-migration-naming: true
   session:
     jdbc:

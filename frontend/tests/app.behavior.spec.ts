@@ -159,6 +159,23 @@ test('@smoke sends the selected prompt bar context when starting an interview', 
     buffer: Buffer.from('# Architecture'),
   })
   await expect(page.getByText('architecture.md')).toBeVisible()
+  const removeAttachment = page.getByRole('button', { name: '移除附件：architecture.md' })
+  const removeGeometry = await removeAttachment.evaluate((button) => {
+    const control = button.getBoundingClientRect()
+    const icon = button.querySelector('svg')!.getBoundingClientRect()
+    return {
+      control: { width: control.width, height: control.height },
+      icon: { width: icon.width, height: icon.height },
+      centered:
+        Math.abs(control.left + control.width / 2 - (icon.left + icon.width / 2)) < 1 &&
+        Math.abs(control.top + control.height / 2 - (icon.top + icon.height / 2)) < 1,
+    }
+  })
+  expect(removeGeometry).toEqual({
+    control: { width: 22, height: 22 },
+    icon: { width: 14, height: 14 },
+    centered: true,
+  })
   await selectContext(page, '选择简历', '作品集简历.pdf')
   await selectContext(page, '选择岗位', '前端工程师')
   await page.getByLabel('职位描述（可选）').fill('负责复杂交互与前端架构。')
@@ -259,6 +276,60 @@ test('@smoke routes prompt bar management actions into global settings', async (
   await page.getByRole('menuitem', { name: '管理模型' }).click()
   await expect(page.getByRole('heading', { name: '模型管理' })).toBeVisible()
   await expect(page.getByLabel('服务协议')).toContainText('DeepSeek')
+  await expect(page.getByText(/个可用模型/)).toHaveCount(0)
+  await expect(page.getByText('尚未保存 API Key')).toHaveCount(0)
+  await expect(page.getByRole('status')).toHaveCount(0)
+})
+
+test('@smoke centers the async button indicator without resizing the control', async ({ page }) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+  await page.route('**/api/llm/config', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.fallback()
+      return
+    }
+    const body = route.request().postDataJSON() as Record<string, unknown>
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok({
+        ...body,
+        baseUrl: body.baseUrl ?? null,
+        hasApiKey: false,
+        apiKeyMasked: null,
+        maxTokens: body.maxTokens ?? null,
+        thinkingDepth: body.thinkingDepth ?? null,
+      }),
+    })
+  })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '模型管理' }).click()
+
+  const save = page.getByRole('button', { name: '保存设置' })
+  const idleWidth = (await save.boundingBox())!.width
+  await save.click()
+  await expect(save).toHaveAttribute('aria-busy', 'true')
+  const loading = await save.evaluate((button) => {
+    const control = button.getBoundingClientRect()
+    const spinner = button.querySelector<HTMLElement>('.button-spinner')!.getBoundingClientRect()
+    const content = button.querySelector<HTMLElement>('.prelude-button__content')!
+    return {
+      width: control.width,
+      centered:
+        Math.abs(control.left + control.width / 2 - (spinner.left + spinner.width / 2)) < 1 &&
+        Math.abs(control.top + control.height / 2 - (spinner.top + spinner.height / 2)) < 1,
+      contentOpacity: getComputedStyle(content).opacity,
+    }
+  })
+  expect(loading).toEqual({ width: idleWidth, centered: true, contentOpacity: '0' })
+
+  await expect(page.getByText('LLM 配置已保存')).toBeVisible()
+  await expect(save).not.toHaveAttribute('aria-busy')
+  await expect(save.locator('.prelude-button__content')).toHaveCSS('opacity', '1')
+  expect((await save.boundingBox())!.width).toBe(idleWidth)
 })
 
 test('@smoke updates the prompt model depth before the save request completes', async ({ page }) => {
@@ -475,6 +546,21 @@ test('@smoke renders structured reports and applies resume improvements', async 
   await page.getByRole('button', { name: '报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await expect(page.getByText('8.1')).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+  await page.locator('body').evaluate((body) => body.classList.add('is-printing-report'))
+  await expect(page.locator('.app-layout__main')).toHaveCSS('overflow', 'visible')
+  await expect(page.locator('.report-export-actions')).toHaveCSS('display', 'none')
+  await page.locator('body').evaluate((body) => body.classList.remove('is-printing-report'))
+  await page.emulateMedia({ media: 'screen' })
+  await page.evaluate(() => {
+    window.print = () => {
+      document.body.dataset.printCalled = 'true'
+    }
+  })
+  await page.getByRole('button', { name: '导出 PDF' }).click()
+  await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true')
+  await expect(page.locator('body')).not.toHaveClass(/is-printing-report/)
+  await expect(page.getByText('已打开系统打印窗口')).toBeVisible()
   await page.getByRole('button', { name: '接受并写入简历' }).click()
   await expect(page.getByText('已接受')).toBeVisible()
   expect(

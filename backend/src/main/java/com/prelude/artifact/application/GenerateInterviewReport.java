@@ -116,7 +116,7 @@ public class GenerateInterviewReport {
                                 "nextInterviewFocus": ["下次模拟重点"]
                               },
                               "finalAdvice": "总结建议",
-                              "reportMarkdown": "完整 Markdown 兼容报告",
+                              "reportMarkdown": "完整 Markdown 报告",
                               "resumeSuggestions": [{
                                 "targetPath": "必须来自用户消息提供的白名单路径",
                                 "currentText": "必须逐字等于对应路径当前值",

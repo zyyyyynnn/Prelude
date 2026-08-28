@@ -1,6 +1,6 @@
 ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS `user` (
+CREATE TABLE `user` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `username` VARCHAR(64) NOT NULL COMMENT '用户名',
   `password` VARCHAR(255) NOT NULL COMMENT 'BCrypt加密密码',
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   UNIQUE KEY `uk_user_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
-CREATE TABLE IF NOT EXISTS `resume` (
+CREATE TABLE `resume` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `file_name` VARCHAR(255) NOT NULL COMMENT '文件名',
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `resume` (
   CONSTRAINT `fk_resume_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='简历表';
 
-CREATE TABLE IF NOT EXISTS `position_template` (
+CREATE TABLE `position_template` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT DEFAULT NULL COMMENT '自建岗位所属用户，空表示内置模板',
   `name` VARCHAR(100) NOT NULL COMMENT '岗位名称',
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `position_template` (
   CONSTRAINT `fk_position_template_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='岗位模板表';
 
-CREATE TABLE IF NOT EXISTS `attachment` (
+CREATE TABLE `attachment` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT NOT NULL COMMENT '所有者用户ID',
   `file_name` VARCHAR(255) NOT NULL COMMENT '原始文件名',
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS `attachment` (
   CONSTRAINT `fk_attachment_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户上下文附件';
 
-CREATE TABLE IF NOT EXISTS `interview_session` (
+CREATE TABLE `interview_session` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `resume_id` BIGINT NOT NULL COMMENT '简历ID',
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `interview_session` (
   CONSTRAINT `fk_session_position` FOREIGN KEY (`position_id`) REFERENCES `position_template` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试会话表';
 
-CREATE TABLE IF NOT EXISTS `resume_improvement` (
+CREATE TABLE `resume_improvement` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `resume_id` BIGINT NOT NULL COMMENT '简历ID',
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS `resume_improvement` (
   CONSTRAINT `fk_resume_improvement_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试证据驱动的简历改进建议';
 
-CREATE TABLE IF NOT EXISTS `retrieval_chunk` (
+CREATE TABLE `retrieval_chunk` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `scope_type` VARCHAR(32) NOT NULL COMMENT '检索作用域类型',
   `scope_id` BIGINT NOT NULL COMMENT '检索作用域ID',
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS `retrieval_chunk` (
   KEY `idx_retrieval_chunk_hash` (`content_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='检索可重建文本块';
 
-CREATE TABLE IF NOT EXISTS `async_job` (
+CREATE TABLE `async_job` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `job_id` CHAR(36) NOT NULL COMMENT '对外任务ID',
   `type` VARCHAR(64) NOT NULL COMMENT '任务类型',
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS `async_job` (
   CONSTRAINT `fk_async_job_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='异步任务状态与幂等记录';
 
-CREATE TABLE IF NOT EXISTS `interview_message` (
+CREATE TABLE `interview_message` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `session_id` BIGINT NOT NULL COMMENT '会话ID',
   `role` ENUM('system','user','assistant') NOT NULL COMMENT '消息角色',
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS `interview_message` (
   CONSTRAINT `fk_message_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试消息表';
 
-CREATE TABLE IF NOT EXISTS `interview_stage` (
+CREATE TABLE `interview_stage` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `session_id` BIGINT NOT NULL COMMENT '会话ID',
   `stage_name` ENUM('warmup','technical','deep_dive','closing') NOT NULL COMMENT '阶段名',
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS `interview_stage` (
   CONSTRAINT `fk_interview_stage_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试阶段表';
 
-CREATE TABLE IF NOT EXISTS `score_history` (
+CREATE TABLE `score_history` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `session_id` BIGINT NOT NULL COMMENT '面试会话ID',
@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS `score_history` (
   CONSTRAINT `fk_score_history_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评分历史表';
 
-CREATE TABLE IF NOT EXISTS `user_weakness` (
+CREATE TABLE `user_weakness` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `session_id` BIGINT NOT NULL COMMENT '来源会话ID',
@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS `user_weakness` (
   CONSTRAINT `fk_user_weakness_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户薄弱点表';
 
-CREATE TABLE IF NOT EXISTS `llm_provider_config` (
+CREATE TABLE `llm_provider_config` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `provider_key` VARCHAR(32) NOT NULL COMMENT 'Provider 标识',
   `display_name` VARCHAR(64) NOT NULL COMMENT '展示名称',
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS `llm_provider_config` (
   UNIQUE KEY `uk_llm_provider_config_provider_key` (`provider_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LLM Provider 配置表';
 
-CREATE TABLE IF NOT EXISTS SPRING_SESSION (
+CREATE TABLE SPRING_SESSION (
   PRIMARY_ID CHAR(36) NOT NULL,
   SESSION_ID CHAR(36) NOT NULL,
   CREATION_TIME BIGINT NOT NULL,
@@ -236,70 +236,10 @@ CREATE TABLE IF NOT EXISTS SPRING_SESSION (
   KEY SPRING_SESSION_IX3 (PRINCIPAL_NAME)
 ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;
 
-CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
+CREATE TABLE SPRING_SESSION_ATTRIBUTES (
   SESSION_PRIMARY_ID CHAR(36) NOT NULL,
   ATTRIBUTE_NAME VARCHAR(200) NOT NULL,
   ATTRIBUTE_BYTES BLOB NOT NULL,
   CONSTRAINT SPRING_SESSION_ATTRIBUTES_PK PRIMARY KEY (SESSION_PRIMARY_ID, ATTRIBUTE_NAME),
   CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID) REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
 ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;
-
-SET @sql = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `position_template` ADD COLUMN `user_id` BIGINT DEFAULT NULL COMMENT ''自建岗位所属用户，空表示内置模板'' AFTER `id`',
-    'SELECT 1'
-  )
-  FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'position_template'
-    AND COLUMN_NAME = 'user_id'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'CREATE INDEX `idx_position_template_user_id` ON `position_template` (`user_id`)',
-    'SELECT 1'
-  )
-  FROM information_schema.STATISTICS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'position_template'
-    AND INDEX_NAME = 'idx_position_template_user_id'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `position_template` ADD CONSTRAINT `fk_position_template_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)',
-    'SELECT 1'
-  )
-  FROM information_schema.REFERENTIAL_CONSTRAINTS
-  WHERE CONSTRAINT_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'position_template'
-    AND CONSTRAINT_NAME = 'fk_position_template_user'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `interview_session` ADD COLUMN `llm_thinking_depth` VARCHAR(20) DEFAULT NULL COMMENT ''会话使用的思考深度快照'' AFTER `llm_model`',
-    'SELECT 1'
-  )
-  FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'interview_session'
-    AND COLUMN_NAME = 'llm_thinking_depth'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;

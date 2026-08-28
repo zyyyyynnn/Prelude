@@ -1,3 +1,4 @@
+import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import type { ButtonHTMLAttributes } from 'react'
 import { classNames } from '@/shared/lib/class-names'
 
@@ -15,7 +16,8 @@ export function Button({
   loading?: boolean
 }) {
   return (
-    <button
+    <ButtonPrimitive
+      data-slot="button"
       className={classNames(
         'prelude-button',
         `prelude-button--${variant}`,
@@ -25,10 +27,11 @@ export function Button({
       )}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      data-loading={loading || undefined}
       {...props}
     >
       {loading && <span className="button-spinner" aria-hidden="true" />}
-      {children}
-    </button>
+      <span className="prelude-button__content">{children}</span>
+    </ButtonPrimitive>
   )
 }

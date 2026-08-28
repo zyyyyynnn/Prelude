@@ -7,7 +7,16 @@ const path = require('node:path')
 const root = path.resolve(__dirname, '..')
 const sourceRoot = path.join(root, 'src')
 const allowedRoots = new Set(['app', 'devtools', 'features', 'shared'])
-const blockedPackages = ['vue', 'vue-router', 'pinia', 'reka-ui', 'vue-tsc']
+const blockedPackages = [
+  'vue',
+  'vue-router',
+  'pinia',
+  'reka-ui',
+  'radix-vue',
+  'vue-tsc',
+  'html2canvas',
+  'jspdf',
+]
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.vue'])
 const importPattern = /(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g
 const violations = []

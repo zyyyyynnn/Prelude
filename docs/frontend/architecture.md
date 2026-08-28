@@ -8,10 +8,11 @@ Prelude 前端是由 Vite 构建的 React SPA。React Router 管理路由与 URL
 frontend/src/
 ├── app/       启动、Provider 装配、路由与根布局
 ├── features/  auth、assets、resume、template、interview、report、insight、settings
-└── shared/    品牌资源、设计 token、纯工具与 Prelude-owned UI source
+├── shared/    品牌资源、设计 token、纯工具与 Prelude-owned UI source
+└── devtools/  仅开发态组件检查面
 ```
 
-依赖方向是 `app -> features -> shared`。当前 feature 保持扁平公共面；出现内部目录时，跨 feature 调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录。
+依赖方向是 `app / devtools -> features -> shared`。当前 feature 保持扁平公共面；出现内部目录时，跨 feature 调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块，`devtools` 不进入生产路由与产物。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录。
 
 ## Feature Ownership
 

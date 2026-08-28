@@ -119,7 +119,7 @@ jobs:
         shell: pwsh
         run: |
           $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
-          $blocked = @('vue', 'vue-router', 'pinia', 'reka-ui', 'vue-tsc')
+          $blocked = @('vue', 'vue-router', 'pinia', 'reka-ui', 'radix-vue', 'vue-tsc', 'html2canvas', 'jspdf')
           foreach ($name in $blocked) {
             if ($lock.packages.ContainsKey("node_modules/$name")) {
               throw "blocked package resolved: $name"

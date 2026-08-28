@@ -32,14 +32,14 @@ export function useLlmSettings(
     () => initialProvider?.availableModels ?? [],
   )
   const [showKey, setShowKey] = useState(false)
-  const [testMessage, setTestMessage] = useState('未测试')
+  const [testMessage, setTestMessage] = useState('')
 
   const provider = providers.find((item) => item.providerKey === draft.providerKey)
   const protocol = getCustomProviderMeta(draft.providerKey)
   const custom = isCustomProvider(draft.providerKey)
   const update = <K extends keyof LlmConfigPayload>(key: K, value: LlmConfigPayload[K]) => {
     setDraft((current) => ({ ...current, [key]: value }))
-    setTestMessage('配置已变更，建议重新测试')
+    setTestMessage('')
   }
   const payload = useMemo(
     () => ({
@@ -105,7 +105,7 @@ export function useLlmSettings(
       apiKey: undefined,
     }))
     setModels(next?.availableModels ?? [])
-    setTestMessage('配置已变更，建议重新测试')
+    setTestMessage('')
   }
   function validate() {
     if (!draft.providerKey || !draft.model.trim()) {

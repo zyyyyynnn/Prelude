@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Check, ChevronLeft, ChevronRight, Download, X } from 'lucide-react'
 import { acceptResumeImprovement, rejectResumeImprovement } from '@/features/resume'
@@ -23,16 +23,14 @@ const stageLabels = {
 
 export function ReportPanel({ source }: { source: string }) {
   const parsed = parseInterviewReport(source)
-  const surface = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
   const feedback = useFeedback()
   async function exportReport() {
-    if (!surface.current) return
     setExporting(true)
     try {
-      const { exportToPdf } = await import('./export-pdf')
-      await exportToPdf(surface.current, '面试训练报告.pdf')
-      feedback.notify('报告已导出', 'success')
+      const { printReport } = await import('./print-report')
+      await printReport('面试训练报告')
+      feedback.notify('已打开系统打印窗口', 'success')
     } catch (error) {
       feedback.notify(error instanceof Error ? error.message : '报告导出失败', 'error')
     } finally {
@@ -40,8 +38,8 @@ export function ReportPanel({ source }: { source: string }) {
     }
   }
   return (
-    <div className="report-export-surface" ref={surface}>
-      <div className="report-export-actions" data-html2canvas-ignore="true">
+    <div className="report-export-surface">
+      <div className="report-export-actions">
         <Button variant="secondary" loading={exporting} onClick={() => void exportReport()}>
           <Download size={15} />
           导出 PDF
@@ -330,7 +328,7 @@ function ResumeImprovementList({
               </p>
             </div>
             {item.status === 'pending' && (
-              <div className="resume-improvement__actions" data-html2canvas-ignore="true">
+              <div className="resume-improvement__actions">
                 <Button
                   loading={busyId === item.id}
                   disabled={busyId != null}

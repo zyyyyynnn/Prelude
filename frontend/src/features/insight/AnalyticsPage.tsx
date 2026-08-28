@@ -4,7 +4,7 @@ import * as echarts from 'echarts/core'
 import { LineChart, RadarChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { BarChart3, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { Button } from '@/shared/ui'
 import { fetchRadar, fetchTrend, fetchWeaknesses } from './api'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint } from './types'
@@ -57,8 +57,7 @@ export function AnalyticsPage() {
             </Button>
           </div>
         ) : !radar.data?.sessionCount ? (
-          <div className="panel empty-state">
-            <BarChart3 size={24} />
+          <div className="empty-state">
             <p>完成至少一场面试后，这里会显示能力变化与训练重点。</p>
           </div>
         ) : (

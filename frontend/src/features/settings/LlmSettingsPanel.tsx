@@ -71,11 +71,7 @@ function LlmSettingsForm({
           </div>
         </Field>
       )}
-      <Field
-        label="模型"
-        htmlFor="llm-model"
-        hint={state.models.length ? `${state.models.length} 个可用模型` : '可直接填写模型 ID'}
-      >
+      <Field label="模型" htmlFor="llm-model">
         {state.models.length ? (
           <Select
             id="llm-model"
@@ -98,7 +94,9 @@ function LlmSettingsForm({
         label="API Key"
         htmlFor="llm-api-key"
         hint={
-          state.config?.hasApiKey ? `已保存 ${state.config.apiKeyMasked ?? ''}` : '尚未保存 API Key'
+          state.config?.hasApiKey && state.config.apiKeyMasked
+            ? `已保存 ${state.config.apiKeyMasked}`
+            : undefined
         }
       >
         <div className="password-field">
@@ -170,9 +168,11 @@ function LlmSettingsForm({
           </Field>
         </div>
       </section>
-      <p className="helper-text" role="status">
-        {state.testMessage}
-      </p>
+      {state.testMessage && (
+        <p className="helper-text" role="status">
+          {state.testMessage}
+        </p>
+      )}
       <div className="settings-inline-actions settings-inline-actions--header">
         <Button
           variant="secondary"

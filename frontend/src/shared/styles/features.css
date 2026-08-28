@@ -161,24 +161,26 @@
   white-space: nowrap;
 }
 .prompt-bar__attachment-remove {
-  display: grid;
-  inline-size: var(--ui-height-compact);
-  block-size: var(--ui-height-compact);
-  margin-inline-end: calc(var(--spacing-xs) * -1);
+  display: inline-grid;
+  flex: 0 0 auto;
+  inline-size: var(--spacing-5-5);
+  block-size: var(--spacing-5-5);
+  margin-inline-end: calc(var(--spacing-0-5) * -1);
   padding: 0;
   place-items: center;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-tertiary);
+  line-height: 0;
 }
 .prompt-bar__attachment-remove:hover {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 .prompt-bar__attachment-remove svg {
-  inline-size: calc(var(--spacing-sm) + var(--spacing-xs));
-  block-size: calc(var(--spacing-sm) + var(--spacing-xs));
+  inline-size: var(--spacing-3-5);
+  block-size: var(--spacing-3-5);
 }
 .prompt-bar__rail {
   display: flex;
@@ -1087,27 +1089,6 @@ h3 {
     transition-duration: 0.01ms;
   }
 }
-.pdf-export-clone .question-review-carousel {
-  box-shadow: none;
-}
-.pdf-export-clone .question-review-carousel__nav {
-  display: none;
-}
-.pdf-export-clone .question-review-carousel__viewport {
-  overflow: visible;
-}
-.pdf-export-clone .question-review-list {
-  display: block;
-  transform: none !important;
-}
-.pdf-export-clone .question-review {
-  margin-top: var(--spacing-md);
-}
-.pdf-export-clone .question-review__body {
-  max-block-size: none;
-  overflow: visible;
-}
-
 .report-section {
   padding-block: var(--spacing-xl);
   border-top: 1px solid var(--color-border);
@@ -1895,6 +1876,86 @@ h3 {
   justify-content: flex-end;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body.is-printing-report,
+  body.is-printing-report #root,
+  body.is-printing-report .app-layout,
+  body.is-printing-report .app-layout__main,
+  body.is-printing-report .interview-workspace,
+  body.is-printing-report .workspace-active,
+  body.is-printing-report .workspace-active__main,
+  body.is-printing-report .workspace-report,
+  body.is-printing-report .report-content {
+    display: block;
+    block-size: auto;
+    min-block-size: 0;
+    overflow: visible;
+  }
+
+  body.is-printing-report * {
+    visibility: hidden;
+  }
+
+  body.is-printing-report .report-export-surface,
+  body.is-printing-report .report-export-surface * {
+    visibility: visible;
+  }
+
+  body.is-printing-report .report-export-surface {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    background: var(--color-surface);
+  }
+
+  body.is-printing-report .report-export-actions,
+  body.is-printing-report .resume-improvement__actions,
+  body.is-printing-report .question-review-carousel__nav {
+    display: none;
+  }
+
+  body.is-printing-report .question-review-carousel {
+    box-shadow: none;
+  }
+
+  body.is-printing-report .question-review-carousel__viewport,
+  body.is-printing-report .question-review__body {
+    max-block-size: none;
+    overflow: visible;
+  }
+
+  body.is-printing-report .question-review-list {
+    display: block;
+    transform: none !important;
+  }
+
+  body.is-printing-report .question-review {
+    margin-top: var(--spacing-md);
+  }
+
+  body.is-printing-report .panel,
+  body.is-printing-report .weakness-item,
+  body.is-printing-report .report-section__header,
+  body.is-printing-report .report-score-item,
+  body.is-printing-report .stage-performance,
+  body.is-printing-report .question-review,
+  body.is-printing-report .training-plan__group,
+  body.is-printing-report .markdown-body h2,
+  body.is-printing-report .markdown-body h3,
+  body.is-printing-report .markdown-body p,
+  body.is-printing-report .markdown-body ul,
+  body.is-printing-report .markdown-body ol,
+  body.is-printing-report .markdown-body pre,
+  body.is-printing-report .markdown-body blockquote {
+    break-inside: avoid;
+  }
 }
 .settings-inline-actions--leading {
   justify-content: flex-start;

@@ -63,7 +63,7 @@ function ContextAttachment({
       {onRemove && (
         <button
           type="button"
-          className="prompt-bar__attachment-remove ui-action"
+          className="prompt-bar__attachment-remove ui-action ui-action-icon"
           aria-label={`移除${kindLabel}：${label}`}
           onClick={onRemove}
         >

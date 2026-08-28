@@ -164,6 +164,40 @@ test('@dark restores the governed dark theme before rendering', async ({ page })
   expect(colors.every((value) => value.trim().length > 0)).toBe(true)
 })
 
+test('@visual keeps no-data pages lightweight and typographically consistent', async ({ page }) => {
+  await installApi(page)
+  await page.route('**/api/analytics/radar', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 200,
+        message: 'ok',
+        data: { technical: 0, expression: 0, logic: 0, sessionCount: 0 },
+      }),
+    })
+  })
+  await page.goto('/analytics')
+  const emptyState = page.locator('.workspace-page__content > .empty-state')
+  await expect(emptyState).toBeVisible()
+  await expect(emptyState.locator('svg')).toHaveCount(0)
+  const presentation = await emptyState.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      usesSerif: style.fontFamily.includes('Lora'),
+      borderStyle: style.borderStyle,
+      boxShadow: style.boxShadow,
+      backgroundColor: style.backgroundColor,
+    }
+  })
+  expect(presentation).toEqual({
+    usesSerif: true,
+    borderStyle: 'none',
+    boxShadow: 'none',
+    backgroundColor: 'rgba(0, 0, 0, 0)',
+  })
+})
+
 test('@a11y keeps the primary authenticated surface accessible', async ({ page }) => {
   await installApi(page)
   await page.goto('/interview')
@@ -414,7 +448,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   })
 })
 
-test('@visual keeps settings navigation and select surfaces on the shared baseline', async ({
+test('@visual keeps settings navigation and select surfaces on the shared component contract', async ({
   page,
 }) => {
   await installApi(page)
