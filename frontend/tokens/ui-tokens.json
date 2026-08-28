@@ -189,11 +189,7 @@
         "brand-metaballs-4",
         "brand-metaballs-5",
         "brand-metaballs-bg",
-        "brand-metaballs-shadow",
-        "rose-three-color",
-        "rose-three-muted",
-        "rose-three-stroke",
-        "rose-three-speed"
+        "brand-metaballs-shadow"
       ]
     },
     "component-tailwind-theme": {

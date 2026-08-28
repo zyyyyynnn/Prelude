@@ -107,7 +107,6 @@ export function AnalyticsPage() {
                           <h3 className="weakness-item__title">{item.category}</h3>
                           <p className="weakness-item__summary">出现 {item.count} 次</p>
                         </div>
-                        <span className="status-badge">{item.count}</span>
                       </div>
                       <ul className="weakness-item__descriptions">
                         {item.descriptions.map((description) => (

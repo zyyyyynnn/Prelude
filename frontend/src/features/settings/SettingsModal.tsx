@@ -95,9 +95,8 @@ export function SettingsModal({
             <button
               className="settings-sidebar__item settings-sidebar__item--danger ui-action ui-action-danger"
               onClick={() => {
-                void auth.signOut()
                 onOpenChange(false)
-                void navigate('/login')
+                void auth.signOut().then(() => navigate('/login'))
               }}
             >
               <LogOut aria-hidden="true" />

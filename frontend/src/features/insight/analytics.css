@@ -1,0 +1,60 @@
+.page-grid--dashboard {
+  /* ECharts grid 与图表块尺寸的局部语义变量，从此处读出。 */
+  --analytics-chart-block-size: 256px;
+  --analytics-chart-grid-left: 44;
+  --analytics-chart-grid-right: 18;
+  --analytics-chart-grid-top: 30;
+  --analytics-chart-grid-bottom: 30;
+
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--layout-dashboard-card-min-inline-size), 1fr)
+  );
+  gap: var(--spacing-lg);
+}
+.analytics-chart {
+  block-size: var(--analytics-chart-block-size);
+}
+.weakness-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+.weakness-item {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.weakness-item__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-sm);
+}
+.weakness-item__title {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.weakness-item__summary {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+.weakness-item__descriptions {
+  margin: 0;
+  padding-left: var(--spacing-xl);
+  font-size: var(--font-size-meta);
+  color: var(--color-text-tertiary);
+  list-style-type: disc;
+}
+.weakness-item__descriptions li {
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.5;
+}

@@ -95,7 +95,6 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
                       · {resume.sessionCount ?? 0} 场面试
                     </p>
                     <div className="resume-item__badges">
-                      <span className="status-badge">PDF</span>
                       {resume.inUse && <span className="status-badge">正在使用</span>}
                     </div>
                   </div>

@@ -37,19 +37,6 @@ export type StructuredTrainingPlan = {
   nextInterviewFocus: string[]
 }
 
-export type ReportResumeImprovement = {
-  id: number
-  resumeId: number
-  sessionId: number
-  targetPath: string
-  currentText: string
-  proposedText: string
-  rationale: string
-  evidence: string
-  baseDocumentVersion: number
-  status: 'pending' | 'accepted' | 'rejected'
-}
-
 export type StructuredInterviewReport = {
   summary: StructuredReportSummary
   scores: StructuredReportScores
@@ -59,9 +46,7 @@ export type StructuredInterviewReport = {
   weaknesses: string[]
   trainingPlan: StructuredTrainingPlan
   finalAdvice: string
-  markdownFallback: string
-  resumeImprovements: ReportResumeImprovement[]
 }
 
 export type ParsedInterviewReport =
-  { kind: 'structured'; report: StructuredInterviewReport } | { kind: 'markdown'; markdown: string }
+  { kind: 'structured'; report: StructuredInterviewReport } | { kind: 'plain'; text: string }

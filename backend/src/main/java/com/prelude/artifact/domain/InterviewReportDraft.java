@@ -12,21 +12,8 @@ public record InterviewReportDraft(
     List<String> strengths,
     TrainingPlan trainingPlan,
     String finalAdvice,
-    String reportMarkdown,
-    List<ResumeSuggestion> resumeSuggestions
+    String reportMarkdown
 ) {
-
-    public InterviewReportDraft(
-        ReportSummary summary,
-        DimensionScores scores,
-        List<StageNarrative> stagePerformances,
-        List<String> strengths,
-        TrainingPlan trainingPlan,
-        String finalAdvice,
-        String reportMarkdown
-    ) {
-        this(summary, scores, stagePerformances, strengths, trainingPlan, finalAdvice, reportMarkdown, List.of());
-    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ReportSummary(
@@ -62,13 +49,4 @@ public record InterviewReportDraft(
     ) {
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record ResumeSuggestion(
-        String targetPath,
-        String currentText,
-        String proposedText,
-        String rationale,
-        String evidence
-    ) {
-    }
 }

@@ -1,4 +1,4 @@
-export { fetchSessions } from './api'
+export { fetchSession, fetchSessions } from './api'
 export { groupSessions } from './session-list'
 export { readSessionPreferences, writeSessionPreferences } from './session-preferences'
 export type { SessionPreferences } from './session-preferences'

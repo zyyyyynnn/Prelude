@@ -55,7 +55,7 @@ export function LoginPage() {
         return
       }
       const result = await login(username.trim(), password)
-      auth.signIn(result.userId)
+      await auth.signIn(result.userId)
       const redirect = new URLSearchParams(location.search).get('redirect') || '/interview'
       await navigate(redirect, { replace: true })
     } catch (reason) {

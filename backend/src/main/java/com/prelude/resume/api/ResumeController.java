@@ -7,9 +7,6 @@ import com.prelude.resume.application.DeleteResume;
 import com.prelude.resume.application.ImportResumePdf;
 import com.prelude.resume.application.ImportResumeResult;
 import com.prelude.resume.application.ListResumes;
-import com.prelude.resume.application.ResumeImprovementDecisionView;
-import com.prelude.resume.application.ResumeImprovementService;
-import com.prelude.resume.application.ResumeImprovementView;
 import com.prelude.resume.application.port.ResumeFixturePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +29,6 @@ public class ResumeController {
     private final ImportResumePdf importResumePdf;
     private final ListResumes listResumes;
     private final DeleteResume deleteResume;
-    private final ResumeImprovementService resumeImprovementService;
     private final ResumeFixturePort devFixtureService;
 
     @PostMapping("/upload")
@@ -76,24 +72,6 @@ public class ResumeController {
     public Result<Void> delete(@PathVariable Long resumeId) {
         deleteResume.execute(currentUserId(), resumeId);
         return Result.success();
-    }
-
-    @GetMapping("/{resumeId}/improvements")
-    public Result<List<ResumeImprovementView>> listImprovements(
-        @PathVariable Long resumeId,
-        @RequestParam(value = "sessionId", required = false) Long sessionId
-    ) {
-        return Result.success(resumeImprovementService.list(currentUserId(), resumeId, sessionId));
-    }
-
-    @PostMapping("/improvements/{improvementId}/accept")
-    public Result<ResumeImprovementDecisionView> acceptImprovement(@PathVariable Long improvementId) {
-        return Result.success(resumeImprovementService.accept(currentUserId(), improvementId));
-    }
-
-    @PostMapping("/improvements/{improvementId}/reject")
-    public Result<ResumeImprovementView> rejectImprovement(@PathVariable Long improvementId) {
-        return Result.success(resumeImprovementService.reject(currentUserId(), improvementId));
     }
 
     private Long currentUserId() {

@@ -12,6 +12,7 @@ export function useInterviewSession(sessionId: number, onError: (message: string
   const [connectionStatus, setConnectionStatus] = useState('')
   const abort = useRef<AbortController | null>(null)
   const autoStarted = useRef(false)
+  const active = useRef(true)
   const session = useQuery({
     queryKey: ['interview-session', sessionId],
     queryFn: ({ signal }) => fetchSession(sessionId, signal),
@@ -20,7 +21,13 @@ export function useInterviewSession(sessionId: number, onError: (message: string
   const current = session.data
   const visibleMessages = messages ?? current?.messages ?? []
 
-  useEffect(() => () => abort.current?.abort(), [])
+  useEffect(
+    () => () => {
+      active.current = false
+      abort.current?.abort()
+    },
+    [],
+  )
 
   function updateMessage(message: InterviewMessageRecord, append = false) {
     setMessages((existing) => {
@@ -111,8 +118,13 @@ export function useInterviewSession(sessionId: number, onError: (message: string
       setMessages(null)
       await client.invalidateQueries({ queryKey: ['interview-sessions'] })
     },
-    onError: (error) => {
-      if (error.name !== 'AbortError') onError(error.message)
+    onError: async (error) => {
+      if (error.name === 'AbortError' || !active.current) return
+      onError(error.message)
+      await session.refetch()
+      if (!active.current) return
+      setConnectionStatus('')
+      setMessages(null)
     },
   })
 

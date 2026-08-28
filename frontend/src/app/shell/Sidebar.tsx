@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useCallback, useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3,
   ChevronLeft,
@@ -14,6 +14,7 @@ import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import {
   fetchSessions,
+  fetchSession,
   groupSessions,
   readSessionPreferences,
   writeSessionPreferences,
@@ -28,9 +29,13 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [collapsed, setCollapsed] = useState(false)
   const auth = useAuth()
   const feedback = useFeedback()
+  const client = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
   const [params] = useSearchParams()
+  const [sessionRequest, setSessionRequest] = useState<AbortController | null>(null)
+  const [loadingSessionId, setLoadingSessionId] = useState<number | null>(null)
+  const [failedSessionId, setFailedSessionId] = useState<number | null>(null)
   const activeId = Number(params.get('session')) || null
   const accountScope = String(auth.userId ?? '')
   const [preferences, setPreferences] = useState<SessionPreferences>(() =>
@@ -41,6 +46,8 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
     queryFn: ({ signal }) => fetchSessions(signal),
   })
   const grouped = groupSessions(sessions.data ?? [], preferences)
+
+  useEffect(() => () => sessionRequest?.abort(), [sessionRequest])
 
   function updatePreferences(next: SessionPreferences) {
     setPreferences(next)
@@ -57,6 +64,34 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
     })
     feedback.notify(pinned ? '已取消置顶' : '会话已置顶', 'success')
   }
+
+  const openSession = useCallback(
+    async (session: InterviewSessionItem) => {
+      const controller = new AbortController()
+      setSessionRequest((previous) => {
+        previous?.abort()
+        return controller
+      })
+      setLoadingSessionId(session.sessionId)
+      setFailedSessionId(null)
+      try {
+        await client.fetchQuery({
+          queryKey: ['interview-session', session.sessionId],
+          queryFn: ({ signal }) =>
+            fetchSession(session.sessionId, AbortSignal.any([signal, controller.signal])),
+        })
+        if (controller.signal.aborted) return
+        setLoadingSessionId(null)
+        await navigate(`/interview?session=${session.sessionId}`)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        setLoadingSessionId(null)
+        setFailedSessionId(session.sessionId)
+        feedback.notify(error instanceof Error ? error.message : '会话加载失败', 'error')
+      }
+    },
+    [client, feedback, navigate],
+  )
 
   async function removeSession(session: InterviewSessionItem) {
     const accepted = await feedback.confirm({
@@ -128,18 +163,24 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
                         const pinned = preferences.pinnedIds.includes(session.sessionId)
                         const active =
                           activeId === session.sessionId && location.pathname === '/interview'
+                        const loading = loadingSessionId === session.sessionId
+                        const failed = failedSessionId === session.sessionId
                         return (
                           <li className="session-item-wrapper" key={session.sessionId}>
                             <button
-                              className={`session-item-btn ui-action ui-action-nav${active ? ' is-active' : ''}`}
-                              aria-label={`${group.finished ? '打开已结束会话' : '打开会话'} ${session.targetPosition || session.positionName || '未命名岗位'}`}
-                              onClick={() =>
-                                void navigate(`/interview?session=${session.sessionId}`)
-                              }
+                              className={`session-item-btn ui-action ui-action-nav${active ? ' is-active' : ''}${loading ? ' is-loading' : ''}${failed ? ' is-error' : ''}`}
+                              aria-label={`${failed ? '重试打开会话' : group.finished ? '打开已结束会话' : '打开会话'} ${session.targetPosition || session.positionName || '未命名岗位'}`}
+                              aria-busy={loading || undefined}
+                              onClick={() => void openSession(session)}
                             >
                               <span className="session-item__name">
                                 {session.targetPosition || session.positionName || '未命名岗位'}
                               </span>
+                              {(loading || failed) && (
+                                <span className="session-item__state">
+                                  {loading ? '加载中' : '加载失败'}
+                                </span>
+                              )}
                             </button>
                             {pinned && (
                               <Pin

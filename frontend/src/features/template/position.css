@@ -1,0 +1,50 @@
+.position-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+.position-settings__form {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-sm);
+  padding-block-start: var(--spacing-lg);
+  border-block-start: 1px solid var(--color-border);
+}
+.position-settings .form-section__title {
+  margin: 0;
+}
+.position-settings__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-md);
+}
+.position-settings__catalog {
+  min-inline-size: 0;
+  display: grid;
+  gap: var(--spacing-sm);
+}
+.position-settings__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+}
+.position-settings__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-block-size: var(--ui-height-md);
+  padding-inline: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+.position-settings__item:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+.upload-field.is-dragging {
+  border-color: var(--color-focus-field);
+  background: var(--color-surface-hover);
+}

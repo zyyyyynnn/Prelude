@@ -20,7 +20,7 @@ frontend/src/
 | --- | --- |
 | `auth` | 登录、注册与 Session 客户端状态 |
 | `assets` | 面试附件上传、删除与附件类型契约 |
-| `resume` | 简历列表、上传、删除与改进建议契约 |
+| `resume` | 简历列表、上传、删除与面试上下文契约 |
 | `template` | 内置岗位读取与用户岗位管理 |
 | `interview` | 开面配置、会话、文字流、语音编排与报告入口 |
 | `report` | 报告解析、展示与 PDF 打印导出 |
@@ -35,7 +35,9 @@ frontend/src/
 | 当前页面、筛选和可分享导航 | React Router 与 URL |
 | 临时交互与表单草稿 | React local state |
 
-Query response 保留在 Query cache；派生值由 props、URL 或 Query 结果直接计算。模型配置属于账号级全局配置，面试会话保存开面时的模型与思考深度快照。
+Query response 保留在 Query cache；派生值由 props、URL 或 Query 结果直接计算。账号主体变化或 Session 失效时，`auth` 先卸载当前账号资源，再取消并清空 Query cache，避免跨账号复用旧响应。模型配置属于账号级全局配置，面试会话保存开面时的模型与思考深度快照。
+
+历史会话导航先获取目标会话，再提交 URL；失败时保留当前会话并提供原位重试，较早请求不得覆盖较新的选择。流式回答失败后，以服务端会话快照恢复消息。报告只接受完整核心结构；结构不合法时按纯文本原样展示，不推断分数或生成事实。
 
 ## UI Source
 

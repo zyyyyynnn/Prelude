@@ -22,10 +22,10 @@ Port 用于外部基础设施、框架隔离或跨模块接口。普通内部类
 - `identity` 拥有账号、服务端 Session 登录与用户资料。
 - `llm` 拥有 DeepSeek 与三种自定义协议、模型路由和 BYOK 配置。
 - `assets` 拥有面试附件的存储、归属校验与上下文投影，`documents` 负责受支持文档的内容提取。
-- `resume` 拥有简历导入、结构化文档和改进建议。
+- `resume` 拥有简历导入、结构化文档与面试上下文投影。
 - `template` 拥有内置岗位与用户自定义岗位。
 - `interview` 拥有会话、阶段与文字面试用例，`voice` 拥有语音通道。
-- `artifact` 拥有训练报告与分析，`jobs` 拥有报告异步任务。
+- `artifact` 拥有训练报告与分析，报告不会回写简历；`jobs` 拥有报告异步任务。
 - Redis 承载实时广播能力，RabbitMQ 承载报告任务，MySQL 承载业务数据和 Spring Session。
 
 ## Persistence

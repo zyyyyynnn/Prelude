@@ -125,20 +125,6 @@ async function respond(route: Route, state: ApiState) {
       maxTokens: (body as { maxTokens?: number }).maxTokens ?? null,
       thinkingDepth: (body as { thinkingDepth?: string }).thinkingDepth ?? null,
     }
-  else if (/\/api\/resume\/improvements\/\d+\/accept$/.test(path)) {
-    const improvement = { ...reportImprovement, status: 'accepted' }
-    data = {
-      improvement,
-      resume: {
-        resumeId: 1,
-        fileName: '候选人简历.pdf',
-        documentVersion: 2,
-        sourceType: 'pdf',
-        document: {},
-      },
-    }
-  } else if (/\/api\/resume\/improvements\/\d+\/reject$/.test(path))
-    data = { ...reportImprovement, status: 'rejected' }
   await route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -283,6 +269,10 @@ test('@smoke routes prompt bar management actions into global settings', async (
 
 test('@smoke centers the async button indicator without resizing the control', async ({ page }) => {
   const state: ApiState = { requests: [] }
+  let releaseSave!: () => void
+  const saveGate = new Promise<void>((resolve) => {
+    releaseSave = resolve
+  })
   await installApi(page, state)
   await page.route('**/api/llm/config', async (route) => {
     if (route.request().method() !== 'PUT') {
@@ -290,7 +280,7 @@ test('@smoke centers the async button indicator without resizing the control', a
       return
     }
     const body = route.request().postDataJSON() as Record<string, unknown>
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    await saveGate
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -325,6 +315,7 @@ test('@smoke centers the async button indicator without resizing the control', a
     }
   })
   expect(loading).toEqual({ width: idleWidth, centered: true, contentOpacity: '0' })
+  releaseSave()
 
   await expect(page.getByText('LLM 配置已保存')).toBeVisible()
   await expect(save).not.toHaveAttribute('aria-busy')
@@ -447,6 +438,313 @@ test('@smoke streams an interview answer with bounded context', async ({ page })
   })
 })
 
+test('@smoke keeps the active session when a requested session fails and retries that target', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    sessions: [
+      { sessionId: 11, targetPosition: '会话 A', status: 'ongoing' },
+      { sessionId: 12, targetPosition: '会话 B', status: 'ongoing' },
+    ],
+  }
+  await installApi(page, state)
+  let bAttempts = 0
+  await page.route('**/api/interview/*/messages', async (route) => {
+    const sessionId = Number(new URL(route.request().url()).pathname.split('/').at(-2))
+    if (sessionId === 12 && bAttempts++ < 2) {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 503, message: '会话 B 暂时不可用', data: null }),
+      })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok({
+        sessionId,
+        targetPosition: sessionId === 11 ? '会话 A' : '会话 B',
+        status: 'ongoing',
+        currentStage: 'technical',
+        summaryReport: null,
+        stages: [],
+        messages: [
+          { id: sessionId, role: 'assistant', content: sessionId === 11 ? 'A 正在显示' : 'B 已加载' },
+        ],
+        resumeId: 1,
+        positionId: 1,
+        attachments: [],
+      }),
+    })
+  })
+
+  await page.goto('/interview?session=11')
+  await expect(page.getByText('A 正在显示')).toBeVisible()
+  await page.getByRole('button', { name: '打开会话 会话 B' }).click()
+
+  await expect(page).toHaveURL(/session=11/)
+  await expect(page.getByText('A 正在显示')).toBeVisible()
+  await expect(page.getByText('会话 B 暂时不可用')).toBeVisible()
+  await page.getByRole('button', { name: '重试打开会话 会话 B' }).click()
+  await expect(page).toHaveURL(/session=12/)
+  await expect(page.getByText('B 已加载')).toBeVisible()
+})
+
+test('@smoke prevents a late session request from overwriting the latest target', async ({ page }) => {
+  const state: ApiState = {
+    requests: [],
+    sessions: [
+      { sessionId: 11, targetPosition: '会话 A', status: 'ongoing' },
+      { sessionId: 12, targetPosition: '会话 B', status: 'ongoing' },
+      { sessionId: 13, targetPosition: '会话 C', status: 'ongoing' },
+    ],
+  }
+  await installApi(page, state)
+  let releaseB!: () => void
+  const bGate = new Promise<void>((resolve) => {
+    releaseB = resolve
+  })
+  await page.route('**/api/interview/*/messages', async (route) => {
+    const sessionId = Number(new URL(route.request().url()).pathname.split('/').at(-2))
+    if (sessionId === 12) await bGate
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok({
+        sessionId,
+        targetPosition: `会话 ${String.fromCharCode(54 + sessionId)}`,
+        status: 'ongoing',
+        currentStage: 'technical',
+        summaryReport: null,
+        stages: [],
+        messages: [{ id: sessionId, role: 'assistant', content: `会话 ${sessionId} 已加载` }],
+        resumeId: 1,
+        positionId: 1,
+        attachments: [],
+      }),
+    })
+  })
+
+  await page.goto('/interview?session=11')
+  await page.getByRole('button', { name: '打开会话 会话 B' }).click()
+  await page.getByRole('button', { name: '打开会话 会话 C' }).click()
+  await expect(page).toHaveURL(/session=13/)
+  releaseB()
+  await page.waitForTimeout(100)
+  await expect(page).toHaveURL(/session=13/)
+  await expect(page.getByText('会话 13 已加载')).toBeVisible()
+})
+
+test('@smoke removes optimistic messages and restores the authoritative session after stream failure', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'technical',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '服务端权威消息' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.route('**/api/interview/11/chat', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 503, message: '流式服务暂不可用', data: null }),
+    })
+  })
+
+  await page.goto('/interview?session=11')
+  await page.getByPlaceholder('输入回答…').fill('这条乐观消息必须回滚')
+  await page.getByRole('button', { name: '发送' }).click()
+  await expect(page.getByText('这条乐观消息必须回滚')).toBeVisible()
+  await expect(page.getByText('流式服务暂不可用')).toBeVisible()
+  await expect(page.getByText('这条乐观消息必须回滚')).toHaveCount(0)
+  await expect(page.getByText('服务端权威消息')).toBeVisible()
+})
+
+test('@smoke expires authentication when the SSE handshake returns 401', async ({ page }) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'technical',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '请回答问题。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.route('**/api/interview/11/chat', async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 401, message: '登录已失效', data: null }),
+    })
+  })
+
+  await page.goto('/interview?session=11')
+  await page.getByPlaceholder('输入回答…').fill('触发认证失效')
+  await page.getByRole('button', { name: '发送' }).click()
+
+  await expect(page).toHaveURL(/\/login\?reason=expired/)
+  await expect(page.getByText('登录已失效，请重新登录。')).toBeVisible()
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('prelude-user-id'))).toBeNull()
+})
+
+test('@smoke isolates account-scoped queries when a previous principal completes late', async ({
+  page,
+}) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+  let profileRequests = 0
+  let releaseAccountA!: () => void
+  const accountAGate = new Promise<void>((resolve) => {
+    releaseAccountA = resolve
+  })
+  await page.route('**/api/user/profile', async (route) => {
+    profileRequests += 1
+    const requestNumber = profileRequests
+    if (requestNumber === 1) await accountAGate
+    const account = requestNumber === 1 ? 'account-a' : 'account-b'
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok({ username: account, email: `${account}@example.com`, themePreference: 'system' }),
+    })
+  })
+  await page.route('**/api/auth/login', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: ok({ userId: 2 }) })
+  })
+
+  try {
+    await page.goto('/interview')
+    await page.getByRole('button', { name: '设置' }).click()
+    await expect(page.getByText('正在读取账号资料…')).toBeVisible()
+    await page.getByRole('button', { name: '退出登录' }).click()
+    await expect(page).toHaveURL(/\/login$/)
+    await page.getByLabel('用户名').fill('account-b')
+    await page.locator('#auth-password').fill('password')
+    await page.getByRole('button', { name: '登录', exact: true }).last().click()
+    await expect(page).toHaveURL(/\/interview$/)
+    await page.getByRole('button', { name: '设置' }).click()
+    await expect.poll(() => profileRequests).toBe(2)
+    await expect(page.getByLabel('用户名')).toHaveValue('account-b')
+    releaseAccountA()
+    await page.waitForTimeout(100)
+    await expect(page.getByLabel('用户名')).toHaveValue('account-b')
+    await expect(page.getByText('account-a')).toHaveCount(0)
+  } finally {
+    releaseAccountA()
+  }
+})
+
+test('@smoke releases voice resources and returns to text mode after a terminal error', async ({ page }) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'technical',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '请回答问题。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.addInitScript(() => {
+    const voiceState = { closed: 0, stopped: 0 }
+    class MockWebSocket {
+      static OPEN = 1
+      readyState = MockWebSocket.OPEN
+      binaryType = ''
+      onopen: ((event: Event) => void) | null = null
+      onmessage: ((event: MessageEvent) => void) | null = null
+      onerror: ((event: Event) => void) | null = null
+      onclose: ((event: CloseEvent) => void) | null = null
+      constructor() {
+        ;(window as unknown as { voiceSocket: MockWebSocket }).voiceSocket = this
+        setTimeout(() => this.onopen?.(new Event('open')), 0)
+      }
+      send() {}
+      close() {
+        voiceState.closed += 1
+        this.readyState = 3
+        this.onclose?.(new CloseEvent('close'))
+      }
+    }
+    class MockMediaRecorder {
+      state = 'inactive'
+      ondataavailable: ((event: BlobEvent) => void) | null = null
+      onstop: (() => void) | null = null
+      start() {
+        this.state = 'recording'
+      }
+      stop() {
+        this.state = 'inactive'
+        this.onstop?.()
+      }
+    }
+    Object.defineProperty(window, 'WebSocket', { configurable: true, value: MockWebSocket })
+    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: MockMediaRecorder })
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.resolve({
+          getTracks: () => [{ stop: () => (voiceState.stopped += 1) }],
+        }),
+      },
+    })
+    ;(window as unknown as { voiceState: typeof voiceState }).voiceState = voiceState
+  })
+
+  await page.goto('/interview?session=11')
+  await page.getByRole('button', { name: '切换到语音输入' }).click()
+  const talk = page.locator('.prompt-bar__voice-button')
+  await talk.dispatchEvent('pointerdown')
+  await expect(talk).toHaveText('松开发送')
+  await page.evaluate(() => {
+    const socket = (window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } })
+      .voiceSocket
+    socket.onmessage(
+      new MessageEvent('message', { data: JSON.stringify({ type: 'error', message: '语音服务终止' }) }),
+    )
+  })
+
+  await expect(page.getByPlaceholder('输入回答…')).toBeVisible()
+  await expect(page.getByText('语音服务终止')).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as { voiceState: { closed: number } }).voiceState.closed),
+    )
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as { voiceState: { stopped: number } }).voiceState.stopped),
+    )
+    .toBeGreaterThan(0)
+})
+
 test('@byok sends the exact custom provider DTO', async ({ page }) => {
   const state: ApiState = { requests: [] }
   await installApi(page, state)
@@ -473,18 +771,6 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
   })
 })
 
-const reportImprovement = {
-  id: 31,
-  resumeId: 1,
-  sessionId: 11,
-  targetPath: 'summary',
-  currentText: '负责服务开发',
-  proposedText: '负责核心服务并降低故障恢复时间',
-  rationale: '补充职责与结果',
-  evidence: '回答中描述了故障演练',
-  baseDocumentVersion: 1,
-  status: 'pending',
-}
 const report = JSON.stringify({
   summary: {
     fitAssessment: '具备岗位所需的工程能力',
@@ -520,11 +806,9 @@ const report = JSON.stringify({
     nextInterviewFocus: ['量化方案'],
   },
   finalAdvice: '保持结构化表达。',
-  markdownFallback: '# 面试训练报告',
-  resumeImprovements: [reportImprovement],
 })
 
-test('@smoke renders structured reports and applies resume improvements', async ({ page }) => {
+test('@smoke renders structured reports without resume mutation controls', async ({ page }) => {
   const state: ApiState = {
     requests: [],
     session: {
@@ -561,11 +845,41 @@ test('@smoke renders structured reports and applies resume improvements', async 
   await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true')
   await expect(page.locator('body')).not.toHaveClass(/is-printing-report/)
   await expect(page.getByText('已打开系统打印窗口')).toBeVisible()
-  await page.getByRole('button', { name: '接受并写入简历' }).click()
-  await expect(page.getByText('已接受')).toBeVisible()
-  expect(
-    state.requests.some((request) => request.path === '/api/resume/improvements/31/accept'),
-  ).toBe(true)
+})
+
+test('@smoke degrades malformed structured reports to safe plain text', async ({ page }) => {
+  const malformed = JSON.stringify({
+    summary: {
+      fitAssessment: '不能伪造评分',
+      actionRecommendation: '展示原始结果',
+      overallRisk: '评分字段缺失',
+    },
+    scores: { expression: 7, logic: 8 },
+    stagePerformances: [{ stageName: 'invented-stage', summary: '非法阶段' }],
+    finalAdvice: '保留原始事实',
+  })
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'finished',
+      currentStage: 'closing',
+      summaryReport: malformed,
+      stages: [],
+      messages: [],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.goto('/interview?session=11')
+  await page.getByRole('button', { name: '报告' }).click()
+
+  await expect(page.locator('.report-plain-text')).toContainText('"expression":7')
+  await expect(page.getByText('6.0')).toHaveCount(0)
+  await expect(page.getByText('破冰')).toHaveCount(0)
 })
 
 async function selectContext(page: Page, menuLabel: string, option: string) {

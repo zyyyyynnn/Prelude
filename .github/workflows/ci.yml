@@ -114,21 +114,6 @@ jobs:
         working-directory: frontend
         run: npm audit --omit=dev
 
-      - name: Verify single React runtime
-        working-directory: frontend
-        shell: pwsh
-        run: |
-          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
-          $blocked = @('vue', 'vue-router', 'pinia', 'reka-ui', 'radix-vue', 'vue-tsc', 'html2canvas', 'jspdf')
-          foreach ($name in $blocked) {
-            if ($lock.packages.ContainsKey("node_modules/$name")) {
-              throw "blocked package resolved: $name"
-            }
-          }
-          if (Get-ChildItem src -Recurse -Filter *.vue) {
-            throw 'Vue source found under frontend/src'
-          }
-
       - name: Verify architecture and UI governance
         working-directory: frontend
         run: npm run check

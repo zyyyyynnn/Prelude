@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import type { InterviewMessageRecord } from './types'
 
 type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking'
@@ -9,12 +9,14 @@ export function useVoiceInterview({
   onMessage,
   onRefresh,
   onError,
+  onTerminalError,
 }: {
   enabled: boolean
   sessionId: number
   onMessage: (message: InterviewMessageRecord, append?: boolean) => void
   onRefresh: () => void
   onError: (message: string) => void
+  onTerminalError: () => void
 }) {
   const [status, setStatus] = useState<VoiceStatus>('idle')
   const [recording, setRecording] = useState(false)
@@ -22,13 +24,35 @@ export function useVoiceInterview({
   const recorder = useRef<MediaRecorder | null>(null)
   const stream = useRef<MediaStream | null>(null)
   const assistantId = useRef<number | null>(null)
-  const callbacks = useRef({ onMessage, onRefresh, onError })
-  callbacks.current = { onMessage, onRefresh, onError }
+  const closing = useRef(false)
+  const terminal = useRef(false)
+  const reportMessage = useEffectEvent(onMessage)
+  const refreshSession = useEffectEvent(onRefresh)
+  const reportError = useEffectEvent(onError)
+  const exitVoice = useEffectEvent(onTerminalError)
+
+  const close = useCallback(() => {
+    closing.current = true
+    if (recorder.current?.state === 'recording') recorder.current.stop()
+    stream.current?.getTracks().forEach((track) => track.stop())
+    socket.current?.close()
+    recorder.current = null
+    stream.current = null
+    socket.current = null
+    setRecording(false)
+    setStatus('idle')
+  }, [])
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled) return
+    closing.current = false
+    terminal.current = false
+    const terminalError = (message: string) => {
+      if (terminal.current) return
+      terminal.current = true
       close()
-      return
+      exitVoice()
+      reportError(message)
     }
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
     const ws = new WebSocket(`${protocol}://${location.host}/api/ws`)
@@ -58,7 +82,7 @@ export function useVoiceInterview({
                 : 'listening',
           )
         if (payload.type === 'user_text' && payload.text)
-          callbacks.current.onMessage({
+          reportMessage({
             id: Date.now(),
             role: 'user',
             content: payload.text,
@@ -66,7 +90,7 @@ export function useVoiceInterview({
           })
         if (payload.type === 'text' && payload.chunk) {
           if (!assistantId.current) assistantId.current = Date.now() + 1
-          callbacks.current.onMessage(
+          reportMessage(
             {
               id: assistantId.current,
               role: 'assistant',
@@ -84,18 +108,21 @@ export function useVoiceInterview({
         }
         if (payload.type === 'judge') {
           assistantId.current = null
-          callbacks.current.onRefresh()
+          refreshSession()
         }
-        if (payload.type === 'error') callbacks.current.onError(payload.message || '语音服务异常')
+        if (payload.type === 'error') terminalError(payload.message || '语音服务异常')
       } catch {
-        callbacks.current.onError('语音服务返回了无法识别的数据')
+        terminalError('语音服务返回了无法识别的数据')
       }
     }
-    ws.onerror = () => callbacks.current.onError('语音连接异常，请切回文字模式后重试')
-    ws.onclose = () => setStatus('idle')
+    ws.onerror = () => terminalError('语音连接异常，已切回文字模式')
+    ws.onclose = () => {
+      if (!closing.current) terminalError('语音连接已断开，已切回文字模式')
+      else setStatus('idle')
+    }
     socket.current = ws
     return close
-  }, [enabled, sessionId])
+  }, [close, enabled, sessionId])
 
   async function startRecording() {
     if (recording || recorder.current?.state === 'recording') return
@@ -131,16 +158,6 @@ export function useVoiceInterview({
   async function toggleRecording() {
     if (recording) stopRecording()
     else await startRecording()
-  }
-  function close() {
-    if (recorder.current?.state === 'recording') recorder.current.stop()
-    stream.current?.getTracks().forEach((track) => track.stop())
-    socket.current?.close()
-    recorder.current = null
-    stream.current = null
-    socket.current = null
-    setRecording(false)
-    setStatus('idle')
   }
   return {
     status,

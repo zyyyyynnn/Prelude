@@ -87,31 +87,6 @@ CREATE TABLE `interview_session` (
   CONSTRAINT `fk_session_position` FOREIGN KEY (`position_id`) REFERENCES `position_template` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试会话表';
 
-CREATE TABLE `resume_improvement` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `user_id` BIGINT NOT NULL COMMENT '用户ID',
-  `resume_id` BIGINT NOT NULL COMMENT '简历ID',
-  `session_id` BIGINT NOT NULL COMMENT '建议来源面试会话ID',
-  `ordinal` INT NOT NULL COMMENT '会话内建议顺序',
-  `target_path` VARCHAR(128) NOT NULL COMMENT 'ResumeDocument 白名单字段路径',
-  `current_text` TEXT NOT NULL COMMENT '生成建议时的字段原值',
-  `proposed_text` TEXT NOT NULL COMMENT '建议替换文本',
-  `rationale` VARCHAR(1000) NOT NULL COMMENT '改写理由',
-  `evidence` TEXT NOT NULL COMMENT '面试原文证据',
-  `base_document_version` INT NOT NULL COMMENT '生成建议时的简历版本',
-  `status` ENUM('pending','accepted','rejected') NOT NULL DEFAULT 'pending' COMMENT '用户决策状态',
-  `applied_document_version` INT DEFAULT NULL COMMENT '接受后产生的简历版本',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `decided_at` DATETIME DEFAULT NULL COMMENT '决策时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_resume_improvement_session_ordinal` (`session_id`, `ordinal`),
-  KEY `idx_resume_improvement_resume_status` (`resume_id`, `status`),
-  KEY `idx_resume_improvement_user` (`user_id`),
-  CONSTRAINT `fk_resume_improvement_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
-  CONSTRAINT `fk_resume_improvement_resume` FOREIGN KEY (`resume_id`) REFERENCES `resume` (`id`),
-  CONSTRAINT `fk_resume_improvement_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试证据驱动的简历改进建议';
-
 CREATE TABLE `retrieval_chunk` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `scope_type` VARCHAR(32) NOT NULL COMMENT '检索作用域类型',

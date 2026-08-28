@@ -93,8 +93,7 @@ public class InterviewReportAssembler {
                 safeList(trainingPlan.sevenDay()),
                 safeList(trainingPlan.nextInterviewFocus())
             ),
-            safeDraft.finalAdvice(),
-            safeDraft.reportMarkdown()
+            safeDraft.finalAdvice()
         );
     }
 

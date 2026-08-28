@@ -301,6 +301,7 @@ export function InterviewAnswerComposer({
     onMessage,
     onRefresh,
     onError,
+    onTerminalError: () => setVoice(false),
   })
   const thinkingLabel = thinkingDepth ? (thinkingLabels[thinkingDepth] ?? thinkingDepth) : '默认'
 

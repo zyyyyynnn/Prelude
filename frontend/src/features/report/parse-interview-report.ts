@@ -2,48 +2,17 @@ import type {
   ParsedInterviewReport,
   ReportStageName,
   StructuredQuestionReview,
-  ReportResumeImprovement,
   StructuredStagePerformance,
 } from './types'
 
-const stageNames: ReportStageName[] = ['warmup', 'technical', 'deep_dive', 'closing']
+const stageNames = new Set<ReportStageName>(['warmup', 'technical', 'deep_dive', 'closing'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function resumeImprovements(value: unknown): ReportResumeImprovement[] {
-  if (!Array.isArray(value)) return []
-  return value.filter(isRecord).flatMap((item) => {
-    const status = item.status
-    if (
-      typeof item.id !== 'number' ||
-      typeof item.resumeId !== 'number' ||
-      typeof item.sessionId !== 'number' ||
-      (status !== 'pending' && status !== 'accepted' && status !== 'rejected')
-    ) {
-      return []
-    }
-    return [
-      {
-        id: item.id,
-        resumeId: item.resumeId,
-        sessionId: item.sessionId,
-        targetPath: text(item.targetPath, 'summary'),
-        currentText: text(item.currentText, ''),
-        proposedText: text(item.proposedText, ''),
-        rationale: text(item.rationale, '基于本场面试表现完善表述。'),
-        evidence: text(item.evidence, '未提供证据摘录'),
-        baseDocumentVersion:
-          typeof item.baseDocumentVersion === 'number' ? item.baseDocumentVersion : 0,
-        status,
-      },
-    ]
-  })
-}
-
-function text(value: unknown, fallback: string) {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+function requiredText(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
 function strings(value: unknown): string[] {
@@ -54,78 +23,97 @@ function strings(value: unknown): string[] {
     .filter(Boolean)
 }
 
-function score(value: unknown, fallback: number) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.max(1, Math.min(10, Math.round(value * 10) / 10))
+function score(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 10
+    ? Math.round(value * 10) / 10
+    : null
 }
 
-function optionalScore(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? score(value, 6) : null
-}
-
-function stageName(value: unknown): ReportStageName {
-  return stageNames.includes(value as ReportStageName) ? (value as ReportStageName) : 'warmup'
+function stageName(value: unknown): ReportStageName | null {
+  return typeof value === 'string' && stageNames.has(value as ReportStageName)
+    ? (value as ReportStageName)
+    : null
 }
 
 function stagePerformances(value: unknown): StructuredStagePerformance[] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((item) => ({
-    stageName: stageName(item.stageName),
-    score: optionalScore(item.score),
-    summary: text(item.summary, '本阶段暂无补充总结'),
-    positiveSignals: strings(item.positiveSignals),
-    negativeSignals: strings(item.negativeSignals),
-    improvementSuggestions: strings(item.improvementSuggestions),
-  }))
+  return value.filter(isRecord).flatMap((item) => {
+    const name = stageName(item.stageName)
+    const summary = requiredText(item.summary)
+    if (!name || !summary) return []
+    return [
+      {
+        stageName: name,
+        score: score(item.score),
+        summary,
+        positiveSignals: strings(item.positiveSignals),
+        negativeSignals: strings(item.negativeSignals),
+        improvementSuggestions: strings(item.improvementSuggestions),
+      },
+    ]
+  })
 }
 
 function questionReviews(value: unknown): StructuredQuestionReview[] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((item) => ({
-    stageName: stageName(item.stageName),
-    question: text(item.question, '未记录问题文本'),
-    answerSummary: text(item.answerSummary, '未记录有效回答'),
-    score: optionalScore(item.score),
-    scoringReason: text(item.scoringReason, '暂无评分依据'),
-    improvementSuggestion: text(item.improvementSuggestion, '结合岗位要求继续完善回答。'),
-  }))
+  return value.filter(isRecord).flatMap((item) => {
+    const name = stageName(item.stageName)
+    const question = requiredText(item.question)
+    const answerSummary = requiredText(item.answerSummary)
+    const scoringReason = requiredText(item.scoringReason)
+    const improvementSuggestion = requiredText(item.improvementSuggestion)
+    if (!name || !question || !answerSummary || !scoringReason || !improvementSuggestion) return []
+    return [
+      {
+        stageName: name,
+        question,
+        answerSummary,
+        score: score(item.score),
+        scoringReason,
+        improvementSuggestion,
+      },
+    ]
+  })
 }
 
 export function parseInterviewReport(source: string): ParsedInterviewReport {
   const raw = source?.trim() || ''
-  if (!raw.startsWith('{')) {
-    return { kind: 'markdown', markdown: raw }
-  }
+  if (!raw.startsWith('{')) return { kind: 'plain', text: raw }
 
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!isRecord(parsed) || !isRecord(parsed.summary) || !isRecord(parsed.scores)) {
-      return { kind: 'markdown', markdown: raw }
+      return { kind: 'plain', text: raw }
     }
-    const dimensions = parsed.scores
-    const technical = score(dimensions.technical, 6)
-    const expression = score(dimensions.expression, 6)
-    const logic = score(dimensions.logic, 6)
-    const plan = isRecord(parsed.trainingPlan) ? parsed.trainingPlan : {}
     const summary = parsed.summary
-    const markdownFallback = text(
-      parsed.markdownFallback,
-      '# 面试训练报告\n\n结构化字段不完整，请查看逐题复盘。',
-    )
+    const dimensions = parsed.scores
+    const fitAssessment = requiredText(summary.fitAssessment)
+    const actionRecommendation = requiredText(summary.actionRecommendation)
+    const overallRisk = requiredText(summary.overallRisk)
+    const technical = score(dimensions.technical)
+    const expression = score(dimensions.expression)
+    const logic = score(dimensions.logic)
+    const overall = score(dimensions.overall)
+    const finalAdvice = requiredText(parsed.finalAdvice)
+    if (
+      !fitAssessment ||
+      !actionRecommendation ||
+      !overallRisk ||
+      technical == null ||
+      expression == null ||
+      logic == null ||
+      overall == null ||
+      !finalAdvice
+    ) {
+      return { kind: 'plain', text: raw }
+    }
+
+    const plan = isRecord(parsed.trainingPlan) ? parsed.trainingPlan : {}
     return {
       kind: 'structured',
       report: {
-        summary: {
-          fitAssessment: text(summary.fitAssessment, '建议结合岗位要求继续评估'),
-          actionRecommendation: text(summary.actionRecommendation, '针对薄弱项训练后再次模拟'),
-          overallRisk: text(summary.overallRisk, '现有信息不足，需结合逐题表现判断'),
-        },
-        scores: {
-          technical,
-          expression,
-          logic,
-          overall: score(dimensions.overall, (technical + expression + logic) / 3),
-        },
+        summary: { fitAssessment, actionRecommendation, overallRisk },
+        scores: { technical, expression, logic, overall },
         stagePerformances: stagePerformances(parsed.stagePerformances),
         questionReviews: questionReviews(parsed.questionReviews),
         strengths: strings(parsed.strengths),
@@ -135,12 +123,10 @@ export function parseInterviewReport(source: string): ParsedInterviewReport {
           sevenDay: strings(plan.sevenDay),
           nextInterviewFocus: strings(plan.nextInterviewFocus),
         },
-        finalAdvice: text(parsed.finalAdvice, '保持复盘，并围绕薄弱项继续专项训练。'),
-        markdownFallback,
-        resumeImprovements: resumeImprovements(parsed.resumeImprovements),
+        finalAdvice,
       },
     }
   } catch {
-    return { kind: 'markdown', markdown: raw }
+    return { kind: 'plain', text: raw }
   }
 }

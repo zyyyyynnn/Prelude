@@ -4,18 +4,13 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.ReportParser;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
 
-@Slf4j
 @Component
 public class InterviewReportParser implements ReportParser {
-
-    private static final int FALLBACK_SCORE = 6;
-    private static final String FALLBACK_MARKDOWN = "# 面试训练报告\n\n报告叙述字段不完整，请结合逐题复盘继续训练。";
 
     private final ObjectMapper objectMapper;
 
@@ -39,36 +34,43 @@ public class InterviewReportParser implements ReportParser {
         String rawContent = content == null ? "" : content.trim();
         String jsonContent = stripJsonFence(rawContent);
         if (!jsonContent.startsWith("{")) {
-            return fallback(rawContent);
+            throw new IllegalArgumentException("interview report must be structured JSON");
         }
         try {
             return normalize(objectMapper.readValue(jsonContent, InterviewReportDraft.class));
-        } catch (JacksonException | IllegalArgumentException exception) {
-            log.warn("Failed to parse structured interview report draft: {}", exception.getMessage());
-            return fallback(rawContent);
+        } catch (JacksonException exception) {
+            throw new IllegalArgumentException("interview report JSON is malformed", exception);
         }
     }
 
     private InterviewReportDraft normalize(InterviewReportDraft report) {
         InterviewReportDraft.ReportSummary sourceSummary = report.summary();
+        if (sourceSummary == null) {
+            throw new IllegalArgumentException("summary is required");
+        }
         InterviewReportDraft.ReportSummary summary = new InterviewReportDraft.ReportSummary(
-            text(sourceSummary == null ? null : sourceSummary.fitAssessment(), "建议结合岗位要求继续评估"),
-            text(sourceSummary == null ? null : sourceSummary.actionRecommendation(), "针对薄弱项训练后再次模拟"),
-            text(sourceSummary == null ? null : sourceSummary.overallRisk(), "现有信息不足，需结合逐题表现判断")
+            requiredText(sourceSummary.fitAssessment(), "summary.fitAssessment"),
+            requiredText(sourceSummary.actionRecommendation(), "summary.actionRecommendation"),
+            requiredText(sourceSummary.overallRisk(), "summary.overallRisk")
         );
 
         InterviewReportDraft.DimensionScores sourceScores = report.scores();
+        if (sourceScores == null) {
+            throw new IllegalArgumentException("scores are required");
+        }
         InterviewReportDraft.DimensionScores scores = new InterviewReportDraft.DimensionScores(
-            clamp(sourceScores == null ? null : sourceScores.technical()),
-            clamp(sourceScores == null ? null : sourceScores.expression()),
-            clamp(sourceScores == null ? null : sourceScores.logic())
+            requiredScore(sourceScores.technical(), "technical"),
+            requiredScore(sourceScores.expression(), "expression"),
+            requiredScore(sourceScores.logic(), "logic")
         );
 
         List<InterviewReportDraft.StageNarrative> stages = safeList(report.stagePerformances()).stream()
             .filter(Objects::nonNull)
+            .filter(stage -> stage.stageName() != null && !stage.stageName().isBlank())
+            .filter(stage -> stage.summary() != null && !stage.summary().isBlank())
             .map(stage -> new InterviewReportDraft.StageNarrative(
-                text(stage.stageName(), "unknown"),
-                text(stage.summary(), "本阶段暂无补充总结"),
+                stage.stageName().trim(),
+                stage.summary().trim(),
                 strings(stage.positiveSignals()),
                 strings(stage.negativeSignals()),
                 strings(stage.improvementSuggestions())
@@ -88,33 +90,9 @@ public class InterviewReportParser implements ReportParser {
             stages,
             strings(report.strengths()),
             plan,
-            text(report.finalAdvice(), "保持复盘，并围绕薄弱项进行下一轮专项训练。"),
-            text(report.reportMarkdown(), FALLBACK_MARKDOWN),
-            safeList(report.resumeSuggestions()).stream()
-                .filter(Objects::nonNull)
-                .map(suggestion -> new InterviewReportDraft.ResumeSuggestion(
-                    text(suggestion.targetPath(), ""),
-                    text(suggestion.currentText(), ""),
-                    text(suggestion.proposedText(), ""),
-                    text(suggestion.rationale(), ""),
-                    text(suggestion.evidence(), "")
-                ))
-                .filter(suggestion -> !suggestion.targetPath().isBlank() && !suggestion.proposedText().isBlank())
-                .limit(3)
-                .toList()
+            requiredText(report.finalAdvice(), "finalAdvice"),
+            requiredText(report.reportMarkdown(), "reportMarkdown")
         );
-    }
-
-    private InterviewReportDraft fallback(String rawContent) {
-        return normalize(new InterviewReportDraft(
-            null,
-            new InterviewReportDraft.DimensionScores(FALLBACK_SCORE, FALLBACK_SCORE, FALLBACK_SCORE),
-            List.of(),
-            List.of(),
-            null,
-            null,
-            rawContent.isBlank() ? FALLBACK_MARKDOWN : rawContent
-        ));
     }
 
     private String stripJsonFence(String content) {
@@ -130,15 +108,18 @@ public class InterviewReportParser implements ReportParser {
         return trimmed.trim();
     }
 
-    private int clamp(Integer value) {
-        if (value == null) {
-            return FALLBACK_SCORE;
+    private int requiredScore(Integer value, String field) {
+        if (value == null || value < 1 || value > 10) {
+            throw new IllegalArgumentException(field + " score must be between 1 and 10");
         }
-        return Math.max(1, Math.min(10, value));
+        return value;
     }
 
-    private String text(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value.trim();
+    private String requiredText(String value, String field) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " is required");
+        }
+        return value.trim();
     }
 
     private List<String> strings(List<String> values) {

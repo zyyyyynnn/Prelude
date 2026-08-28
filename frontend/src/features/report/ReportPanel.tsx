@@ -1,13 +1,9 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { Check, ChevronLeft, ChevronRight, Download, X } from 'lucide-react'
-import { acceptResumeImprovement, rejectResumeImprovement } from '@/features/resume'
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { Button } from '@/shared/ui'
 import { useFeedback } from '@/shared/ui/feedback'
 import { parseInterviewReport } from './parse-interview-report'
-import { renderMarkdown } from './render-markdown'
 import type {
-  ReportResumeImprovement,
   StructuredInterviewReport,
   StructuredQuestionReview,
   StructuredStagePerformance,
@@ -45,12 +41,9 @@ export function ReportPanel({ source }: { source: string }) {
           导出 PDF
         </Button>
       </div>
-      {parsed.kind === 'markdown' ? (
-        <article className="markdown-surface markdown-surface--paper">
-          <div
-            className="markdown-body"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(parsed.markdown) }}
-          />
+      {parsed.kind === 'plain' ? (
+        <article className="report-plain-surface">
+          <pre className="report-plain-text">{parsed.text}</pre>
         </article>
       ) : (
         <StructuredReport report={parsed.report} />
@@ -60,30 +53,6 @@ export function ReportPanel({ source }: { source: string }) {
 }
 
 function StructuredReport({ report }: { report: StructuredInterviewReport }) {
-  const feedback = useFeedback()
-  const [items, setItems] = useState(report.resumeImprovements)
-  const accept = useMutation({
-    mutationFn: acceptResumeImprovement,
-    onSuccess: ({ improvement }) => {
-      setItems((current) =>
-        current.map((item) =>
-          item.id === improvement.id ? { ...item, status: improvement.status } : item,
-        ),
-      )
-      feedback.notify('建议已写入简历', 'success')
-    },
-    onError: (error) => feedback.notify(error.message, 'error'),
-  })
-  const reject = useMutation({
-    mutationFn: rejectResumeImprovement,
-    onSuccess: (improvement) =>
-      setItems((current) =>
-        current.map((item) =>
-          item.id === improvement.id ? { ...item, status: improvement.status } : item,
-        ),
-      ),
-    onError: (error) => feedback.notify(error.message, 'error'),
-  })
   return (
     <article className="structured-report">
       <header className="structured-report__hero">
@@ -104,12 +73,6 @@ function StructuredReport({ report }: { report: StructuredInterviewReport }) {
       <ScoreCard report={report} />
       <StagePerformanceList stages={report.stagePerformances} />
       <QuestionReviewList reviews={report.questionReviews} />
-      <ResumeImprovementList
-        items={items}
-        busyId={accept.isPending ? accept.variables : reject.isPending ? reject.variables : null}
-        onAccept={(item) => accept.mutate(item.id)}
-        onReject={(item) => reject.mutate(item.id)}
-      />
       <section className="report-section structured-report__traits">
         <header>
           <p>能力沉淀</p>
@@ -139,7 +102,6 @@ function ScoreCard({ report }: { report: StructuredInterviewReport }) {
     <section className="report-section report-scores">
       <header className="report-section__header">
         <div>
-          <p className="report-section__eyebrow">能力画像</p>
           <h2>三维评分</h2>
         </div>
         <div className="report-scores__overall">
@@ -282,78 +244,6 @@ function ReviewDetail({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ResumeImprovementList({
-  items,
-  busyId,
-  onAccept,
-  onReject,
-}: {
-  items: ReportResumeImprovement[]
-  busyId: number | null | undefined
-  onAccept: (item: ReportResumeImprovement) => void
-  onReject: (item: ReportResumeImprovement) => void
-}) {
-  if (!items.length) return null
-  return (
-    <section className="report-section resume-improvements">
-      <header>
-        <p>简历闭环</p>
-        <h2>基于本场证据的改写建议</h2>
-      </header>
-      <div className="resume-improvements__list">
-        {items.map((item) => (
-          <article className="resume-improvement" key={item.id}>
-            <div className="resume-improvement__header">
-              <h3>{fieldLabel(item.targetPath)}</h3>
-              <span className="status-badge">{statusLabel(item.status)}</span>
-            </div>
-            <dl className="resume-improvement__diff">
-              <div>
-                <dt>当前表述</dt>
-                <dd>{item.currentText || '暂无内容'}</dd>
-              </div>
-              <div>
-                <dt>建议表述</dt>
-                <dd>{item.proposedText}</dd>
-              </div>
-            </dl>
-            <div className="resume-improvement__evidence">
-              <p>
-                <strong>面试证据</strong>
-                {item.evidence}
-              </p>
-              <p>
-                <strong>改写理由</strong>
-                {item.rationale}
-              </p>
-            </div>
-            {item.status === 'pending' && (
-              <div className="resume-improvement__actions">
-                <Button
-                  loading={busyId === item.id}
-                  disabled={busyId != null}
-                  onClick={() => onAccept(item)}
-                >
-                  <Check size={15} />
-                  接受并写入简历
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={busyId != null}
-                  onClick={() => onReject(item)}
-                >
-                  <X size={15} />
-                  拒绝
-                </Button>
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
   const groups = [
     ['3 天补强', plan.threeDay],
@@ -402,16 +292,4 @@ function Trait({ title, items, empty }: { title: string; items: string[]; empty:
       )}
     </section>
   )
-}
-
-function fieldLabel(path: string) {
-  if (path === 'summary') return '个人摘要'
-  const match = path.match(/^(projects|experiences)\[(\d+)]\.(bullets|outcome)(?:\[(\d+)])?$/)
-  if (!match) return '简历字段'
-  const scope = match[1] === 'projects' ? '项目' : '经历'
-  const suffix = match[3] === 'outcome' ? '成果' : `要点 ${Number(match[4]) + 1}`
-  return `${scope} ${Number(match[2]) + 1} · ${suffix}`
-}
-function statusLabel(status: ReportResumeImprovement['status']) {
-  return status === 'accepted' ? '已接受' : status === 'rejected' ? '已拒绝' : '待决定'
 }
