@@ -37,9 +37,16 @@ Prelude 以面试为核心，将面试准备、实时问答、结构化评估和
 
 ## 系统架构
 
-<p align="center">
-  <img src="docs/assets/architecture-overview.svg" width="960" alt="Prelude 高层系统架构总览">
-</p>
+```mermaid
+flowchart TB
+    U[用户] --> C[React 19 客户端]
+    C --> A[Spring Boot + Spring Modulith<br/>面试 · 语音 · 上下文 · 报告 · 分析 · 身份 · 设置]
+
+    A --> L[模型网关<br/>DeepSeek · 自定义模型服务]
+    A --> D[(MySQL<br/>业务与会话持久化)]
+    A --> R[(Redis<br/>实时发布与订阅)]
+    A --> Q[RabbitMQ<br/>异步报告任务]
+```
 
 README 只展示系统职责分层；16 个应用模块的完整边界与依赖拓扑见[后端架构](docs/backend/architecture.md)。前端状态所有权与目录边界见[前端架构](docs/frontend/architecture.md)。
 
