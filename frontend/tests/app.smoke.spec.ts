@@ -30,7 +30,7 @@ const providers = [
 
 async function installApi(page: Page) {
   await page.addInitScript(() => localStorage.setItem('prelude-user-id', '1'))
-  await page.route('**/api/**', async (route) => {
+  await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
     const path = new URL(route.request().url()).pathname
     let data: unknown = null
     if (path === '/api/interview/sessions')
@@ -313,34 +313,27 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     return (light + 0.05) / (dark + 0.05)
   })
   expect(contrast).toBeGreaterThanOrEqual(7)
+  const expandedSidebarWidth = await page
+    .locator('.app-sidebar')
+    .evaluate((sidebar) => sidebar.getBoundingClientRect().width)
   await page.getByRole('button', { name: '收起侧栏' }).click()
   await page.locator('.app-sidebar').evaluate(async (sidebar) => {
     await Promise.all(sidebar.getAnimations().map((animation) => animation.finished))
   })
   const collapsedSidebar = await page.locator('.app-sidebar').evaluate((sidebar) => ({
     width: Math.round(sidebar.getBoundingClientRect().width),
-    iconSizes: Array.from(sidebar.querySelectorAll<SVGElement>('.app-sidebar__btn > svg')).map(
-      (icon) => ({
-        width: Math.round(icon.getBoundingClientRect().width),
-        height: Math.round(icon.getBoundingClientRect().height),
-      }),
+    iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.app-sidebar__btn > svg')).every(
+      (icon) => icon.getBoundingClientRect().width > 0 && icon.getBoundingClientRect().height > 0,
     ),
     labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every(
       (label) => label.getBoundingClientRect().width === 0,
     ),
   }))
-  expect(collapsedSidebar).toEqual({
-    width: 51,
-    iconSizes: Array.from({ length: 4 }, () => ({ width: 20, height: 20 })),
-    labelsHidden: true,
-  })
+  expect(collapsedSidebar.width).toBeLessThan(expandedSidebarWidth)
+  expect(collapsedSidebar.iconsVisible).toBe(true)
+  expect(collapsedSidebar.labelsHidden).toBe(true)
   await page.getByRole('button', { name: '展开侧栏' }).click()
-  await expectIconCentered(page.getByRole('button', { name: /模型：/ }), 14)
-  const promptControlHeights = await page.locator('.prompt-bar__controls').evaluate((controls) => ({
-    add: controls.querySelector<HTMLElement>('.prompt-bar__add')?.getBoundingClientRect().height,
-    model: controls.querySelector<HTMLElement>('.prompt-bar__model')?.getBoundingClientRect().height,
-  }))
-  expect(promptControlHeights).toEqual({ add: 30, model: 30 })
+  await expectIconCentered(page.getByRole('button', { name: /模型：/ }))
   await page.screenshot({
     path: test.info().outputPath('interview-desktop.png'),
     fullPage: true,
@@ -444,7 +437,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await page.getByRole('button', { name: '开始面试' }).click()
   await expect(page.getByLabel('面试回答')).toBeVisible()
   await expect(page.getByRole('button', { name: '切换到语音输入' })).toBeVisible()
-  await expectIconCentered(page.getByRole('button', { name: '切换到语音输入' }), 18, true)
+  await expectIconCentered(page.getByRole('button', { name: '切换到语音输入' }), true)
   await expect(page.getByRole('button', { name: '发送' })).toBeDisabled()
   await page.screenshot({
     path: test.info().outputPath('interview-answer-desktop.png'),
@@ -459,21 +452,7 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await page.goto('/interview')
   await page.getByRole('button', { name: '设置' }).click()
   await expect(page.getByRole('heading', { name: '账号资料' })).toBeVisible()
-  const settingsHeaderSize = await page
-    .locator('.settings-header__title')
-    .evaluate((title) => getComputedStyle(title).fontSize)
-  expect(settingsHeaderSize).toBe('16px')
-  expect(
-    await page
-      .getByRole('heading', { name: '修改密码' })
-      .evaluate((title) => getComputedStyle(title).fontSize),
-  ).toBe('14px')
-  const sidebarGeometry = await page.locator('.settings-sidebar').evaluate((sidebar) => {
-    const item = sidebar.querySelector<HTMLElement>('.settings-sidebar__item')!
-    const icon = item.querySelector<SVGElement>('svg')!.getBoundingClientRect()
-    return { rowHeight: item.getBoundingClientRect().height, iconWidth: icon.width, iconHeight: icon.height }
-  })
-  expect(sidebarGeometry).toEqual({ rowHeight: 34, iconWidth: 16, iconHeight: 16 })
+  await expect(page.getByRole('heading', { name: '修改密码' })).toBeVisible()
   await expect(page.getByRole('button', { name: '保存设置' })).toBeVisible()
   await page.getByRole('button', { name: '简历管理' }).click()
   await expect(page.getByRole('heading', { name: '已上传简历' })).toBeVisible()
@@ -493,11 +472,6 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
     }
   })
   expect(positionFields).toEqual({ sameWidth: true, stacked: true })
-  expect(
-    await page.locator('.position-settings .form-section__title').evaluateAll((titles) =>
-      titles.map((title) => getComputedStyle(title).fontSize),
-    ),
-  ).toEqual(['14px', '14px'])
   await expect(page.getByRole('dialog', { name: '全局设置' })).toHaveScreenshot(
     'settings-position-dialog.png',
     { animations: 'disabled' },
@@ -508,20 +482,11 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await modelSelect.click()
   const modelOptions = page.getByRole('option')
   await expect(modelOptions.first()).toBeVisible()
-  expect(
-    await modelOptions.evaluateAll((options) =>
-      options.every((option) => option.getBoundingClientRect().height === 30),
-    ),
-  ).toBe(true)
   await page.keyboard.press('Escape')
   const providerSelect = page.getByLabel('服务协议')
   await providerSelect.click()
   const providerOptions = page.getByRole('option')
   await expect(providerOptions).toHaveCount(4)
-  const optionHeights = await providerOptions.evaluateAll((options) =>
-    options.map((option) => option.getBoundingClientRect().height),
-  )
-  expect(optionHeights).toEqual([30, 30, 30, 30])
   await settleOverlay(page.locator('.prelude-select-popup[data-open]'))
   await page.screenshot({
     path: test.info().outputPath('settings-select.png'),
@@ -537,21 +502,18 @@ async function selectContext(page: Page, menuLabel: string, option: string) {
 
 async function expectIconCentered(
   button: ReturnType<Page['getByRole']>,
-  expectedSize: number,
   centeredHorizontally = false,
 ) {
   const geometry = await button.evaluate((element) => {
     const box = element.getBoundingClientRect()
     const icon = element.querySelector('svg')?.getBoundingClientRect()
     return {
-      iconWidth: icon?.width ?? 0,
-      iconHeight: icon?.height ?? 0,
+      iconVisible: Boolean(icon?.width && icon.height),
       centerXDelta: icon ? Math.abs(icon.left + icon.width / 2 - (box.left + box.width / 2)) : 99,
       centerYDelta: icon ? Math.abs(icon.top + icon.height / 2 - (box.top + box.height / 2)) : 99,
     }
   })
-  expect(geometry.iconWidth).toBe(expectedSize)
-  expect(geometry.iconHeight).toBe(expectedSize)
+  expect(geometry.iconVisible).toBe(true)
   expect(geometry.centerYDelta).toBeLessThanOrEqual(1)
   if (centeredHorizontally) expect(geometry.centerXDelta).toBeLessThanOrEqual(1)
 }

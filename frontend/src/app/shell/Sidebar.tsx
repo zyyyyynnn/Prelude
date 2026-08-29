@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3,
@@ -33,7 +33,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [params] = useSearchParams()
-  const [sessionRequest, setSessionRequest] = useState<AbortController | null>(null)
+  const sessionRequest = useRef<AbortController | null>(null)
   const [loadingSessionId, setLoadingSessionId] = useState<number | null>(null)
   const [failedSessionId, setFailedSessionId] = useState<number | null>(null)
   const activeId = Number(params.get('session')) || null
@@ -47,7 +47,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   })
   const grouped = groupSessions(sessions.data ?? [], preferences)
 
-  useEffect(() => () => sessionRequest?.abort(), [sessionRequest])
+  useEffect(() => () => sessionRequest.current?.abort(), [])
 
   function updatePreferences(next: SessionPreferences) {
     setPreferences(next)
@@ -65,33 +65,25 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
     feedback.notify(pinned ? '已取消置顶' : '会话已置顶', 'success')
   }
 
-  const openSession = useCallback(
-    async (session: InterviewSessionItem) => {
-      const controller = new AbortController()
-      setSessionRequest((previous) => {
-        previous?.abort()
-        return controller
+  async function openSession(session: InterviewSessionItem, controller: AbortController) {
+    setLoadingSessionId(session.sessionId)
+    setFailedSessionId(null)
+    try {
+      await client.fetchQuery({
+        queryKey: ['interview-session', session.sessionId],
+        queryFn: ({ signal }) =>
+          fetchSession(session.sessionId, AbortSignal.any([signal, controller.signal])),
       })
-      setLoadingSessionId(session.sessionId)
-      setFailedSessionId(null)
-      try {
-        await client.fetchQuery({
-          queryKey: ['interview-session', session.sessionId],
-          queryFn: ({ signal }) =>
-            fetchSession(session.sessionId, AbortSignal.any([signal, controller.signal])),
-        })
-        if (controller.signal.aborted) return
-        setLoadingSessionId(null)
-        await navigate(`/interview?session=${session.sessionId}`)
-      } catch (error) {
-        if (controller.signal.aborted) return
-        setLoadingSessionId(null)
-        setFailedSessionId(session.sessionId)
-        feedback.notify(error instanceof Error ? error.message : '会话加载失败', 'error')
-      }
-    },
-    [client, feedback, navigate],
-  )
+      if (controller.signal.aborted) return
+      setLoadingSessionId(null)
+      await navigate(`/interview?session=${session.sessionId}`)
+    } catch (error) {
+      if (controller.signal.aborted) return
+      setLoadingSessionId(null)
+      setFailedSessionId(session.sessionId)
+      feedback.notify(error instanceof Error ? error.message : '会话加载失败', 'error')
+    }
+  }
 
   async function removeSession(session: InterviewSessionItem) {
     const accepted = await feedback.confirm({
@@ -171,7 +163,13 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
                               className={`session-item-btn ui-action ui-action-nav${active ? ' is-active' : ''}${loading ? ' is-loading' : ''}${failed ? ' is-error' : ''}`}
                               aria-label={`${failed ? '重试打开会话' : group.finished ? '打开已结束会话' : '打开会话'} ${session.targetPosition || session.positionName || '未命名岗位'}`}
                               aria-busy={loading || undefined}
-                              onClick={() => void openSession(session)}
+                              onClick={() => {
+                                // eslint-disable-next-line react-hooks/refs -- This runs only after a user click.
+                                sessionRequest.current?.abort()
+                                const controller = new AbortController()
+                                sessionRequest.current = controller
+                                void openSession(session, controller)
+                              }}
                             >
                               <span className="session-item__name">
                                 {session.targetPosition || session.positionName || '未命名岗位'}

@@ -49,8 +49,8 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 - `npm run typecheck`：严格 TypeScript 检查。
 - `npm run lint`：ESLint、typescript-eslint 与 React Hooks 规则。
-- `npm run build`：TypeScript 检查后执行 Vite 生产构建。
-- `npm run test:smoke`：真实浏览器验证根页面与客户端路由。
+- `npm run build`：执行 Vite 生产构建；TypeScript 静态检查由 `npm run check` 负责。
+- `npm run test:smoke`：在 React 开发 StrictMode 下通过真实浏览器验证核心行为与客户端路由。
 - `npm run verify:architecture`：目录与依赖方向。
 - `npm run verify:ui`、`verify:tokens`：UI 结构与 token 契约。
 - `npm run verify:byok`、`verify:dark`：BYOK 与主题行为。

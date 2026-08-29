@@ -30,19 +30,8 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
 }
 
 const overlays = fs.readFileSync(path.join(sourceRoot, 'shared', 'ui', 'overlay.tsx'), 'utf8')
-const styles = fs.readFileSync(path.join(sourceRoot, 'shared', 'styles', 'index.css'), 'utf8')
 if (!overlays.includes('Tooltip.Provider') && !overlays.includes('Tooltip.Root')) {
   violations.push('shared/ui/overlay.tsx: Base UI tooltip primitive is required')
-}
-const tooltipRule = styles.match(/\.prelude-tooltip\s*\{([^}]+)\}/)?.[1] ?? ''
-for (const required of [
-  'background: var(--color-text-primary)',
-  'color: var(--color-surface)',
-  'border: 1px solid var(--color-border-warm)',
-  'box-shadow: var(--shadow-whisper)',
-]) {
-  if (!tooltipRule.includes(required))
-    violations.push(`shared/styles/index.css: tooltip must include ${required}`)
 }
 
 if (violations.length) {

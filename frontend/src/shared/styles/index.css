@@ -1340,7 +1340,7 @@ label,
   margin-top: var(--spacing-md);
 }
 
-/* 彻底消除 Chrome Autofill 亮黄背景污染 (针对纯白输入框) */
+/* Keep browser autofill colors aligned with the input surface. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -1352,7 +1352,7 @@ textarea:-webkit-autofill:focus {
   transition: none;
 }
 
-/* 彻底隐藏 Edge/Chrome 原生的密码查看眼睛图标，防止与业务 Icon 冲突 */
+/* Hide native password controls where the product provides its own control. */
 input[type='password']::-ms-reveal,
 input[type='password']::-ms-clear {
   display: none !important;

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
@@ -20,9 +20,13 @@ export function LoginPage() {
   const feedback = useFeedback()
   const navigate = useNavigate()
   const location = useLocation()
+  const reportedExpiration = useRef(false)
 
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('reason') === 'expired') {
+    const expired = new URLSearchParams(location.search).get('reason') === 'expired'
+    if (!expired) reportedExpiration.current = false
+    else if (!reportedExpiration.current) {
+      reportedExpiration.current = true
       feedback.notify('登录已失效，请重新登录。', 'error')
     }
   }, [feedback, location.search])

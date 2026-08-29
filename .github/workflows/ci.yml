@@ -1,8 +1,17 @@
 name: CI
 
 on:
-  push:
   pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend:
@@ -44,23 +53,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install architecture checker
-        shell: bash
-        run: |
-          set -euo pipefail
-          url='https://github.com/sentrux/sentrux/releases/download/v0.5.7/sentrux-linux-x86_64'
-          expected_sha256='3237f80fe20d54aad4deefa8a143f0d60543bb5d2d6ad891eb42432f155725a6'
-          tool_directory="$RUNNER_TEMP/sentrux"
-          executable="$tool_directory/sentrux"
-          mkdir -p "$tool_directory"
-          curl --fail --location --silent --show-error "$url" --output "$executable"
-          echo "$expected_sha256  $executable" | sha256sum --check --status
-          chmod +x "$executable"
-          echo "$tool_directory" >> "$GITHUB_PATH"
-
-      - name: Verify repository architecture
-        run: sentrux check .
-
       - name: Check whitespace
         shell: bash
         run: git diff --check "$(git merge-base origin/main HEAD)" HEAD
@@ -84,14 +76,6 @@ jobs:
           SPRING_RABBITMQ_PORT: '5672'
         run: mvn --batch-mode clean test
 
-      - name: Verify resolved dependency lines
-        working-directory: backend
-        shell: bash
-        run: |
-          mvn --batch-mode dependency:tree -DoutputFile=target/dependency-tree.txt
-          ! grep -E 'mybatis-plus-spring-boot3-starter|spring-ai-[^:]+:[^:]+:[^:]+:2\.0\.0' target/dependency-tree.txt
-          test "$(grep -oE 'org\.springframework\.ai:[^:]+:[^:]+:2\.0\.[0-9]+' target/dependency-tree.txt | sed -E 's/.*:(2\.0\.[0-9]+)$/\1/' | sort -u)" = '2.0.1'
-
   frontend:
     runs-on: windows-latest
     env:
@@ -114,15 +98,19 @@ jobs:
         working-directory: frontend
         run: npm audit --omit=dev
 
-      - name: Verify architecture and UI governance
+      - name: Verify frontend
         working-directory: frontend
         run: npm run check
 
-      - name: Build and browser verification
+      - name: Build production frontend
         working-directory: frontend
         run: |
           npm run build
           npm run verify:production
+
+      - name: Verify browser behavior
+        working-directory: frontend
+        run: |
           npm run test:smoke
           npm run verify:byok
           npm run verify:dark

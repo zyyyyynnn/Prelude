@@ -130,8 +130,13 @@ export function useVoiceInterview({
       onError('当前浏览器不支持语音录制')
       return
     }
+    const activeSocket = socket.current
     try {
       const media = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (closing.current || socket.current !== activeSocket) {
+        media.getTracks().forEach((track) => track.stop())
+        return
+      }
       const next = new MediaRecorder(media, { mimeType: 'audio/webm' })
       next.ondataavailable = async (event) => {
         if (event.data.size && socket.current?.readyState === WebSocket.OPEN)
@@ -144,7 +149,8 @@ export function useVoiceInterview({
       setRecording(true)
       setStatus('listening')
     } catch {
-      onError('无法访问麦克风，请检查浏览器权限')
+      if (!closing.current && socket.current === activeSocket)
+        onError('无法访问麦克风，请检查浏览器权限')
     }
   }
 

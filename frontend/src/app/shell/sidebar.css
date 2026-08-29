@@ -1,5 +1,4 @@
 .app-sidebar {
-  /* 组件级几何变量：折叠时按钮水平内边距与 sessions 容器宽度集中声明，便于审计。 */
   --sidebar-icon-glyph-size: 20px;
   --sidebar-btn-padding-inline: calc((var(--ui-height-md) - var(--sidebar-icon-glyph-size)) / 2);
   --sidebar-sessions-inline-size: calc(var(--layout-sidebar-inline-size) - var(--spacing-sm) * 2);
@@ -11,10 +10,6 @@
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
   overflow-x: hidden;
-  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
-  will-change: inline-size;
-  transform: translateZ(0); /* 强制开启 GPU 加速，消除卡顿 */
-  backface-visibility: hidden; /* 消除某些浏览器在动画期间的字体模糊闪烁 */
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -37,13 +32,9 @@
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition:
-    inline-size var(--motion-duration-base) var(--motion-ease-standard),
-    opacity var(--motion-duration-base) var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
   inline-size: var(--layout-sidebar-brand-inline-size);
   opacity: 1;
-  transform: translateZ(0);
-  -webkit-font-smoothing: antialiased;
 }
 .app-sidebar.is-collapsed .app-sidebar__brand {
   inline-size: 0;
@@ -70,8 +61,6 @@
   transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
   display: inline-block;
   overflow: hidden;
-  transform: translateZ(0);
-  -webkit-font-smoothing: antialiased;
   flex-shrink: 0;
 }
 .app-sidebar.is-collapsed .sidebar-label {
@@ -103,9 +92,6 @@
   overflow: hidden;
   padding: var(--spacing-sm);
   min-height: 0;
-}
-.app-sidebar__actions {
-  /* margin-bottom handled by divider */
 }
 .app-sidebar__btn {
   display: flex;
@@ -183,11 +169,8 @@
   min-height: 0;
   inline-size: var(--sidebar-sessions-inline-size);
   flex-shrink: 0;
-  contain: strict; /* 绝对封锁：告诉浏览器内部元素完全独立，不再参与外层 Layout 挤压计算 */
-  transform: translateZ(0); /* 提升渲染层 */
   overflow-y: auto;
   overflow-x: hidden;
-  /* margin-bottom handled by divider */
   padding-right: 0;
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
@@ -274,7 +257,7 @@
 }
 .app-sidebar__footer {
   padding: 0 var(--spacing-sm);
-  padding-bottom: var(--spacing-sm); /* 保留最底部的 8px 留白 */
+  padding-bottom: var(--spacing-sm);
 }
 
 .session-item-wrapper {
@@ -367,11 +350,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-sidebar,
   .app-sidebar__brand,
   .sidebar-label,
   .app-sidebar__sessions,
   .app-sidebar__collapsed-actions {
-    transition-duration: 0.01ms;
+    transition: none;
   }
 }

@@ -11,8 +11,7 @@ export function useInterviewSession(sessionId: number, onError: (message: string
   const [showReport, setShowReport] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState('')
   const abort = useRef<AbortController | null>(null)
-  const autoStarted = useRef(false)
-  const active = useRef(true)
+  const autoStartedSessionId = useRef<number | null>(null)
   const session = useQuery({
     queryKey: ['interview-session', sessionId],
     queryFn: ({ signal }) => fetchSession(sessionId, signal),
@@ -23,7 +22,6 @@ export function useInterviewSession(sessionId: number, onError: (message: string
 
   useEffect(
     () => () => {
-      active.current = false
       abort.current?.abort()
     },
     [],
@@ -119,21 +117,29 @@ export function useInterviewSession(sessionId: number, onError: (message: string
       await client.invalidateQueries({ queryKey: ['interview-sessions'] })
     },
     onError: async (error) => {
-      if (error.name === 'AbortError' || !active.current) return
+      if (error.name === 'AbortError') return
       onError(error.message)
       await session.refetch()
-      if (!active.current) return
       setConnectionStatus('')
       setMessages(null)
     },
   })
 
   useEffect(() => {
-    if (!current || current.messages.length || autoStarted.current || current.status === 'finished')
+    if (
+      !current ||
+      current.messages.length ||
+      autoStartedSessionId.current === sessionId ||
+      current.status === 'finished'
+    )
       return
-    autoStarted.current = true
-    send.mutate({ content: '', autoStart: true })
-  }, [current, send])
+    const timer = window.setTimeout(() => {
+      if (autoStartedSessionId.current === sessionId) return
+      autoStartedSessionId.current = sessionId
+      send.mutate({ content: '', autoStart: true })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [current, send, sessionId])
 
   const finish = useMutation({
     mutationFn: () => finishInterview(sessionId),
