@@ -7,16 +7,18 @@
     <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=flat-square&amp;label=%E8%AE%B8%E5%8F%AF%E8%AF%81&amp;logo=opensourceinitiative&amp;logoColor=white"></a>
   </p>
   <p>
-    <img src="https://api.iconify.design/logos/java.svg" width="34" height="34" alt="Java" title="Java">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/spring-icon.svg" width="34" height="34" alt="Spring" title="Spring">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/react.svg" width="34" height="34" alt="React" title="React">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/typescript-icon.svg" width="34" height="34" alt="TypeScript" title="TypeScript">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/vitejs.svg" width="34" height="34" alt="Vite" title="Vite">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/tailwindcss-icon.svg" width="34" height="34" alt="Tailwind CSS" title="Tailwind CSS">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/mysql-icon.svg" width="34" height="34" alt="MySQL" title="MySQL">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/redis.svg" width="34" height="34" alt="Redis" title="Redis">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/rabbitmq-icon.svg" width="34" height="34" alt="RabbitMQ" title="RabbitMQ">&nbsp;&nbsp;&nbsp;
-    <img src="https://api.iconify.design/logos/docker-icon.svg" width="34" height="34" alt="Docker" title="Docker">
+    <img src="https://img.shields.io/badge/Java%2021-ED8B00?style=flat&amp;logo=openjdk&amp;logoColor=white" alt="Java 21" title="Java 21">
+    <img src="https://img.shields.io/badge/Spring-6DB33F?style=flat&amp;logo=spring&amp;logoColor=white" alt="Spring" title="Spring">
+    <img src="https://img.shields.io/badge/React%2019-20232A?style=flat&amp;logo=react&amp;logoColor=61DAFB" alt="React 19" title="React 19">
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" title="TypeScript">
+    <img src="https://img.shields.io/badge/Vite-646CFF?style=flat&amp;logo=vite&amp;logoColor=white" alt="Vite" title="Vite">
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=flat&amp;logo=tailwindcss&amp;logoColor=white" alt="Tailwind CSS" title="Tailwind CSS">
+    <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat&amp;logo=mysql&amp;logoColor=white" alt="MySQL" title="MySQL">
+    <img src="https://img.shields.io/badge/Redis-DC382D?style=flat&amp;logo=redis&amp;logoColor=white" alt="Redis" title="Redis">
+    <img src="https://img.shields.io/badge/RabbitMQ-FF6600?style=flat&amp;logo=rabbitmq&amp;logoColor=white" alt="RabbitMQ" title="RabbitMQ">
+    <img src="https://img.shields.io/badge/Docker-2496ED?style=flat&amp;logo=docker&amp;logoColor=white" alt="Docker" title="Docker">
   </p>
 </div>
 
