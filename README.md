@@ -1,12 +1,23 @@
 <div align="center">
-  <img src="frontend/src/shared/brand/brand-logo.png" width="78" alt="Prelude 品牌标识">
-  <h1>Prelude</h1>
+  <img src="frontend/src/shared/brand/brand-logo.png" width="96" alt="Prelude 品牌标识">
+  <h1 align="center" style="border-bottom: none">Prelude</h1>
   <p><strong>AI 模拟面试、训练评估与职业成长分析工作台</strong></p>
   <p>
-    <a href="https://github.com/zyyyyynnn/Prelude/actions/workflows/ci.yml"><img alt="构建状态" src="https://img.shields.io/github/actions/workflow/status/zyyyyynnn/Prelude/ci.yml?branch=main&amp;style=flat-square&amp;label=%E6%9E%84%E5%BB%BA&amp;logo=githubactions&amp;logoColor=white&amp;labelColor=30363d"></a>
-    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=flat-square&amp;label=%E8%AE%B8%E5%8F%AF%E8%AF%81&amp;logo=opensourceinitiative&amp;logoColor=white&amp;labelColor=30363d"></a>
-    <img src="https://img.shields.io/badge/%E5%90%8E%E7%AB%AF-Java%2021-4c6b82?style=flat-square&amp;logo=openjdk&amp;logoColor=white&amp;labelColor=30363d" alt="后端：Java 21" title="后端：Java 21">
-    <img src="https://img.shields.io/badge/%E5%89%8D%E7%AB%AF-React%2019-087ea4?style=flat-square&amp;logo=react&amp;logoColor=white&amp;labelColor=30363d" alt="前端：React 19" title="前端：React 19">
+    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=for-the-badge&amp;label=LICENSE&amp;logo=opensourceinitiative&amp;logoColor=white&amp;labelColor=4B4A46&amp;color=786A63"></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/-Java%2021-8D6352?style=for-the-badge&amp;logo=openjdk&amp;logoColor=white&amp;labelColor=4B4A46" alt="Java 21" title="Java 21">
+    <img src="https://img.shields.io/badge/-Spring%20Boot-63765A?style=for-the-badge&amp;logo=springboot&amp;logoColor=white&amp;labelColor=4B4A46" alt="Spring Boot" title="Spring Boot">
+    <img src="https://img.shields.io/badge/-Spring%20Modulith-6B7B62?style=for-the-badge&amp;logo=spring&amp;logoColor=white&amp;labelColor=4B4A46" alt="Spring Modulith" title="Spring Modulith">
+    <img src="https://img.shields.io/badge/-React%2019-5E7780?style=for-the-badge&amp;logo=react&amp;logoColor=white&amp;labelColor=4B4A46" alt="React 19" title="React 19">
+    <img src="https://img.shields.io/badge/-TypeScript-5B718A?style=for-the-badge&amp;logo=typescript&amp;logoColor=white&amp;labelColor=4B4A46" alt="TypeScript" title="TypeScript">
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/-Tailwind%20CSS-557B7F?style=for-the-badge&amp;logo=tailwindcss&amp;logoColor=white&amp;labelColor=4B4A46" alt="Tailwind CSS" title="Tailwind CSS">
+    <img src="https://img.shields.io/badge/-MySQL-516F80?style=for-the-badge&amp;logo=mysql&amp;logoColor=white&amp;labelColor=4B4A46" alt="MySQL" title="MySQL">
+    <img src="https://img.shields.io/badge/-Redis-9A615A?style=for-the-badge&amp;logo=redis&amp;logoColor=white&amp;labelColor=4B4A46" alt="Redis" title="Redis">
+    <img src="https://img.shields.io/badge/-RabbitMQ-936545?style=for-the-badge&amp;logo=rabbitmq&amp;logoColor=white&amp;labelColor=4B4A46" alt="RabbitMQ" title="RabbitMQ">
+    <img src="https://img.shields.io/badge/-Docker-4F708F?style=for-the-badge&amp;logo=docker&amp;logoColor=white&amp;labelColor=4B4A46" alt="Docker" title="Docker">
   </p>
 </div>
 
@@ -15,10 +26,6 @@
 Prelude 以面试为核心，将面试准备、实时问答、结构化评估和训练分析组织在一个工作区中。简历、岗位、职位描述与通用附件作为面试上下文资源，为每场面试提供可控上下文，而不是独立的简历编辑工作流。
 
 应用支持服务端会话、历史会话、文字与语音交互，以及按账号保存的自带密钥模型配置。当前仓库聚焦本地开发与可验证的模块化架构，不宣称公开托管或生产级软件即服务能力。
-
-<p align="center">
-  <img src="docs/images/interview-setup.png" width="960" alt="Prelude 面试准备工作区">
-</p>
 
 ## 核心能力
 
@@ -32,78 +39,24 @@ Prelude 以面试为核心，将面试准备、实时问答、结构化评估和
 
 ## 系统架构
 
-```mermaid
-flowchart TB
-    U[用户] --> C[React 19 客户端]
-
-    C -->|REST| G
-    C -->|SSE| G
-    C -->|WebSocket| G
-
-    subgraph APP[Spring Boot 与 Spring Modulith]
-        G[接口与实时通信入口]
-        ID[身份与设置<br/>identity · settings]
-        IV[面试与语音<br/>interview · voice]
-        CR[上下文与资源<br/>context · assets · resume · template · documents]
-        LM[模型与智能体<br/>llm · tools · agent]
-        RJ[报告与运行支撑<br/>artifact · jobs · activity · telemetry]
-        ST[业务与会话持久化端口]
-
-        G --> ID
-        G --> IV
-        G --> CR
-        G --> RJ
-        IV --> CR
-        IV --> LM
-        IV --> RJ
-        CR --> LM
-        ID --> ST
-        IV --> ST
-        CR --> ST
-        RJ --> ST
-    end
-
-    subgraph INFRA[基础设施]
-        DB[(MySQL<br/>业务与会话持久化)]
-        CACHE[(Redis<br/>实时发布与订阅)]
-        MQ[(RabbitMQ<br/>异步报告任务)]
-    end
-
-    subgraph EXT[外部模型服务]
-        DS[DeepSeek]
-        CUSTOM[自定义 OpenAI 或 Anthropic 端点]
-    end
-
-    ST --> DB
-    RJ <-->|发布与订阅| CACHE
-    RJ <-->|AMQP| MQ
-    LM --> DS
-    LM --> CUSTOM
-```
+<p align="center">
+  <img src="docs/assets/architecture-overview.svg" width="960" alt="Prelude 高层系统架构总览">
+</p>
 
 README 只展示系统职责分层；16 个应用模块的完整边界与依赖拓扑见[后端架构](docs/backend/architecture.md)。前端状态所有权与目录边界见[前端架构](docs/frontend/architecture.md)。
-
-## 界面预览
-
-| 实时面试 | 结构化评估 |
-| :---: | :---: |
-| ![历史会话、当前问答与面试上下文](docs/images/interview-session.png) | ![结构化面试训练报告](docs/images/interview-report.png) |
-| 历史会话、当前问答与面试上下文 | 分阶段评分、复盘与训练建议 |
-
-| 全局设置 | 训练分析 |
-| :---: | :---: |
-| ![简历与岗位资源统一位于全局设置](docs/images/settings-resources.png) | ![能力雷达与训练趋势](docs/images/analytics.png) |
-| 简历与岗位资源统一进入全局设置 | 能力雷达、分数趋势与薄弱点 |
 
 ## 技术栈
 
 | 层级 | 技术 | 职责 |
 | --- | --- | --- |
-| 前端应用 | React 19、React Router、Base UI、Tailwind CSS、Vite | 路由与导航、交互语义、设计令牌和生产构建 |
+| 前端应用 | React 19、React Router、TypeScript、Vite | 页面组合、路由导航、类型契约和生产构建 |
+| 界面基础 | Base UI、Tailwind CSS | 浮层、焦点与键盘交互原语，以及设计令牌和布局样式 |
 | 服务端状态 | TanStack Query | 请求生命周期、缓存、失效与乐观更新 |
 | 模块化后端 | Java 21、Spring Boot 4.1、Spring Modulith | 接口边界、模块化业务用例与依赖拓扑验证 |
-| 模型与持久化 | Spring AI、MyBatis-Plus、Flyway | 模型协议接入、数据访问与数据库版本治理 |
-| 数据与消息 | MySQL 8.4、Redis 7.4、RabbitMQ 4.1 | 业务和会话数据、实时广播与异步报告任务 |
+| 模型与数据访问 | Spring AI、MyBatis-Plus | 模型协议接入、模型网关与持久化适配 |
+| 持久化 | MySQL 8.4、Flyway | 业务与会话数据，以及数据库版本治理 |
+| 实时与消息 | Redis 7.4、RabbitMQ 4.1 | 实时发布与订阅，以及异步报告任务 |
+| 训练分析 | ECharts | 能力雷达、分数趋势与薄弱点呈现 |
 | 本地运行 | Docker Compose | 本地基础设施与完整容器栈 |
 
 shadcn/ui 与 Beautiful UI 仅提供已采用组件的源码结构或组合参考；本地源码、视觉语义与维护责任归 Prelude 所有。
