@@ -1,42 +1,38 @@
 <div align="center">
+  <img src="frontend/src/shared/brand/brand-logo.png" width="78" alt="Prelude 品牌标识">
   <h1>Prelude</h1>
+  <p><strong>AI 模拟面试、训练评估与职业成长分析工作台</strong></p>
   <p>
-    <strong>面向 AI 模拟面试、训练评估与职业成长分析的智能工作台。</strong>
+    <a href="https://github.com/zyyyyynnn/Prelude/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/zyyyyynnn/Prelude/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;logo=githubactions&amp;logoColor=white"></a>
+    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=flat-square&amp;label=%E8%AE%B8%E5%8F%AF%E8%AF%81&amp;logo=opensourceinitiative&amp;logoColor=white"></a>
   </p>
   <p>
-    <a href="https://github.com/zyyyyynnn/Prelude/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/zyyyyynnn/Prelude/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;logo=githubactions&amp;logoColor=white&amp;color=334155"></a>
-    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=flat-square&amp;label=%E8%AE%B8%E5%8F%AF%E8%AF%81&amp;logo=opensourceinitiative&amp;logoColor=white&amp;color=334155"></a>
-  </p>
-  <p>
-    <img alt="Java 21" src="https://img.shields.io/badge/Java%2021-334155?style=flat-square&amp;logo=openjdk&amp;logoColor=white">
-    <img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-334155?style=flat-square&amp;logo=springboot&amp;logoColor=white">
-    <img alt="Spring Modulith" src="https://img.shields.io/badge/Spring%20Modulith-334155?style=flat-square&amp;logo=spring&amp;logoColor=white">
-    <img alt="Spring AI" src="https://img.shields.io/badge/Spring%20AI-334155?style=flat-square&amp;logo=spring&amp;logoColor=white">
-  </p>
-  <p>
-    <img alt="React 19" src="https://img.shields.io/badge/React%2019-334155?style=flat-square&amp;logo=react&amp;logoColor=white">
-    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-334155?style=flat-square&amp;logo=typescript&amp;logoColor=white">
-    <img alt="TanStack Query" src="https://img.shields.io/badge/TanStack%20Query-334155?style=flat-square&amp;logo=reactquery&amp;logoColor=white">
-    <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind%20CSS-334155?style=flat-square&amp;logo=tailwindcss&amp;logoColor=white">
-    <img alt="Vite" src="https://img.shields.io/badge/Vite-334155?style=flat-square&amp;logo=vite&amp;logoColor=white">
-  </p>
-  <p>
-    <img alt="MySQL" src="https://img.shields.io/badge/MySQL-334155?style=flat-square&amp;logo=mysql&amp;logoColor=white">
-    <img alt="Redis" src="https://img.shields.io/badge/Redis-334155?style=flat-square&amp;logo=redis&amp;logoColor=white">
-    <img alt="RabbitMQ" src="https://img.shields.io/badge/RabbitMQ-334155?style=flat-square&amp;logo=rabbitmq&amp;logoColor=white">
-    <img alt="Docker" src="https://img.shields.io/badge/Docker-334155?style=flat-square&amp;logo=docker&amp;logoColor=white">
+    <img src="https://api.iconify.design/logos/java.svg" width="34" height="34" alt="Java" title="Java">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/spring-icon.svg" width="34" height="34" alt="Spring" title="Spring">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/react.svg" width="34" height="34" alt="React" title="React">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/typescript-icon.svg" width="34" height="34" alt="TypeScript" title="TypeScript">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/vitejs.svg" width="34" height="34" alt="Vite" title="Vite">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/tailwindcss-icon.svg" width="34" height="34" alt="Tailwind CSS" title="Tailwind CSS">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/mysql-icon.svg" width="34" height="34" alt="MySQL" title="MySQL">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/redis.svg" width="34" height="34" alt="Redis" title="Redis">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/rabbitmq-icon.svg" width="34" height="34" alt="RabbitMQ" title="RabbitMQ">&nbsp;&nbsp;&nbsp;
+    <img src="https://api.iconify.design/logos/docker-icon.svg" width="34" height="34" alt="Docker" title="Docker">
   </p>
 </div>
 
 ## 项目概览
 
-Prelude 以面试为核心，将面试准备、实时问答、结构化评估和训练分析组织在一个工作区中。简历、岗位、JD 与通用附件当前作为面试上下文资源，为每场面试提供可控上下文，而不是独立的简历编辑工作流。
+Prelude 以面试为核心，将面试准备、实时问答、结构化评估和训练分析组织在一个工作区中。简历、岗位、职位描述与通用附件作为面试上下文资源，为每场面试提供可控上下文，而不是独立的简历编辑工作流。
 
 应用支持服务端会话、历史会话、文字与语音交互，以及按账号保存的自带密钥模型配置。当前仓库聚焦本地开发与可验证的模块化架构，不宣称公开托管或生产级软件即服务能力。
 
+<p align="center">
+  <img src="docs/images/interview-setup.png" width="960" alt="Prelude 面试准备工作区">
+</p>
+
 ## 核心能力
 
-- 上下文面试准备：组合简历、岗位、JD 与附件上下文。
+- 上下文面试准备：组合简历、岗位、职位描述与附件上下文。
 - 文字与语音面试：提供流式文字回答与可安全释放资源的语音交互。
 - 历史会话：浏览、置顶、隐藏和恢复历史面试会话。
 - 结构化评估：生成并安全展示结构化训练报告。
@@ -44,35 +40,83 @@ Prelude 以面试为核心，将面试准备、实时问答、结构化评估和
 - 自带密钥模型配置：配置 DeepSeek 或受支持的自定义模型协议。
 - 账号与偏好：管理账号资料、主题和面试设置。
 
+## 系统架构
+
+```mermaid
+flowchart TB
+    U[用户] --> C[React 19 客户端]
+
+    C -->|REST| G
+    C -->|SSE| G
+    C -->|WebSocket| G
+
+    subgraph APP[Spring Boot 与 Spring Modulith]
+        G[接口与实时通信入口]
+        ID[身份与设置<br/>identity · settings]
+        IV[面试与语音<br/>interview · voice]
+        CR[上下文与资源<br/>context · assets · resume · template · documents]
+        LM[模型与智能体<br/>llm · tools · agent]
+        RJ[报告与运行支撑<br/>artifact · jobs · activity · telemetry]
+        ST[业务与会话持久化端口]
+
+        G --> ID
+        G --> IV
+        G --> CR
+        G --> RJ
+        IV --> CR
+        IV --> LM
+        IV --> RJ
+        CR --> LM
+        ID --> ST
+        IV --> ST
+        CR --> ST
+        RJ --> ST
+    end
+
+    subgraph INFRA[基础设施]
+        DB[(MySQL<br/>业务与会话持久化)]
+        CACHE[(Redis<br/>实时发布与订阅)]
+        MQ[(RabbitMQ<br/>异步报告任务)]
+    end
+
+    subgraph EXT[外部模型服务]
+        DS[DeepSeek]
+        CUSTOM[自定义 OpenAI 或 Anthropic 端点]
+    end
+
+    ST --> DB
+    RJ <-->|发布与订阅| CACHE
+    RJ <-->|AMQP| MQ
+    LM --> DS
+    LM --> CUSTOM
+```
+
+README 只展示系统职责分层；16 个应用模块的完整边界与依赖拓扑见[后端架构](docs/backend/architecture.md)。前端状态所有权与目录边界见[前端架构](docs/frontend/architecture.md)。
+
+## 界面预览
+
+| 实时面试 | 结构化评估 |
+| :---: | :---: |
+| ![历史会话、当前问答与面试上下文](docs/images/interview-session.png) | ![结构化面试训练报告](docs/images/interview-report.png) |
+| 历史会话、当前问答与面试上下文 | 分阶段评分、复盘与训练建议 |
+
+| 全局设置 | 训练分析 |
+| :---: | :---: |
+| ![简历与岗位资源统一位于全局设置](docs/images/settings-resources.png) | ![能力雷达与训练趋势](docs/images/analytics.png) |
+| 简历与岗位资源统一进入全局设置 | 能力雷达、分数趋势与薄弱点 |
+
 ## 技术栈
 
 | 层级 | 技术 | 职责 |
 | --- | --- | --- |
-| 前端 | React 19、TypeScript、React Router、TanStack Query、Base UI、Tailwind CSS、Vite | 路由、服务端状态、交互语义、设计令牌与生产构建 |
-| 应用 | Java 21、Spring Boot 4.1、Spring Modulith、Spring AI、MyBatis-Plus、Flyway | HTTP 与会话边界、模块化业务用例、模型接入与持久化治理 |
-| 数据与消息 | MySQL 8.4、Redis 7.4、RabbitMQ 4.1 | 业务与会话数据、实时广播、异步报告任务 |
-| 运行环境 | Docker Compose | 本地基础设施与完整容器栈 |
+| 前端应用 | React 19、React Router、Base UI、Tailwind CSS、Vite | 路由与导航、交互语义、设计令牌和生产构建 |
+| 服务端状态 | TanStack Query | 请求生命周期、缓存、失效与乐观更新 |
+| 模块化后端 | Java 21、Spring Boot 4.1、Spring Modulith | 接口边界、模块化业务用例与依赖拓扑验证 |
+| 模型与持久化 | Spring AI、MyBatis-Plus、Flyway | 模型协议接入、数据访问与数据库版本治理 |
+| 数据与消息 | MySQL 8.4、Redis 7.4、RabbitMQ 4.1 | 业务和会话数据、实时广播与异步报告任务 |
+| 本地运行 | Docker Compose | 本地基础设施与完整容器栈 |
 
 shadcn/ui 与 Beautiful UI 仅提供已采用组件的源码结构或组合参考；本地源码、视觉语义与维护责任归 Prelude 所有。
-
-## 架构
-
-```text
-React 客户端  →  Spring Modulith 模块化单体  →  MySQL / Redis / RabbitMQ
-```
-
-后端由 16 个 Spring Modulith 应用模块组成，模块拓扑由 `ApplicationModules.verify()` 与少量聚焦的 ArchUnit 规则验证。前端由 React Router 管理导航状态、TanStack Query 管理服务端状态，临时交互状态保留在最接近使用位置的组件中。
-
-详细边界见[后端架构](docs/backend/architecture.md)与[前端架构](docs/frontend/architecture.md)。
-
-## 仓库结构
-
-```text
-backend/   Spring Modulith 后端、Flyway 数据库迁移与后端测试
-frontend/  React 客户端、设计令牌、浏览器测试与第三方许可声明
-docs/      环境、架构与质量体系文档
-.github/   CI 工作流与拉取请求模板
-```
 
 ## 快速开始
 
@@ -116,6 +160,15 @@ npm --prefix frontend run test:smoke
 ```
 
 CI 还会执行生产产物、自带密钥契约、暗色主题、可访问性、代表性视觉与运行时依赖审计。GitHub 仅以 `backend` 和 `frontend` 两个职责域作为必需检查项。
+
+## 仓库结构
+
+```text
+backend/   Spring Modulith 后端、Flyway 数据库迁移与后端测试
+frontend/  React 客户端、设计令牌、浏览器测试与第三方许可声明
+docs/      环境、架构、质量体系与产品文档资产
+.github/   CI 工作流与拉取请求模板
+```
 
 ## 文档
 
