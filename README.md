@@ -3,22 +3,10 @@
   <h1>Prelude</h1>
   <p><strong>AI 模拟面试、训练评估与职业成长分析工作台</strong></p>
   <p>
-    <a href="https://github.com/zyyyyynnn/Prelude/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/zyyyyynnn/Prelude/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;logo=githubactions&amp;logoColor=white"></a>
-    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=flat-square&amp;label=%E8%AE%B8%E5%8F%AF%E8%AF%81&amp;logo=opensourceinitiative&amp;logoColor=white"></a>
-  </p>
-  <p>
-    <img src="https://img.shields.io/badge/Java%2021-ED8B00?style=flat&amp;logo=openjdk&amp;logoColor=white" alt="Java 21" title="Java 21">
-    <img src="https://img.shields.io/badge/Spring-6DB33F?style=flat&amp;logo=spring&amp;logoColor=white" alt="Spring" title="Spring">
-    <img src="https://img.shields.io/badge/React%2019-20232A?style=flat&amp;logo=react&amp;logoColor=61DAFB" alt="React 19" title="React 19">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" title="TypeScript">
-    <img src="https://img.shields.io/badge/Vite-646CFF?style=flat&amp;logo=vite&amp;logoColor=white" alt="Vite" title="Vite">
-  </p>
-  <p>
-    <img src="https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=flat&amp;logo=tailwindcss&amp;logoColor=white" alt="Tailwind CSS" title="Tailwind CSS">
-    <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat&amp;logo=mysql&amp;logoColor=white" alt="MySQL" title="MySQL">
-    <img src="https://img.shields.io/badge/Redis-DC382D?style=flat&amp;logo=redis&amp;logoColor=white" alt="Redis" title="Redis">
-    <img src="https://img.shields.io/badge/RabbitMQ-FF6600?style=flat&amp;logo=rabbitmq&amp;logoColor=white" alt="RabbitMQ" title="RabbitMQ">
-    <img src="https://img.shields.io/badge/Docker-2496ED?style=flat&amp;logo=docker&amp;logoColor=white" alt="Docker" title="Docker">
+    <a href="https://github.com/zyyyyynnn/Prelude/actions/workflows/ci.yml"><img alt="构建状态" src="https://img.shields.io/github/actions/workflow/status/zyyyyynnn/Prelude/ci.yml?branch=main&amp;style=flat-square&amp;label=%E6%9E%84%E5%BB%BA&amp;logo=githubactions&amp;logoColor=white&amp;labelColor=30363d"></a>
+    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=flat-square&amp;label=%E8%AE%B8%E5%8F%AF%E8%AF%81&amp;logo=opensourceinitiative&amp;logoColor=white&amp;labelColor=30363d"></a>
+    <img src="https://img.shields.io/badge/%E5%90%8E%E7%AB%AF-Java%2021-4c6b82?style=flat-square&amp;logo=openjdk&amp;logoColor=white&amp;labelColor=30363d" alt="后端：Java 21" title="后端：Java 21">
+    <img src="https://img.shields.io/badge/%E5%89%8D%E7%AB%AF-React%2019-087ea4?style=flat-square&amp;logo=react&amp;logoColor=white&amp;labelColor=30363d" alt="前端：React 19" title="前端：React 19">
   </p>
 </div>
 
