@@ -248,7 +248,6 @@
 
   /* ── Component Semantics ── */
   --ui-segmented-item-min-inline-size: 80px;
-  --session-item-action-width: 64px;
 
   /* ── Layer Semantics ── */
   --z-index-local-raised: 2;
@@ -1435,7 +1434,4 @@ html[data-input-intent='keyboard']
   .segmented-control button {
     transition: none;
   }
-}
-.training-plan {
-  display: block;
 }

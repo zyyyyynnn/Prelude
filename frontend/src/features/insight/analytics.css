@@ -36,7 +36,7 @@
   --analytics-chart-grid-left: 44;
   --analytics-chart-grid-right: 18;
   --analytics-chart-grid-top: 30;
-  --analytics-chart-grid-bottom: 30;
+  --analytics-chart-grid-bottom: calc(var(--spacing-xl) + var(--spacing-md));
 
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

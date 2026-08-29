@@ -44,19 +44,6 @@
   font-size: var(--font-size-md);
   line-height: 1.5;
 }
-.question-review-carousel__viewport {
-  overflow: hidden;
-}
-.question-review-list {
-  display: grid;
-  grid-auto-columns: 100%;
-  grid-auto-flow: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  transition: transform var(--motion-duration-base) var(--motion-ease-standard);
-  will-change: transform;
-}
 .question-review {
   min-inline-size: 0;
   padding: var(--spacing-lg);
@@ -88,18 +75,12 @@
   font-family: var(--font-serif);
   font-size: var(--font-size-sm);
 }
-.question-review dd,
-.question-review-list__empty {
+.question-review dd {
   margin: 0;
   color: var(--color-text-secondary);
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
   line-height: 1.7;
-}
-@media (prefers-reduced-motion: reduce) {
-  .question-review-list {
-    transition: none;
-  }
 }
 .report-scores__overall {
   display: flex;
@@ -180,7 +161,7 @@
   line-height: 1.7;
 }
 .stage-performance > p {
-  max-inline-size: var(--content-reading-max-inline-size);
+  max-inline-size: var(--report-reading-max-inline-size);
   margin: var(--spacing-sm) 0 0;
 }
 .stage-performance__signals {
@@ -217,6 +198,8 @@
 }
 
 .structured-report {
+  --report-reading-max-inline-size: 68ch;
+
   inline-size: 100%;
   padding: var(--spacing-2xl);
   background: var(--color-surface);
@@ -258,7 +241,7 @@
   font-size: var(--font-size-md);
 }
 .structured-report__lede {
-  max-inline-size: var(--content-reading-max-inline-size);
+  max-inline-size: var(--report-reading-max-inline-size);
   margin: var(--spacing-sm) 0 0;
   color: var(--color-text-secondary);
   font-family: var(--font-serif);
@@ -316,7 +299,7 @@
   content: '';
 }
 .structured-report__advice h2 {
-  max-inline-size: var(--content-reading-max-inline-size);
+  max-inline-size: var(--report-reading-max-inline-size);
   line-height: 1.6;
 }
 
@@ -422,23 +405,15 @@
     box-shadow: none;
   }
 
-  body.is-printing-report .question-review-carousel__viewport,
   body.is-printing-report .question-review__body {
     max-block-size: none;
     overflow: visible;
-  }
-
-  body.is-printing-report .question-review-list {
-    display: block;
-    transform: none !important;
   }
 
   body.is-printing-report .question-review {
     margin-top: var(--spacing-md);
   }
 
-  body.is-printing-report .analytics-panel,
-  body.is-printing-report .analytics-weakness-item,
   body.is-printing-report .report-section__header,
   body.is-printing-report .report-score-item,
   body.is-printing-report .stage-performance,

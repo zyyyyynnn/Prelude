@@ -255,12 +255,15 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
           }),
           formatter: (params: unknown) => formatTrendTooltip(params, data),
         },
-        legend: { bottom: 0, textStyle: { color: secondary } },
+        legend: {
+          bottom: cssVarNumber('--spacing-xs', 4),
+          textStyle: { color: secondary },
+        },
         grid: {
           left: cssVarNumber('--analytics-chart-grid-left', 44),
           right: cssVarNumber('--analytics-chart-grid-right', 18),
           top: cssVarNumber('--analytics-chart-grid-top', 30),
-          bottom: cssVarNumber('--analytics-chart-grid-bottom', 30),
+          bottom: cssVarNumber('--analytics-chart-grid-bottom', 48),
         },
         xAxis: {
           type: 'category',

@@ -231,13 +231,12 @@
     },
     "supporting": {
       "prefix": null,
-      "description": "登录背景、弹层遮罩、基础圆角、分段控件、会话动作和登录内容层使用的辅助 token。",
+      "description": "登录背景、弹层遮罩、基础圆角、分段控件和登录内容层使用的辅助 token。",
       "tokens": [
         "radius",
         "bg-paper-filter",
         "mask-overlay",
         "ui-segmented-item-min-inline-size",
-        "session-item-action-width",
         "login-card-content-layer"
       ]
     },
