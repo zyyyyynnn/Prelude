@@ -1,4 +1,5 @@
-import { Button } from '@/shared/ui'
+import { Download } from 'lucide-react'
+import { Button, IconTooltip, SegmentedControl } from '@/shared/ui'
 import type { InterviewStageName } from '../types'
 
 const stageLabels: Record<InterviewStageName, string> = {
@@ -7,7 +8,6 @@ const stageLabels: Record<InterviewStageName, string> = {
   deep_dive: '深挖追问',
   closing: '收尾',
 }
-const stages: InterviewStageName[] = ['warmup', 'technical', 'deep_dive', 'closing']
 
 export function WorkspaceHeader({
   title,
@@ -17,7 +17,9 @@ export function WorkspaceHeader({
   showingReport,
   sending,
   finishing,
+  exporting = false,
   onFinish,
+  onExportReport,
   onToggleReport,
 }: {
   title?: string
@@ -27,15 +29,24 @@ export function WorkspaceHeader({
   showingReport: boolean
   sending: boolean
   finishing: boolean
+  exporting?: boolean
   onFinish: () => void
+  onExportReport: () => void
   onToggleReport: (show: boolean) => void
 }) {
+  const headerTitle = title?.trim() || '新面试会话'
   const finished = status === 'finished' || status === 'generating'
+  const showGenerateButton = !showingReport && !finished
+  const generateDisabled = sending || stage !== 'closing'
   return (
     <header className="workspace-header">
       <div className="workspace-header__main">
         <div className="workspace-header__title-area">
-          <h1 className="workspace-header__title">{title || '新面试会话'}</h1>
+          <IconTooltip label={headerTitle}>
+            <h1 className="workspace-header__title workspace-header__title--truncated" aria-label={headerTitle}>
+              {headerTitle}
+            </h1>
+          </IconTooltip>
           <span className="status-badge">
             {status === 'generating'
               ? '报告生成中'
@@ -45,45 +56,40 @@ export function WorkspaceHeader({
           </span>
         </div>
         <div className="workspace-header__right">
-          {!showingReport && (
-            <div className="workspace-header__stage-wrap">
-              <div className="stage-bar" aria-label={`当前阶段：${stageLabels[stage]}`}>
-                {stages.map((item) => (
-                  <span
-                    key={item}
-                    className={`${item === stage ? ' is-active' : ''}${stages.indexOf(item) < stages.indexOf(stage) ? ' is-complete' : ''}`}
-                  >
-                    {stageLabels[item]}
-                  </span>
-                ))}
-              </div>
-              {!finished && (
-                <Button
-                  variant="secondary"
-                  loading={finishing}
-                  disabled={sending}
-                  onClick={onFinish}
-                >
-                  结束面试
-                </Button>
-              )}
+          {showGenerateButton && (
+            <div className="stage-actions">
+              <Button
+                variant="secondary"
+                loading={finishing}
+                disabled={generateDisabled}
+                onClick={onFinish}
+              >
+                生成报告
+              </Button>
+            </div>
+          )}
+          {hasReport && showingReport && (
+            <div className="workspace-header__actions">
+              <Button
+                variant="secondary"
+                loading={exporting}
+                onClick={onExportReport}
+              >
+                <Download size={15} />
+                导出 PDF
+              </Button>
             </div>
           )}
           {hasReport && (
-            <div className="segmented-control" aria-label="工作区视图">
-              <button
-                className={!showingReport ? 'is-active' : ''}
-                onClick={() => onToggleReport(false)}
-              >
-                面试
-              </button>
-              <button
-                className={showingReport ? 'is-active' : ''}
-                onClick={() => onToggleReport(true)}
-              >
-                报告
-              </button>
-            </div>
+            <SegmentedControl
+              items={[
+                { value: 'interview', label: '面试' },
+                { value: 'report', label: '报告' },
+              ] as const}
+              value={showingReport ? 'report' : 'interview'}
+              onValueChange={(value) => onToggleReport(value === 'report')}
+              ariaLabel="工作区视图"
+            />
           )}
         </div>
       </div>

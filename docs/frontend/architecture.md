@@ -45,6 +45,8 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 `shared/ui` 中的 Button、Field 与表单控件采用 shadcn source ownership 结构，Modal、Menu 与 Tooltip 使用 Base UI。面试输入区的 Prompt Bar 采用 [Beautiful UI](https://www.beautifului.dev/) 组合模式，来源记录位于 `frontend/beautiful-ui.sources.json`。Prompt Bar 负责附件、简历、岗位、JD 与模型选择；管理动作统一进入设置弹窗。所有 UI 源码使用 Prelude token 与 `DESIGN.md` 视觉语言。
 
+样式组合由 `app/styles.css` 负责：它装配 Tailwind、应用扫描范围、共享样式、应用外壳样式和各 feature 样式。`shared/styles/index.css` 只拥有 token、主题、重置、全局排版、焦点状态和可复用 UI/layout primitive；业务页面的样式必须留在对应的 `features/*` 或 `app/shell` owner 中。`verify:architecture` 同时检查源码依赖和 CSS 本地 `@import`，阻止 shared 反向引入应用或 feature 样式。
+
 ## 验证
 
 - `npm run typecheck`：严格 TypeScript 检查。

@@ -129,12 +129,14 @@
   gap: var(--spacing-md);
   font-family: var(--font-serif);
 }
-.form-section {
+.settings-form-section {
+  display: grid;
+  gap: var(--spacing-3-5);
   margin-top: var(--spacing-md);
   padding-top: var(--spacing-md);
   border-top: 1px dashed var(--color-border);
 }
-.form-section__title {
+.settings-form-section__title {
   margin: var(--spacing-xs) 0 var(--spacing-md);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -164,12 +166,6 @@
 }
 .model-combobox {
   width: 100%;
-}
-
-.panel-content-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
 }
 
 .theme-grid {
@@ -241,12 +237,6 @@
   font-size: var(--font-size-sm);
 }
 
-.panel-content-wrapper {
-  --profile-avatar-size: 82px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
 .profile-avatar-row {
   display: grid;
   justify-items: center;
@@ -255,6 +245,8 @@
   padding: var(--spacing-md) 0;
 }
 .profile-avatar {
+  --profile-avatar-size: 82px;
+
   display: grid;
   place-items: center;
   inline-size: var(--profile-avatar-size);

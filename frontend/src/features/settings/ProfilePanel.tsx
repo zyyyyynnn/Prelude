@@ -113,8 +113,8 @@ export function ProfilePanel() {
           />
         </Field>
       </div>
-      <section className="form-section">
-        <h3 className="form-section__title">修改密码</h3>
+      <section className="settings-form-section">
+        <h3 className="settings-form-section__title">修改密码</h3>
         <div className="field-grid">
           <PasswordField
             label="旧密码"

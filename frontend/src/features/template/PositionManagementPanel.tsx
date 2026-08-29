@@ -87,7 +87,7 @@ export function PositionManagementPanel() {
         </Button>
       </div>
       <section className="position-settings__catalog" aria-label="岗位列表">
-        <h3 className="form-section__title">可选岗位</h3>
+        <h3 className="position-settings__section-title">可选岗位</h3>
         {positions.isPending ? (
           <div className="empty-state">正在读取岗位…</div>
         ) : positions.isError ? (
@@ -122,8 +122,8 @@ export function PositionManagementPanel() {
         )}
       </section>
       <form id="position-settings-form" className="position-settings__form" onSubmit={submit}>
-        <div className="form-section__heading">
-          <h3 className="form-section__title">{editing ? '编辑岗位' : '新建岗位'}</h3>
+        <div className="position-settings__form-heading">
+          <h3 className="position-settings__section-title">{editing ? '编辑岗位' : '新建岗位'}</h3>
           {editing && (
             <Button
               type="button"

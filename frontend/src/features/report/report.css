@@ -272,6 +272,7 @@
   gap: var(--spacing-lg);
   padding: var(--spacing-lg);
   border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
 }
 .structured-report__summary section + section {
   padding-inline-start: var(--spacing-lg);
@@ -413,7 +414,6 @@
     background: var(--color-surface);
   }
 
-  body.is-printing-report .report-export-actions,
   body.is-printing-report .question-review-carousel__nav {
     display: none;
   }
@@ -437,8 +437,8 @@
     margin-top: var(--spacing-md);
   }
 
-  body.is-printing-report .panel,
-  body.is-printing-report .weakness-item,
+  body.is-printing-report .analytics-panel,
+  body.is-printing-report .analytics-weakness-item,
   body.is-printing-report .report-section__header,
   body.is-printing-report .report-score-item,
   body.is-printing-report .stage-performance,
@@ -447,12 +447,6 @@
   body.is-printing-report .report-plain-text {
     break-inside: avoid;
   }
-}
-.report-export-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
 }
 
 .report-plain-surface {

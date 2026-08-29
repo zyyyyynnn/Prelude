@@ -495,6 +495,55 @@ test('@smoke streams an interview answer with bounded context', async ({ page })
   })
 })
 
+test('@smoke keeps report generation disabled before the closing stage', async ({ page }) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'technical',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '请描述你的服务拆分原则。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.goto('/interview?session=11')
+
+  await expect(page.getByRole('button', { name: '生成报告' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '生成报告' })).toBeDisabled()
+  await expect(page.getByText('结束面试')).toHaveCount(0)
+  await expect(page.getByText('破冰')).toHaveCount(0)
+  await expect(page.getByText('深挖追问')).toHaveCount(0)
+  await expect(page.getByText('收尾')).toHaveCount(0)
+})
+
+test('@smoke enables report generation only during the closing stage', async ({ page }) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'closing',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '面试即将结束。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.goto('/interview?session=11')
+
+  await expect(page.getByRole('button', { name: '生成报告' })).toBeEnabled()
+})
+
 test('@smoke keeps the active session when a requested session fails and retries that target', async ({
   page,
 }) => {
@@ -934,10 +983,13 @@ test('@smoke renders structured reports without resume mutation controls', async
   await page.getByRole('button', { name: '报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await expect(page.getByText('8.1')).toBeVisible()
+  await expect(page.getByRole('button', { name: '导出 PDF' })).toHaveCount(1)
+  const viewToggle = page.getByRole('group', { name: '工作区视图' })
+  await expect(viewToggle.getByRole('button', { name: '面试' })).toHaveCount(1)
+  await expect(viewToggle.getByRole('button', { name: '报告' })).toHaveCount(1)
   await page.emulateMedia({ media: 'print' })
   await page.locator('body').evaluate((body) => body.classList.add('is-printing-report'))
   await expect(page.locator('.app-layout__main')).toHaveCSS('overflow', 'visible')
-  await expect(page.locator('.report-export-actions')).toHaveCSS('display', 'none')
   await page.locator('body').evaluate((body) => body.classList.remove('is-printing-report'))
   await page.emulateMedia({ media: 'screen' })
   await page.evaluate(() => {
@@ -949,6 +1001,40 @@ test('@smoke renders structured reports without resume mutation controls', async
   await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true')
   await expect(page.locator('body')).not.toHaveClass(/is-printing-report/)
   await expect(page.getByText('已打开系统打印窗口')).toBeVisible()
+})
+
+test('@smoke renders analytics charts and recent-score labels from the React dashboard', async ({
+  page,
+}) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+  await page.route('**/api/analytics/**', async (route) => {
+    const path = new URL(route.request().url()).pathname
+    const data =
+      path.endsWith('/radar')
+        ? { technical: 8.2, expression: 7.6, logic: 8.4, sessionCount: 5 }
+        : path.endsWith('/trend')
+          ? [
+              { sessionId: 1, createdAt: '2026-08-01T00:00:00Z', technical: 7, expression: 6, logic: 8 },
+              { sessionId: 2, createdAt: '2026-08-08T00:00:00Z', technical: 8, expression: 7, logic: 8 },
+            ]
+          : [{ category: '容量估算', count: 2, descriptions: ['补充量化依据。'] }]
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok(data),
+    })
+  })
+  await page.goto('/analytics')
+
+  await expect(page.getByRole('heading', { name: '能力雷达' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
+  await expect(page.getByRole('img', { name: /技术能力 8\.2/ })).toHaveCount(1)
+  await expect(page.getByRole('img', { name: '最近 2 场面试的分数趋势' })).toHaveCount(1)
+  await expect(page.getByText('最近 5 场均分')).toHaveCount(3)
+  await expect(page.getByText('结构')).toBeVisible()
+  await expect(page.getByText('走势')).toBeVisible()
+  await expect(page.getByText('聚合')).toBeVisible()
 })
 
 test('@smoke degrades malformed structured reports to safe plain text', async ({ page }) => {

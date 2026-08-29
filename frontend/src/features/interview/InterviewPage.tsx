@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { deleteAttachment, uploadAttachment } from '@/features/assets'
 import { fetchResumes } from '@/features/resume'
-import { ReportPanel } from '@/features/report'
+import { printInterviewReport, ReportPanel } from '@/features/report'
 import {
   fetchLlmConfig,
   fetchProviders,
@@ -14,6 +15,7 @@ import {
 } from '@/features/settings'
 import { fetchPositions } from '@/features/template'
 import { Button } from '@/shared/ui'
+import { RoseThree } from '@/shared/brand/RoseThree'
 import { useFeedback } from '@/shared/ui/feedback'
 import { fetchSessions, startInterview } from './api'
 import { InterviewAnswerComposer, InterviewSetupComposer } from './components/InterviewComposer'
@@ -158,6 +160,7 @@ function InterviewSetup() {
 
 function InterviewSession({ sessionId }: { sessionId: number }) {
   const feedback = useFeedback()
+  const [exporting, setExporting] = useState(false)
   const controller = useInterviewSession(sessionId, (message) => feedback.notify(message, 'error'))
   const sessions = useQuery({
     queryKey: ['interview-sessions'],
@@ -184,6 +187,17 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
   const summary = sessions.data?.find((item) => item.sessionId === sessionId)
   const resumeName = resumes.data?.find((item) => item.id === current.resumeId)?.fileName
   const hasReport = Boolean(current.summaryReport)
+  async function exportReport() {
+    setExporting(true)
+    try {
+      await printInterviewReport()
+      feedback.notify('已打开系统打印窗口', 'success')
+    } catch (error) {
+      feedback.notify(error instanceof Error ? error.message : '报告导出失败', 'error')
+    } finally {
+      setExporting(false)
+    }
+  }
   return (
     <div className="interview-workspace">
       <div className="workspace-active">
@@ -193,16 +207,18 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
           status={current.status}
           hasReport={hasReport}
           showingReport={controller.showReport}
-          sending={controller.sending}
-          finishing={controller.finishing}
-          onFinish={controller.finish}
-          onToggleReport={controller.setShowReport}
+           sending={controller.sending}
+           finishing={controller.finishing}
+           exporting={exporting}
+           onFinish={controller.finish}
+           onExportReport={() => void exportReport()}
+           onToggleReport={controller.setShowReport}
         />
         <div className="workspace-active__main">
           {current.status === 'generating' && !hasReport ? (
             <div className="workspace-generating">
               <div className="generating-card">
-                <Bot className="generating-rose" />
+                <RoseThree className="generating-rose" />
                 <h2 className="generating-title">AI 评估报告生成中…</h2>
                 <p className="generating-subtitle">正在整理答题表现并生成训练建议。</p>
                 <div className="generating-progress">

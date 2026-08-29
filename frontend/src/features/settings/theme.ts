@@ -12,6 +12,7 @@ export function applyTheme(value: ThemePreference) {
   const dark =
     value === 'dark' || (value === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', dark)
+  window.dispatchEvent(new CustomEvent('prelude-theme-change', { detail: { theme: value, dark } }))
 }
 
 export function initializeTheme() {

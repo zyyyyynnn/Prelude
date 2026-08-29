@@ -8,7 +8,7 @@ import { initializeTheme } from '@/features/settings'
 import { FeedbackProvider } from '@/shared/ui/feedback'
 import { queryClient } from './query-client'
 import { router } from './router'
-import '@/shared/styles/index.css'
+import './styles.css'
 
 const rootElement = document.getElementById('root')
 

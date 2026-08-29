@@ -134,8 +134,8 @@ function LlmSettingsForm({
           </div>
         </div>
       </Field>
-      <section className="form-section">
-        <h3 className="form-section__title">高级设置</h3>
+      <section className="settings-form-section">
+        <h3 className="settings-form-section__title">高级设置</h3>
         <div className="advanced-grid">
           <Field label="最大回复长度" htmlFor="llm-max-tokens">
             <Select

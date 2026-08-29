@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/shared/ui'
-import { useFeedback } from '@/shared/ui/feedback'
 import { parseInterviewReport } from './parse-interview-report'
 import type {
   StructuredInterviewReport,
@@ -19,28 +18,8 @@ const stageLabels = {
 
 export function ReportPanel({ source }: { source: string }) {
   const parsed = parseInterviewReport(source)
-  const [exporting, setExporting] = useState(false)
-  const feedback = useFeedback()
-  async function exportReport() {
-    setExporting(true)
-    try {
-      const { printReport } = await import('./print-report')
-      await printReport('面试训练报告')
-      feedback.notify('已打开系统打印窗口', 'success')
-    } catch (error) {
-      feedback.notify(error instanceof Error ? error.message : '报告导出失败', 'error')
-    } finally {
-      setExporting(false)
-    }
-  }
   return (
     <div className="report-export-surface">
-      <div className="report-export-actions">
-        <Button variant="secondary" loading={exporting} onClick={() => void exportReport()}>
-          <Download size={15} />
-          导出 PDF
-        </Button>
-      </div>
       {parsed.kind === 'plain' ? (
         <article className="report-plain-surface">
           <pre className="report-plain-text">{parsed.text}</pre>
@@ -102,6 +81,7 @@ function ScoreCard({ report }: { report: StructuredInterviewReport }) {
     <section className="report-section report-scores">
       <header className="report-section__header">
         <div>
+          <p>能力画像</p>
           <h2>三维评分</h2>
         </div>
         <div className="report-scores__overall">

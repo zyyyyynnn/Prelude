@@ -12,3 +12,4 @@ export {
   DropdownMenuSubmenu,
 } from './menu'
 export { IconTooltip, Modal } from './overlay'
+export { SegmentedControl, type SegmentedControlItem } from './segmented-control'

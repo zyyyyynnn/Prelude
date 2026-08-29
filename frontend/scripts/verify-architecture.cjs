@@ -17,8 +17,9 @@ const blockedPackages = [
   'html2canvas',
   'jspdf',
 ]
-const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.vue'])
+const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.vue', '.css'])
 const importPattern = /(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g
+const cssImportPattern = /@import\s+(?:url\(\s*)?['"]([^'"]+)['"]\s*\)?/g
 const violations = []
 
 function walk(directory) {
@@ -38,9 +39,15 @@ for (const file of walk(sourceRoot).filter((item) => sourceExtensions.has(path.e
   const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
   if (file.endsWith('.vue')) violations.push(`${relative}: Vue source is forbidden`)
   const source = fs.readFileSync(file, 'utf8')
-  let match
-  while ((match = importPattern.exec(source)) !== null) {
-    const specifier = match[1]
+  const specifiers = []
+  if (path.extname(file) === '.css') {
+    let cssMatch
+    while ((cssMatch = cssImportPattern.exec(source)) !== null) specifiers.push(cssMatch[1])
+  } else {
+    let match
+    while ((match = importPattern.exec(source)) !== null) specifiers.push(match[1])
+  }
+  for (const specifier of specifiers) {
     const resolved = specifier.startsWith('@/')
       ? specifier.slice(2)
       : specifier.startsWith('.')
