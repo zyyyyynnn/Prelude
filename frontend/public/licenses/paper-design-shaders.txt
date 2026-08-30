@@ -1,0 +1,12 @@
+Paper Design Shaders 第三方许可声明
+
+涉及包：
+- @paper-design/shaders
+- @paper-design/shaders-react
+
+许可证：PolyForm Shield License 1.0.0
+条款：https://polyformproject.org/licenses/shield/1.0.0
+上游：https://github.com/paper-design/shaders
+
+这些包用于 Prelude 的动态品牌界面，不适用 Prelude 的 MIT 授权。接收者必须遵守
+上游 PolyForm Shield 条款，包括其中的分发与非竞争条件。

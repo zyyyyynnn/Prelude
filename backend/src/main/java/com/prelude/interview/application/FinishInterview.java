@@ -1,0 +1,74 @@
+package com.prelude.interview.application;
+
+import com.prelude.BusinessException;
+import com.prelude.interview.domain.InterviewSession;
+import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.jobs.JobRequest;
+import com.prelude.jobs.JobSchedulerPort;
+import com.prelude.jobs.JobTicket;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class FinishInterview {
+
+    private static final String STATUS_ONGOING = "ongoing";
+    private static final String STATUS_GENERATING = "generating";
+    private static final String STATUS_FINISHED = "finished";
+    private static final String STAGE_CLOSING = "closing";
+
+    private final InterviewSessionAccess sessionAccess;
+    private final InterviewSessionRepository interviewSessionRepository;
+    private final JobSchedulerPort jobSchedulerPort;
+    private final InterviewMessageService interviewMessageService;
+    private final InterviewStageManager interviewStageManager;
+
+    public FinishInterviewResult execute(Long sessionId) {
+        Long userId = sessionAccess.currentUserId();
+        InterviewSession session = sessionAccess.requireOwned(sessionId, userId);
+        String status = session.getStatus();
+
+        if (STATUS_GENERATING.equals(status)) {
+            return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, null);
+        }
+        if (STATUS_FINISHED.equals(status)) {
+            return new FinishInterviewResult(session.getId(), session.getSummaryReport(), STATUS_FINISHED, null);
+        }
+        if (!STATUS_ONGOING.equals(status)) {
+            throw BusinessException.badRequest("面试会话状态异常");
+        }
+        if (!STAGE_CLOSING.equals(interviewStageManager.currentStageName(sessionId))) {
+            throw BusinessException.badRequest("仅在收尾阶段才能生成报告");
+        }
+
+        session.setStatus(STATUS_GENERATING);
+        interviewSessionRepository.update(session);
+
+        JobTicket job;
+        try {
+            job = jobSchedulerPort.enqueue(JobRequest.report(sessionId, userId));
+            log.info("Scheduled report generation job {} for session {}", job.jobId(), sessionId);
+        } catch (Exception exception) {
+            restoreOngoingStatus(sessionId);
+            throw BusinessException.badRequest("报告生成任务发布失败");
+        }
+
+        interviewMessageService.invalidateSessionLock(sessionId);
+        return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, job.jobId());
+    }
+
+    private void restoreOngoingStatus(Long sessionId) {
+        try {
+            InterviewSession restoreSession = interviewSessionRepository.selectById(sessionId);
+            if (restoreSession != null && STATUS_GENERATING.equals(restoreSession.getStatus())) {
+                restoreSession.setStatus(STATUS_ONGOING);
+                interviewSessionRepository.update(restoreSession);
+            }
+        } catch (Exception restoreException) {
+            log.error("Failed to restore session {} status to ongoing", sessionId, restoreException);
+        }
+    }
+}

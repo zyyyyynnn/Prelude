@@ -1,14 +1,12 @@
-# Build stage
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+FROM maven:3.9.11-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn package -DskipTests -B
 
-# Run stage
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/prelude-backend-1.0.0.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

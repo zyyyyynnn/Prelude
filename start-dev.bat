@@ -1,176 +1,80 @@
 @echo off
-setlocal EnableExtensions EnableDelayedExpansion
+setlocal EnableExtensions
 chcp 65001 >nul
 
 set "ROOT=%~dp0"
 set "BACKEND_DIR=%ROOT%backend"
 set "FRONTEND_DIR=%ROOT%frontend"
-set "BACKEND_READY_URL=http://127.0.0.1:8080/api/health"
-set "FRONTEND_URL=http://127.0.0.1:5173"
+set "BACKEND_READY_URL=http://127.0.0.1:8080/actuator/health"
 
 cd /d "%ROOT%"
 
-REM ---- 前置检查 ----
-where docker >nul 2>nul
-if errorlevel 1 (
-  echo [ERROR] Docker not found.
-  pause
-  exit /b 1
-)
-docker info >nul 2>nul
-if errorlevel 1 (
-  echo [ERROR] Docker daemon not reachable.
-  pause
-  exit /b 1
-)
-where mvn >nul 2>nul
-if errorlevel 1 (
-  echo [ERROR] Maven ^(mvn^) not found.
-  pause
-  exit /b 1
-)
-where npm >nul 2>nul
-if errorlevel 1 (
-  echo [ERROR] npm not found.
-  pause
-  exit /b 1
-)
+where docker >nul 2>nul || goto :missing_docker
+docker info >nul 2>nul || goto :missing_daemon
+where mvn >nul 2>nul || goto :missing_maven
+where npm >nul 2>nul || goto :missing_npm
 
-if not exist "%BACKEND_DIR%" (
-  echo [ERROR] backend directory not found.
-  pause
-  exit /b 1
-)
-if not exist "%FRONTEND_DIR%" (
-  echo [ERROR] frontend directory not found.
-  pause
-  exit /b 1
-)
+for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$port=5173; while(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue){$port++}; $port"`) do set "FRONTEND_PORT=%%P"
+set "FRONTEND_URL=http://127.0.0.1:%FRONTEND_PORT%"
 
-REM ---- 确保 .env 存在 ----
-if not exist "%ROOT%.env" (
-  if exist "%ROOT%.env.example" (
-    echo [INFO] .env not found, copying from .env.example
-    copy /Y "%ROOT%.env.example" "%ROOT%.env" >nul
-  )
-)
+if not exist "%ROOT%.env" if exist "%ROOT%.env.example" copy /Y "%ROOT%.env.example" "%ROOT%.env" >nul
 
-REM ---- 启动 Docker 中间件 ----
-echo [INFO] Starting Docker middleware...
-docker compose up -d mysql redis rabbitmq
-if errorlevel 1 (
-  echo [ERROR] Failed to start Docker middleware.
-  pause
-  exit /b 1
-)
+echo [INFO] Starting MySQL, Redis, and RabbitMQ...
+docker compose up -d mysql redis rabbitmq || goto :failed
 
-REM 从 .env 尝试读取端口，如果没有则使用默认值
 set "MYSQL_PORT=13306"
 set "REDIS_PORT=16379"
 set "RABBITMQ_PORT=5672"
-if exist "%ROOT%.env" (
-  for /f "tokens=1,2 delims==" %%A in ('findstr /b "MYSQL_HOST_PORT=" "%ROOT%.env"') do set "MYSQL_PORT=%%B"
-  for /f "tokens=1,2 delims==" %%A in ('findstr /b "REDIS_HOST_PORT=" "%ROOT%.env"') do set "REDIS_PORT=%%B"
-  for /f "tokens=1,2 delims==" %%A in ('findstr /b "RABBITMQ_HOST_PORT=" "%ROOT%.env"') do set "RABBITMQ_PORT=%%B"
-)
+if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "MYSQL_HOST_PORT=" "%ROOT%.env"') do set "MYSQL_PORT=%%B"
+if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "REDIS_HOST_PORT=" "%ROOT%.env"') do set "REDIS_PORT=%%B"
+if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "RABBITMQ_HOST_PORT=" "%ROOT%.env"') do set "RABBITMQ_PORT=%%B"
 
-echo [INFO] Waiting for middleware ports: MySQL %MYSQL_PORT%, Redis %REDIS_PORT%, RabbitMQ %RABBITMQ_PORT%
-call :wait_for_port %MYSQL_PORT%
-if errorlevel 1 (
-  pause
-  exit /b 1
-)
-call :wait_for_port %REDIS_PORT%
-if errorlevel 1 (
-  pause
-  exit /b 1
-)
-call :wait_for_port %RABBITMQ_PORT%
-if errorlevel 1 (
-  pause
-  exit /b 1
-)
+call :wait_for_port %MYSQL_PORT% 60 || goto :failed
+call :wait_for_port %REDIS_PORT% 60 || goto :failed
+call :wait_for_port %RABBITMQ_PORT% 60 || goto :failed
 
-REM ---- 确保后端本地配置 ----
-if not exist "%BACKEND_DIR%\src\main\resources\application-local.yml" (
-  if exist "%BACKEND_DIR%\src\main\resources\application-local.example.yml" (
-    echo [INFO] application-local.yml not found, copying from example...
-    copy /Y "%BACKEND_DIR%\src\main\resources\application-local.example.yml" "%BACKEND_DIR%\src\main\resources\application-local.yml" >nul
-  )
-)
-
-if exist "%BACKEND_DIR%\src\main\resources\application-local.yml" (
-  findstr /c:"replace-with-at-least-32-bytes-jwt-secret" "%BACKEND_DIR%\src\main\resources\application-local.yml" >nul 2>nul
-  if not errorlevel 1 echo [WARN] application-local.yml uses placeholder JWT_SECRET.
-  findstr /c:"replace-with-at-least-32-bytes-aes-secret" "%BACKEND_DIR%\src\main\resources\application-local.yml" >nul 2>nul
-  if not errorlevel 1 echo [WARN] application-local.yml uses placeholder APP_CRYPTO_AES_SECRET.
-)
-
-REM ---- 确保前端依赖 ----
 if not exist "%FRONTEND_DIR%\node_modules" (
   echo [INFO] Installing frontend dependencies...
-  call npm --prefix "%FRONTEND_DIR%" install
-  if errorlevel 1 (
-    echo [ERROR] npm install failed.
-    pause
-    exit /b 1
-  )
+  call npm --prefix "%FRONTEND_DIR%" ci || goto :failed
 )
 
-REM ---- 启动后端窗口 ----
-echo [INFO] Starting Backend...
-start "Backend - Spring Boot" cmd /k "cd /d "%BACKEND_DIR%" && mvn spring-boot:run"
+echo [INFO] Starting Prelude backend...
+start "Prelude Backend" /D "%BACKEND_DIR%" cmd /k "mvn spring-boot:run -Dspring-boot.run.profiles=dev"
+call :wait_for_url "%BACKEND_READY_URL%" 120 || goto :failed
 
-echo [INFO] Waiting for backend readiness at %BACKEND_READY_URL% ...
-call :wait_for_url "%BACKEND_READY_URL%" 120
-if errorlevel 1 (
-  echo [ERROR] Backend did not become reachable.
-  pause
-  exit /b 1
-)
-
-REM ---- 启动前端窗口 ----
-echo [INFO] Starting Frontend...
-start "Frontend - Vite" cmd /k "cd /d "%FRONTEND_DIR%" && npm run dev -- --host 127.0.0.1"
-
-echo [INFO] Waiting for frontend readiness at %FRONTEND_URL% ...
-call :wait_for_url "%FRONTEND_URL%" 60
-if errorlevel 1 (
-  echo [ERROR] Frontend did not become reachable.
-  pause
-  exit /b 1
-)
+echo [INFO] Starting Prelude React frontend...
+start "Prelude Frontend" /D "%FRONTEND_DIR%" cmd /k "npm run dev -- --host 127.0.0.1 --port %FRONTEND_PORT% --strictPort"
+call :wait_for_url "%FRONTEND_URL%" 60 || goto :failed
 
 echo.
-echo ============================================================
-echo  Prelude start-dev is running.
-echo  - Backend window: Backend - Spring Boot
-echo  - Frontend window: Frontend - Vite
-echo  - Frontend: %FRONTEND_URL%
-echo  - Backend: http://127.0.0.1:8080
-echo  - Middleware: Docker mysql/redis/rabbitmq
-echo  - Dev test account: demo / 123456
-echo.
-echo  * Docker Desktop only shows middleware containers in this mode.
-echo  * Frontend uses Vite dev server, Vue/CSS modifications will apply instantly via HMR.
-echo ============================================================
-echo  Stop app: close Backend/Frontend windows or Ctrl+C in them
-echo  Stop middleware: docker compose stop mysql redis rabbitmq
-echo  Full Docker alternative: .\start-docker.bat
-echo ============================================================
+echo Prelude is running:
+echo   Frontend: %FRONTEND_URL%
+echo   Backend health: %BACKEND_READY_URL%
 echo.
 pause
-goto :eof
+exit /b 0
 
 :wait_for_port
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$port = %~1; $deadline = (Get-Date).AddSeconds(30); while ((Get-Date) -lt $deadline) { if (@(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue).Count -gt 0) { exit 0 }; Start-Sleep -Seconds 1 }; exit 1"
-if errorlevel 1 (
-  echo [ERROR] Port %1 is not listening.
-  exit /b 1
-)
-exit /b 0
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$port=%~1; $deadline=(Get-Date).AddSeconds([int]'%~2'); while((Get-Date)-lt $deadline){if(Test-NetConnection -ComputerName 127.0.0.1 -Port $port -InformationLevel Quiet){exit 0}; Start-Sleep 1}; exit 1"
+exit /b %errorlevel%
 
 :wait_for_url
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$url = '%~1'; $deadline = (Get-Date).AddSeconds([int]'%~2'); while ((Get-Date) -lt $deadline) { try { $resp = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5; if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) { exit 0 } } catch { }; Start-Sleep -Seconds 2 }; exit 1"
-if errorlevel 1 exit /b 1
-exit /b 0
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$url='%~1'; $deadline=(Get-Date).AddSeconds([int]'%~2'); while((Get-Date)-lt $deadline){try{$response=Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5; if($response.StatusCode -lt 400){exit 0}}catch{}; Start-Sleep 2}; exit 1"
+exit /b %errorlevel%
+
+:missing_docker
+echo [ERROR] Docker was not found.
+goto :failed
+:missing_daemon
+echo [ERROR] Docker Desktop is not running.
+goto :failed
+:missing_maven
+echo [ERROR] Maven was not found.
+goto :failed
+:missing_npm
+echo [ERROR] npm was not found.
+goto :failed
+:failed
+echo [ERROR] Prelude startup failed.
+pause
+exit /b 1

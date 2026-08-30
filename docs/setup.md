@@ -1,84 +1,53 @@
-# 环境配置指南
+# 本地开发
 
-推荐入口是 `start-dev.bat`。运行模式差异与停止命令见 [runtime-modes.md](runtime-modes.md)。
+## 环境
 
-## 1. 环境变量
+- Windows 11 与 PowerShell 7+
+- Java 与 Maven，具体要求见 `backend/pom.xml`
+- Node.js 与 npm，具体要求见 `frontend/package.json`
+- Docker Desktop
 
-```powershell
-Copy-Item .\.env.example .\.env
-```
-
-`.env` 关键字段：
-
-```env
-MYSQL_HOST_PORT=13306
-REDIS_HOST_PORT=16379
-RABBITMQ_HOST_PORT=5672
-RABBITMQ_MANAGEMENT_HOST_PORT=15672
-MYSQL_ROOT_PASSWORD=root_password
-JWT_SECRET=replace-with-at-least-32-bytes-jwt-secret
-APP_CRYPTO_AES_SECRET=replace-with-at-least-32-bytes-aes-secret
-OPENAI_API_KEY=
-OPENAI_BASE_URL=https://api.openai.com/v1
-```
-
-`.env` 已被 `.gitignore` 忽略，不要提交真实密钥。`OPENAI_*` 仅用于系统语音能力；面试 LLM 的用户级 Key 与根地址在前端设置中按明确协议配置。
-
-生产默认只允许自定义 LLM 访问 HTTPS 443 公网地址。只有明确受控的本地调试才可通过 `PRELUDE_LLM_EGRESS_ALLOW_HTTP`、`PRELUDE_LLM_EGRESS_ALLOW_PRIVATE_ADDRESSES` 与 `PRELUDE_LLM_EGRESS_ALLOWED_PORTS` 放宽。
-
-## 2. 启动入口
+## 启动
 
 ```powershell
-# 推荐
-.\start-dev.bat
-
-# 可选
-.\start-docker.bat
-```
-
-详细模式边界、底层流程与停止命令见 [runtime-modes.md](runtime-modes.md)。
-
-## 3. 端口
-
-默认宿主机端口避开常见本机服务端口：
-
-| 服务 | 端口 |
-| --- | --- |
-| 前端 (Vite / nginx) | 5173 |
-| 后端 | 8080 |
-| MySQL | 13306 |
-| Redis | 16379 |
-| RabbitMQ | 5672 |
-| RabbitMQ 管理台 | 15672 |
-
-不建议同时运行本机 MySQL / Redis / RabbitMQ 系统服务，以免端口冲突。
-
-## 4. 数据初始化
-
-- `schema.sql` 是唯一 DDL 与幂等结构升级入口。
-- `data.sql` 只包含生产安全的岗位参考数据、Provider 目录和旧协议值归并。
-- `data-dev.sql` 只创建 local/dev 验收账号；完整会话夹具由 `/api/dev-fixtures/reset` 生成。
-
-`/api/dev-fixtures/reset` 会删除并重建 demo 用户数据。`npm run capture:local` 仅在显式设置 `PRELUDE_ALLOW_DESTRUCTIVE_FIXTURE_RESET=true` 后执行，禁止用于需要保留现有 demo 会话的环境。
-
-后端在启动时重放 `schema.sql` 与 `data.sql`，因此现有数据库会直接完成兼容升级；不要额外创建日期命名迁移 SQL。
-
-## 5. 本地验收账号
-
-`demo / 123456` 由 `data-dev.sql` 与 dev fixture 链路提供，仅用于 local/dev。
-
-## 6. 源码级调试配置
-
-需要直接使用 `scripts/dev/start-dev.ps1` 时：
-
-```powershell
-Copy-Item .\backend\src\main\resources\application-local.example.yml .\backend\src\main\resources\application-local.yml
-Copy-Item .\frontend\.env.example .\frontend\.env.local
-```
-
-默认连接 Docker 暴露端口，详见 `application-local.example.yml` 与 `frontend/.env.example`。启动命令：
-
-```powershell
+Copy-Item .env.example .env
 docker compose up -d mysql redis rabbitmq
-.\scripts\dev\start-dev.ps1
 ```
+
+后端：
+
+```powershell
+mvn -f backend/pom.xml spring-boot:run
+```
+
+健康检查：`http://127.0.0.1:8080/actuator/health`。
+
+前端：
+
+```powershell
+npm --prefix frontend ci
+npm --prefix frontend run dev
+```
+
+访问 `http://127.0.0.1:5173`。`start-dev.bat` 执行相同的本地模式，`start-docker.bat` 执行完整容器模式。
+
+## 验证
+
+```powershell
+mvn -f backend/pom.xml clean test
+npm --prefix frontend run typecheck
+npm --prefix frontend run lint
+npm --prefix frontend run verify:architecture
+npm --prefix frontend run verify:ui
+npm --prefix frontend run verify:tokens
+npm --prefix frontend run verify:byok
+npm --prefix frontend run verify:dark
+npm --prefix frontend run verify:a11y
+npm --prefix frontend run verify:visual
+npm --prefix frontend run build
+npm --prefix frontend run test:smoke
+npm --prefix frontend audit --omit=dev
+git diff --check
+```
+
+MySQL 空库验证由 CI 设置 `PRELUDE_MYSQL_SMOKE=true`，在应用上下文启动时执行 Flyway 并确认 MyBatis 可连接。所有 DDL 位于 `backend/src/main/resources/db/migration/`。

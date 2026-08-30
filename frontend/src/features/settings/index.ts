@@ -1,24 +1,6 @@
-export {
-  discoverLlmModels,
-  fetchProviders,
-  fetchUserLlmConfig,
-  saveUserLlmConfig,
-  testUserLlmConfig,
-} from './api/llm'
-export { fetchUserProfile, updateUserProfile, uploadUserAvatar } from './api/user'
-export { default as GlobalSettingsModal } from './components/GlobalSettingsModal.vue'
-export {
-  applyThemePreference,
-  getStoredThemePreference,
-  resolveThemePreference,
-  storeThemePreference,
-} from './model/theme'
-export type {
-  LlmConfigPayload,
-  LlmConfigResponse,
-  LlmProviderOption,
-  LlmProviderResponse,
-  ThemePreference,
-  UserProfilePayload,
-  UserProfileResponse,
-} from './model/types'
+export { SettingsProvider } from './SettingsProvider'
+export { useSettings } from './settings-context'
+export { initializeTheme } from './theme'
+export { fetchLlmConfig, fetchProviders, saveLlmConfig } from './api'
+export type { SettingsIntent, SettingsSection } from './settings-context'
+export type { LlmConfigPayload, LlmConfigResponse, LlmProviderResponse } from './types'

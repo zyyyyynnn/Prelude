@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "component": "Prompt Bar",
+      "upstream": "https://github.com/slev12397/beautiful-ui",
+      "revision": "fa3ed75d53e30517d0ed41c19e7fe7bcf46acb7d",
+      "path": "components/primitives/PromptBar.tsx",
+      "localPath": "src/features/interview/components/PromptBar.tsx",
+      "license": "MIT"
+    }
+  ]
+}

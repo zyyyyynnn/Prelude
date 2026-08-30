@@ -1,28 +1,32 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
-    name: backend
-  config:
-    import: optional:classpath:application-local.yml
+    name: prelude
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://127.0.0.1:13306/prelude?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root_password}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-migration-naming: true
+  session:
+    jdbc:
+      initialize-schema: never
   data:
     redis:
-      host: localhost
-      port: 6379
-      database: 0
+      host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
+      port: ${SPRING_DATA_REDIS_PORT:16379}
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
       timeout: 5000ms
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
+    host: ${SPRING_RABBITMQ_HOST:127.0.0.1}
     port: ${SPRING_RABBITMQ_PORT:5672}
     username: ${SPRING_RABBITMQ_USERNAME:guest}
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
@@ -34,18 +38,16 @@ mybatis-plus:
     db-config:
       id-type: auto
 
-jwt:
-  secret: ${JWT_SECRET:}
-  expire-days: 7
-
 deepseek:
-  base-url: https://api.deepseek.com/chat/completions
-  model: deepseek-v4-pro
+  base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/chat/completions}
+  model: ${DEEPSEEK_MODEL:deepseek-v4-pro}
   api-key: ${DEEPSEEK_API_KEY:}
 
 openai:
   base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
   api-key: ${OPENAI_API_KEY:}
+  embedding-url: ${OPENAI_EMBEDDING_URL:https://api.openai.com/v1/embeddings}
+  embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
 
 app:
   cors:
@@ -53,8 +55,7 @@ app:
       - http://localhost:5173
       - http://127.0.0.1:5173
   crypto:
-    aes-secret: ${APP_CRYPTO_AES_SECRET:}
-  sse-timeout-ms: 120000
+    aes-secret: ${APP_CRYPTO_AES_SECRET:prelude-local-development-secret-change-me}
 
 prelude:
   llm:
@@ -62,15 +63,12 @@ prelude:
       allow-http: ${PRELUDE_LLM_EGRESS_ALLOW_HTTP:false}
       allow-private-addresses: ${PRELUDE_LLM_EGRESS_ALLOW_PRIVATE_ADDRESSES:false}
       allowed-ports: ${PRELUDE_LLM_EGRESS_ALLOWED_PORTS:443}
-  resume:
-    projection-source: document
-    backfill-on-startup: true
-    backfill-batch-size: 100
   realtime:
-    mode: local
+    mode: ${PRELUDE_REALTIME_MODE:local}
   voice:
     tts-pool-size: 4
   jobs:
+    recovery-enabled: true
     execution-lease-seconds: 300
     dispatch-recovery-delay-ms: 30000
     redispatch-after-seconds: 60
@@ -81,16 +79,17 @@ prelude:
       vector-weight: 0.7
       keyword-weight: 0.3
 
-logging:
-  level:
-    root: info
-    com.interview: info
-
 management:
   endpoints:
     web:
       exposure:
-        include: prometheus, health
-  metrics:
-    tags:
-      application: ${spring.application.name}
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: info
+    com.prelude: info
