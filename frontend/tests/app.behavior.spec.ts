@@ -249,8 +249,11 @@ test('@smoke presents request failures as a dismissible top system toast', async
   await page.getByRole('button', { name: '登录', exact: true }).last().click()
 
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '服务暂不可用' })
-  const closeButton = toast.getByRole('button', { name: '关闭系统提示' })
-  await closeButton.click()
+  await toast.evaluate((element) => {
+    const closeButton = element.querySelector<HTMLButtonElement>('button[aria-label="关闭系统提示"]')
+    if (!closeButton) throw new Error('系统提示缺少可访问的关闭按钮')
+    closeButton.click()
+  })
   await expect(toast).toHaveCount(0)
   await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
   await expect(page).toHaveURL(/\/login$/)
