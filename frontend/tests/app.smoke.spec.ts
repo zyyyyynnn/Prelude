@@ -5,7 +5,7 @@ const providers = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    availableModels: ['deepseek-chat'],
+    availableModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
     enabled: 1,
   },
   {
@@ -41,7 +41,7 @@ async function installApi(page: Page) {
           status: 'ongoing',
           currentStage: 'warmup',
           llmProvider: 'deepseek',
-          llmModel: 'deepseek-chat',
+          llmModel: 'deepseek-v4-pro',
         },
       ]
     else if (path === '/api/position/list') data = [{ id: 1, name: 'Java 后端工程师' }]
@@ -58,7 +58,7 @@ async function installApi(page: Page) {
       data = {
         providerKey: 'deepseek',
         baseUrl: null,
-        model: 'deepseek-chat',
+        model: 'deepseek-v4-pro',
         hasApiKey: false,
         apiKeyMasked: null,
         maxTokens: null,
@@ -394,7 +394,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(page.locator('.prelude-menu')).toHaveCount(0)
   await selectContext(page, '选择岗位', 'Java 后端工程师')
   const modelTrigger = page.getByRole('button', { name: /模型：/ })
-  await expect(modelTrigger).toContainText('deepseek-chat · 默认')
+  await expect(modelTrigger).toContainText('deepseek-v4-pro · 默认')
   await expect(modelTrigger).not.toContainText('DeepSeek')
   await expect(modelTrigger.locator('svg')).toHaveCount(1)
   await modelTrigger.screenshot({ path: test.info().outputPath('interview-model-trigger.png') })

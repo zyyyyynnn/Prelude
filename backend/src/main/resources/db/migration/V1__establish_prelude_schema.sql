@@ -67,7 +67,7 @@ CREATE TABLE `interview_session` (
   `position_id` BIGINT NOT NULL COMMENT '岗位模板ID',
   `target_position` VARCHAR(100) NOT NULL COMMENT '目标岗位',
   `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT '会话使用的 Provider 快照',
-  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-chat' COMMENT '会话使用的模型快照',
+  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT '会话使用的模型快照',
   `llm_thinking_depth` VARCHAR(20) DEFAULT NULL COMMENT '会话使用的思考深度快照',
   `status` ENUM('ongoing','generating','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
   `summary` TEXT COMMENT '上下文压缩摘要',

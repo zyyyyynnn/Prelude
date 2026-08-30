@@ -17,18 +17,21 @@
 .analytics-score-card__meta {
   margin: 0;
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  line-height: 1.58;
 }
 
 .analytics-score-card__label {
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font: 500 var(--font-size-sm)/1.4 var(--font-serif);
+}
+
+.analytics-score-card__meta {
+  font: 400 var(--font-size-xs)/1.5 var(--font-sans);
 }
 
 .analytics-score-card__value {
   color: var(--color-text-primary);
   font: 500 var(--font-size-xl)/1.15 var(--font-serif);
+  font-variant-numeric: tabular-nums;
 }
 
 .analytics-dashboard-grid {
@@ -74,8 +77,7 @@
   max-width: 58ch;
   margin: var(--spacing-xs) 0 0;
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-sm);
-  line-height: 1.58;
+  font: 400 var(--font-size-sm)/1.58 var(--font-sans);
 }
 
 .analytics-chart {
@@ -108,27 +110,25 @@
 .analytics-weakness-item__title {
   margin: 0 0 var(--spacing-xs);
   color: var(--color-text-primary);
-  font-size: var(--font-size-md);
-  font-weight: 500;
+  font: 500 var(--font-size-md)/1.4 var(--font-serif);
 }
 
 .analytics-weakness-item__summary {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  font: 400 var(--font-size-xs)/1.5 var(--font-sans);
 }
 
 .analytics-weakness-item__descriptions {
   margin: 0;
   padding-inline-start: var(--spacing-xl);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-meta);
+  font: 400 var(--font-size-meta)/1.5 var(--font-sans);
   list-style-type: disc;
 }
 
 .analytics-weakness-item__descriptions li {
   margin-bottom: var(--spacing-xs);
-  line-height: 1.5;
 }
 
 @media (max-width: 980px) {

@@ -10,7 +10,7 @@ const providers = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    availableModels: ['deepseek-chat'],
+    availableModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
     enabled: 1,
   },
   {
@@ -162,7 +162,7 @@ async function respond(route: Route, state: ApiState) {
     data = {
       providerKey: 'deepseek',
       baseUrl: null,
-      model: 'deepseek-chat',
+      model: 'deepseek-v4-pro',
       hasApiKey: false,
       apiKeyMasked: null,
       maxTokens: null,
@@ -230,7 +230,7 @@ test('@smoke sends the selected prompt bar context when starting an interview', 
     resumeId: 2,
     positionId: 2,
     jdText: '负责复杂交互与前端架构。',
-    llmModel: 'deepseek-chat',
+    llmModel: 'deepseek-v4-pro',
     attachmentIds: [51],
   })
 })
@@ -315,7 +315,7 @@ test('@smoke routes prompt bar management actions into global settings', async (
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: '全局设置' })).toBeHidden()
 
-  await page.getByRole('button', { name: /模型：deepseek-chat，思考深度：默认/ }).click()
+  await page.getByRole('button', { name: /模型：deepseek-v4-pro，思考深度：默认/ }).click()
   await page.getByRole('menuitem', { name: '管理模型' }).click()
   await expect(page.getByRole('heading', { name: '模型管理' })).toBeVisible()
   await expect(page.getByLabel('服务协议')).toContainText('DeepSeek')
@@ -411,7 +411,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
   await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
 
   modelTrigger = page.getByRole('button', { name: /模型：/ })
-  expect(await modelTrigger.textContent()).toContain('deepseek-chat · 高')
+  expect(await modelTrigger.textContent()).toContain('deepseek-v4-pro · 高')
   await expect(page.getByText('模型配置已更新')).toBeVisible()
 
   await modelTrigger.click()
@@ -421,7 +421,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
   )
   await page.getByRole('menuitemradio', { name: '默认', exact: true }).click()
   expect(await page.getByRole('button', { name: /模型：/ }).textContent()).toContain(
-    'deepseek-chat · 默认',
+    'deepseek-v4-pro · 默认',
   )
   expect((await resetRequest).postDataJSON()).toMatchObject({ thinkingDepth: null })
 })
@@ -1035,6 +1035,34 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   await expect(page.getByText('结构')).toBeVisible()
   await expect(page.getByText('走势')).toBeVisible()
   await expect(page.getByText('聚合')).toBeVisible()
+
+  const typography = await page.locator('.analytics-score-card').first().evaluate((card) => {
+    const label = getComputedStyle(card.querySelector('.analytics-score-card__label')!)
+    const value = getComputedStyle(card.querySelector('.analytics-score-card__value')!)
+    const meta = getComputedStyle(card.querySelector('.analytics-score-card__meta')!)
+    return {
+      label: {
+        family: label.fontFamily,
+        size: label.fontSize,
+        weight: label.fontWeight,
+      },
+      value: {
+        family: value.fontFamily,
+        numeric: value.fontVariantNumeric,
+      },
+      meta: {
+        family: meta.fontFamily,
+        size: meta.fontSize,
+        weight: meta.fontWeight,
+      },
+    }
+  })
+  expect(typography.label).toMatchObject({ size: '14px', weight: '500' })
+  expect(typography.label.family).toContain('Lora')
+  expect(typography.value.family).toContain('Lora')
+  expect(typography.value.numeric).toBe('tabular-nums')
+  expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
+  expect(typography.meta.family).toContain('Inter')
 })
 
 test('@smoke degrades malformed structured reports to safe plain text', async ({ page }) => {

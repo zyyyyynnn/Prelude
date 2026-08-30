@@ -3,19 +3,19 @@
   <h1 align="center" style="border-bottom: none">Prelude</h1>
   <p><strong>AI 模拟面试、训练评估与职业成长分析工作台</strong></p>
   <p>
-    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=for-the-badge&amp;label=LICENSE&amp;logo=opensourceinitiative&amp;logoColor=white&amp;labelColor=4B4A46&amp;color=786A63"></a>
-    <img src="https://img.shields.io/badge/JDK-Java%2021-8D6352?style=for-the-badge&amp;labelColor=4B4A46" alt="Java 21" title="Java 21">
-    <img src="https://img.shields.io/badge/-Spring%20Boot-63765A?style=for-the-badge&amp;logo=springboot&amp;logoColor=white&amp;labelColor=4B4A46" alt="Spring Boot" title="Spring Boot">
-    <img src="https://img.shields.io/badge/-Spring%20Modulith-6B7B62?style=for-the-badge&amp;logo=spring&amp;logoColor=white&amp;labelColor=4B4A46" alt="Spring Modulith" title="Spring Modulith">
-    <img src="https://img.shields.io/badge/-React%2019-5E7780?style=for-the-badge&amp;logo=react&amp;logoColor=white&amp;labelColor=4B4A46" alt="React 19" title="React 19">
+    <a href="LICENSE"><img alt="MIT 许可证" height="24" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=for-the-badge&amp;label=LICENSE&amp;labelColor=4B4A46&amp;color=786A63"></a>
+    <img src="https://img.shields.io/badge/JDK-Java%2021-8D6352?style=for-the-badge&amp;labelColor=4B4A46" height="24" alt="Java 21" title="Java 21">
+    <img src="https://img.shields.io/badge/-Spring%20Boot-63765A?style=for-the-badge&amp;logo=springboot&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="Spring Boot" title="Spring Boot">
+    <img src="https://img.shields.io/badge/-Spring%20Modulith-6B7B62?style=for-the-badge&amp;logo=spring&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="Spring Modulith" title="Spring Modulith">
+    <img src="https://img.shields.io/badge/-React%2019-5E7780?style=for-the-badge&amp;logo=react&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="React 19" title="React 19">
   </p>
   <p>
-    <img src="https://img.shields.io/badge/-TypeScript-5B718A?style=for-the-badge&amp;logo=typescript&amp;logoColor=white&amp;labelColor=4B4A46" alt="TypeScript" title="TypeScript">
-    <img src="https://img.shields.io/badge/-Tailwind%20CSS-557B7F?style=for-the-badge&amp;logo=tailwindcss&amp;logoColor=white&amp;labelColor=4B4A46" alt="Tailwind CSS" title="Tailwind CSS">
-    <img src="https://img.shields.io/badge/SQL-MySQL-516F80?style=for-the-badge&amp;labelColor=4B4A46" alt="MySQL" title="MySQL">
-    <img src="https://img.shields.io/badge/-Redis-9A615A?style=for-the-badge&amp;logo=redis&amp;logoColor=white&amp;labelColor=4B4A46" alt="Redis" title="Redis">
-    <img src="https://img.shields.io/badge/-RabbitMQ-936545?style=for-the-badge&amp;logo=rabbitmq&amp;logoColor=white&amp;labelColor=4B4A46" alt="RabbitMQ" title="RabbitMQ">
-    <img src="https://img.shields.io/badge/-Docker-4F708F?style=for-the-badge&amp;logo=docker&amp;logoColor=white&amp;labelColor=4B4A46" alt="Docker" title="Docker">
+    <img src="https://img.shields.io/badge/-TypeScript-5B718A?style=for-the-badge&amp;logo=typescript&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="TypeScript" title="TypeScript">
+    <img src="https://img.shields.io/badge/-Tailwind%20CSS-557B7F?style=for-the-badge&amp;logo=tailwindcss&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="Tailwind CSS" title="Tailwind CSS">
+    <img src="https://img.shields.io/badge/SQL-MySQL-516F80?style=for-the-badge&amp;labelColor=4B4A46" height="24" alt="MySQL" title="MySQL">
+    <img src="https://img.shields.io/badge/-Redis-9A615A?style=for-the-badge&amp;logo=redis&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="Redis" title="Redis">
+    <img src="https://img.shields.io/badge/-RabbitMQ-936545?style=for-the-badge&amp;logo=rabbitmq&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="RabbitMQ" title="RabbitMQ">
+    <img src="https://img.shields.io/badge/-Docker-4F708F?style=for-the-badge&amp;logo=docker&amp;logoColor=white&amp;labelColor=4B4A46" height="24" alt="Docker" title="Docker">
   </p>
 </div>
 

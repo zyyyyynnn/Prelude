@@ -187,6 +187,7 @@ function Radar({ data }: { data: AnalyticsRadarResponse }) {
       const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
       const border = cssVar('--color-border-warm', 'var(--color-border)')
       const ring = cssVar('--color-ring', 'var(--color-border)')
+      const serif = cssToken('--font-serif', 'serif')
       return {
         animation: false,
         radar: {
@@ -198,7 +199,12 @@ function Radar({ data }: { data: AnalyticsRadarResponse }) {
             { name: '逻辑思维', max: 10 },
           ],
           splitArea: { show: false },
-          axisName: { color: secondary, fontSize: cssVarNumber('--font-size-sm', 14) },
+          axisName: {
+            color: secondary,
+            fontFamily: serif,
+            fontSize: cssVarNumber('--font-size-sm', 14),
+            fontWeight: 500,
+          },
           splitLine: { lineStyle: { color: border } },
           axisLine: { lineStyle: { color: ring } },
         },
@@ -242,6 +248,8 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
       const surface = cssVar('--color-surface', 'var(--color-bg)')
       const input = cssVar('--color-input', 'var(--color-border)')
       const text = cssVar('--color-text-primary', 'var(--color-text-primary)')
+      const serif = cssToken('--font-serif', 'serif')
+      const sans = cssToken('--font-sans', 'sans-serif')
       return {
         animation: false,
         tooltip: {
@@ -253,7 +261,7 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
           padding: [cssVarNumber('--spacing-xs', 4), cssVarNumber('--spacing-sm', 8)],
           textStyle: {
             color: text,
-            fontFamily: cssToken('--font-serif', 'sans-serif'),
+            fontFamily: sans,
             fontSize: cssVarNumber('--font-size-sm', 14),
           },
           extraCssText: cssDeclarations({
@@ -264,7 +272,12 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
         },
         legend: {
           bottom: cssVarNumber('--spacing-xs', 4),
-          textStyle: { color: secondary },
+          textStyle: {
+            color: secondary,
+            fontFamily: serif,
+            fontSize: cssVarNumber('--font-size-xs', 13),
+            fontWeight: 500,
+          },
         },
         grid: {
           ...TREND_GRID,
@@ -274,14 +287,22 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
           boundaryGap: false,
           data: data.map((item) => formatDate(item.createdAt, 'MM/DD')),
           axisLine: { lineStyle: { color: ring } },
-          axisLabel: { color: tertiary },
+          axisLabel: {
+            color: tertiary,
+            fontFamily: sans,
+            fontSize: cssVarNumber('--font-size-xs', 13),
+          },
         },
         yAxis: {
           type: 'value',
           min: 0,
           max: 10,
           axisLine: { lineStyle: { color: ring } },
-          axisLabel: { color: tertiary },
+          axisLabel: {
+            color: tertiary,
+            fontFamily: sans,
+            fontSize: cssVarNumber('--font-size-xs', 13),
+          },
           splitLine: { lineStyle: { color: border } },
         },
         series: [

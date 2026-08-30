@@ -19,7 +19,8 @@
     "verify:dark": "playwright test --grep @dark",
     "verify:a11y": "playwright test --grep @a11y",
     "verify:visual": "playwright test --grep @visual --workers=1",
-    "capture:visual": "playwright test --grep @visual"
+    "capture:visual": "playwright test --grep @visual",
+    "capture:demo": "playwright test --grep @demo --workers=1"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
