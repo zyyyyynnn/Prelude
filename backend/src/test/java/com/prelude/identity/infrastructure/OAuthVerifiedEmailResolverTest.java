@@ -38,7 +38,7 @@ class OAuthVerifiedEmailResolverTest {
                 ]
                 """, MediaType.APPLICATION_JSON));
 
-        String email = resolver.resolveVerifiedEmail("github", user("pub@example.com"), token);
+        String email = resolver.resolveVerifiedEmail(user("pub@example.com"), token);
 
         assertThat(email).isEqualTo("real@example.com");
         server.verify();
@@ -51,19 +51,16 @@ class OAuthVerifiedEmailResolverTest {
                 [{"email":"pub@example.com","primary":true,"verified":false}]
                 """, MediaType.APPLICATION_JSON));
 
-        String email = resolver.resolveVerifiedEmail("github", user("pub@example.com"), token);
+        String email = resolver.resolveVerifiedEmail(user("pub@example.com"), token);
 
         assertThat(email).isNull();
         server.verify();
     }
 
     @Test
-    void googleUsesOnlyTheExplicitVerifiedClaim() {
-        OAuth2User verified = user(Map.of("email", "owner@example.com", "email_verified", true));
-        OAuth2User unverified = user(Map.of("email", "owner@example.com", "email_verified", false));
-
-        assertThat(resolver.resolveVerifiedEmail("google", verified, token)).isEqualTo("owner@example.com");
-        assertThat(resolver.resolveVerifiedEmail("google", unverified, token)).isNull();
+    void aMissingTokenYieldsNoVerifiedEmail() {
+        assertThat(resolver.resolveVerifiedEmail(user("pub@example.com"), null)).isNull();
+        server.verify();
     }
 
     private OAuth2User user(String email) {

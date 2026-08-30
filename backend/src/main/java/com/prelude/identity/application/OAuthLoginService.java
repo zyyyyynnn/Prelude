@@ -80,10 +80,10 @@ public class OAuthLoginService {
             log.info("Pending {} binding completed through existing {} identity for account {}",
                 pending.provider(), provider, boundAccount.getId());
         } catch (BusinessException conflict) {
-            // The pending identity can never bind to this account; drop the dead intent.
+            // The pending intent can never complete; drop it, but surface the conflict
+            // instead of masking the failed binding as a successful login.
             session.removeAttribute(PENDING_ATTRIBUTE);
-            log.warn("Pending binding for account {} conflicts with existing bindings; intent cleared",
-                boundAccount.getId());
+            throw conflict;
         }
     }
 

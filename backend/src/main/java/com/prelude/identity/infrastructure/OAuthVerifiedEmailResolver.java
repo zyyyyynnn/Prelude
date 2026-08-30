@@ -11,11 +11,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Resolves the provider-verified email of an OAuth identity. Google identities
- * carry the verified claim in the profile attributes; GitHub exposes explicit
- * verification status only through its emails endpoint, which is called with
- * the access token of the current exchange. Identities without a verified
- * email resolve to null and never trigger account discovery.
+ * Resolves the provider-verified email of a GitHub OAuth identity: GitHub
+ * exposes explicit verification status only through its emails endpoint, which
+ * is called with the access token of the current exchange. Google identities
+ * are OIDC and resolve their verified claim from the validated ID token
+ * directly. Identities without a verified email resolve to null and never
+ * trigger account discovery.
  */
 @Component
 public class OAuthVerifiedEmailResolver {
@@ -33,21 +34,8 @@ public class OAuthVerifiedEmailResolver {
         this.restClient = restClientBuilder.build();
     }
 
-    public String resolveVerifiedEmail(String registrationId, OAuth2User user, OAuth2AccessToken accessToken) {
-        if ("github".equals(registrationId)) {
-            return githubVerifiedEmail(accessToken);
-        }
-        return verifiedClaimEmail(user.getAttributes());
-    }
-
-    private String verifiedClaimEmail(Map<String, Object> attributes) {
-        if (!(attributes.get("email_verified") instanceof Boolean verified) || !verified) {
-            return null;
-        }
-        if (attributes.get("email") instanceof String email && !email.isBlank()) {
-            return email;
-        }
-        return null;
+    public String resolveVerifiedEmail(OAuth2User user, OAuth2AccessToken accessToken) {
+        return githubVerifiedEmail(accessToken);
     }
 
     private String githubVerifiedEmail(OAuth2AccessToken accessToken) {

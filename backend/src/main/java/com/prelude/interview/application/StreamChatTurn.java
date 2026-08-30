@@ -1,5 +1,6 @@
 package com.prelude.interview.application;
 
+import com.prelude.BusinessException;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.activity.RealtimePort;
@@ -26,20 +27,22 @@ public class StreamChatTurn {
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
     private final RealtimePort realtimePort;
+    private final com.prelude.identity.api.SessionValidity sessionValidity;
 
-    public SseEmitter execute(Long sessionId, String content, boolean autoStart) {
+    public SseEmitter execute(Long sessionId, String content, boolean autoStart, String authSessionId) {
         long accountId = sessionAccess.currentAccountId();
         SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
         stream.emitter().onTimeout(() -> completeWithError(stream, "连接超时，请重试"));
         stream.emitter().onError(error -> stream.complete());
 
-        sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, content, autoStart, stream));
+        sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, authSessionId, content, autoStart, stream));
         return stream.emitter();
     }
 
     private void runTurn(
         Long sessionId,
         long accountId,
+        String authSessionId,
         String content,
         boolean autoStart,
         SseSessionStream stream
@@ -53,7 +56,14 @@ public class StreamChatTurn {
                     autoStart,
                     true
                 ),
-                delta -> stream.send("message", delta)
+                delta -> {
+                    // Natural send boundary: a revoked session stops the stream
+                    // instead of continuing to emit authenticated business data.
+                    if (!sessionValidity.isActive(authSessionId, accountId)) {
+                        throw BusinessException.unauthorized("登录已失效，请重新登录");
+                    }
+                    stream.send("message", delta);
+                }
             );
             if (result.userMessage() == null) {
                 stream.complete();

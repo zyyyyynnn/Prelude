@@ -33,6 +33,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final VoiceInterviewSessionService voiceInterviewSessionService;
     private final VoiceInterviewTurnService voiceInterviewTurnService;
+    private final com.prelude.identity.api.SessionValidity sessionValidity;
 
     private final Map<String, ByteArrayOutputStream> sessionBuffers = new ConcurrentHashMap<>();
     private final Map<String, Long> activeSessionIds = new ConcurrentHashMap<>();
@@ -58,6 +59,10 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
+        if (sessionRevoked(session)) {
+            closeRevokedSession(session);
+            return;
+        }
         ByteArrayOutputStream buffer = sessionBuffers.get(session.getId());
         if (buffer != null) {
             byte[] bytes = message.getPayload().array();
@@ -70,6 +75,10 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
         Long accountId = (Long) session.getAttributes().get("accountId");
         if (accountId == null) {
             session.close(CloseStatus.BAD_DATA);
+            return;
+        }
+        if (sessionRevoked(session)) {
+            closeRevokedSession(session);
             return;
         }
 
@@ -161,6 +170,26 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
                 activeSessionIds.remove(session.getId());
             }
         };
+    }
+
+    /**
+     * The originating Spring Session must still be alive and owned by the same
+     * account; a revoked session closes the connection with a policy status.
+     */
+    private boolean sessionRevoked(WebSocketSession session) {
+        Long accountId = (Long) session.getAttributes().get("accountId");
+        String authSessionId = (String) session.getAttributes().get("authSessionId");
+        if (accountId == null || authSessionId == null) {
+            return true;
+        }
+        return !sessionValidity.isActive(authSessionId, accountId);
+    }
+
+    private void closeRevokedSession(WebSocketSession session) throws IOException {
+        sessionBuffers.remove(session.getId());
+        activeSessionIds.remove(session.getId());
+        log.info("WebSocket closed: originating session revoked, connection id: {}", session.getId());
+        session.close(CloseStatus.POLICY_VIOLATION.withReason("session revoked"));
     }
 
     private void sendJson(WebSocketSession session, Object payload) {

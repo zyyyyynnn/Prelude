@@ -31,6 +31,8 @@ public class OAuthClientConfiguration {
     public ClientRegistrationRepository clientRegistrationRepository(OAuthClientProperties properties) {
         List<ClientRegistration> registrations = new ArrayList<>();
         if (isConfigured(properties.google().clientId())) {
+            // Explicit official Google OIDC metadata: the JWK Set URI makes Spring
+            // Security process the login as OIDC and validate the Google ID token.
             registrations.add(ClientRegistration.withRegistrationId("google")
                 .clientId(properties.google().clientId())
                 .clientSecret(properties.google().clientSecret())
@@ -40,6 +42,7 @@ public class OAuthClientConfiguration {
                 .scope("openid", "profile", "email")
                 .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
                 .tokenUri("https://www.googleapis.com/oauth2/v4/token")
+                .jwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
                 .userInfoUri("https://www.googleapis.com/oauth2/v3/userinfo")
                 .userNameAttributeName(IdTokenClaimNames.SUB)
                 .clientName("Google")

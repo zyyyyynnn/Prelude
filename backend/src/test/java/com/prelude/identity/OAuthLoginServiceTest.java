@@ -142,6 +142,44 @@ class OAuthLoginServiceTest {
     }
 
     @Test
+    void aConflictingPendingCompletionSurfacesTheConflictInsteadOfSilentSuccess() {
+        PendingOAuthBinding pending = new PendingOAuthBinding("github", "subject-gh", "owner@example.com");
+        session.setAttribute(OAuthLoginService.PENDING_ATTRIBUTE, pending);
+        OAuthBinding googleBinding = new OAuthBinding();
+        googleBinding.setAccountId(5L);
+        googleBinding.setProvider("google");
+        googleBinding.setProviderSubject("subject-goog");
+        OAuthBinding conflictingBinding = new OAuthBinding();
+        conflictingBinding.setAccountId(8L);
+        conflictingBinding.setProvider("github");
+        conflictingBinding.setProviderSubject("subject-gh");
+        when(oauthBindingMapper.selectOne(any()))
+            .thenReturn(googleBinding, conflictingBinding, conflictingBinding);
+        when(accountMapper.selectById(5L)).thenAnswer(invocation -> {
+            Account boundAccount = new Account();
+            boundAccount.setId(5L);
+            boundAccount.setUsername("owner");
+            boundAccount.setEmail("owner@example.com");
+            return boundAccount;
+        });
+        when(oauthBindingMapper.insert(any(OAuthBinding.class)))
+            .thenThrow(new DuplicateKeyException("unique violation"));
+
+        assertThatThrownBy(() ->
+            oauthLoginService.resolveLogin("google", "subject-goog", null, session))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasFieldOrPropertyWithValue("code", "oauth_binding_conflict");
+
+        // The dead intent is cleared, but the failed binding was never created.
+        assertThat(session.getAttribute(OAuthLoginService.PENDING_ATTRIBUTE)).isNull();
+        ArgumentCaptor<OAuthBinding> attempted = ArgumentCaptor.forClass(OAuthBinding.class);
+        verify(oauthBindingMapper).insert(attempted.capture());
+        assertThat(attempted.getValue().getProvider()).isEqualTo("github");
+        assertThat(attempted.getValue().getProviderSubject()).isEqualTo("subject-gh");
+        assertThat(attempted.getValue().getAccountId()).isEqualTo(5L);
+    }
+
+    @Test
     void aConflictingDuplicateBindingIsNotTreatedAsIdempotent() {
         when(oauthBindingMapper.selectOne(any())).thenReturn(null);
         when(accountMapper.selectOne(any())).thenReturn(null);
