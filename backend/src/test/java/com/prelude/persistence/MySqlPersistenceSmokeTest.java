@@ -2,10 +2,12 @@ package com.prelude.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.sql.ResultSet;
+import java.util.List;
 import java.util.UUID;
 
-import com.prelude.identity.User;
-import com.prelude.identity.UserMapper;
+import com.prelude.identity.Account;
+import com.prelude.identity.AccountMapper;
 import com.prelude.resume.api.port.ResumeContextPort;
 import com.prelude.resume.application.port.ResumeRepository;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -26,7 +28,7 @@ class MySqlPersistenceSmokeTest {
     private SqlSessionFactory sqlSessionFactory;
 
     @Autowired
-    private UserMapper userMapper;
+    private AccountMapper accountMapper;
 
     @Autowired
     private ResumeRepository resumeRepository;
@@ -35,12 +37,11 @@ class MySqlPersistenceSmokeTest {
     private ResumeContextPort resumeContextPort;
 
     @Test
-    void migratesAnEmptyMySqlDatabaseAndStartsMybatis() throws Exception {
+    void migratesAnEmptyMySqlDatabaseToTheCurrentSchema() throws Exception {
         var appliedMigrations = flyway.info().applied();
-        assertThat(appliedMigrations).hasSize(2);
         assertThat(appliedMigrations)
             .extracting(migration -> migration.getDescription())
-            .containsExactly("establish prelude schema", "establish reference data");
+            .containsExactly("establish prelude schema", "reference data");
 
         try (var session = sqlSessionFactory.openSession();
              var statement = session.getConnection().createStatement();
@@ -51,20 +52,50 @@ class MySqlPersistenceSmokeTest {
     }
 
     @Test
-    void explicitlyClearsNullableLlmConfigurationFields() {
-        User user = new User();
-        user.setUsername("migration-smoke-" + UUID.randomUUID());
-        user.setPassword("not-used");
-        user.setLlmProvider("deepseek");
-        user.setLlmModel("deepseek-v4-flash");
-        user.setLlmBaseUrl("https://example.com/v1");
-        user.setLlmApiKeyEncrypted("encrypted");
-        user.setLlmMaxTokens(4096);
-        user.setLlmThinkingDepth("high");
-        userMapper.insert(user);
+    void establishesTheCurrentAccountSchemaWithoutAuthenticationSessionTables() throws Exception {
+        List<String> tables = queryColumn("SHOW TABLES");
+        assertThat(tables).contains(
+            "user_account", "oauth_binding", "asset", "attachment",
+            "artifact", "artifact_version", "interview_session", "async_job");
+        assertThat(tables)
+            .doesNotContain("SPRING_SESSION", "SPRING_SESSION_ATTRIBUTES", "user", "user_weakness");
+    }
 
-        userMapper.updateLlmConfiguration(
-            user.getId(),
+    @Test
+    void attachmentKeepsMetadataOnlyAndReferencesItsBinaryAsset() throws Exception {
+        List<String> attachmentColumns = queryColumn(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'attachment'");
+        assertThat(attachmentColumns).contains("account_id", "asset_id", "file_name");
+        assertThat(attachmentColumns).doesNotContain("content", "user_id");
+
+        List<String> attachmentDataTypes = queryColumn(
+            "SELECT DATA_TYPE FROM information_schema.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'attachment'");
+        assertThat(attachmentDataTypes).doesNotContain("longblob");
+
+        List<String> accountColumns = queryColumn(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_account'");
+        assertThat(accountColumns).contains("password_hash", "revision", "last_operation_id", "email");
+    }
+
+    @Test
+    void explicitlyClearsNullableLlmConfigurationFields() {
+        Account account = new Account();
+        account.setUsername("migration-smoke-" + UUID.randomUUID());
+        account.setPasswordHash("not-used");
+        account.setRevision(0L);
+        account.setLlmProvider("deepseek");
+        account.setLlmModel("deepseek-v4-flash");
+        account.setLlmBaseUrl("https://example.com/v1");
+        account.setLlmApiKeyEncrypted("encrypted");
+        account.setLlmMaxTokens(4096);
+        account.setLlmThinkingDepth("high");
+        accountMapper.insert(account);
+
+        accountMapper.updateLlmConfiguration(
+            account.getId(),
             "deepseek",
             null,
             "deepseek-v4-flash",
@@ -73,7 +104,7 @@ class MySqlPersistenceSmokeTest {
             null
         );
 
-        User updated = userMapper.selectById(user.getId());
+        Account updated = accountMapper.selectById(account.getId());
         assertThat(updated.getLlmBaseUrl()).isNull();
         assertThat(updated.getLlmApiKeyEncrypted()).isNull();
         assertThat(updated.getLlmMaxTokens()).isNull();
@@ -82,13 +113,14 @@ class MySqlPersistenceSmokeTest {
 
     @Test
     void persistsResumeResourceAndBuildsInterviewContext() {
-        User user = new User();
-        user.setUsername("resume-smoke-" + UUID.randomUUID());
-        user.setPassword("not-used");
-        userMapper.insert(user);
+        Account account = new Account();
+        account.setUsername("resume-smoke-" + UUID.randomUUID());
+        account.setPasswordHash("not-used");
+        account.setRevision(0L);
+        accountMapper.insert(account);
 
         var stored = resumeRepository.create(new ResumeRepository.NewResume(
-            user.getId(),
+            account.getId(),
             "candidate.pdf",
             "Java 后端候选人原始简历",
             java.util.List.of("Java", "Spring Boot"),
@@ -101,9 +133,21 @@ class MySqlPersistenceSmokeTest {
         assertThat(reloaded.parsedProjects())
             .containsExactly(new ResumeRepository.ParsedProject("Prelude", "模拟面试平台"));
 
-        var projection = resumeContextPort.requireOwnedProjection(user.getId(), stored.id());
+        var projection = resumeContextPort.requireOwnedProjection(account.getId(), stored.id());
         assertThat(projection.plainText()).isEqualTo("Java 后端候选人原始简历");
         assertThat(projection.skills()).containsExactly("Java", "Spring Boot");
         assertThat(projection.projectsSummary()).containsExactly("Prelude：模拟面试平台");
+    }
+
+    private List<String> queryColumn(String sql) throws Exception {
+        try (var session = sqlSessionFactory.openSession();
+             var statement = session.getConnection().createStatement();
+             ResultSet result = statement.executeQuery(sql)) {
+            List<String> values = new java.util.ArrayList<>();
+            while (result.next()) {
+                values.add(result.getString(1));
+            }
+            return values;
+        }
     }
 }

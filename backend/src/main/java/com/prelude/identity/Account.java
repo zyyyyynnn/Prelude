@@ -1,18 +1,22 @@
 package com.prelude.identity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-public class User {
+@TableName("user_account")
+public class Account {
 
     private Long id;
     private String username;
-    private String password;
+    private String passwordHash;
     private String email;
     private String avatarUrl;
     private String themePreference;
+    private Long revision;
+    private String lastOperationId;
     private String llmProvider;
     private String llmModel;
     private String llmBaseUrl;
@@ -20,4 +24,5 @@ public class User {
     private Integer llmMaxTokens;
     private String llmThinkingDepth;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
