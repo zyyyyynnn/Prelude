@@ -8,7 +8,7 @@
 | `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项 |
 | `npm run verify:tokens` | token 声明完整性、基础控件不变量、语义阴影与层级唯一性 |
 | `npm run verify:production` | 生产产物不包含开发态组件检查面 |
-| `npm run verify:byok` | 四种 provider DTO、参考数据与设置界面 |
+| `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
 | `npm run verify:dark` | 暗色偏好启动恢复 |
 | `npm run verify:a11y` | 真实浏览器 Axe 检查 |
 | `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度 |

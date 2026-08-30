@@ -104,9 +104,11 @@ jobs:
 
       - name: Build production frontend
         working-directory: frontend
-        run: |
-          npm run build
-          npm run verify:production
+        run: npm run build
+
+      - name: Verify production bundle
+        working-directory: frontend
+        run: npm run verify:production
 
       - name: Smoke tests
         working-directory: frontend
