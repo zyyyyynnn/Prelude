@@ -5,10 +5,10 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class UserWeakness {
+public class AccountWeakness {
 
     private Long id;
-    private Long userId;
+    private Long accountId;
     private Long sessionId;
     private String category;
     private String description;

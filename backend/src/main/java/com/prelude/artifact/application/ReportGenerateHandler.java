@@ -39,7 +39,7 @@ public class ReportGenerateHandler {
                 return;
             }
             try {
-                generateInterviewReport.execute(message.sessionId(), message.userId());
+                generateInterviewReport.execute(message.sessionId(), message.accountId());
                 jobExecutionPort.markSucceeded(message.jobId());
                 return;
             } catch (RuntimeException error) {

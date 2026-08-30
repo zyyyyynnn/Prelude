@@ -7,6 +7,6 @@ public record AttachmentSnapshot(
     long size,
     boolean image,
     String text,
-    byte[] content
+    AssetRef assetRef
 ) {
 }

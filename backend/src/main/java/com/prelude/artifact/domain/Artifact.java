@@ -5,13 +5,10 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class ScoreHistory {
+public class Artifact {
 
     private Long id;
     private Long accountId;
-    private Long sessionId;
-    private Integer technicalScore;
-    private Integer expressionScore;
-    private Integer logicScore;
+    private String kind;
     private LocalDateTime createdAt;
 }

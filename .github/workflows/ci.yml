@@ -67,6 +67,8 @@ jobs:
         working-directory: backend
         env:
           PRELUDE_MYSQL_SMOKE: 'true'
+          PRELUDE_IDENTITY_SMOKE: 'true'
+          PRELUDE_S3_SMOKE: 'true'
           SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/prelude?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: root_password
