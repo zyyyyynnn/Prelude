@@ -24,21 +24,16 @@ public class LlmResumeParser implements ResumeParser {
     private final ObjectMapper objectMapper;
 
     @Override
-    public ParsedResume parse(Long userId, String rawText) {
+    public ParsedResume parse(Long accountId, String rawText) {
         String systemPrompt = promptRegistry.load(PromptIds.RESUME_PARSE);
-        String content = chatPort.complete(new ChatRequest(
-            userId,
+        String content = chatPort.complete(ChatRequest.currentUser(
+            accountId,
             LlmPurpose.PARSE,
             PromptIds.RESUME_PARSE,
             List.of(
                 Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", "请从以下中文简历文本中提取技能列表和项目经历：\n" + rawText)
-            ),
-            null,
-            null,
-            null,
-            null,
-            null
+            )
         ));
         try {
             ParsePayload payload = objectMapper.readValue(stripFence(content), ParsePayload.class);

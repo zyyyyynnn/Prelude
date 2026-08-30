@@ -24,9 +24,9 @@ class FinishInterviewTest {
         InterviewStageManager stages = mock(InterviewStageManager.class);
         InterviewSession session = new InterviewSession();
         session.setId(51L);
-        session.setUserId(7L);
+        session.setAccountId(7L);
         session.setStatus("ongoing");
-        when(access.currentUserId()).thenReturn(7L);
+        when(access.currentAccountId()).thenReturn(7L);
         when(access.requireOwned(51L, 7L)).thenReturn(session);
         when(stages.currentStageName(51L)).thenReturn("closing");
         when(jobs.enqueue(org.mockito.ArgumentMatchers.any())).thenReturn(new JobTicket("job-1", "pending"));
@@ -40,7 +40,7 @@ class FinishInterviewTest {
         verify(sessions).update(session);
         ArgumentCaptor<JobRequest> request = ArgumentCaptor.forClass(JobRequest.class);
         verify(jobs).enqueue(request.capture());
-        assertThat(request.getValue().userId()).isEqualTo(7L);
+        assertThat(request.getValue().accountId()).isEqualTo(7L);
         assertThat(request.getValue().subjectId()).isEqualTo(51L);
         verify(messages).invalidateSessionLock(51L);
     }

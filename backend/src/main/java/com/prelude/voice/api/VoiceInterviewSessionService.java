@@ -15,12 +15,12 @@ public class VoiceInterviewSessionService {
 
     private final InterviewSessionRepository interviewSessionRepository;
 
-    public InterviewSession validateActiveSession(Long userId, Long sessionId) {
-        if (userId == null || sessionId == null) {
+    public InterviewSession validateActiveSession(Long accountId, Long sessionId) {
+        if (accountId == null || sessionId == null) {
             return null;
         }
         InterviewSession interviewSession = interviewSessionRepository.selectById(sessionId);
-        if (interviewSession == null || !Objects.equals(interviewSession.getUserId(), userId)) {
+        if (interviewSession == null || !Objects.equals(interviewSession.getAccountId(), accountId)) {
             return null;
         }
         if (!STATUS_ONGOING.equals(interviewSession.getStatus())) {

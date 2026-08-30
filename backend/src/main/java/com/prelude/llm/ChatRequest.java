@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 public record ChatRequest(
-    Long userId,
+    Long accountId,
+    Long sessionId,
     LlmPurpose purpose,
     String promptId,
     List<Map<String, String>> messages,
@@ -25,18 +26,19 @@ public record ChatRequest(
     }
 
     public static ChatRequest currentUser(
-        Long userId,
+        Long accountId,
         LlmPurpose purpose,
         String promptId,
         List<Map<String, String>> messages
     ) {
         return new ChatRequest(
-            userId, purpose, promptId, messages, null, null, null, null, null
+            accountId, null, purpose, promptId, messages, null, null, null, null, null
         );
     }
 
     public static ChatRequest snapshot(
-        Long userId,
+        Long accountId,
+        Long sessionId,
         LlmPurpose purpose,
         String promptId,
         List<Map<String, String>> messages,
@@ -44,12 +46,13 @@ public record ChatRequest(
         Map<String, Object> extraParams
     ) {
         return new ChatRequest(
-            userId, purpose, promptId, messages, selection, null, null, extraParams, null
+            accountId, sessionId, purpose, promptId, messages, selection, null, null, extraParams, null
         );
     }
 
     public static ChatRequest snapshot(
-        Long userId,
+        Long accountId,
+        Long sessionId,
         LlmPurpose purpose,
         String promptId,
         List<Map<String, String>> messages,
@@ -58,7 +61,7 @@ public record ChatRequest(
         List<LlmAttachment> attachments
     ) {
         return new ChatRequest(
-            userId, purpose, promptId, messages, selection, null, null, extraParams, attachments
+            accountId, sessionId, purpose, promptId, messages, selection, null, null, extraParams, attachments
         );
     }
 }

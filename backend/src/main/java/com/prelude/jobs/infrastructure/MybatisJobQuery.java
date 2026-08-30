@@ -16,10 +16,10 @@ public class MybatisJobQuery implements JobQueryPort {
     private final AsyncJobMapper asyncJobMapper;
 
     @Override
-    public Optional<JobSnapshot> findOwned(String jobId, Long userId) {
+    public Optional<JobSnapshot> findOwned(String jobId, Long accountId) {
         AsyncJob job = asyncJobMapper.selectOne(new LambdaQueryWrapper<AsyncJob>()
             .eq(AsyncJob::getJobId, jobId)
-            .eq(AsyncJob::getUserId, userId)
+            .eq(AsyncJob::getAccountId, accountId)
             .last("LIMIT 1"));
         return Optional.ofNullable(job).map(this::toSnapshot);
     }

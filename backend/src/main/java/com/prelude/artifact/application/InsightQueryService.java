@@ -1,9 +1,9 @@
 package com.prelude.artifact.application;
 
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
+import com.prelude.identity.api.CurrentAccount;
 import com.prelude.artifact.domain.ScoreHistory;
-import com.prelude.artifact.domain.UserWeakness;
+import com.prelude.artifact.domain.AccountWeakness;
 import com.prelude.artifact.application.port.InsightRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,9 +19,10 @@ public class InsightQueryService {
 
 
     private final InsightRepository insightRepository;
+    private final CurrentAccount currentAccount;
 
     public InsightRadarView getRadar() {
-        List<ScoreHistory> recentScores = insightRepository.recentScores(currentUserId(), 5);
+        List<ScoreHistory> recentScores = insightRepository.recentScores(currentAccountId(), 5);
 
         return new InsightRadarView(
             average(recentScores.stream().map(ScoreHistory::getTechnicalScore).toList()),
@@ -32,7 +33,7 @@ public class InsightQueryService {
     }
 
     public List<InsightTrendView> getTrend() {
-        List<InsightTrendView> recent = insightRepository.recentScores(currentUserId(), 5)
+        List<InsightTrendView> recent = insightRepository.recentScores(currentAccountId(), 5)
             .stream()
             .map(item -> new InsightTrendView(
                 item.getSessionId(),
@@ -46,10 +47,10 @@ public class InsightQueryService {
     }
 
     public List<InsightWeaknessView> getWeaknesses() {
-        List<UserWeakness> weaknesses = insightRepository.listWeaknessesByUser(currentUserId());
+        List<AccountWeakness> weaknesses = insightRepository.listWeaknessesByAccount(currentAccountId());
 
-        Map<String, List<UserWeakness>> grouped = weaknesses.stream()
-            .collect(Collectors.groupingBy(UserWeakness::getCategory, LinkedHashMap::new, Collectors.toList()));
+        Map<String, List<AccountWeakness>> grouped = weaknesses.stream()
+            .collect(Collectors.groupingBy(AccountWeakness::getCategory, LinkedHashMap::new, Collectors.toList()));
 
         return grouped.entrySet().stream()
             .sorted((left, right) -> Integer.compare(right.getValue().size(), left.getValue().size()))
@@ -57,7 +58,7 @@ public class InsightQueryService {
                 entry.getKey(),
                 entry.getValue().size(),
                 entry.getValue().stream()
-                    .map(UserWeakness::getDescription)
+                    .map(AccountWeakness::getDescription)
                     .filter(description -> description != null && !description.isBlank())
                     .distinct()
                     .toList()
@@ -73,11 +74,7 @@ public class InsightQueryService {
             .orElse(0);
     }
 
-    private Long currentUserId() {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) {
-            throw BusinessException.unauthorized("请先登录");
-        }
-        return userId;
+    private Long currentAccountId() {
+        return currentAccount.requireId();
     }
 }

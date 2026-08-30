@@ -42,11 +42,14 @@ export function ProfilePanel() {
       feedback.notify('新密码不能与旧密码相同', 'error')
       return
     }
+    if (!profile.data) return
     save.mutate({
       username: formText(data, 'username'),
       email: formText(data, 'email'),
       oldPassword: oldPassword || undefined,
       newPassword: newPassword || undefined,
+      expectedRevision: profile.data.revision,
+      operationId: crypto.randomUUID(),
     })
   }
   if (profile.isPending) return <div className="empty-state">正在读取账号资料…</div>

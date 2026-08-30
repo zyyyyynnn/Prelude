@@ -50,11 +50,11 @@ export function useInterviewSession(sessionId: number, onError: (message: string
       content: string
       autoStart?: boolean
     }) => {
-      const userId = Date.now()
-      const assistantId = userId + 1
+      const optimisticId = Date.now()
+      const assistantId = optimisticId + 1
       const base = [...visibleMessages]
       if (!autoStart)
-        base.push({ id: userId, role: 'user', content, createdAt: new Date().toISOString() })
+        base.push({ id: optimisticId, role: 'user', content, createdAt: new Date().toISOString() })
       base.push({
         id: assistantId,
         role: 'assistant',

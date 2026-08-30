@@ -5,7 +5,7 @@ import com.prelude.assets.api.AttachmentSnapshot;
 import com.prelude.template.api.port.PositionCatalogPort;
 import com.prelude.template.api.port.PositionCatalogPort.PositionSnapshot;
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
+import com.prelude.identity.api.CurrentAccount;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.llm.LlmSelection;
 import com.prelude.interview.application.port.InterviewSessionRepository;
@@ -39,32 +39,33 @@ public class StartInterview {
     private final Executor sseTaskExecutor;
     private final RetrievalPort retrievalPort;
     private final AttachmentContextPort attachmentContextPort;
+    private final CurrentAccount currentAccount;
 
     @Transactional(rollbackFor = Exception.class)
     public StartInterviewResult execute(StartInterviewCommand command) {
-        Long userId = currentUserId();
-        ResumeProjection resume = resumeContextPort.requireOwnedProjection(userId, command.resumeId());
+        long accountId = currentAccountId();
+        ResumeProjection resume = resumeContextPort.requireOwnedProjection(accountId, command.resumeId());
         List<AttachmentSnapshot> attachments = attachmentContextPort.requireOwned(
-            userId, command.attachmentIds());
+            accountId, command.attachmentIds());
 
-        PositionSnapshot position = positionCatalogPort.findAccessibleById(userId, command.positionId());
+        PositionSnapshot position = positionCatalogPort.findAccessibleById(accountId, command.positionId());
         if (position == null) {
             throw BusinessException.badRequest("岗位模板不存在");
         }
 
         InterviewSession session = new InterviewSession();
-        session.setUserId(userId);
+        session.setAccountId(accountId);
         session.setResumeId(resume.resumeId());
         session.setPositionId(position.id());
         session.setTargetPosition(position.name());
-        LlmSelection selection = llmConfigPort.resolveSelection(userId, command.llmModel());
+        LlmSelection selection = llmConfigPort.resolveSelection(accountId, command.llmModel());
         session.setLlmProvider(selection.providerKey());
         session.setLlmModel(selection.model());
         session.setLlmThinkingDepth(llmConfigPort.currentThinkingDepth());
         session.setStatus(STATUS_ONGOING);
         session.setJdText(command.jdText());
         interviewSessionRepository.add(session);
-        attachmentContextPort.bind(userId, command.attachmentIds(), "interview", session.getId());
+        attachmentContextPort.bind(accountId, command.attachmentIds(), "interview", session.getId());
 
         List<String> retrievalDocuments = new ArrayList<>();
         addIfPresent(retrievalDocuments, resume.plainText());
@@ -84,12 +85,8 @@ public class StartInterview {
         return new StartInterviewResult(session.getId(), position.name(), InterviewStageManager.STAGE_WARMUP);
     }
 
-    private Long currentUserId() {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) {
-            throw BusinessException.unauthorized("请先登录");
-        }
-        return userId;
+    private long currentAccountId() {
+        return currentAccount.requireId();
     }
 
     private void addIfPresent(List<String> documents, String value) {

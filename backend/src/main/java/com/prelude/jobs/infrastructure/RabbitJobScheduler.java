@@ -49,7 +49,7 @@ public class RabbitJobScheduler implements JobSchedulerPort {
             rabbitTemplate.convertAndSend(
                 ReportJobChannel.EXCHANGE,
                 ReportJobChannel.ROUTING_KEY,
-                new ReportJobMessage(request.subjectId(), request.userId(), job.getJobId())
+                new ReportJobMessage(request.subjectId(), request.accountId(), job.getJobId())
             );
             job.setDispatchedAt(LocalDateTime.now());
             job.setLastError(null);
@@ -70,7 +70,7 @@ public class RabbitJobScheduler implements JobSchedulerPort {
         AsyncJob job = new AsyncJob();
         job.setJobId(UUID.randomUUID().toString());
         job.setType(request.type());
-        job.setUserId(request.userId());
+        job.setAccountId(request.accountId());
         job.setSubjectId(request.subjectId());
         job.setIdempotencyKey(request.idempotencyKey());
         job.setStatus(JobStatuses.PENDING);

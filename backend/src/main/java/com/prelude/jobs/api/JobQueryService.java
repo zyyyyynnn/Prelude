@@ -2,7 +2,7 @@ package com.prelude.jobs.api;
 
 import com.prelude.jobs.JobQueryPort;
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
+import com.prelude.identity.api.CurrentAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,14 +11,12 @@ import org.springframework.stereotype.Service;
 public class JobQueryService {
 
     private final JobQueryPort jobQueryPort;
+    private final CurrentAccount currentAccount;
 
     public JobStatusResponse requireOwned(String jobId) {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) {
-            throw BusinessException.unauthorized("请先登录");
-        }
-        JobQueryPort.JobSnapshot job = jobQueryPort.findOwned(jobId, userId)
-            .orElseThrow(() -> new BusinessException(404, "任务不存在"));
+        long accountId = currentAccount.requireId();
+        JobQueryPort.JobSnapshot job = jobQueryPort.findOwned(jobId, accountId)
+            .orElseThrow(() -> BusinessException.notFound("任务不存在"));
         return new JobStatusResponse(
             job.jobId(),
             job.type(),

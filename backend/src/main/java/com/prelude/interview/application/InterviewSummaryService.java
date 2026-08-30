@@ -67,7 +67,8 @@ public class InterviewSummaryService {
             "新增面试记录：\n" + builder;
 
         return chatPort.complete(ChatRequest.snapshot(
-            session.getUserId(),
+            session.getAccountId(),
+            session.getId(),
             LlmPurpose.CHAT,
             PromptIds.SUMMARY,
             List.of(

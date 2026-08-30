@@ -23,7 +23,7 @@ public class InterviewSessionQueryService {
     private final AttachmentContextPort attachmentContextPort;
 
     public List<InterviewSessionSummary> listCurrentUserSessions() {
-        return interviewSessionRepository.listByUser(sessionAccess.currentUserId())
+        return interviewSessionRepository.listByUser(sessionAccess.currentAccountId())
             .stream()
             .map(session -> interviewResponseAssembler.toSessionItem(
                 session, interviewStageManager.currentStageName(session.getId())))
@@ -31,11 +31,11 @@ public class InterviewSessionQueryService {
     }
 
     public InterviewSessionDetails getSessionMessages(Long sessionId) {
-        InterviewSession session = sessionAccess.requireOwned(sessionId, sessionAccess.currentUserId());
+        InterviewSession session = sessionAccess.requireOwned(sessionId, sessionAccess.currentAccountId());
         List<InterviewStage> stages = interviewStageManager.listStages(sessionId);
         List<InterviewMessage> messages = interviewMessageRepository.listBySession(sessionId);
         List<InterviewAttachmentView> attachments = attachmentContextPort
-            .list(session.getUserId(), "interview", sessionId)
+            .list(session.getAccountId(), "interview", sessionId)
             .stream()
             .map(item -> new InterviewAttachmentView(
                 item.id(), item.fileName(), item.mediaType(), item.size(), item.image()))

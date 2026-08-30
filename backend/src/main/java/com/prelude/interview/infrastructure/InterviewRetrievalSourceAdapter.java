@@ -29,7 +29,7 @@ public class InterviewRetrievalSourceAdapter implements RetrievalSourcePort {
             return List.of();
         }
         ResumeProjection resume = resumeContextPort.requireOwnedProjection(
-            session.getUserId(),
+            session.getAccountId(),
             session.getResumeId()
         );
         List<String> documents = new ArrayList<>();

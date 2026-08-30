@@ -32,7 +32,7 @@ class ImportResumePdfTest {
             ResumeRepository.NewResume draft = invocation.getArgument(0);
             return new ResumeRepository.StoredResume(
                 41L,
-                draft.userId(),
+                draft.accountId(),
                 draft.fileName(),
                 draft.rawText(),
                 draft.parsedSkills(),
@@ -48,7 +48,7 @@ class ImportResumePdfTest {
         assertThat(result.skills()).containsExactly("Java");
         ArgumentCaptor<ResumeRepository.NewResume> draft = ArgumentCaptor.forClass(ResumeRepository.NewResume.class);
         verify(repository).create(draft.capture());
-        assertThat(draft.getValue().userId()).isEqualTo(7L);
+        assertThat(draft.getValue().accountId()).isEqualTo(7L);
         assertThat(draft.getValue().fileName()).isEqualTo("candidate.pdf");
         assertThat(draft.getValue().rawText()).isEqualTo("Java\nPrelude platform");
         assertThat(draft.getValue().parsedSkills()).containsExactly("Java");

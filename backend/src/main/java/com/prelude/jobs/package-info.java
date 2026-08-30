@@ -1,5 +1,5 @@
 @org.springframework.modulith.ApplicationModule(
     displayName = "Jobs",
-    allowedDependencies = {}
+    allowedDependencies = {"identity::api"}
 )
 package com.prelude.jobs;

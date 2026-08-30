@@ -5,18 +5,19 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Interview-context attachment metadata. The binary truth lives in the
+ * referenced asset; this row never stores bytes.
+ */
 @Data
 @TableName("attachment")
 public class StoredAttachment {
 
     private Long id;
-    private Long userId;
+    private Long accountId;
+    private Long assetId;
     private String fileName;
-    private String mediaType;
-    private Long byteSize;
-    private Integer image;
     private String extractedText;
-    private byte[] content;
     private String scopeType;
     private Long scopeId;
     private LocalDateTime createdAt;

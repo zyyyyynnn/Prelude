@@ -12,7 +12,7 @@ public class ListResumes {
 
     private final ResumeRepository repository;
 
-    public List<ResumeRepository.ResumeListItem> execute(Long userId) {
-        return repository.listByOwner(userId);
+    public List<ResumeRepository.ResumeListItem> execute(Long accountId) {
+        return repository.listByOwner(accountId);
     }
 }

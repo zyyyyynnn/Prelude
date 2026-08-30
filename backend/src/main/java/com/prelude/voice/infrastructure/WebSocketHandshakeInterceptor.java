@@ -22,12 +22,15 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
         Map<String, Object> attributes
     ) throws Exception {
         if (request instanceof ServletServerHttpRequest servletRequest) {
+            jakarta.servlet.http.HttpSession httpSession =
+                servletRequest.getServletRequest().getSession(false);
             Object principal = servletRequest.getServletRequest().getUserPrincipal() == null
                 ? null
                 : servletRequest.getServletRequest().getUserPrincipal().getName();
-            if (principal != null) {
+            if (principal != null && httpSession != null) {
                 try {
-                    attributes.put("userId", Long.valueOf(principal.toString()));
+                    attributes.put("accountId", Long.valueOf(principal.toString()));
+                    attributes.put("authSessionId", httpSession.getId());
                     return true;
                 } catch (NumberFormatException exception) {
                     log.warn("WebSocket handshake rejected: invalid session principal");

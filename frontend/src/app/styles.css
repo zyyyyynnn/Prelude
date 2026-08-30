@@ -13,3 +13,11 @@
 @import '../features/resume/resume.css';
 @import '../features/settings/settings.css';
 @import '../features/template/position.css';
+
+/* App-owned boot state shown while the session bootstrap resolves. */
+.app-boot {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class Resume {
 
     private Long id;
-    private Long userId;
+    private Long accountId;
     private String fileName;
     private String parsedSkills;
     private String parsedProjects;

@@ -23,10 +23,11 @@
 
 Prelude 以面试为核心，将面试准备、实时问答、结构化评估和训练分析组织在一个工作区中。简历、岗位、职位描述与通用附件作为面试上下文资源，为每场面试提供可控上下文，而不是独立的简历编辑工作流。
 
-应用支持服务端会话、历史会话、文字与语音交互，以及按账号保存的自带密钥模型配置。当前仓库聚焦本地开发与可验证的模块化架构，不宣称公开托管或生产级软件即服务能力。
+应用支持服务端会话、历史会话、文字与语音交互，以及按账号保存的自带密钥模型配置。身份支持密码登录与 Google/GitHub OAuth 绑定，会话存于 Redis，附件与头像等二进制以 Asset 形式存于 S3 兼容对象存储。当前仓库聚焦本地开发与可验证的模块化架构，不宣称公开托管或生产级软件即服务能力。
 
 ## 核心能力
 
+- 账号与安全：密码（Argon2id）与 OAuth 登录、服务端会话、Session revoke 与账户隔离。
 - 上下文面试准备：组合简历、岗位、职位描述与附件上下文。
 - 文字与语音面试：提供流式文字回答与可安全释放资源的语音交互。
 - 历史会话：浏览、置顶、隐藏和恢复历史面试会话。
@@ -43,8 +44,9 @@ flowchart TB
     C --> A[Spring Boot + Spring Modulith<br/>面试 · 语音 · 上下文 · 报告 · 分析 · 身份 · 设置]
 
     A --> L[模型网关<br/>DeepSeek · 自定义模型服务]
-    A --> D[(MySQL<br/>业务与会话持久化)]
-    A --> R[(Redis<br/>实时发布与订阅)]
+    A --> D[(MySQL<br/>业务数据持久化)]
+    A --> R[(Redis<br/>认证会话与实时广播)]
+    A --> S[(S3 兼容对象存储<br/>VersityGW local/CI)]
     A --> Q[RabbitMQ<br/>异步报告任务]
 ```
 
@@ -58,9 +60,11 @@ README 只展示系统职责分层；16 个应用模块的完整边界与依赖�
 | 界面基础 | Base UI、Tailwind CSS | 浮层、焦点与键盘交互原语，以及设计令牌和布局样式 |
 | 服务端状态 | TanStack Query | 请求生命周期、缓存、失效与乐观更新 |
 | 模块化后端 | Java 21、Spring Boot 4.1、Spring Modulith | 接口边界、模块化业务用例与依赖拓扑验证 |
+| 身份与安全 | Spring Security 7、Spring Session Redis | 密码（Argon2id）与 OAuth 登录、服务端会话、CSRF/Origin、账户隔离 |
 | 模型与数据访问 | Spring AI、MyBatis-Plus | 模型协议接入、模型网关与持久化适配 |
-| 持久化 | MySQL 8.4、Flyway | 业务与会话数据，以及数据库版本治理 |
-| 实时与消息 | Redis 7.4、RabbitMQ 4.1 | 实时发布与订阅，以及异步报告任务 |
+| 对象存储 | AWS SDK for Java v2（S3 兼容）、VersityGW | Asset 二进制存储，local/CI 使用 VersityGW |
+| 持久化 | MySQL 8.4、Flyway | 业务数据与数据库版本治理 |
+| 实时与消息 | Redis 7.4、RabbitMQ 4.1 | 认证会话、实时发布与订阅、异步报告任务 |
 | 训练分析 | ECharts | 能力雷达、分数趋势与薄弱点呈现 |
 | 本地运行 | Docker Compose | 本地基础设施与完整容器栈 |
 

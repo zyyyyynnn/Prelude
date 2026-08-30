@@ -4,7 +4,7 @@ import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.StructuredInterviewReport;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewStage;
-import com.prelude.artifact.domain.UserWeakness;
+import com.prelude.artifact.domain.AccountWeakness;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public class InterviewReportAssembler {
         InterviewReportDraft draft,
         List<InterviewStage> stages,
         List<InterviewMessage> messages,
-        List<UserWeakness> weaknesses
+        List<AccountWeakness> weaknesses
     ) {
         InterviewReportDraft safeDraft = Objects.requireNonNull(draft, "report draft must not be null");
         List<InterviewStage> orderedStages = safeList(stages).stream()
@@ -185,7 +185,7 @@ public class InterviewReportAssembler {
         return "结合评分依据补充具体场景、取舍和量化结果。";
     }
 
-    private List<String> formatWeaknesses(List<UserWeakness> weaknesses) {
+    private List<String> formatWeaknesses(List<AccountWeakness> weaknesses) {
         return safeList(weaknesses).stream()
             .filter(Objects::nonNull)
             .filter(item -> !isBlank(item.getCategory()) || !isBlank(item.getDescription()))

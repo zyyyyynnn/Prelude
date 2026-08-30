@@ -1,6 +1,5 @@
 package com.prelude.llm;
 
-import com.prelude.UserContext;
 import com.prelude.llm.api.LlmConfigTestRequest;
 import com.prelude.llm.api.LlmConfigTestResponse;
 import com.prelude.llm.api.LlmModelDiscoveryRequest;
@@ -24,19 +23,8 @@ public class LlmConfigGateway implements LlmConfigPort {
     private final UserLlmConfigService userLlmConfigService;
 
     @Override
-    public LlmSelection resolveSelection(Long userId, String requestedModel) {
-        Long previousUserId = UserContext.getCurrentUserId();
-        if (userId != null) {
-            UserContext.setCurrentUserId(userId);
-        }
-        try {
-            return llmRouter.resolveCurrentUserSelection(requestedModel);
-        } finally {
-            UserContext.remove();
-            if (previousUserId != null) {
-                UserContext.setCurrentUserId(previousUserId);
-            }
-        }
+    public LlmSelection resolveSelection(Long accountId, String requestedModel) {
+        return llmRouter.resolveSelection(accountId, requestedModel);
     }
 
     @Override

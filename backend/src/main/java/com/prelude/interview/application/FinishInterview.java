@@ -27,8 +27,8 @@ public class FinishInterview {
     private final InterviewStageManager interviewStageManager;
 
     public FinishInterviewResult execute(Long sessionId) {
-        Long userId = sessionAccess.currentUserId();
-        InterviewSession session = sessionAccess.requireOwned(sessionId, userId);
+        long accountId = sessionAccess.currentAccountId();
+        InterviewSession session = sessionAccess.requireOwned(sessionId, accountId);
         String status = session.getStatus();
 
         if (STATUS_GENERATING.equals(status)) {
@@ -49,7 +49,7 @@ public class FinishInterview {
 
         JobTicket job;
         try {
-            job = jobSchedulerPort.enqueue(JobRequest.report(sessionId, userId));
+            job = jobSchedulerPort.enqueue(JobRequest.report(sessionId, accountId));
             log.info("Scheduled report generation job {} for session {}", job.jobId(), sessionId);
         } catch (Exception exception) {
             restoreOngoingStatus(sessionId);

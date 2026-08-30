@@ -4,7 +4,7 @@ import java.util.List;
 
 public interface ResumeParser {
 
-    ParsedResume parse(Long userId, String rawText);
+    ParsedResume parse(Long accountId, String rawText);
 
     record ParsedResume(List<String> skills, List<ParsedProject> projects) {
         public ParsedResume {

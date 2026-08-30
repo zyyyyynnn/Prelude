@@ -4,29 +4,50 @@ export type ApiResult<T> = {
   data: T
 }
 
+export type ProblemDetail = {
+  type?: string
+  title?: string
+  status?: number
+  detail?: string
+  code?: string
+}
+
 export class ApiClientError extends Error {
   constructor(
     message: string,
     readonly status?: number,
-    readonly code?: number,
+    readonly code?: string,
   ) {
     super(message)
     this.name = 'ApiClientError'
   }
 }
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
 const STREAM_TIMEOUT_MS = 120_000
+const UNSAFE_METHODS = new Set(['post', 'put', 'patch', 'delete'])
 let onUnauthorized = () => undefined as void | Promise<void>
 
 export function configureApi(options: { onUnauthorized: () => void | Promise<void> }) {
   onUnauthorized = options.onUnauthorized
 }
 
+export function csrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function withCsrfHeader(headers: Headers, method: string) {
+  if (UNSAFE_METHODS.has(method.toLowerCase())) {
+    const token = csrfToken()
+    if (token && !headers.has('X-XSRF-TOKEN')) headers.set('X-XSRF-TOKEN', token)
+  }
+}
+
 async function apiError(response: Response, fallback: string) {
   if (response.status === 401) await onUnauthorized()
-  const payload = (await response.json().catch(() => null)) as ApiResult<unknown> | null
-  return new ApiClientError(payload?.message || fallback, response.status, payload?.code)
+  const problem = (await response.json().catch(() => null)) as ProblemDetail | null
+  return new ApiClientError(problem?.detail || fallback, response.status, problem?.code)
 }
 
 export async function apiRequest<T>(
@@ -42,12 +63,13 @@ export async function apiRequest<T>(
   if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
+  withCsrfHeader(headers, init.method ?? 'get')
 
   const response = await fetch(url, { ...init, headers, credentials: 'include' })
+  if (!response.ok) throw await apiError(response, '请求失败')
   const payload = (await response.json().catch(() => null)) as ApiResult<T> | null
-  if (!response.ok || !payload || payload.code !== 200) {
-    if (response.status === 401) await onUnauthorized()
-    throw new ApiClientError(payload?.message || '请求失败', response.status, payload?.code)
+  if (!payload || payload.code !== 200) {
+    throw new ApiClientError(payload?.message || '请求失败', response.status, 'invalid_response')
   }
   return payload.data
 }
@@ -67,10 +89,12 @@ export async function streamRequest(
     controller.abort()
   }, STREAM_TIMEOUT_MS)
   try {
+    const headers = new Headers({ 'Content-Type': 'application/json' })
+    withCsrfHeader(headers, 'post')
     const response = await fetch(`${apiBaseUrl}${path}`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
       signal: controller.signal,
     })

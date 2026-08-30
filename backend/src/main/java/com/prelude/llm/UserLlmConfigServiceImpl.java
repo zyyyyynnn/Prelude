@@ -1,17 +1,17 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
+import com.prelude.identity.Account;
+import com.prelude.identity.AccountMapper;
+import com.prelude.identity.api.CurrentAccount;
 import com.prelude.llm.api.LlmConfigTestRequest;
 import com.prelude.llm.api.LlmConfigTestResponse;
 import com.prelude.llm.api.LlmModelDiscoveryRequest;
 import com.prelude.llm.api.LlmModelDiscoveryResponse;
 import com.prelude.llm.api.UserLlmConfigRequest;
 import com.prelude.llm.api.UserLlmConfigResponse;
-import com.prelude.identity.User;
 import com.prelude.llm.LlmRouter;
 import com.prelude.llm.LlmSelection;
-import com.prelude.identity.UserMapper;
 import com.prelude.settings.AesGcmEncryptor;
 import com.prelude.llm.LlmModelDiscoveryService;
 import com.prelude.llm.UserLlmConfigService;
@@ -27,30 +27,31 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserLlmConfigServiceImpl implements UserLlmConfigService {
 
-    private final UserMapper userMapper;
+    private final AccountMapper accountMapper;
     private final LlmRouter llmRouter;
     private final AesGcmEncryptor aesGcmEncryptor;
     private final LlmModelDiscoveryService llmModelDiscoveryService;
     private final CustomLlmEgressPolicy egressPolicy;
+    private final CurrentAccount currentAccount;
 
     @Override
     public UserLlmConfigResponse getCurrentUserConfig() {
-        User user = requireCurrentUser();
-        LlmSelection selection = llmRouter.resolveCurrentUserSelection();
+        Account account = requireAccount();
+        LlmSelection selection = llmRouter.resolveSelection(account.getId(), null);
         return new UserLlmConfigResponse(
             selection.providerKey(),
-            user.getLlmBaseUrl(),
+            account.getLlmBaseUrl(),
             selection.model(),
-            user.getLlmApiKeyEncrypted() != null && !user.getLlmApiKeyEncrypted().isBlank(),
-            maskApiKey(user.getLlmApiKeyEncrypted()),
-            user.getLlmMaxTokens(),
-            user.getLlmThinkingDepth()
+            account.getLlmApiKeyEncrypted() != null && !account.getLlmApiKeyEncrypted().isBlank(),
+            maskApiKey(account.getLlmApiKeyEncrypted()),
+            account.getLlmMaxTokens(),
+            account.getLlmThinkingDepth()
         );
     }
 
     @Override
     public UserLlmConfigResponse updateCurrentUserConfig(UserLlmConfigRequest request) {
-        User user = requireCurrentUser();
+        Account account = requireAccount();
         String providerKey = request.providerKey();
         String baseUrl = null;
         if (CustomLlmProtocol.isCustom(providerKey)) {
@@ -59,9 +60,9 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         }
         llmRouter.validateProviderSelection(providerKey, request.model());
 
-        boolean scopeChanged = isScopeChanged(user, providerKey, baseUrl);
+        boolean scopeChanged = isScopeChanged(account, providerKey, baseUrl);
 
-        String encryptedApiKey = user.getLlmApiKeyEncrypted();
+        String encryptedApiKey = account.getLlmApiKeyEncrypted();
         if (request.apiKey() != null && !request.apiKey().isBlank()) {
             encryptedApiKey = "__CLEAR__".equals(request.apiKey())
                 ? null
@@ -71,8 +72,8 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
             encryptedApiKey = null;
         }
 
-        userMapper.updateLlmConfiguration(
-            user.getId(),
+        accountMapper.updateLlmConfiguration(
+            account.getId(),
             providerKey,
             baseUrl,
             request.model(),
@@ -86,19 +87,20 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
 
     @Override
     public LlmModelDiscoveryResponse discoverModels(LlmModelDiscoveryRequest request) {
-        User user = requireCurrentUser();
+        Account account = requireAccount();
         CustomLlmProtocol protocol = CustomLlmProtocol.require(request.providerKey());
         String normalizedBaseUrl = CustomLlmEndpointUrl.normalizeRoot(request.baseUrl(), protocol);
         // 自动检测按与测试相同的 Key 选择规则处理：表单新 Key > 同 scope 已保存 Key > 否则报错。检测不保存 Key。
-        String apiKey = resolveDraftApiKey(request.apiKey(), user, protocol.providerKey(), normalizedBaseUrl);
+        String apiKey = resolveDraftApiKey(request.apiKey(), account, protocol.providerKey(), normalizedBaseUrl);
         return llmModelDiscoveryService.discoverModels(
             new LlmModelDiscoveryRequest(protocol.providerKey(), normalizedBaseUrl, apiKey));
     }
 
     @Override
     public LlmConfigTestResponse testCurrentUserConfig() {
-        LlmSelection selection = llmRouter.resolveCurrentUserSelection();
-        String content = llmRouter.chatCurrentUser(List.of(
+        Account account = requireAccount();
+        LlmSelection selection = llmRouter.resolveSelection(account.getId(), null);
+        String content = llmRouter.chat(account.getId(), List.of(
             Map.of("role", "system", "content", "你是模型连通性测试助手。"),
             Map.of("role", "user", "content", "请只回复 OK")
         ));
@@ -114,11 +116,11 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
             return testCurrentUserConfig();
         }
 
-        User user = requireCurrentUser();
+        Account account = requireAccount();
         String providerKey = (request.providerKey() == null || request.providerKey().isBlank())
-            ? user.getLlmProvider() : request.providerKey();
+            ? account.getLlmProvider() : request.providerKey();
         String model = (request.model() == null || request.model().isBlank())
-            ? user.getLlmModel() : request.model();
+            ? account.getLlmModel() : request.model();
         if (providerKey == null || providerKey.isBlank()) {
             throw BusinessException.badRequest("请选择接入方式");
         }
@@ -130,17 +132,17 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         if (CustomLlmProtocol.isCustom(providerKey)) {
             String draftBaseUrl = request.baseUrl();
             if (draftBaseUrl == null || draftBaseUrl.isBlank()) {
-                if (!providerKey.equals(user.getLlmProvider())
-                    || user.getLlmBaseUrl() == null || user.getLlmBaseUrl().isBlank()) {
+                if (!providerKey.equals(account.getLlmProvider())
+                    || account.getLlmBaseUrl() == null || account.getLlmBaseUrl().isBlank()) {
                     throw BusinessException.badRequest("请填写 Base URL");
                 }
-                draftBaseUrl = user.getLlmBaseUrl();
+                draftBaseUrl = account.getLlmBaseUrl();
             }
             baseUrl = CustomLlmEndpointUrl.normalizeRoot(draftBaseUrl, CustomLlmProtocol.require(providerKey));
             egressPolicy.validateConfiguredEndpoint(baseUrl);
         }
 
-        String apiKey = resolveDraftApiKey(request.apiKey(), user, providerKey, baseUrl);
+        String apiKey = resolveDraftApiKey(request.apiKey(), account, providerKey, baseUrl);
         Map<String, Object> extraParams = null;
         if (request.thinkingDepth() != null && !request.thinkingDepth().isBlank()) {
             extraParams = Map.of("thinking_depth", request.thinkingDepth());
@@ -165,12 +167,12 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         return value == null || value.isBlank();
     }
 
-    private boolean isScopeChanged(User user, String newProviderKey, String newBaseUrl) {
-        if (newProviderKey == null || !newProviderKey.equals(user.getLlmProvider())) {
+    private boolean isScopeChanged(Account account, String newProviderKey, String newBaseUrl) {
+        if (newProviderKey == null || !newProviderKey.equals(account.getLlmProvider())) {
             return true;
         }
         if (CustomLlmProtocol.isCustom(newProviderKey)) {
-            String oldBaseUrl = user.getLlmBaseUrl();
+            String oldBaseUrl = account.getLlmBaseUrl();
             return newBaseUrl == null || !newBaseUrl.equals(oldBaseUrl);
         }
         return false;
@@ -184,13 +186,13 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
      *   - 自定义接口 → 报错（必须重新填 Key）。
      *   - 内置 provider → 不复用旧 BYOK Key，由 LlmRouter 回退该 provider 系统 Key（传 null）。
      */
-    private String resolveDraftApiKey(String draftApiKey, User user, String providerKey, String baseUrl) {
+    private String resolveDraftApiKey(String draftApiKey, Account account, String providerKey, String baseUrl) {
         if (draftApiKey != null && !draftApiKey.isBlank()) {
             return draftApiKey;
         }
-        boolean scopeChanged = isScopeChanged(user, providerKey, baseUrl);
+        boolean scopeChanged = isScopeChanged(account, providerKey, baseUrl);
         if (!scopeChanged) {
-            return decryptSavedApiKey(user.getLlmApiKeyEncrypted());
+            return decryptSavedApiKey(account.getLlmApiKeyEncrypted());
         }
         if (CustomLlmProtocol.isCustom(providerKey)) {
             throw BusinessException.badRequest("更换接入方式或 Base URL 后，请重新填写 API Key 再测试。");
@@ -210,16 +212,13 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         }
     }
 
-    private User requireCurrentUser() {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) {
+    private Account requireAccount() {
+        long accountId = currentAccount.requireId();
+        Account account = accountMapper.selectById(accountId);
+        if (account == null) {
             throw BusinessException.unauthorized("请先登录");
         }
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw BusinessException.unauthorized("请先登录");
-        }
-        return user;
+        return account;
     }
 
     private String maskApiKey(String encryptedApiKey) {
@@ -229,7 +228,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         try {
             return aesGcmEncryptor.mask(encryptedApiKey);
         } catch (BusinessException exception) {
-            log.warn("Failed to mask user API key");
+            log.warn("Failed to mask account API key");
             return null;
         }
     }

@@ -11,7 +11,7 @@
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up -d mysql redis rabbitmq
+docker compose up -d mysql redis rabbitmq versitygw
 ```
 
 后端：
@@ -50,4 +50,12 @@ npm --prefix frontend audit --omit=dev
 git diff --check
 ```
 
-MySQL 空库验证由 CI 设置 `PRELUDE_MYSQL_SMOKE=true`，在应用上下文启动时执行 Flyway 并确认 MyBatis 可连接。所有 DDL 位于 `backend/src/main/resources/db/migration/`。
+集成验证由 CI 与本地 Docker 基础设施共同提供环境变量：
+
+- `PRELUDE_MYSQL_SMOKE=true`：空 MySQL 8.4 执行 Flyway 建立当前 schema 并启动应用上下文。
+- `PRELUDE_IDENTITY_SMOKE=true`：基于真实 MySQL 与 Redis 验证注册登录、Session rotation/revoke、CSRF、Origin 与 profile revision 契约。
+- `PRELUDE_S3_SMOKE=true`：通过 Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
+
+所有 DDL 位于 `backend/src/main/resources/db/migration/`：`V20260830__establish_prelude_schema.sql` 建立当前 schema，`R__reference_data.sql` 以幂等方式维护 reference data。数据库仅含开发/demo 数据，schema 调整直接修改当前 baseline 后通过 `docker compose down -v` 空库重建验证。
+
+OAuth（Google/GitHub）为可选能力：在 `.env` 中配置 `OAUTH_GOOGLE_CLIENT_ID`/`OAUTH_GOOGLE_CLIENT_SECRET` 与 `OAUTH_GITHUB_CLIENT_ID`/`OAUTH_GITHUB_CLIENT_SECRET` 后启用；未配置时密码登录正常启动，不要求任何 OAuth 凭据。

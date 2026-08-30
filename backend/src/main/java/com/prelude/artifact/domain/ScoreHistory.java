@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class ScoreHistory {
 
     private Long id;
-    private Long userId;
+    private Long accountId;
     private Long sessionId;
     private Integer technicalScore;
     private Integer expressionScore;

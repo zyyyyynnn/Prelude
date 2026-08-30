@@ -2,7 +2,7 @@ package com.prelude.template.application;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
+import com.prelude.identity.api.CurrentAccount;
 import com.prelude.template.api.PositionTemplateResponse;
 import com.prelude.template.domain.PositionTemplate;
 import com.prelude.template.infrastructure.persistence.PositionTemplateMapper;
@@ -18,24 +18,25 @@ import java.util.List;
 public class PositionServiceImpl implements PositionService {
 
     private final PositionTemplateMapper positionTemplateMapper;
+    private final CurrentAccount currentAccount;
 
     @Override
     public List<PositionTemplateResponse> listPositions() {
-        Long userId = currentUserId();
+        Long accountId = currentAccountId();
         return positionTemplateMapper.selectList(new LambdaQueryWrapper<PositionTemplate>()
-                .and(query -> query.isNull(PositionTemplate::getUserId)
-                    .or().eq(PositionTemplate::getUserId, userId))
+                .and(query -> query.isNull(PositionTemplate::getAccountId)
+                    .or().eq(PositionTemplate::getAccountId, accountId))
                 .orderByAsc(PositionTemplate::getId))
             .stream()
             .map(position -> new PositionTemplateResponse(
                 position.getId(), position.getName(), position.getSystemPrompt(),
-                userId.equals(position.getUserId())))
+                accountId.equals(position.getAccountId())))
             .toList();
     }
 
     @Override
     public PositionTemplateResponse createPosition(String name, String systemPrompt) {
-        Long userId = currentUserId();
+        Long accountId = currentAccountId();
         String normalizedName = name.trim();
         Long count = positionTemplateMapper.selectCount(new LambdaQueryWrapper<PositionTemplate>()
             .eq(PositionTemplate::getName, normalizedName));
@@ -43,7 +44,7 @@ public class PositionServiceImpl implements PositionService {
             throw BusinessException.badRequest("同名岗位已存在");
         }
         PositionTemplate position = new PositionTemplate();
-        position.setUserId(userId);
+        position.setAccountId(accountId);
         position.setName(normalizedName);
         position.setSystemPrompt(systemPrompt.trim());
         positionTemplateMapper.insert(position);
@@ -53,8 +54,8 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public PositionTemplateResponse updatePosition(Long positionId, String name, String systemPrompt) {
-        Long userId = currentUserId();
-        PositionTemplate position = requireOwned(userId, positionId);
+        Long accountId = currentAccountId();
+        PositionTemplate position = requireOwned(accountId, positionId);
         String normalizedName = name.trim();
         Long count = positionTemplateMapper.selectCount(new LambdaQueryWrapper<PositionTemplate>()
             .eq(PositionTemplate::getName, normalizedName)
@@ -69,8 +70,8 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public void deletePosition(Long positionId) {
-        Long userId = currentUserId();
-        requireOwned(userId, positionId);
+        Long accountId = currentAccountId();
+        requireOwned(accountId, positionId);
         try {
             positionTemplateMapper.deleteById(positionId);
         } catch (DataIntegrityViolationException exception) {
@@ -78,20 +79,18 @@ public class PositionServiceImpl implements PositionService {
         }
     }
 
-    private PositionTemplate requireOwned(Long userId, Long positionId) {
+    private PositionTemplate requireOwned(Long accountId, Long positionId) {
         PositionTemplate position = positionTemplateMapper.selectOne(
             new LambdaQueryWrapper<PositionTemplate>()
                 .eq(PositionTemplate::getId, positionId)
-                .eq(PositionTemplate::getUserId, userId)
+                .eq(PositionTemplate::getAccountId, accountId)
                 .last("LIMIT 1")
         );
         if (position == null) throw BusinessException.badRequest("岗位不存在或不可编辑");
         return position;
     }
 
-    private Long currentUserId() {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) throw BusinessException.unauthorized("请先登录");
-        return userId;
+    private Long currentAccountId() {
+        return currentAccount.requireId();
     }
 }

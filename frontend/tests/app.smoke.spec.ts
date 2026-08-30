@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { installAnonymousSession } from './auth-bootstrap'
 
 const providers = [
   {
@@ -29,7 +30,6 @@ const providers = [
 ]
 
 async function installApi(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('prelude-user-id', '1'))
   await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
     const path = new URL(route.request().url()).pathname
     let data: unknown = null
@@ -47,11 +47,14 @@ async function installApi(page: Page) {
     else if (path === '/api/position/list') data = [{ id: 1, name: 'Java 后端工程师' }]
     else if (path === '/api/resume/list')
       data = [{ id: 1, fileName: '候选人简历.pdf', sessionCount: 2, inUse: false }]
+    else if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
     else if (path === '/api/user/profile')
       data = {
+        accountId: 1,
         username: 'prelude',
         email: 'prelude@example.com',
         themePreference: 'system',
+        revision: 0,
       }
     else if (path === '/api/llm/providers') data = providers
     else if (path === '/api/llm/config')
@@ -110,6 +113,7 @@ async function installApi(page: Page) {
 test('@smoke renders the React authentication entry', async ({ page }) => {
   const runtimeErrors: string[] = []
   page.on('pageerror', (error) => runtimeErrors.push(error.message))
+  await installAnonymousSession(page)
   await page.goto('/')
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByRole('heading', { level: 1, name: '进入面试工作台' })).toBeVisible()
@@ -209,6 +213,7 @@ test('@a11y keeps the primary authenticated surface accessible', async ({ page }
 })
 
 test('@visual keeps the authentication hierarchy and primary action stable', async ({ page }) => {
+  await installAnonymousSession(page)
   await page.goto('/login')
   const heading = page.getByRole('heading', { level: 1, name: '进入面试工作台' })
   await expect(heading).toBeVisible()
@@ -496,6 +501,89 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
     path: test.info().outputPath('settings-select.png'),
     fullPage: true,
   })
+})
+
+test('@visual keeps the workspace header flex allocation safe on narrow desktops', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 800 })
+  await installApi(page)
+  const longTitle = '资深全栈工程师（Java 后端 × React 前端 · 平台架构与高并发稳定性方向 · 负责人级）'
+  await page.route('**/api/interview/sessions', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 200,
+        message: 'ok',
+        data: [
+          {
+            sessionId: 9,
+            targetPosition: longTitle,
+            status: 'finished',
+            currentStage: 'closing',
+            llmProvider: 'deepseek',
+            llmModel: 'deepseek-v4-pro',
+          },
+        ],
+      }),
+    })
+  })
+  await page.route('**/api/interview/9/messages', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 200,
+        message: 'ok',
+        data: {
+          sessionId: 9,
+          targetPosition: longTitle,
+          status: 'finished',
+          currentStage: 'closing',
+          summaryReport: '{"summary":{}}',
+          stages: [],
+          messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
+          resumeId: 1,
+          positionId: 1,
+          attachments: [],
+        },
+      }),
+    })
+  })
+
+  await page.goto('/interview?session=9')
+  const header = page.locator('.workspace-header')
+  await expect(header).toBeVisible()
+  // Report state: both report controls must survive a long title.
+  await header.getByRole('button', { name: '报告' }).click()
+  await expect(header.getByRole('button', { name: '导出 PDF' })).toBeVisible()
+  await expect(header.getByRole('button', { name: '面试' })).toBeVisible()
+  await expect(header.locator('.status-badge')).toBeVisible()
+
+  const geometry = await header
+    .locator('.workspace-header__main')
+    .evaluate((main) => {
+      const titleArea = main.querySelector<HTMLElement>('.workspace-header__title-area')!
+      const right = main.querySelector<HTMLElement>('.workspace-header__right')!
+      const title = main.querySelector<HTMLElement>('.workspace-header__title')!
+      const titleBox = title.getBoundingClientRect()
+      return {
+        titleAreaRight: titleArea.getBoundingClientRect().right,
+        rightLeft: right.getBoundingClientRect().left,
+        titleRight: titleBox.right,
+        truncated: title.scrollWidth > title.clientWidth,
+        titleAreaTop: titleArea.getBoundingClientRect().top,
+        rightTop: right.getBoundingClientRect().top,
+      }
+    })
+
+  // The left group never overlaps the right controls; the title is the only
+  // shrinkable element and stays inside its allocation (single header row).
+  expect(geometry.titleAreaRight).toBeLessThanOrEqual(geometry.rightLeft + 1)
+  expect(geometry.titleRight).toBeLessThanOrEqual(geometry.titleAreaRight + 1)
+  expect(geometry.truncated).toBe(true)
+  expect(Math.abs(geometry.titleAreaTop - geometry.rightTop)).toBeLessThanOrEqual(3)
 })
 
 async function selectContext(page: Page, menuLabel: string, option: string) {

@@ -1,5 +1,5 @@
 @org.springframework.modulith.ApplicationModule(
     displayName = "Template",
-    allowedDependencies = {}
+    allowedDependencies = {"identity::api"}
 )
 package com.prelude.template;

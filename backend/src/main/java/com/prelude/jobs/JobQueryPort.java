@@ -5,7 +5,7 @@ import java.util.Optional;
 
 public interface JobQueryPort {
 
-    Optional<JobSnapshot> findOwned(String jobId, Long userId);
+    Optional<JobSnapshot> findOwned(String jobId, Long accountId);
 
     record JobSnapshot(
         String jobId,

@@ -37,7 +37,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [loadingSessionId, setLoadingSessionId] = useState<number | null>(null)
   const [failedSessionId, setFailedSessionId] = useState<number | null>(null)
   const activeId = Number(params.get('session')) || null
-  const accountScope = String(auth.userId ?? '')
+  const accountScope = String(auth.accountId ?? '')
   const [preferences, setPreferences] = useState<SessionPreferences>(() =>
     readSessionPreferences(localStorage, accountScope),
   )

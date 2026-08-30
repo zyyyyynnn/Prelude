@@ -1,14 +1,15 @@
 import { createContext, use, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { configureApi } from '@/shared/api/client'
-import { logout } from './api'
+import { fetchCurrentUser, logout } from './api'
 
-const STORAGE_KEY = 'prelude-user-id'
+export type AuthStatus = 'checking' | 'authenticated' | 'anonymous'
 
 type AuthValue = {
-  userId: number | null
+  status: AuthStatus
+  accountId: number | null
   expired: boolean
-  signIn: (userId: number) => Promise<void>
+  signIn: (accountId: number) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -16,27 +17,17 @@ const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient()
-  const [userId, setUserId] = useState<number | null>(() => {
-    try {
-      const value = localStorage.getItem(STORAGE_KEY)
-      return value && Number.isInteger(Number(value)) ? Number(value) : null
-    } catch {
-      return null
-    }
-  })
+  const [status, setStatus] = useState<AuthStatus>('checking')
+  const [accountId, setAccountId] = useState<number | null>(null)
   const [expired, setExpired] = useState(false)
-  const principal = useRef(userId)
+  const principal = useRef(accountId)
 
   const disposePrincipal = useCallback(
     async (reason: 'expired' | 'sign-out' | 'change') => {
       principal.current = null
-      try {
-        localStorage.removeItem(STORAGE_KEY)
-      } catch {
-        // Storage can be unavailable; in-memory auth state remains authoritative.
-      }
+      setStatus('anonymous')
       setExpired(reason === 'expired')
-      setUserId(null)
+      setAccountId(null)
       await client.cancelQueries()
       client.clear()
     },
@@ -51,21 +42,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [disposePrincipal],
   )
 
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const current = await fetchCurrentUser()
+      if (cancelled) return
+      if (current) {
+        principal.current = current.accountId
+        setAccountId(current.accountId)
+        setStatus('authenticated')
+      } else {
+        setStatus('anonymous')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <AuthContext
       value={{
-        userId,
+        status,
+        accountId,
         expired,
         signIn: async (id) => {
           if (principal.current !== id) await disposePrincipal('change')
           principal.current = id
-          try {
-            localStorage.setItem(STORAGE_KEY, String(id))
-          } catch {
-            // The authenticated session still works without persistent storage.
-          }
           setExpired(false)
-          setUserId(id)
+          setAccountId(id)
+          setStatus('authenticated')
         },
         signOut: async () => {
           try {

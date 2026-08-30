@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class InterviewSession {
 
     private Long id;
-    private Long userId;
+    private Long accountId;
     private Long resumeId;
     private Long positionId;
     private String targetPosition;

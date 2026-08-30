@@ -52,3 +52,5 @@ output/screenshots/dev/
 # setting in .github/workflows/ci.yml — local devs who copy that env var
 # for parity with CI get a gitignored, ephemeral cache directory.
 .cache/
+backend/uploads/
+backend/startup*.log

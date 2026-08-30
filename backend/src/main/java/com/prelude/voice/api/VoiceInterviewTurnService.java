@@ -2,7 +2,6 @@ package com.prelude.voice.api;
 
 import com.prelude.interview.application.InterviewJudgeService;
 import com.prelude.interview.application.InterviewSummaryService;
-import com.prelude.UserContext;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.InterviewTurnCommand;
@@ -44,26 +43,24 @@ public class VoiceInterviewTurnService {
     @Qualifier("ttsTaskExecutor")
     private final SessionKeyedSerialExecutor ttsTaskExecutor;
 
-    public void processTurn(Long userId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
-        sseTaskExecutor.execute(() -> runTurn(userId, sessionId, audioBytes, sink));
+    public void processTurn(Long accountId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
+        sseTaskExecutor.execute(() -> runTurn(accountId, sessionId, audioBytes, sink));
     }
 
-    private void runTurn(Long userId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
-        UserContext.setCurrentUserId(userId);
-        UserContext.setCurrentSessionId(sessionId);
+    private void runTurn(Long accountId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
         try {
             if (!Objects.equals(sink.currentActiveSessionId(), sessionId)) {
                 sink.error("面试会话已切换，请重新开始语音输入");
                 return;
             }
-            if (voiceInterviewSessionService.validateActiveSession(userId, sessionId) == null) {
+            if (voiceInterviewSessionService.validateActiveSession(accountId, sessionId) == null) {
                 sink.clearActiveSession();
                 sink.error("面试会话不可用，请刷新后重试");
                 return;
             }
 
             sink.status("stt_processing");
-            String transcribed = voiceService.speechToText(sessionId, audioBytes, "voice.webm");
+            String transcribed = voiceService.speechToText(accountId, sessionId, audioBytes, "voice.webm");
             if (transcribed == null || transcribed.trim().isEmpty()) {
                 sink.error("网络状况不佳，已为您切回文字模式");
                 return;
@@ -76,7 +73,7 @@ public class VoiceInterviewTurnService {
             AtomicBoolean ttsTimedOut = new AtomicBoolean(false);
 
             InterviewTurnResult result = runInterviewTurn.execute(
-                new InterviewTurnCommand(sessionId, userId, transcribed, false, false),
+                new InterviewTurnCommand(sessionId, accountId, transcribed, false, false),
                 new InterviewTurnSink() {
                     @Override
                     public void userAccepted(InterviewMessage userMessage) {
@@ -91,7 +88,7 @@ public class VoiceInterviewTurnService {
                         if (sentence != null && !sentence.trim().isEmpty() && !ttsFailed.get()) {
                             ttsFutures.add(submitTtsTask(
                                 sessionId,
-                                () -> synthesizeSentence(sentence, sink, ttsFailed, ttsTimedOut)
+                                () -> synthesizeSentence(accountId, sentence, sink, ttsFailed, ttsTimedOut)
                             ));
                         }
                     }
@@ -102,7 +99,7 @@ public class VoiceInterviewTurnService {
             if (!remaining.trim().isEmpty() && !ttsFailed.get()) {
                 ttsFutures.add(submitTtsTask(
                     sessionId,
-                    () -> synthesizeSentence(remaining, sink, ttsFailed, ttsTimedOut)
+                    () -> synthesizeSentence(accountId, remaining, sink, ttsFailed, ttsTimedOut)
                 ));
             }
             awaitTtsFutures(ttsFutures, TTS_AWAIT_SECONDS, sessionId, sink, ttsFailed, ttsTimedOut);
@@ -113,8 +110,6 @@ public class VoiceInterviewTurnService {
         } catch (RuntimeException error) {
             log.error("Voice turn processing chain crashed", error);
             sink.error("网络状况不佳，已为您切回文字模式");
-        } finally {
-            UserContext.remove();
         }
     }
 
@@ -132,6 +127,7 @@ public class VoiceInterviewTurnService {
     }
 
     private void synthesizeSentence(
+        Long accountId,
         String sentence,
         VoiceTurnEventSink sink,
         AtomicBoolean ttsFailed,
@@ -141,7 +137,7 @@ public class VoiceInterviewTurnService {
             return;
         }
         try {
-            byte[] speechBytes = voiceService.textToSpeech(sentence);
+            byte[] speechBytes = voiceService.textToSpeech(accountId, sentence);
             if (speechBytes != null && speechBytes.length > 0 && !ttsFailed.get() && !ttsTimedOut.get()) {
                 sink.audio(Base64.getEncoder().encodeToString(speechBytes));
             }

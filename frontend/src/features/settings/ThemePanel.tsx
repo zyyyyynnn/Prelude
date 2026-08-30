@@ -17,15 +17,16 @@ export function ThemePanel() {
   if (profile.isPending) return <div className="empty-state">正在读取主题偏好…</div>
   if (profile.isError) return <div className="empty-state">{profile.error.message}</div>
   const initial = profile.data?.themePreference ?? readTheme()
-  return <ThemeForm key={initial} initial={initial} />
+  return <ThemeForm key={initial} initial={initial} revision={profile.data?.revision ?? 0} />
 }
 
-function ThemeForm({ initial }: { initial: ThemePreference }) {
+function ThemeForm({ initial, revision }: { initial: ThemePreference; revision: number }) {
   const [value, setValue] = useState(initial)
   const client = useQueryClient()
   const feedback = useFeedback()
   const save = useMutation({
-    mutationFn: () => saveProfile({ themePreference: value }),
+    mutationFn: () =>
+      saveProfile({ themePreference: value, expectedRevision: revision, operationId: crypto.randomUUID() }),
     onSuccess: (data) => {
       client.setQueryData(['profile'], data)
       applyTheme(data.themePreference ?? value)

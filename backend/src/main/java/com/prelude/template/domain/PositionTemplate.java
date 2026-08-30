@@ -6,7 +6,7 @@ import lombok.Data;
 public class PositionTemplate {
 
     private Long id;
-    private Long userId;
+    private Long accountId;
     private String name;
     private String systemPrompt;
 }

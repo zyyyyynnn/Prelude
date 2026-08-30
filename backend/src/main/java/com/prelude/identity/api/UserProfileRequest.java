@@ -1,5 +1,7 @@
 package com.prelude.identity.api;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -19,4 +21,10 @@ public class UserProfileRequest {
     private String oldPassword;
 
     private String newPassword;
+
+    @NotNull(message = "缺少资料版本号")
+    private Long expectedRevision;
+
+    @NotBlank(message = "缺少操作标识")
+    private String operationId;
 }
