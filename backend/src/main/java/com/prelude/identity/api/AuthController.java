@@ -2,14 +2,15 @@ package com.prelude.identity.api;
 
 import com.prelude.Result;
 import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
 import com.prelude.identity.AccountPrincipal;
+import com.prelude.identity.AccountMapper;
 import com.prelude.identity.application.AuthenticationService;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.application.PendingOAuthBinding;
 import com.prelude.identity.application.SessionRevokeService;
 import com.prelude.identity.infrastructure.SessionAuthentication;
 import com.prelude.BusinessException;
+import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.CurrentUserResponse;
 import com.prelude.identity.api.SessionView;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,9 +18,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +39,7 @@ public class AuthController {
     private final AuthenticationService authenticationService;
     private final SessionRevokeService sessionRevokeService;
     private final AccountMapper accountMapper;
+    private final CurrentAccount currentAccount;
     private final SecurityContextRepository securityContextRepository;
     private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
 
@@ -55,7 +56,7 @@ public class AuthController {
         HttpServletResponse servletResponse
     ) {
         PendingOAuthBinding pending = extractPendingBinding(servletRequest);
-        AccountPrincipal principal = authenticationService.login(request, pending);
+        AccountPrincipal principal = authenticationService.login(request, pending, servletRequest.getSession());
         SessionAuthentication.establish(
             principal, securityContextRepository, sessionAuthenticationStrategy,
             servletRequest, servletResponse);
@@ -64,8 +65,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public Result<CurrentUserResponse> me() {
-        long accountId = accountId();
-        Account account = accountMapper.selectById(accountId);
+        Account account = accountMapper.selectById(currentAccount.requireId());
         if (account == null) {
             throw BusinessException.unauthorized("请先登录");
         }
@@ -102,11 +102,4 @@ public class AuthController {
         return attribute instanceof PendingOAuthBinding pending ? pending : null;
     }
 
-    private long accountId() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof AccountPrincipal principal) {
-            return principal.accountId();
-        }
-        throw BusinessException.unauthorized("请先登录");
-    }
 }

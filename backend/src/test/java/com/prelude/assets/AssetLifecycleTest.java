@@ -8,11 +8,14 @@ import com.prelude.assets.persistence.StoredAttachment;
 import com.prelude.identity.Account;
 import com.prelude.identity.AccountMapper;
 import com.prelude.identity.AccountPrincipal;
+import com.prelude.identity.api.UserProfileResponse;
+import com.prelude.identity.application.ProfileService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -78,6 +81,9 @@ class AssetLifecycleTest {
     @Autowired
     private StalePendingAssetReconciler stalePendingAssetReconciler;
 
+    @Autowired
+    private ProfileService profileService;
+
     @Test
     void uploadMarksTheAssetReadyAndBinaryTruthLivesOnlyInObjectStorage() {
         long accountId = createAccount("asset-owner");
@@ -113,8 +119,42 @@ class AssetLifecycleTest {
         assertThat(bound.get(0).image()).isTrue();
         assertThat(bound.get(0).assetRef().id()).isEqualTo(snapshot.assetId());
 
-        byte[] content = attachmentService.readContent(bound.get(0).assetRef());
+        byte[] content = attachmentService.readOwnedContent(accountId, bound.get(0).assetRef());
         assertThat(content).isEqualTo(pngBytes);
+
+        long other = createAccount("asset-image-other");
+        assertThatThrownBy(() -> attachmentService.readOwnedContent(other, bound.get(0).assetRef()))
+            .isInstanceOf(BusinessException.class)
+            .hasFieldOrPropertyWithValue("code", "not_found");
+    }
+
+    @Test
+    void avatarPublicationCommitsAReferenceThatResolvesToTheAuthorizedContentEndpoint() {
+        long accountId = createAccount("avatar-owner");
+        authenticate(accountId);
+        byte[] png = java.util.Base64.getDecoder().decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+        MockMultipartFile firstUpload =
+            new MockMultipartFile("file", "me.png", "image/png", png);
+        MockMultipartFile secondUpload =
+            new MockMultipartFile("file", "me-2.png", "image/png", png);
+
+        UserProfileResponse first = profileService.updateAvatar(firstUpload);
+        assertThat(first.avatarUrl()).startsWith("/api/assets/");
+        assertThat(first.avatarUrl()).endsWith("/content");
+        long firstAssetId = assetIdFromUrl(first.avatarUrl());
+        assertThat(assetMapper.selectById(firstAssetId)).isNotNull();
+
+        UserProfileResponse second = profileService.updateAvatar(secondUpload);
+        long secondAssetId = assetIdFromUrl(second.avatarUrl());
+        assertThat(secondAssetId).isNotEqualTo(firstAssetId);
+        assertThat(assetMapper.selectById(secondAssetId)).isNotNull();
+        assertThat(assetMapper.selectById(firstAssetId)).isNull();
+    }
+
+    private long assetIdFromUrl(String avatarUrl) {
+        String id = avatarUrl.substring("/api/assets/".length(), avatarUrl.length() - "/content".length());
+        return Long.parseLong(id);
     }
 
     @Test

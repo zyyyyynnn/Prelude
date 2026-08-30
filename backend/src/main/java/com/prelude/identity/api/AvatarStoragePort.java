@@ -3,16 +3,21 @@ package com.prelude.identity.api;
 /**
  * Port for storing the account avatar binary. Implemented by the assets module;
  * identity never touches object storage infrastructure directly.
+ *
+ * Storing never touches the previous avatar: the caller commits the guarded
+ * account reference first and only then cleans up the obsolete asset.
  */
 public interface AvatarStoragePort {
 
     /**
-     * Stores the new avatar and returns the public reference URL for user_account.avatar_url.
+     * Stores a new avatar asset and returns its public reference URL, which
+     * resolves to the authorized content endpoint (/api/assets/{id}/content).
      */
-    String store(Long accountId, String previousAvatarUrl, String mediaType, byte[] bytes);
+    String store(Long accountId, String mediaType, byte[] bytes);
 
     /**
-     * Best-effort removal of an avatar asset that was stored but not committed.
+     * Best-effort removal of one avatar asset owned by the account. Storage or
+     * database failures propagate; callers treat cleanup as non-fatal.
      */
-    void discard(String avatarUrl);
+    void discard(Long accountId, String avatarUrl);
 }

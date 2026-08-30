@@ -10,6 +10,7 @@ import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.UserProfileRequest;
 import com.prelude.identity.api.UserProfileResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
@@ -141,22 +143,34 @@ public class ProfileService {
             ? "application/octet-stream"
             : file.getContentType();
 
-        String avatarUrl = avatarStoragePort.store(accountId, account.getAvatarUrl(), mediaType, bytes);
+        String previousAvatarUrl = account.getAvatarUrl();
+        String newAvatarUrl = avatarStoragePort.store(accountId, mediaType, bytes);
         int updated = accountMapper.updateProfileGuarded(
             accountId,
             account.getUsername(),
             account.getEmail(),
             account.getThemePreference(),
             account.getPasswordHash(),
-            avatarUrl,
+            newAvatarUrl,
             account.getRevision(),
             UUID.randomUUID().toString()
         );
         if (updated != 1) {
-            avatarStoragePort.discard(avatarUrl);
+            discardQuietly(accountId, newAvatarUrl);
             throw BusinessException.revisionConflict("资料已被其他操作更新，请刷新后重试");
         }
+        // The committed reference is authoritative; obsolete-avatar cleanup is non-fatal.
+        discardQuietly(accountId, previousAvatarUrl);
         return toResponse(accountMapper.selectById(accountId));
+    }
+
+    private void discardQuietly(long accountId, String avatarUrl) {
+        try {
+            avatarStoragePort.discard(accountId, avatarUrl);
+        } catch (RuntimeException exception) {
+            log.warn("Avatar cleanup failed for account {} at {}; the asset row remains as recovery anchor",
+                accountId, avatarUrl, exception);
+        }
     }
 
     private Account requireAccount(long accountId) {

@@ -64,12 +64,13 @@ public class AssetService {
         return objectStoragePort.presignGet(asset.getObjectKey(), presignTtl());
     }
 
+    /**
+     * Deletes the remote object first; only a confirmed delete (S3 delete is
+     * idempotent, a missing object counts as deleted) may remove the DB row.
+     * On storage failure the metadata stays as the recovery anchor.
+     */
     public void delete(Asset asset) {
-        try {
-            objectStoragePort.delete(asset.getObjectKey());
-        } catch (RuntimeException exception) {
-            log.warn("Failed to delete object {} for asset {}", asset.getObjectKey(), asset.getId(), exception);
-        }
+        objectStoragePort.delete(asset.getObjectKey());
         assetMapper.deleteById(asset.getId());
     }
 

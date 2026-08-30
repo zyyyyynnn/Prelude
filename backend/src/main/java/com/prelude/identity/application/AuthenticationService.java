@@ -5,12 +5,10 @@ import com.prelude.BusinessException;
 import com.prelude.identity.Account;
 import com.prelude.identity.AccountMapper;
 import com.prelude.identity.AccountPrincipal;
-import com.prelude.identity.OAuthBinding;
-import com.prelude.identity.OAuthBindingMapper;
 import com.prelude.identity.api.LoginRequest;
 import com.prelude.identity.api.RegisterRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthenticationService {
 
     private final AccountMapper accountMapper;
-    private final OAuthBindingMapper oauthBindingMapper;
+    private final OAuthLoginService oauthLoginService;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(rollbackFor = Exception.class)
@@ -39,7 +37,7 @@ public class AuthenticationService {
         accountMapper.insert(account);
     }
 
-    public AccountPrincipal login(LoginRequest request, PendingOAuthBinding pending) {
+    public AccountPrincipal login(LoginRequest request, PendingOAuthBinding pending, HttpSession session) {
         Account account = accountMapper.selectOne(new LambdaQueryWrapper<Account>()
             .eq(Account::getUsername, request.getUsername())
             .last("LIMIT 1"));
@@ -50,20 +48,10 @@ public class AuthenticationService {
         }
         if (pending != null && account.getEmail() != null
             && pending.verifiedEmail().equalsIgnoreCase(account.getEmail())) {
-            createBinding(pending.provider(), pending.providerSubject(), account.getId());
+            oauthLoginService.createBindingExact(pending.provider(), pending.providerSubject(), account.getId());
+            // One-shot: the completed intent must not survive the rotated session.
+            session.removeAttribute(OAuthLoginService.PENDING_ATTRIBUTE);
         }
         return new AccountPrincipal(account.getId(), account.getUsername());
-    }
-
-    void createBinding(String provider, String providerSubject, Long accountId) {
-        OAuthBinding binding = new OAuthBinding();
-        binding.setAccountId(accountId);
-        binding.setProvider(provider);
-        binding.setProviderSubject(providerSubject);
-        try {
-            oauthBindingMapper.insert(binding);
-        } catch (DuplicateKeyException duplicate) {
-            // The binding already exists; completing login idempotently is the correct outcome.
-        }
     }
 }

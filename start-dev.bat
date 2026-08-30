@@ -19,19 +19,22 @@ set "FRONTEND_URL=http://127.0.0.1:%FRONTEND_PORT%"
 
 if not exist "%ROOT%.env" if exist "%ROOT%.env.example" copy /Y "%ROOT%.env.example" "%ROOT%.env" >nul
 
-echo [INFO] Starting MySQL, Redis, and RabbitMQ...
-docker compose up -d mysql redis rabbitmq || goto :failed
+echo [INFO] Starting MySQL, Redis, RabbitMQ, and VersityGW...
+docker compose up -d mysql redis rabbitmq versitygw || goto :failed
 
 set "MYSQL_PORT=13306"
 set "REDIS_PORT=16379"
 set "RABBITMQ_PORT=5672"
+set "S3_PORT=19000"
 if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "MYSQL_HOST_PORT=" "%ROOT%.env"') do set "MYSQL_PORT=%%B"
 if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "REDIS_HOST_PORT=" "%ROOT%.env"') do set "REDIS_PORT=%%B"
 if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "RABBITMQ_HOST_PORT=" "%ROOT%.env"') do set "RABBITMQ_PORT=%%B"
+if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "S3_HOST_PORT=" "%ROOT%.env"') do set "S3_PORT=%%B"
 
 call :wait_for_port %MYSQL_PORT% 60 || goto :failed
 call :wait_for_port %REDIS_PORT% 60 || goto :failed
 call :wait_for_port %RABBITMQ_PORT% 60 || goto :failed
+call :wait_for_port %S3_PORT% 60 || goto :failed
 
 if not exist "%FRONTEND_DIR%\node_modules" (
   echo [INFO] Installing frontend dependencies...

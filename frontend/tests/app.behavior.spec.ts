@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { installAnonymousSession } from './auth-bootstrap'
 
 type ApiState = {
   sessions?: unknown[]
@@ -238,6 +239,7 @@ test('@smoke sends the selected prompt bar context when starting an interview', 
 })
 
 test('@smoke presents request failures as a dismissible top system toast', async ({ page }) => {
+  await installAnonymousSession(page)
   await page.route('**/api/auth/login', async (route) => {
     await route.fulfill({
       status: 503,
@@ -262,6 +264,7 @@ test('@smoke presents request failures as a dismissible top system toast', async
 })
 
 test('@smoke keeps authentication validation out of the form layout', async ({ page }) => {
+  await installAnonymousSession(page)
   await page.goto('/login')
   await page.getByLabel('用户名').fill('demo')
   await page.getByRole('button', { name: '登录', exact: true }).last().click()

@@ -12,7 +12,9 @@ public interface AttachmentContextPort {
 
     /**
      * Controlled binary read for consumers that genuinely need the bytes
-     * (e.g. multimodal LLM calls). Metadata-only consumers must use snapshots.
+     * (e.g. multimodal LLM calls). Ownership is part of the contract: the
+     * asset must be READY and owned by the given account. Metadata-only
+     * consumers must use snapshots.
      */
-    byte[] readContent(AssetRef assetRef);
+    byte[] readOwnedContent(Long accountId, AssetRef assetRef);
 }

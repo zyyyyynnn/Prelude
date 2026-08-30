@@ -60,6 +60,13 @@ services:
       - versitygw-data:/data/s3
       - versitygw-iam:/data/iam
       - versitygw-versioning:/data/versioning
+    healthcheck:
+      # VersityGW v1.7.0 ships busybox nc; a TCP probe on the S3 API port is
+      # the smallest reliable readiness signal the official image supports.
+      test: ["CMD", "nc", "-z", "127.0.0.1", "7070"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
 
   backend:
     build:
@@ -74,6 +81,8 @@ services:
       redis:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      versitygw:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/prelude?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai

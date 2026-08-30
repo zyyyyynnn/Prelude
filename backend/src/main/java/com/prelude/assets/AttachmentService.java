@@ -61,7 +61,7 @@ public class AttachmentService implements AttachmentContextPort {
         try {
             objectStoragePort.put(asset.getObjectKey(), resolvedMediaType, bytes);
         } catch (RuntimeException exception) {
-            assetService.delete(asset);
+            // The PENDING row stays as the recovery anchor; the reconciler reclaims it.
             throw BusinessException.badRequest("附件上传失败");
         }
         if (!assetService.markReady(asset.getId())) {
@@ -78,6 +78,12 @@ public class AttachmentService implements AttachmentContextPort {
         return toSnapshot(stored, assetService.requireOwnedReady(accountId, asset.getId()));
     }
 
+    /**
+     * Deterministic deletion: validate ownership, delete the remote object
+     * (failure leaves both rows intact), then remove the asset row — the
+     * attachment metadata goes with it through the FK cascade in the same
+     * statement.
+     */
     public void deleteUnbound(Long attachmentId) {
         long accountId = currentAccount.requireId();
         StoredAttachment stored = attachmentMapper.selectOne(new LambdaQueryWrapper<StoredAttachment>()
@@ -88,11 +94,13 @@ public class AttachmentService implements AttachmentContextPort {
         if (stored == null) {
             throw BusinessException.badRequest("附件不存在、已使用或无权删除");
         }
-        attachmentMapper.deleteById(stored.getId());
         Asset asset = assetMapper.selectById(stored.getAssetId());
-        if (asset != null) {
-            assetService.delete(asset);
+        if (asset == null) {
+            attachmentMapper.deleteById(stored.getId());
+            return;
         }
+        objectStoragePort.delete(asset.getObjectKey());
+        assetMapper.deleteById(asset.getId());
     }
 
     @Override
@@ -144,9 +152,9 @@ public class AttachmentService implements AttachmentContextPort {
     }
 
     @Override
-    public byte[] readContent(AssetRef assetRef) {
-        Asset asset = assetMapper.selectById(assetRef.id());
-        if (asset == null || asset.getStatus() != AssetStatus.READY) {
+    public byte[] readOwnedContent(Long accountId, AssetRef assetRef) {
+        Asset asset = assetService.requireOwnedReady(accountId, assetRef.id());
+        if (!KIND_ATTACHMENT.equals(asset.getKind())) {
             throw BusinessException.notFound("资产不存在");
         }
         return assetService.readContent(asset);

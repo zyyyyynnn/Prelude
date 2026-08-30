@@ -65,7 +65,7 @@ CREATE TABLE `attachment` (
   KEY `idx_attachment_account_created` (`account_id`, `created_at`),
   KEY `idx_attachment_scope` (`scope_type`, `scope_id`),
   CONSTRAINT `fk_attachment_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`),
-  CONSTRAINT `fk_attachment_asset` FOREIGN KEY (`asset_id`) REFERENCES `asset` (`id`)
+  CONSTRAINT `fk_attachment_asset` FOREIGN KEY (`asset_id`) REFERENCES `asset` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试上下文附件';
 
 CREATE TABLE `resume` (

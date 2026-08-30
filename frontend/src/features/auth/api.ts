@@ -1,4 +1,4 @@
-import { apiRequest, csrfToken } from '@/shared/api/client'
+import { apiBaseUrl, apiRequest, csrfToken } from '@/shared/api/client'
 import type { CurrentUser, LoginResponse } from './types'
 
 export function login(username: string, password: string) {
@@ -25,7 +25,7 @@ export function logout() {
  */
 export async function fetchCurrentUser(): Promise<CurrentUser | null> {
   const token = csrfToken()
-  const response = await fetch('/api/auth/me', {
+  const response = await fetch(new URL(`${apiBaseUrl}/auth/me`, window.location.origin), {
     credentials: 'include',
     headers: token ? { 'X-XSRF-TOKEN': token } : undefined,
   }).catch(() => null)

@@ -45,6 +45,7 @@ public class SecurityConfig {
         ObjectProvider<ClientRegistrationRepository> clientRegistrations,
         SecurityContextRepository securityContextRepository,
         AuthenticationSuccessHandler oauthLoginSuccessHandler,
+        org.springframework.security.oauth2.client.userinfo.OAuth2UserService<org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest, org.springframework.security.oauth2.core.user.OAuth2User> providerIdentityUserService,
         CorsProperties corsProperties
     ) throws Exception {
         var chain = http
@@ -66,7 +67,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/llm/providers").permitAll()
                 .anyRequest().authenticated());
         if (clientRegistrations.getIfAvailable() != null) {
-            chain = chain.oauth2Login(oauth -> oauth.successHandler(oauthLoginSuccessHandler));
+            chain = chain.oauth2Login(oauth -> oauth
+                .userInfoEndpoint(endpoint -> endpoint.userService(providerIdentityUserService))
+                .successHandler(oauthLoginSuccessHandler));
         }
         return chain.build();
     }

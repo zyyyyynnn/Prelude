@@ -77,11 +77,20 @@ public class S3ObjectStorageAdapter implements ObjectStoragePort {
 
     @Override
     public void put(String objectKey, String mediaType, byte[] bytes) {
-        s3Client.putObject(PutObjectRequest.builder()
+        PutObjectRequest request = PutObjectRequest.builder()
             .bucket(properties.bucket())
             .key(objectKey)
             .contentType(mediaType)
-            .build(), RequestBody.fromBytes(bytes));
+            .build();
+        try {
+            s3Client.putObject(request, RequestBody.fromBytes(bytes));
+        } catch (NoSuchBucketException missing) {
+            // Bounded self-heal for a bucket that appeared missing (fresh gateway volume,
+            // deferred startup): create it once and retry the same put. Only NoSuchBucket
+            // is healed; timeouts, auth failures and 5xx propagate.
+            s3Client.createBucket(CreateBucketRequest.builder().bucket(properties.bucket()).build());
+            s3Client.putObject(request, RequestBody.fromBytes(bytes));
+        }
     }
 
     @Override

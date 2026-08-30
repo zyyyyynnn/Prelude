@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { installAnonymousSession } from './auth-bootstrap'
 
 const providers = [
   {
@@ -112,6 +113,7 @@ async function installApi(page: Page) {
 test('@smoke renders the React authentication entry', async ({ page }) => {
   const runtimeErrors: string[] = []
   page.on('pageerror', (error) => runtimeErrors.push(error.message))
+  await installAnonymousSession(page)
   await page.goto('/')
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByRole('heading', { level: 1, name: '进入面试工作台' })).toBeVisible()
@@ -211,6 +213,7 @@ test('@a11y keeps the primary authenticated surface accessible', async ({ page }
 })
 
 test('@visual keeps the authentication hierarchy and primary action stable', async ({ page }) => {
+  await installAnonymousSession(page)
   await page.goto('/login')
   const heading = page.getByRole('heading', { level: 1, name: '进入面试工作台' })
   await expect(heading).toBeVisible()
