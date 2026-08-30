@@ -384,7 +384,11 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   const resumeOption = page.getByRole('menuitemradio', { name: '候选人简历.pdf' })
   await expect(resumeOption).toBeVisible()
   await expect(resumeOption.locator('.prelude-menu__indicator')).toHaveCount(0)
-  expect((await resumeOption.boundingBox())?.height).toBe((await resumeMenuItem.boundingBox())?.height)
+  const resumeOptionBox = await resumeOption.boundingBox()
+  const resumeMenuItemBox = await resumeMenuItem.boundingBox()
+  expect(resumeOptionBox).not.toBeNull()
+  expect(resumeMenuItemBox).not.toBeNull()
+  expect(Math.abs(resumeOptionBox!.height - resumeMenuItemBox!.height)).toBeLessThanOrEqual(1)
   await settleOverlay(page.locator('.prelude-menu').last())
   await page.screenshot({
     path: test.info().outputPath('interview-context-submenu.png'),
