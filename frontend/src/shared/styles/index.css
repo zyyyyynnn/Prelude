@@ -629,6 +629,7 @@ label,
 }
 
 .status-badge {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   min-block-size: var(--ui-height-compact);
@@ -801,15 +802,22 @@ label,
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--spacing-lg);
   width: 100%;
 }
 .workspace-header__title-area {
+  flex: 1;
+  min-inline-size: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
 }
 .workspace-header__title {
   margin: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-serif);
   font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
   font-weight: 500;
