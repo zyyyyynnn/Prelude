@@ -10,7 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:serve": "vite --host 127.0.0.1 --port 4173",
-    "test:smoke": "playwright test --grep @smoke",
+    "test:smoke": "playwright test --grep @smoke --workers=1",
     "verify:architecture": "node scripts/verify-architecture.cjs",
     "verify:ui": "node scripts/verify-ui-guardrails.cjs",
     "verify:tokens": "node scripts/verify-ui-tokens.cjs",

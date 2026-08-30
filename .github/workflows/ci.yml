@@ -108,11 +108,22 @@ jobs:
           npm run build
           npm run verify:production
 
-      - name: Verify browser behavior
+      - name: Smoke tests
         working-directory: frontend
-        run: |
-          npm run test:smoke
-          npm run verify:byok
-          npm run verify:dark
-          npm run verify:a11y
-          npm run verify:visual
+        run: npm run test:smoke
+
+      - name: BYOK behavior
+        working-directory: frontend
+        run: npm run verify:byok
+
+      - name: Dark theme
+        working-directory: frontend
+        run: npm run verify:dark
+
+      - name: Accessibility
+        working-directory: frontend
+        run: npm run verify:a11y
+
+      - name: Visual regression
+        working-directory: frontend
+        run: npm run verify:visual

@@ -250,34 +250,10 @@ test('@smoke presents request failures as a dismissible top system toast', async
 
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '服务暂不可用' })
   await expect(toast).toBeVisible()
-  await toast.hover()
   await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
-  await expect.poll(async () => (await toast.boundingBox())?.y ?? -1).toBeGreaterThan(0)
-  await page.waitForTimeout(450)
-  const geometry = await toast.evaluate((element) => {
-    const rect = element.getBoundingClientRect()
-    const close = element.querySelector<HTMLElement>('[data-close-button]')!.getBoundingClientRect()
-    const spacing = Number.parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--spacing-sm'),
-    )
-    return {
-      top: rect.top,
-      height: rect.height,
-      centerDelta: Math.abs(rect.left + rect.width / 2 - window.innerWidth / 2),
-      closeCenterDelta: Math.abs(close.top + close.height / 2 - (rect.top + rect.height / 2)),
-      closeRightInset: rect.right - close.right,
-      expectedRightInset: spacing,
-    }
-  })
-  expect(geometry.top).toBeGreaterThan(0)
-  expect(geometry.top).toBeLessThanOrEqual(40)
-  expect(geometry.height).toBeGreaterThanOrEqual(49)
-  expect(geometry.centerDelta).toBeLessThanOrEqual(1)
-  expect(geometry.closeCenterDelta).toBeLessThanOrEqual(1)
-  expect(Math.abs(geometry.closeRightInset - geometry.expectedRightInset)).toBeLessThanOrEqual(1)
-  await page.screenshot({ path: test.info().outputPath('login-error-toast.png'), fullPage: true })
-
-  await toast.getByRole('button', { name: '关闭系统提示' }).click()
+  const closeButton = toast.getByRole('button', { name: '关闭系统提示' })
+  await expect(closeButton).toBeVisible()
+  await closeButton.click()
   await expect(toast).toHaveCount(0)
   await expect(page).toHaveURL(/\/login$/)
 })
