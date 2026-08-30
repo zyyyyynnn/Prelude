@@ -3,30 +3,19 @@
   <h1 align="center" style="border-bottom: none">Prelude</h1>
   <p><strong>AI 模拟面试、训练评估与职业成长分析工作台</strong></p>
   <p>
-    <a href="https://github.com/zyyyyynnn/Prelude/actions/workflows/ci.yml"><img alt="持续集成状态" src="https://img.shields.io/github/actions/workflow/status/zyyyyynnn/Prelude/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;logo=githubactions&amp;logoColor=white"></a>
-    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=flat-square&amp;label=MIT&amp;logo=opensourceinitiative&amp;logoColor=white"></a>
+    <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/github/license/zyyyyynnn/Prelude?style=for-the-badge&amp;label=LICENSE&amp;logo=opensourceinitiative&amp;logoColor=white&amp;labelColor=4B4A46&amp;color=786A63"></a>
+    <img src="https://img.shields.io/badge/JDK-Java%2021-8D6352?style=for-the-badge&amp;labelColor=4B4A46" alt="Java 21" title="Java 21">
+    <img src="https://img.shields.io/badge/-Spring%20Boot-63765A?style=for-the-badge&amp;logo=springboot&amp;logoColor=white&amp;labelColor=4B4A46" alt="Spring Boot" title="Spring Boot">
+    <img src="https://img.shields.io/badge/-Spring%20Modulith-6B7B62?style=for-the-badge&amp;logo=spring&amp;logoColor=white&amp;labelColor=4B4A46" alt="Spring Modulith" title="Spring Modulith">
+    <img src="https://img.shields.io/badge/-React%2019-5E7780?style=for-the-badge&amp;logo=react&amp;logoColor=white&amp;labelColor=4B4A46" alt="React 19" title="React 19">
   </p>
   <p>
-    <strong>后端</strong><br>
-    <img src="https://img.shields.io/badge/Java%2021-007396?style=flat-square&amp;logo=openjdk&amp;logoColor=white" alt="Java 21" title="Java 21">
-    <img src="https://img.shields.io/badge/Spring%20Boot-6DB33F?style=flat-square&amp;logo=springboot&amp;logoColor=white" alt="Spring Boot" title="Spring Boot">
-    <img src="https://img.shields.io/badge/Spring%20Modulith-5A8F3D?style=flat-square&amp;logo=spring&amp;logoColor=white" alt="Spring Modulith" title="Spring Modulith">
-    <img src="https://img.shields.io/badge/Spring%20AI-4F772D?style=flat-square&amp;logo=spring&amp;logoColor=white" alt="Spring AI" title="Spring AI">
-  </p>
-  <p>
-    <strong>前端</strong><br>
-    <img src="https://img.shields.io/badge/React%2019-20232A?style=flat-square&amp;logo=react&amp;logoColor=61DAFB" alt="React 19" title="React 19">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" title="TypeScript">
-    <img src="https://img.shields.io/badge/TanStack%20Query-FF4154?style=flat-square&amp;logo=reactquery&amp;logoColor=white" alt="TanStack Query" title="TanStack Query">
-    <img src="https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=flat-square&amp;logo=tailwindcss&amp;logoColor=white" alt="Tailwind CSS" title="Tailwind CSS">
-    <img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&amp;logo=vite&amp;logoColor=white" alt="Vite" title="Vite">
-  </p>
-  <p>
-    <strong>基础设施</strong><br>
-    <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&amp;logo=mysql&amp;logoColor=white" alt="MySQL" title="MySQL">
-    <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&amp;logo=redis&amp;logoColor=white" alt="Redis" title="Redis">
-    <img src="https://img.shields.io/badge/RabbitMQ-FF6600?style=flat-square&amp;logo=rabbitmq&amp;logoColor=white" alt="RabbitMQ" title="RabbitMQ">
-    <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&amp;logo=docker&amp;logoColor=white" alt="Docker" title="Docker">
+    <img src="https://img.shields.io/badge/-TypeScript-5B718A?style=for-the-badge&amp;logo=typescript&amp;logoColor=white&amp;labelColor=4B4A46" alt="TypeScript" title="TypeScript">
+    <img src="https://img.shields.io/badge/-Tailwind%20CSS-557B7F?style=for-the-badge&amp;logo=tailwindcss&amp;logoColor=white&amp;labelColor=4B4A46" alt="Tailwind CSS" title="Tailwind CSS">
+    <img src="https://img.shields.io/badge/SQL-MySQL-516F80?style=for-the-badge&amp;labelColor=4B4A46" alt="MySQL" title="MySQL">
+    <img src="https://img.shields.io/badge/-Redis-9A615A?style=for-the-badge&amp;logo=redis&amp;logoColor=white&amp;labelColor=4B4A46" alt="Redis" title="Redis">
+    <img src="https://img.shields.io/badge/-RabbitMQ-936545?style=for-the-badge&amp;logo=rabbitmq&amp;logoColor=white&amp;labelColor=4B4A46" alt="RabbitMQ" title="RabbitMQ">
+    <img src="https://img.shields.io/badge/-Docker-4F708F?style=for-the-badge&amp;logo=docker&amp;logoColor=white&amp;labelColor=4B4A46" alt="Docker" title="Docker">
   </p>
 </div>
 
