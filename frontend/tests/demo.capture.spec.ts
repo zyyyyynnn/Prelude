@@ -27,6 +27,8 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
   await page.getByLabel('用户名').fill('demo')
   await page.getByLabel('密码', { exact: true }).fill('123456')
   await page.locator('form').getByRole('button', { name: '登录', exact: true }).click()
+  await expect.poll(() => state.requests.some(({ path }) => path === '/api/auth/login')).toBe(true)
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('prelude-user-id'))).toBe('1')
   await expect(page).toHaveURL(/\/interview$/)
 
   await selectContext(page, '选择简历', 'Java 后端候选人简历.pdf')

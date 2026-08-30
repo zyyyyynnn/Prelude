@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router'
+import { Navigate, useLocation } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { Button, Field, IconTooltip, Input } from '@/shared/ui'
 import { useFeedback } from '@/shared/ui/feedback'
@@ -18,7 +18,6 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false)
   const auth = useAuth()
   const feedback = useFeedback()
-  const navigate = useNavigate()
   const location = useLocation()
   const reportedExpiration = useRef(false)
 
@@ -30,12 +29,6 @@ export function LoginPage() {
       feedback.notify('登录已失效，请重新登录。', 'error')
     }
   }, [feedback, location.search])
-
-  useEffect(() => {
-    if (!auth.userId) return
-    const redirect = new URLSearchParams(location.search).get('redirect') || '/interview'
-    void navigate(redirect, { replace: true })
-  }, [auth.userId, location.search, navigate])
 
   const switchMode = (next: AuthMode) => {
     setMode(next)
@@ -71,6 +64,11 @@ export function LoginPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  if (auth.userId !== null) {
+    const redirect = new URLSearchParams(location.search).get('redirect') || '/interview'
+    return <Navigate to={redirect} replace />
   }
 
   return (
