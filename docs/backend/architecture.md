@@ -32,7 +32,7 @@ Port 用于外部基础设施、框架隔离或跨模块接口。普通内部类
 
 - MySQL 是唯一关系数据库；所有资源所有权统一为 `account_id`。
 - Flyway 是唯一 DDL owner，所有 migration 位于 `backend/src/main/resources/db/migration/`，使用单一全局版本序列（当前 baseline：`V20260830__establish_prelude_schema.sql`），reference data 由幂等的 `R__reference_data.sql` 维护。
-- `attachment` 只保存业务元数据并以 `asset_id` 引用二进制；认证 Session、二进制内容均不在 MySQL。
+- `attachment` 只保存业务元数据并以 `asset_id` 引用二进制；认证 Session、二进制内容均不在 MySQL。Spring Modulith 事件发布表 `EVENT_PUBLICATION` 由同一 baseline 建立，自动建表保持关闭。
 
 ## 依赖台账
 

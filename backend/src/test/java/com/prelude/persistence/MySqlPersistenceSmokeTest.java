@@ -56,7 +56,8 @@ class MySqlPersistenceSmokeTest {
         List<String> tables = queryColumn("SHOW TABLES");
         assertThat(tables).contains(
             "user_account", "oauth_binding", "asset", "attachment",
-            "artifact", "artifact_version", "interview_session", "async_job");
+            "artifact", "artifact_version", "interview_session", "async_job",
+            "EVENT_PUBLICATION");
         assertThat(tables)
             .doesNotContain("SPRING_SESSION", "SPRING_SESSION_ATTRIBUTES", "user", "user_weakness");
     }
