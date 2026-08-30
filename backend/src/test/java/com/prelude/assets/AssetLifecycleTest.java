@@ -14,6 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -26,11 +30,35 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Asset lifecycle against real MySQL and the S3-compatible endpoint:
  * PENDING_UPLOAD to READY, controlled reads, ownership checks and reconciler cleanup.
+ * The VersityGW lifecycle is owned by this test via Testcontainers.
  */
 @EnabledIfEnvironmentVariable(named = "PRELUDE_MYSQL_SMOKE", matches = "true")
-@EnabledIfEnvironmentVariable(named = "PRELUDE_S3_SMOKE", matches = "true")
 @SpringBootTest
 class AssetLifecycleTest {
+
+    @SuppressWarnings("resource")
+    private static final GenericContainer<?> VERSITYGW = new GenericContainer<>("versity/versitygw:v1.7.0")
+        .withEnv("ROOT_ACCESS_KEY", "prelude-local-key")
+        .withEnv("ROOT_SECRET_KEY", "prelude-local-secret")
+        .withEnv("VGW_BACKEND", "posix")
+        .withEnv("VGW_BACKEND_ARGS", "/data/s3")
+        .withEnv("VGW_PORT", ":7070")
+        .withEnv("VGW_IAM_DIR", "/data/iam")
+        .withEnv("VGW_VERSIONING_DIR", "/data/versioning")
+        .withTmpFs(java.util.Map.of(
+            "/data/s3", "rw",
+            "/data/iam", "rw",
+            "/data/versioning", "rw"))
+        .withExposedPorts(7070)
+        .waitingFor(Wait.forListeningPort());
+
+    @DynamicPropertySource
+    static void versityGwProperties(DynamicPropertyRegistry registry) {
+        VERSITYGW.start();
+        String endpoint = "http://" + VERSITYGW.getHost() + ":" + VERSITYGW.getMappedPort(7070);
+        registry.add("prelude.storage.s3.endpoint", () -> endpoint);
+        registry.add("prelude.storage.s3.public-endpoint", () -> endpoint);
+    }
 
     @Autowired
     private AttachmentService attachmentService;
