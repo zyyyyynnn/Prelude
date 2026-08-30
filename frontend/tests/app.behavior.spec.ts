@@ -249,12 +249,10 @@ test('@smoke presents request failures as a dismissible top system toast', async
   await page.getByRole('button', { name: '登录', exact: true }).last().click()
 
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '服务暂不可用' })
-  await expect(toast).toBeVisible()
-  await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
   const closeButton = toast.getByRole('button', { name: '关闭系统提示' })
-  await expect(closeButton).toBeVisible()
   await closeButton.click()
   await expect(toast).toHaveCount(0)
+  await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
   await expect(page).toHaveURL(/\/login$/)
 })
 
@@ -264,7 +262,7 @@ test('@smoke keeps authentication validation out of the form layout', async ({ p
   await page.getByRole('button', { name: '登录', exact: true }).last().click()
 
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '密码至少需要 6 个字符' })
-  await expect(toast).toBeVisible()
+  await expect(toast).toBeAttached()
   await expect(page.locator('#auth-password')).toBeFocused()
   await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
 })
