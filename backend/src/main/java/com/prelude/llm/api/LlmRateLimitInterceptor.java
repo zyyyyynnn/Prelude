@@ -1,13 +1,14 @@
 package com.prelude.llm.api;
 
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
+import com.prelude.identity.api.CurrentAccount;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -20,6 +21,7 @@ import java.util.Collections;
 public class LlmRateLimitInterceptor implements HandlerInterceptor {
 
     private final StringRedisTemplate stringRedisTemplate;
+    private final CurrentAccount currentAccount;
 
     private static final String LUA_LIMIT_SCRIPT =
         "local key = KEYS[1]\n" +
@@ -55,12 +57,12 @@ public class LlmRateLimitInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) {
-            return true; // Let authentication interceptor handle unauthenticated users
+        Long accountId = currentAccount.idOrNull();
+        if (accountId == null) {
+            return true; // Let authentication handle unauthenticated users
         }
 
-        String key = "ratelimit:user:" + userId;
+        String key = "ratelimit:account:" + accountId;
         long now = Instant.now().getEpochSecond();
         // 10 rpm limit (capacity=10, replenish rate=10 per 60 seconds)
         Long result = stringRedisTemplate.execute(
@@ -72,8 +74,10 @@ public class LlmRateLimitInterceptor implements HandlerInterceptor {
         );
 
         if (result != null && result == 0) {
-            log.warn("User {} exceeded rate limit for LLM calls", userId);
-            throw new BusinessException(429, "请求过于频繁，大模型接口限额 10 次/分钟，请稍后再试");
+            log.warn("Account {} exceeded rate limit for LLM calls", accountId);
+            throw new BusinessException(
+                HttpStatus.TOO_MANY_REQUESTS, "rate_limited",
+                "请求过于频繁，大模型接口限额 10 次/分钟，请稍后再试");
         }
 
         return true;

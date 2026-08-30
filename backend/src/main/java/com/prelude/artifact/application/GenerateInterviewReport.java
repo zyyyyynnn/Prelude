@@ -2,14 +2,13 @@ package com.prelude.artifact.application;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-import com.prelude.UserContext;
 import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.StructuredInterviewReport;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
 import com.prelude.artifact.domain.ScoreHistory;
-import com.prelude.artifact.domain.UserWeakness;
+import com.prelude.artifact.domain.AccountWeakness;
 import com.prelude.llm.LlmSelection;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.artifact.application.port.InsightRepository;
@@ -43,12 +42,10 @@ public class GenerateInterviewReport {
     private final InterviewReportAssembler interviewReportAssembler;
     private final RealtimePort realtimePort;
 
-    public Outcome execute(Long sessionId, Long userId) {
+    public Outcome execute(Long sessionId, Long accountId) {
         try {
-            UserContext.setCurrentUserId(userId);
-            UserContext.setCurrentSessionId(sessionId);
 
-            log.info("Processing report generation for session {} and user {}", sessionId, userId);
+            log.info("Processing report generation for session {} and account {}", sessionId, accountId);
             InterviewSession session = interviewReportPort.findSession(sessionId);
             if (session == null) {
                 log.warn("Session {} not found, skipping", sessionId);
@@ -63,7 +60,7 @@ public class GenerateInterviewReport {
             List<InterviewMessage> messages = interviewReportPort.listMessages(sessionId);
             String prompt = buildFinishPrompt(session, messages);
             String reportContent = chatPort.complete(ChatRequest.snapshot(
-                session.getUserId(),
+                session.getAccountId(), session.getId(),
                 LlmPurpose.REPORT,
                 PromptIds.REPORT,
                 List.of(
@@ -111,7 +108,7 @@ public class GenerateInterviewReport {
             persistWeaknesses(session, reportDraft.reportMarkdown());
 
             List<InterviewStage> stages = interviewReportPort.listStages(sessionId);
-            List<UserWeakness> weaknesses = insightRepository.listWeaknessesBySession(sessionId);
+            List<AccountWeakness> weaknesses = insightRepository.listWeaknessesBySession(sessionId);
             StructuredInterviewReport structuredReport = interviewReportAssembler.assemble(
                 reportDraft, stages, messages, weaknesses
             );
@@ -125,8 +122,6 @@ public class GenerateInterviewReport {
             return Outcome.COMPLETED;
         } catch (Exception e) {
             throw new ReportGenerationException(sessionId, e);
-        } finally {
-            UserContext.remove();
         }
     }
 
@@ -170,7 +165,7 @@ public class GenerateInterviewReport {
     private void persistScoreHistory(InterviewSession session, InterviewReportDraft report) {
         try {
             ScoreHistory score = new ScoreHistory();
-            score.setUserId(session.getUserId());
+            score.setAccountId(session.getAccountId());
             score.setSessionId(session.getId());
             score.setTechnicalScore(report.scores().technical());
             score.setExpressionScore(report.scores().expression());
@@ -184,16 +179,16 @@ public class GenerateInterviewReport {
 
     private void persistWeaknesses(InterviewSession session, String report) {
         try {
-            List<UserWeakness> weaknesses = extractWeaknesses(session, report);
+            List<AccountWeakness> weaknesses = extractWeaknesses(session, report);
             insightRepository.replaceWeaknesses(session.getId(), weaknesses);
         } catch (Exception exception) {
             log.warn("Failed to persist weaknesses for session {}", session.getId(), exception);
         }
     }
 
-    private List<UserWeakness> extractWeaknesses(InterviewSession session, String report) throws Exception {
+    private List<AccountWeakness> extractWeaknesses(InterviewSession session, String report) throws Exception {
         String content = chatPort.complete(ChatRequest.snapshot(
-            session.getUserId(),
+            session.getAccountId(), session.getId(),
             LlmPurpose.REPORT,
             PromptIds.REPORT,
             List.of(
@@ -209,13 +204,13 @@ public class GenerateInterviewReport {
         ));
         String json = stripJsonFence(content);
         List<WeaknessExtractionItem> items = objectMapper.readValue(json, new TypeReference<>() {});
-        ArrayList<UserWeakness> weaknesses = new ArrayList<>();
+        ArrayList<AccountWeakness> weaknesses = new ArrayList<>();
         for (WeaknessExtractionItem item : items) {
             if (item.category() == null || item.category().isBlank() || item.description() == null || item.description().isBlank()) {
                 continue;
             }
-            UserWeakness weakness = new UserWeakness();
-            weakness.setUserId(session.getUserId());
+            AccountWeakness weakness = new AccountWeakness();
+            weakness.setAccountId(session.getAccountId());
             weakness.setSessionId(session.getId());
             weakness.setCategory(item.category().trim());
             weakness.setDescription(item.description().trim());

@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface LlmConfigPort {
 
-    LlmSelection resolveSelection(Long userId, String requestedModel);
+    LlmSelection resolveSelection(Long accountId, String requestedModel);
 
     String currentThinkingDepth();
 

@@ -561,6 +561,7 @@
 }
 
 .workspace-header__right {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
@@ -572,10 +573,7 @@
 }
 
 .workspace-header__title--truncated {
-  max-inline-size: min(48vw, 34rem);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-inline-size: 100%;
 }
 
 .message-bubble__head {

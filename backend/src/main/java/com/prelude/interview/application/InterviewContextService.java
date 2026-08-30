@@ -57,7 +57,7 @@ public class InterviewContextService {
 
     public List<Map<String, String>> buildAutoStartMessages(InterviewSession session) {
         ResumeProjection resume = resumeContextPort.requireOwnedProjection(
-            session.getUserId(),
+            session.getAccountId(),
             session.getResumeId()
         );
         List<Map<String, String>> messages = new ArrayList<>(buildContextMessages(session.getId()));

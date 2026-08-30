@@ -6,41 +6,40 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class DevAccountInitializerTest {
 
-    private final UserMapper userMapper = org.mockito.Mockito.mock(UserMapper.class);
-    private final BCryptPasswordEncoder passwordEncoder =
-        org.mockito.Mockito.mock(BCryptPasswordEncoder.class);
+    private final AccountMapper accountMapper = org.mockito.Mockito.mock(AccountMapper.class);
+    private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
     private final DevAccountInitializer initializer =
-        new DevAccountInitializer(userMapper, passwordEncoder);
+        new DevAccountInitializer(accountMapper, passwordEncoder);
 
     @Test
     void createsTheDemoAccountWhenItIsMissing() throws Exception {
-        when(userMapper.selectOne(any())).thenReturn(null);
+        when(accountMapper.selectOne(any())).thenReturn(null);
         when(passwordEncoder.encode(DevAccountInitializer.PASSWORD)).thenReturn("encoded-password");
 
         initializer.run(null);
 
-        verify(userMapper).insert(any(User.class));
-        verify(userMapper, never()).updateById(any(User.class));
+        verify(accountMapper).insert(any(Account.class));
+        verify(accountMapper, never()).updateById(any(Account.class));
     }
 
     @Test
     void restoresTheExpectedPasswordForAnExistingDemoAccount() throws Exception {
-        User user = new User();
-        user.setId(1L);
-        user.setUsername(DevAccountInitializer.USERNAME);
-        user.setPassword("stale-password");
-        when(userMapper.selectOne(any())).thenReturn(user);
+        Account account = new Account();
+        account.setId(1L);
+        account.setUsername(DevAccountInitializer.USERNAME);
+        account.setPasswordHash("stale-password");
+        when(accountMapper.selectOne(any())).thenReturn(account);
         when(passwordEncoder.matches(DevAccountInitializer.PASSWORD, "stale-password"))
             .thenReturn(false);
         when(passwordEncoder.encode(DevAccountInitializer.PASSWORD)).thenReturn("encoded-password");
 
         initializer.run(null);
 
-        verify(userMapper).updateById(user);
-        org.assertj.core.api.Assertions.assertThat(user.getPassword()).isEqualTo("encoded-password");
+        verify(accountMapper).updateById(account);
+        org.assertj.core.api.Assertions.assertThat(account.getPasswordHash()).isEqualTo("encoded-password");
     }
 }

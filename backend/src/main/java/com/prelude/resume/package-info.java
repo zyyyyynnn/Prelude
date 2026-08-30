@@ -1,5 +1,5 @@
 @org.springframework.modulith.ApplicationModule(
     displayName = "Resume",
-    allowedDependencies = {"documents::extraction", "llm"}
+    allowedDependencies = {"documents::extraction", "identity::api", "llm"}
 )
 package com.prelude.resume;

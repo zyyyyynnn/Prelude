@@ -3,7 +3,7 @@ package com.prelude.identity.api;
 import com.prelude.Result;
 import com.prelude.identity.api.UserProfileRequest;
 import com.prelude.identity.api.UserProfileResponse;
-import com.prelude.identity.application.UserProfileService;
+import com.prelude.identity.application.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,20 +20,20 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserProfileService userProfileService;
+    private final ProfileService profileService;
 
     @GetMapping("/profile")
     public Result<UserProfileResponse> getProfile() {
-        return Result.success(userProfileService.getCurrentUserProfile());
+        return Result.success(profileService.getCurrentUserProfile());
     }
 
     @PutMapping("/profile")
     public Result<UserProfileResponse> updateProfile(@Valid @RequestBody UserProfileRequest request) {
-        return Result.success(userProfileService.updateCurrentUserProfile(request));
+        return Result.success(profileService.updateCurrentUserProfile(request));
     }
 
     @PostMapping("/avatar")
     public Result<UserProfileResponse> updateAvatar(@RequestParam("file") MultipartFile file) {
-        return Result.success(userProfileService.updateAvatar(file));
+        return Result.success(profileService.updateAvatar(file));
     }
 }

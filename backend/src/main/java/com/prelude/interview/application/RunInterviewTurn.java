@@ -37,7 +37,7 @@ public class RunInterviewTurn {
         InterviewMessage insertedUserMessage = null;
         boolean assistantPersisted = false;
         try {
-            InterviewSession session = sessionAccess.requireOngoing(command.sessionId(), command.userId());
+            InterviewSession session = sessionAccess.requireOngoing(command.sessionId(), command.accountId());
             String content = normalizeContent(command.content());
             boolean firstRound = !hasConversationRound(command.sessionId());
             List<Map<String, String>> messages;
@@ -55,10 +55,12 @@ public class RunInterviewTurn {
 
             StringBuilder assistantReply = new StringBuilder();
             List<LlmAttachment> imageAttachments = command.autoStart() && firstRound
-                ? attachmentContextPort.list(session.getUserId(), "interview", session.getId()).stream()
+                ? attachmentContextPort.list(session.getAccountId(), "interview", session.getId()).stream()
                     .filter(attachment -> attachment.image())
                     .map(attachment -> new LlmAttachment(
-                        attachment.fileName(), attachment.mediaType(), attachment.content()))
+                        attachment.fileName(),
+                        attachment.mediaType(),
+                        attachmentContextPort.readOwnedContent(session.getAccountId(), attachment.assetRef())))
                     .toList()
                 : List.of();
             streamAssistantReply(session, messages, imageAttachments, assistantReply, sink);
@@ -94,7 +96,8 @@ public class RunInterviewTurn {
     ) {
         chatPort.stream(
             ChatRequest.snapshot(
-                session.getUserId(),
+                session.getAccountId(),
+                session.getId(),
                 LlmPurpose.CHAT,
                 PromptIds.CHAT,
                 messages,

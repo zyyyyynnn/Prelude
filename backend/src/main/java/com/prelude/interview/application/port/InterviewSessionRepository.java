@@ -13,5 +13,5 @@ public interface InterviewSessionRepository {
 
     int update(InterviewSession session);
 
-    List<InterviewSession> listByUser(Long userId);
+    List<InterviewSession> listByUser(Long accountId);
 }

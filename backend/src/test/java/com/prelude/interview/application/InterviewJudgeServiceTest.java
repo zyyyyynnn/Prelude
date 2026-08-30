@@ -45,7 +45,7 @@ class InterviewJudgeServiceTest {
 
         InterviewSession session = new InterviewSession();
         session.setId(11L);
-        session.setUserId(7L);
+        session.setAccountId(7L);
         session.setTargetPosition("Java 后端工程师");
         session.setLlmProvider("deepseek");
         session.setLlmModel("deepseek-v4-flash");

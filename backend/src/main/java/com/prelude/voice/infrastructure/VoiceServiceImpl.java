@@ -31,9 +31,9 @@ public class VoiceServiceImpl implements VoicePort {
             .build();
 
     @Override
-    public String speechToText(Long sessionId, byte[] audioBytes, String filename) {
+    public String speechToText(Long accountId, Long sessionId, byte[] audioBytes, String filename) {
         try {
-            VoiceModelAccess access = voiceModelAccessPort.resolveCurrentUser();
+            VoiceModelAccess access = voiceModelAccessPort.resolveForAccount(accountId);
             String url = access.baseUrl() + "/audio/transcriptions";
 
             RequestBody fileBody = RequestBody.create(audioBytes, MediaType.parse("audio/webm"));
@@ -63,9 +63,9 @@ public class VoiceServiceImpl implements VoicePort {
     }
 
     @Override
-    public byte[] textToSpeech(String text) {
+    public byte[] textToSpeech(Long accountId, String text) {
         try {
-            VoiceModelAccess access = voiceModelAccessPort.resolveCurrentUser();
+            VoiceModelAccess access = voiceModelAccessPort.resolveForAccount(accountId);
             String url = access.baseUrl() + "/audio/speech";
 
             Map<String, Object> payload = new HashMap<>();

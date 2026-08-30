@@ -35,13 +35,13 @@ public class InterviewJudgeService {
     private final PromptRegistry promptRegistry;
 
     public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg) {
-        Long userId = session.getUserId();
-        String lockKey = "lock:judge:" + userId + ":" + session.getId();
+        Long accountId = session.getAccountId();
+        String lockKey = "lock:judge:" + accountId + ":" + session.getId();
         boolean lockAcquired = false;
         try {
             lockAcquired = acquireJudgeLock(lockKey);
             if (!lockAcquired) {
-                log.warn("Failed to acquire judge lock for user {}, skipping judge", userId);
+                log.warn("Failed to acquire judge lock for account {}, skipping judge", accountId);
                 return Optional.empty();
             }
 
@@ -84,7 +84,8 @@ public class InterviewJudgeService {
             "候选人的回答：" + userMsg.getContent() + "\n";
 
         String judgeOutput = chatPort.complete(ChatRequest.snapshot(
-            session.getUserId(),
+            session.getAccountId(),
+            session.getId(),
             LlmPurpose.JUDGE,
             PromptIds.JUDGE,
             List.of(

@@ -5,12 +5,11 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
 import com.prelude.llm.api.LlmProviderResponse;
 import com.prelude.llm.persistence.LlmProviderConfig;
-import com.prelude.identity.User;
 import com.prelude.llm.persistence.LlmProviderConfigMapper;
-import com.prelude.identity.UserMapper;
+import com.prelude.identity.Account;
+import com.prelude.identity.AccountMapper;
 import com.prelude.llm.LlmProviderRegistry;
 import com.prelude.llm.LlmSelectionResolver;
 import com.prelude.settings.AesGcmEncryptor;
@@ -36,7 +35,7 @@ import java.util.function.Consumer;
 @Component
 public class LlmRouter {
 
-    private final UserMapper userMapper;
+    private final AccountMapper accountMapper;
     private final LlmProviderConfigMapper llmProviderConfigMapper;
     private final AesGcmEncryptor aesGcmEncryptor;
     private final ObjectMapper objectMapper;
@@ -46,20 +45,20 @@ public class LlmRouter {
     private final CircuitBreakerRegistry circuitBreakerRegistry;
 
     public LlmRouter(
-        UserMapper userMapper,
+        AccountMapper accountMapper,
         LlmProviderConfigMapper llmProviderConfigMapper,
         AesGcmEncryptor aesGcmEncryptor,
         ObjectMapper objectMapper,
         List<LlmProvider> providers,
         RealtimePort realtimePort
     ) {
-        this.userMapper = userMapper;
+        this.accountMapper = accountMapper;
         this.llmProviderConfigMapper = llmProviderConfigMapper;
         this.aesGcmEncryptor = aesGcmEncryptor;
         this.objectMapper = objectMapper;
         this.providerRegistry = new LlmProviderRegistry(providers);
         this.selectionResolver = new LlmSelectionResolver(
-            userMapper,
+            accountMapper,
             llmProviderConfigMapper,
             objectMapper,
             providerRegistry
@@ -79,7 +78,7 @@ public class LlmRouter {
 
     @Autowired
     public LlmRouter(
-        UserMapper userMapper,
+        AccountMapper accountMapper,
         LlmProviderConfigMapper llmProviderConfigMapper,
         AesGcmEncryptor aesGcmEncryptor,
         ObjectMapper objectMapper,
@@ -88,7 +87,7 @@ public class LlmRouter {
         LlmProviderRegistry providerRegistry,
         LlmSelectionResolver selectionResolver
     ) {
-        this.userMapper = userMapper;
+        this.accountMapper = accountMapper;
         this.llmProviderConfigMapper = llmProviderConfigMapper;
         this.aesGcmEncryptor = aesGcmEncryptor;
         this.objectMapper = objectMapper;
@@ -117,40 +116,41 @@ public class LlmRouter {
             .toList();
     }
 
-    public LlmSelection resolveCurrentUserSelection() {
-        return resolveCurrentUserSelection(null);
+    public LlmSelection resolveSelection(Long accountId, String requestedModel) {
+        return selectionResolver.resolveSelection(accountId, requestedModel);
     }
 
-    public LlmSelection resolveCurrentUserSelection(String requestedModel) {
-        return selectionResolver.resolveCurrentUserSelection(requestedModel);
-    }
-
-    public String chatCurrentUser(List<Map<String, String>> messages) {
-        User user = requireCurrentUser();
-        LlmProvider provider = requireProvider(user.getLlmProvider());
-        String model = normalizeModel(user.getLlmModel(), provider.defaultModel());
+    public String chat(Long accountId, List<Map<String, String>> messages) {
+        Account account = requireAccount(accountId);
+        LlmProvider provider = requireProvider(account.getLlmProvider());
+        String model = normalizeModel(account.getLlmModel(), provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), model);
-        String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
-        return provider.chat(buildInvocation(providerConfig, model, apiKey, user, messages, null, List.of()));
+        String apiKey = resolveApiKey(account.getLlmApiKeyEncrypted(), provider);
+        return provider.chat(buildInvocation(providerConfig, model, apiKey, account, messages, null, List.of()));
     }
 
-    public void streamCurrentUser(List<Map<String, String>> messages, Consumer<String> onDelta) {
-        User user = requireCurrentUser();
-        LlmProvider provider = requireProvider(user.getLlmProvider());
-        String model = normalizeModel(user.getLlmModel(), provider.defaultModel());
+    public void stream(Long accountId, List<Map<String, String>> messages, Consumer<String> onDelta) {
+        Account account = requireAccount(accountId);
+        LlmProvider provider = requireProvider(account.getLlmProvider());
+        String model = normalizeModel(account.getLlmModel(), provider.defaultModel());
         LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), model);
-        String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+        String apiKey = resolveApiKey(account.getLlmApiKeyEncrypted(), provider);
         provider.streamChat(buildInvocation(
-            providerConfig, model, apiKey, user, messages, null, List.of()), onDelta);
+            providerConfig, model, apiKey, account, messages, null, List.of()), onDelta);
     }
 
-    public String chatWithSnapshot(String providerKey, String model, List<Map<String, String>> messages) {
-        return chatWithSnapshot(providerKey, model, messages, null);
+    public String chatWithSnapshot(
+        Long accountId,
+        String providerKey,
+        String model,
+        List<Map<String, String>> messages
+    ) {
+        return chatWithSnapshot(accountId, providerKey, model, messages, null);
     }
 
     /**
-     * 用显式参数测试草稿配置，不读写用户表、不触发 fallback、不经过熔断器。
-     * 自定义协议使用用户根地址解析出对应的调用端点。
+     * 用显式参数测试草稿配置，不读写账户表、不触发 fallback、不经过熔断器。
+     * 自定义协议使用账户根地址解析出对应的调用端点。
      */
     public String chatWithExplicit(
         String providerKey,
@@ -180,15 +180,17 @@ public class LlmRouter {
     }
 
     public String chatWithSnapshot(
+        Long accountId,
         String providerKey,
         String model,
         List<Map<String, String>> messages,
         Map<String, Object> extraParams
     ) {
-        return chatWithSnapshot(providerKey, model, messages, extraParams, List.of());
+        return chatWithSnapshot(accountId, providerKey, model, messages, extraParams, List.of());
     }
 
     public String chatWithSnapshot(
+        Long accountId,
         String providerKey,
         String model,
         List<Map<String, String>> messages,
@@ -198,38 +200,46 @@ public class LlmRouter {
         CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(providerKey);
         try {
             return cb.executeSupplier(() -> {
-                User user = requireCurrentUser();
+                Account account = requireAccount(accountId);
                 LlmProvider provider = requireProvider(providerKey);
                 String normalizedModel = normalizeModel(model, provider.defaultModel());
                 LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
-                String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+                String apiKey = resolveApiKey(account.getLlmApiKeyEncrypted(), provider);
                 return provider.chat(buildInvocation(
-                    providerConfig, normalizedModel, apiKey, user, messages, extraParams, attachments));
+                    providerConfig, normalizedModel, apiKey, account, messages, extraParams, attachments));
             });
         } catch (Exception e) {
             log.warn("Call to LLM provider {} failed, attempting fallback routing", providerKey, e);
             if (e instanceof BusinessException && !(e instanceof LlmServerException || e instanceof LlmTimeoutException)) {
                 throw (BusinessException) e;
             }
-            return executeFallbackChat(providerKey, model, messages, extraParams, attachments);
+            return executeFallbackChat(accountId, providerKey, model, messages, extraParams, attachments);
         }
     }
 
-    public void streamWithSnapshot(String providerKey, String model, List<Map<String, String>> messages, Consumer<String> onDelta) {
-        streamWithSnapshot(providerKey, model, messages, onDelta, null);
+    public void streamWithSnapshot(
+        Long accountId,
+        String providerKey,
+        String model,
+        List<Map<String, String>> messages,
+        Consumer<String> onDelta
+    ) {
+        streamWithSnapshot(accountId, providerKey, model, messages, onDelta, null);
     }
 
     public void streamWithSnapshot(
+        Long accountId,
         String providerKey,
         String model,
         List<Map<String, String>> messages,
         Consumer<String> onDelta,
         Map<String, Object> extraParams
     ) {
-        streamWithSnapshot(providerKey, model, messages, onDelta, extraParams, List.of());
+        streamWithSnapshot(accountId, providerKey, model, messages, onDelta, extraParams, List.of());
     }
 
     public void streamWithSnapshot(
+        Long accountId,
         String providerKey,
         String model,
         List<Map<String, String>> messages,
@@ -240,31 +250,32 @@ public class LlmRouter {
         CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(providerKey);
         try {
             cb.executeRunnable(() -> {
-                User user = requireCurrentUser();
+                Account account = requireAccount(accountId);
                 LlmProvider provider = requireProvider(providerKey);
                 String normalizedModel = normalizeModel(model, provider.defaultModel());
                 LlmProviderConfig providerConfig = validateProviderSelection(provider.providerKey(), normalizedModel);
-                String apiKey = resolveApiKey(user.getLlmApiKeyEncrypted(), provider);
+                String apiKey = resolveApiKey(account.getLlmApiKeyEncrypted(), provider);
                 provider.streamChat(buildInvocation(
-                    providerConfig, normalizedModel, apiKey, user, messages, extraParams, attachments), onDelta);
+                    providerConfig, normalizedModel, apiKey, account, messages, extraParams, attachments), onDelta);
             });
         } catch (Exception e) {
             log.warn("Stream call to LLM provider {} failed, attempting fallback routing", providerKey, e);
             if (e instanceof BusinessException && !(e instanceof LlmServerException || e instanceof LlmTimeoutException)) {
                 throw (BusinessException) e;
             }
-            executeFallbackStream(providerKey, model, messages, onDelta, extraParams, attachments);
+            executeFallbackStream(accountId, providerKey, model, messages, onDelta, extraParams, attachments);
         }
     }
 
     private String executeFallbackChat(
+        Long accountId,
         String failedProviderKey,
         String model,
         List<Map<String, String>> messages,
         Map<String, Object> extraParams,
         List<LlmAttachment> attachments
     ) {
-        // 用户 BYOK 配置失败必须显式暴露，不得静默 fallback 到系统通道。
+        // 账户 BYOK 配置失败必须显式暴露，不得静默 fallback 到系统通道。
         if (CustomLlmProtocol.isCustom(failedProviderKey)) {
             throw BusinessException.badRequest("自定义接口调用失败，请检查 Base URL、API Key 与模型后重试。");
         }
@@ -277,22 +288,23 @@ public class LlmRouter {
         LlmProviderConfig fallbackConfig = configs.get(0);
         String fallbackProviderKey = fallbackConfig.getProviderKey();
         log.info("Fallback routing triggered: {} -> {}", failedProviderKey, fallbackProviderKey);
-        
+
         broadcastFallbackNotification(fallbackConfig.getDisplayName());
 
         CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(fallbackProviderKey);
         return cb.executeSupplier(() -> {
-            User user = requireCurrentUser();
+            Account account = requireAccount(accountId);
             LlmProvider provider = requireProvider(fallbackProviderKey);
             String fallbackModel = provider.defaultModel();
-            // fallback 仅允许使用目标 provider 的系统 Key，绝不复用用户 BYOK Key，避免把用户 Key 发给其他 provider。
+            // fallback 仅允许使用目标 provider 的系统 Key，绝不复用账户 BYOK Key，避免把账户 Key 发给其他 provider。
             String apiKey = resolveSystemApiKey(provider);
             return provider.chat(buildInvocation(
-                fallbackConfig, fallbackModel, apiKey, user, messages, extraParams, attachments));
+                fallbackConfig, fallbackModel, apiKey, account, messages, extraParams, attachments));
         });
     }
 
     private void executeFallbackStream(
+        Long accountId,
         String failedProviderKey,
         String model,
         List<Map<String, String>> messages,
@@ -312,22 +324,22 @@ public class LlmRouter {
         LlmProviderConfig fallbackConfig = configs.get(0);
         String fallbackProviderKey = fallbackConfig.getProviderKey();
         log.info("Fallback routing triggered (stream): {} -> {}", failedProviderKey, fallbackProviderKey);
-        
+
         broadcastFallbackNotification(fallbackConfig.getDisplayName());
 
         CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker(fallbackProviderKey);
         cb.executeRunnable(() -> {
-            User user = requireCurrentUser();
+            Account account = requireAccount(accountId);
             LlmProvider provider = requireProvider(fallbackProviderKey);
             String fallbackModel = provider.defaultModel();
             String apiKey = resolveSystemApiKey(provider);
             provider.streamChat(buildInvocation(
-                fallbackConfig, fallbackModel, apiKey, user, messages, extraParams, attachments), onDelta);
+                fallbackConfig, fallbackModel, apiKey, account, messages, extraParams, attachments), onDelta);
         });
     }
 
     private List<LlmProviderConfig> listFallbackProviderConfigs(String failedProviderKey) {
-        // SQL 与内存双重排除用户 BYOK provider，避免 fallback 复用用户端点或密钥。
+        // SQL 与内存双重排除账户 BYOK provider，避免 fallback 复用账户端点或密钥。
         return llmProviderConfigMapper.selectList(new LambdaQueryWrapper<LlmProviderConfig>()
             .eq(LlmProviderConfig::getEnabled, 1)
             .ne(LlmProviderConfig::getProviderKey, failedProviderKey)
@@ -339,7 +351,7 @@ public class LlmRouter {
     }
 
     private void broadcastFallbackNotification(String displayName) {
-        Long sessionId = UserContext.getCurrentSessionId();
+        Long sessionId = LlmInvocationContext.getCurrentSessionId();
         if (sessionId != null) {
             realtimePort.publish(sessionId, "fallback", "已为您自动切换至备用通道: " + displayName);
         }
@@ -353,13 +365,13 @@ public class LlmRouter {
         LlmProviderConfig providerConfig,
         String model,
         String apiKey,
-        User user,
+        Account account,
         List<Map<String, String>> messages,
         Map<String, Object> callerExtraParams,
         List<LlmAttachment> attachments
     ) {
-        Integer maxTokens = user.getLlmMaxTokens();
-        String thinkingDepth = user.getLlmThinkingDepth();
+        Integer maxTokens = account.getLlmMaxTokens();
+        String thinkingDepth = account.getLlmThinkingDepth();
         Map<String, Object> extraParams = null;
         if (thinkingDepth != null && !thinkingDepth.isBlank()) {
             extraParams = new HashMap<>();
@@ -374,7 +386,7 @@ public class LlmRouter {
         String baseUrl = providerConfig.getBaseUrl();
         if (CustomLlmProtocol.isCustom(providerConfig.getProviderKey())) {
             CustomLlmProtocol protocol = CustomLlmProtocol.require(providerConfig.getProviderKey());
-            baseUrl = CustomLlmEndpointUrl.toInvocationUrl(user.getLlmBaseUrl(), protocol);
+            baseUrl = CustomLlmEndpointUrl.toInvocationUrl(account.getLlmBaseUrl(), protocol);
         }
         return new LlmProvider.LlmInvocation(
             baseUrl,
@@ -388,7 +400,7 @@ public class LlmRouter {
     }
 
     /**
-     * 草稿测试专用：用显式 baseUrl/apiKey 构建 invocation，不读 user 表的 maxTokens/thinkingDepth/baseUrl。
+     * 草稿测试专用：用显式 baseUrl/apiKey 构建 invocation，不读账户表的 maxTokens/thinkingDepth/baseUrl。
      */
     private LlmProvider.LlmInvocation buildInvocationExplicit(
         LlmProviderConfig providerConfig,
@@ -415,44 +427,29 @@ public class LlmRouter {
         );
     }
 
-    private User requireCurrentUser() {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) {
+    private Account requireAccount(Long accountId) {
+        if (accountId == null) {
             throw BusinessException.unauthorized("请先登录");
         }
-        User user = userMapper.selectById(userId);
-        if (user == null) {
+        Account account = accountMapper.selectById(accountId);
+        if (account == null) {
             throw BusinessException.unauthorized("请先登录");
         }
-        return user;
+        return account;
     }
 
     private LlmProvider requireProvider(String providerKey) {
         return providerRegistry.require(providerKey);
     }
 
-    private LlmProviderConfig requireEnabledProviderConfig(String providerKey) {
-        if (providerKey == null || providerKey.isBlank()) {
-            throw BusinessException.badRequest("接入方式不能为空");
-        }
-        LlmProviderConfig providerConfig = llmProviderConfigMapper.selectOne(new LambdaQueryWrapper<LlmProviderConfig>()
-            .eq(LlmProviderConfig::getProviderKey, providerKey)
-            .eq(LlmProviderConfig::getEnabled, 1)
-            .last("LIMIT 1"));
-        if (providerConfig == null) {
-            throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换接入方式");
-        }
-        return providerConfig;
-    }
-
     private String normalizeModel(String model, String defaultModel) {
         return (model == null || model.isBlank()) ? defaultModel : model;
     }
 
-    private String resolveApiKey(String encryptedUserKey, LlmProvider provider) {
-        String userKey = decryptUserApiKey(encryptedUserKey);
-        if (userKey != null && !userKey.isBlank()) {
-            return userKey;
+    private String resolveApiKey(String encryptedAccountKey, LlmProvider provider) {
+        String accountKey = decryptAccountApiKey(encryptedAccountKey);
+        if (accountKey != null && !accountKey.isBlank()) {
+            return accountKey;
         }
         if (CustomLlmProtocol.isCustom(provider.providerKey())) {
             throw BusinessException.badRequest("自定义接口 API Key 不能为空");
@@ -465,7 +462,7 @@ public class LlmRouter {
     }
 
     /**
-     * fallback 专用：只允许使用目标 provider 的系统 Key，绝不解密用户 BYOK Key。
+     * fallback 专用：只允许使用目标 provider 的系统 Key，绝不解密账户 BYOK Key。
      */
     private String resolveSystemApiKey(LlmProvider provider) {
         String systemApiKey = provider.systemApiKey();
@@ -489,14 +486,14 @@ public class LlmRouter {
         throw BusinessException.badRequest("模型服务暂不可用，请稍后重试或切换接入方式");
     }
 
-    private String decryptUserApiKey(String encryptedUserKey) {
-        if (encryptedUserKey == null || encryptedUserKey.isBlank()) {
+    private String decryptAccountApiKey(String encryptedAccountKey) {
+        if (encryptedAccountKey == null || encryptedAccountKey.isBlank()) {
             return null;
         }
         try {
-            return aesGcmEncryptor.decrypt(encryptedUserKey);
+            return aesGcmEncryptor.decrypt(encryptedAccountKey);
         } catch (BusinessException exception) {
-            log.warn("Failed to decrypt user API key, fallback to system default");
+            log.warn("Failed to decrypt account API key, fallback to system default");
             return null;
         }
     }

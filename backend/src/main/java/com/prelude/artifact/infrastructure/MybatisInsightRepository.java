@@ -2,10 +2,10 @@ package com.prelude.artifact.infrastructure;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.artifact.domain.ScoreHistory;
-import com.prelude.artifact.domain.UserWeakness;
+import com.prelude.artifact.domain.AccountWeakness;
 import com.prelude.artifact.application.port.InsightRepository;
 import com.prelude.artifact.infrastructure.persistence.ScoreHistoryMapper;
-import com.prelude.artifact.infrastructure.persistence.UserWeaknessMapper;
+import com.prelude.artifact.infrastructure.persistence.AccountWeaknessMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -16,31 +16,31 @@ import java.util.List;
 public class MybatisInsightRepository implements InsightRepository {
 
     private final ScoreHistoryMapper scoreHistoryMapper;
-    private final UserWeaknessMapper userWeaknessMapper;
+    private final AccountWeaknessMapper accountWeaknessMapper;
 
     @Override
-    public List<ScoreHistory> recentScores(Long userId, int limit) {
+    public List<ScoreHistory> recentScores(Long accountId, int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 100));
         return scoreHistoryMapper.selectList(new LambdaQueryWrapper<ScoreHistory>()
-            .eq(ScoreHistory::getUserId, userId)
+            .eq(ScoreHistory::getAccountId, accountId)
             .orderByDesc(ScoreHistory::getCreatedAt)
             .last("LIMIT " + safeLimit));
     }
 
     @Override
-    public List<UserWeakness> listWeaknessesByUser(Long userId) {
-        return userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
-            .eq(UserWeakness::getUserId, userId)
-            .orderByDesc(UserWeakness::getCreatedAt)
-            .orderByAsc(UserWeakness::getId));
+    public List<AccountWeakness> listWeaknessesByAccount(Long accountId) {
+        return accountWeaknessMapper.selectList(new LambdaQueryWrapper<AccountWeakness>()
+            .eq(AccountWeakness::getAccountId, accountId)
+            .orderByDesc(AccountWeakness::getCreatedAt)
+            .orderByAsc(AccountWeakness::getId));
     }
 
     @Override
-    public List<UserWeakness> listWeaknessesBySession(Long sessionId) {
-        return userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
-            .eq(UserWeakness::getSessionId, sessionId)
-            .orderByAsc(UserWeakness::getCreatedAt)
-            .orderByAsc(UserWeakness::getId));
+    public List<AccountWeakness> listWeaknessesBySession(Long sessionId) {
+        return accountWeaknessMapper.selectList(new LambdaQueryWrapper<AccountWeakness>()
+            .eq(AccountWeakness::getSessionId, sessionId)
+            .orderByAsc(AccountWeakness::getCreatedAt)
+            .orderByAsc(AccountWeakness::getId));
     }
 
     @Override
@@ -51,11 +51,11 @@ public class MybatisInsightRepository implements InsightRepository {
     }
 
     @Override
-    public void replaceWeaknesses(Long sessionId, List<UserWeakness> weaknesses) {
-        userWeaknessMapper.delete(new LambdaQueryWrapper<UserWeakness>()
-            .eq(UserWeakness::getSessionId, sessionId));
-        for (UserWeakness weakness : weaknesses) {
-            userWeaknessMapper.insert(weakness);
+    public void replaceWeaknesses(Long sessionId, List<AccountWeakness> weaknesses) {
+        accountWeaknessMapper.delete(new LambdaQueryWrapper<AccountWeakness>()
+            .eq(AccountWeakness::getSessionId, sessionId));
+        for (AccountWeakness weakness : weaknesses) {
+            accountWeaknessMapper.insert(weakness);
         }
     }
 }

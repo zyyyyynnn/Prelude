@@ -20,9 +20,9 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSession>, In
     }
 
     @Override
-    default List<InterviewSession> listByUser(Long userId) {
+    default List<InterviewSession> listByUser(Long accountId) {
         return selectList(new LambdaQueryWrapper<InterviewSession>()
-            .eq(InterviewSession::getUserId, userId)
+            .eq(InterviewSession::getAccountId, accountId)
             .orderByDesc(InterviewSession::getCreatedAt));
     }
 }

@@ -1,4 +1,4 @@
 package com.prelude.identity.api;
 
-public record LoginResponse(Long userId) {
+public record LoginResponse(Long accountId) {
 }

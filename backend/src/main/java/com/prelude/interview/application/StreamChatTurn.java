@@ -1,6 +1,6 @@
 package com.prelude.interview.application;
 
-import com.prelude.UserContext;
+import com.prelude.BusinessException;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.activity.RealtimePort;
@@ -27,36 +27,43 @@ public class StreamChatTurn {
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
     private final RealtimePort realtimePort;
+    private final com.prelude.identity.api.SessionValidity sessionValidity;
 
-    public SseEmitter execute(Long sessionId, String content, boolean autoStart) {
-        Long userId = sessionAccess.currentUserId();
+    public SseEmitter execute(Long sessionId, String content, boolean autoStart, String authSessionId) {
+        long accountId = sessionAccess.currentAccountId();
         SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
         stream.emitter().onTimeout(() -> completeWithError(stream, "连接超时，请重试"));
         stream.emitter().onError(error -> stream.complete());
 
-        sseTaskExecutor.execute(() -> runTurn(sessionId, userId, content, autoStart, stream));
+        sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, authSessionId, content, autoStart, stream));
         return stream.emitter();
     }
 
     private void runTurn(
         Long sessionId,
-        Long userId,
+        long accountId,
+        String authSessionId,
         String content,
         boolean autoStart,
         SseSessionStream stream
     ) {
-        UserContext.setCurrentUserId(userId);
-        UserContext.setCurrentSessionId(sessionId);
         try {
             InterviewTurnResult result = runInterviewTurn.execute(
                 new InterviewTurnCommand(
                     sessionId,
-                    userId,
+                    accountId,
                     content,
                     autoStart,
                     true
                 ),
-                delta -> stream.send("message", delta)
+                delta -> {
+                    // Natural send boundary: a revoked session stops the stream
+                    // instead of continuing to emit authenticated business data.
+                    if (!sessionValidity.isActive(authSessionId, accountId)) {
+                        throw BusinessException.unauthorized("登录已失效，请重新登录");
+                    }
+                    stream.send("message", delta);
+                }
             );
             if (result.userMessage() == null) {
                 stream.complete();
@@ -66,8 +73,6 @@ public class StreamChatTurn {
             interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session());
         } catch (RuntimeException error) {
             completeWithError(stream, error.getMessage() == null ? "连接已断开，请重试" : error.getMessage());
-        } finally {
-            UserContext.remove();
         }
     }
 
@@ -87,7 +92,6 @@ public class StreamChatTurn {
         SseSessionStream stream
     ) {
         sseTaskExecutor.execute(() -> {
-            UserContext.setCurrentUserId(session.getUserId());
             try {
                 interviewJudgeService.judgeAndPersist(session, userMessage)
                     .ifPresent(result -> sendJudgeEvent(stream, result.json()));
@@ -95,8 +99,6 @@ public class StreamChatTurn {
             } catch (RuntimeException error) {
                 log.error("Error in async judge task", error);
                 stream.complete();
-            } finally {
-                UserContext.remove();
             }
         });
     }

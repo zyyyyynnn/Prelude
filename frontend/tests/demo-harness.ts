@@ -183,9 +183,13 @@ async function respond(route: Route, state: DemoState) {
     : null
   state.requests.push({ path, method, body })
 
+  if (path === '/api/auth/me' && method === 'GET') {
+    if (!state.authenticated) return fulfillProblem(route, 401, 'authentication_required', '请先登录')
+    return fulfillJson(route, { accountId: 1, username: 'demo' })
+  }
   if (path === '/api/auth/login' && method === 'POST') {
     state.authenticated = true
-    return fulfillJson(route, { userId: 1 })
+    return fulfillJson(route, { accountId: 1 })
   }
   if (path === '/api/auth/logout' && method === 'POST') {
     state.authenticated = false
@@ -289,10 +293,12 @@ async function respond(route: Route, state: DemoState) {
     ])
   if (path === '/api/user/profile' && method === 'GET')
     return fulfillJson(route, {
+      accountId: 1,
       username: 'demo',
       email: 'demo@prelude.local',
       avatarUrl: null,
       themePreference: 'light',
+      revision: 0,
     })
   if (path === '/api/llm/providers' && method === 'GET') return fulfillJson(route, demoProviders)
   if (path === '/api/llm/config' && method === 'GET') return fulfillJson(route, state.llmConfig)
@@ -318,11 +324,7 @@ async function respond(route: Route, state: DemoState) {
       { category: '量化表达', count: 1, descriptions: ['用指标说明架构权衡。'] },
     ])
 
-  await route.fulfill({
-    status: 501,
-    contentType: 'application/json',
-    body: JSON.stringify({ code: 501, message: `Demo harness 未处理 ${method} ${path}`, data: null }),
-  })
+  return fulfillProblem(route, 501, 'not_implemented', `Demo harness 未处理 ${method} ${path}`)
 }
 
 function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessionItem {
@@ -337,6 +339,14 @@ function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessi
     createdAt: '2026-08-30T09:00:00+08:00',
     summaryReport: session.summaryReport,
   }
+}
+
+async function fulfillProblem(route: Route, status: number, code: string, detail: string) {
+  await route.fulfill({
+    status,
+    contentType: 'application/problem+json',
+    body: JSON.stringify({ type: 'about:blank', title: code, status, detail, code }),
+  })
 }
 
 async function fulfillJson(route: Route, data: unknown) {

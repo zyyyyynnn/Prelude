@@ -35,7 +35,7 @@ public class MybatisResumeRepository implements ResumeRepository {
     @Override
     public StoredResume create(NewResume draft) {
         Resume row = new Resume();
-        row.setUserId(draft.userId());
+        row.setAccountId(draft.accountId());
         row.setFileName(draft.fileName());
         row.setRawText(draft.rawText());
         row.setParsedSkills(writeJson(draft.parsedSkills()));
@@ -50,9 +50,9 @@ public class MybatisResumeRepository implements ResumeRepository {
     }
 
     @Override
-    public List<ResumeListItem> listByOwner(Long userId) {
+    public List<ResumeListItem> listByOwner(Long accountId) {
         List<Resume> resumes = resumeMapper.selectList(new LambdaQueryWrapper<Resume>()
-            .eq(Resume::getUserId, userId)
+            .eq(Resume::getAccountId, accountId)
             .orderByDesc(Resume::getCreatedAt));
         if (resumes == null || resumes.isEmpty()) {
             return List.of();
@@ -82,7 +82,7 @@ public class MybatisResumeRepository implements ResumeRepository {
     private StoredResume toStored(Resume row) {
         return new StoredResume(
             row.getId(),
-            row.getUserId(),
+            row.getAccountId(),
             row.getFileName(),
             row.getRawText(),
             readJson(row.getParsedSkills(), new TypeReference<List<String>>() {}),

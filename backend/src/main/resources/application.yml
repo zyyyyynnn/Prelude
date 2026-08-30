@@ -1,5 +1,12 @@
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      cookie:
+        name: SESSION
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
 
 spring:
   application:
@@ -16,9 +23,16 @@ spring:
     enabled: true
     locations: classpath:db/migration
     validate-migration-naming: true
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false
   session:
-    jdbc:
-      initialize-schema: never
+    data:
+      redis:
+        repository-type: indexed
+        namespace: prelude:session
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
@@ -58,6 +72,25 @@ app:
     aes-secret: ${APP_CRYPTO_AES_SECRET:prelude-local-development-secret-change-me}
 
 prelude:
+  oauth:
+    google:
+      client-id: ${OAUTH_GOOGLE_CLIENT_ID:}
+      client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:}
+    github:
+      client-id: ${OAUTH_GITHUB_CLIENT_ID:}
+      client-secret: ${OAUTH_GITHUB_CLIENT_SECRET:}
+  storage:
+    s3:
+      endpoint: ${PRELUDE_S3_ENDPOINT:http://127.0.0.1:19000}
+      public-endpoint: ${PRELUDE_S3_PUBLIC_ENDPOINT:}
+      region: ${PRELUDE_S3_REGION:us-east-1}
+      bucket: ${PRELUDE_S3_BUCKET:prelude-assets}
+      access-key: ${PRELUDE_S3_ACCESS_KEY:prelude-local-key}
+      secret-key: ${PRELUDE_S3_SECRET_KEY:prelude-local-secret}
+      path-style: ${PRELUDE_S3_PATH_STYLE:true}
+      presign-ttl: ${PRELUDE_S3_PRESIGN_TTL:PT10M}
+    stale-pending-ttl: ${PRELUDE_STORAGE_STALE_PENDING_TTL:PT24H}
+    reconcile-interval-ms: ${PRELUDE_STORAGE_RECONCILE_INTERVAL_MS:300000}
   llm:
     egress:
       allow-http: ${PRELUDE_LLM_EGRESS_ALLOW_HTTP:false}

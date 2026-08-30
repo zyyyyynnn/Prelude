@@ -3,13 +3,17 @@ package com.prelude.assets;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.prelude.BusinessException;
-import com.prelude.UserContext;
+import com.prelude.assets.api.AssetRef;
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.assets.api.AttachmentSnapshot;
+import com.prelude.assets.domain.AssetStatus;
+import com.prelude.assets.persistence.Asset;
+import com.prelude.assets.persistence.AssetMapper;
 import com.prelude.assets.persistence.AttachmentMapper;
 import com.prelude.assets.persistence.StoredAttachment;
 import com.prelude.documents.api.DocumentContent;
 import com.prelude.documents.api.DocumentExtractor;
+import com.prelude.identity.api.CurrentAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,20 +23,30 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+/**
+ * Interview-context attachments. Binary content lives only in the referenced
+ * asset (object storage); this service owns the attachment metadata and the
+ * business binding semantics.
+ */
 @Service
 @RequiredArgsConstructor
 public class AttachmentService implements AttachmentContextPort {
 
+    private static final String KIND_ATTACHMENT = "attachment";
     private static final int MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
     private static final int MAX_ATTACHMENT_COUNT = 5;
     private static final int MAX_EXTRACTED_TEXT = 100_000;
 
     private final AttachmentMapper attachmentMapper;
+    private final AssetMapper assetMapper;
+    private final AssetService assetService;
+    private final AttachmentPublication attachmentPublication;
+    private final ObjectStoragePort objectStoragePort;
     private final DocumentExtractor documentExtractor;
+    private final CurrentAccount currentAccount;
 
-    @Transactional(rollbackFor = Exception.class)
     public AttachmentSnapshot upload(String originalName, String mediaType, byte[] bytes) {
-        Long userId = currentUserId();
+        long accountId = currentAccount.requireId();
         String fileName = safeFileName(originalName);
         if (bytes == null || bytes.length == 0) {
             throw BusinessException.badRequest("请选择附件");
@@ -40,40 +54,67 @@ public class AttachmentService implements AttachmentContextPort {
         if (bytes.length > MAX_ATTACHMENT_BYTES) {
             throw BusinessException.badRequest("单个附件不能超过 10MB");
         }
-        DocumentContent extracted = documentExtractor.extract(fileName, mediaType, bytes);
+        String resolvedMediaType = mediaType == null || mediaType.isBlank()
+            ? "application/octet-stream" : mediaType;
+        DocumentContent extracted = documentExtractor.extract(fileName, resolvedMediaType, bytes);
+
+        Asset asset = assetService.createPending(accountId, KIND_ATTACHMENT, resolvedMediaType, bytes.length);
+        try {
+            objectStoragePort.put(asset.getObjectKey(), resolvedMediaType, bytes);
+        } catch (RuntimeException exception) {
+            // The PENDING row stays as the recovery anchor; the reconciler reclaims it.
+            throw BusinessException.badRequest("附件上传失败");
+        }
+
         StoredAttachment stored = new StoredAttachment();
-        stored.setUserId(userId);
+        stored.setAccountId(accountId);
+        stored.setAssetId(asset.getId());
         stored.setFileName(fileName);
-        stored.setMediaType(mediaType == null || mediaType.isBlank()
-            ? "application/octet-stream" : mediaType);
-        stored.setByteSize((long) bytes.length);
-        stored.setImage(extracted.kind() == DocumentContent.Kind.IMAGE ? 1 : 0);
         stored.setExtractedText(truncate(extracted.text(), MAX_EXTRACTED_TEXT));
-        stored.setContent(bytes);
-        attachmentMapper.insert(stored);
-        return toSnapshot(stored);
+        // One DB transaction: business reference + PENDING_UPLOAD → READY.
+        // A failure rolls both back and leaves the asset PENDING for the reconciler.
+        try {
+            attachmentPublication.finalizeUpload(asset, stored);
+        } catch (RuntimeException exception) {
+            throw BusinessException.badRequest("附件上传失败");
+        }
+
+        return toSnapshot(stored, assetService.requireOwnedReady(accountId, asset.getId()));
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    /**
+     * Deterministic deletion: validate ownership, delete the remote object
+     * (failure leaves both rows intact), then remove the asset row — the
+     * attachment metadata goes with it through the FK cascade in the same
+     * statement.
+     */
     public void deleteUnbound(Long attachmentId) {
-        Long userId = currentUserId();
-        int deleted = attachmentMapper.delete(new LambdaQueryWrapper<StoredAttachment>()
+        long accountId = currentAccount.requireId();
+        StoredAttachment stored = attachmentMapper.selectOne(new LambdaQueryWrapper<StoredAttachment>()
             .eq(StoredAttachment::getId, attachmentId)
-            .eq(StoredAttachment::getUserId, userId)
-            .isNull(StoredAttachment::getScopeType));
-        if (deleted != 1) {
+            .eq(StoredAttachment::getAccountId, accountId)
+            .isNull(StoredAttachment::getScopeType)
+            .last("LIMIT 1"));
+        if (stored == null) {
             throw BusinessException.badRequest("附件不存在、已使用或无权删除");
         }
+        Asset asset = assetMapper.selectById(stored.getAssetId());
+        if (asset == null) {
+            attachmentMapper.deleteById(stored.getId());
+            return;
+        }
+        objectStoragePort.delete(asset.getObjectKey());
+        assetMapper.deleteById(asset.getId());
     }
 
     @Override
-    public List<AttachmentSnapshot> requireOwned(Long userId, List<Long> attachmentIds) {
+    public List<AttachmentSnapshot> requireOwned(Long accountId, List<Long> attachmentIds) {
         List<Long> ids = normalizeIds(attachmentIds);
         if (ids.isEmpty()) return List.of();
         List<StoredAttachment> rows = attachmentMapper.selectList(
             new LambdaQueryWrapper<StoredAttachment>()
                 .in(StoredAttachment::getId, ids)
-                .eq(StoredAttachment::getUserId, userId)
+                .eq(StoredAttachment::getAccountId, accountId)
                 .isNull(StoredAttachment::getScopeType)
         );
         if (rows.size() != ids.size()) {
@@ -87,15 +128,15 @@ public class AttachmentService implements AttachmentContextPort {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void bind(Long userId, List<Long> attachmentIds, String scopeType, Long scopeId) {
+    public void bind(Long accountId, List<Long> attachmentIds, String scopeType, Long scopeId) {
         List<Long> ids = normalizeIds(attachmentIds);
         if (ids.isEmpty()) return;
-        requireOwned(userId, ids);
+        requireOwned(accountId, ids);
         int updated = attachmentMapper.update(null, new LambdaUpdateWrapper<StoredAttachment>()
             .set(StoredAttachment::getScopeType, scopeType)
             .set(StoredAttachment::getScopeId, scopeId)
             .in(StoredAttachment::getId, ids)
-            .eq(StoredAttachment::getUserId, userId)
+            .eq(StoredAttachment::getAccountId, accountId)
             .isNull(StoredAttachment::getScopeType));
         if (updated != ids.size()) {
             throw BusinessException.badRequest("附件绑定失败，请重新上传");
@@ -103,15 +144,24 @@ public class AttachmentService implements AttachmentContextPort {
     }
 
     @Override
-    public List<AttachmentSnapshot> list(Long userId, String scopeType, Long scopeId) {
+    public List<AttachmentSnapshot> list(Long accountId, String scopeType, Long scopeId) {
         return attachmentMapper.selectList(new LambdaQueryWrapper<StoredAttachment>()
-                .eq(StoredAttachment::getUserId, userId)
+                .eq(StoredAttachment::getAccountId, accountId)
                 .eq(StoredAttachment::getScopeType, scopeType)
                 .eq(StoredAttachment::getScopeId, scopeId)
                 .orderByAsc(StoredAttachment::getId))
             .stream()
             .map(this::toSnapshot)
             .toList();
+    }
+
+    @Override
+    public byte[] readOwnedContent(Long accountId, AssetRef assetRef) {
+        Asset asset = assetService.requireOwnedReady(accountId, assetRef.id());
+        if (!KIND_ATTACHMENT.equals(asset.getKind())) {
+            throw BusinessException.notFound("资产不存在");
+        }
+        return assetService.readContent(asset);
     }
 
     private List<Long> normalizeIds(List<Long> attachmentIds) {
@@ -127,16 +177,23 @@ public class AttachmentService implements AttachmentContextPort {
     }
 
     private AttachmentSnapshot toSnapshot(StoredAttachment stored) {
-        return new AttachmentSnapshot(
-            stored.getId(), stored.getFileName(), stored.getMediaType(), stored.getByteSize(),
-            Integer.valueOf(1).equals(stored.getImage()), stored.getExtractedText(), stored.getContent()
-        );
+        Asset asset = assetMapper.selectById(stored.getAssetId());
+        if (asset == null) {
+            throw BusinessException.notFound("资产不存在");
+        }
+        return toSnapshot(stored, asset);
     }
 
-    private Long currentUserId() {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) throw BusinessException.unauthorized("请先登录");
-        return userId;
+    private AttachmentSnapshot toSnapshot(StoredAttachment stored, Asset asset) {
+        return new AttachmentSnapshot(
+            stored.getId(),
+            stored.getFileName(),
+            asset.getMediaType(),
+            asset.getByteSize() == null ? 0L : asset.getByteSize(),
+            asset.getMediaType() != null && asset.getMediaType().startsWith("image/"),
+            stored.getExtractedText(),
+            new AssetRef(asset.getId())
+        );
     }
 
     private String safeFileName(String originalName) {

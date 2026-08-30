@@ -68,9 +68,10 @@ public class InterviewController {
     public SseEmitter chat(
         @PathVariable Long sessionId,
         @Valid @RequestBody InterviewChatRequest request,
-        @RequestParam(defaultValue = "false") boolean autoStart
+        @RequestParam(defaultValue = "false") boolean autoStart,
+        jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
-        return streamChatTurn.execute(sessionId, request.getContent(), autoStart);
+        return streamChatTurn.execute(sessionId, request.getContent(), autoStart, authSessionId(servletRequest));
     }
 
     @PostMapping("/{sessionId}/finish")
@@ -79,7 +80,12 @@ public class InterviewController {
     }
 
     @GetMapping(value = "/{sessionId}/listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter listen(@PathVariable Long sessionId) {
-        return listenInterview.execute(sessionId);
+    public SseEmitter listen(@PathVariable Long sessionId, jakarta.servlet.http.HttpServletRequest servletRequest) {
+        return listenInterview.execute(sessionId, authSessionId(servletRequest));
+    }
+
+    private String authSessionId(jakarta.servlet.http.HttpServletRequest servletRequest) {
+        var session = servletRequest.getSession(false);
+        return session == null ? null : session.getId();
     }
 }

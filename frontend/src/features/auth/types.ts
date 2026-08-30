@@ -1,3 +1,8 @@
 export type LoginResponse = {
-  userId: number
+  accountId: number
+}
+
+export type CurrentUser = {
+  accountId: number
+  username: string
 }

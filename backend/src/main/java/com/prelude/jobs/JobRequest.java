@@ -2,16 +2,16 @@ package com.prelude.jobs;
 
 public record JobRequest(
     String type,
-    Long userId,
+    Long accountId,
     Long subjectId,
     String payloadJson,
     String idempotencyKey
 ) {
 
-    public static JobRequest report(Long sessionId, Long userId) {
+    public static JobRequest report(Long sessionId, Long accountId) {
         return new JobRequest(
             JobTypes.REPORT_GENERATE,
-            userId,
+            accountId,
             sessionId,
             "{}",
             JobTypes.REPORT_GENERATE + ":session:" + sessionId
