@@ -21,7 +21,7 @@ import java.util.Map;
  */
 public class SecurityProblemWriter implements AuthenticationEntryPoint, AccessDeniedHandler {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     static void write(HttpServletResponse response, int status, String code, String message) throws IOException {
         if (response.isCommitted()) {
@@ -36,7 +36,7 @@ public class SecurityProblemWriter implements AuthenticationEntryPoint, AccessDe
         body.put("status", problem.getStatus());
         body.put("detail", problem.getDetail());
         body.put("code", code);
-        response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+        response.getWriter().write(OBJECT_MAPPER.writeValueAsString(body));
     }
 
     @Override

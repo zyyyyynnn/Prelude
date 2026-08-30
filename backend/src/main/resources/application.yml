@@ -16,6 +16,11 @@ spring:
     enabled: true
     locations: classpath:db/migration
     validate-migration-naming: true
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false
   session:
     data:
       redis:
