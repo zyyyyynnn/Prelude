@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -32,6 +31,7 @@ public class ProfileService {
     private final PasswordEncoder passwordEncoder;
     private final CurrentAccount currentAccount;
     private final AvatarStoragePort avatarStoragePort;
+    private final AvatarPublication avatarPublication;
 
     public UserProfileResponse getCurrentUserProfile() {
         return toResponse(requireAccount(currentAccount.requireId()));
@@ -144,20 +144,25 @@ public class ProfileService {
             : file.getContentType();
 
         String previousAvatarUrl = account.getAvatarUrl();
-        String newAvatarUrl = avatarStoragePort.store(accountId, mediaType, bytes);
-        int updated = accountMapper.updateProfileGuarded(
-            accountId,
-            account.getUsername(),
-            account.getEmail(),
-            account.getThemePreference(),
-            account.getPasswordHash(),
-            newAvatarUrl,
-            account.getRevision(),
-            UUID.randomUUID().toString()
-        );
-        if (updated != 1) {
-            discardQuietly(accountId, newAvatarUrl);
-            throw BusinessException.revisionConflict("资料已被其他操作更新，请刷新后重试");
+        String candidateUrl = avatarStoragePort.stage(accountId, mediaType, bytes);
+        try {
+            // One DB transaction: guarded account reference + asset READY transition.
+            // A failure rolls both back and leaves the asset PENDING for the reconciler.
+            avatarPublication.publish(
+                candidateUrl,
+                accountId,
+                account.getUsername(),
+                account.getEmail(),
+                account.getThemePreference(),
+                account.getPasswordHash(),
+                account.getRevision()
+            );
+        } catch (RuntimeException failure) {
+            discardQuietly(accountId, candidateUrl);
+            if (failure instanceof BusinessException businessFailure) {
+                throw businessFailure;
+            }
+            throw BusinessException.badRequest("头像上传失败");
         }
         // The committed reference is authoritative; obsolete-avatar cleanup is non-fatal.
         discardQuietly(accountId, previousAvatarUrl);

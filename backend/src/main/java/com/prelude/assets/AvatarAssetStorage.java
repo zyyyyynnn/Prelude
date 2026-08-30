@@ -22,7 +22,7 @@ public class AvatarAssetStorage implements AvatarStoragePort {
     private final ObjectStoragePort objectStoragePort;
 
     @Override
-    public String store(Long accountId, String mediaType, byte[] bytes) {
+    public String stage(Long accountId, String mediaType, byte[] bytes) {
         Asset asset = assetService.createPending(accountId, KIND_AVATAR, mediaType, bytes.length);
         try {
             objectStoragePort.put(asset.getObjectKey(), mediaType, bytes);
@@ -30,10 +30,15 @@ public class AvatarAssetStorage implements AvatarStoragePort {
             // The PENDING row stays as the recovery anchor for the reconciler.
             throw BusinessException.badRequest("头像上传失败");
         }
-        if (!assetService.markReady(asset.getId())) {
+        return AVATAR_URL_PREFIX + asset.getId() + AVATAR_URL_SUFFIX;
+    }
+
+    @Override
+    public void confirmReady(String avatarUrl) {
+        Asset asset = resolveOwnedAsset(null, avatarUrl);
+        if (asset == null || !assetService.markReady(asset.getId())) {
             throw BusinessException.badRequest("头像上传失败");
         }
-        return AVATAR_URL_PREFIX + asset.getId() + AVATAR_URL_SUFFIX;
     }
 
     @Override
@@ -53,7 +58,9 @@ public class AvatarAssetStorage implements AvatarStoragePort {
         try {
             Long assetId = Long.valueOf(idSegment);
             Asset asset = assetMapper.selectById(assetId);
-            return asset != null && accountId.equals(asset.getAccountId()) && KIND_AVATAR.equals(asset.getKind())
+            return asset != null
+                && (accountId == null || accountId.equals(asset.getAccountId()))
+                && KIND_AVATAR.equals(asset.getKind())
                 ? asset
                 : null;
         } catch (NumberFormatException exception) {

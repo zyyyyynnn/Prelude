@@ -40,6 +40,7 @@ public class AttachmentService implements AttachmentContextPort {
     private final AttachmentMapper attachmentMapper;
     private final AssetMapper assetMapper;
     private final AssetService assetService;
+    private final AttachmentPublication attachmentPublication;
     private final ObjectStoragePort objectStoragePort;
     private final DocumentExtractor documentExtractor;
     private final CurrentAccount currentAccount;
@@ -64,16 +65,19 @@ public class AttachmentService implements AttachmentContextPort {
             // The PENDING row stays as the recovery anchor; the reconciler reclaims it.
             throw BusinessException.badRequest("附件上传失败");
         }
-        if (!assetService.markReady(asset.getId())) {
-            throw BusinessException.badRequest("附件上传失败");
-        }
 
         StoredAttachment stored = new StoredAttachment();
         stored.setAccountId(accountId);
         stored.setAssetId(asset.getId());
         stored.setFileName(fileName);
         stored.setExtractedText(truncate(extracted.text(), MAX_EXTRACTED_TEXT));
-        attachmentMapper.insert(stored);
+        // One DB transaction: business reference + PENDING_UPLOAD → READY.
+        // A failure rolls both back and leaves the asset PENDING for the reconciler.
+        try {
+            attachmentPublication.finalizeUpload(asset, stored);
+        } catch (RuntimeException exception) {
+            throw BusinessException.badRequest("附件上传失败");
+        }
 
         return toSnapshot(stored, assetService.requireOwnedReady(accountId, asset.getId()));
     }

@@ -34,7 +34,7 @@ if exist "%ROOT%.env" for /f "tokens=1,2 delims==" %%A in ('findstr /b "S3_HOST_
 call :wait_for_port %MYSQL_PORT% 60 || goto :failed
 call :wait_for_port %REDIS_PORT% 60 || goto :failed
 call :wait_for_port %RABBITMQ_PORT% 60 || goto :failed
-call :wait_for_port %S3_PORT% 60 || goto :failed
+call :wait_for_url http://127.0.0.1:%S3_PORT%/health 60 || goto :failed
 
 if not exist "%FRONTEND_DIR%\node_modules" (
   echo [INFO] Installing frontend dependencies...

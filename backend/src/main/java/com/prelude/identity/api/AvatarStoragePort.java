@@ -1,19 +1,30 @@
 package com.prelude.identity.api;
 
 /**
- * Port for storing the account avatar binary. Implemented by the assets module;
+ * Port for staged avatar publication, implemented by the assets module.
  * identity never touches object storage infrastructure directly.
  *
- * Storing never touches the previous avatar: the caller commits the guarded
- * account reference first and only then cleans up the obsolete asset.
+ * Lifecycle: stage() creates a PENDING asset with its remote object and
+ * returns the candidate reference; confirmReady() must be called inside the
+ * same DB transaction that commits the account reference, so a failure of
+ * either rolls the account update and the READY transition back together and
+ * leaves the asset PENDING for the reconciler.
  */
 public interface AvatarStoragePort {
 
     /**
-     * Stores a new avatar asset and returns its public reference URL, which
-     * resolves to the authorized content endpoint (/api/assets/{id}/content).
+     * Creates a PENDING avatar asset and uploads its object. Returns the
+     * candidate reference URL that resolves to the authorized content
+     * endpoint (/api/assets/{id}/content). Storage failures leave the
+     * PENDING row as the recovery anchor.
      */
-    String store(Long accountId, String mediaType, byte[] bytes);
+    String stage(Long accountId, String mediaType, byte[] bytes);
+
+    /**
+     * Moves the staged avatar asset from PENDING_UPLOAD to READY. Must run
+     * inside the finalization transaction of the account reference.
+     */
+    void confirmReady(String avatarUrl);
 
     /**
      * Best-effort removal of one avatar asset owned by the account. Storage or

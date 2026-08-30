@@ -52,6 +52,7 @@ services:
       VGW_BACKEND: posix
       VGW_BACKEND_ARGS: /data/s3
       VGW_PORT: ":7070"
+      VGW_HEALTH: /health
       VGW_IAM_DIR: /data/iam
       VGW_VERSIONING_DIR: /data/versioning
     ports:
@@ -61,9 +62,9 @@ services:
       - versitygw-iam:/data/iam
       - versitygw-versioning:/data/versioning
     healthcheck:
-      # VersityGW v1.7.0 ships busybox nc; a TCP probe on the S3 API port is
-      # the smallest reliable readiness signal the official image supports.
-      test: ["CMD", "nc", "-z", "127.0.0.1", "7070"]
+      # VersityGW v1.7.0 exposes a semantic health endpoint when VGW_HEALTH is
+      # configured; busybox wget ships in the official image.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:7070/health"]
       interval: 5s
       timeout: 3s
       retries: 24
@@ -98,6 +99,7 @@ services:
       PRELUDE_S3_BUCKET: ${S3_BUCKET:-prelude-assets}
       PRELUDE_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-prelude-local-key}
       PRELUDE_S3_SECRET_KEY: ${S3_SECRET_KEY:-prelude-local-secret}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID:-}
       OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
       OAUTH_GITHUB_CLIENT_ID: ${OAUTH_GITHUB_CLIENT_ID:-}

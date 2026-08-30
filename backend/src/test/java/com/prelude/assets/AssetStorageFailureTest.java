@@ -7,7 +7,7 @@ import com.prelude.assets.persistence.AssetMapper;
 import com.prelude.identity.Account;
 import com.prelude.identity.AccountMapper;
 import com.prelude.identity.AccountPrincipal;
-import com.prelude.identity.api.UserProfileResponse;
+import com.prelude.identity.application.AvatarPublication;
 import com.prelude.identity.application.ProfileService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -20,19 +20,21 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
 
 /**
- * Failure-path contracts for the asset lifecycle: every remote failure must
- * leave a recovery anchor behind instead of losing cleanup state.
+ * Failure-path contracts for asset publication: a successful S3 put followed
+ * by a failed business-reference finalization must leave the asset PENDING so
+ * the bounded reconciler can reclaim it. No READY orphan may exist.
  */
 @EnabledIfEnvironmentVariable(named = "PRELUDE_MYSQL_SMOKE", matches = "true")
 @SpringBootTest
@@ -41,11 +43,14 @@ class AssetStorageFailureTest {
     @MockitoBean
     private ObjectStoragePort objectStoragePort;
 
-    @Autowired
-    private AttachmentService attachmentService;
+    @MockitoBean
+    private AttachmentPublication attachmentPublication;
+
+    @MockitoBean
+    private AvatarPublication avatarPublication;
 
     @Autowired
-    private AssetService assetService;
+    private AttachmentService attachmentService;
 
     @Autowired
     private StalePendingAssetReconciler stalePendingAssetReconciler;
@@ -60,11 +65,11 @@ class AssetStorageFailureTest {
     private ProfileService profileService;
 
     @Test
-    void failedObjectPutKeepsThePendingUploadRecoveryAnchor() {
-        long accountId = createAccount("upload-anchor");
+    void failedAttachmentFinalizationKeepsTheAssetPendingForTheReconciler() {
+        long accountId = createAccount("finalize-anchor");
         authenticate(accountId);
-        doThrow(new IllegalStateException("gateway down"))
-            .when(objectStoragePort).put(anyString(), anyString(), org.mockito.ArgumentMatchers.any());
+        doThrow(new IllegalStateException("reference insert failed"))
+            .when(attachmentPublication).finalizeUpload(any(), any());
 
         assertThatThrownBy(() -> attachmentService.upload(
             "notes.txt", "text/plain", "body".getBytes(StandardCharsets.UTF_8)))
@@ -74,56 +79,44 @@ class AssetStorageFailureTest {
         Asset anchor = latestPendingAsset(accountId);
         assertThat(anchor).isNotNull();
         assertThat(anchor.getStatus()).isEqualTo(AssetStatus.PENDING_UPLOAD);
+
+        // The reconciler reclaims the anchor: object delete + metadata delete.
+        anchor.setCreatedAt(LocalDateTime.now().minusHours(48));
+        assetMapper.updateById(anchor);
+        stalePendingAssetReconciler.reconcileStalePendingAssets();
+        assertThat(assetMapper.selectById(anchor.getId())).isNull();
     }
 
     @Test
-    void failedAvatarPutKeepsThePendingUploadRecoveryAnchor() {
-        long accountId = createAccount("avatar-anchor");
+    void failedAvatarFinalizationKeepsTheAssetPendingWhenDiscardAlsoFails() {
+        long accountId = createAccount("avatar-finalize-anchor");
         authenticate(accountId);
+        doThrow(BusinessException.revisionConflict("资料已被其他操作更新，请刷新后重试"))
+            .when(avatarPublication).publish(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), any(), any(), any(), org.mockito.ArgumentMatchers.anyLong());
         doThrow(new IllegalStateException("gateway down"))
-            .when(objectStoragePort).put(anyString(), anyString(), org.mockito.ArgumentMatchers.any());
+            .when(objectStoragePort).delete(anyString());
 
         assertThatThrownBy(() -> profileService.updateAvatar(avatarFile()))
             .isInstanceOf(BusinessException.class)
-            .hasMessage("头像上传失败");
+            .hasFieldOrPropertyWithValue("code", "revision_conflict");
 
         Asset anchor = latestPendingAsset(accountId);
         assertThat(anchor).isNotNull();
         assertThat(anchor.getStatus()).isEqualTo(AssetStatus.PENDING_UPLOAD);
-    }
 
-    @Test
-    void failedObjectDeleteKeepsTheAssetRowAsRecoveryAnchor() {
-        long accountId = createAccount("delete-anchor");
-        authenticate(accountId);
-        Asset asset = createReadyAsset(accountId);
-        doThrow(new IllegalStateException("gateway down"))
-            .when(objectStoragePort).delete(asset.getObjectKey());
-
-        assertThatThrownBy(() -> assetService.delete(asset))
-            .isInstanceOf(IllegalStateException.class);
-
-        assertThat(assetMapper.selectById(asset.getId())).isNotNull();
-    }
-
-    @Test
-    void reconcilerKeepsTheRowWhenObjectDeletionFailsAndRemovesItOnTheNextPass() {
-        long accountId = createAccount("reconcile-anchor");
-        authenticate(accountId);
-        Asset asset = createReadyAsset(accountId);
-        asset.setStatus(AssetStatus.PENDING_UPLOAD);
-        asset.setCreatedAt(LocalDateTime.now().minusHours(48));
-        assetMapper.updateById(asset);
-
+        // Next reconciler pass: the object delete finally succeeds and reclaims the anchor.
+        // (Discard consumed the first throw; give the reconciler one failing pass, then success.)
         doThrow(new IllegalStateException("gateway down"))
             .doNothing()
-            .when(objectStoragePort).delete(asset.getObjectKey());
+            .doNothing()
+            .when(objectStoragePort).delete(anyString());
+        anchor.setCreatedAt(LocalDateTime.now().minusHours(48));
+        assetMapper.updateById(anchor);
+        stalePendingAssetReconciler.reconcileStalePendingAssets();
+        assertThat(assetMapper.selectById(anchor.getId())).isNotNull();
 
         stalePendingAssetReconciler.reconcileStalePendingAssets();
-        assertThat(assetMapper.selectById(asset.getId())).isNotNull();
-
-        stalePendingAssetReconciler.reconcileStalePendingAssets();
-        assertThat(assetMapper.selectById(asset.getId())).isNull();
+        assertThat(assetMapper.selectById(anchor.getId())).isNull();
     }
 
     private long createAccount(String prefix) {
@@ -138,18 +131,6 @@ class AssetStorageFailureTest {
         AccountPrincipal principal = new AccountPrincipal(accountId, "tester");
         SecurityContextHolder.getContext().setAuthentication(
             UsernamePasswordAuthenticationToken.authenticated(principal, null, List.of()));
-    }
-
-    private Asset createReadyAsset(long accountId) {
-        Asset asset = new Asset();
-        asset.setAccountId(accountId);
-        asset.setKind("attachment");
-        asset.setObjectKey(UUID.randomUUID().toString());
-        asset.setMediaType("text/plain");
-        asset.setByteSize(6L);
-        asset.setStatus(AssetStatus.READY);
-        assetMapper.insert(asset);
-        return asset;
     }
 
     private Asset latestPendingAsset(long accountId) {
