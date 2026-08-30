@@ -31,6 +31,12 @@ export function LoginPage() {
     }
   }, [feedback, location.search])
 
+  useEffect(() => {
+    if (!auth.userId) return
+    const redirect = new URLSearchParams(location.search).get('redirect') || '/interview'
+    void navigate(redirect, { replace: true })
+  }, [auth.userId, location.search, navigate])
+
   const switchMode = (next: AuthMode) => {
     setMode(next)
     setPassword('')
@@ -60,8 +66,6 @@ export function LoginPage() {
       }
       const result = await login(username.trim(), password)
       await auth.signIn(result.userId)
-      const redirect = new URLSearchParams(location.search).get('redirect') || '/interview'
-      await navigate(redirect, { replace: true })
     } catch (reason) {
       feedback.notify(reason instanceof Error ? reason.message : '请求失败', 'error')
     } finally {

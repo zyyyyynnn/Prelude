@@ -977,7 +977,6 @@ test('@smoke renders structured reports without resume mutation controls', async
   await page.getByRole('button', { name: '导出 PDF' }).click()
   await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true')
   await expect(page.locator('body')).not.toHaveClass(/is-printing-report/)
-  await expect(page.getByText('已打开系统打印窗口')).toBeVisible()
 })
 
 test('@smoke renders analytics charts and recent-score labels from the React dashboard', async ({

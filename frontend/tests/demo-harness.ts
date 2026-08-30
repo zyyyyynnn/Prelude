@@ -170,7 +170,7 @@ export function createDemoState(): DemoState {
 }
 
 export async function installDemoHarness(page: Page, state: DemoState) {
-  await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => respond(route, state))
+  await page.context().route(/^https?:\/\/[^/]+\/api\//, async (route) => respond(route, state))
 }
 
 async function respond(route: Route, state: DemoState) {
