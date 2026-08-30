@@ -1,7 +1,5 @@
 package com.prelude.resume.application.port;
 
-import com.prelude.resume.domain.ResumeDocument;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,23 +14,19 @@ public interface ResumeRepository {
 
     boolean hasInterviewSessions(Long resumeId);
 
-    boolean updateDocument(
-        Long resumeId,
-        Long userId,
-        int expectedVersion,
-        ResumeDocument document,
-        String sourceType
-    );
-
     void delete(Long resumeId);
 
     record NewResume(
         Long userId,
         String fileName,
         String rawText,
-        ResumeDocument document,
-        String sourceType
+        List<String> parsedSkills,
+        List<ParsedProject> parsedProjects
     ) {
+        public NewResume {
+            parsedSkills = parsedSkills == null ? List.of() : List.copyOf(parsedSkills);
+            parsedProjects = parsedProjects == null ? List.of() : List.copyOf(parsedProjects);
+        }
     }
 
     record StoredResume(
@@ -40,11 +34,17 @@ public interface ResumeRepository {
         Long userId,
         String fileName,
         String rawText,
-        ResumeDocument document,
-        int documentVersion,
-        String sourceType,
+        List<String> parsedSkills,
+        List<ParsedProject> parsedProjects,
         LocalDateTime createdAt
     ) {
+        public StoredResume {
+            parsedSkills = parsedSkills == null ? List.of() : List.copyOf(parsedSkills);
+            parsedProjects = parsedProjects == null ? List.of() : List.copyOf(parsedProjects);
+        }
+    }
+
+    record ParsedProject(String name, String description) {
     }
 
     record ResumeListItem(

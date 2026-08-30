@@ -15,7 +15,7 @@
     "verify:ui": "node scripts/verify-ui-guardrails.cjs",
     "verify:tokens": "node scripts/verify-ui-tokens.cjs",
     "verify:production": "node scripts/verify-production-bundle.cjs",
-    "verify:byok": "node scripts/verify-byok-contract.cjs && playwright test --grep @byok",
+    "verify:byok": "playwright test --grep @byok",
     "verify:dark": "playwright test --grep @dark",
     "verify:a11y": "playwright test --grep @a11y",
     "verify:visual": "playwright test --grep @visual --workers=1",

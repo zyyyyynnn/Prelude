@@ -4,8 +4,6 @@ import com.prelude.BusinessException;
 import com.prelude.documents.api.DocumentExtractor;
 import com.prelude.resume.application.port.ResumeParser;
 import com.prelude.resume.application.port.ResumeRepository;
-import com.prelude.resume.domain.ResumeDocument;
-import com.prelude.resume.domain.ResumeDocumentFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,12 +29,11 @@ public class ImportResumePdf {
         ResumeParser.ParsedResume parsed = resumeParser.parse(
             userId, truncate(extracted, MAX_LLM_PARSE_TEXT_LENGTH)
         );
-        List<ResumeDocumentFactory.ImportedProject> projects = parsed.projects().stream()
-            .map(project -> new ResumeDocumentFactory.ImportedProject(project.name(), project.description()))
+        List<ResumeRepository.ParsedProject> projects = parsed.projects().stream()
+            .map(project -> new ResumeRepository.ParsedProject(project.name(), project.description()))
             .toList();
-        ResumeDocument document = ResumeDocumentFactory.fromImport(rawText, parsed.skills(), projects);
         ResumeRepository.StoredResume stored = repository.create(new ResumeRepository.NewResume(
-            userId, fileName, rawText, document, "pdf_import"
+            userId, fileName, rawText, parsed.skills(), projects
         ));
         return new ImportResumeResult(stored.id(), parsed.skills(), parsed.projects());
     }

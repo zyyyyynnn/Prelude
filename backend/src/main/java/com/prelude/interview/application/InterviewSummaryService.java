@@ -10,7 +10,6 @@ import com.prelude.llm.ChatRequest;
 import com.prelude.llm.LlmPurpose;
 import com.prelude.llm.PromptIds;
 import com.prelude.llm.PromptRegistry;
-import com.prelude.interview.application.port.InterviewFixturePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,12 +30,11 @@ public class InterviewSummaryService {
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewMessageRepository interviewMessageRepository;
     private final ChatPort chatPort;
-    private final InterviewFixturePort devFixtureService;
     private final PromptRegistry promptRegistry;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
 
-    public void triggerAsyncSummarizeIfNeeded(InterviewSession session, boolean voiceMode) {
+    public void triggerAsyncSummarizeIfNeeded(InterviewSession session) {
         List<InterviewMessage> dialogMsgs = dialogMessages(session.getId());
         int rounds = dialogMsgs.size() / 2;
         if (rounds < 15 || (rounds - 10) % 5 != 0) {
@@ -48,7 +46,7 @@ public class InterviewSummaryService {
 
         sseTaskExecutor.execute(() -> {
             try {
-                String newSummary = buildSummary(session, messagesToSummarize, voiceMode);
+                String newSummary = buildSummary(session, messagesToSummarize);
                 session.setSummary(newSummary);
                 interviewSessionRepository.update(session);
                 log.info("Successfully updated sliding window memory summary for session {}", session.getId());
@@ -58,12 +56,7 @@ public class InterviewSummaryService {
         });
     }
 
-    private String buildSummary(InterviewSession session, List<InterviewMessage> messagesToSummarize, boolean voiceMode) {
-        if (devFixtureService != null && devFixtureService.isEnabled()) {
-            return voiceMode
-                ? "dev fixture 下自动生成的模拟对话摘要。候选人对后端架构设计进行了基本的回答，表现稳定。"
-                : "dev fixture 下自动生成的模拟对话摘要。候选人对后端架构设计、MyBatis-Plus 分页与自定义 SQL 执行进行了基本的回答，表现稳定。";
-        }
+    private String buildSummary(InterviewSession session, List<InterviewMessage> messagesToSummarize) {
         StringBuilder builder = new StringBuilder();
         for (InterviewMessage message : messagesToSummarize) {
             builder.append(message.getRole()).append(": ").append(message.getContent()).append("\n");

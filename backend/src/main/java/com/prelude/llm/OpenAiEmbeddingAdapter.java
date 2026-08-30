@@ -36,19 +36,10 @@ public class OpenAiEmbeddingAdapter implements EmbedPort {
     @Value("${openai.embedding-model:text-embedding-3-small}")
     private String embeddingModel;
 
-    @Value("${app.dev-fixtures.enabled:false}")
-    private boolean devFixtureEnabled;
-
     @Override
     public float[] embed(String text) {
-        if (devFixtureEnabled || apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
-            // Predictable mock embedding based on character hash code to support offline/dev-fixture testing
-            float[] mock = new float[1536];
-            int hash = text.hashCode();
-            for (int i = 0; i < 1536; i++) {
-                mock[i] = (float) Math.sin(hash + i);
-            }
-            return mock;
+        if (apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
+            throw BusinessException.badRequest("Embedding API Key 未配置");
         }
 
         try {
@@ -86,9 +77,6 @@ public class OpenAiEmbeddingAdapter implements EmbedPort {
 
     @Override
     public String modelVersion() {
-        if (devFixtureEnabled || apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
-            return "mock-character-hash";
-        }
         return "openai:" + embeddingModel;
     }
 }

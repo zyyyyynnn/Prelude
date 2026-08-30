@@ -24,6 +24,13 @@ echarts.use([
   CanvasRenderer,
 ])
 
+const TREND_GRID = {
+  left: 44,
+  right: 18,
+  top: 30,
+  bottom: 48,
+} as const
+
 export function AnalyticsPage() {
   const radar = useQuery({ queryKey: ['analytics-radar'], queryFn: fetchRadar })
   const trend = useQuery({ queryKey: ['analytics-trend'], queryFn: fetchTrend })
@@ -260,10 +267,7 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
           textStyle: { color: secondary },
         },
         grid: {
-          left: cssVarNumber('--analytics-chart-grid-left', 44),
-          right: cssVarNumber('--analytics-chart-grid-right', 18),
-          top: cssVarNumber('--analytics-chart-grid-top', 30),
-          bottom: cssVarNumber('--analytics-chart-grid-bottom', 48),
+          ...TREND_GRID,
         },
         xAxis: {
           type: 'category',

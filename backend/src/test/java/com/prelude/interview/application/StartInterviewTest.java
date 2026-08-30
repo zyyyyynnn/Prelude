@@ -42,7 +42,7 @@ class StartInterviewTest {
         AttachmentContextPort attachments = mock(AttachmentContextPort.class);
         UserContext.setCurrentUserId(7L);
         when(resumes.requireOwnedProjection(7L, 11L))
-            .thenReturn(new ResumeProjection(11L, 7L, "candidate.pdf", "resume text", List.of(), List.of(), 1));
+            .thenReturn(new ResumeProjection(11L, 7L, "candidate.pdf", "resume text", List.of(), List.of()));
         when(attachments.requireOwned(7L, List.of(31L)))
             .thenReturn(List.of(new AttachmentSnapshot(31L, "notes.txt", "text/plain", 5, false, "notes", null)));
         when(positions.findAccessibleById(7L, 21L))

@@ -27,6 +27,5 @@ class ApplicationModulesTest {
             .collect(Collectors.toUnmodifiableSet());
 
         assertThat(identifiers).containsExactlyInAnyOrderElementsOf(EXPECTED_MODULES);
-        assertThat(identifiers).doesNotContain("bootstrap", "data", "workspace");
     }
 }

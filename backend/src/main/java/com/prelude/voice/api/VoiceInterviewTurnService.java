@@ -109,7 +109,7 @@ public class VoiceInterviewTurnService {
             sink.status("speech_end");
 
             triggerJudge(result.session(), result.userMessage(), sink);
-            interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session(), true);
+            interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session());
         } catch (RuntimeException error) {
             log.error("Voice turn processing chain crashed", error);
             sink.error("网络状况不佳，已为您切回文字模式");
@@ -191,7 +191,7 @@ public class VoiceInterviewTurnService {
             return;
         }
         try {
-            interviewJudgeService.judgeAndPersist(session, userMessage, true).ifPresent(result ->
+            interviewJudgeService.judgeAndPersist(session, userMessage).ifPresent(result ->
                 sink.judge(result.score(), result.hint())
             );
         } catch (RuntimeException error) {

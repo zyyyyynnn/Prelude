@@ -20,7 +20,6 @@ import com.prelude.llm.ChatRequest;
 import com.prelude.llm.LlmPurpose;
 import com.prelude.llm.PromptIds;
 import com.prelude.activity.RealtimePort;
-import com.prelude.artifact.application.port.InsightFixturePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,7 +39,6 @@ public class GenerateInterviewReport {
     private final InterviewReportPort interviewReportPort;
     private final InsightRepository insightRepository;
     private final ChatPort chatPort;
-    private final InsightFixturePort devFixtureService;
     private final ReportParser interviewReportParser;
     private final InterviewReportAssembler interviewReportAssembler;
     private final RealtimePort realtimePort;
@@ -64,24 +62,12 @@ public class GenerateInterviewReport {
 
             List<InterviewMessage> messages = interviewReportPort.listMessages(sessionId);
             String prompt = buildFinishPrompt(session, messages);
-            String reportContent;
-
-            boolean devFixtureEnabled = devFixtureService != null && devFixtureService.isEnabled();
-            if (devFixtureEnabled) {
-                reportContent = devFixtureService.resolveReport(session.getTargetPosition());
-                try {
-                    Thread.sleep(1500); // Simulate processing delay
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Report generation interrupted", e);
-                }
-            } else {
-                reportContent = chatPort.complete(ChatRequest.snapshot(
-                    session.getUserId(),
-                    LlmPurpose.REPORT,
-                    PromptIds.REPORT,
-                    List.of(
-                        Map.of("role", "system", "content", """
+            String reportContent = chatPort.complete(ChatRequest.snapshot(
+                session.getUserId(),
+                LlmPurpose.REPORT,
+                PromptIds.REPORT,
+                List.of(
+                    Map.of("role", "system", "content", """
                             你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
                             JSON Schema（不得增加 overall、stage score、question score 或 weaknesses）：
                             {
@@ -111,14 +97,13 @@ public class GenerateInterviewReport {
                               "finalAdvice": "总结建议",
                               "reportMarkdown": "完整 Markdown 报告"
                             }
-                            三个评分必须使用 1-10 整数范围。
-                            """),
-                        Map.of("role", "user", "content", prompt)
-                    ),
-                    new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-                    Map.of("response_format", Map.of("type", "json_object"))
-                ));
-            }
+                        三个评分必须使用 1-10 整数范围。
+                        """),
+                    Map.of("role", "user", "content", prompt)
+                ),
+                new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
+                Map.of("response_format", Map.of("type", "json_object"))
+            ));
 
             InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportContent);
             interviewReportPort.closeCurrentStage(sessionId);
@@ -199,13 +184,7 @@ public class GenerateInterviewReport {
 
     private void persistWeaknesses(InterviewSession session, String report) {
         try {
-            List<UserWeakness> weaknesses;
-            boolean devFixtureEnabled = devFixtureService != null && devFixtureService.isEnabled();
-            if (devFixtureEnabled) {
-                weaknesses = devFixtureService.buildWeaknesses(session.getUserId(), session.getId());
-            } else {
-                weaknesses = extractWeaknesses(session, report);
-            }
+            List<UserWeakness> weaknesses = extractWeaknesses(session, report);
             insightRepository.replaceWeaknesses(session.getId(), weaknesses);
         } catch (Exception exception) {
             log.warn("Failed to persist weaknesses for session {}", session.getId(), exception);

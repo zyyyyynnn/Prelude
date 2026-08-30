@@ -63,7 +63,7 @@ public class StreamChatTurn {
                 return;
             }
             triggerAsyncJudge(result.session(), result.userMessage(), stream);
-            interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session(), false);
+            interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session());
         } catch (RuntimeException error) {
             completeWithError(stream, error.getMessage() == null ? "连接已断开，请重试" : error.getMessage());
         } finally {
@@ -89,7 +89,7 @@ public class StreamChatTurn {
         sseTaskExecutor.execute(() -> {
             UserContext.setCurrentUserId(session.getUserId());
             try {
-                interviewJudgeService.judgeAndPersist(session, userMessage, false)
+                interviewJudgeService.judgeAndPersist(session, userMessage)
                     .ifPresent(result -> sendJudgeEvent(stream, result.json()));
                 stream.complete();
             } catch (RuntimeException error) {

@@ -15,9 +15,5 @@ public class Resume {
     private String parsedSkills;
     private String parsedProjects;
     private String rawText;
-    private String documentJson;
-    private Integer documentVersion;
-    private String sourceType;
-    private String plainTextProjection;
     private LocalDateTime createdAt;
 }

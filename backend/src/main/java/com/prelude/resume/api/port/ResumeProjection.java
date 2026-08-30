@@ -8,7 +8,6 @@ public record ResumeProjection(
     String displayName,
     String plainText,
     List<String> skills,
-    List<String> projectsSummary,
-    Integer documentVersion
+    List<String> projectsSummary
 ) {
 }

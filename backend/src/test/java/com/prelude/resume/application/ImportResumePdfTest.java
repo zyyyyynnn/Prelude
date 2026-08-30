@@ -35,9 +35,8 @@ class ImportResumePdfTest {
                 draft.userId(),
                 draft.fileName(),
                 draft.rawText(),
-                draft.document(),
-                1,
-                draft.sourceType(),
+                draft.parsedSkills(),
+                draft.parsedProjects(),
                 LocalDateTime.now()
             );
         });
@@ -51,7 +50,9 @@ class ImportResumePdfTest {
         verify(repository).create(draft.capture());
         assertThat(draft.getValue().userId()).isEqualTo(7L);
         assertThat(draft.getValue().fileName()).isEqualTo("candidate.pdf");
-        assertThat(draft.getValue().sourceType()).isEqualTo("pdf_import");
-        assertThat(draft.getValue().document().projects()).hasSize(1);
+        assertThat(draft.getValue().rawText()).isEqualTo("Java\nPrelude platform");
+        assertThat(draft.getValue().parsedSkills()).containsExactly("Java");
+        assertThat(draft.getValue().parsedProjects())
+            .containsExactly(new ResumeRepository.ParsedProject("Prelude", "Interview platform"));
     }
 }

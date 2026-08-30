@@ -30,7 +30,6 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     private final UserMapper userMapper;
     private final LlmRouter llmRouter;
     private final AesGcmEncryptor aesGcmEncryptor;
-    private final LlmFixturePort devFixtureService;
     private final LlmModelDiscoveryService llmModelDiscoveryService;
     private final CustomLlmEgressPolicy egressPolicy;
 
@@ -66,9 +65,7 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
         if (request.apiKey() != null && !request.apiKey().isBlank()) {
             encryptedApiKey = "__CLEAR__".equals(request.apiKey())
                 ? null
-                : isDevFixtureEnabled()
-                    ? devFixtureService.nextStoredApiKey(request.apiKey(), encryptedApiKey)
-                    : aesGcmEncryptor.encrypt(request.apiKey());
+                : aesGcmEncryptor.encrypt(request.apiKey());
         } else if (scopeChanged) {
             // 未提供新 Key 且 provider/baseUrl 已变：清空旧 Key，避免串用到新接入方式。
             encryptedApiKey = null;
@@ -101,10 +98,6 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     @Override
     public LlmConfigTestResponse testCurrentUserConfig() {
         LlmSelection selection = llmRouter.resolveCurrentUserSelection();
-        if (isDevFixtureEnabled()) {
-            return new LlmConfigTestResponse(selection.providerKey(), selection.model(), true, "Dev fixture 配置可用");
-        }
-
         String content = llmRouter.chatCurrentUser(List.of(
             Map.of("role", "system", "content", "你是模型连通性测试助手。"),
             Map.of("role", "user", "content", "请只回复 OK")
@@ -145,10 +138,6 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
             }
             baseUrl = CustomLlmEndpointUrl.normalizeRoot(draftBaseUrl, CustomLlmProtocol.require(providerKey));
             egressPolicy.validateConfiguredEndpoint(baseUrl);
-        }
-
-        if (isDevFixtureEnabled()) {
-            return new LlmConfigTestResponse(providerKey, model, true, "Dev fixture 配置可用");
         }
 
         String apiKey = resolveDraftApiKey(request.apiKey(), user, providerKey, baseUrl);
@@ -234,9 +223,6 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
     }
 
     private String maskApiKey(String encryptedApiKey) {
-        if (isDevFixtureEnabled()) {
-            return devFixtureService.maskApiKey(encryptedApiKey);
-        }
         if (encryptedApiKey == null || encryptedApiKey.isBlank()) {
             return null;
         }
@@ -246,9 +232,5 @@ public class UserLlmConfigServiceImpl implements UserLlmConfigService {
             log.warn("Failed to mask user API key");
             return null;
         }
-    }
-
-    private boolean isDevFixtureEnabled() {
-        return devFixtureService != null && devFixtureService.isEnabled();
     }
 }

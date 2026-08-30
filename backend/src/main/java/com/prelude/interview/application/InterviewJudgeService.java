@@ -12,7 +12,6 @@ import com.prelude.llm.ChatRequest;
 import com.prelude.llm.LlmPurpose;
 import com.prelude.llm.PromptIds;
 import com.prelude.llm.PromptRegistry;
-import com.prelude.interview.application.port.InterviewFixturePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,17 +28,13 @@ import java.util.Optional;
 public class InterviewJudgeService {
 
     private static final String ROLE_ASSISTANT = "assistant";
-    private static final String FALLBACK_JUDGE_JSON = "{\"score\": 7, \"hint\": \"回答已记录，继续加油。\"}";
-
     private final InterviewMessageRepository interviewMessageRepository;
     private final ChatPort chatPort;
-    private final InterviewFixturePort devFixtureService;
     private final ObjectMapper objectMapper;
-    private final InterviewStageManager interviewStageManager;
     private final StringRedisTemplate stringRedisTemplate;
     private final PromptRegistry promptRegistry;
 
-    public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg, boolean voiceMode) {
+    public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg) {
         Long userId = session.getUserId();
         String lockKey = "lock:judge:" + userId + ":" + session.getId();
         boolean lockAcquired = false;
@@ -50,8 +45,7 @@ public class InterviewJudgeService {
                 return Optional.empty();
             }
 
-            String judgeResultJson = resolveJudgeJson(session, userMsg, voiceMode);
-            JudgeResult result = parseJudgeJson(judgeResultJson);
+            JudgeResult result = resolveJudgeResult(session, userMsg);
             userMsg.setScore(result.score());
             userMsg.setHint(result.hint());
             interviewMessageRepository.update(userMsg);
@@ -82,18 +76,7 @@ public class InterviewJudgeService {
         return false;
     }
 
-    private String resolveJudgeJson(InterviewSession session, InterviewMessage userMsg, boolean voiceMode) throws JacksonException {
-        if (devFixtureService != null && devFixtureService.isEnabled()) {
-            if (voiceMode) {
-                int replyIndex = nextSeqNum(session.getId());
-                int score = 7 + (replyIndex % 3);
-                return objectMapper.writeValueAsString(Map.of("score", score, "hint", "语音表达流畅，内容符合技术规范要求。"));
-            }
-            String currentStage = interviewStageManager.currentStageName(session.getId());
-            int replyIndex = interviewStageManager.assistantRepliesInCurrentStage(session.getId());
-            return devFixtureService.resolveMockJudge(currentStage, replyIndex);
-        }
-
+    private JudgeResult resolveJudgeResult(InterviewSession session, InterviewMessage userMsg) throws JacksonException {
         String questionContent = lastAssistantQuestion(session.getId(), userMsg);
         String systemPrompt = promptRegistry.load(PromptIds.JUDGE);
         String userPrompt = "面试岗位：" + session.getTargetPosition() + "\n" +
@@ -111,30 +94,35 @@ public class InterviewJudgeService {
             new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
             Map.of("response_format", Map.of("type", "json_object"))
         ));
-        return normalizeJudgeOutput(judgeOutput);
+        return parseJudgeOutput(judgeOutput);
     }
 
-    private String normalizeJudgeOutput(String judgeOutput) {
+    private JudgeResult parseJudgeOutput(String judgeOutput) throws JacksonException {
         String trimmed = stripJsonFence(judgeOutput);
-        try {
-            Map<String, Object> map = objectMapper.readValue(trimmed, new TypeReference<>() {
-            });
-            int score = ((Number) map.getOrDefault("score", 7)).intValue();
-            int safeScore = Math.max(1, Math.min(10, score));
-            String hint = (String) map.getOrDefault("hint", "回答已记录");
-            return objectMapper.writeValueAsString(Map.of("score", safeScore, "hint", hint));
-        } catch (Exception exception) {
-            log.warn("Failed to parse judge output: {}", judgeOutput, exception);
-            return FALLBACK_JUDGE_JSON;
-        }
-    }
-
-    private JudgeResult parseJudgeJson(String judgeResultJson) throws JacksonException {
-        Map<String, Object> parsedMap = objectMapper.readValue(judgeResultJson, new TypeReference<>() {
+        Map<String, Object> map = objectMapper.readValue(trimmed, new TypeReference<>() {
         });
-        int score = ((Number) parsedMap.get("score")).intValue();
-        String hint = (String) parsedMap.get("hint");
-        return new JudgeResult(score, hint, judgeResultJson);
+        Object scoreValue = map.get("score");
+        if (!(scoreValue instanceof Number number)) {
+            throw new IllegalArgumentException("Judge output must contain a numeric score");
+        }
+        double numericScore = number.doubleValue();
+        if (!Double.isFinite(numericScore) || numericScore != Math.rint(numericScore)) {
+            throw new IllegalArgumentException("Judge score must be a finite integer");
+        }
+        int score = (int) Math.max(1, Math.min(10, numericScore));
+        Object hintValue = map.get("hint");
+        if (hintValue != null && !(hintValue instanceof String)) {
+            throw new IllegalArgumentException("Judge hint must be text");
+        }
+        String hint = hintValue == null || ((String) hintValue).isBlank()
+            ? null
+            : ((String) hintValue).trim();
+        Map<String, Object> normalized = new java.util.LinkedHashMap<>();
+        normalized.put("score", score);
+        if (hint != null) {
+            normalized.put("hint", hint);
+        }
+        return new JudgeResult(score, hint, objectMapper.writeValueAsString(normalized));
     }
 
     private String lastAssistantQuestion(Long sessionId, InterviewMessage userMsg) {
@@ -146,14 +134,6 @@ public class InterviewJudgeService {
             }
         }
         return "";
-    }
-
-    int nextSeqNum(Long sessionId) {
-        InterviewMessage latest = interviewMessageRepository.findLatest(sessionId);
-        if (latest == null || latest.getSeqNum() == null) {
-            return 0;
-        }
-        return latest.getSeqNum() + 1;
     }
 
     private String stripJsonFence(String text) {

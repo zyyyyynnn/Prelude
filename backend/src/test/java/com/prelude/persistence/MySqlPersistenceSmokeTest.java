@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import com.prelude.identity.User;
 import com.prelude.identity.UserMapper;
+import com.prelude.resume.api.port.ResumeContextPort;
+import com.prelude.resume.application.port.ResumeRepository;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,12 @@ class MySqlPersistenceSmokeTest {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private ResumeRepository resumeRepository;
+
+    @Autowired
+    private ResumeContextPort resumeContextPort;
 
     @Test
     void migratesAnEmptyMySqlDatabaseAndStartsMybatis() throws Exception {
@@ -70,5 +78,32 @@ class MySqlPersistenceSmokeTest {
         assertThat(updated.getLlmApiKeyEncrypted()).isNull();
         assertThat(updated.getLlmMaxTokens()).isNull();
         assertThat(updated.getLlmThinkingDepth()).isNull();
+    }
+
+    @Test
+    void persistsResumeResourceAndBuildsInterviewContext() {
+        User user = new User();
+        user.setUsername("resume-smoke-" + UUID.randomUUID());
+        user.setPassword("not-used");
+        userMapper.insert(user);
+
+        var stored = resumeRepository.create(new ResumeRepository.NewResume(
+            user.getId(),
+            "candidate.pdf",
+            "Java 后端候选人原始简历",
+            java.util.List.of("Java", "Spring Boot"),
+            java.util.List.of(new ResumeRepository.ParsedProject("Prelude", "模拟面试平台"))
+        ));
+
+        var reloaded = resumeRepository.findById(stored.id()).orElseThrow();
+        assertThat(reloaded.rawText()).isEqualTo("Java 后端候选人原始简历");
+        assertThat(reloaded.parsedSkills()).containsExactly("Java", "Spring Boot");
+        assertThat(reloaded.parsedProjects())
+            .containsExactly(new ResumeRepository.ParsedProject("Prelude", "模拟面试平台"));
+
+        var projection = resumeContextPort.requireOwnedProjection(user.getId(), stored.id());
+        assertThat(projection.plainText()).isEqualTo("Java 后端候选人原始简历");
+        assertThat(projection.skills()).containsExactly("Java", "Spring Boot");
+        assertThat(projection.projectsSummary()).containsExactly("Prelude：模拟面试平台");
     }
 }

@@ -26,7 +26,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(requests -> requests
                 .requestMatchers("/api/auth/**", "/api/health", "/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/llm/providers", "/uploads/**").permitAll()
-                .requestMatchers("/api/dev-fixtures/reset").permitAll()
                 .anyRequest().authenticated())
             .build();
     }

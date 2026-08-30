@@ -7,7 +7,6 @@ import com.prelude.resume.application.DeleteResume;
 import com.prelude.resume.application.ImportResumePdf;
 import com.prelude.resume.application.ImportResumeResult;
 import com.prelude.resume.application.ListResumes;
-import com.prelude.resume.application.port.ResumeFixturePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,17 +28,10 @@ public class ResumeController {
     private final ImportResumePdf importResumePdf;
     private final ListResumes listResumes;
     private final DeleteResume deleteResume;
-    private final ResumeFixturePort devFixtureService;
 
     @PostMapping("/upload")
     public Result<ResumeUploadResponse> upload(@RequestParam("file") MultipartFile file) {
         Long userId = currentUserId();
-        if (devFixtureService.isEnabled()) {
-            validateFixtureFile(file);
-            return Result.success(toUploadResponse(
-                devFixtureService.createDevFixtureResume(userId, file.getOriginalFilename())
-            ));
-        }
         try {
             ImportResumeResult result = importResumePdf.execute(userId, file.getOriginalFilename(), file.getBytes());
             return Result.success(toUploadResponse(result));
@@ -82,16 +74,4 @@ public class ResumeController {
         return userId;
     }
 
-    private void validateFixtureFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw BusinessException.badRequest("请上传 PDF 简历文件");
-        }
-        String fileName = file.getOriginalFilename();
-        if (fileName == null || !fileName.toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")) {
-            throw BusinessException.badRequest("仅支持 PDF 文件");
-        }
-        if (file.getSize() > 10L * 1024 * 1024) {
-            throw BusinessException.badRequest("文件大小不能超过 10MB");
-        }
-    }
 }

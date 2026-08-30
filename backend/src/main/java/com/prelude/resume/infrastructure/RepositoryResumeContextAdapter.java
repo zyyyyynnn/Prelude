@@ -4,26 +4,15 @@ import com.prelude.BusinessException;
 import com.prelude.resume.api.port.ResumeContextPort;
 import com.prelude.resume.api.port.ResumeProjection;
 import com.prelude.resume.application.port.ResumeRepository;
-import com.prelude.resume.domain.ResumeDocumentProjection;
-import com.prelude.resume.domain.ResumeDocumentProjector;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class RepositoryResumeContextAdapter implements ResumeContextPort {
 
     private final ResumeRepository repository;
-    private final String projectionSource;
-    private final ResumeDocumentProjector projector = new ResumeDocumentProjector();
 
-    public RepositoryResumeContextAdapter(
-        ResumeRepository repository,
-        @Value("${prelude.resume.projection-source:document}") String projectionSource
-    ) {
+    public RepositoryResumeContextAdapter(ResumeRepository repository) {
         this.repository = repository;
-        this.projectionSource = projectionSource;
     }
 
     @Override
@@ -33,26 +22,29 @@ public class RepositoryResumeContextAdapter implements ResumeContextPort {
         if (!userId.equals(resume.userId())) {
             throw BusinessException.badRequest("简历不存在或无权访问");
         }
-        if (!"raw".equalsIgnoreCase(projectionSource) && resume.document() != null) {
-            ResumeDocumentProjection projection = projector.project(resume.document());
-            return new ResumeProjection(
-                resume.id(),
-                resume.userId(),
-                resume.fileName(),
-                projection.plainText(),
-                projection.skills(),
-                projection.projectsSummary(),
-                resume.documentVersion()
-            );
-        }
         return new ResumeProjection(
             resume.id(),
             resume.userId(),
             resume.fileName(),
             resume.rawText(),
-            List.of(),
-            List.of(),
-            0
+            resume.parsedSkills(),
+            resume.parsedProjects().stream()
+                .map(RepositoryResumeContextAdapter::projectSummary)
+                .filter(summary -> !summary.isBlank())
+                .toList()
         );
+    }
+
+    private static String projectSummary(ResumeRepository.ParsedProject project) {
+        String name = clean(project.name());
+        String description = clean(project.description());
+        if (name.isEmpty()) {
+            return description;
+        }
+        return description.isEmpty() ? name : name + "：" + description;
+    }
+
+    private static String clean(String value) {
+        return value == null ? "" : value.trim();
     }
 }

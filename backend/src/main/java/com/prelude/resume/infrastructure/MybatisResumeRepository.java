@@ -1,32 +1,26 @@
 package com.prelude.resume.infrastructure;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.BusinessException;
 import com.prelude.resume.infrastructure.persistence.Resume;
 import com.prelude.resume.infrastructure.persistence.ResumeMapper;
 import com.prelude.resume.application.port.ResumeRepository;
 import com.prelude.resume.application.port.ResumeUsagePort;
-import com.prelude.resume.domain.ResumeDocument;
-import com.prelude.resume.domain.ResumeDocumentProjection;
-import com.prelude.resume.domain.ResumeDocumentProjector;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Slf4j
 @Repository
 public class MybatisResumeRepository implements ResumeRepository {
 
     private final ResumeMapper resumeMapper;
     private final ResumeUsagePort resumeUsagePort;
     private final ObjectMapper objectMapper;
-    private final ResumeDocumentProjector projector = new ResumeDocumentProjector();
 
     public MybatisResumeRepository(
         ResumeMapper resumeMapper,
@@ -40,9 +34,12 @@ public class MybatisResumeRepository implements ResumeRepository {
 
     @Override
     public StoredResume create(NewResume draft) {
-        Resume row = writeRow(draft.document(), 1, draft.sourceType(), draft.rawText());
+        Resume row = new Resume();
         row.setUserId(draft.userId());
         row.setFileName(draft.fileName());
+        row.setRawText(draft.rawText());
+        row.setParsedSkills(writeJson(draft.parsedSkills()));
+        row.setParsedProjects(writeJson(draft.parsedProjects()));
         resumeMapper.insert(row);
         return toStored(row);
     }
@@ -78,40 +75,8 @@ public class MybatisResumeRepository implements ResumeRepository {
     }
 
     @Override
-    public boolean updateDocument(
-        Long resumeId,
-        Long userId,
-        int expectedVersion,
-        ResumeDocument document,
-        String sourceType
-    ) {
-        Resume row = writeRow(document, expectedVersion + 1, sourceType, null);
-        row.setId(resumeId);
-        row.setUserId(null);
-        return resumeMapper.update(row, new LambdaUpdateWrapper<Resume>()
-            .eq(Resume::getId, resumeId)
-            .eq(Resume::getUserId, userId)
-            .eq(Resume::getDocumentVersion, expectedVersion)) == 1;
-    }
-
-    @Override
     public void delete(Long resumeId) {
         resumeMapper.deleteById(resumeId);
-    }
-
-    private Resume writeRow(ResumeDocument document, int version, String sourceType, String rawText) {
-        ResumeDocumentProjection projection = projector.project(document);
-        Resume row = new Resume();
-        row.setDocumentJson(writeJson(document));
-        row.setDocumentVersion(version);
-        row.setSourceType(sourceType);
-        row.setPlainTextProjection(projection.plainText());
-        row.setRawText(rawText == null ? projection.plainText() : rawText);
-        row.setParsedSkills(writeJson(projection.skills()));
-        row.setParsedProjects(writeJson(document.projects().stream()
-            .map(project -> new ProjectRow(project.name(), projectDescription(project)))
-            .toList()));
-        return row;
     }
 
     private StoredResume toStored(Resume row) {
@@ -120,23 +85,20 @@ public class MybatisResumeRepository implements ResumeRepository {
             row.getUserId(),
             row.getFileName(),
             row.getRawText(),
-            readDocument(row),
-            row.getDocumentVersion() == null ? 0 : row.getDocumentVersion(),
-            row.getSourceType(),
+            readJson(row.getParsedSkills(), new TypeReference<List<String>>() {}),
+            readJson(row.getParsedProjects(), new TypeReference<List<ParsedProject>>() {}),
             row.getCreatedAt()
         );
     }
 
-    private ResumeDocument readDocument(Resume row) {
-        if (row.getDocumentJson() == null || row.getDocumentJson().isBlank()) {
-            return null;
+    private <T> T readJson(String value, TypeReference<T> type) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("简历解析数据缺失");
         }
         try {
-            return objectMapper.readValue(row.getDocumentJson(), ResumeDocument.class);
+            return objectMapper.readValue(value, type);
         } catch (Exception exception) {
-            log.warn("Resume {} contains invalid document JSON", row.getId());
-            log.debug("Invalid resume document JSON", exception);
-            return null;
+            throw new IllegalStateException("简历解析数据读取失败", exception);
         }
     }
 
@@ -144,18 +106,7 @@ public class MybatisResumeRepository implements ResumeRepository {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JacksonException exception) {
-            throw BusinessException.badRequest("简历文档序列化失败");
+            throw BusinessException.badRequest("简历解析数据序列化失败");
         }
-    }
-
-    private String projectDescription(ResumeDocument.Project project) {
-        List<String> values = new java.util.ArrayList<>(project.bullets());
-        if (project.outcome() != null && !project.outcome().isBlank()) {
-            values.add(project.outcome());
-        }
-        return String.join("\n", values);
-    }
-
-    private record ProjectRow(String name, String description) {
     }
 }

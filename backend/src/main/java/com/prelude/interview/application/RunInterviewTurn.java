@@ -11,7 +11,6 @@ import com.prelude.llm.ChatRequest;
 import com.prelude.llm.LlmPurpose;
 import com.prelude.llm.LlmAttachment;
 import com.prelude.llm.PromptIds;
-import com.prelude.interview.application.port.InterviewFixturePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +28,6 @@ public class RunInterviewTurn {
     private final InterviewSessionAccess sessionAccess;
     private final InterviewMessageRepository interviewMessageRepository;
     private final ChatPort chatPort;
-    private final InterviewFixturePort devFixtureService;
     private final InterviewStageManager interviewStageManager;
     private final InterviewContextService interviewContextService;
     private final InterviewMessageService interviewMessageService;
@@ -94,13 +92,6 @@ public class RunInterviewTurn {
         StringBuilder assistantReply,
         InterviewTurnSink sink
     ) {
-        if (devFixtureService != null && devFixtureService.isEnabled()) {
-            String currentStage = interviewStageManager.currentStageName(session.getId());
-            int replyIndex = interviewStageManager.assistantRepliesInCurrentStage(session.getId());
-            String reply = devFixtureService.resolveScriptedReply(currentStage, replyIndex);
-            devFixtureService.streamReply(reply, delta -> appendAndSend(assistantReply, sink, delta));
-            return;
-        }
         chatPort.stream(
             ChatRequest.snapshot(
                 session.getUserId(),
