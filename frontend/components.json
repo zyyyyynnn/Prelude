@@ -1,16 +1,21 @@
 {
-  "$schema": "https://shadcn-vue.com/schema.json",
-  "style": "default",
-  "typescript": true,
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": false,
+  "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/shared/ui/styles/index.css",
-    "baseColor": "slate",
-    "cssVariables": true
+    "css": "src/shared/styles/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
   },
   "aliases": {
-    "components": "@/shared/ui",
-    "utils": "@/shared/lib/utils",
-    "ui": "@/shared/ui"
-  }
+    "components": "@/shared",
+    "utils": "@/shared/lib/class-names",
+    "ui": "@/shared/ui",
+    "lib": "@/shared/lib",
+    "hooks": "@/shared/lib"
+  },
+  "iconLibrary": "lucide"
 }

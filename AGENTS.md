@@ -47,8 +47,8 @@
 
 - **UI 规范入口**：`DESIGN.md` 是 UI 规范唯一最高入口；本文件不复述 `DESIGN.md` 的样式与组件约束。
 - **色彩 Token 化、动效 GPU 红线、空间与 Z 轴管控、交互防抽搐**等具体红线以 `DESIGN.md` 为准。
-- UI 自动化质量体系（`verify:ui` / `verify:tokens` / `verify:a11y` / `capture:visual` / Component Lab）的当前态见 `docs/quality/ui-quality-system.md`。
-- UI 修改后必须跑 `npm --prefix frontend run verify:ui` 与 `verify:tokens`；视觉相关改动需同步更新 `docs/quality/ui-quality-system.md`。
+- 前端架构与验证入口见 `docs/frontend/architecture.md`。
+- UI 修改后必须运行 `check`、`build`、`test:smoke`、`verify:a11y` 与 `verify:visual`，并按 `DESIGN.md` 审查视觉与交互。
 
 ## 5. 产出与输出规范
 - **方案选择**：默认提供最稳妥、兼容性好的方案。除非被明确要求，不引入新依赖、不增加新框架、不大改结构。

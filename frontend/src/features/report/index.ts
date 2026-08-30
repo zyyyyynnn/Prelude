@@ -1,13 +1,6 @@
-export { default as StructuredReportPanel } from './components/StructuredReportPanel.vue'
-export { renderMarkdown } from './lib/markdown'
-export { parseInterviewReport } from './lib/parseInterviewReport'
-export type {
-  ParsedInterviewReport,
-  ReportResumeImprovement,
-  StructuredInterviewReport,
-} from './model/types'
+export { ReportPanel } from './ReportPanel'
 
-export async function exportInterviewReportToPdf(element: HTMLElement, filename?: string) {
-  const { exportToPdf } = await import('./lib/pdf')
-  return exportToPdf(element, filename)
+export async function printInterviewReport(title = '面试训练报告') {
+  const { printReport } = await import('./print-report')
+  return printReport(title)
 }

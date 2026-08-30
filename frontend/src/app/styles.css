@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+
+@source './';
+@source '../shared';
+@source '../features';
+@source '../devtools';
+
+@import '../shared/styles/index.css';
+@import './shell/sidebar.css';
+@import '../features/insight/analytics.css';
+@import '../features/interview/interview.css';
+@import '../features/report/report.css';
+@import '../features/resume/resume.css';
+@import '../features/settings/settings.css';
+@import '../features/template/position.css';

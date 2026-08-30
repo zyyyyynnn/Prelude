@@ -1,398 +1,101 @@
 # Prelude UI 设计规范
 
-> 本文件是 Prelude 前端样式、交互与数据展示的唯一规范入口。后续 UI、token、primitive、业务组件和必要数据源修改都必须以本文件为准。
->
-> 技术栈：Vue 3 + shadcn-vue + Tailwind CSS v4 + reka-ui。
+本文件是 Prelude 前端视觉、交互与数据展示的最高规范。技术栈为 React、Base UI 与 Tailwind CSS。
 
----
+## 视觉基础
 
-## 1. 总原则
+Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字、边界、焦点、圆角、阴影、间距、字号、动效和层级由 `frontend/src/shared/styles/index.css` 中的 Prelude Design Tokens 驱动。
 
-- UI 使用暖色纸感体系：页面、卡片、浮层、遮罩、图表和报告都必须由集中 token 驱动。
-- 禁止业务组件新增或保留非 token 颜色、透明度、尺寸、字体、阴影、圆角和 z-index。
-- 修复 UI 异常时，如果根因来自 seed、接口字段、报告内容、评分趋势或薄弱点数据，必须修数据源，不允许只在前端隐藏、过滤或硬编码。
-- 不保留本轮确认替换的旧 UI、旧样式、旧组件 fallback 或兼容分支；禁止两套样式体系并存。
-- 本轮不扩展数据看板雷达图维度。雷达图固定三维：技术能力、表达清晰度、逻辑思维。
-
----
-
-## 2. Token 体系
-
-### 2.1 颜色
-
-- 业务组件只能使用 CSS var、Tailwind token utility、项目语义 token 或 `color-mix()`。
-- token 基础色值只允许集中定义在 `frontend/src/shared/ui/styles/index.css`；其他文件不得写散落基础色。
-- 透明度必须使用 `color-mix(in srgb, var(--token) X%, transparent)`。
-- 禁止业务组件出现非 token 色值、`rgba()`、`white`、`black`。
-
-必备语义 token：
+### Color
 
 - `--color-bg`：全局纸感背景。
-- `--color-surface`：卡片、输入区、Dialog、Dropdown、Toast 表面。
-- `--color-surface-hover`：hover 背景。
-- `--color-surface-muted`：弱底色、selected 背景。
+- `--color-surface`：组件与浮层表面。
+- `--color-surface-hover`：hover 表面。
+- `--color-surface-muted`：弱强调表面。
 - `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。
-- `--color-brand`、`--color-brand-light`：品牌主色及弱强调。
-- `--color-border`、`--color-border-warm`：弱边界。
-- `--color-ring`、`--color-ring-deep`：轻轮廓与选中环。
-- `--color-focus-field`、`--color-focus-action`：字段与动作焦点色。
-- `--color-error`：破坏性和错误状态。
-- `--mask-overlay`：Dialog、Confirm 等遮罩。
-- `--chart-technical`、`--chart-expression`、`--chart-logic`：数据看板三维图表色。
-- `--brand-metaballs-1` 至 `--brand-metaballs-5`、`--brand-metaballs-bg`、`--brand-metaballs-shadow`：BrandMetaballs 专用 logo palette，用于保留旧版暖棕层次。
-- `--rose-three-color`、`--rose-three-muted`：Rose Three 加载视觉。
+- `--color-brand`、`--color-brand-light`：品牌强调。
+- `--color-border`、`--color-border-warm`：边界。
+- `--color-focus-field`、`--color-focus-action`：字段与动作焦点。
+- `--color-error`：错误与破坏性动作。
 
-### 2.2 shadcn-vue 映射
+组件颜色使用 CSS var、Tailwind token utility 或 `color-mix()`。基础色值集中在 token 定义中。浅色与暗色模式通过同一语义 token 映射。
 
-`index.css` 必须将 shadcn 语义变量映射到 Prelude token：
+### Spacing And Size
 
-- `--background` -> `--color-bg`
-- `--foreground` -> `--color-text-primary`
-- `--card`、`--popover` -> `--color-surface`
-- `--primary` -> `--color-brand`
-- `--secondary`、`--muted` -> `--color-surface-muted`
-- `--accent` -> `--color-surface-hover`
-- `--destructive` -> `--color-error`
-- `--border` -> `--color-border`
-- `--input` -> `--color-border-warm`
-- `--ring` -> `--color-focus-action`
+间距使用 `--spacing-xs` 至 `--spacing-2xl` 阶梯。基础控件高度为 `--ui-height-base`，紧凑控件高度为 `--ui-height-compact`。布局宽度、Header 高度和内容行宽使用对应 `--layout-*`、`--header-height` 与 `--content-*` token。
 
-### 2.3 间距
+固定格式控件通过稳定高度、宽度或 grid track 保持布局。文本在容器内自然换行或截断，并由 Tooltip 提供完整值。
 
-间距必须使用集中 token 或 Tailwind spacing token，不在业务组件散落裸尺寸。
+### Radius And Shadow
 
-- `--spacing-xs`：图标文字间距、badge 内边距。
-- `--spacing-sm`：按钮组、表单小 gap、列表项内距。
-- `--spacing-md`：面板和 section 常规 gap/padding。
-- `--spacing-lg`：页面 header、区块大 gap。
-- `--spacing-xl`、`--spacing-2xl`：页面级留白。
-- 常用半阶/负向间距必须沉淀为共享 token 直接使用，不在业务侧写 `calc(var(--spacing-*) ...)` 拼出常见值。
+- 小型控件使用 `--radius-sm` 或 `--radius-md`。
+- Dialog 等大型表面使用 `--radius-lg` 或 `--radius-xl`。
+- Dropdown、Select、Combobox、Tooltip 与 Toast 使用 `--shadow-whisper`。
+- Dialog 与 Confirm 使用 `--shadow-modal`。
 
-### 2.4 高度
+组件通过 shadow token 获得层级，单个表面保持一层边界与一层阴影。
 
-- `--ui-height-base`：默认 Button、Input、Select、表单控件、send 框右侧主操作按钮。当前为 34px。
-- `--ui-height-compact`：只用于 send 框左下角元信息控件及其 compact dropdown trigger/item。当前为 30px。
-- `--header-height`：工作区 header。
-- `--composer-height`：底部 composer 占位。
+### Typography
 
-禁止：
+- 品牌、标题、表单控件与关键操作使用 `--font-serif`。
+- 正文、说明和数据文本使用 `--font-sans`。
+- 代码、日志和 token 名称使用 `--font-mono`。
+- 字号使用 `--font-size-xs` 至 `--font-size-2xl` 阶梯，组件内部采用紧凑标题尺度。
 
-- 业务组件写散落固定交互高度。
-- 把 send 右侧发送、按住说话、语音/文字切换改成 compact。
-- 把 send 左侧简历、岗位、模型、JD 元信息控件改成 base。
+### Motion
 
-### 2.5 圆角、阴影、层级
+动效使用 `--motion-duration-*` 与 `--motion-ease-standard`。颜色与表面变化使用 token transition；进入和退出优先 opacity 与 transform。几何动画采用 `transform`，加载态保持控件尺寸稳定，并支持 `prefers-reduced-motion`。
 
-圆角：
+## Components
 
-- `--radius-sm`：badge、内部小元素。
-- `--radius-md`：Button、Input、Select、Dropdown item、Tooltip。
-- `--radius-lg`：普通卡片内部区块。
-- `--radius-xl`：页面卡片和 Dialog shell。
-- `--radius-full`：头像、圆形状态点等明确圆形元素。
+Base UI 提供 Dialog、Popover、Menu、Tooltip、Combobox、Select、Focus 与 Keyboard 行为。Prelude-owned source 负责视觉、语义 variant 和组合接口。每类交互对应一套 primitive。
 
-阴影：
+### Actions
 
-- `--shadow-ring`、`--shadow-ring-deep`：轻轮廓。
-- `--shadow-whisper`：Dropdown、Select、Combobox、Tooltip、Toast 的低浮层阴影。
-- `--shadow-modal`：Dialog、Confirm。
+Button variant 明确表达主操作、次操作、轮廓、轻操作和破坏性操作。图标操作使用熟悉图标与可访问名称。loading 状态保留原始宽高，文本和图标使用透明度或受控替换。
 
-Focus 规则：
+### Fields
 
-- 标准 Input、Textarea、Select 与 Combobox 只改变现有 1px 边框，使用 `--color-focus-field`；不得改变背景、阴影、尺寸或位置。
-- Button 按 default、destructive、outline、secondary、ghost、link 变体分别拥有语义焦点类别；Primary 与 Destructive 必须保持原背景和文字语义。
-- Sidebar、关闭按钮、密码操作、Theme 与 SegmentedControl 使用明确的 action/selectable 类；active、selected、open 与 focus 必须彼此独立。
-- Action 焦点只在键盘输入意图或浏览器初始 `:focus-visible` 下显示；pointer/F12 往返不得留下外框或灰底。Field 焦点不受输入意图区分。
-- 普通主题禁止外部 ring、ring offset、focus box-shadow 与 focus transform；强制高对比度模式使用系统 `CanvasText` outline。
-- Composer compact 控件与标准 Select/Button 使用同等焦点质量，不允许 quiet/no-focus 例外；报告逐题轮播仅让上一题/下一题按钮进入 Tab 顺序。
-- `verify:ui` 必须同时阻断旧焦点样式回流和 `outline: none` 后没有可见替代的实现。
+Input、Textarea、Select 与 Combobox 使用 `--color-surface` 表面、`--color-border-warm` 边界、token padding 与衬线字体。字段焦点改变现有边界颜色，错误状态使用 `--color-error`。
 
-层级：
+### Floating Surfaces
 
-- Header / Sidebar：`z-[100]`
-- Dialog / Confirm：`z-[101]`
-- Select / Dropdown / Combobox：`z-[105]`
-- Tooltip：`z-[110]`
+Dropdown、Select、Combobox 与 Tooltip 使用 `--color-surface`、`--color-text-primary`、`--color-border-warm`、`--radius-md` 和 `--shadow-whisper`。这一中性高对比表面保持文字清晰，也与品牌强调色分离。
 
-业务组件不得另写非 token z-index。
+Tooltip 内容使用 `--font-size-xs`、token padding 和 `--content-tooltip-max-inline-size`。primitive 统一 trigger 间距和 opacity 动效。截断文字的定位锚点是完整交互控件。
 
----
+Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overlay`，Dialog 使用 `--shadow-modal`。
 
-## 3. 字体
+### Composition
 
-- UI 控件默认使用 `var(--font-serif)` 或 `font-serif`：button、input、select、dropdown、combobox、tooltip、sidebar、header、settings、label、helper text、badge、toast。
-- `var(--font-sans)` 只允许用于对话气泡正文、面试报告正文和其他真正长阅读正文。
-- `var(--font-mono)` 只用于 code/pre、接口片段和技术标识。
-- 禁止下拉菜单、设置页按钮、send 框控件字体漂移到 sans。
-- 字号使用 Tailwind 标准阶梯或集中 token；当前集中 token 包含 `--font-size-xs`、`--font-size-sm`、`--font-size-meta`、`--font-size-md`、`--font-size-lg`。
-- 业务组件不得散落裸 `13px` / `14px` 等字号。
+页面区段使用无框布局与受控内容宽度。Card 用于重复项目、独立工具或需要明确边界的数据对象。组件通过明确 variant 和 composition 表达差异。
 
----
+## Accessibility
 
-## 4. Motion
+- 交互控件具备可访问名称与完整键盘路径。
+- 键盘焦点使用可见的语义边界；字段、动作、选中与打开状态彼此独立。
+- 图标装饰使用空替代文本；信息图像提供等价文本。
+- 文本与交互目标在桌面布局中保持互不遮挡。
+- 系统高对比度与 reduced motion 偏好保持可用。
 
-### 4.1 Motion Token
+## Source Adoption
 
-`index.css` 必须集中定义：
+shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮层交互语义。[Beautiful UI](https://www.beautifului.dev/) Prompt Bar 组合用于面试输入区。组件视觉统一由本文件和 Prelude Design Tokens 定义。
 
-- `--motion-duration-base`
-- `--motion-duration-slow`
-- `--motion-duration-thinking`
-- `--motion-ease-standard`
-- `--motion-delay-min`
-- 常用 transition preset，例如 color、surface、opacity、transform、shadow。
+## Validation
 
-禁止业务组件散落固定 duration 或 easing。
+UI 改动执行：
 
-### 4.2 动效红线
+```powershell
+npm --prefix frontend run typecheck
+npm --prefix frontend run lint
+npm --prefix frontend run verify:ui
+npm --prefix frontend run verify:tokens
+npm --prefix frontend run verify:dark
+npm --prefix frontend run verify:a11y
+npm --prefix frontend run verify:visual
+npm --prefix frontend run build
+npm --prefix frontend run test:smoke
+```
 
-允许过渡属性：
-
-- `opacity`
-- `transform`
-- `color`
-- `background-color`
-- `border-color`
-- `box-shadow`
-
-禁止：
-
-- `transition-all`
-- layout 属性动画，包括 width、height、padding、margin、max-height。
-- 无依据缩放、弹簧、过度弹跳。
-- 分散写死 duration、delay、easing。
-
-唯一例外：Sidebar 展开/折叠宽度切换可以保留，但必须集中、可审查，并使用硬件加速提示。
-
-### 4.3 按钮 Loading
-
-- 按钮 loading 使用绝对居中的 spinner 覆盖。
-- 原按钮文本通过 opacity 交叉溶解，不允许 DOM 替换导致宽度抽搐。
-- 普通异步提交使用 `withMinDelay`，流式 LLM 输出不加延迟。
-
----
-
-## 5. UI Primitives
-
-### 5.1 Button
-
-业务可用尺寸只保留：
-
-- `default`
-- `sm`
-- `icon`
-- `icon-sm`
-- `compact`
-- `icon-compact`
-
-规则：
-
-- `default`、`sm`、`icon`、`icon-sm` 使用 `--ui-height-base`。
-- `compact`、`icon-compact` 使用 `--ui-height-compact`，只用于 send 左侧元信息控件。
-- 删除 `lg`、`icon-lg` 业务可用大号按钮体系。
-- 默认按钮宽度按内容自适应；登录 submit 可 `w-full`；Sidebar 主操作可 full width；Icon button 保持正方形。
-- Focus 必须使用 2.5 节定义的统一暖色 focus ring；图标按钮必须有 `aria-label`。
-
-### 5.2 Input / Textarea / Select
-
-- Input、Select 默认高度使用 `--ui-height-base`。
-- Textarea 不得使用硬编码暗色背景；背景、边框、focus 全部走 token。
-- Composer textarea 视觉可保留，但高度、字号、滚动与 focus 必须 token 化。
-- 固定选项优先 Select；可输入/可搜索模型使用 Combobox。
-
-### 5.3 Dropdown / Select / Combobox / Tooltip
-
-Dropdown、Select、Combobox 使用统一低浮层视觉：
-
-- `bg-surface`
-- 与表单控件一致的 `border-input` 淡灰棕边界
-- `shadow-whisper`
-- `rounded-md`
-- token padding
-- `font-serif`
-
-Tooltip 使用同一 primitive，采用 `bg-surface` + `text-popover-foreground` 的主题表面，不使用纯黑或品牌色背景。Tooltip、Dropdown、Select 与 Combobox 浮层统一使用和表单控件相同的 `border-input` 淡灰棕边界，并只叠加一层 `shadow-whisper`；禁止再叠加 ring token 形成双重轮廓。Tooltip 使用 `rounded-md`、token padding、`text-xs` 与 `font-serif`，宽度按内容自然展开，并以 `--content-tooltip-max-inline-size` 限制长文本换行。Tooltip 与完整交互 trigger 的间距由 primitive 统一为 `--spacing-1-5`，业务组件不得另行覆盖；截断文字位于 Button 或菜单项内部时，定位锚点必须提升到完整父交互控件。出现和退出只允许透明度动效，不使用会抵消浮层间距的方向位移。Canvas 图表等无法挂载 Vue primitive 的浮层也必须等价使用这组现有 token，不得另造主题色气泡。
-
-规则：
-
-- Dropdown、Select、Combobox content 使用共享类，不在业务组件单独写一套浮层。
-- Tooltip 必须通过 `shared/ui/tooltip/TooltipContent.vue`，业务组件不得覆盖背景色或文字色。
-- content 层级使用 `z-[105]`，Tooltip 使用 `z-[110]`。
-- item 高度跟 trigger：default 34px，compact 30px。
-- item 使用 nowrap、truncate、token hover、focus-visible。
-- 原生 `title` 全局禁用。所有 truncate / ellipsis 动态文本必须使用 Tooltip 展示完整值。
-
-### 5.4 Dialog / Confirm / Toast
-
-- Dialog、Confirm 使用统一暖色半透明遮罩 `--mask-overlay`。
-- shell 使用 `bg-surface`、token radius、token padding、`shadow-modal`，不得使用强硬边框。
-- Confirm 必须提供 Promise 异步 API；替换 `window.confirm` 时必须改造控制流为 `const confirmed = await confirm(...)`。
-- Toast 使用低浮层纸感，状态差异通过 token 色彩和图标表达，不使用独立硬阴影。
-
-### 5.5 Badge / Card / Separator / EmptyState
-
-- Badge 保持胶囊形，使用 token 背景、边框和字体。
-- Card 默认不使用强阴影。
-- Separator 只使用弱边界色。
-- EmptyState 保持安静，不默认增加操作按钮。
-
----
-
-## 6. 业务组件规范
-
-### 6.1 Login
-
-- 保持纸感背景和登录卡片。
-- BrandMetaballs 必须使用专用 logo token palette，不得写散落品牌色；视觉目标是延续旧版暖棕层次，不因 token 化变成新视觉。背景圆盘必须柔和，贴近所在容器纸感，避免成为沉重的实心圆盘（logo background token should stay close to the surrounding surface and must not read as a separate heavy disk）。
-- 登录/注册切换继续使用 SegmentedControl。
-- 密码可见按钮为透明图标按钮，必须有 `aria-label` 和 focus 样式。
-- submit 使用 base 高度，登录页允许 full width。
-
-### 6.2 App Shell / Sidebar / Header
-
-- 主应用保持 100vh flex shell。
-- Sidebar 展开 260px，折叠约 51px；折叠态隐藏品牌文字。
-- Sidebar item 只显示岗位名，长文本 Tooltip；active/hover 只用背景和文字色，不加左侧条。
-- Header 标题长文本 Tooltip；状态 Badge 只展示业务状态/阶段，不展示数据库 id。
-- 面试/报告切换继续放 header 右侧。
-
-### 6.3 Message Thread
-
-- 消息区上方滚动，composer 固定底部。
-- 消息正文纯文本，不渲染 Markdown。
-- 对话气泡正文使用 sans；角色、时间和标签使用 serif。
-- 面试过程不展示逐题数字评分、评分依据或改进 hint；后端评分仅用于结束后的结构化训练报告和能力画像。
-- 不保留实时评分开关、隐藏入口或第二套旧评分 UI。
-- 思考中和重连状态保留，但动效必须符合 motion 规则。
-
-### 6.4 Composer
-
-- 空状态 composer 在工作区可用高度内水平、垂直居中；内容超高时使用安全居中并允许滚动。
-- 文本/JD textarea 去掉裸高度和裸字号，使用 token。
-- send 左侧元信息控件：简历、岗位、模型、JD 使用 compact 30px。
-- send 右侧主操作：开始面试、发送、按住说话、语音/文字切换使用 base 34px。
-- 简历 dropdown 保留上传 PDF；岗位 dropdown 只显示岗位名。
-- 模型入口改为 dropdown：只切当前 provider 的模型，不切 provider；底部提供进入 LLM 配置页入口。
-- 语音/文字切换只显示图标，必须有 `aria-label`。
-- 面试结束后输入区整体置灰且不可操作。
-
-### 6.5 Report
-
-- 报告生成中保留居中状态卡片，但不保留沙漏字符；使用 token 化 Rose Three 或统一加载视觉。
-- 报告正文保留约 800px 纸面容器。
-- Markdown 标题用 serif；正文、列表、表格内容用 sans；code/pre 用 mono。
-- Markdown 必须覆盖 h1-h4、p、ul/ol/li、blockquote、table、code/pre、长报告滚动。
-- 新报告优先渲染结构化 JSON，纯 Markdown 只作为旧报告或非法 JSON 的兼容渲染路径；结构化报告不显示兼容文本切换入口。
-- 结构化报告按总览、三维评分、分阶段表现、逐题复盘、优势、短板、训练计划、总结建议组织；列表必须使用真实 `ul` / `ol`。
-- 三维评分卡只使用现有 chart/brand 语义 token，不新增 one-off 色板；阶段和匹配状态使用 Badge，普通说明文字不得伪装成 Badge。
-- 逐题复盘使用单题左右轮播，支持按钮和方向键切换；当前题显示问题、回答摘要、已落库得分、评分依据和改进建议，无评分时显示明确空态，不伪造分数。
-- 阶段信号、优势/短板和训练计划使用无卡片分隔布局与真实列表，避免重复灰色卡片。桌面端保持单列阅读主轴，评分摘要可使用稳定的三列网格；小屏降为单列且不得水平溢出。
-- loading、empty、error 与 Markdown fallback 状态复用现有 EmptyState、Button 和 markdown surface，不建立独立状态视觉。
-- PDF 导出必须包含结构化报告完整根节点；轮播中的全部逐题条目在导出克隆中展开，分阶段和逐题条目应纳入分页避免选择器，避免关键条目跨页截断或空白导出。
-
-### 6.6 Settings
-
-- 设置弹窗保持左侧导航、右侧内容双栏。
-- 设置页包含账号资料、主题、LLM 配置三个 tab。
-- 退出登录放左侧底部；保存、测试按钮放右上角；内容较长时只滚动右侧内容。
-- 用户名可编辑；邮箱可编辑；密码区只保留旧密码和新密码。
-- 新增真实头像上传：后端保存头像 URL/路径，未设置时展示用户名首字母。
-- 新增主题切换：浅色、暗色、跟随系统；使用小卡片式 SVG 选项，不做普通按钮。
-- LLM provider 展示名以接口返回为准；当前协议入口为 OpenAI Responses、OpenAI Chat Completions 与 Anthropic Messages。Thinking Depth 包含“默认（Default）”。
-
-### 6.7 Resume Management
-
-- 页面标题不加说明文案。
-- 上传按钮保留在页面右上角。
-- 统计卡片保留。
-- 文件名长文本 truncate + Tooltip。
-- 删除已占用简历时按钮禁用；删除确认使用统一 Confirm。
-
-### 6.8 Analytics
-
-- Analytics cards / radar / trend use the latest 5 real completed scored sessions.
-- Radar chart must avoid heavy filled background surfaces.
-- Seed data must be reviewed against schema before commit.
-- Seed messages must not reuse identical scripts across sessions.
-
-- Score cards 固定技术、表达、逻辑三项。
-- 雷达图固定三维：技术能力、表达清晰度、逻辑思维；不增加维度。
-- 趋势图显示最近五次真实评分数据，日期来自真实 `score_history.created_at` 或关联 session 时间。
-- ECharts 颜色、tooltip、axis、grid 全部 token 化。
-- 薄弱点按类别聚合；同一弱点下描述同层级展示，不出现 summary/detail 伪层级。
-
----
-
-## 7. 主题、资料与数据边界
-
-### 7.1 主题
-
-- 主题取值固定为 `light | dark | system`。
-- 登录用户主题偏好保存到后端；未登录用户保存到 localStorage。
-- 应用启动时根据偏好设置根节点主题；system 跟随系统变化。
-- 暗色主题切换必须通知依赖 canvas、chart、shader 的组件重新解析 token 并重绘。
-- 暗色主题必须通过 token 映射完成，业务组件不得写 `dark:bg-*` 作为独立视觉。
-
-### 7.2 用户资料与头像
-
-后端 contract：
-
-- `username`
-- `email`
-- `avatarUrl`
-- `themePreference`
-
-数据库字段：
-
-- `avatar_url`
-- `theme_preference`
-
-头像存储：
-
-- 只允许本地文件系统。
-- 上传目录为项目配置的本地 uploads 路径。
-- 通过 Spring WebMvc 静态资源映射暴露。
-- 禁止引入云存储依赖。
-- 禁止把图片 Base64 存入数据库。
-
-### 7.3 数据源
-
-- demo seed 必须幂等，不删除重建真实用户、自定义岗位、自建会话或真实简历。
-- demo session 不依赖自增 id，不重置 AUTO_INCREMENT。
-- UI 不展示数据库内部 id。
-- 趋势日期、报告、评分、薄弱点必须来自真实后端数据。
-- 如果修改 `schema.sql` 或 `data.sql`，必须执行后端验证。
-
----
-
-## 8. Rose Three 加载动画
-
-- 使用原生 SVG + `requestAnimationFrame`，不引入 Three.js、Lottie 等重型库。
-- 使用 Math Curve Rose Three 方向，粒子渲染绕过 Vue 响应式热路径。
-- 颜色使用 `currentColor` 或 Rose Three token。
-- 宽高使用 `1em`，由外层 Tailwind/token 控制。
-- 支持 `speedMultiplier`，速度与全局 motion token 结合。
-- 用于报告生成、AI 思考、长等待状态；普通按钮 loading 仍使用 Button loading。
-
----
-
-## 9. 静态扫描红线
-
-本轮结束时业务代码不得命中：
-
-- `transition-all`
-- 原生 `title=`
-- `window.confirm`
-- `shadow-md` / `shadow-lg`
-- 无依据 `border-border`
-- `rgba(`
-- 非 token 色值
-- `white` / `black`
-- 散落固定交互高度
-- 裸字号
-- 分散 fixed duration / easing
-- `dark:bg-*`
-- 内联硬编码颜色、背景、边框、阴影
-- 普通主题下外部 focus ring、ring offset、focus box-shadow 与 focus transform，或无可见替代的 `outline: none`
-
-token 定义文件中的基础色值允许集中存在，但必须人工确认不泄漏到业务组件。
+视觉审查以本文件和 `frontend/src/shared/styles/index.css` 的 token 定义为准。

@@ -1,85 +1,16 @@
-# UI Quality System
+# UI 质量体系
 
-`DESIGN.md` 是 UI 规范的唯一最高入口。本文件只描述当前 UI 代码组织与自动化验证，不重新定义色板、token 数值或视觉语言。
+`DESIGN.md` 是视觉与交互规范，`frontend/tokens/ui-tokens.json` 是 token 名称与分类索引，`frontend/src/shared/styles/index.css` 是 token 值和全局样式入口。
 
-## 代码映射
+| 门禁 | 验证范围 |
+| --- | --- |
+| `npm run check` | TypeScript、ESLint、架构、UI 与 token 静态门禁 |
+| `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项 |
+| `npm run verify:tokens` | token 声明完整性、基础控件不变量、语义阴影与层级唯一性 |
+| `npm run verify:production` | 生产产物不包含开发态组件检查面 |
+| `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
+| `npm run verify:dark` | 暗色偏好启动恢复 |
+| `npm run verify:a11y` | 真实浏览器 Axe 检查 |
+| `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度 |
 
-| 层级 | 路径 | 职责 |
-| --- | --- | --- |
-| Foundations | `frontend/src/shared/ui/styles/index.css`、`frontend/tokens/ui-tokens.json` | token 定义、基础样式与只读 token 索引 |
-| Components | `frontend/src/shared/ui/` | Reka UI 驱动的通用 primitive |
-| Patterns | `frontend/src/features/*/components/` | 由 primitive 组成的业务界面 |
-| Lab | `frontend/src/devtools/component-lab/` | 仅开发态的组件状态检查 |
-
-样式入口移动或模块拆分必须保持现有 token 值和用户可见视觉不变。业务组件不得反向定义 Foundations。
-
-## 命令
-
-```powershell
-npm --prefix frontend run check
-npm --prefix frontend run verify:ui
-npm --prefix frontend run verify:tokens
-npm --prefix frontend run verify:byok
-npm --prefix frontend run verify:dark
-npm --prefix frontend run verify:flows
-npm --prefix frontend run verify:a11y
-npm --prefix frontend run verify:visual
-```
-
-## CI 门禁
-
-| Gate | 范围 | CI 类型 |
-| --- | --- | --- |
-| `check` | Oxfmt、Oxlint、`vue-tsc --noEmit` | blocking |
-| `verify:architecture` | 四层目录、依赖方向、feature 公共入口、旧目录回流 | blocking |
-| `test:contracts` | 会话偏好迁移、Provider DTO 与报告简历建议解析 | blocking |
-| `build` | Vite+ / Rolldown 生产构建 | blocking |
-| `verify:production` | 生产产物不包含 devtools，PDF vendor 不被首屏预加载 | blocking |
-| `verify:ui` | 静态 UI guardrail | blocking |
-| `verify:tokens` | token schema、唯一性与 design-lock 值 | blocking |
-| `verify:byok` | BYOK 设置流程 | blocking |
-| `verify:dark` | 暗色主题基本行为 | blocking |
-| `verify:flows` | 会话偏好、隐藏恢复、简历管理边界与建议接受/拒绝 | blocking |
-| `verify:a11y` | axe critical 与键盘路径 | blocking |
-| `capture:visual` | 视觉场景截图 | artifact-only |
-
-CI 浏览器测试复用 Windows runner 的 Microsoft Edge channel，并设置 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`。本地未设置 `CI` 时使用 Playwright 默认浏览器；本地专用配置可显式使用 Edge。
-
-## 静态 Guardrail
-
-`verify:ui` 阻断以下回流：
-
-- `transition-all`、`window.confirm`、原生 `title=`；
-- 未批准的阴影、边框、硬高度、arbitrary px 与 magic ratio；
-- 业务组件中的非 token 颜色和裸像素；
-- 字段未复用 `ui-field-control` / `ui-field-boundary` 单边框契约，或 action 未按 Button variant / icon / nav / selectable 语义分类；
-- `focus-visible:ring-*`、`focus:ring-*`、`ring-offset-*`、focus shadow/transform、`ui-focus-quiet` 以及无可见替代的 `outline: none`；
-- 输入意图没有在 Foundations 层同时处理 pointer、keyboard 与 F12 等非导航功能键。
-- Tooltip 未使用统一的主题 surface、表单同源 `border-input` 单层边界、`shadow-whisper` 单层浮层阴影、完整交互 trigger 间距、无位移淡入淡出、紧凑字号及长文本换行约束；Dropdown、Select、Combobox 浮层未使用同一表单边界和阴影时同样阻断。ECharts 等 Canvas 浮层以浏览器用例验证等价 token。
-
-`verify:tokens` 校验：
-
-- `frontend/tokens/ui-tokens.json` schema 完整性；
-- `--shadow-*` 原始值只位于 token 定义块；
-- `--z-index-*` 数值唯一；
-- 已锁定布局与控件尺寸和 `frontend/src/shared/ui/styles/index.css` 一致。
-
-## Component Lab
-
-共享 Toast 默认通过 Sonner 定位变量在右侧内嵌、垂直居中提供无常驻外框的关闭按钮，使用统一的 surface、hover 与 focus token，并通过“关闭系统提示”提供可访问名称。包含 Toast 操作的 Dialog 必须在自身 dismiss 边界保留 Toast 交互，不能由通用 Dialog primitive 猜测业务例外。
-
-`/components-lab` 由 `frontend/src/app/router.ts` 在 `import.meta.env.DEV` 为真时条件注册。生产构建不包含该路由或 `frontend/src/devtools/` 模块。
-
-Lab 覆盖 Button、Input、Textarea、Select、DropdownMenu、Combobox、Dialog、Tooltip、Badge、Card、EmptyState、SegmentedControl、Workspace、Composer 与 Message 等稳定状态。
-
-## 浏览器覆盖
-
-`verify:a11y` 使用 mock API 执行登录页、工作区、设置弹窗、下拉控件、侧栏、Composer 和结构化报告的 axe 与键盘路径检查。门禁只阻断 critical violation；绿色结果不代表不存在 serious color-contrast 问题，也不授权修改现有品牌色或 token 值。`verify:flows` 另外读取真实 computed style，覆盖字段单边框、Button variant、Sidebar F12/pointer/keyboard、快捷操作 focus-within、设置选中态、报告导航和 forced-colors。
-
-`verify:visual` 覆盖浅色/暗色登录、侧栏、工作区空态、文字/语音 Composer、设置页、下拉浮层、Tooltip 与图表浮层对比度、报告、数据看板、Component Lab、移动端报告与 PDF 导出。CI 的 `capture:visual` 只上传 artifact，本地 `verify:visual` 用于明确的视觉回归验证。
-
-## 相关文档
-
-- `DESIGN.md`：视觉、交互与 token 最高规范
-- `docs/frontend/architecture.md`：前端四层架构与模块所有权
-- `docs/quality/local-review-checklist.md`：本地交付检查
+Tooltip 由 Base UI 提供交互行为，并使用高对比中性表面。页面和组件使用既有 Prelude token，不建立局部色板。

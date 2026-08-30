@@ -1,29 +1,17 @@
 name: prelude
 
-# 基础服务（mysql/redis/rabbitmq）无 profile，作为 dev 与 Docker 应用层的公共依赖。
-# Profiles 仅控制应用层与可选观测层：
-#   app           -> backend + frontend (Full Docker / deployment verification)
-#   observability -> prometheus + grafana (可选叠加)
-#
-# 启动示例:
-#   docker compose --profile app up -d --build
-#   docker compose --profile app --profile observability up -d --build
-
 services:
-  # ---------- 基础中间件（无 profile，所有模式共享） ----------
   mysql:
     image: mysql:8.4
     container_name: prelude-mysql
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_DATABASE: interview_system
+      MYSQL_DATABASE: prelude
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
     ports:
       - "${MYSQL_HOST_PORT:-13306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro
-      - ./backend/src/main/resources/data.sql:/docker-entrypoint-initdb.d/2-data.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
       interval: 5s
@@ -31,45 +19,35 @@ services:
       retries: 20
 
   redis:
-    image: redis:alpine
+    image: redis:7.4-alpine
     container_name: prelude-redis
-    restart: always
+    restart: unless-stopped
     ports:
       - "${REDIS_HOST_PORT:-16379}:6379"
-    volumes:
-      - redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-      timeout: 3s
-      retries: 10
+      timeout: 5s
+      retries: 20
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:4.1-alpine
     container_name: prelude-rabbitmq
-    restart: always
+    restart: unless-stopped
     ports:
       - "${RABBITMQ_HOST_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_HOST_PORT:-15672}:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
-  # ---------- 应用层（profile: app） ----------
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-    image: prelude/backend:app
+    image: prelude/backend:latest
     container_name: prelude-backend
-    restart: always
+    restart: unless-stopped
     profiles: [app]
     depends_on:
       mysql:
@@ -79,61 +57,28 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/interview_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/prelude?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_DATABASE: 0
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: guest
-      SPRING_RABBITMQ_PASSWORD: guest
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1/chat/completions}
-      OPENAI_MODEL: ${OPENAI_MODEL:-}
-      JWT_SECRET: ${JWT_SECRET:-replace-with-at-least-32-bytes-jwt-secret}
-      APP_CRYPTO_AES_SECRET: ${APP_CRYPTO_AES_SECRET:-replace-with-at-least-32-bytes-aes-secret}
+      APP_CRYPTO_AES_SECRET: ${APP_CRYPTO_AES_SECRET:-prelude-local-development-secret-change-me}
     ports:
       - "8080:8080"
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    image: prelude/frontend:app
+    image: prelude/frontend:latest
     container_name: prelude-frontend
-    restart: always
+    restart: unless-stopped
     profiles: [app]
     depends_on:
       - backend
     ports:
       - "5173:80"
 
-  # ---------- 观测（profile: observability，可选叠加） ----------
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prelude-prometheus
-    restart: always
-    profiles: [observability]
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - "9090:9090"
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: prelude-grafana
-    restart: always
-    profiles: [observability]
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-storage:/var/lib/grafana
-
 volumes:
   mysql-data:
-  redis-data:
-  rabbitmq-data:
-  grafana-storage:

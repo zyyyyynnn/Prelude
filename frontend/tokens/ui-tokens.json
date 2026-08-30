@@ -1,6 +1,6 @@
 {
-  "$schema": "ui-tokens/v1",
-  "description": "Prelude UI token schema. Source of truth for token naming and classification. Values live in frontend/src/shared/ui/styles/index.css; this file indexes them so the verify-ui-tokens script can detect drift, missing declarations, or category reclassification without diffing the CSS by hand.",
+  "$schema": "ui-tokens",
+  "description": "Prelude UI token schema. Source of truth for token naming and classification. Values live in frontend/src/shared/styles/index.css; this file indexes them so the verify-ui-tokens script can detect drift, missing declarations, or category reclassification without diffing the CSS by hand.",
   "categories": {
     "color": {
       "prefix": "color",
@@ -138,16 +138,7 @@
         "layout-dashboard-card-min-inline-size",
         "layout-form-field-min-inline-size",
         "layout-list-title-min-inline-size"
-      ],
-      "rules": {
-        "design-locked": [
-          "layout-sidebar-inline-size",
-          "layout-sidebar-collapsed-inline-size",
-          "layout-workspace-content-max-inline-size",
-          "layout-settings-dialog-max-inline-size",
-          "layout-settings-dialog-min-block-size"
-        ]
-      }
+      ]
     },
     "content": {
       "prefix": "content",
@@ -157,7 +148,16 @@
     "z-index": {
       "prefix": "z-index",
       "description": "层级 token。值必须唯一（layer 语义不重叠）。",
-      "tokens": ["z-index-workspace-composer", "z-index-app-header", "z-index-sidebar"],
+      "tokens": [
+        "z-index-local-raised",
+        "z-index-workspace-composer",
+        "z-index-app-header",
+        "z-index-sidebar",
+        "z-index-dialog-backdrop",
+        "z-index-dialog",
+        "z-index-menu",
+        "z-index-tooltip"
+      ],
       "rules": {
         "values-must-be-unique": true
       }
@@ -180,16 +180,12 @@
         "brand-metaballs-4",
         "brand-metaballs-5",
         "brand-metaballs-bg",
-        "brand-metaballs-shadow",
-        "rose-three-color",
-        "rose-three-muted",
-        "rose-three-stroke",
-        "rose-three-speed"
+        "brand-metaballs-shadow"
       ]
     },
-    "shadcn-tailwind-theme": {
+    "component-tailwind-theme": {
       "prefix": null,
-      "description": "Tailwind v4 + shadcn-vue 默认 @theme block 的语义 token。这些 token 在 index.css 的 @theme { ... } 块里声明，用于 shadcn-vue 组件 (Button, Dialog, Card 等) 的 variant 系统。不在 Prelude 自己的业务 token 命名空间下，但需要与 index.css 中的实际声明保持一致。",
+      "description": "Tailwind @theme block 的组件语义 token，与 index.css 中的声明保持一致。",
       "tokens": [
         "background",
         "foreground",
@@ -233,21 +229,20 @@
         "color-ring"
       ]
     },
-    "legacy-utility": {
+    "supporting": {
       "prefix": null,
-      "description": "项目早期遗留的 utility token：bg-paper-filter（登录背景纹理）、mask-overlay（dialog 背景遮罩）、--radius（基础圆角别名）、--ui-segmented-item-min-inline-size（Phase 1 SegmentedControl 单一阈值）、--session-item-action-width（侧边栏动作）、--login-card-content-layer（登录卡片 z-index）。这些 token 在 Phase 4 之后会被逐步整合到统一 namespace。",
+      "description": "登录背景、弹层遮罩、基础圆角、分段控件和登录内容层使用的辅助 token。",
       "tokens": [
         "radius",
         "bg-paper-filter",
         "mask-overlay",
         "ui-segmented-item-min-inline-size",
-        "session-item-action-width",
         "login-card-content-layer"
       ]
     },
     "scoped-component-private": {
       "prefix": null,
-      "description": "组件 scoped 私有变量，定义在组件 <style scoped> 块内，不在本 schema 集中管理。脚本会跳过这些 token 的全局校验，但要求组件属性侧只引用命名语义变量。",
+      "description": "组件私有变量不在本索引集中管理；脚本跳过其全局校验，但组件属性只引用命名语义变量。",
       "tokens": []
     }
   },
@@ -259,11 +254,6 @@
   },
   "design_lock_values": {
     "ui-height-base": "34px",
-    "ui-height-compact": "30px",
-    "layout-sidebar-inline-size": "260px",
-    "layout-sidebar-collapsed-inline-size": "51px",
-    "layout-workspace-content-max-inline-size": "800px",
-    "layout-settings-dialog-max-inline-size": "960px",
-    "layout-settings-dialog-min-block-size": "500px"
+    "ui-height-compact": "30px"
   }
 }

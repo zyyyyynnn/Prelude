@@ -1,21 +1,21 @@
-## Summary
+## 关联议题
 
+Closes #
 
+## 变更摘要
 
-## Checklist
+<!-- 概括本次拉取请求的直接交付。 -->
 
-- [ ] `mvn -f backend/pom.xml test` — all pass
-- [ ] `npm --prefix frontend run build` — pass
-- [ ] `npm --prefix frontend run verify:byok` — pass
-- [ ] `npm --prefix frontend run verify:dark` — pass
-- [ ] `npm --prefix frontend audit --omit=dev` — clean
-- [ ] `sentrux check E:\Prelude` — all rules pass
-- [ ] `git diff --check` — clean
+## 关键设计或行为变化
 
-<details>
-<summary>Sentrux output (paste last run)</summary>
+<!-- 说明会影响调用方、用户或维护边界的变化。 -->
+
+## 验证
 
 ```text
 
 ```
-</details>
+
+## 风险或剩余事项
+
+<!-- 写明已知风险、未覆盖验证或后续事项；没有则写“无”。 -->
