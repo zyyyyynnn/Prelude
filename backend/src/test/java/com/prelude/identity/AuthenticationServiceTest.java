@@ -8,6 +8,7 @@ import com.prelude.identity.application.PendingOAuthBinding;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import com.prelude.identity.application.OAuthLoginService;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -22,10 +23,11 @@ import static org.mockito.Mockito.when;
 class AuthenticationServiceTest {
 
     private final AccountMapper accountMapper = mock(AccountMapper.class);
-    private final OAuthBindingMapper oauthBindingMapper = mock(OAuthBindingMapper.class);
+    private final OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
     private final PasswordEncoder passwordEncoder = new Argon2PasswordEncoder(16, 32, 1, 19456, 2);
     private final AuthenticationService authenticationService =
-        new AuthenticationService(accountMapper, oauthBindingMapper, passwordEncoder);
+        new AuthenticationService(accountMapper, oauthLoginService, passwordEncoder);
+    private final org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
 
     private final Account account = new Account();
 
@@ -56,10 +58,10 @@ class AuthenticationServiceTest {
 
     @Test
     void correctPasswordAuthenticatesAndWrongPasswordIsRejected() {
-        AccountPrincipal principal = authenticationService.login(request("correct-horse"), null);
+        AccountPrincipal principal = authenticationService.login(request("correct-horse"), null, session);
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
-        assertThatThrownBy(() -> authenticationService.login(request("wrong-password"), null))
+        assertThatThrownBy(() -> authenticationService.login(request("wrong-password"), null, session))
             .isInstanceOf(BusinessException.class)
             .hasFieldOrPropertyWithValue("code", "invalid_credentials");
     }
@@ -68,7 +70,7 @@ class AuthenticationServiceTest {
     void oauthOnlyAccountsWithoutPasswordHashCannotPasswordLogin() {
         account.setPasswordHash(null);
 
-        assertThatThrownBy(() -> authenticationService.login(request("correct-horse"), null))
+        assertThatThrownBy(() -> authenticationService.login(request("correct-horse"), null, session))
             .isInstanceOf(BusinessException.class)
             .hasFieldOrPropertyWithValue("code", "invalid_credentials");
     }
@@ -78,14 +80,25 @@ class AuthenticationServiceTest {
         account.setEmail("owner@example.com");
 
         PendingOAuthBinding pending = new PendingOAuthBinding("google", "subject-1", "OWNER@example.com");
-        AccountPrincipal principal = authenticationService.login(request("correct-horse"), pending);
+        session.setAttribute(OAuthLoginService.PENDING_ATTRIBUTE, pending);
+        AccountPrincipal principal = authenticationService.login(request("correct-horse"), pending, session);
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
-        ArgumentCaptor<OAuthBinding> binding = ArgumentCaptor.forClass(OAuthBinding.class);
-        verify(oauthBindingMapper).insert(binding.capture());
-        assertThat(binding.getValue().getAccountId()).isEqualTo(account.getId());
-        assertThat(binding.getValue().getProvider()).isEqualTo("google");
-        assertThat(binding.getValue().getProviderSubject()).isEqualTo("subject-1");
+        verify(oauthLoginService).createBindingExact("google", "subject-1", account.getId());
+        // One-shot: the completed intent must not survive the rotated session.
+        assertThat(session.getAttribute(OAuthLoginService.PENDING_ATTRIBUTE)).isNull();
+    }
+
+    @Test
+    void pendingIntentSurvivesWhenTheProvenAccountDoesNotMatch() {
+        account.setEmail("owner@example.com");
+
+        PendingOAuthBinding pending = new PendingOAuthBinding("google", "subject-1", "other@example.com");
+        session.setAttribute(OAuthLoginService.PENDING_ATTRIBUTE, pending);
+        authenticationService.login(request("correct-horse"), pending, session);
+
+        verify(oauthLoginService, never()).createBindingExact(any(), any(), any());
+        assertThat(session.getAttribute(OAuthLoginService.PENDING_ATTRIBUTE)).isEqualTo(pending);
     }
 
     @Test
@@ -93,9 +106,9 @@ class AuthenticationServiceTest {
         account.setEmail("owner@example.com");
 
         PendingOAuthBinding pending = new PendingOAuthBinding("google", "subject-1", "other@example.com");
-        authenticationService.login(request("correct-horse"), pending);
+        authenticationService.login(request("correct-horse"), pending, session);
 
-        verify(oauthBindingMapper, never()).insert(any(OAuthBinding.class));
+        verify(oauthLoginService, never()).createBindingExact(any(), any(), any());
     }
 
     private RegisterRequest command() {

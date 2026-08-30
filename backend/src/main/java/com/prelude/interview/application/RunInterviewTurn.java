@@ -60,7 +60,7 @@ public class RunInterviewTurn {
                     .map(attachment -> new LlmAttachment(
                         attachment.fileName(),
                         attachment.mediaType(),
-                        attachmentContextPort.readContent(attachment.assetRef())))
+                        attachmentContextPort.readOwnedContent(session.getAccountId(), attachment.assetRef())))
                     .toList()
                 : List.of();
             streamAssistantReply(session, messages, imageAttachments, assistantReply, sink);
