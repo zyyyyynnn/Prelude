@@ -10,14 +10,14 @@ public interface ResumeRepository {
 
     Optional<StoredResume> findById(Long resumeId);
 
-    List<ResumeListItem> listByOwner(Long userId);
+    List<ResumeListItem> listByOwner(Long accountId);
 
     boolean hasInterviewSessions(Long resumeId);
 
     void delete(Long resumeId);
 
     record NewResume(
-        Long userId,
+        Long accountId,
         String fileName,
         String rawText,
         List<String> parsedSkills,
@@ -31,7 +31,7 @@ public interface ResumeRepository {
 
     record StoredResume(
         Long id,
-        Long userId,
+        Long accountId,
         String fileName,
         String rawText,
         List<String> parsedSkills,

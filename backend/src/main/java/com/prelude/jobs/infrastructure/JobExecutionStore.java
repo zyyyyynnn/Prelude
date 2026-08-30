@@ -76,7 +76,7 @@ public class JobExecutionStore implements JobExecutionPort {
         AsyncJob job = new AsyncJob();
         job.setJobId(message.jobId());
         job.setType(JobTypes.REPORT_GENERATE);
-        job.setUserId(message.userId());
+        job.setAccountId(message.accountId());
         job.setSubjectId(message.sessionId());
         job.setIdempotencyKey(JobTypes.REPORT_GENERATE + ":session:" + message.sessionId());
         job.setStatus(JobStatuses.PENDING);

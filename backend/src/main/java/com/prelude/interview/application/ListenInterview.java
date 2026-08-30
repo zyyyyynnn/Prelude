@@ -16,7 +16,7 @@ public class ListenInterview {
     private final RealtimePort realtimePort;
 
     public SseEmitter execute(Long sessionId) {
-        sessionAccess.requireOwned(sessionId, sessionAccess.currentUserId());
+        sessionAccess.requireOwned(sessionId, sessionAccess.currentAccountId());
 
         SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
         try {

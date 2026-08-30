@@ -39,14 +39,14 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        Long userId = (Long) session.getAttributes().get("userId");
-        if (userId == null) {
-            log.warn("WebSocket connection rejected: userId not bound in session attributes");
+        Long accountId = (Long) session.getAttributes().get("accountId");
+        if (accountId == null) {
+            log.warn("WebSocket connection rejected: accountId not bound in session attributes");
             session.close(CloseStatus.BAD_DATA);
             return;
         }
         sessionBuffers.put(session.getId(), new ByteArrayOutputStream());
-        log.info("WebSocket connection established for user {}, connection id: {}", userId, session.getId());
+        log.info("WebSocket connection established for account {}, connection id: {}", accountId, session.getId());
     }
 
     @Override
@@ -67,8 +67,8 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        Long userId = (Long) session.getAttributes().get("userId");
-        if (userId == null) {
+        Long accountId = (Long) session.getAttributes().get("accountId");
+        if (accountId == null) {
             session.close(CloseStatus.BAD_DATA);
             return;
         }
@@ -87,7 +87,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             Number sessionIdNum = (Number) requestMap.get("sessionId");
             if (sessionIdNum != null) {
                 Long requestedSessionId = sessionIdNum.longValue();
-                InterviewSession interviewSession = voiceInterviewSessionService.validateActiveSession(userId, requestedSessionId);
+                InterviewSession interviewSession = voiceInterviewSessionService.validateActiveSession(accountId, requestedSessionId);
                 if (interviewSession == null) {
                     sendJson(session, Map.of("type", "error", "message", "面试会话不可用，请刷新后重试"));
                     return;
@@ -115,7 +115,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             byte[] audioBytes = buffer.toByteArray();
             buffer.reset();
 
-            voiceInterviewTurnService.processTurn(userId, activeSessionId, audioBytes, buildSink(session));
+            voiceInterviewTurnService.processTurn(accountId, activeSessionId, audioBytes, buildSink(session));
         }
     }
 

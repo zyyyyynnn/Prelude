@@ -22,24 +22,24 @@ public class ImportResumePdf {
     private final ResumeRepository repository;
 
     @Transactional(rollbackFor = Exception.class)
-    public ImportResumeResult execute(Long userId, String fileName, byte[] pdfBytes) {
-        validate(userId, fileName, pdfBytes);
+    public ImportResumeResult execute(Long accountId, String fileName, byte[] pdfBytes) {
+        validate(accountId, fileName, pdfBytes);
         String extracted = documentExtractor.extract(fileName, "application/pdf", pdfBytes).text();
         String rawText = truncate(extracted, MAX_RAW_TEXT_STORE_LENGTH);
         ResumeParser.ParsedResume parsed = resumeParser.parse(
-            userId, truncate(extracted, MAX_LLM_PARSE_TEXT_LENGTH)
+            accountId, truncate(extracted, MAX_LLM_PARSE_TEXT_LENGTH)
         );
         List<ResumeRepository.ParsedProject> projects = parsed.projects().stream()
             .map(project -> new ResumeRepository.ParsedProject(project.name(), project.description()))
             .toList();
         ResumeRepository.StoredResume stored = repository.create(new ResumeRepository.NewResume(
-            userId, fileName, rawText, parsed.skills(), projects
+            accountId, fileName, rawText, parsed.skills(), projects
         ));
         return new ImportResumeResult(stored.id(), parsed.skills(), parsed.projects());
     }
 
-    private void validate(Long userId, String fileName, byte[] bytes) {
-        if (userId == null) {
+    private void validate(Long accountId, String fileName, byte[] bytes) {
+        if (accountId == null) {
             throw BusinessException.unauthorized("请先登录");
         }
         if (fileName == null || !fileName.toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")) {

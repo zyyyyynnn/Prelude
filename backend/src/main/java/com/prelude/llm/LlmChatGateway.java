@@ -1,8 +1,5 @@
 package com.prelude.llm;
 
-import com.prelude.UserContext;
-import com.prelude.llm.LlmRouter;
-import com.prelude.llm.LlmSelection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,12 +17,13 @@ public class LlmChatGateway implements ChatPort {
     @Override
     public String complete(ChatRequest request) {
         logRequest(request);
-        return withUserContext(request.userId(), () -> {
+        return withInvocationContext(request.sessionId(), () -> {
             LlmSelection selection = request.selection();
             if (selection == null) {
-                return llmRouter.chatCurrentUser(request.messages());
+                return llmRouter.chat(request.accountId(), request.messages());
             }
             return llmRouter.chatWithSnapshot(
+                request.accountId(),
                 selection.providerKey(),
                 selection.model(),
                 request.messages(),
@@ -38,12 +36,13 @@ public class LlmChatGateway implements ChatPort {
     @Override
     public void stream(ChatRequest request, Consumer<String> onDelta) {
         logRequest(request);
-        withUserContext(request.userId(), () -> {
+        withInvocationContext(request.sessionId(), () -> {
             LlmSelection selection = request.selection();
             if (selection == null) {
-                llmRouter.streamCurrentUser(request.messages(), onDelta);
+                llmRouter.stream(request.accountId(), request.messages(), onDelta);
             } else {
                 llmRouter.streamWithSnapshot(
+                    request.accountId(),
                     selection.providerKey(),
                     selection.model(),
                     request.messages(),
@@ -59,8 +58,9 @@ public class LlmChatGateway implements ChatPort {
     private void logRequest(ChatRequest request) {
         LlmSelection selection = request.selection();
         log.info(
-            "llm_request userId={} purpose={} promptId={} provider={} model={} timeoutMs={} maxTokens={}",
-            request.userId(),
+            "llm_request accountId={} sessionId={} purpose={} promptId={} provider={} model={} timeoutMs={} maxTokens={}",
+            request.accountId(),
+            request.sessionId(),
             request.purpose(),
             request.promptId(),
             selection == null ? "current" : selection.providerKey(),
@@ -70,21 +70,17 @@ public class LlmChatGateway implements ChatPort {
         );
     }
 
-    private <T> T withUserContext(Long userId, Supplier<T> action) {
-        Long previousUserId = UserContext.getCurrentUserId();
-        Long previousSessionId = UserContext.getCurrentSessionId();
-        if (userId != null) {
-            UserContext.setCurrentUserId(userId);
+    private <T> T withInvocationContext(Long sessionId, Supplier<T> action) {
+        Long previousSessionId = LlmInvocationContext.getCurrentSessionId();
+        if (sessionId != null) {
+            LlmInvocationContext.setCurrentSessionId(sessionId);
         }
         try {
             return action.get();
         } finally {
-            UserContext.remove();
-            if (previousUserId != null) {
-                UserContext.setCurrentUserId(previousUserId);
-            }
+            LlmInvocationContext.clear();
             if (previousSessionId != null) {
-                UserContext.setCurrentSessionId(previousSessionId);
+                LlmInvocationContext.setCurrentSessionId(previousSessionId);
             }
         }
     }

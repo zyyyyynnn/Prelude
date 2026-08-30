@@ -1,9 +1,8 @@
 package com.prelude.llm;
 
-import com.prelude.identity.User;
-import com.prelude.identity.UserMapper;
+import com.prelude.identity.Account;
+import com.prelude.identity.AccountMapper;
 import com.prelude.settings.AesGcmEncryptor;
-import com.prelude.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,42 +11,41 @@ import org.springframework.stereotype.Service;
 @Service
 public class LlmVoiceModelAccessAdapter implements VoiceModelAccessPort {
 
-    private final UserMapper userMapper;
+    private final AccountMapper accountMapper;
     private final AesGcmEncryptor aesGcmEncryptor;
     private final String systemBaseUrl;
     private final String systemApiKey;
 
     public LlmVoiceModelAccessAdapter(
-        UserMapper userMapper,
+        AccountMapper accountMapper,
         AesGcmEncryptor aesGcmEncryptor,
         @Value("${openai.base-url:https://api.openai.com/v1}") String systemBaseUrl,
         @Value("${openai.api-key:}") String systemApiKey
     ) {
-        this.userMapper = userMapper;
+        this.accountMapper = accountMapper;
         this.aesGcmEncryptor = aesGcmEncryptor;
         this.systemBaseUrl = systemBaseUrl;
         this.systemApiKey = systemApiKey;
     }
 
     @Override
-    public VoiceModelAccess resolveCurrentUser() {
-        Long userId = UserContext.getCurrentUserId();
-        if (userId == null) {
-            throw new IllegalStateException("用户未登录");
+    public VoiceModelAccess resolveForAccount(Long accountId) {
+        if (accountId == null) {
+            throw new IllegalStateException("账户未登录");
         }
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new IllegalStateException("用户不存在");
+        Account account = accountMapper.selectById(accountId);
+        if (account == null) {
+            throw new IllegalStateException("账户不存在");
         }
 
         String baseUrl = systemBaseUrl;
         String apiKey = systemApiKey;
-        String providerKey = user.getLlmProvider();
+        String providerKey = account.getLlmProvider();
         if (CustomLlmProtocol.OPENAI_RESPONSES.providerKey().equals(providerKey)
             || CustomLlmProtocol.OPENAI_CHAT_COMPLETIONS.providerKey().equals(providerKey)) {
             CustomLlmProtocol protocol = CustomLlmProtocol.require(providerKey);
-            baseUrl = CustomLlmEndpointUrl.normalizeRoot(user.getLlmBaseUrl(), protocol);
-            apiKey = decryptUserKey(user.getLlmApiKeyEncrypted());
+            baseUrl = CustomLlmEndpointUrl.normalizeRoot(account.getLlmBaseUrl(), protocol);
+            apiKey = decryptAccountKey(account.getLlmApiKeyEncrypted());
         }
         if (apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
             throw new IllegalStateException("缺少可用的 OpenAI 语音访问密钥");
@@ -55,7 +53,7 @@ public class LlmVoiceModelAccessAdapter implements VoiceModelAccessPort {
         return new VoiceModelAccess(baseUrl, apiKey);
     }
 
-    private String decryptUserKey(String encryptedApiKey) {
+    private String decryptAccountKey(String encryptedApiKey) {
         if (encryptedApiKey == null || encryptedApiKey.isBlank()) {
             return null;
         }

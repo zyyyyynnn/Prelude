@@ -1,6 +1,5 @@
 package com.prelude.interview.application;
 
-import com.prelude.UserContext;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.activity.RealtimePort;
@@ -29,29 +28,27 @@ public class StreamChatTurn {
     private final RealtimePort realtimePort;
 
     public SseEmitter execute(Long sessionId, String content, boolean autoStart) {
-        Long userId = sessionAccess.currentUserId();
+        long accountId = sessionAccess.currentAccountId();
         SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
         stream.emitter().onTimeout(() -> completeWithError(stream, "连接超时，请重试"));
         stream.emitter().onError(error -> stream.complete());
 
-        sseTaskExecutor.execute(() -> runTurn(sessionId, userId, content, autoStart, stream));
+        sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, content, autoStart, stream));
         return stream.emitter();
     }
 
     private void runTurn(
         Long sessionId,
-        Long userId,
+        long accountId,
         String content,
         boolean autoStart,
         SseSessionStream stream
     ) {
-        UserContext.setCurrentUserId(userId);
-        UserContext.setCurrentSessionId(sessionId);
         try {
             InterviewTurnResult result = runInterviewTurn.execute(
                 new InterviewTurnCommand(
                     sessionId,
-                    userId,
+                    accountId,
                     content,
                     autoStart,
                     true
@@ -66,8 +63,6 @@ public class StreamChatTurn {
             interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session());
         } catch (RuntimeException error) {
             completeWithError(stream, error.getMessage() == null ? "连接已断开，请重试" : error.getMessage());
-        } finally {
-            UserContext.remove();
         }
     }
 
@@ -87,7 +82,6 @@ public class StreamChatTurn {
         SseSessionStream stream
     ) {
         sseTaskExecutor.execute(() -> {
-            UserContext.setCurrentUserId(session.getUserId());
             try {
                 interviewJudgeService.judgeAndPersist(session, userMessage)
                     .ifPresent(result -> sendJudgeEvent(stream, result.json()));
@@ -95,8 +89,6 @@ public class StreamChatTurn {
             } catch (RuntimeException error) {
                 log.error("Error in async judge task", error);
                 stream.complete();
-            } finally {
-                UserContext.remove();
             }
         });
     }

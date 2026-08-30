@@ -36,7 +36,6 @@ const providers = [
 const ok = (data: unknown) => JSON.stringify({ code: 200, message: 'ok', data })
 
 async function installApi(page: Page, state: ApiState) {
-  await page.addInitScript(() => localStorage.setItem('prelude-user-id', '1'))
   await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => respond(route, state))
 }
 
@@ -131,7 +130,8 @@ async function respond(route: Route, state: ApiState) {
     return
   }
   let data: unknown = null
-  if (path === '/api/interview/sessions') data = state.sessions ?? []
+  if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
+  else if (path === '/api/interview/sessions') data = state.sessions ?? []
   else if (/\/api\/interview\/\d+\/messages$/.test(path)) data = state.session
   else if (path === '/api/position/list')
     data = [
@@ -145,9 +145,11 @@ async function respond(route: Route, state: ApiState) {
     ]
   else if (path === '/api/user/profile')
     data = {
+      accountId: 1,
       username: 'prelude',
       email: 'prelude@example.com',
       themePreference: 'system',
+      revision: 0,
     }
   else if (path === '/api/llm/providers') data = providers
   else if (path === '/api/attachments' && method === 'POST')
@@ -239,8 +241,8 @@ test('@smoke presents request failures as a dismissible top system toast', async
   await page.route('**/api/auth/login', async (route) => {
     await route.fulfill({
       status: 503,
-      contentType: 'application/json',
-      body: JSON.stringify({ code: 503, message: '服务暂不可用', data: null }),
+      contentType: 'application/problem+json',
+      body: JSON.stringify({ type: 'about:blank', title: 'service_unavailable', status: 503, detail: '服务暂不可用', code: 'service_unavailable' }),
     })
   })
   await page.goto('/login')
@@ -539,7 +541,7 @@ test('@smoke keeps the active session when a requested session fails and retries
       await route.fulfill({
         status: 503,
         contentType: 'application/json',
-        body: JSON.stringify({ code: 503, message: '会话 B 暂时不可用', data: null }),
+        body: JSON.stringify({ type: 'about:blank', title: 'service_unavailable', status: 503, detail: '会话 B 暂时不可用', code: 'service_unavailable' }),
       })
       return
     }
@@ -686,7 +688,7 @@ test('@smoke restores the authoritative session after stream failure under Stric
     await route.fulfill({
       status: 503,
       contentType: 'application/json',
-      body: JSON.stringify({ code: 503, message: '流式服务暂不可用', data: null }),
+      body: JSON.stringify({ type: 'about:blank', title: 'service_unavailable', status: 503, detail: '流式服务暂不可用', code: 'service_unavailable' }),
     })
   })
 
@@ -719,8 +721,8 @@ test('@smoke expires authentication when the SSE handshake returns 401', async (
   await page.route('**/api/interview/11/chat', async (route) => {
     await route.fulfill({
       status: 401,
-      contentType: 'application/json',
-      body: JSON.stringify({ code: 401, message: '登录已失效', data: null }),
+      contentType: 'application/problem+json',
+      body: JSON.stringify({ type: 'about:blank', title: 'authentication_required', status: 401, detail: '登录已失效', code: 'authentication_required' }),
     })
   })
 
@@ -755,7 +757,7 @@ test('@smoke isolates account-scoped queries when a previous principal completes
     })
   })
   await page.route('**/api/auth/login', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: ok({ userId: 2 }) })
+    await route.fulfill({ status: 200, contentType: 'application/json', body: ok({ accountId: 2 }) })
   })
 
   try {

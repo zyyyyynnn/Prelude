@@ -66,7 +66,7 @@ public class PendingJobRecoveryPublisher {
                 rabbitTemplate.convertAndSend(
                     ReportJobChannel.EXCHANGE,
                     ReportJobChannel.ROUTING_KEY,
-                    new ReportJobMessage(job.getSubjectId(), job.getUserId(), job.getJobId())
+                    new ReportJobMessage(job.getSubjectId(), job.getAccountId(), job.getJobId())
                 );
                 job.setDispatchedAt(LocalDateTime.now());
                 asyncJobMapper.updateById(job);

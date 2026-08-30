@@ -27,7 +27,7 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
                 : servletRequest.getServletRequest().getUserPrincipal().getName();
             if (principal != null) {
                 try {
-                    attributes.put("userId", Long.valueOf(principal.toString()));
+                    attributes.put("accountId", Long.valueOf(principal.toString()));
                     return true;
                 } catch (NumberFormatException exception) {
                     log.warn("WebSocket handshake rejected: invalid session principal");

@@ -29,7 +29,6 @@ const providers = [
 ]
 
 async function installApi(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('prelude-user-id', '1'))
   await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
     const path = new URL(route.request().url()).pathname
     let data: unknown = null
@@ -47,11 +46,14 @@ async function installApi(page: Page) {
     else if (path === '/api/position/list') data = [{ id: 1, name: 'Java 后端工程师' }]
     else if (path === '/api/resume/list')
       data = [{ id: 1, fileName: '候选人简历.pdf', sessionCount: 2, inUse: false }]
+    else if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
     else if (path === '/api/user/profile')
       data = {
+        accountId: 1,
         username: 'prelude',
         email: 'prelude@example.com',
         themePreference: 'system',
+        revision: 0,
       }
     else if (path === '/api/llm/providers') data = providers
     else if (path === '/api/llm/config')

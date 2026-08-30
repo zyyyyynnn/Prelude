@@ -14,12 +14,12 @@ public class MybatisPositionCatalogAdapter implements PositionCatalogPort {
     private final PositionTemplateMapper positionTemplateMapper;
 
     @Override
-    public PositionSnapshot findAccessibleById(Long userId, Long positionId) {
+    public PositionSnapshot findAccessibleById(Long accountId, Long positionId) {
         PositionTemplate position = positionTemplateMapper.selectOne(
             new LambdaQueryWrapper<PositionTemplate>()
                 .eq(PositionTemplate::getId, positionId)
-                .and(query -> query.isNull(PositionTemplate::getUserId)
-                    .or().eq(PositionTemplate::getUserId, userId))
+                .and(query -> query.isNull(PositionTemplate::getAccountId)
+                    .or().eq(PositionTemplate::getAccountId, accountId))
                 .last("LIMIT 1")
         );
         return position == null

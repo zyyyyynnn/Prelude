@@ -12,7 +12,7 @@ public class AsyncJob {
     private Long id;
     private String jobId;
     private String type;
-    private Long userId;
+    private Long accountId;
     private Long subjectId;
     private String idempotencyKey;
     private String status;

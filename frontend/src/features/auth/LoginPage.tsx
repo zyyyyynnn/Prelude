@@ -58,7 +58,7 @@ export function LoginPage() {
         return
       }
       const result = await login(username.trim(), password)
-      await auth.signIn(result.userId)
+      await auth.signIn(result.accountId)
     } catch (reason) {
       feedback.notify(reason instanceof Error ? reason.message : '请求失败', 'error')
     } finally {
@@ -66,7 +66,7 @@ export function LoginPage() {
     }
   }
 
-  if (auth.userId !== null) {
+  if (auth.status === 'authenticated') {
     const redirect = new URLSearchParams(location.search).get('redirect') || '/interview'
     return <Navigate to={redirect} replace />
   }
