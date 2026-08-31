@@ -68,7 +68,7 @@ function InterviewSetup() {
           ? {
               ...current,
               model: payload.model,
-              thinkingDepth: payload.thinkingDepth ?? null,
+              reasoningLevel: payload.reasoningLevel ?? current.reasoningLevel,
             }
           : current,
       )
@@ -91,15 +91,17 @@ function InterviewSetup() {
     },
     onError: (error) => feedback.notify(error.message, 'error'),
   })
-  function updateModel(patch: Pick<LlmConfigPayload, 'model'> | Pick<LlmConfigPayload, 'thinkingDepth'>) {
+  function updateModel(
+    patch: Pick<LlmConfigPayload, 'model'> | Pick<LlmConfigPayload, 'reasoningLevel'>,
+  ) {
     if (!llmConfig.data) return
     saveModel.mutate({
-      providerKey: llmConfig.data.providerKey,
-      baseUrl: llmConfig.data.baseUrl ?? undefined,
+      provider: llmConfig.data.provider,
+      customEndpointUrl: llmConfig.data.customEndpointUrl ?? undefined,
       model: 'model' in patch ? patch.model : llmConfig.data.model,
-      maxTokens: llmConfig.data.maxTokens ?? undefined,
-      thinkingDepth:
-        'thinkingDepth' in patch ? patch.thinkingDepth : llmConfig.data.thinkingDepth,
+      reasoningLevel:
+        'reasoningLevel' in patch ? patch.reasoningLevel : llmConfig.data.reasoningLevel,
+      fallbackModels: llmConfig.data.fallbackModels,
     })
   }
   const error = positions.error || resumes.error || llmConfig.error || providers.error
@@ -141,8 +143,8 @@ function InterviewSetup() {
               onUploadAttachment={(file) => upload.mutateAsync(file)}
               onDeleteAttachment={(id) => removeAttachment.mutateAsync(id)}
               onModelChange={(model) => updateModel({ model })}
-              onThinkingDepthChange={(thinkingDepth) => updateModel({ thinkingDepth })}
-              onManageModel={(providerKey) => openSettings({ section: 'llm', providerKey })}
+              onThinkingDepthChange={(reasoningLevel) => updateModel({ reasoningLevel: reasoningLevel ?? undefined })}
+              onManageModel={(provider) => openSettings({ section: 'llm', provider })}
               onNewResume={() =>
                 openSettings({ section: 'resumes', intent: 'upload-resume' })
               }

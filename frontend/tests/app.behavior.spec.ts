@@ -15,21 +15,21 @@ const providers = [
     enabled: 1,
   },
   {
-    providerKey: 'openai-responses',
-    displayName: 'OpenAI Responses',
+    providerKey: 'openai',
+    displayName: 'OpenAI',
     availableModels: ['gpt-5.4'],
     enabled: 1,
   },
   {
-    providerKey: 'openai-chat-completions',
-    displayName: 'OpenAI Chat Completions',
-    availableModels: ['gpt-4.1'],
+    providerKey: 'anthropic',
+    displayName: 'Anthropic',
+    availableModels: ['claude-sonnet-4-6'],
     enabled: 1,
   },
   {
-    providerKey: 'anthropic-messages',
-    displayName: 'Anthropic Messages',
-    availableModels: ['claude-sonnet-4-6'],
+    providerKey: 'openai-compatible',
+    displayName: 'OpenAI 兼容端点',
+    availableModels: [],
     enabled: 1,
   },
 ]
@@ -163,13 +163,15 @@ async function respond(route: Route, state: ApiState) {
     }
   else if (path === '/api/llm/config' && method === 'GET')
     data = {
-      providerKey: 'deepseek',
-      baseUrl: null,
+      provider: 'deepseek',
       model: 'deepseek-v4-pro',
+      customEndpointUrl: null,
       hasApiKey: false,
       apiKeyMasked: null,
-      maxTokens: null,
-      thinkingDepth: null,
+      reasoningLevel: 'AUTO',
+      fallbackModels: [],
+      reasoningSupported: true,
+      supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
     }
   else if (path === '/api/interview/start')
     data = {
@@ -179,11 +181,15 @@ async function respond(route: Route, state: ApiState) {
     }
   else if (path === '/api/llm/config' && method === 'PUT')
     data = {
-      ...(body as object),
+      provider: 'deepseek',
+      model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+      customEndpointUrl: null,
       hasApiKey: true,
       apiKeyMasked: 'sk-***',
-      maxTokens: (body as { maxTokens?: number }).maxTokens ?? null,
-      thinkingDepth: (body as { thinkingDepth?: string }).thinkingDepth ?? null,
+      reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+      fallbackModels: [],
+      reasoningSupported: true,
+      supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
     }
   await route.fulfill({
     status: 200,
@@ -300,7 +306,7 @@ test('@smoke routes prompt bar management actions into global settings', async (
   await page.getByRole('button', { name: /模型：deepseek-v4-pro，思考深度：默认/ }).click()
   await page.getByRole('menuitem', { name: '管理模型' }).click()
   await expect(page.getByRole('heading', { name: '模型管理' })).toBeVisible()
-  await expect(page.getByLabel('服务协议')).toContainText('DeepSeek')
+  await expect(page.getByLabel('接入方式')).toContainText('DeepSeek')
   await expect(page.getByText(/个可用模型/)).toHaveCount(0)
   await expect(page.getByText('尚未保存 API Key')).toHaveCount(0)
   await expect(page.getByRole('status')).toHaveCount(0)
@@ -324,12 +330,15 @@ test('@smoke centers the async button indicator without resizing the control', a
       status: 200,
       contentType: 'application/json',
       body: ok({
-        ...body,
-        baseUrl: body.baseUrl ?? null,
+        provider: (body as { provider?: string }).provider ?? 'deepseek',
+        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+        customEndpointUrl: null,
         hasApiKey: false,
         apiKeyMasked: null,
-        maxTokens: body.maxTokens ?? null,
-        thinkingDepth: body.thinkingDepth ?? null,
+        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        fallbackModels: [],
+        reasoningSupported: true,
+        supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
       }),
     })
   })
@@ -376,12 +385,15 @@ test('@smoke updates the prompt model depth before the save request completes', 
       status: 200,
       contentType: 'application/json',
       body: ok({
-        ...body,
-        baseUrl: body.baseUrl ?? null,
+        provider: (body as { provider?: string }).provider ?? 'deepseek',
+        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+        customEndpointUrl: null,
         hasApiKey: false,
         apiKeyMasked: null,
-        maxTokens: body.maxTokens ?? null,
-        thinkingDepth: body.thinkingDepth ?? null,
+        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        fallbackModels: [],
+        reasoningSupported: true,
+        supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
       }),
     })
   })
@@ -405,7 +417,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
   expect(await page.getByRole('button', { name: /模型：/ }).textContent()).toContain(
     'deepseek-v4-pro · 默认',
   )
-  expect((await resetRequest).postDataJSON()).toMatchObject({ thinkingDepth: null })
+  expect((await resetRequest).postDataJSON()).toMatchObject({ reasoningLevel: 'AUTO' })
 })
 
 test('@smoke persists pinned and hidden sessions per account', async ({ page }) => {
@@ -886,11 +898,10 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
   await page.goto('/interview')
   await page.getByRole('button', { name: '设置' }).click()
   await page.getByRole('button', { name: '模型管理' }).click()
-  await page.getByLabel('服务协议').click()
-  await page.getByRole('option', { name: 'OpenAI Responses' }).click()
-  await page.getByLabel('Base URL').fill('https://api.openai.com/v1/responses/')
-  await page.getByLabel('模型', { exact: true }).click()
-  await page.getByRole('option', { name: 'gpt-5.4' }).click()
+  await page.getByLabel('接入方式').click()
+  await page.getByRole('option', { name: 'OpenAI 兼容端点' }).click()
+  await page.getByLabel('Base URL').fill('https://api.openai.com/v1/chat/completions/')
+  await page.getByLabel('模型', { exact: true }).fill('gpt-5.4')
   await page.getByLabel('API Key', { exact: true }).fill('sk-test')
   await page.getByRole('button', { name: '保存设置' }).click()
   await expect(page.getByText('LLM 配置已保存')).toBeVisible()
@@ -898,11 +909,12 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
     (request) => request.path === '/api/llm/config' && request.method === 'PUT',
   )
   expect(save?.body).toEqual({
-    providerKey: 'openai-responses',
-    baseUrl: 'https://api.openai.com/v1',
+    provider: 'openai-compatible',
+    customEndpointUrl: 'https://api.openai.com/v1',
     model: 'gpt-5.4',
     apiKey: 'sk-test',
-    thinkingDepth: null,
+    reasoningLevel: 'AUTO',
+    fallbackModels: [],
   })
 })
 

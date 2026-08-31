@@ -29,21 +29,21 @@ export const demoProviders: LlmProviderResponse[] = [
     enabled: 1,
   },
   {
-    providerKey: 'openai-responses',
-    displayName: 'OpenAI Responses',
+    providerKey: 'openai',
+    displayName: 'OpenAI',
     availableModels: ['gpt-5.4'],
     enabled: 1,
   },
   {
-    providerKey: 'openai-chat-completions',
-    displayName: 'OpenAI Chat Completions',
-    availableModels: ['gpt-4.1'],
+    providerKey: 'anthropic',
+    displayName: 'Anthropic',
+    availableModels: ['claude-sonnet-4-6'],
     enabled: 1,
   },
   {
-    providerKey: 'anthropic-messages',
-    displayName: 'Anthropic Messages',
-    availableModels: ['claude-sonnet-4-6'],
+    providerKey: 'openai-compatible',
+    displayName: 'OpenAI 兼容端点',
+    availableModels: [],
     enabled: 1,
   },
 ]
@@ -158,13 +158,15 @@ export function createDemoState(): DemoState {
       attachments: [],
     },
     llmConfig: {
-      providerKey: 'deepseek',
-      baseUrl: null,
+      provider: 'deepseek',
       model: 'deepseek-v4-pro',
+      customEndpointUrl: null,
       hasApiKey: false,
       apiKeyMasked: null,
-      maxTokens: 4096,
-      thinkingDepth: 'high',
+      reasoningLevel: 'HIGH',
+      fallbackModels: [],
+      reasoningSupported: true,
+      supportedReasoningLevels: ['AUTO', 'HIGH'],
     },
   }
 }
@@ -303,7 +305,13 @@ async function respond(route: Route, state: DemoState) {
   if (path === '/api/llm/providers' && method === 'GET') return fulfillJson(route, demoProviders)
   if (path === '/api/llm/config' && method === 'GET') return fulfillJson(route, state.llmConfig)
   if (path === '/api/llm/config' && method === 'PUT') {
-    state.llmConfig = { ...state.llmConfig, ...(body as Partial<LlmConfigResponse>) }
+    const saved = body as Partial<LlmConfigResponse>
+    state.llmConfig = {
+      ...state.llmConfig,
+      provider: saved.provider ?? state.llmConfig.provider,
+      model: saved.model ?? state.llmConfig.model,
+      reasoningLevel: saved.reasoningLevel ?? state.llmConfig.reasoningLevel,
+    }
     return fulfillJson(route, state.llmConfig)
   }
   if (path === '/api/analytics/radar' && method === 'GET')

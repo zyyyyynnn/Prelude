@@ -3,7 +3,7 @@ import {
   ChevronRight,
   Settings,
 } from 'lucide-react'
-import type { LlmConfigResponse, LlmProviderResponse } from '@/features/settings'
+import { REASONING_LABELS, type LlmConfigResponse, type LlmProviderResponse, type ReasoningLevel } from '@/features/settings'
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -13,14 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
 } from '@/shared/ui'
-
-const thinkingOptions = [
-  { value: 'default', label: '默认' },
-  { value: 'low', label: '低' },
-  { value: 'medium', label: '中' },
-  { value: 'high', label: '高' },
-  { value: 'xhigh', label: '极高' },
-]
 
 function MenuRow({
   label,
@@ -52,14 +44,14 @@ export function InterviewModelMenu({
   providers: LlmProviderResponse[]
   saving: boolean
   onModelChange: (model: string) => void
-  onThinkingDepthChange: (depth: string | null) => void
+  onThinkingDepthChange: (level: ReasoningLevel | null) => void
   onManage: () => void
 }) {
-  const provider = providers.find((item) => item.providerKey === config.providerKey)
+  const provider = providers.find((item) => item.providerKey === config.provider)
   const models = [...new Set([config.model, ...(provider?.availableModels ?? [])])].filter(Boolean)
-  const thinkingValue = config.thinkingDepth || 'default'
-  const thinkingLabel =
-    thinkingOptions.find((item) => item.value === thinkingValue)?.label ?? config.thinkingDepth ?? '默认'
+  const reasoningSupported = config.reasoningSupported
+  const thinkingValue = config.reasoningLevel
+  const ariaThinking = reasoningSupported ? `，思考深度：${REASONING_LABELS[thinkingValue]}` : ''
 
   return (
     <DropdownMenu
@@ -69,11 +61,12 @@ export function InterviewModelMenu({
         <button
           type="button"
           className="prompt-bar__control prompt-bar__model ui-action"
-          aria-label={`模型：${config.model}，思考深度：${thinkingLabel}`}
+          aria-label={`模型：${config.model}${ariaThinking}`}
           disabled={saving}
         >
           <span className="prompt-bar__control-label">
-            {config.model} · {thinkingLabel}
+            {config.model}
+            {reasoningSupported ? ` · ${REASONING_LABELS[thinkingValue]}` : ''}
           </span>
           <ChevronDown aria-hidden="true" />
         </button>
@@ -95,22 +88,22 @@ export function InterviewModelMenu({
             )}
           </DropdownMenuRadioGroup>
         </DropdownMenuSubmenu>
-        <DropdownMenuSubmenu
-          trigger={
-            <MenuRow label="思考深度" value={thinkingLabel} submenu />
-          }
-        >
-          <DropdownMenuRadioGroup
-            value={thinkingValue}
-            onValueChange={(value) => onThinkingDepthChange(value === 'default' ? null : value)}
+        {reasoningSupported ? (
+          <DropdownMenuSubmenu
+            trigger={<MenuRow label="思考深度" value={REASONING_LABELS[thinkingValue]} submenu />}
           >
-            {thinkingOptions.map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
-                <span className="prelude-menu__item-label">{option.label}</span>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuSubmenu>
+            <DropdownMenuRadioGroup
+              value={thinkingValue}
+              onValueChange={(value) => onThinkingDepthChange(value as ReasoningLevel)}
+            >
+              {config.supportedReasoningLevels.map((level) => (
+                <DropdownMenuRadioItem key={level} value={level}>
+                  <span className="prelude-menu__item-label">{REASONING_LABELS[level]}</span>
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubmenu>
+        ) : null}
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>

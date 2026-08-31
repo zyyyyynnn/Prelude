@@ -10,21 +10,21 @@ const providers = [
     enabled: 1,
   },
   {
-    providerKey: 'openai-responses',
-    displayName: 'OpenAI Responses',
+    providerKey: 'openai',
+    displayName: 'OpenAI',
     availableModels: ['gpt-5.4'],
     enabled: 1,
   },
   {
-    providerKey: 'openai-chat-completions',
-    displayName: 'OpenAI Chat Completions',
-    availableModels: ['gpt-4.1'],
+    providerKey: 'anthropic',
+    displayName: 'Anthropic',
+    availableModels: ['claude-sonnet-4-6'],
     enabled: 1,
   },
   {
-    providerKey: 'anthropic-messages',
-    displayName: 'Anthropic Messages',
-    availableModels: ['claude-sonnet-4-6'],
+    providerKey: 'openai-compatible',
+    displayName: 'OpenAI 兼容端点',
+    availableModels: [],
     enabled: 1,
   },
 ]
@@ -59,14 +59,16 @@ async function installApi(page: Page) {
     else if (path === '/api/llm/providers') data = providers
     else if (path === '/api/llm/config')
       data = {
-        providerKey: 'deepseek',
-        baseUrl: null,
-        model: 'deepseek-v4-pro',
-        hasApiKey: false,
-        apiKeyMasked: null,
-        maxTokens: null,
-        thinkingDepth: null,
-      }
+      provider: 'deepseek',
+      model: 'deepseek-v4-pro',
+      customEndpointUrl: null,
+      hasApiKey: false,
+      apiKeyMasked: null,
+      reasoningLevel: 'AUTO',
+      fallbackModels: [],
+      reasoningSupported: true,
+      supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
+    }
     else if (path === '/api/analytics/radar')
       data = { technical: 8, expression: 7.5, logic: 8.5, sessionCount: 5 }
     else if (path === '/api/analytics/trend')
@@ -144,15 +146,15 @@ test('@byok exposes only the four governed provider protocols', async ({ page })
   await page.goto('/interview')
   await page.getByRole('button', { name: '设置' }).click()
   await page.getByRole('button', { name: '模型管理' }).click()
-  const select = page.getByLabel('服务协议')
+  const select = page.getByLabel('接入方式')
   await select.click()
   const options = page.getByRole('option')
   await expect(options).toHaveCount(4)
   await expect(options).toHaveText([
     'DeepSeek',
-    'OpenAI Responses',
-    'OpenAI Chat Completions',
-    'Anthropic Messages',
+    'OpenAI',
+    'Anthropic',
+    'OpenAI 兼容端点',
   ])
 })
 
@@ -410,7 +412,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await modelTrigger.click()
   const modelMenu = page.locator('.prelude-menu--structured[data-open]')
   await expect(modelMenu).toBeVisible()
-  await expect(page.getByRole('menuitem', { name: /服务协议/ })).toHaveCount(0)
+  await expect(page.getByRole('menuitem', { name: /接入方式/ })).toHaveCount(0)
   await expect(page.getByRole('menuitem', { name: /^模型\s/ })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: /思考深度/ })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: '管理模型' })).toBeVisible()
@@ -492,7 +494,7 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   const modelOptions = page.getByRole('option')
   await expect(modelOptions.first()).toBeVisible()
   await page.keyboard.press('Escape')
-  const providerSelect = page.getByLabel('服务协议')
+  const providerSelect = page.getByLabel('接入方式')
   await providerSelect.click()
   const providerOptions = page.getByRole('option')
   await expect(providerOptions).toHaveCount(4)

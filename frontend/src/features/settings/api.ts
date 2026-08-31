@@ -2,8 +2,6 @@ import { apiRequest } from '@/shared/api/client'
 import type {
   LlmConfigPayload,
   LlmConfigResponse,
-  LlmConfigTestPayload,
-  LlmConfigTestResponse,
   LlmModelDiscoveryPayload,
   LlmModelDiscoveryResponse,
   LlmProviderResponse,
@@ -15,11 +13,6 @@ export const fetchProviders = () => apiRequest<LlmProviderResponse[]>('/llm/prov
 export const fetchLlmConfig = () => apiRequest<LlmConfigResponse>('/llm/config')
 export const saveLlmConfig = (payload: LlmConfigPayload) =>
   apiRequest<LlmConfigResponse>('/llm/config', { method: 'PUT', body: JSON.stringify(payload) })
-export const testLlmConfig = (payload: LlmConfigTestPayload) =>
-  apiRequest<LlmConfigTestResponse>('/llm/config/test', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
 export const discoverModels = (payload: LlmModelDiscoveryPayload) =>
   apiRequest<LlmModelDiscoveryResponse>('/llm/config/discover-models', {
     method: 'POST',

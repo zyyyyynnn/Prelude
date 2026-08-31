@@ -11,54 +11,39 @@ export type LlmProviderOption = {
   models: string[]
 }
 
+/** Reasoning levels come from the backend capability catalog — never guessed. */
+export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH'
+
 export type LlmConfigPayload = {
-  providerKey: string
-  baseUrl?: string
+  provider: string
   model: string
+  customEndpointUrl?: string
   apiKey?: string
-  maxTokens?: number
-  thinkingDepth?: string | null
+  reasoningLevel?: ReasoningLevel | null
+  fallbackModels?: string[]
 }
 
 export type LlmConfigResponse = {
-  providerKey: string
-  baseUrl: string | null
+  provider: string
   model: string
+  customEndpointUrl: string | null
   hasApiKey: boolean
   apiKeyMasked: string | null
-  maxTokens: number | null
-  thinkingDepth: string | null
+  reasoningLevel: ReasoningLevel
+  fallbackModels: string[]
+  reasoningSupported: boolean
+  supportedReasoningLevels: ReasoningLevel[]
 }
 
 export type LlmModelDiscoveryPayload = {
-  providerKey: string
   baseUrl: string
   apiKey?: string
 }
 
 export type LlmModelDiscoveryResponse = {
-  providerKey: string
   baseUrl: string
   models: string[]
 }
-
-export type LlmConfigTestPayload = {
-  providerKey?: string
-  baseUrl?: string
-  model?: string
-  apiKey?: string
-  maxTokens?: number
-  thinkingDepth?: string | null
-}
-
-export type LlmConfigTestResponse = {
-  providerKey: string
-  model: string
-  ok: boolean
-  message: string
-}
-
-export type ThemePreference = 'light' | 'dark' | 'system'
 
 export type UserProfilePayload = {
   username?: string
@@ -69,7 +54,6 @@ export type UserProfilePayload = {
   expectedRevision: number
   operationId: string
 }
-
 export type UserProfileResponse = {
   accountId: number
   username?: string
@@ -78,3 +62,5 @@ export type UserProfileResponse = {
   themePreference?: ThemePreference
   revision: number
 }
+
+export type ThemePreference = 'light' | 'dark' | 'system'

@@ -21,12 +21,7 @@ import { InterviewContextMenu, LockedInterviewContextButton } from './InterviewC
 import { InterviewModelMenu } from './InterviewModelMenu'
 import { PromptBar } from './PromptBar'
 
-const thinkingLabels: Record<string, string> = {
-  low: '低',
-  medium: '中',
-  high: '高',
-  xhigh: '极高',
-}
+import { REASONING_LABELS, type ReasoningLevel } from '@/features/settings'
 
 function PromptBarFact({ label, icon }: { label: string; icon: ReactNode }) {
   return (
@@ -101,7 +96,7 @@ export function InterviewSetupComposer({
   onUploadAttachment: (file: File) => Promise<AttachmentItem>
   onDeleteAttachment: (id: number) => Promise<void>
   onModelChange: (model: string) => void
-  onThinkingDepthChange: (depth: string | null) => void
+  onThinkingDepthChange: (depth: ReasoningLevel | null) => void
   onManageModel: (providerKey?: string) => void
   onNewResume: () => void
   onNewPosition: () => void
@@ -303,7 +298,7 @@ export function InterviewAnswerComposer({
     onError,
     onTerminalError: () => setVoice(false),
   })
-  const thinkingLabel = thinkingDepth ? (thinkingLabels[thinkingDepth] ?? thinkingDepth) : '默认'
+  const thinkingLabel = thinkingDepth ? (REASONING_LABELS[thinkingDepth as ReasoningLevel] ?? thinkingDepth) : '默认'
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
