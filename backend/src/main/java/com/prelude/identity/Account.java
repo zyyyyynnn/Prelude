@@ -5,6 +5,10 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Authenticated account. Identity owns account, security and profile data
+ * only; model execution configuration belongs to the llm module.
+ */
 @Data
 @TableName("user_account")
 public class Account {
@@ -17,12 +21,6 @@ public class Account {
     private String themePreference;
     private Long revision;
     private String lastOperationId;
-    private String llmProvider;
-    private String llmModel;
-    private String llmBaseUrl;
-    private String llmApiKeyEncrypted;
-    private Integer llmMaxTokens;
-    private String llmThinkingDepth;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

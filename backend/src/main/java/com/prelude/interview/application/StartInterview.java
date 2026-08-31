@@ -7,10 +7,10 @@ import com.prelude.template.api.port.PositionCatalogPort.PositionSnapshot;
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.LlmSelection;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.interview.application.port.InterviewSessionRepository;
 import com.prelude.context.RetrievalPort;
-import com.prelude.llm.LlmConfigPort;
 import com.prelude.resume.api.port.ResumeContextPort;
 import com.prelude.resume.api.port.ResumeProjection;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class StartInterview {
     private final ResumeContextPort resumeContextPort;
     private final PositionCatalogPort positionCatalogPort;
     private final InterviewSessionRepository interviewSessionRepository;
-    private final LlmConfigPort llmConfigPort;
+    private final LlmPort llmPort;
     private final InterviewStageManager interviewStageManager;
     private final InterviewMessageService interviewMessageService;
     @Qualifier("sseTaskExecutor")
@@ -58,10 +58,9 @@ public class StartInterview {
         session.setResumeId(resume.resumeId());
         session.setPositionId(position.id());
         session.setTargetPosition(position.name());
-        LlmSelection selection = llmConfigPort.resolveSelection(accountId, command.llmModel());
-        session.setLlmProvider(selection.providerKey());
-        session.setLlmModel(selection.model());
-        session.setLlmThinkingDepth(llmConfigPort.currentThinkingDepth());
+        ModelExecutionSnapshotRef snapshotRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null, null, command.requestedModel()));
+        session.setModelExecutionSnapshotId(snapshotRef.snapshotId());
         session.setStatus(STATUS_ONGOING);
         session.setJdText(command.jdText());
         interviewSessionRepository.add(session);

@@ -1,48 +1,57 @@
 package com.prelude.jobs.infrastructure;
 
-import com.prelude.jobs.ReportJobChannel;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * RabbitMQ topology for background job dispatch. The routing target matches
+ * the @Externalized annotation on BackgroundJobRequested; Spring Modulith
+ * externalizes the publication after the business transaction commits. The
+ * DLQ receives poison/unprocessable broker messages only — ordinary business
+ * failures stay in background_job.
+ */
 @Configuration
 public class RabbitMqConfig {
 
+    public static final String EXCHANGE = "prelude.job.exchange";
+    public static final String QUEUE = "prelude.job.report.queue";
+    public static final String ROUTING_KEY = "report.generate";
+    public static final String DLQ = QUEUE + ".dlq";
+
     @Bean
-    public DirectExchange reportExchange() {
-        return new DirectExchange(ReportJobChannel.EXCHANGE, true, false);
+    public DirectExchange jobExchange() {
+        return new DirectExchange(EXCHANGE, true, false);
     }
 
     @Bean
-    public Queue reportQueue() {
-        return new Queue(ReportJobChannel.QUEUE, true);
+    public Queue reportJobQueue() {
+        return QueueBuilder.durable(QUEUE)
+            .withArgument("x-dead-letter-exchange", EXCHANGE)
+            .withArgument("x-dead-letter-routing-key", DLQ)
+            .build();
     }
 
     @Bean
-    public Binding reportBinding(Queue reportQueue, DirectExchange reportExchange) {
-        return BindingBuilder.bind(reportQueue)
-            .to(reportExchange)
-            .with(ReportJobChannel.ROUTING_KEY);
+    public Queue reportJobDeadLetterQueue() {
+        return QueueBuilder.durable(DLQ).build();
     }
 
     @Bean
-    public JacksonJsonMessageConverter jacksonJsonMessageConverter() {
-        return new JacksonJsonMessageConverter();
+    public Binding reportJobBinding(Queue reportJobQueue, DirectExchange jobExchange) {
+        return BindingBuilder.bind(reportJobQueue)
+            .to(jobExchange)
+            .with(ROUTING_KEY);
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(
-        ConnectionFactory connectionFactory,
-        JacksonJsonMessageConverter messageConverter
-    ) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(messageConverter);
-        return template;
+    public Binding reportJobDeadLetterBinding(Queue reportJobDeadLetterQueue, DirectExchange jobExchange) {
+        return BindingBuilder.bind(reportJobDeadLetterQueue)
+            .to(jobExchange)
+            .with(DLQ);
     }
 }

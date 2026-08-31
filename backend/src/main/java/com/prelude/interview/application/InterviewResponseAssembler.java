@@ -21,9 +21,6 @@ public class InterviewResponseAssembler {
             session.getStatus(),
             session.getCreatedAt(),
             currentStage,
-            session.getLlmProvider(),
-            session.getLlmModel(),
-            session.getLlmThinkingDepth(),
             session.getSummaryReport()
         );
     }
@@ -49,7 +46,6 @@ public class InterviewResponseAssembler {
             session.getResumeId(),
             session.getPositionId(),
             session.getJdText(),
-            session.getLlmThinkingDepth(),
             attachments
         );
     }

@@ -4,13 +4,9 @@ import com.prelude.BusinessException;
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.LlmSelection;
 import com.prelude.interview.application.port.InterviewMessageRepository;
-import com.prelude.llm.ChatPort;
-import com.prelude.llm.ChatRequest;
-import com.prelude.llm.LlmPurpose;
-import com.prelude.llm.LlmAttachment;
-import com.prelude.llm.PromptIds;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.PromptIds;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +23,7 @@ public class RunInterviewTurn {
 
     private final InterviewSessionAccess sessionAccess;
     private final InterviewMessageRepository interviewMessageRepository;
-    private final ChatPort chatPort;
+    private final LlmPort llmPort;
     private final InterviewStageManager interviewStageManager;
     private final InterviewContextService interviewContextService;
     private final InterviewMessageService interviewMessageService;
@@ -54,10 +50,10 @@ public class RunInterviewTurn {
             }
 
             StringBuilder assistantReply = new StringBuilder();
-            List<LlmAttachment> imageAttachments = command.autoStart() && firstRound
+            List<LlmPort.Attachment> imageAttachments = command.autoStart() && firstRound
                 ? attachmentContextPort.list(session.getAccountId(), "interview", session.getId()).stream()
                     .filter(attachment -> attachment.image())
-                    .map(attachment -> new LlmAttachment(
+                    .map(attachment -> new LlmPort.Attachment(
                         attachment.fileName(),
                         attachment.mediaType(),
                         attachmentContextPort.readOwnedContent(session.getAccountId(), attachment.assetRef())))
@@ -90,24 +86,31 @@ public class RunInterviewTurn {
     private void streamAssistantReply(
         InterviewSession session,
         List<Map<String, String>> messages,
-        List<LlmAttachment> attachments,
+        List<LlmPort.Attachment> attachments,
         StringBuilder assistantReply,
         InterviewTurnSink sink
     ) {
-        chatPort.stream(
-            ChatRequest.snapshot(
-                session.getAccountId(),
-                session.getId(),
-                LlmPurpose.CHAT,
+        llmPort.stream(
+            new LlmPort.ModelExecutionRequest(
+                session.getModelExecutionSnapshotId(),
+                "chat",
                 PromptIds.CHAT,
-                messages,
-                new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-                session.getLlmThinkingDepth() == null || session.getLlmThinkingDepth().isBlank()
-                    ? null
-                    : Map.of("thinking_depth", session.getLlmThinkingDepth()),
+                messages.stream()
+                    .map(message -> new LlmPort.Message(message.get("role"), message.get("content")))
+                    .toList(),
                 attachments
             ),
-            delta -> appendAndSend(assistantReply, sink, delta)
+            new LlmPort.StreamSink() {
+                @Override
+                public void onNext(String delta) {
+                    appendAndSend(assistantReply, sink, delta);
+                }
+
+                @Override
+                public void onUsage(LlmPort.Usage usage) {
+                    // telemetry handoff only; #46 owns persistence
+                }
+            }
         );
     }
 

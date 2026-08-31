@@ -1,82 +1,65 @@
 package com.prelude.llm;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import com.prelude.BusinessException;
-import com.prelude.llm.EmbedPort;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
+import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.HashMap;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
-@Slf4j
+/**
+ * Retrieval embeddings through Spring AI's OpenAI embedding model, built
+ * programmatically with the deployment credential. The system OpenAI key is
+ * the only credential for this infrastructure path; there is no per-account
+ * embedding BYOK scope today.
+ */
 @Service
-@RequiredArgsConstructor
 public class OpenAiEmbeddingAdapter implements EmbedPort {
 
-    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-    private final OkHttpClient client = new OkHttpClient();
-    private final ObjectMapper objectMapper;
+    private final OpenAiEmbeddingModel embeddingModel;
+    private final String embeddingModelVersion;
 
-    @Value("${openai.api-key:}")
-    private String apiKey;
-
-    @Value("${openai.embedding-url:https://api.openai.com/v1/embeddings}")
-    private String embeddingUrl;
-
-    @Value("${openai.embedding-model:text-embedding-3-small}")
-    private String embeddingModel;
+    public OpenAiEmbeddingAdapter(
+        @Value("${prelude.llm.provider.openai.base-url:https://api.openai.com/v1}") String baseUrl,
+        @Value("${prelude.llm.provider.openai.api-key:}") String apiKey,
+        @Value("${prelude.llm.provider.openai.embedding-model:text-embedding-3-small}") String embeddingModelVersion
+    ) {
+        this.embeddingModelVersion = embeddingModelVersion;
+        this.embeddingModel = OpenAiEmbeddingModel.builder()
+            .openAiClient(OpenAiSetup.setupSyncClient(
+                baseUrl, null, com.openai.credential.BearerTokenCredential.create(apiKey),
+                null, null, null, false, false, null,
+                Duration.ofSeconds(60), 1, null, Map.of(),
+                io.micrometer.observation.ObservationRegistry.NOOP,
+                io.micrometer.core.instrument.Metrics.globalRegistry,
+                List.of()))
+            .metadataMode(MetadataMode.EMBED)
+            .options(OpenAiEmbeddingOptions.builder().model(embeddingModelVersion).build())
+            .build();
+    }
 
     @Override
     public float[] embed(String text) {
-        if (apiKey == null || apiKey.isBlank() || apiKey.startsWith("${")) {
-            throw BusinessException.badRequest("Embedding API Key 未配置");
-        }
-
         try {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("input", text);
-            payload.put("model", embeddingModel);
-
-            Request request = new Request.Builder()
-                .url(embeddingUrl)
-                .addHeader("Authorization", "Bearer " + apiKey)
-                .post(RequestBody.create(objectMapper.writeValueAsString(payload), JSON))
-                .build();
-
-            try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw BusinessException.badRequest("Embedding API call failed: " + response.code());
-                }
-                String body = response.body() != null ? response.body().string() : "";
-                JsonNode root = objectMapper.readTree(body);
-                JsonNode embeddingNode = root.at("/data/0/embedding");
-                if (embeddingNode.isMissingNode() || !embeddingNode.isArray()) {
-                    throw BusinessException.badRequest("Invalid response from Embedding API");
-                }
-                float[] vector = new float[embeddingNode.size()];
-                for (int i = 0; i < embeddingNode.size(); i++) {
-                    vector[i] = (float) embeddingNode.get(i).asDouble();
-                }
-                return vector;
+            float[] vector = embeddingModel.embed(text);
+            if (vector == null || vector.length == 0) {
+                throw BusinessException.badRequest("Embedding 服务返回内容为空");
             }
-        } catch (IOException e) {
-            log.error("Failed to get embedding from API", e);
-            throw BusinessException.badRequest("获取 Embedding 失败");
+            return vector;
+        } catch (BusinessException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw BusinessException.badRequest("Embedding 调用失败，请稍后重试");
         }
     }
 
     @Override
     public String modelVersion() {
-        return "openai:" + embeddingModel;
+        return embeddingModelVersion;
     }
 }

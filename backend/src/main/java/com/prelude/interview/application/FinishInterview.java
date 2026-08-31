@@ -3,13 +3,21 @@ package com.prelude.interview.application;
 import com.prelude.BusinessException;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.port.InterviewSessionRepository;
-import com.prelude.jobs.JobRequest;
-import com.prelude.jobs.JobSchedulerPort;
-import com.prelude.jobs.JobTicket;
+import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
+import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Finishes an interview and schedules the report. One transaction covers the
+ * session state, the background_job row and the Spring Modulith publication;
+ * the broker call happens only after commit. If the broker is down at that
+ * point, the job stays PENDING with an incomplete publication and the
+ * framework's recovery externalizes it — no status-compensation rollback.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,12 +28,15 @@ public class FinishInterview {
     private static final String STATUS_FINISHED = "finished";
     private static final String STAGE_CLOSING = "closing";
 
+    private static final String JOB_TYPE_REPORT = "report.generate";
+
     private final InterviewSessionAccess sessionAccess;
     private final InterviewSessionRepository interviewSessionRepository;
-    private final JobSchedulerPort jobSchedulerPort;
+    private final BackgroundJobOperations backgroundJobOperations;
     private final InterviewMessageService interviewMessageService;
     private final InterviewStageManager interviewStageManager;
 
+    @Transactional(rollbackFor = Exception.class)
     public FinishInterviewResult execute(Long sessionId) {
         long accountId = sessionAccess.currentAccountId();
         InterviewSession session = sessionAccess.requireOwned(sessionId, accountId);
@@ -47,28 +58,16 @@ public class FinishInterview {
         session.setStatus(STATUS_GENERATING);
         interviewSessionRepository.update(session);
 
-        JobTicket job;
-        try {
-            job = jobSchedulerPort.enqueue(JobRequest.report(sessionId, accountId));
-            log.info("Scheduled report generation job {} for session {}", job.jobId(), sessionId);
-        } catch (Exception exception) {
-            restoreOngoingStatus(sessionId);
-            throw BusinessException.badRequest("报告生成任务发布失败");
-        }
+        BackgroundJobRef job = backgroundJobOperations.request(new BackgroundJobRequest(
+            JOB_TYPE_REPORT,
+            accountId,
+            sessionId,
+            JOB_TYPE_REPORT + ":session:" + sessionId,
+            "{}"
+        ));
+        log.info("Requested report generation job {} for session {}", job.jobId(), sessionId);
 
         interviewMessageService.invalidateSessionLock(sessionId);
         return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, job.jobId());
-    }
-
-    private void restoreOngoingStatus(Long sessionId) {
-        try {
-            InterviewSession restoreSession = interviewSessionRepository.selectById(sessionId);
-            if (restoreSession != null && STATUS_GENERATING.equals(restoreSession.getStatus())) {
-                restoreSession.setStatus(STATUS_ONGOING);
-                interviewSessionRepository.update(restoreSession);
-            }
-        } catch (Exception restoreException) {
-            log.error("Failed to restore session {} status to ongoing", sessionId, restoreException);
-        }
     }
 }

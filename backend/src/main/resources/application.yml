@@ -52,17 +52,6 @@ mybatis-plus:
     db-config:
       id-type: auto
 
-deepseek:
-  base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/chat/completions}
-  model: ${DEEPSEEK_MODEL:deepseek-v4-pro}
-  api-key: ${DEEPSEEK_API_KEY:}
-
-openai:
-  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
-  api-key: ${OPENAI_API_KEY:}
-  embedding-url: ${OPENAI_EMBEDDING_URL:https://api.openai.com/v1/embeddings}
-  embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
-
 app:
   cors:
     allowed-origins:
@@ -92,6 +81,17 @@ prelude:
     stale-pending-ttl: ${PRELUDE_STORAGE_STALE_PENDING_TTL:PT24H}
     reconcile-interval-ms: ${PRELUDE_STORAGE_RECONCILE_INTERVAL_MS:300000}
   llm:
+    provider:
+      deepseek:
+        base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+        api-key: ${DEEPSEEK_API_KEY:}
+      openai:
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+        api-key: ${OPENAI_API_KEY:}
+        embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+      anthropic:
+        api-key: ${ANTHROPIC_API_KEY:}
+    transport-retry-max-attempts: ${PRELUDE_LLM_TRANSPORT_RETRY_MAX_ATTEMPTS:3}
     egress:
       allow-http: ${PRELUDE_LLM_EGRESS_ALLOW_HTTP:false}
       allow-private-addresses: ${PRELUDE_LLM_EGRESS_ALLOW_PRIVATE_ADDRESSES:false}
@@ -101,12 +101,8 @@ prelude:
   voice:
     tts-pool-size: 4
   jobs:
-    recovery-enabled: true
-    execution-lease-seconds: 300
-    dispatch-recovery-delay-ms: 30000
-    redispatch-after-seconds: 60
-    report:
-      max-attempts: 3
+    stale-recovery-delay-ms: ${PRELUDE_JOBS_STALE_RECOVERY_DELAY_MS:60000}
+    publication-resubmission-delay-ms: ${PRELUDE_JOBS_PUBLICATION_RESUBMISSION_DELAY_MS:120000}
   retrieval:
     hybrid:
       vector-weight: 0.7

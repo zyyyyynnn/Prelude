@@ -19,7 +19,7 @@ final class InterviewApiMapper {
             request.getResumeId(),
             request.getPositionId(),
             request.getJdText(),
-            request.getLlmModel(),
+            request.getRequestedModel(),
             request.getAttachmentIds()
         );
     }
@@ -47,9 +47,6 @@ final class InterviewApiMapper {
             summary.status(),
             summary.createdAt(),
             summary.currentStage(),
-            summary.llmProvider(),
-            summary.llmModel(),
-            summary.llmThinkingDepth(),
             summary.summaryReport()
         );
     }
@@ -66,7 +63,6 @@ final class InterviewApiMapper {
             details.resumeId(),
             details.positionId(),
             details.jdText(),
-            details.llmThinkingDepth(),
             details.attachments().stream()
                 .map(item -> new InterviewAttachmentItemResponse(
                     item.id(), item.fileName(), item.mediaType(), item.size(), item.image()))

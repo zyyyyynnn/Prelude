@@ -13,7 +13,6 @@ public record InterviewSessionDetails(
     Long resumeId,
     Long positionId,
     String jdText,
-    String llmThinkingDepth,
     List<InterviewAttachmentView> attachments
 ) {
 }

@@ -9,15 +9,12 @@ import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
 import com.prelude.artifact.domain.ScoreHistory;
 import com.prelude.artifact.domain.AccountWeakness;
-import com.prelude.llm.LlmSelection;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.artifact.application.port.InsightRepository;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
-import com.prelude.llm.ChatPort;
-import com.prelude.llm.ChatRequest;
-import com.prelude.llm.LlmPurpose;
-import com.prelude.llm.PromptIds;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.PromptIds;
 import com.prelude.activity.RealtimePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +34,7 @@ public class GenerateInterviewReport {
     private final ObjectMapper objectMapper;
     private final InterviewReportPort interviewReportPort;
     private final InsightRepository insightRepository;
-    private final ChatPort chatPort;
+    private final LlmPort llmPort;
     private final ReportParser interviewReportParser;
     private final InterviewReportAssembler interviewReportAssembler;
     private final RealtimePort realtimePort;
@@ -59,50 +56,50 @@ public class GenerateInterviewReport {
 
             List<InterviewMessage> messages = interviewReportPort.listMessages(sessionId);
             String prompt = buildFinishPrompt(session, messages);
-            String reportContent = chatPort.complete(ChatRequest.snapshot(
-                session.getAccountId(), session.getId(),
-                LlmPurpose.REPORT,
-                PromptIds.REPORT,
-                List.of(
-                    Map.of("role", "system", "content", """
-                            你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
-                            JSON Schema（不得增加 overall、stage score、question score 或 weaknesses）：
-                            {
-                              "summary": {
-                                "fitAssessment": "岗位适配判断",
-                                "actionRecommendation": "继续投递或专项训练建议",
-                                "overallRisk": "总体风险"
-                              },
-                              "scores": {
-                                "technical": 1-10 的整数,
-                                "expression": 1-10 的整数,
-                                "logic": 1-10 的整数
-                              },
-                              "stagePerformances": [{
-                                "stageName": "warmup|technical|deep_dive|closing",
-                                "summary": "阶段总结",
-                                "positiveSignals": ["正向信号"],
-                                "negativeSignals": ["风险信号"],
-                                "improvementSuggestions": ["改进建议"]
-                              }],
-                              "strengths": ["核心优势"],
-                              "trainingPlan": {
-                                "threeDay": ["3 天补强"],
-                                "sevenDay": ["7 天专项"],
-                                "nextInterviewFocus": ["下次模拟重点"]
-                              },
-                              "finalAdvice": "总结建议",
-                              "reportMarkdown": "完整 Markdown 报告"
-                            }
-                        三个评分必须使用 1-10 整数范围。
-                        """),
-                    Map.of("role", "user", "content", prompt)
-                ),
-                new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-                Map.of("response_format", Map.of("type", "json_object"))
-            ));
+            LlmPort.CompletionResult reportCompletion = llmPort.complete(
+                new LlmPort.ModelExecutionRequest(
+                    session.getModelExecutionSnapshotId(),
+                    "report",
+                    PromptIds.REPORT,
+                    List.of(
+                        new LlmPort.Message("system", """
+                                你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
+                                JSON Schema（不得增加 overall、stage score、question score 或 weaknesses）：
+                                {
+                                  "summary": {
+                                    "fitAssessment": "岗位适配判断",
+                                    "actionRecommendation": "继续投递或专项训练建议",
+                                    "overallRisk": "总体风险"
+                                  },
+                                  "scores": {
+                                    "technical": 1-10 的整数,
+                                    "expression": 1-10 的整数,
+                                    "logic": 1-10 的整数
+                                  },
+                                  "stagePerformances": [{
+                                    "stageName": "warmup|technical|deep_dive|closing",
+                                    "summary": "阶段总结",
+                                    "positiveSignals": ["正向信号"],
+                                    "negativeSignals": ["风险信号"],
+                                    "improvementSuggestions": ["改进建议"]
+                                  }],
+                                  "strengths": ["核心优势"],
+                                  "trainingPlan": {
+                                    "threeDay": ["3 天补强"],
+                                    "sevenDay": ["7 天专项"],
+                                    "nextInterviewFocus": ["下次模拟重点"]
+                                  },
+                                  "finalAdvice": "总结建议",
+                                  "reportMarkdown": "完整 Markdown 报告"
+                                }
+                            三个评分必须使用 1-10 整数范围。
+                            """),
+                        new LlmPort.Message("user", prompt)
+                    ),
+                    List.of()
+                ));
 
-            InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportContent);
+            InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportCompletion.content());
             interviewReportPort.closeCurrentStage(sessionId);
             persistScoreHistory(session, reportDraft);
             persistWeaknesses(session, reportDraft.reportMarkdown());
@@ -187,22 +184,22 @@ public class GenerateInterviewReport {
     }
 
     private List<AccountWeakness> extractWeaknesses(InterviewSession session, String report) throws Exception {
-        String content = chatPort.complete(ChatRequest.snapshot(
-            session.getAccountId(), session.getId(),
-            LlmPurpose.REPORT,
-            PromptIds.REPORT,
-            List.of(
-                Map.of("role", "system", "content", """
-                    你是面试分析助手。请只输出严格 JSON 数组，不要输出 Markdown。
-                    每个元素必须包含 category 和 description 两个字段。
-                    示例：[{"category":"JVM 内存模型","description":"对堆、栈和 GC 场景回答不完整"}]
-                    """),
-                Map.of("role", "user", "content", "请从以下面试报告中提取 1 到 5 个候选人的薄弱点：\n" + report)
-            ),
-            new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-            null
-        ));
-        String json = stripJsonFence(content);
+        LlmPort.CompletionResult weaknessCompletion = llmPort.complete(
+            new LlmPort.ModelExecutionRequest(
+                session.getModelExecutionSnapshotId(),
+                "weaknesses",
+                PromptIds.REPORT,
+                List.of(
+                    new LlmPort.Message("system", """
+                        你是面试分析助手。请只输出严格 JSON 数组，不要输出 Markdown。
+                        每个元素必须包含 category 和 description 两个字段。
+                        示例：[{"category":"JVM 内存模型","description":"对堆、栈和 GC 场景回答不完整"}]
+                        """),
+                    new LlmPort.Message("user", "请从以下面试报告中提取 1 到 5 个候选人的薄弱点：\n" + report)
+                ),
+                List.of()
+            ));
+        String json = stripJsonFence(weaknessCompletion.content());
         List<WeaknessExtractionItem> items = objectMapper.readValue(json, new TypeReference<>() {});
         ArrayList<AccountWeakness> weaknesses = new ArrayList<>();
         for (WeaknessExtractionItem item : items) {

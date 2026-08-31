@@ -9,12 +9,6 @@ CREATE TABLE `user_account` (
   `theme_preference` VARCHAR(16) NOT NULL DEFAULT 'system' COMMENT '主题偏好',
   `revision` BIGINT NOT NULL DEFAULT 0 COMMENT '乐观并发版本号',
   `last_operation_id` VARCHAR(64) DEFAULT NULL COMMENT '最近一次成功 mutation 的 operationId',
-  `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT 'LLM Provider',
-  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT 'LLM 模型',
-  `llm_base_url` VARCHAR(255) DEFAULT NULL COMMENT '账户自定义模型接口根地址',
-  `llm_api_key_encrypted` VARCHAR(512) DEFAULT NULL COMMENT '加密后的账户 API Key',
-  `llm_max_tokens` INT DEFAULT NULL COMMENT 'LLM 最大输出 Token',
-  `llm_thinking_depth` VARCHAR(20) DEFAULT NULL COMMENT 'LLM 思考深度',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -98,9 +92,7 @@ CREATE TABLE `interview_session` (
   `resume_id` BIGINT NOT NULL COMMENT '简历ID',
   `position_id` BIGINT NOT NULL COMMENT '岗位模板ID',
   `target_position` VARCHAR(100) NOT NULL COMMENT '目标岗位',
-  `llm_provider` VARCHAR(32) NOT NULL DEFAULT 'deepseek' COMMENT '会话使用的 Provider 快照',
-  `llm_model` VARCHAR(64) NOT NULL DEFAULT 'deepseek-v4-pro' COMMENT '会话使用的模型快照',
-  `llm_thinking_depth` VARCHAR(20) DEFAULT NULL COMMENT '会话使用的思考深度快照',
+  `model_execution_snapshot_id` BIGINT DEFAULT NULL COMMENT '开面冻结的模型执行快照',
   `status` ENUM('ongoing','generating','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
   `summary` TEXT COMMENT '上下文压缩摘要',
   `summary_report` TEXT COMMENT '评估报告',
@@ -160,30 +152,6 @@ CREATE TABLE `retrieval_chunk` (
   KEY `idx_retrieval_chunk_hash` (`content_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='检索可重建文本块';
 
-CREATE TABLE `async_job` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `job_id` CHAR(36) NOT NULL COMMENT '对外任务ID',
-  `type` VARCHAR(64) NOT NULL COMMENT '任务类型',
-  `account_id` BIGINT NOT NULL COMMENT '任务所属账户',
-  `subject_id` BIGINT NOT NULL COMMENT '业务对象ID',
-  `idempotency_key` VARCHAR(160) NOT NULL COMMENT '幂等键',
-  `status` ENUM('pending','running','succeeded','failed') NOT NULL DEFAULT 'pending' COMMENT '任务状态',
-  `attempts` INT NOT NULL DEFAULT 0 COMMENT '已执行次数',
-  `payload_json` TEXT NOT NULL COMMENT '任务参数快照',
-  `last_error` TEXT DEFAULT NULL COMMENT '最近一次错误',
-  `dispatched_at` DATETIME DEFAULT NULL COMMENT '最近一次投递时间',
-  `started_at` DATETIME DEFAULT NULL COMMENT '最近一次开始时间',
-  `finished_at` DATETIME DEFAULT NULL COMMENT '终态时间',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_async_job_job_id` (`job_id`),
-  UNIQUE KEY `uk_async_job_idempotency_key` (`idempotency_key`),
-  KEY `idx_async_job_account_created` (`account_id`, `created_at`),
-  KEY `idx_async_job_status_updated` (`status`, `updated_at`),
-  CONSTRAINT `fk_async_job_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='异步任务状态与幂等记录';
-
 CREATE TABLE `score_history` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `account_id` BIGINT NOT NULL COMMENT '所属账户ID',
@@ -213,18 +181,6 @@ CREATE TABLE `account_weakness` (
   CONSTRAINT `fk_account_weakness_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户薄弱点表';
 
-CREATE TABLE `llm_provider_config` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `provider_key` VARCHAR(32) NOT NULL COMMENT 'Provider 标识',
-  `display_name` VARCHAR(64) NOT NULL COMMENT '展示名称',
-  `base_url` VARCHAR(255) NOT NULL COMMENT 'API 端点',
-  `available_models` TEXT NOT NULL COMMENT '可选模型 JSON 数组',
-  `enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_llm_provider_config_provider_key` (`provider_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LLM Provider 配置表';
-
 CREATE TABLE `artifact` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `account_id` BIGINT NOT NULL COMMENT '所属账户ID',
@@ -247,6 +203,94 @@ CREATE TABLE `artifact_version` (
   CONSTRAINT `fk_artifact_version_artifact` FOREIGN KEY (`artifact_id`) REFERENCES `artifact` (`id`),
   CONSTRAINT `fk_artifact_version_asset` FOREIGN KEY (`asset_id`) REFERENCES `asset` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='正式成果不可变版本';
+
+
+CREATE TABLE `provider_credential` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `account_id` BIGINT NOT NULL COMMENT '所属账户ID',
+  `provider` VARCHAR(32) NOT NULL COMMENT 'Provider 标识',
+  `scope_key` VARCHAR(255) NOT NULL COMMENT '凭据作用域：SYSTEM 或账户自定义端点根地址',
+  `api_key_encrypted` VARCHAR(512) NOT NULL COMMENT 'AES-GCM 加密后的 API Key',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_provider_credential_scope` (`account_id`, `provider`, `scope_key`),
+  CONSTRAINT `fk_provider_credential_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户级 BYOK 模型凭据';
+
+CREATE TABLE `model_profile` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `account_id` BIGINT NOT NULL COMMENT '所属账户ID',
+  `provider` VARCHAR(32) NOT NULL COMMENT 'Provider 标识',
+  `model` VARCHAR(64) NOT NULL COMMENT '主模型ID',
+  `credential_id` BIGINT DEFAULT NULL COMMENT '凭据引用，空表示 SYSTEM 凭据',
+  `custom_endpoint_url` VARCHAR(255) DEFAULT NULL COMMENT 'OpenAI 兼容自定义端点根地址',
+  `reasoning_level` VARCHAR(16) DEFAULT 'AUTO' COMMENT '默认推理深度 AUTO/LOW/MEDIUM/HIGH',
+  `effective_parameters_json` TEXT DEFAULT NULL COMMENT '生效参数默认值 JSON',
+  `fallback_models_json` TEXT NOT NULL COMMENT '有序回退模型 JSON 数组（同 Provider 同凭据边界）',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_model_profile_account_provider` (`account_id`, `provider`),
+  CONSTRAINT `fk_model_profile_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`),
+  CONSTRAINT `fk_model_profile_credential` FOREIGN KEY (`credential_id`) REFERENCES `provider_credential` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户级模型执行配置';
+
+CREATE TABLE `model_execution_snapshot` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `account_id` BIGINT NOT NULL COMMENT '所属账户ID',
+  `profile_id` BIGINT NOT NULL COMMENT '冻结时引用的 ModelProfile',
+  `provider` VARCHAR(32) NOT NULL COMMENT 'Provider 标识',
+  `model` VARCHAR(64) NOT NULL COMMENT '模型ID',
+  `reasoning_level` VARCHAR(16) NOT NULL COMMENT 'AUTO/LOW/MEDIUM/HIGH',
+  `effective_parameters_json` TEXT NOT NULL COMMENT '冻结的生效参数 JSON',
+  `capability_version` VARCHAR(32) NOT NULL COMMENT '冻结时的能力目录版本',
+  `fallback_models_json` TEXT NOT NULL COMMENT '冻结的有序回退模型 JSON 数组',
+  `credential_id` BIGINT DEFAULT NULL COMMENT '冻结的凭据引用，空表示 SYSTEM 凭据',
+  `custom_endpoint_url` VARCHAR(255) DEFAULT NULL COMMENT '冻结的自定义端点根地址',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_snapshot_account_created` (`account_id`, `created_at`),
+  CONSTRAINT `fk_snapshot_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`),
+  CONSTRAINT `fk_snapshot_profile` FOREIGN KEY (`profile_id`) REFERENCES `model_profile` (`id`),
+  CONSTRAINT `fk_snapshot_credential` FOREIGN KEY (`credential_id`) REFERENCES `provider_credential` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='不可变模型执行快照';
+
+CREATE TABLE `background_job` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `job_id` CHAR(36) NOT NULL COMMENT '对外任务ID',
+  `type` VARCHAR(64) NOT NULL COMMENT '任务类型',
+  `account_id` BIGINT NOT NULL COMMENT '任务所属账户',
+  `subject_id` BIGINT NOT NULL COMMENT '业务对象ID',
+  `operation_key` VARCHAR(160) NOT NULL COMMENT '幂等操作键',
+  `payload_json` TEXT NOT NULL COMMENT '任务参数快照',
+  `status` ENUM('PENDING','RUNNING','SUCCEEDED','FAILED','CANCELLED') NOT NULL DEFAULT 'PENDING' COMMENT '任务状态',
+  `attempt_count` INT NOT NULL DEFAULT 0 COMMENT '已执行次数',
+  `max_attempts` INT NOT NULL DEFAULT 3 COMMENT '最大尝试次数',
+  `last_error` TEXT DEFAULT NULL COMMENT '最近一次脱敏错误摘要',
+  `claimed_at` DATETIME DEFAULT NULL COMMENT '最近一次认领时间',
+  `finished_at` DATETIME DEFAULT NULL COMMENT '终态时间',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_background_job_job_id` (`job_id`),
+  UNIQUE KEY `uk_background_job_operation_key` (`operation_key`),
+  KEY `idx_background_job_account_created` (`account_id`, `created_at`),
+  KEY `idx_background_job_status_claimed` (`status`, `claimed_at`),
+  CONSTRAINT `fk_background_job_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='持久化后台任务';
+
+CREATE TABLE `job_attempt` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `job_id` CHAR(36) NOT NULL COMMENT '所属任务对外ID',
+  `attempt_number` INT NOT NULL COMMENT '尝试序号',
+  `status` ENUM('RUNNING','SUCCEEDED','FAILED','INTERRUPTED') NOT NULL COMMENT '尝试状态',
+  `started_at` DATETIME NOT NULL COMMENT '开始时间',
+  `finished_at` DATETIME DEFAULT NULL COMMENT '结束时间',
+  `failure_summary` TEXT DEFAULT NULL COMMENT '脱敏失败摘要',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_job_attempt_number` (`job_id`, `attempt_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务尝试记录';
 
 -- Spring Modulith 2.1.1 event publication schema (official v2 schema-mysql.sql).
 -- Auto schema initialization is disabled; Flyway is the only DDL owner.
