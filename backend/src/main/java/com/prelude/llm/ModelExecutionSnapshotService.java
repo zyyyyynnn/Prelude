@@ -8,6 +8,10 @@ import com.prelude.llm.persistence.ModelProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
 
 /**
  * Freezes immutable model execution snapshots. A run reads its configuration
@@ -22,6 +26,7 @@ public class ModelExecutionSnapshotService {
     private final ModelExecutionSnapshotMapper snapshotMapper;
     private final ModelCapabilityCatalog capabilityCatalog;
     private final ReasoningLevels reasoningLevels;
+    private final ObjectMapper objectMapper;
 
     @Transactional(rollbackFor = Exception.class)
     public ModelExecutionSnapshotRef freeze(FreezeSnapshotCommand command) {
@@ -38,6 +43,7 @@ public class ModelExecutionSnapshotService {
         if (!capabilityCatalog.capability(provider, model).supportedReasoningLevels().contains(level)) {
             throw com.prelude.BusinessException.badRequest("所选模型不支持该思考深度");
         }
+        validateFrozenFallbacks(provider, profile.getFallbackModelsJson(), level);
 
         ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
         snapshot.setAccountId(command.accountId());
@@ -65,5 +71,31 @@ public class ModelExecutionSnapshotService {
                 org.springframework.http.HttpStatus.NOT_FOUND, "model_snapshot_not_found", "模型执行快照不存在");
         }
         return snapshot;
+    }
+
+    private void validateFrozenFallbacks(
+        String provider,
+        String fallbackModelsJson,
+        com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel reasoningLevel
+    ) {
+        if (fallbackModelsJson == null || fallbackModelsJson.isBlank()
+            || "[]".equals(fallbackModelsJson.trim())) {
+            return;
+        }
+        final List<String> fallbackModels;
+        try {
+            fallbackModels = objectMapper.readValue(
+                fallbackModelsJson, new TypeReference<List<String>>() {
+                });
+        } catch (Exception exception) {
+            throw com.prelude.BusinessException.badRequest("模型回退配置无效，请重新保存模型配置");
+        }
+        for (String fallbackModel : fallbackModels) {
+            capabilityCatalog.requireSupportedModel(provider, fallbackModel);
+            if (!capabilityCatalog.capability(provider, fallbackModel)
+                .supportedReasoningLevels().contains(reasoningLevel)) {
+                throw com.prelude.BusinessException.badRequest("回退模型不支持所选思考深度");
+            }
+        }
     }
 }

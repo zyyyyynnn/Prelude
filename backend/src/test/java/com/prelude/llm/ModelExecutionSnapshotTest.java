@@ -202,6 +202,23 @@ class ModelExecutionSnapshotTest {
             .hasMessage("回退模型不支持所选思考深度");
     }
 
+    @Test
+    @Transactional
+    void reasoningOverrideCannotFreezeAnIncompatibleFallback() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+        ModelProfile profile = profileMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelProfile>()
+                .eq(ModelProfile::getAccountId, accountId)
+                .last("LIMIT 1"));
+        profile.setFallbackModelsJson("[\"deepseek-chat\"]");
+        profileMapper.updateById(profile);
+
+        assertThatThrownBy(() -> llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null)))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasMessage("回退模型不支持所选思考深度");
+    }
+
     private long createAccountAndProfile(String provider, String model,
                                          String reasoningLevel, String customEndpointUrl) {
         com.prelude.identity.Account account = new com.prelude.identity.Account();
