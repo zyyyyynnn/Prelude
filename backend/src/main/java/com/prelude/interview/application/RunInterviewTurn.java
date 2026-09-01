@@ -95,10 +95,12 @@ public class RunInterviewTurn {
                 session.getModelExecutionSnapshotId(),
                 "chat",
                 PromptIds.CHAT,
+                LlmPort.ResponseMode.PLAIN_TEXT,
                 messages.stream()
                     .map(message -> new LlmPort.Message(message.get("role"), message.get("content")))
                     .toList(),
-                attachments
+                attachments,
+                List.of()
             ),
             new LlmPort.StreamSink() {
                 @Override

@@ -85,10 +85,12 @@ public class InterviewJudgeService {
                 session.getModelExecutionSnapshotId(),
                 "judge",
                 PromptIds.JUDGE,
+                LlmPort.ResponseMode.JSON,
                 List.of(
                     new LlmPort.Message("system", systemPrompt),
                     new LlmPort.Message("user", userPrompt)
                 ),
+                List.of(),
                 List.of()
             ));
         return parseJudgeOutput(completion.content());

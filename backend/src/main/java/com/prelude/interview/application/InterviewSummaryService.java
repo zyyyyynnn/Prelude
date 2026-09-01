@@ -68,10 +68,12 @@ public class InterviewSummaryService {
                 session.getModelExecutionSnapshotId(),
                 "summary",
                 PromptIds.SUMMARY,
+                LlmPort.ResponseMode.PLAIN_TEXT,
                 List.of(
                     new LlmPort.Message("system", promptRegistry.load(PromptIds.SUMMARY)),
                     new LlmPort.Message("user", prompt)
                 ),
+                List.of(),
                 List.of()
             ));
         return completion.content();

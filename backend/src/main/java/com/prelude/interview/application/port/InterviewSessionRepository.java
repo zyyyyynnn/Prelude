@@ -13,5 +13,7 @@ public interface InterviewSessionRepository {
 
     int update(InterviewSession session);
 
+    int markGeneratingIfOngoing(Long sessionId, Long accountId);
+
     List<InterviewSession> listByUser(Long accountId);
 }

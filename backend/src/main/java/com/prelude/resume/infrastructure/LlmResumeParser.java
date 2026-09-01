@@ -25,16 +25,18 @@ public class LlmResumeParser implements ResumeParser {
     public ParsedResume parse(Long accountId, String rawText) {
         String systemPrompt = promptRegistry.load(PromptIds.RESUME_PARSE);
         var snapshotRef = llmPort.freezeSnapshot(
-            new LlmPort.FreezeSnapshotCommand(accountId, null, null, null, null));
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
         LlmPort.CompletionResult completion = llmPort.complete(
             new LlmPort.ModelExecutionRequest(
                 snapshotRef.snapshotId(),
                 "resume-parse",
                 PromptIds.RESUME_PARSE,
+                LlmPort.ResponseMode.JSON,
                 List.of(
                     new LlmPort.Message("system", systemPrompt),
                     new LlmPort.Message("user", "请从以下中文简历文本中提取技能列表和项目经历：\n" + rawText)
                 ),
+                List.of(),
                 List.of()
             ));
         String content = completion.content();

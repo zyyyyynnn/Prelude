@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 /**
  * Finishes an interview and schedules the report. One transaction covers the
  * session state, the background_job row and the Spring Modulith publication;
@@ -55,14 +57,17 @@ public class FinishInterview {
             throw BusinessException.badRequest("仅在收尾阶段才能生成报告");
         }
 
-        session.setStatus(STATUS_GENERATING);
-        interviewSessionRepository.update(session);
+        if (interviewSessionRepository.markGeneratingIfOngoing(sessionId, accountId) != 1) {
+            // Another request won the only valid ongoing -> generating transition.
+            return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, null);
+        }
 
+        String operationId = UUID.randomUUID().toString();
         BackgroundJobRef job = backgroundJobOperations.request(new BackgroundJobRequest(
             JOB_TYPE_REPORT,
             accountId,
             sessionId,
-            JOB_TYPE_REPORT + ":session:" + sessionId,
+            JOB_TYPE_REPORT + ":session:" + sessionId + ":" + operationId,
             "{}"
         ));
         log.info("Requested report generation job {} for session {}", job.jobId(), sessionId);

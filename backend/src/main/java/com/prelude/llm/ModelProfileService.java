@@ -8,7 +8,6 @@ import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ModelDescriptorView;
 import com.prelude.llm.api.SaveConfigurationCommand;
-import com.prelude.llm.persistence.ModelExecutionSnapshotMapper;
 import com.prelude.llm.persistence.ModelProfile;
 import com.prelude.llm.persistence.ModelProfileMapper;
 import com.prelude.llm.persistence.ProviderCredential;
@@ -42,7 +41,6 @@ public class ModelProfileService {
 
     private final ProviderCredentialMapper credentialMapper;
     private final ModelProfileMapper profileMapper;
-    private final ModelExecutionSnapshotMapper snapshotMapper;
     private final ProviderSecretCipher secretCipher;
     private final ModelCapabilityCatalog capabilityCatalog;
     private final ReasoningLevels reasoningLevels;
@@ -96,6 +94,7 @@ public class ModelProfileService {
             customEndpointUrl = normalizeRoot(command.customEndpointUrl());
             egressPolicy.validateConfiguredEndpoint(customEndpointUrl);
         }
+        capabilityCatalog.requireSupportedModel(provider, command.model());
 
         ModelCapabilityResponse.ReasoningLevel level = reasoningLevels.parse(command.reasoningLevel());
         if (!capabilityCatalog.capability(provider, command.model()).supportedReasoningLevels().contains(level)) {
@@ -105,34 +104,25 @@ public class ModelProfileService {
         ModelProfile existing = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
             .eq(ModelProfile::getAccountId, accountId)
             .last("LIMIT 1"));
-        Long credentialId = existing == null ? null : existing.getCredentialId();
-        boolean scopeChanged = existing == null
-            || !provider.equals(existing.getProvider())
-            || !equalsNullable(customEndpointUrl, existing.getCustomEndpointUrl());
+        String credentialScope = customEndpointUrl == null ? ProviderCredential.SYSTEM_SCOPE : customEndpointUrl;
+        Long credentialId;
 
         if (command.apiKey() != null && !command.apiKey().isBlank()) {
             if (SaveConfigurationCommand.CLEAR_API_KEY.equals(command.apiKey())) {
                 credentialId = null;
             } else {
-                credentialId = upsertCredential(accountId, provider, customEndpointUrl,
+                credentialId = createCredential(accountId, provider, credentialScope,
                     secretCipher.encrypt(command.apiKey()));
             }
-        } else if (scopeChanged && credentialId != null) {
-            // Provider/base URL changed: an old-scope key must not leak into the new scope.
-            credentialId = null;
+        } else {
+            credentialId = reusableActiveCredentialId(existing, accountId, provider, credentialScope);
         }
         if (ModelCapabilityCatalog.PROVIDER_OPENAI_COMPATIBLE.equals(provider) && credentialId == null) {
             throw BusinessException.badRequest("自定义端点必须配置 API Key");
         }
 
-        List<String> fallbackModels = command.fallbackModels() == null
-            ? List.of()
-            : List.copyOf(command.fallbackModels());
-        if (fallbackModels.contains(command.model())) {
-            fallbackModels = new ArrayList<>(fallbackModels);
-            fallbackModels.remove(command.model());
-            fallbackModels = List.copyOf(fallbackModels);
-        }
+        List<String> fallbackModels = validateFallbackModels(
+            provider, command.model(), level, command.fallbackModels());
 
         ModelProfile profile = existing == null ? new ModelProfile() : existing;
         profile.setAccountId(accountId);
@@ -187,7 +177,7 @@ public class ModelProfileService {
                     capabilityCatalog.displayName(provider), "", true, List.of()));
             } else {
                 descriptors.add(new ModelDescriptorView(provider,
-                    capabilityCatalog.displayName(provider), "", false, List.of()));
+                    capabilityCatalog.displayName(provider), "", false, capabilityCatalog.models(provider)));
             }
         }
         return descriptors;
@@ -201,7 +191,7 @@ public class ModelProfileService {
         String baseUrl = normalizeRoot(command.baseUrl());
         String apiKey = command.apiKey();
         if (apiKey == null || apiKey.isBlank()) {
-            apiKey = savedKeyForScope(accountId, baseUrl);
+            apiKey = activeKeyForScope(accountId, baseUrl);
         }
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("API Key 不能为空");
@@ -231,44 +221,79 @@ public class ModelProfileService {
         }
     }
 
-    private String savedKeyForScope(Long accountId, String baseUrl) {
-        ProviderCredential credential = credentialMapper.selectOne(
-            new LambdaQueryWrapper<ProviderCredential>()
-                .eq(ProviderCredential::getAccountId, accountId)
-                .eq(ProviderCredential::getProvider, ModelCapabilityCatalog.PROVIDER_OPENAI_COMPATIBLE)
-                .eq(ProviderCredential::getScopeKey, baseUrl)
-                .last("LIMIT 1"));
-        return credential == null ? null : secretCipher.decrypt(credential.getApiKeyEncrypted());
+    private String activeKeyForScope(Long accountId, String baseUrl) {
+        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
+            .eq(ModelProfile::getAccountId, accountId)
+            .last("LIMIT 1"));
+        Long credentialId = reusableActiveCredentialId(
+            profile, accountId, ModelCapabilityCatalog.PROVIDER_OPENAI_COMPATIBLE, baseUrl);
+        return credentialId == null
+            ? null
+            : secretCipher.decrypt(credentialMapper.selectById(credentialId).getApiKeyEncrypted());
     }
 
-    private Long upsertCredential(Long accountId, String provider, String scopeKey, String encryptedKey) {
-        String scope = scopeKey == null ? ProviderCredential.SYSTEM_SCOPE : scopeKey;
-        ProviderCredential existing = credentialMapper.selectOne(
-            new LambdaQueryWrapper<ProviderCredential>()
-                .eq(ProviderCredential::getAccountId, accountId)
-                .eq(ProviderCredential::getProvider, provider)
-                .eq(ProviderCredential::getScopeKey, scope)
-                .last("LIMIT 1"));
-        if (existing == null) {
-            ProviderCredential credential = new ProviderCredential();
-            credential.setAccountId(accountId);
-            credential.setProvider(provider);
-            credential.setScopeKey(scope);
-            credential.setApiKeyEncrypted(encryptedKey);
-            credentialMapper.insert(credential);
-            return credential.getId();
+    private Long reusableActiveCredentialId(ModelProfile profile, Long accountId, String provider, String scope) {
+        if (profile == null || profile.getCredentialId() == null
+            || !provider.equals(profile.getProvider())) {
+            return null;
         }
-        existing.setApiKeyEncrypted(encryptedKey);
-        credentialMapper.updateById(existing);
-        return existing.getId();
+        ProviderCredential credential = credentialMapper.selectById(profile.getCredentialId());
+        if (credential == null
+            || !accountId.equals(credential.getAccountId())
+            || !provider.equals(credential.getProvider())
+            || !scope.equals(credential.getScopeKey())) {
+            return null;
+        }
+        return credential.getId();
+    }
+
+    private Long createCredential(Long accountId, String provider, String scope, String encryptedKey) {
+        ProviderCredential credential = new ProviderCredential();
+        credential.setAccountId(accountId);
+        credential.setProvider(provider);
+        credential.setScopeKey(scope);
+        credential.setApiKeyEncrypted(encryptedKey);
+        credentialMapper.insert(credential);
+        return credential.getId();
     }
 
     private ModelConfigurationView defaultConfiguration() {
         String provider = ModelCapabilityCatalog.PROVIDER_DEEPSEEK;
-        ModelCapabilityResponse capability = capabilityCatalog.capability(provider, "");
+        ModelCapabilityResponse capability = capabilityCatalog.capability(provider, "deepseek-v4-pro");
         return new ModelConfigurationView(
             provider, "", null, false, null, "AUTO", List.of(),
             capability.reasoning(), capability.supportedReasoningLevels(), List.of());
+    }
+
+    private List<String> validateFallbackModels(
+        String provider,
+        String primaryModel,
+        ModelCapabilityResponse.ReasoningLevel reasoningLevel,
+        List<String> requested
+    ) {
+        if (requested == null || requested.isEmpty()) {
+            return List.of();
+        }
+        List<String> validated = new ArrayList<>();
+        for (String raw : requested) {
+            if (raw == null || raw.isBlank()) {
+                throw BusinessException.badRequest("回退模型不能为空");
+            }
+            String model = raw.trim();
+            if (model.equals(primaryModel)) {
+                throw BusinessException.badRequest("主模型不能同时出现在回退模型中");
+            }
+            if (validated.contains(model)) {
+                throw BusinessException.badRequest("回退模型不能重复");
+            }
+            capabilityCatalog.requireSupportedModel(provider, model);
+            if (!capabilityCatalog.capability(provider, model)
+                .supportedReasoningLevels().contains(reasoningLevel)) {
+                throw BusinessException.badRequest("回退模型不支持所选思考深度");
+            }
+            validated.add(model);
+        }
+        return List.copyOf(validated);
     }
 
     private String normalizeRoot(String input) {
@@ -295,7 +320,7 @@ public class ModelProfileService {
             List<String> ids = new ArrayList<>();
             tools.jackson.databind.JsonNode root = objectMapper.readTree(body);
             for (tools.jackson.databind.JsonNode node : root.path("data")) {
-                String id = node.path("id").asText(null);
+                String id = node.path("id").asString(null);
                 if (id != null && !id.isBlank()) {
                     ids.add(id);
                 }
@@ -326,7 +351,4 @@ public class ModelProfileService {
         }
     }
 
-    private boolean equalsNullable(String left, String right) {
-        return left == null ? right == null : left.equals(right);
-    }
 }

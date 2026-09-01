@@ -45,13 +45,17 @@ public class GenerateInterviewReport {
             log.info("Processing report generation for session {} and account {}", sessionId, accountId);
             InterviewSession session = interviewReportPort.findSession(sessionId);
             if (session == null) {
-                log.warn("Session {} not found, skipping", sessionId);
-                return Outcome.SKIPPED;
+                throw new IllegalStateException("Interview session does not exist: " + sessionId);
             }
             if (!STATUS_GENERATING.equals(session.getStatus())) {
-                log.info("Session {} status is '{}', expected '{}'; skipping duplicate or stale job",
-                    sessionId, session.getStatus(), STATUS_GENERATING);
-                return Outcome.SKIPPED;
+                if ("finished".equals(session.getStatus())
+                    && session.getSummaryReport() != null && !session.getSummaryReport().isBlank()) {
+                    log.info("Session {} already has a completed report; treating delivery as idempotent", sessionId);
+                    return Outcome.SKIPPED;
+                }
+                throw new IllegalStateException(
+                    "Report job requires a generating interview session; session=" + sessionId
+                        + ", status=" + session.getStatus());
             }
 
             List<InterviewMessage> messages = interviewReportPort.listMessages(sessionId);
@@ -61,6 +65,7 @@ public class GenerateInterviewReport {
                     session.getModelExecutionSnapshotId(),
                     "report",
                     PromptIds.REPORT,
+                    LlmPort.ResponseMode.JSON,
                     List.of(
                         new LlmPort.Message("system", """
                                 你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
@@ -96,6 +101,7 @@ public class GenerateInterviewReport {
                             """),
                         new LlmPort.Message("user", prompt)
                     ),
+                    List.of(),
                     List.of()
                 ));
 
@@ -116,7 +122,7 @@ public class GenerateInterviewReport {
             // Broadcast report ready event
             realtimePort.publish(sessionId, "report_ready", reportJson);
             log.info("Successfully finished report generation and broadcasted for session {}", sessionId);
-            return Outcome.COMPLETED;
+            return Outcome.GENERATED;
         } catch (Exception e) {
             throw new ReportGenerationException(sessionId, e);
         }
@@ -189,6 +195,7 @@ public class GenerateInterviewReport {
                 session.getModelExecutionSnapshotId(),
                 "weaknesses",
                 PromptIds.REPORT,
+                LlmPort.ResponseMode.JSON,
                 List.of(
                     new LlmPort.Message("system", """
                         你是面试分析助手。请只输出严格 JSON 数组，不要输出 Markdown。
@@ -197,6 +204,7 @@ public class GenerateInterviewReport {
                         """),
                     new LlmPort.Message("user", "请从以下面试报告中提取 1 到 5 个候选人的薄弱点：\n" + report)
                 ),
+                List.of(),
                 List.of()
             ));
         String json = stripJsonFence(weaknessCompletion.content());
@@ -240,7 +248,7 @@ public class GenerateInterviewReport {
     private record WeaknessExtractionItem(String category, String description) {}
 
     public enum Outcome {
-        COMPLETED,
+        GENERATED,
         SKIPPED
     }
 

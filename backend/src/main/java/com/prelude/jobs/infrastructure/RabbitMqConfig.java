@@ -5,8 +5,11 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * RabbitMQ topology for background job dispatch. The routing target matches
@@ -22,6 +25,11 @@ public class RabbitMqConfig {
     public static final String QUEUE = "prelude.job.report.queue";
     public static final String ROUTING_KEY = "report.generate";
     public static final String DLQ = QUEUE + ".dlq";
+
+    @Bean
+    public MessageConverter rabbitMessageConverter(JsonMapper jsonMapper) {
+        return new JacksonJsonMessageConverter(jsonMapper);
+    }
 
     @Bean
     public DirectExchange jobExchange() {

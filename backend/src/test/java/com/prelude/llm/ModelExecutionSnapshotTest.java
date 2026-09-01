@@ -56,7 +56,7 @@ class ModelExecutionSnapshotTest {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
         ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
-            new LlmPort.FreezeSnapshotCommand(accountId, null, null, "HIGH", null));
+            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null));
         ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
         assertThat(frozen.getModel()).isEqualTo("deepseek-v4-pro");
         assertThat(frozen.getReasoningLevel()).isEqualTo("HIGH");
@@ -77,7 +77,7 @@ class ModelExecutionSnapshotTest {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
         ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
-            new LlmPort.FreezeSnapshotCommand(accountId, null, null, null, "deepseek-v4-flash"));
+            new LlmPort.FreezeSnapshotCommand(accountId, null, "deepseek-v4-flash"));
 
         ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
         assertThat(frozen.getModel()).isEqualTo("deepseek-v4-flash");
@@ -95,7 +95,7 @@ class ModelExecutionSnapshotTest {
                 .last("LIMIT 1"));
 
         ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
-            new LlmPort.FreezeSnapshotCommand(accountId, null, null, null, null));
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
 
         ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
         assertThat(frozen.getProvider()).isEqualTo("openai-compatible");
@@ -132,6 +132,74 @@ class ModelExecutionSnapshotTest {
         ModelConfigurationView view = llmPort.currentConfiguration(accountId);
         assertThat(view.apiKeyMasked()).doesNotContain("sk-live-secret");
         assertThat(view.apiKeyMasked()).startsWith("****");
+    }
+
+    @Test
+    @Transactional
+    void rotatingAKeyCreatesANewCredentialAndKeepsTheFrozenSnapshotOnTheOldSecret() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+
+        llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-v4-pro", null, "sk-immutable-A", "AUTO", java.util.List.of()));
+        ModelExecutionSnapshotRef snapshotARef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
+        ModelExecutionSnapshot snapshotA = snapshotMapper.selectById(snapshotARef.snapshotId());
+
+        llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-v4-pro", null, "sk-immutable-B", "AUTO", java.util.List.of()));
+        ModelExecutionSnapshotRef snapshotBRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
+        ModelExecutionSnapshot snapshotB = snapshotMapper.selectById(snapshotBRef.snapshotId());
+
+        assertThat(snapshotA.getCredentialId()).isNotEqualTo(snapshotB.getCredentialId());
+        assertThat(profileService.resolveApiKey(accountId, snapshotA.getCredentialId())).isEqualTo("sk-immutable-A");
+        assertThat(profileService.resolveApiKey(accountId, snapshotB.getCredentialId())).isEqualTo("sk-immutable-B");
+
+        java.util.List<ProviderCredential> credentials = credentialMapper.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProviderCredential>()
+                .eq(ProviderCredential::getAccountId, accountId)
+                .eq(ProviderCredential::getProvider, "deepseek")
+                .eq(ProviderCredential::getScopeKey, ProviderCredential.SYSTEM_SCOPE)
+                .orderByAsc(ProviderCredential::getId));
+        assertThat(credentials).hasSize(2);
+        assertThat(credentials).allSatisfy(stored -> {
+            assertThat(stored.getApiKeyEncrypted()).doesNotContain("sk-immutable-A");
+            assertThat(stored.getApiKeyEncrypted()).doesNotContain("sk-immutable-B");
+        });
+    }
+
+    @Test
+    @Transactional
+    void unsupportedReasoningIsRejectedInsteadOfSilentlyDowngraded() {
+        long accountId = createAccountAndProfile(
+            "openai-compatible", "custom-model", "AUTO", "https://example.com/v1");
+
+        assertThatThrownBy(() -> llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null)))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasMessage("所选模型不支持该思考深度");
+    }
+
+    @Test
+    @Transactional
+    void unknownBuiltInModelIsRejectedInsteadOfInheritingProviderCapabilities() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+
+        assertThatThrownBy(() -> llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-unknown", null, null, "AUTO", java.util.List.of())))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasMessage("当前接入方式不支持该模型");
+    }
+
+    @Test
+    @Transactional
+    void fallbackMustSupportTheSameFrozenReasoningLevel() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+
+        assertThatThrownBy(() -> llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-v4-pro", null, null, "HIGH", java.util.List.of("deepseek-chat"))))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasMessage("回退模型不支持所选思考深度");
     }
 
     private long createAccountAndProfile(String provider, String model,

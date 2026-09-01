@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
     "spring.datasource.password=",
     "spring.flyway.enabled=false",
     "spring.rabbitmq.listener.simple.auto-startup=false",
-    "prelude.jobs.recovery-enabled=false"
+    "prelude.jobs.scheduling-enabled=false"
 })
 class PreludeApplicationTest {
 

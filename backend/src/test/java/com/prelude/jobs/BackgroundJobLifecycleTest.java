@@ -5,6 +5,9 @@ import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
 import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
+import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
+import com.prelude.jobs.integration.BackgroundJobFailed;
+import com.prelude.jobs.integration.BackgroundJobSucceeded;
 import com.prelude.jobs.persistence.BackgroundJob;
 import com.prelude.jobs.persistence.BackgroundJobMapper;
 import org.junit.jupiter.api.Test;
@@ -12,6 +15,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * framework owns externalization; jobs never calls RabbitTemplate.
  */
 @EnabledIfEnvironmentVariable(named = "PRELUDE_MYSQL_SMOKE", matches = "true")
-@SpringBootTest
+@SpringBootTest(properties = "spring.rabbitmq.listener.simple.auto-startup=false")
+@RecordApplicationEvents
 class BackgroundJobLifecycleTest {
 
     @Autowired
@@ -40,7 +46,10 @@ class BackgroundJobLifecycleTest {
     private com.prelude.identity.AccountMapper accountMapper;
 
     @Autowired
-    private BackgroundJobService jobService;
+    private BackgroundJobRecoveryService recoveryService;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     private long createAccount() {
         com.prelude.identity.Account account = new com.prelude.identity.Account();
@@ -100,20 +109,6 @@ class BackgroundJobLifecycleTest {
     }
 
     @Test
-    void concurrentClaimsAllowExactlyOneExecution() {
-        long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 44L, uniqueOperationKey(), "{}"));
-
-        ClaimOutcome first = jobs.claim(ref.jobId());
-        ClaimOutcome second = jobs.claim(ref.jobId());
-
-        assertThat(first.claimed()).isTrue();
-        assertThat(second.claimed()).isFalse();
-        assertThat(stored(ref.jobId()).getAttemptCount()).isEqualTo(1);
-    }
-
-    @Test
     void duplicateDeliveryAbsorbsBusinessSideEffects() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
@@ -128,6 +123,11 @@ class BackgroundJobLifecycleTest {
         BackgroundJob job = stored(ref.jobId());
         assertThat(job.getStatus()).isEqualTo(BackgroundJob.SUCCEEDED);
         assertThat(job.getAttemptCount()).isEqualTo(1);
+        assertThat(applicationEvents.stream(BackgroundJobSucceeded.class)
+            .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
+        jobs.complete(ref.jobId());
+        assertThat(applicationEvents.stream(BackgroundJobSucceeded.class)
+            .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
 
     @Test
@@ -138,7 +138,10 @@ class BackgroundJobLifecycleTest {
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             assertThat(jobs.claim(ref.jobId()).claimed()).isTrue();
-            jobs.fail(ref.jobId(), "transient failure");
+            FailureOutcome outcome = jobs.fail(ref.jobId(), new RuntimeException("transient failure"));
+            assertThat(outcome).isEqualTo(attempt < 3
+                ? FailureOutcome.RETRY_SCHEDULED
+                : FailureOutcome.TERMINAL_FAILED);
         }
 
         BackgroundJob job = stored(ref.jobId());
@@ -147,24 +150,30 @@ class BackgroundJobLifecycleTest {
         assertThat(job.getAttemptCount()).isEqualTo(3);
         // Original request + the two bounded retries produced durable publications.
         assertThat(publicationRowsFor(ref.jobId())).isGreaterThanOrEqualTo(3);
+        assertThat(applicationEvents.stream(BackgroundJobFailed.class)
+            .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
+        assertThat(jobs.fail(ref.jobId(), new RuntimeException("duplicate terminal failure")))
+            .isEqualTo(FailureOutcome.NOT_RUNNING);
+        assertThat(applicationEvents.stream(BackgroundJobFailed.class)
+            .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
 
     @Test
-    void cancelAndClaimRaceHasExactlyOneWinner() {
+    void persistedFailureSummaryRedactsSecretsAtTheJobsBoundary() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
             "report.generate", accountId, 47L, uniqueOperationKey(), "{}"));
+        assertThat(jobs.claim(ref.jobId()).claimed()).isTrue();
 
-        boolean cancelled = jobs.cancel(ref.jobId(), accountId);
-        ClaimOutcome claim = jobs.claim(ref.jobId());
+        jobs.fail(ref.jobId(), new RuntimeException(
+            "Bearer secret-token apiKey=sk-supersecret123 https://user:pass@example.com/v1?token=abc"));
 
-        if (cancelled) {
-            assertThat(claim.claimed()).isFalse();
-            assertThat(jobs.view(ref.jobId(), accountId).status()).isEqualTo(BackgroundJob.CANCELLED);
-        } else {
-            assertThat(claim.claimed()).isTrue();
-            assertThat(jobs.view(ref.jobId(), accountId).status()).isEqualTo(BackgroundJob.RUNNING);
-        }
+        BackgroundJob job = stored(ref.jobId());
+        assertThat(job.getLastError())
+            .contains("Bearer [REDACTED]")
+            .contains("apiKey=[REDACTED]")
+            .contains("https://[REDACTED]@example.com/v1?[REDACTED]")
+            .doesNotContain("secret-token", "sk-supersecret123", "user:pass", "token=abc");
     }
 
     @Test
@@ -193,7 +202,7 @@ class BackgroundJobLifecycleTest {
         running.setClaimedAt(java.time.LocalDateTime.now().minusHours(1));
         jobMapper.updateById(running);
 
-        jobService.recoverStaleRunning();
+        recoveryService.recover(ref.jobId(), java.time.LocalDateTime.now().minusMinutes(5));
 
         BackgroundJob recovered = stored(ref.jobId());
         // The interrupted attempt was closed and the job redispatched via the

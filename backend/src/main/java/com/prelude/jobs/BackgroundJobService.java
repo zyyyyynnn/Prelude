@@ -8,7 +8,10 @@ import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
 import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
+import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
+import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobRequested;
+import com.prelude.jobs.integration.BackgroundJobSucceeded;
 import com.prelude.jobs.persistence.BackgroundJob;
 import com.prelude.jobs.persistence.BackgroundJobMapper;
 import com.prelude.jobs.persistence.JobAttempt;
@@ -17,13 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
-import org.springframework.modulith.events.IncompleteEventPublications;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Durable background job execution: atomic claims, attempt records, bounded
@@ -38,24 +40,27 @@ import java.util.UUID;
 @Service
 public class BackgroundJobService implements BackgroundJobOperations {
 
-    private static final int STALE_RUNNING_MINUTES = 5;
-    private static final int RECOVERY_BATCH = 100;
+    private static final int MAX_FAILURE_SUMMARY_LENGTH = 1024;
+    private static final Pattern BEARER_SECRET = Pattern.compile("(?i)(bearer\\s+)[^\\s,;]+");
+    private static final Pattern NAMED_SECRET = Pattern.compile(
+        "(?i)((?:api[-_ ]?key|authorization|token|secret)\\s*[:=]\\s*)[^\\s,;]+"
+    );
+    private static final Pattern OPENAI_STYLE_SECRET = Pattern.compile("\\bsk-[A-Za-z0-9_-]{8,}\\b");
+    private static final Pattern URL_CREDENTIALS = Pattern.compile("(?i)(https?://)[^\\s/@]+@");
+    private static final Pattern URL_QUERY = Pattern.compile("(?i)(https?://[^\\s?#]+)\\?[^\\s]+");
 
     private final BackgroundJobMapper jobMapper;
     private final JobAttemptMapper attemptMapper;
     private final ApplicationEventPublisher eventPublisher;
-    private final IncompleteEventPublications incompleteEventPublications;
 
     public BackgroundJobService(
         BackgroundJobMapper jobMapper,
         JobAttemptMapper attemptMapper,
-        ApplicationEventPublisher eventPublisher,
-        IncompleteEventPublications incompleteEventPublications
+        ApplicationEventPublisher eventPublisher
     ) {
         this.jobMapper = jobMapper;
         this.attemptMapper = attemptMapper;
         this.eventPublisher = eventPublisher;
-        this.incompleteEventPublications = incompleteEventPublications;
     }
 
     @Override
@@ -117,39 +122,53 @@ public class BackgroundJobService implements BackgroundJobOperations {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void complete(String jobId) {
-        closeAttempt(jobId, JobAttempt.SUCCEEDED, null);
+        BackgroundJob job = requireJob(jobId);
         int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
             .set(BackgroundJob::getStatus, BackgroundJob.SUCCEEDED)
             .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
             .eq(BackgroundJob::getJobId, jobId)
             .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
-        if (updated != 1) {
-            log.warn("Job {} completed by a non-RUNNING claim path; state={}", jobId, requireJob(jobId).getStatus());
+        if (updated == 1) {
+            closeAttempt(jobId, job.getAttemptCount(), JobAttempt.SUCCEEDED, null);
+            eventPublisher.publishEvent(new BackgroundJobSucceeded(
+                job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId()));
+        } else {
+            log.info("Ignoring duplicate completion for job {} (state={})", jobId, requireJob(jobId).getStatus());
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void fail(String jobId, String sanitizedFailure) {
+    public FailureOutcome fail(String jobId, Throwable failure) {
+        String sanitizedFailure = sanitizeFailure(failure);
         BackgroundJob job = requireJob(jobId);
-        closeAttempt(jobId, JobAttempt.FAILED, sanitizedFailure);
         if (job.getAttemptCount() < job.getMaxAttempts()) {
-            // Bounded retry by the jobs executor: back to PENDING and dispatch again
-            // through the reliable application-event path.
-            jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
+            int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
                 .set(BackgroundJob::getStatus, BackgroundJob.PENDING)
                 .set(BackgroundJob::getLastError, sanitizedFailure)
+                .set(BackgroundJob::getClaimedAt, null)
                 .eq(BackgroundJob::getJobId, jobId)
                 .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
+            if (updated != 1) {
+                return FailureOutcome.NOT_RUNNING;
+            }
+            closeAttempt(jobId, job.getAttemptCount(), JobAttempt.FAILED, sanitizedFailure);
             eventPublisher.publishEvent(new BackgroundJobRequested(jobId));
-            return;
+            return FailureOutcome.RETRY_SCHEDULED;
         }
-        jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
+        int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
             .set(BackgroundJob::getStatus, BackgroundJob.FAILED)
             .set(BackgroundJob::getLastError, sanitizedFailure)
             .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
             .eq(BackgroundJob::getJobId, jobId)
             .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
+        if (updated != 1) {
+            return FailureOutcome.NOT_RUNNING;
+        }
+        closeAttempt(jobId, job.getAttemptCount(), JobAttempt.FAILED, sanitizedFailure);
+        eventPublisher.publishEvent(new BackgroundJobFailed(
+            job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId(), sanitizedFailure));
+        return FailureOutcome.TERMINAL_FAILED;
     }
 
     @Override
@@ -192,86 +211,14 @@ public class BackgroundJobService implements BackgroundJobOperations {
             job.getAttemptCount(), job.getMaxAttempts(), job.getLastError());
     }
 
-    /**
-     * Stale RUNNING recovery: a claim whose process died leaves RUNNING with
-     * a dead attempt. The attempt is closed as INTERRUPTED and the job either
-     * returns to PENDING (dispatched again via the application event) or
-     * reaches its terminal FAILED state. Never a direct broker call.
-     */
-    @Scheduled(fixedDelayString = "${prelude.jobs.stale-recovery-delay-ms:60000}")
-    public void recoverStaleRunning() {
-        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(STALE_RUNNING_MINUTES);
-        var staleJobs = jobMapper.selectList(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-            .lt(BackgroundJob::getClaimedAt, cutoff)
-            .last("LIMIT " + RECOVERY_BATCH));
-        for (BackgroundJob job : staleJobs) {
-            try {
-                recoverOne(job);
-            } catch (RuntimeException exception) {
-                log.warn("Stale job recovery failed for {}; retrying next pass", job.getJobId(), exception);
-            }
-        }
-        if (!staleJobs.isEmpty()) {
-            log.info("Recovered {} stale RUNNING jobs", staleJobs.size());
-        }
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    void recoverOne(BackgroundJob job) {
-        JobAttempt latest = attemptMapper.selectOne(new LambdaQueryWrapper<JobAttempt>()
-            .eq(JobAttempt::getJobId, job.getJobId())
-            .orderByDesc(JobAttempt::getAttemptNumber)
-            .last("LIMIT 1"));
-        if (latest != null && JobAttempt.RUNNING.equals(latest.getStatus())) {
-            latest.setStatus(JobAttempt.INTERRUPTED);
-            latest.setFinishedAt(LocalDateTime.now());
-            latest.setFailureSummary("worker interrupted before completion");
-            attemptMapper.updateById(latest);
-        }
-        if (job.getAttemptCount() < job.getMaxAttempts()) {
-            int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-                .set(BackgroundJob::getStatus, BackgroundJob.PENDING)
-                .eq(BackgroundJob::getJobId, job.getJobId())
-                .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
-            if (updated == 1) {
-                eventPublisher.publishEvent(new BackgroundJobRequested(job.getJobId()));
-            }
-            return;
-        }
-        jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-            .set(BackgroundJob::getStatus, BackgroundJob.FAILED)
-            .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
-            .eq(BackgroundJob::getJobId, job.getJobId())
-            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
-    }
-
-    /**
-     * Incomplete publication recovery: resubmit through Spring Modulith's
-     * official API. The framework owns the publication registry; this only
-     * triggers it.
-     */
-    @Scheduled(fixedDelayString = "${prelude.jobs.publication-resubmission-delay-ms:120000}")
-    public void resubmitIncompletePublications() {
-        try {
-            incompleteEventPublications
-                .resubmitIncompletePublicationsOlderThan(java.time.Duration.ofMinutes(2));
-        } catch (RuntimeException exception) {
-            log.warn("Publication resubmission pass failed; retrying next cycle", exception);
-        }
-    }
-
-    private void closeAttempt(String jobId, String status, String failureSummary) {
-        JobAttempt latest = attemptMapper.selectOne(new LambdaQueryWrapper<JobAttempt>()
+    private void closeAttempt(String jobId, int attemptNumber, String status, String failureSummary) {
+        attemptMapper.update(null, new LambdaUpdateWrapper<JobAttempt>()
+            .set(JobAttempt::getStatus, status)
+            .set(JobAttempt::getFinishedAt, LocalDateTime.now())
+            .set(JobAttempt::getFailureSummary, failureSummary)
             .eq(JobAttempt::getJobId, jobId)
-            .orderByDesc(JobAttempt::getAttemptNumber)
-            .last("LIMIT 1"));
-        if (latest != null && JobAttempt.RUNNING.equals(latest.getStatus())) {
-            latest.setStatus(status);
-            latest.setFinishedAt(LocalDateTime.now());
-            latest.setFailureSummary(failureSummary);
-            attemptMapper.updateById(latest);
-        }
+            .eq(JobAttempt::getAttemptNumber, attemptNumber)
+            .eq(JobAttempt::getStatus, JobAttempt.RUNNING));
     }
 
     private BackgroundJob requireJob(String jobId) {
@@ -282,5 +229,20 @@ public class BackgroundJobService implements BackgroundJobOperations {
             throw new BusinessException(HttpStatus.NOT_FOUND, "job_not_found", "任务不存在");
         }
         return job;
+    }
+
+    private String sanitizeFailure(Throwable failure) {
+        String message = failure == null || failure.getMessage() == null || failure.getMessage().isBlank()
+            ? failure == null ? "Unknown failure" : failure.getClass().getSimpleName()
+            : failure.getMessage();
+        String safe = message.replaceAll("[\\r\\n\\t]+", " ").replaceAll("\\p{Cntrl}", " ");
+        safe = URL_CREDENTIALS.matcher(safe).replaceAll("$1[REDACTED]@");
+        safe = URL_QUERY.matcher(safe).replaceAll("$1?[REDACTED]");
+        safe = BEARER_SECRET.matcher(safe).replaceAll("$1[REDACTED]");
+        safe = NAMED_SECRET.matcher(safe).replaceAll("$1[REDACTED]");
+        safe = OPENAI_STYLE_SECRET.matcher(safe).replaceAll("[REDACTED]");
+        return safe.length() <= MAX_FAILURE_SUMMARY_LENGTH
+            ? safe
+            : safe.substring(0, MAX_FAILURE_SUMMARY_LENGTH);
     }
 }

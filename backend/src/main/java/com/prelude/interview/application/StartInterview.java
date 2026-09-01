@@ -59,7 +59,7 @@ public class StartInterview {
         session.setPositionId(position.id());
         session.setTargetPosition(position.name());
         ModelExecutionSnapshotRef snapshotRef = llmPort.freezeSnapshot(
-            new LlmPort.FreezeSnapshotCommand(accountId, null, null, null, command.requestedModel()));
+            new LlmPort.FreezeSnapshotCommand(accountId, null, command.requestedModel()));
         session.setModelExecutionSnapshotId(snapshotRef.snapshotId());
         session.setStatus(STATUS_ONGOING);
         session.setJdText(command.jdText());

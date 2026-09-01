@@ -30,12 +30,13 @@ public class ModelExecutionSnapshotService {
             ? profile.getModel()
             : command.requestedModel().trim();
         String provider = profile.getProvider();
+        capabilityCatalog.requireSupportedModel(provider, model);
 
         var level = reasoningLevels.parse(command.reasoningLevel() == null
             ? profile.getReasoningLevel()
             : command.reasoningLevel());
         if (!capabilityCatalog.capability(provider, model).supportedReasoningLevels().contains(level)) {
-            level = com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO;
+            throw com.prelude.BusinessException.badRequest("所选模型不支持该思考深度");
         }
 
         ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();

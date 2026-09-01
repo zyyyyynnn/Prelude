@@ -214,7 +214,7 @@ CREATE TABLE `provider_credential` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_provider_credential_scope` (`account_id`, `provider`, `scope_key`),
+  KEY `idx_provider_credential_scope` (`account_id`, `provider`, `scope_key`),
   CONSTRAINT `fk_provider_credential_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户级 BYOK 模型凭据';
 
@@ -291,6 +291,14 @@ CREATE TABLE `job_attempt` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_job_attempt_number` (`job_id`, `attempt_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务尝试记录';
+
+ALTER TABLE `interview_session`
+  ADD CONSTRAINT `fk_session_model_execution_snapshot`
+  FOREIGN KEY (`model_execution_snapshot_id`) REFERENCES `model_execution_snapshot` (`id`);
+
+ALTER TABLE `job_attempt`
+  ADD CONSTRAINT `fk_job_attempt_job`
+  FOREIGN KEY (`job_id`) REFERENCES `background_job` (`job_id`);
 
 -- Spring Modulith 2.1.1 event publication schema (official v2 schema-mysql.sql).
 -- Auto schema initialization is disabled; Flyway is the only DDL owner.

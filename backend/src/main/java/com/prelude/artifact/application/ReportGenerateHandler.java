@@ -2,6 +2,7 @@ package com.prelude.artifact.application;
 
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
+import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,21 +27,15 @@ public class ReportGenerateHandler {
             return;
         }
         try {
-            generateInterviewReport.execute(sessionId, accountId);
-            backgroundJobOperations.complete(jobId);
+            GenerateInterviewReport.Outcome outcome = generateInterviewReport.execute(sessionId, accountId);
+            switch (outcome) {
+                case GENERATED, SKIPPED -> backgroundJobOperations.complete(jobId);
+            }
         } catch (RuntimeException error) {
-            generateInterviewReport.handleTerminalFailure(sessionId, error);
-            backgroundJobOperations.fail(jobId, sanitize(error));
+            FailureOutcome failure = backgroundJobOperations.fail(jobId, error);
+            if (failure == FailureOutcome.TERMINAL_FAILED) {
+                generateInterviewReport.handleTerminalFailure(sessionId, error);
+            }
         }
-    }
-
-    /**
-     * Failure summaries are persisted; they must never carry secrets or
-     * provider payloads. Class + message only.
-     */
-    private String sanitize(Throwable error) {
-        String message = error.getMessage() == null ? error.getClass().getSimpleName()
-            : error.getMessage();
-        return message.length() > 500 ? message.substring(0, 500) : message;
     }
 }

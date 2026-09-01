@@ -1,9 +1,8 @@
 package com.prelude.llm;
 
-import okhttp3.Interceptor;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.time.Duration;
 
 /**
  * Supplies egress constraints for the OpenAI-compatible custom endpoint
@@ -20,17 +19,12 @@ public class EgressHttpClientFactory {
         this.egressPolicy = egressPolicy;
     }
 
-    /**
-     * OkHttp interceptor enforcing the egress policy on every custom-endpoint
-     * request: re-validated URL, guarded DNS, redirects refused.
-     */
-    public List<Interceptor> openAiInterceptors() {
-        return List.of(chain -> {
-            okhttp3.HttpUrl url = chain.request().url();
-            egressPolicy.validateUrl(url);
-            egressPolicy.guardedLookup(url.host());
-            return chain.proceed(chain.request());
-        });
+    public okhttp3.OkHttpClient runtimeClient() {
+        return configuredBuilder()
+            .readTimeout(Duration.ofSeconds(60))
+            .writeTimeout(Duration.ofSeconds(60))
+            .callTimeout(Duration.ofSeconds(90))
+            .build();
     }
 
     /**
@@ -38,12 +32,22 @@ public class EgressHttpClientFactory {
      * the same egress constraints.
      */
     public okhttp3.OkHttpClient discoveryClient() {
+        return configuredBuilder()
+            .readTimeout(Duration.ofSeconds(15))
+            .writeTimeout(Duration.ofSeconds(15))
+            .callTimeout(Duration.ofSeconds(30))
+            .build();
+    }
+
+    private okhttp3.OkHttpClient.Builder configuredBuilder() {
         return new okhttp3.OkHttpClient.Builder()
             .dns(egressPolicy::guardedLookup)
             .followRedirects(false)
             .followSslRedirects(false)
-            .connectTimeout(java.time.Duration.ofSeconds(15))
-            .readTimeout(java.time.Duration.ofSeconds(15))
-            .build();
+            .connectTimeout(Duration.ofSeconds(15))
+            .addInterceptor(chain -> {
+                egressPolicy.validateUrl(chain.request().url());
+                return chain.proceed(chain.request());
+            });
     }
 }

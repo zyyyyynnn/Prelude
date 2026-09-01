@@ -14,7 +14,7 @@ public interface BackgroundJobOperations {
 
     void complete(String jobId);
 
-    void fail(String jobId, String sanitizedFailure);
+    FailureOutcome fail(String jobId, Throwable failure);
 
     boolean cancel(String jobId, Long accountId);
 
@@ -51,6 +51,12 @@ public interface BackgroundJobOperations {
         public static ClaimOutcome skip(String status, String reason) {
             return new ClaimOutcome(false, status, reason);
         }
+    }
+
+    enum FailureOutcome {
+        RETRY_SCHEDULED,
+        TERMINAL_FAILED,
+        NOT_RUNNING
     }
 
     record BackgroundJobView(

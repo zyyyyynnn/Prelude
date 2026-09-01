@@ -25,8 +25,6 @@ public interface LlmPort {
 
     record FreezeSnapshotCommand(
         Long accountId,
-        String provider,
-        String model,
         String reasoningLevel,
         String requestedModel
     ) {
@@ -36,9 +34,29 @@ public interface LlmPort {
         Long snapshotId,
         String purpose,
         String promptId,
+        ResponseMode responseMode,
         List<Message> messages,
-        List<Attachment> attachments
+        List<Attachment> attachments,
+        List<ToolBinding> tools
     ) {
+    }
+
+    enum ResponseMode {
+        PLAIN_TEXT,
+        JSON
+    }
+
+    record ToolBinding(
+        String name,
+        String description,
+        String inputSchema,
+        ToolHandler handler
+    ) {
+    }
+
+    @FunctionalInterface
+    interface ToolHandler {
+        String call(String argumentsJson);
     }
 
     record Message(String role, String content) {
