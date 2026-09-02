@@ -10,7 +10,6 @@ import com.prelude.interview.domain.InterviewStage;
 import com.prelude.artifact.domain.ScoreHistory;
 import com.prelude.artifact.domain.AccountWeakness;
 import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.artifact.application.port.InsightRepository;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
 import com.prelude.llm.api.LlmPort;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -32,12 +30,11 @@ public class GenerateInterviewReport {
 
     private final ObjectMapper objectMapper;
     private final InterviewReportPort interviewReportPort;
-    private final InsightRepository insightRepository;
     private final LlmPort llmPort;
     private final ReportParser interviewReportParser;
     private final InterviewReportAssembler interviewReportAssembler;
 
-    public Outcome execute(Long sessionId, Long accountId) {
+    public GenerationResult execute(Long sessionId, Long accountId) {
         try {
 
             log.info("Processing report generation for session {} and account {}", sessionId, accountId);
@@ -49,7 +46,8 @@ public class GenerateInterviewReport {
                 if ("finished".equals(session.getStatus())
                     && session.getSummaryReport() != null && !session.getSummaryReport().isBlank()) {
                     log.info("Session {} already has a completed report; treating delivery as idempotent", sessionId);
-                    return Outcome.SKIPPED;
+                    return new GenerationResult(
+                        Outcome.SKIPPED, session.getSummaryReport(), null, List.of());
                 }
                 throw new IllegalStateException(
                     "Report job requires a generating interview session; session=" + sessionId
@@ -104,20 +102,16 @@ public class GenerateInterviewReport {
                 ));
 
             InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportCompletion.content());
-            interviewReportPort.closeCurrentStage(sessionId);
-            persistScoreHistory(session, reportDraft);
-            persistWeaknesses(session, reportDraft.reportMarkdown());
-
+            ScoreHistory scoreHistory = scoreHistory(session, reportDraft);
+            List<AccountWeakness> weaknesses = extractWeaknessesBestEffort(session, reportDraft.reportMarkdown());
             List<InterviewStage> stages = interviewReportPort.listStages(sessionId);
-            List<AccountWeakness> weaknesses = insightRepository.listWeaknessesBySession(sessionId);
             StructuredInterviewReport structuredReport = interviewReportAssembler.assemble(
                 reportDraft, stages, messages, weaknesses
             );
             String reportJson = objectMapper.writeValueAsString(structuredReport);
 
-            interviewReportPort.completeReport(sessionId, reportJson);
-            log.info("Successfully persisted report generation for session {}", sessionId);
-            return Outcome.GENERATED;
+            log.info("Successfully prepared report generation for session {}", sessionId);
+            return new GenerationResult(Outcome.GENERATED, reportJson, scoreHistory, weaknesses);
         } catch (Exception e) {
             throw new ReportGenerationException(sessionId, e);
         }
@@ -150,27 +144,22 @@ public class GenerateInterviewReport {
         return builder.toString();
     }
 
-    private void persistScoreHistory(InterviewSession session, InterviewReportDraft report) {
-        try {
-            ScoreHistory score = new ScoreHistory();
-            score.setAccountId(session.getAccountId());
-            score.setSessionId(session.getId());
-            score.setTechnicalScore(report.scores().technical());
-            score.setExpressionScore(report.scores().expression());
-            score.setLogicScore(report.scores().logic());
-
-            insightRepository.replaceScore(score);
-        } catch (Exception exception) {
-            log.warn("Failed to persist score history for session {}", session.getId(), exception);
-        }
+    private ScoreHistory scoreHistory(InterviewSession session, InterviewReportDraft report) {
+        ScoreHistory score = new ScoreHistory();
+        score.setAccountId(session.getAccountId());
+        score.setSessionId(session.getId());
+        score.setTechnicalScore(report.scores().technical());
+        score.setExpressionScore(report.scores().expression());
+        score.setLogicScore(report.scores().logic());
+        return score;
     }
 
-    private void persistWeaknesses(InterviewSession session, String report) {
+    private List<AccountWeakness> extractWeaknessesBestEffort(InterviewSession session, String report) {
         try {
-            List<AccountWeakness> weaknesses = extractWeaknesses(session, report);
-            insightRepository.replaceWeaknesses(session.getId(), weaknesses);
+            return extractWeaknesses(session, report);
         } catch (Exception exception) {
-            log.warn("Failed to persist weaknesses for session {}", session.getId(), exception);
+            log.warn("Failed to extract weaknesses for session {}", session.getId(), exception);
+            return List.of();
         }
     }
 
@@ -235,6 +224,17 @@ public class GenerateInterviewReport {
     public enum Outcome {
         GENERATED,
         SKIPPED
+    }
+
+    public record GenerationResult(
+        Outcome outcome,
+        String reportJson,
+        ScoreHistory scoreHistory,
+        List<AccountWeakness> weaknesses
+    ) {
+        public GenerationResult {
+            weaknesses = weaknesses == null ? List.of() : List.copyOf(weaknesses);
+        }
     }
 
     public static class ReportGenerationException extends RuntimeException {

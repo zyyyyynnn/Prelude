@@ -1,6 +1,5 @@
 package com.prelude.artifact.application;
 
-import com.prelude.artifact.application.port.InsightRepository;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.ReportParser;
@@ -18,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class GenerateInterviewReportResponseModeTest {
@@ -25,7 +25,6 @@ class GenerateInterviewReportResponseModeTest {
     @Test
     void reportUsesObjectSemanticsAndWeaknessExtractionUsesArraySemantics() {
         InterviewReportPort reportPort = mock(InterviewReportPort.class);
-        InsightRepository insightRepository = mock(InsightRepository.class);
         LlmPort llmPort = mock(LlmPort.class);
         ReportParser parser = mock(ReportParser.class);
         InterviewReportAssembler assembler = mock(InterviewReportAssembler.class);
@@ -38,7 +37,6 @@ class GenerateInterviewReportResponseModeTest {
         when(reportPort.findSession(42L)).thenReturn(session);
         when(reportPort.listMessages(42L)).thenReturn(List.of());
         when(reportPort.listStages(42L)).thenReturn(List.of());
-        when(insightRepository.listWeaknessesBySession(42L)).thenReturn(List.of());
         when(llmPort.complete(any())).thenAnswer(invocation -> {
             LlmPort.ModelExecutionRequest request = invocation.getArgument(0);
             return new LlmPort.CompletionResult(
@@ -68,9 +66,11 @@ class GenerateInterviewReportResponseModeTest {
         );
         when(assembler.assemble(any(), any(), any(), any())).thenReturn(report);
         GenerateInterviewReport generate = new GenerateInterviewReport(
-            new ObjectMapper(), reportPort, insightRepository, llmPort, parser, assembler);
+            new ObjectMapper(), reportPort, llmPort, parser, assembler);
 
-        assertThat(generate.execute(42L, 7L)).isEqualTo(GenerateInterviewReport.Outcome.GENERATED);
+        GenerateInterviewReport.GenerationResult result = generate.execute(42L, 7L);
+        assertThat(result.outcome()).isEqualTo(GenerateInterviewReport.Outcome.GENERATED);
+        assertThat(result.reportJson()).isNotBlank();
 
         ArgumentCaptor<LlmPort.ModelExecutionRequest> requests =
             ArgumentCaptor.forClass(LlmPort.ModelExecutionRequest.class);
@@ -78,6 +78,7 @@ class GenerateInterviewReportResponseModeTest {
         assertThat(requests.getAllValues())
             .extracting(LlmPort.ModelExecutionRequest::responseMode)
             .containsExactly(LlmPort.ResponseMode.JSON_OBJECT, LlmPort.ResponseMode.JSON_ARRAY);
-        verify(reportPort).completeReport(org.mockito.ArgumentMatchers.eq(42L), any());
+        verify(reportPort, never()).closeCurrentStage(42L);
+        verify(reportPort, never()).completeReport(org.mockito.ArgumentMatchers.eq(42L), any());
     }
 }

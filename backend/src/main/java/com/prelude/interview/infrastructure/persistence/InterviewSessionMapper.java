@@ -31,6 +31,17 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSession>, In
         """)
     int markGeneratingIfOngoing(@Param("sessionId") Long sessionId, @Param("accountId") Long accountId);
 
+    @Update("""
+        UPDATE interview_session
+        SET status = 'finished', summary_report = #{reportJson}
+        WHERE id = #{sessionId}
+          AND status = 'generating'
+        """)
+    int completeReportIfGenerating(
+        @Param("sessionId") Long sessionId,
+        @Param("reportJson") String reportJson
+    );
+
     @Override
     default List<InterviewSession> listByUser(Long accountId) {
         return selectList(new LambdaQueryWrapper<InterviewSession>()

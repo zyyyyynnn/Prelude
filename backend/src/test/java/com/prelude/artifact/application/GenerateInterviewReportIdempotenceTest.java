@@ -1,6 +1,5 @@
 package com.prelude.artifact.application;
 
-import com.prelude.artifact.application.port.InsightRepository;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
 import com.prelude.interview.api.port.InterviewReportPort;
@@ -19,7 +18,6 @@ class GenerateInterviewReportIdempotenceTest {
     @Test
     void finishedPersistedReportIsRecognizedWithoutCallingTheModelAgain() {
         InterviewReportPort reportPort = mock(InterviewReportPort.class);
-        InsightRepository insightRepository = mock(InsightRepository.class);
         LlmPort llmPort = mock(LlmPort.class);
         ReportParser parser = mock(ReportParser.class);
         InterviewReportAssembler assembler = mock(InterviewReportAssembler.class);
@@ -30,10 +28,12 @@ class GenerateInterviewReportIdempotenceTest {
         session.setSummaryReport("{\"summary\":{}}");
         when(reportPort.findSession(42L)).thenReturn(session);
         GenerateInterviewReport generate = new GenerateInterviewReport(
-            new ObjectMapper(), reportPort, insightRepository, llmPort, parser, assembler);
+            new ObjectMapper(), reportPort, llmPort, parser, assembler);
 
-        assertThat(generate.execute(42L, 7L)).isEqualTo(GenerateInterviewReport.Outcome.SKIPPED);
+        GenerateInterviewReport.GenerationResult result = generate.execute(42L, 7L);
+        assertThat(result.outcome()).isEqualTo(GenerateInterviewReport.Outcome.SKIPPED);
+        assertThat(result.reportJson()).isEqualTo("{\"summary\":{}}");
 
-        verifyNoInteractions(llmPort, insightRepository, parser, assembler);
+        verifyNoInteractions(llmPort, parser, assembler);
     }
 }

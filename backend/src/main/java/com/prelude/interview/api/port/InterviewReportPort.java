@@ -16,7 +16,7 @@ public interface InterviewReportPort {
 
     List<InterviewStage> listStages(Long sessionId);
 
-    void completeReport(Long sessionId, String reportJson);
+    boolean completeReport(Long sessionId, String reportJson);
 
     void restoreOngoing(Long sessionId);
 }

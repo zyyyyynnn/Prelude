@@ -16,7 +16,7 @@ public interface BackgroundJobOperations {
 
     ExecutionLease keepLeaseAlive(String jobId, int attemptNumber);
 
-    void complete(String jobId, int attemptNumber);
+    boolean complete(String jobId, int attemptNumber);
 
     FailureOutcome fail(String jobId, int attemptNumber, Throwable failure);
 

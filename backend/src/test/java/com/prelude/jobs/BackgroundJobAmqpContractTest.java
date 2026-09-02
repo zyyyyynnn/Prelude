@@ -1,6 +1,7 @@
 package com.prelude.jobs;
 
 import com.prelude.artifact.application.GenerateInterviewReport;
+import com.prelude.artifact.application.ReportJobCompletion;
 import com.prelude.jobs.infrastructure.RabbitMqConfig;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
@@ -25,12 +26,17 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @EnabledIfEnvironmentVariable(named = "PRELUDE_MYSQL_SMOKE", matches = "true")
@@ -62,13 +68,23 @@ class BackgroundJobAmqpContractTest {
     @MockitoBean
     private GenerateInterviewReport generateInterviewReport;
 
+    @MockitoBean
+    private ReportJobCompletion reportJobCompletion;
+
     @BeforeEach
     void prepare() {
         listenerRegistry.getListenerContainers().forEach(container -> container.stop());
         rabbitAdmin.purgeQueue(RabbitMqConfig.QUEUE, true);
         rabbitAdmin.purgeQueue(RabbitMqConfig.DLQ, true);
         when(generateInterviewReport.execute(anyLong(), anyLong()))
-            .thenReturn(GenerateInterviewReport.Outcome.GENERATED);
+            .thenReturn(new GenerateInterviewReport.GenerationResult(
+                GenerateInterviewReport.Outcome.GENERATED, "{}", null, List.of()));
+        doAnswer(invocation -> {
+            String jobId = invocation.getArgument(0);
+            int attemptNumber = invocation.getArgument(1);
+            assertThat(jobs.complete(jobId, attemptNumber)).isTrue();
+            return null;
+        }).when(reportJobCompletion).complete(anyString(), anyInt(), anyLong(), any());
         listenerRegistry.getListenerContainers().forEach(container -> container.start());
     }
 

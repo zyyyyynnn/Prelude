@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class ReportGenerateHandler {
 
     private final GenerateInterviewReport generateInterviewReport;
+    private final ReportJobCompletion reportJobCompletion;
     private final BackgroundJobOperations backgroundJobOperations;
 
     public void handle(String jobId, Long sessionId, Long accountId) {
@@ -29,9 +30,10 @@ public class ReportGenerateHandler {
         try (BackgroundJobOperations.ExecutionLease ignored =
                  backgroundJobOperations.keepLeaseAlive(jobId, attemptNumber)) {
             try {
-                GenerateInterviewReport.Outcome outcome = generateInterviewReport.execute(sessionId, accountId);
-                switch (outcome) {
-                    case GENERATED, SKIPPED -> backgroundJobOperations.complete(jobId, attemptNumber);
+                GenerateInterviewReport.GenerationResult result =
+                    generateInterviewReport.execute(sessionId, accountId);
+                if (!reportJobCompletion.complete(jobId, attemptNumber, sessionId, result)) {
+                    log.info("Skipping stale report job completion {} attempt {}", jobId, attemptNumber);
                 }
             } catch (RuntimeException error) {
                 backgroundJobOperations.fail(jobId, attemptNumber, error);

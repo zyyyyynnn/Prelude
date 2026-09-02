@@ -180,7 +180,7 @@ public class BackgroundJobService implements BackgroundJobOperations {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void complete(String jobId, int attemptNumber) {
+    public boolean complete(String jobId, int attemptNumber) {
         BackgroundJob job = requireJob(jobId);
         int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
             .set(BackgroundJob::getStatus, BackgroundJob.SUCCEEDED)
@@ -193,9 +193,10 @@ public class BackgroundJobService implements BackgroundJobOperations {
             closeAttempt(jobId, attemptNumber, JobAttempt.SUCCEEDED, null);
             eventPublisher.publishEvent(new BackgroundJobSucceeded(
                 job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId()));
-        } else {
-            log.info("Ignoring stale or duplicate completion for job {} attempt {}", jobId, attemptNumber);
+            return true;
         }
+        log.info("Ignoring stale or duplicate completion for job {} attempt {}", jobId, attemptNumber);
+        return false;
     }
 
     @Override

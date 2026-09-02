@@ -20,7 +20,6 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
 
     private static final String STATUS_GENERATING = "generating";
     private static final String STATUS_ONGOING = "ongoing";
-    private static final String STATUS_FINISHED = "finished";
 
     private final InterviewSessionMapper interviewSessionMapper;
     private final InterviewMessageMapper interviewMessageMapper;
@@ -60,13 +59,8 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
     }
 
     @Override
-    public void completeReport(Long sessionId, String reportJson) {
-        InterviewSession session = interviewSessionMapper.selectById(sessionId);
-        if (session != null && STATUS_GENERATING.equals(session.getStatus())) {
-            session.setStatus(STATUS_FINISHED);
-            session.setSummaryReport(reportJson);
-            interviewSessionMapper.updateById(session);
-        }
+    public boolean completeReport(Long sessionId, String reportJson) {
+        return interviewSessionMapper.completeReportIfGenerating(sessionId, reportJson) == 1;
     }
 
     @Override
