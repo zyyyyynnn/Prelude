@@ -21,7 +21,7 @@ import { InterviewContextMenu, LockedInterviewContextButton } from './InterviewC
 import { InterviewModelMenu } from './InterviewModelMenu'
 import { PromptBar } from './PromptBar'
 
-import { REASONING_LABELS, type ReasoningLevel } from '@/features/settings'
+import type { ReasoningLevel } from '@/features/settings'
 
 function PromptBarFact({ label, icon }: { label: string; icon: ReactNode }) {
   return (
@@ -104,7 +104,7 @@ export function InterviewSetupComposer({
     resumeId: number
     positionId: number
     jdText?: string
-    llmModel?: string
+    requestedModel?: string
     attachmentIds?: number[]
   }) => void
 }) {
@@ -147,7 +147,7 @@ export function InterviewSetupComposer({
       resumeId: selectedResume.id,
       positionId: selectedPosition.id,
       jdText: jdEnabled && normalizedJd ? normalizedJd : undefined,
-      llmModel: llmConfig.model,
+      requestedModel: llmConfig.model,
       attachmentIds: attachments.length ? attachments.map((item) => item.id) : undefined,
     })
   }
@@ -264,8 +264,6 @@ export function InterviewAnswerComposer({
   resumeName,
   positionName,
   attachments,
-  model,
-  thinkingDepth,
   jdMatched,
   disabled,
   sending,
@@ -278,8 +276,6 @@ export function InterviewAnswerComposer({
   resumeName?: string
   positionName: string
   attachments: AttachmentItem[]
-  model: string
-  thinkingDepth?: string
   jdMatched: boolean
   disabled: boolean
   sending: boolean
@@ -298,8 +294,6 @@ export function InterviewAnswerComposer({
     onError,
     onTerminalError: () => setVoice(false),
   })
-  const thinkingLabel = thinkingDepth ? (REASONING_LABELS[thinkingDepth as ReasoningLevel] ?? thinkingDepth) : '默认'
-
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const value = answer.trim()
@@ -426,7 +420,7 @@ export function InterviewAnswerComposer({
         <div className="prompt-bar__rail">
           <LockedInterviewContextButton />
           <PromptBarFact
-            label={`${model} · ${thinkingLabel}`}
+            label="本场模型已锁定"
             icon={<Terminal aria-hidden="true" />}
           />
           {jdMatched && (

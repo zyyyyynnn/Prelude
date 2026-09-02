@@ -6,7 +6,7 @@ export type InterviewStartPayload = {
   resumeId: number
   positionId: number
   jdText?: string
-  llmModel?: string
+  requestedModel?: string
   attachmentIds?: number[]
 }
 
@@ -46,9 +46,6 @@ export type InterviewSessionItem = {
   positionName?: string
   status?: string
   currentStage?: InterviewStageName
-  llmProvider?: string
-  llmModel?: string
-  llmThinkingDepth?: string
   createdAt?: string
   summaryReport?: string
 }
@@ -64,7 +61,6 @@ export type InterviewSessionDetailResponse = {
   resumeId?: number
   positionId?: number
   jdText?: string
-  llmThinkingDepth?: string
   attachments: AttachmentItem[]
 }
 

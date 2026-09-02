@@ -296,7 +296,7 @@ test('@smoke sends the selected prompt bar context when starting an interview', 
     resumeId: 2,
     positionId: 2,
     jdText: '负责复杂交互与前端架构。',
-    llmModel: 'deepseek-v4-pro',
+    requestedModel: 'deepseek-v4-pro',
     attachmentIds: [51],
   })
 })
@@ -525,7 +525,6 @@ test('@smoke streams an interview answer with bounded context', async ({ page })
       messages: [{ id: 1, role: 'assistant', content: '请描述你的服务拆分原则。' }],
       resumeId: 1,
       positionId: 1,
-      llmThinkingDepth: 'high',
       attachments: [],
     },
   }
@@ -1077,7 +1076,6 @@ test('@smoke renders structured reports without resume mutation controls', async
       messages: [{ id: 1, role: 'assistant', content: '本场面试已结束。' }],
       resumeId: 1,
       positionId: 1,
-      llmThinkingDepth: null,
       attachments: [],
     },
   }

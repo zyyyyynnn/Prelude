@@ -55,8 +55,6 @@ async function installApi(page: Page) {
           targetPosition: 'Java 后端工程师',
           status: 'ongoing',
           currentStage: 'warmup',
-          llmProvider: 'deepseek',
-          llmModel: 'deepseek-v4-pro',
         },
       ]
     else if (path === '/api/position/list') data = [{ id: 1, name: 'Java 后端工程师' }]
@@ -115,7 +113,6 @@ async function installApi(page: Page) {
         messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
         resumeId: 1,
         positionId: 1,
-        llmThinkingDepth: null,
         attachments: [],
       }
     await route.fulfill({
@@ -538,8 +535,6 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
             targetPosition: longTitle,
             status: 'finished',
             currentStage: 'closing',
-            llmProvider: 'deepseek',
-            llmModel: 'deepseek-v4-pro',
           },
         ],
       }),

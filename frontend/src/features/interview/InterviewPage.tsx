@@ -17,7 +17,7 @@ import { fetchPositions } from '@/features/template'
 import { Button } from '@/shared/ui'
 import { RoseThree } from '@/shared/brand/RoseThree'
 import { useFeedback } from '@/shared/ui/feedback'
-import { fetchSessions, startInterview } from './api'
+import { startInterview } from './api'
 import { InterviewAnswerComposer, InterviewSetupComposer } from './components/InterviewComposer'
 import { MessageThread } from './components/MessageThread'
 import { WorkspaceHeader } from './components/WorkspaceHeader'
@@ -172,10 +172,6 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
   const feedback = useFeedback()
   const [exporting, setExporting] = useState(false)
   const controller = useInterviewSession(sessionId, (message) => feedback.notify(message, 'error'))
-  const sessions = useQuery({
-    queryKey: ['interview-sessions'],
-    queryFn: ({ signal }) => fetchSessions(signal),
-  })
   const resumes = useQuery({
     queryKey: ['resumes'],
     queryFn: ({ signal }) => fetchResumes(signal),
@@ -194,7 +190,6 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
       </div>
     )
   const current = controller.current
-  const summary = sessions.data?.find((item) => item.sessionId === sessionId)
   const resumeName = resumes.data?.find((item) => item.id === current.resumeId)?.fileName
   const hasReport = Boolean(current.summaryReport)
   async function exportReport() {
@@ -254,8 +249,6 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
                   resumeName={resumeName}
                   positionName={current.targetPosition ?? '当前岗位'}
                   attachments={current.attachments ?? []}
-                  model={summary?.llmModel ?? '默认模型'}
-                  thinkingDepth={current.llmThinkingDepth ?? summary?.llmThinkingDepth}
                   jdMatched={Boolean(current.jdText?.trim())}
                   disabled={current.status === 'finished'}
                   sending={controller.sending}

@@ -149,8 +149,6 @@ export function createDemoState(): DemoState {
         targetPosition: '平台工程师',
         status: 'finished',
         currentStage: 'closing',
-        llmProvider: 'deepseek',
-        llmModel: 'deepseek-v4-pro',
         createdAt: '2026-08-22T09:30:00+08:00',
       },
     ],
@@ -184,7 +182,6 @@ export function createDemoState(): DemoState {
       resumeId: 1,
       positionId: 1,
       jdText: '负责 Java 服务端架构、稳定性建设与性能优化。',
-      llmThinkingDepth: 'high',
       attachments: [],
     },
     llmConfig: {
@@ -370,9 +367,6 @@ function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessi
     targetPosition: session.targetPosition,
     status: session.status,
     currentStage: session.currentStage,
-    llmProvider: 'deepseek',
-    llmModel: 'deepseek-v4-pro',
-    llmThinkingDepth: session.llmThinkingDepth,
     createdAt: '2026-08-30T09:00:00+08:00',
     summaryReport: session.summaryReport,
   }
