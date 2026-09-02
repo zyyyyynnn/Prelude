@@ -9,14 +9,13 @@ import com.sun.net.httpserver.HttpServer;
 import okhttp3.Dns;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.retry.TransientAiException;
 import reactor.core.publisher.Flux;
@@ -28,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -56,30 +56,42 @@ class SpringAiExecutionContractTest {
         ModelExecutionSnapshot deepseek = snapshot("deepseek", "deepseek-v4-pro", "HIGH", null);
         DeepSeekChatOptions deepseekPlain = (DeepSeekChatOptions) factory.requestOptions(
             deepseek, LlmPort.ResponseMode.PLAIN_TEXT);
-        DeepSeekChatOptions deepseekJson = (DeepSeekChatOptions) factory.requestOptions(
-            deepseek, LlmPort.ResponseMode.JSON);
+        DeepSeekChatOptions deepseekObject = (DeepSeekChatOptions) factory.requestOptions(
+            deepseek, LlmPort.ResponseMode.JSON_OBJECT);
+        DeepSeekChatOptions deepseekArray = (DeepSeekChatOptions) factory.requestOptions(
+            deepseek, LlmPort.ResponseMode.JSON_ARRAY);
         assertThat(deepseekPlain.getModel()).isEqualTo("deepseek-v4-pro");
         assertThat(deepseekPlain.getResponseFormat()).isNull();
-        assertThat(deepseekJson.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_OBJECT);
+        assertThat(deepseekObject.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_OBJECT);
+        assertThat(deepseekArray.getResponseFormat()).isNull();
+        assertThat(factory.chatModel(deepseek, "sk-test"))
+            .isInstanceOf(org.springframework.ai.deepseek.DeepSeekChatModel.class);
 
-        ModelExecutionSnapshot openAi = snapshot("openai", "gpt-5.4", "MEDIUM", null);
-        OpenAiChatOptions openAiPlain = (OpenAiChatOptions) factory.requestOptions(
-            openAi, LlmPort.ResponseMode.PLAIN_TEXT);
-        OpenAiChatOptions openAiJson = (OpenAiChatOptions) factory.requestOptions(
-            openAi, LlmPort.ResponseMode.JSON);
-        assertThat(openAiPlain.getModel()).isEqualTo("gpt-5.4");
-        assertThat(openAiPlain.getResponseFormat()).isNull();
-        assertThat(openAiJson.getResponseFormat().getType())
-            .isEqualTo(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT);
+        ModelExecutionSnapshot chatCompletions = snapshot(
+            "openai-chat-completions", "account-model", "AUTO", "https://example.com/v1");
+        OpenAiChatOptions customPlain = (OpenAiChatOptions) factory.requestOptions(
+            chatCompletions, LlmPort.ResponseMode.PLAIN_TEXT);
+        OpenAiChatOptions customObject = (OpenAiChatOptions) factory.requestOptions(
+            chatCompletions, LlmPort.ResponseMode.JSON_OBJECT);
+        OpenAiChatOptions customArray = (OpenAiChatOptions) factory.requestOptions(
+            chatCompletions, LlmPort.ResponseMode.JSON_ARRAY);
+        assertThat(customPlain.getModel()).isEqualTo("account-model");
+        assertThat(customPlain.getResponseFormat()).isNull();
+        assertThat(customObject.getResponseFormat()).isNull();
+        assertThat(customArray.getResponseFormat()).isNull();
+        OpenAiChatOptions customHigh = (OpenAiChatOptions) factory.requestOptions(
+            snapshot("openai-chat-completions", "account-model", "HIGH", "https://example.com/v1"),
+            LlmPort.ResponseMode.PLAIN_TEXT);
+        assertThat(customHigh.getReasoningEffort()).isEqualTo("high");
 
-        ModelExecutionSnapshot anthropic = snapshot("anthropic", "claude-sonnet-4-6", "LOW", null);
-        AnthropicChatOptions anthropicPlain = (AnthropicChatOptions) factory.requestOptions(
-            anthropic, LlmPort.ResponseMode.PLAIN_TEXT);
-        AnthropicChatOptions anthropicJson = (AnthropicChatOptions) factory.requestOptions(
-            anthropic, LlmPort.ResponseMode.JSON);
-        assertThat(anthropicPlain.getModel()).isEqualTo("claude-sonnet-4-6");
-        assertThat(anthropicPlain.getOutputSchema()).isNull();
-        assertThat(anthropicJson.getOutputSchema()).isEqualTo("{\"type\":\"object\"}");
+        ChatOptions responses = factory.requestOptions(
+            snapshot("openai-responses", "discovered-responses-model", "AUTO", "https://example.com/v1"),
+            LlmPort.ResponseMode.JSON_OBJECT);
+        ChatOptions anthropic = factory.requestOptions(
+            snapshot("anthropic-messages", "discovered-anthropic-model", "AUTO", "https://example.com/v1"),
+            LlmPort.ResponseMode.JSON_ARRAY);
+        assertThat(responses.getModel()).isEqualTo("discovered-responses-model");
+        assertThat(anthropic.getModel()).isEqualTo("discovered-anthropic-model");
     }
 
     @Test
@@ -129,6 +141,99 @@ class SpringAiExecutionContractTest {
     }
 
     @Test
+    void customChatCompletionsCanRequestSemanticJsonWithoutNativeStructuredOutput() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        startOpenAiStub(exchange -> {
+            requests.incrementAndGet();
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, completionJson("stub-model", "{\"ok\":true}"));
+        });
+
+        ModelExecutionService service = realCustomEndpointService(server.getAddress().getPort(), 3);
+        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.JSON_OBJECT));
+
+        assertThat(result.content()).isEqualTo("{\"ok\":true}");
+        assertThat(requests).hasValue(1);
+        assertThat(requestBody.get()).doesNotContain("response_format");
+    }
+
+    @Test
+    void openAiResponsesProtocolUsesTheDiscoveredModelWithoutSubstitution() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        startProtocolStub("/v1/responses", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, """
+                {"id":"resp-1","output_text":"responses-ok","usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}}
+                """);
+        });
+
+        ModelExecutionService service = realCustomProtocolService(
+            "openai-responses", "account-discovered-model", server.getAddress().getPort(), 1);
+        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.JSON_OBJECT));
+
+        assertThat(result.content()).isEqualTo("responses-ok");
+        assertThat(requestBody.get()).contains("\"model\":\"account-discovered-model\"");
+    }
+
+    @Test
+    void openAiResponsesUsesTheFrozenReasoningLevelOnTheWire() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        startProtocolStub("/v1/responses", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, """
+                {"id":"resp-1","output_text":"responses-ok","usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}}
+                """);
+        });
+
+        ModelExecutionService service = realCustomProtocolService(
+            "openai-responses", "account-discovered-model", server.getAddress().getPort(), 1, "HIGH");
+        service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
+
+        assertThat(requestBody.get()).contains("\"reasoning\":{\"effort\":\"high\"}");
+    }
+
+    @Test
+    void anthropicMessagesProtocolUsesItsOwnWireContractAndDiscoveredModel() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        AtomicReference<String> observedKey = new AtomicReference<>();
+        startProtocolStub("/v1/messages", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            observedKey.set(exchange.getRequestHeaders().getFirst("x-api-key"));
+            respond(exchange, 200, """
+                {"id":"msg-1","content":[{"type":"text","text":"anthropic-ok"}],
+                 "usage":{"input_tokens":1,"output_tokens":2}}
+                """);
+        });
+
+        ModelExecutionService service = realCustomProtocolService(
+            "anthropic-messages", "account-discovered-model", server.getAddress().getPort(), 1);
+        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.JSON_ARRAY));
+
+        assertThat(result.content()).isEqualTo("anthropic-ok");
+        assertThat(observedKey.get()).isEqualTo("sk-test");
+        assertThat(requestBody.get()).contains("\"model\":\"account-discovered-model\"");
+    }
+
+    @Test
+    void anthropicMessagesUsesTheFrozenEffortLevelOnTheWire() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        startProtocolStub("/v1/messages", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, """
+                {"id":"msg-1","content":[{"type":"text","text":"anthropic-ok"}],
+                 "usage":{"input_tokens":1,"output_tokens":2}}
+                """);
+        });
+
+        ModelExecutionService service = realCustomProtocolService(
+            "anthropic-messages", "account-discovered-model", server.getAddress().getPort(), 1, "MEDIUM");
+        service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
+
+        assertThat(requestBody.get()).contains("\"output_config\":{\"effort\":\"medium\"}");
+    }
+
+    @Test
     void streamingRetriesOnlyBeforeTheFirstVisibleDelta() {
         AtomicInteger subscriptions = new AtomicInteger();
         ChatModel model = new ChatModel() {
@@ -147,7 +252,8 @@ class SpringAiExecutionContractTest {
                 });
             }
         };
-        ModelExecutionService service = fakeService(model, snapshot("openai", "gpt-5.4", "AUTO", null), 3);
+        ModelExecutionService service = fakeService(
+            model, snapshot("deepseek", "deepseek-v4-pro", "AUTO", null), 3);
         List<String> deltas = new ArrayList<>();
 
         service.stream(request(1L, LlmPort.ResponseMode.PLAIN_TEXT), sink(deltas));
@@ -175,8 +281,8 @@ class SpringAiExecutionContractTest {
                 });
             }
         };
-        ModelExecutionSnapshot snapshot = snapshot("openai", "gpt-5.4", "AUTO", null);
-        snapshot.setFallbackModelsJson("[\"gpt-5.4\"]");
+        ModelExecutionSnapshot snapshot = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
+        snapshot.setFallbackModelsJson("[]");
         ModelExecutionService service = fakeService(model, snapshot, 3);
         List<String> deltas = new ArrayList<>();
 
@@ -208,7 +314,7 @@ class SpringAiExecutionContractTest {
             return successfulCallModel("fallback-ok");
         });
         ModelExecutionService service = new ModelExecutionService(
-            factory, snapshotService, profileService, catalog, 1);
+            factory, snapshotService, profileService, catalog, new LlmTransportRetry(1));
 
         LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
 
@@ -217,8 +323,27 @@ class SpringAiExecutionContractTest {
     }
 
     private ModelExecutionService realCustomEndpointService(int port, int attempts) {
+        return realCustomProtocolService("openai-chat-completions", "stub-model", port, attempts);
+    }
+
+    private ModelExecutionService realCustomProtocolService(
+        String provider,
+        String model,
+        int port,
+        int attempts
+    ) {
+        return realCustomProtocolService(provider, model, port, attempts, "AUTO");
+    }
+
+    private ModelExecutionService realCustomProtocolService(
+        String provider,
+        String model,
+        int port,
+        int attempts,
+        String reasoning
+    ) {
         ModelExecutionSnapshot snapshot = snapshot(
-            "openai-compatible", "stub-model", "AUTO", "http://127.0.0.1:" + port + "/v1");
+            provider, model, reasoning, "http://127.0.0.1:" + port + "/v1");
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
         when(snapshotService.require(1L)).thenReturn(snapshot);
@@ -227,7 +352,8 @@ class SpringAiExecutionContractTest {
         CustomLlmEgressPolicy policy = new CustomLlmEgressPolicy(
             true, true, Set.of(port), Dns.SYSTEM);
         SpringAiModelFactory factory = factoryFor(policy);
-        return new ModelExecutionService(factory, snapshotService, profileService, catalog, attempts);
+        return new ModelExecutionService(
+            factory, snapshotService, profileService, catalog, new LlmTransportRetry(attempts));
     }
 
     private ModelExecutionService fakeService(ChatModel model, ModelExecutionSnapshot snapshot, int attempts) {
@@ -240,19 +366,23 @@ class SpringAiExecutionContractTest {
         when(factory.requestOptions(any(), any())).thenReturn(
             OpenAiChatOptions.builder().model(snapshot.getModel()).build());
         return new ModelExecutionService(
-            factory, snapshotService, profileService, new ModelCapabilityCatalog(), attempts);
+            factory, snapshotService, profileService, new ModelCapabilityCatalog(), new LlmTransportRetry(attempts));
     }
 
     private SpringAiModelFactory factoryFor(CustomLlmEgressPolicy policy) {
         ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
         return new SpringAiModelFactory(
-            "", "https://api.deepseek.com", "", "",
-            policy, new EgressHttpClientFactory(policy), catalog);
+            "", "https://api.deepseek.com",
+            policy, new EgressHttpClientFactory(policy), catalog, new tools.jackson.databind.ObjectMapper());
     }
 
     private void startOpenAiStub(com.sun.net.httpserver.HttpHandler handler) throws IOException {
+        startProtocolStub("/v1/chat/completions", handler);
+    }
+
+    private void startProtocolStub(String path, com.sun.net.httpserver.HttpHandler handler) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/v1/chat/completions", handler);
+        server.createContext(path, handler);
         server.start();
     }
 
@@ -266,11 +396,16 @@ class SpringAiExecutionContractTest {
     }
 
     private String completionJson(String model, String content) {
-        return """
-            {"id":"chatcmpl-test","object":"chat.completion","created":1,"model":"%s",
-             "choices":[{"index":0,"message":{"role":"assistant","content":"%s"},"finish_reason":"stop"}],
-             "usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
-            """.formatted(model, content);
+        try {
+            String encodedContent = new tools.jackson.databind.ObjectMapper().writeValueAsString(content);
+            return """
+                {"id":"chatcmpl-test","object":"chat.completion","created":1,"model":"%s",
+                 "choices":[{"index":0,"message":{"role":"assistant","content":%s},"finish_reason":"stop"}],
+                 "usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
+                """.formatted(model, encodedContent);
+        } catch (Exception exception) {
+            throw new AssertionError(exception);
+        }
     }
 
     private ModelExecutionSnapshot snapshot(String provider, String model, String reasoning, String endpoint) {

@@ -7,6 +7,7 @@ import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
 import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
 import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
 import com.prelude.jobs.integration.BackgroundJobFailed;
+import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
 import com.prelude.jobs.persistence.BackgroundJob;
 import com.prelude.jobs.persistence.BackgroundJobMapper;
@@ -115,7 +116,7 @@ class BackgroundJobLifecycleTest {
             "report.generate", accountId, 45L, uniqueOperationKey(), "{}"));
 
         ClaimOutcome first = jobs.claim(ref.jobId());
-        jobs.complete(ref.jobId());
+        jobs.complete(ref.jobId(), first.attemptNumber());
         ClaimOutcome replay = jobs.claim(ref.jobId());
 
         assertThat(first.claimed()).isTrue();
@@ -125,7 +126,7 @@ class BackgroundJobLifecycleTest {
         assertThat(job.getAttemptCount()).isEqualTo(1);
         assertThat(applicationEvents.stream(BackgroundJobSucceeded.class)
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
-        jobs.complete(ref.jobId());
+        jobs.complete(ref.jobId(), first.attemptNumber());
         assertThat(applicationEvents.stream(BackgroundJobSucceeded.class)
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
@@ -137,8 +138,10 @@ class BackgroundJobLifecycleTest {
             "report.generate", accountId, 46L, uniqueOperationKey(), "{}"));
 
         for (int attempt = 1; attempt <= 3; attempt++) {
-            assertThat(jobs.claim(ref.jobId()).claimed()).isTrue();
-            FailureOutcome outcome = jobs.fail(ref.jobId(), new RuntimeException("transient failure"));
+            ClaimOutcome claim = jobs.claim(ref.jobId());
+            assertThat(claim.claimed()).isTrue();
+            FailureOutcome outcome = jobs.fail(
+                ref.jobId(), claim.attemptNumber(), new RuntimeException("transient failure"));
             assertThat(outcome).isEqualTo(attempt < 3
                 ? FailureOutcome.RETRY_SCHEDULED
                 : FailureOutcome.TERMINAL_FAILED);
@@ -152,7 +155,7 @@ class BackgroundJobLifecycleTest {
         assertThat(publicationRowsFor(ref.jobId())).isGreaterThanOrEqualTo(3);
         assertThat(applicationEvents.stream(BackgroundJobFailed.class)
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
-        assertThat(jobs.fail(ref.jobId(), new RuntimeException("duplicate terminal failure")))
+        assertThat(jobs.fail(ref.jobId(), 3, new RuntimeException("duplicate terminal failure")))
             .isEqualTo(FailureOutcome.NOT_RUNNING);
         assertThat(applicationEvents.stream(BackgroundJobFailed.class)
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
@@ -163,9 +166,10 @@ class BackgroundJobLifecycleTest {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
             "report.generate", accountId, 47L, uniqueOperationKey(), "{}"));
-        assertThat(jobs.claim(ref.jobId()).claimed()).isTrue();
+        ClaimOutcome claim = jobs.claim(ref.jobId());
+        assertThat(claim.claimed()).isTrue();
 
-        jobs.fail(ref.jobId(), new RuntimeException(
+        jobs.fail(ref.jobId(), claim.attemptNumber(), new RuntimeException(
             "Bearer secret-token apiKey=sk-supersecret123 https://user:pass@example.com/v1?token=abc"));
 
         BackgroundJob job = stored(ref.jobId());
@@ -196,13 +200,14 @@ class BackgroundJobLifecycleTest {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
             "report.generate", accountId, 49L, uniqueOperationKey(), "{}"));
-        assertThat(jobs.claim(ref.jobId()).claimed()).isTrue();
+        ClaimOutcome claim = jobs.claim(ref.jobId());
+        assertThat(claim.claimed()).isTrue();
 
         BackgroundJob running = stored(ref.jobId());
-        running.setClaimedAt(java.time.LocalDateTime.now().minusHours(1));
+        running.setLeaseExpiresAt(java.time.LocalDateTime.now().minusMinutes(1));
         jobMapper.updateById(running);
 
-        recoveryService.recover(ref.jobId(), java.time.LocalDateTime.now().minusMinutes(5));
+        recoveryService.recover(ref.jobId(), java.time.LocalDateTime.now());
 
         BackgroundJob recovered = stored(ref.jobId());
         // The interrupted attempt was closed and the job redispatched via the
@@ -211,5 +216,40 @@ class BackgroundJobLifecycleTest {
         assertThat(publicationRowsFor(ref.jobId())).isGreaterThanOrEqualTo(2);
         BackgroundJobView view = jobs.view(ref.jobId(), accountId);
         assertThat(view.attemptCount()).isEqualTo(1);
+    }
+
+    @Test
+    void cancellationReturnsAndPublishesTheAuthoritativeTerminalState() {
+        long accountId = createAccount();
+        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
+            "report.generate", accountId, 50L, uniqueOperationKey(), "{}"));
+
+        BackgroundJobView cancelled = jobs.cancel(ref.jobId(), accountId);
+
+        assertThat(cancelled.status()).isEqualTo(BackgroundJob.CANCELLED);
+        assertThat(applicationEvents.stream(BackgroundJobCancelled.class)
+            .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
+        assertThat(jobs.cancel(ref.jobId(), accountId).status()).isEqualTo(BackgroundJob.CANCELLED);
+        assertThat(applicationEvents.stream(BackgroundJobCancelled.class)
+            .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
+    }
+
+    @Test
+    void expiredFinalLeasePublishesTheSameTerminalFailureEventAsWorkerFailure() {
+        long accountId = createAccount();
+        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
+            "report.generate", accountId, 51L, uniqueOperationKey(), "{}"));
+        ClaimOutcome claim = jobs.claim(ref.jobId());
+        BackgroundJob running = stored(ref.jobId());
+        running.setMaxAttempts(claim.attemptNumber());
+        running.setLeaseExpiresAt(java.time.LocalDateTime.now().minusSeconds(1));
+        jobMapper.updateById(running);
+
+        assertThat(recoveryService.recover(ref.jobId(), java.time.LocalDateTime.now()))
+            .isEqualTo(BackgroundJobRecoveryService.RecoveryOutcome.TERMINAL_FAILED);
+
+        assertThat(stored(ref.jobId()).getStatus()).isEqualTo(BackgroundJob.FAILED);
+        assertThat(applicationEvents.stream(BackgroundJobFailed.class)
+            .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
 }

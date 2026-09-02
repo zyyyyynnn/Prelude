@@ -50,6 +50,9 @@ class ModelExecutionSnapshotTest {
     @Autowired
     private ReasoningLevels reasoningLevels;
 
+    @Autowired
+    private tools.jackson.databind.ObjectMapper objectMapper;
+
     @Test
     @Transactional
     void frozenSnapshotIgnoresLaterProfileMutation() {
@@ -65,7 +68,7 @@ class ModelExecutionSnapshotTest {
 
         // Later profile mutation: the frozen snapshot must not change.
         llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
-            "deepseek", "deepseek-reasoner", null, null, "AUTO", java.util.List.of()));
+            "deepseek", "deepseek-v4-flash", null, null, "AUTO", java.util.List.of()));
         ModelExecutionSnapshot reloaded = snapshotMapper.selectById(ref.snapshotId());
         assertThat(reloaded.getModel()).isEqualTo("deepseek-v4-pro");
         assertThat(reloaded.getReasoningLevel()).isEqualTo("HIGH");
@@ -87,7 +90,7 @@ class ModelExecutionSnapshotTest {
     @Transactional
     void customEndpointSnapshotFreezesScopeAndCredential() {
         long accountId = createAccountAndProfile(
-            "openai-compatible", "gpt-4.1", "AUTO", "https://example.com/v1");
+            "openai-chat-completions", "account-model", "AUTO", "https://example.com/v1");
         ProviderCredential credential = credentialMapper.selectOne(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProviderCredential>()
                 .eq(ProviderCredential::getAccountId, accountId)
@@ -98,7 +101,7 @@ class ModelExecutionSnapshotTest {
             new LlmPort.FreezeSnapshotCommand(accountId, null, null));
 
         ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
-        assertThat(frozen.getProvider()).isEqualTo("openai-compatible");
+        assertThat(frozen.getProvider()).isEqualTo("openai-chat-completions");
         assertThat(frozen.getCustomEndpointUrl()).isEqualTo("https://example.com/v1");
         assertThat(frozen.getCredentialId()).isEqualTo(credential.getId());
     }
@@ -172,12 +175,37 @@ class ModelExecutionSnapshotTest {
     @Transactional
     void unsupportedReasoningIsRejectedInsteadOfSilentlyDowngraded() {
         long accountId = createAccountAndProfile(
-            "openai-compatible", "custom-model", "AUTO", "https://example.com/v1");
+            "openai-chat-completions", "custom-model", "AUTO", "https://example.com/v1");
 
         assertThatThrownBy(() -> llmPort.freezeSnapshot(
             new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null)))
             .isInstanceOf(com.prelude.BusinessException.class)
             .hasMessage("所选模型不支持该思考深度");
+    }
+
+    @Test
+    @Transactional
+    void confirmedCustomReasoningCapabilityIsUsedWhenFreezingTheRun() throws Exception {
+        long accountId = createAccountAndProfile(
+            "openai-chat-completions", "custom-model", "AUTO", "https://example.com/v1");
+        ModelProfile profile = profileMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelProfile>()
+                .eq(ModelProfile::getAccountId, accountId)
+                .last("LIMIT 1"));
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            new ModelCapabilityCatalog().customCapability(
+                "openai-chat-completions",
+                "custom-model",
+                java.util.List.of(
+                    com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO,
+                    com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.HIGH))));
+        profileMapper.updateById(profile);
+
+        ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null));
+
+        ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(frozen.getReasoningLevel()).isEqualTo("HIGH");
     }
 
     @Test
@@ -189,34 +217,6 @@ class ModelExecutionSnapshotTest {
             "deepseek", "deepseek-unknown", null, null, "AUTO", java.util.List.of())))
             .isInstanceOf(com.prelude.BusinessException.class)
             .hasMessage("当前接入方式不支持该模型");
-    }
-
-    @Test
-    @Transactional
-    void fallbackMustSupportTheSameFrozenReasoningLevel() {
-        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
-
-        assertThatThrownBy(() -> llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
-            "deepseek", "deepseek-v4-pro", null, null, "HIGH", java.util.List.of("deepseek-chat"))))
-            .isInstanceOf(com.prelude.BusinessException.class)
-            .hasMessage("回退模型不支持所选思考深度");
-    }
-
-    @Test
-    @Transactional
-    void reasoningOverrideCannotFreezeAnIncompatibleFallback() {
-        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
-        ModelProfile profile = profileMapper.selectOne(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelProfile>()
-                .eq(ModelProfile::getAccountId, accountId)
-                .last("LIMIT 1"));
-        profile.setFallbackModelsJson("[\"deepseek-chat\"]");
-        profileMapper.updateById(profile);
-
-        assertThatThrownBy(() -> llmPort.freezeSnapshot(
-            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null)))
-            .isInstanceOf(com.prelude.BusinessException.class)
-            .hasMessage("回退模型不支持所选思考深度");
     }
 
     private long createAccountAndProfile(String provider, String model,

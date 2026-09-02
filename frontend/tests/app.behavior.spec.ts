@@ -7,30 +7,64 @@ type ApiState = {
   requests: Array<{ path: string; method: string; body: unknown }>
 }
 
+const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
+  provider: 'deepseek',
+  model,
+  reasoning: true,
+  structuredOutput: true,
+  toolCalling: true,
+  streaming: true,
+  vision: false,
+  multilingual: true,
+  longContext: true,
+  embedding: false,
+  nativeRealtimeVoice: false,
+  supportedReasoningLevels: ['AUTO', 'HIGH'],
+})
+
+const customCapability = (
+  provider: string,
+  model: string,
+  supportedReasoningLevels: Array<'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH'> = ['AUTO'],
+) => ({
+  provider,
+  model,
+  reasoning: supportedReasoningLevels.length > 1,
+  structuredOutput: false,
+  toolCalling: false,
+  streaming: true,
+  vision: false,
+  multilingual: false,
+  longContext: false,
+  embedding: false,
+  nativeRealtimeVoice: false,
+  supportedReasoningLevels,
+})
+
 const providers = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    availableModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
-    enabled: 1,
+    customEndpoint: false,
+    models: [deepSeekCapability(), deepSeekCapability('deepseek-v4-flash')],
   },
   {
-    providerKey: 'openai',
-    displayName: 'OpenAI',
-    availableModels: ['gpt-5.4'],
-    enabled: 1,
+    providerKey: 'openai-responses',
+    displayName: 'OpenAI Responses',
+    customEndpoint: true,
+    models: [],
   },
   {
-    providerKey: 'anthropic',
-    displayName: 'Anthropic',
-    availableModels: ['claude-sonnet-4-6'],
-    enabled: 1,
+    providerKey: 'openai-chat-completions',
+    displayName: 'OpenAI Chat Completions',
+    customEndpoint: true,
+    models: [],
   },
   {
-    providerKey: 'openai-compatible',
-    displayName: 'OpenAI 兼容端点',
-    availableModels: [],
-    enabled: 1,
+    providerKey: 'anthropic-messages',
+    displayName: 'Anthropic Messages',
+    customEndpoint: true,
+    models: [],
   },
 ]
 
@@ -153,6 +187,22 @@ async function respond(route: Route, state: ApiState) {
       revision: 0,
     }
   else if (path === '/api/llm/providers') data = providers
+  else if (path === '/api/llm/config/discover-models' && method === 'POST')
+    data = {
+      baseUrl: (body as { baseUrl?: string }).baseUrl ?? '',
+      models: [
+        customCapability(
+          (body as { provider?: string }).provider ?? 'openai-chat-completions',
+          'account-discovered-model',
+        ),
+      ],
+    }
+  else if (path === '/api/llm/config/discover-capabilities' && method === 'POST')
+    data = customCapability(
+      (body as { provider?: string }).provider ?? 'openai-chat-completions',
+      (body as { model?: string }).model ?? 'account-discovered-model',
+      ['AUTO', 'HIGH'],
+    )
   else if (path === '/api/attachments' && method === 'POST')
     data = {
       id: 51,
@@ -170,8 +220,7 @@ async function respond(route: Route, state: ApiState) {
       apiKeyMasked: null,
       reasoningLevel: 'AUTO',
       fallbackModels: [],
-      reasoningSupported: true,
-      supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
+      capability: deepSeekCapability(),
     }
   else if (path === '/api/interview/start')
     data = {
@@ -181,15 +230,23 @@ async function respond(route: Route, state: ApiState) {
     }
   else if (path === '/api/llm/config' && method === 'PUT')
     data = {
-      provider: 'deepseek',
+      provider: (body as { provider?: string }).provider ?? 'deepseek',
       model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
-      customEndpointUrl: null,
+      customEndpointUrl: (body as { customEndpointUrl?: string }).customEndpointUrl ?? null,
       hasApiKey: true,
       apiKeyMasked: 'sk-***',
       reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
       fallbackModels: [],
-      reasoningSupported: true,
-      supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
+      capability:
+        ((body as { provider?: string }).provider ?? 'deepseek') === 'deepseek'
+          ? deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro')
+          : customCapability(
+              (body as { provider?: string }).provider ?? 'openai-chat-completions',
+              (body as { model?: string }).model ?? 'account-discovered-model',
+              (body as { reasoningLevel?: string }).reasoningLevel === 'HIGH'
+                ? ['AUTO', 'HIGH']
+                : ['AUTO'],
+            ),
     }
   await route.fulfill({
     status: 200,
@@ -337,8 +394,7 @@ test('@smoke centers the async button indicator without resizing the control', a
         apiKeyMasked: null,
         reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
         fallbackModels: [],
-        reasoningSupported: true,
-        supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
+        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
     })
   })
@@ -392,8 +448,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
         apiKeyMasked: null,
         reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
         fallbackModels: [],
-        reasoningSupported: true,
-        supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
+        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
     })
   })
@@ -899,9 +954,9 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
   await page.getByRole('button', { name: '设置' }).click()
   await page.getByRole('button', { name: '模型管理' }).click()
   await page.getByLabel('接入方式').click()
-  await page.getByRole('option', { name: 'OpenAI 兼容端点' }).click()
+  await page.getByRole('option', { name: 'OpenAI Chat Completions' }).click()
   await page.getByLabel('Base URL').fill('https://api.openai.com/v1/chat/completions/')
-  await page.getByLabel('模型', { exact: true }).fill('gpt-5.4')
+  await page.getByLabel('模型', { exact: true }).fill('account-discovered-model')
   await page.getByLabel('API Key', { exact: true }).fill('sk-test')
   await page.getByRole('button', { name: '保存设置' }).click()
   await expect(page.getByText('LLM 配置已保存')).toBeVisible()
@@ -909,13 +964,67 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
     (request) => request.path === '/api/llm/config' && request.method === 'PUT',
   )
   expect(save?.body).toEqual({
-    provider: 'openai-compatible',
+    provider: 'openai-chat-completions',
     customEndpointUrl: 'https://api.openai.com/v1',
-    model: 'gpt-5.4',
+    model: 'account-discovered-model',
     apiKey: 'sk-test',
     reasoningLevel: 'AUTO',
     fallbackModels: [],
   })
+})
+
+test('@byok discovers selected custom model reasoning levels from the backend', async ({ page }) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '模型管理' }).click()
+  await page.getByLabel('接入方式').click()
+  await page.getByRole('option', { name: 'OpenAI Chat Completions' }).click()
+  await page.getByLabel('Base URL').fill('https://api.openai.com/v1')
+  await page.getByLabel('API Key', { exact: true }).fill('sk-test')
+  await page.getByRole('button', { name: '检测模型' }).click()
+
+  await page.getByLabel('模型', { exact: true }).click()
+  await page.getByRole('option', { name: 'account-discovered-model' }).click()
+
+  await expect.poll(() =>
+    state.requests.some((request) => request.path === '/api/llm/config/discover-capabilities'),
+  ).toBe(true)
+  await page.getByRole('combobox', { name: '思考深度' }).click()
+  await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '高', exact: true })).toBeVisible()
+})
+
+test('@byok keeps only default reasoning when an OpenAI capability probe is inconclusive', async ({ page }) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+  await page.route('**/api/llm/config/discover-capabilities', async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({
+        type: 'about:blank',
+        title: 'Service Unavailable',
+        status: 503,
+        detail: 'capability probe unavailable',
+      }),
+    })
+  })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '模型管理' }).click()
+  await page.getByLabel('接入方式').click()
+  await page.getByRole('option', { name: 'OpenAI Responses' }).click()
+  await page.getByLabel('Base URL').fill('https://api.openai.com/v1')
+  await page.getByLabel('API Key', { exact: true }).fill('sk-test')
+  await page.getByRole('button', { name: '检测模型' }).click()
+  await page.getByLabel('模型', { exact: true }).click()
+  await page.getByRole('option', { name: 'account-discovered-model' }).click()
+
+  await page.getByRole('combobox', { name: '思考深度' }).click()
+  await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '高', exact: true })).toHaveCount(0)
 })
 
 const report = JSON.stringify({

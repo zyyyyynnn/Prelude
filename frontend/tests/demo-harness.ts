@@ -3,7 +3,12 @@ import type {
   InterviewSessionDetailResponse,
   InterviewSessionItem,
 } from '../src/features/interview/types'
-import type { LlmConfigResponse, LlmProviderResponse } from '../src/features/settings/types'
+import type {
+  LlmConfigResponse,
+  LlmProviderResponse,
+  ModelCapabilityResponse,
+  ReasoningLevel,
+} from '../src/features/settings/types'
 
 export const DEMO_VIEWPORT = { width: 1440, height: 900 } as const
 
@@ -21,30 +26,55 @@ export type DemoState = {
   llmConfig: LlmConfigResponse
 }
 
+function capability(
+  provider: string,
+  model: string,
+  supportedReasoningLevels: ReasoningLevel[],
+  overrides: Partial<ModelCapabilityResponse> = {},
+): ModelCapabilityResponse {
+  return {
+    provider,
+    model,
+    reasoning: supportedReasoningLevels.length > 1,
+    structuredOutput: true,
+    toolCalling: true,
+    streaming: true,
+    vision: false,
+    multilingual: true,
+    longContext: true,
+    embedding: false,
+    nativeRealtimeVoice: false,
+    supportedReasoningLevels,
+    ...overrides,
+  }
+}
+
+const deepSeekPro = capability('deepseek', 'deepseek-v4-pro', ['AUTO', 'HIGH'])
+const deepSeekFlash = capability('deepseek', 'deepseek-v4-flash', ['AUTO', 'HIGH'])
 export const demoProviders: LlmProviderResponse[] = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    availableModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
-    enabled: 1,
+    customEndpoint: false,
+    models: [deepSeekPro, deepSeekFlash],
   },
   {
-    providerKey: 'openai',
-    displayName: 'OpenAI',
-    availableModels: ['gpt-5.4'],
-    enabled: 1,
+    providerKey: 'openai-responses',
+    displayName: 'OpenAI Responses',
+    customEndpoint: true,
+    models: [],
   },
   {
-    providerKey: 'anthropic',
-    displayName: 'Anthropic',
-    availableModels: ['claude-sonnet-4-6'],
-    enabled: 1,
+    providerKey: 'openai-chat-completions',
+    displayName: 'OpenAI Chat Completions',
+    customEndpoint: true,
+    models: [],
   },
   {
-    providerKey: 'openai-compatible',
-    displayName: 'OpenAI 兼容端点',
-    availableModels: [],
-    enabled: 1,
+    providerKey: 'anthropic-messages',
+    displayName: 'Anthropic Messages',
+    customEndpoint: true,
+    models: [],
   },
 ]
 
@@ -165,8 +195,7 @@ export function createDemoState(): DemoState {
       apiKeyMasked: null,
       reasoningLevel: 'HIGH',
       fallbackModels: [],
-      reasoningSupported: true,
-      supportedReasoningLevels: ['AUTO', 'HIGH'],
+      capability: deepSeekPro,
     },
   }
 }

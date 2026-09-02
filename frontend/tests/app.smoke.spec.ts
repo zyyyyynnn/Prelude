@@ -2,30 +2,45 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { installAnonymousSession } from './auth-bootstrap'
 
+const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
+  provider: 'deepseek',
+  model,
+  reasoning: true,
+  structuredOutput: true,
+  toolCalling: true,
+  streaming: true,
+  vision: false,
+  multilingual: true,
+  longContext: true,
+  embedding: false,
+  nativeRealtimeVoice: false,
+  supportedReasoningLevels: ['AUTO', 'HIGH'],
+})
+
 const providers = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    availableModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
-    enabled: 1,
+    customEndpoint: false,
+    models: [deepSeekCapability(), deepSeekCapability('deepseek-v4-flash')],
   },
   {
-    providerKey: 'openai',
-    displayName: 'OpenAI',
-    availableModels: ['gpt-5.4'],
-    enabled: 1,
+    providerKey: 'openai-responses',
+    displayName: 'OpenAI Responses',
+    customEndpoint: true,
+    models: [],
   },
   {
-    providerKey: 'anthropic',
-    displayName: 'Anthropic',
-    availableModels: ['claude-sonnet-4-6'],
-    enabled: 1,
+    providerKey: 'openai-chat-completions',
+    displayName: 'OpenAI Chat Completions',
+    customEndpoint: true,
+    models: [],
   },
   {
-    providerKey: 'openai-compatible',
-    displayName: 'OpenAI 兼容端点',
-    availableModels: [],
-    enabled: 1,
+    providerKey: 'anthropic-messages',
+    displayName: 'Anthropic Messages',
+    customEndpoint: true,
+    models: [],
   },
 ]
 
@@ -66,8 +81,7 @@ async function installApi(page: Page) {
       apiKeyMasked: null,
       reasoningLevel: 'AUTO',
       fallbackModels: [],
-      reasoningSupported: true,
-      supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
+      capability: deepSeekCapability(),
     }
     else if (path === '/api/analytics/radar')
       data = { technical: 8, expression: 7.5, logic: 8.5, sessionCount: 5 }
@@ -152,9 +166,9 @@ test('@byok exposes only the four governed provider protocols', async ({ page })
   await expect(options).toHaveCount(4)
   await expect(options).toHaveText([
     'DeepSeek',
-    'OpenAI',
-    'Anthropic',
-    'OpenAI 兼容端点',
+    'OpenAI Responses',
+    'OpenAI Chat Completions',
+    'Anthropic Messages',
   ])
 })
 

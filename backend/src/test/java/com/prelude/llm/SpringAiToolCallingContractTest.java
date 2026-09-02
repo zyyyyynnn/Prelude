@@ -9,7 +9,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.deepseek.DeepSeekChatOptions;
+import org.springframework.ai.deepseek.api.DeepSeekApi;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +31,9 @@ class SpringAiToolCallingContractTest {
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicReference<String> toolArguments = new AtomicReference<>();
         ChatModel model = new ChatModel() {
-            private final OpenAiChatOptions defaults = OpenAiChatOptions.builder().model("gpt-5.4").build();
+            private final DeepSeekChatOptions defaults = DeepSeekChatOptions.builder()
+                .model(DeepSeekApi.ChatModel.DEEPSEEK_V4_PRO)
+                .build();
 
             @Override
             public ChatResponse call(Prompt prompt) {
@@ -67,10 +70,10 @@ class SpringAiToolCallingContractTest {
         when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
         when(factory.chatModel(any(), nullable(String.class))).thenReturn(model);
         when(factory.requestOptions(any(), any())).thenReturn(
-            OpenAiChatOptions.builder().model("gpt-5.4").build());
+            DeepSeekChatOptions.builder().model(DeepSeekApi.ChatModel.DEEPSEEK_V4_PRO).build());
 
         ModelExecutionService service = new ModelExecutionService(
-            factory, snapshotService, profileService, new ModelCapabilityCatalog(), 1);
+            factory, snapshotService, profileService, new ModelCapabilityCatalog(), new LlmTransportRetry(1));
         LlmPort.ToolBinding tool = new LlmPort.ToolBinding(
             "double_value",
             "Doubles the supplied integer.",
@@ -101,8 +104,8 @@ class SpringAiToolCallingContractTest {
         snapshot.setId(1L);
         snapshot.setAccountId(7L);
         snapshot.setProfileId(9L);
-        snapshot.setProvider("openai");
-        snapshot.setModel("gpt-5.4");
+        snapshot.setProvider("deepseek");
+        snapshot.setModel("deepseek-v4-pro");
         snapshot.setReasoningLevel("AUTO");
         snapshot.setEffectiveParametersJson("{}");
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
