@@ -25,11 +25,7 @@ public class JobController {
     }
 
     @DeleteMapping("/{jobId}")
-    public Result<CancelOutcomeResponse> cancel(@PathVariable String jobId) {
-        boolean cancelled = backgroundJobOperations.cancel(jobId, currentAccount.requireId());
-        return Result.success(new CancelOutcomeResponse(cancelled ? "CANCELLED" : "RUNNING"));
-    }
-
-    public record CancelOutcomeResponse(String status) {
+    public Result<BackgroundJobView> cancel(@PathVariable String jobId) {
+        return Result.success(backgroundJobOperations.cancel(jobId, currentAccount.requireId()));
     }
 }

@@ -42,7 +42,7 @@ function LlmSettingsForm({
           value={state.draft.provider}
           options={state.providers.map((provider) => ({
             value: provider.providerKey,
-            label: state.providerLabels[provider.providerKey] ?? provider.providerKey,
+            label: provider.displayName,
           }))}
           onValueChange={state.selectProvider}
         />
@@ -75,10 +75,10 @@ function LlmSettingsForm({
           <Select
             id="llm-model"
             value={state.draft.model}
-            options={[...new Set([state.draft.model, ...state.models])]
+            options={[...new Set([state.draft.model, ...state.models.map((item) => item.model)])]
               .filter(Boolean)
               .map((model) => ({ value: model, label: model }))}
-            onValueChange={(value) => state.update('model', value)}
+            onValueChange={state.selectModel}
           />
         ) : (
           <Input
@@ -136,7 +136,12 @@ function LlmSettingsForm({
       <section className="settings-form-section">
         <h3 className="settings-form-section__title">高级设置</h3>
         <div className="advanced-grid">
-          {state.config?.reasoningSupported ? (
+          {state.selectedCapability
+          && (state.custom
+            || state.selectedCapability.reasoning
+            || !state.selectedCapability.supportedReasoningLevels.includes(
+              state.draft.reasoningLevel ?? 'AUTO',
+            )) ? (
             <Field label="思考深度" htmlFor="llm-reasoning-level">
               <Select
                 id="llm-reasoning-level"

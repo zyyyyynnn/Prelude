@@ -85,7 +85,7 @@ public class InterviewJudgeService {
                 session.getModelExecutionSnapshotId(),
                 "judge",
                 PromptIds.JUDGE,
-                LlmPort.ResponseMode.JSON,
+                LlmPort.ResponseMode.JSON_OBJECT,
                 List.of(
                     new LlmPort.Message("system", systemPrompt),
                     new LlmPort.Message("user", userPrompt)

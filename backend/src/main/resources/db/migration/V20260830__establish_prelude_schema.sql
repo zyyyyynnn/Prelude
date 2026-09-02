@@ -92,7 +92,7 @@ CREATE TABLE `interview_session` (
   `resume_id` BIGINT NOT NULL COMMENT '简历ID',
   `position_id` BIGINT NOT NULL COMMENT '岗位模板ID',
   `target_position` VARCHAR(100) NOT NULL COMMENT '目标岗位',
-  `model_execution_snapshot_id` BIGINT DEFAULT NULL COMMENT '开面冻结的模型执行快照',
+  `model_execution_snapshot_id` BIGINT NOT NULL COMMENT '开面冻结的模型执行快照',
   `status` ENUM('ongoing','generating','finished') NOT NULL DEFAULT 'ongoing' COMMENT '会话状态',
   `summary` TEXT COMMENT '上下文压缩摘要',
   `summary_report` TEXT COMMENT '评估报告',
@@ -227,11 +227,12 @@ CREATE TABLE `model_profile` (
   `custom_endpoint_url` VARCHAR(255) DEFAULT NULL COMMENT 'OpenAI 兼容自定义端点根地址',
   `reasoning_level` VARCHAR(16) DEFAULT 'AUTO' COMMENT '默认推理深度 AUTO/LOW/MEDIUM/HIGH',
   `effective_parameters_json` TEXT DEFAULT NULL COMMENT '生效参数默认值 JSON',
+  `model_capability_json` TEXT DEFAULT NULL COMMENT '自定义协议当前模型最近一次确认的能力投影 JSON',
   `fallback_models_json` TEXT NOT NULL COMMENT '有序回退模型 JSON 数组（同 Provider 同凭据边界）',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_model_profile_account_provider` (`account_id`, `provider`),
+  UNIQUE KEY `uk_model_profile_account` (`account_id`),
   CONSTRAINT `fk_model_profile_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`),
   CONSTRAINT `fk_model_profile_credential` FOREIGN KEY (`credential_id`) REFERENCES `provider_credential` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户级模型执行配置';
@@ -269,6 +270,7 @@ CREATE TABLE `background_job` (
   `max_attempts` INT NOT NULL DEFAULT 3 COMMENT '最大尝试次数',
   `last_error` TEXT DEFAULT NULL COMMENT '最近一次脱敏错误摘要',
   `claimed_at` DATETIME DEFAULT NULL COMMENT '最近一次认领时间',
+  `lease_expires_at` DATETIME DEFAULT NULL COMMENT '当前 attempt 的租约到期时间',
   `finished_at` DATETIME DEFAULT NULL COMMENT '终态时间',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -276,7 +278,7 @@ CREATE TABLE `background_job` (
   UNIQUE KEY `uk_background_job_job_id` (`job_id`),
   UNIQUE KEY `uk_background_job_operation_key` (`operation_key`),
   KEY `idx_background_job_account_created` (`account_id`, `created_at`),
-  KEY `idx_background_job_status_claimed` (`status`, `claimed_at`),
+  KEY `idx_background_job_status_lease` (`status`, `lease_expires_at`),
   CONSTRAINT `fk_background_job_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='持久化后台任务';
 

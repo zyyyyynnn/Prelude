@@ -15,8 +15,6 @@ public record ModelConfigurationView(
     String apiKeyMasked,
     String reasoningLevel,
     List<String> fallbackModels,
-    boolean reasoningSupported,
-    List<ModelCapabilityResponse.ReasoningLevel> supportedReasoningLevels,
-    List<ModelDescriptorView> availableModels
+    ModelCapabilityResponse capability
 ) {
 }

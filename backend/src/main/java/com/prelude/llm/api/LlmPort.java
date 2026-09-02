@@ -19,9 +19,14 @@ public interface LlmPort {
 
     ModelConfigurationView saveConfiguration(Long accountId, SaveConfigurationCommand command);
 
-    List<ModelDescriptorView> listModels(Long accountId);
+    List<ProviderDescriptorView> listModels(Long accountId);
 
     DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command);
+
+    ModelCapabilityResponse discoverCustomModelCapability(
+        Long accountId,
+        DiscoverModelCapabilityCommand command
+    );
 
     record FreezeSnapshotCommand(
         Long accountId,
@@ -43,7 +48,8 @@ public interface LlmPort {
 
     enum ResponseMode {
         PLAIN_TEXT,
-        JSON
+        JSON_OBJECT,
+        JSON_ARRAY
     }
 
     record ToolBinding(
@@ -94,9 +100,12 @@ public interface LlmPort {
     ) {
     }
 
-    record DiscoverModelsCommand(String baseUrl, String apiKey) {
+    record DiscoverModelsCommand(String provider, String baseUrl, String apiKey) {
     }
 
-    record DiscoveredModelsView(String baseUrl, List<String> models) {
+    record DiscoverModelCapabilityCommand(String provider, String baseUrl, String apiKey, String model) {
+    }
+
+    record DiscoveredModelsView(String baseUrl, List<ModelCapabilityResponse> models) {
     }
 }

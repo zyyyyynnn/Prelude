@@ -21,7 +21,7 @@ public class LlmController {
     private final CurrentAccount currentAccount;
 
     @GetMapping("/providers")
-    public Result<List<ModelDescriptorView>> providers() {
+    public Result<List<ProviderDescriptorView>> providers() {
         return Result.success(llmPort.listModels(currentAccount.requireId()));
     }
 
@@ -48,7 +48,15 @@ public class LlmController {
     public Result<LlmPort.DiscoveredModelsView> discoverModels(
         @jakarta.validation.Valid @RequestBody DiscoverModelsRequest request) {
         return Result.success(llmPort.discoverCustomModels(currentAccount.requireId(),
-            new LlmPort.DiscoverModelsCommand(request.baseUrl(), request.apiKey())));
+            new LlmPort.DiscoverModelsCommand(request.provider(), request.baseUrl(), request.apiKey())));
+    }
+
+    @PostMapping("/config/discover-capabilities")
+    public Result<ModelCapabilityResponse> discoverCapabilities(
+        @jakarta.validation.Valid @RequestBody DiscoverModelCapabilityRequest request) {
+        return Result.success(llmPort.discoverCustomModelCapability(currentAccount.requireId(),
+            new LlmPort.DiscoverModelCapabilityCommand(
+                request.provider(), request.baseUrl(), request.apiKey(), request.model())));
     }
 
     public record UpdateConfigurationRequest(
@@ -64,9 +72,22 @@ public class LlmController {
     }
 
     public record DiscoverModelsRequest(
+        @jakarta.validation.constraints.NotBlank(message = "provider 不能为空")
+        String provider,
         @jakarta.validation.constraints.NotBlank(message = "baseUrl 不能为空")
         String baseUrl,
         String apiKey
+    ) {
+    }
+
+    public record DiscoverModelCapabilityRequest(
+        @jakarta.validation.constraints.NotBlank(message = "provider 不能为空")
+        String provider,
+        @jakarta.validation.constraints.NotBlank(message = "baseUrl 不能为空")
+        String baseUrl,
+        String apiKey,
+        @jakarta.validation.constraints.NotBlank(message = "model 不能为空")
+        String model
     ) {
     }
 }

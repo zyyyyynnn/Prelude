@@ -17,6 +17,7 @@ public class ModelProfile {
     private String customEndpointUrl;
     private String reasoningLevel;
     private String effectiveParametersJson;
+    private String modelCapabilityJson;
     private String fallbackModelsJson;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

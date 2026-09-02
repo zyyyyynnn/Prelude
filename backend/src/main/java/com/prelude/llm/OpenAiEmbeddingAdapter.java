@@ -23,18 +23,21 @@ public class OpenAiEmbeddingAdapter implements EmbedPort {
 
     private final OpenAiEmbeddingModel embeddingModel;
     private final String embeddingModelVersion;
+    private final LlmTransportRetry transportRetry;
 
     public OpenAiEmbeddingAdapter(
         @Value("${prelude.llm.provider.openai.base-url:https://api.openai.com/v1}") String baseUrl,
         @Value("${prelude.llm.provider.openai.api-key:}") String apiKey,
-        @Value("${prelude.llm.provider.openai.embedding-model:text-embedding-3-small}") String embeddingModelVersion
+        @Value("${prelude.llm.provider.openai.embedding-model:text-embedding-3-small}") String embeddingModelVersion,
+        LlmTransportRetry transportRetry
     ) {
         this.embeddingModelVersion = embeddingModelVersion;
+        this.transportRetry = transportRetry;
         this.embeddingModel = OpenAiEmbeddingModel.builder()
             .openAiClient(OpenAiSetup.setupSyncClient(
                 baseUrl, null, com.openai.credential.BearerTokenCredential.create(apiKey),
                 null, null, null, false, false, null,
-                Duration.ofSeconds(60), 1, null, Map.of(),
+                Duration.ofSeconds(60), 0, null, Map.of(),
                 io.micrometer.observation.ObservationRegistry.NOOP,
                 io.micrometer.core.instrument.Metrics.globalRegistry,
                 List.of()))
@@ -46,7 +49,9 @@ public class OpenAiEmbeddingAdapter implements EmbedPort {
     @Override
     public float[] embed(String text) {
         try {
-            float[] vector = embeddingModel.embed(text);
+            float[] vector = transportRetry.execute(
+                "embedding-openai-" + embeddingModelVersion,
+                () -> embeddingModel.embed(text));
             if (vector == null || vector.length == 0) {
                 throw BusinessException.badRequest("Embedding 服务返回内容为空");
             }

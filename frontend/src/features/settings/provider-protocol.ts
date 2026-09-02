@@ -1,20 +1,26 @@
-/**
- * The custom-endpoint provider is one OpenAI-compatible protocol now. The
- * backend capability catalog decides which reasoning levels exist; this file
- * only knows the endpoint conventions for form hints.
- */
+/** Protocol-level endpoint conventions only. Model IDs/capabilities come from the backend. */
 export const customProviderProtocol = {
-  'openai-compatible': {
+  'openai-responses': {
+    endpointSuffix: '/responses',
+    modelDiscovery: true,
+    placeholder: '例如：https://api.openai.com/v1',
+  },
+  'openai-chat-completions': {
     endpointSuffix: '/chat/completions',
     modelDiscovery: true,
     placeholder: '例如：https://api.openai.com/v1',
+  },
+  'anthropic-messages': {
+    endpointSuffix: '/messages',
+    modelDiscovery: true,
+    placeholder: '例如：https://api.anthropic.com/v1',
   },
 } as const
 
 export type CustomProviderKey = keyof typeof customProviderProtocol
 
 export function isCustomProvider(providerKey: string): providerKey is CustomProviderKey {
-  return providerKey === 'openai-compatible'
+  return providerKey in customProviderProtocol
 }
 
 export function normalizeCustomBaseUrl(baseUrl: string, providerKey: string): string {

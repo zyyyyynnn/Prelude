@@ -15,7 +15,6 @@ import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.PromptIds;
-import com.prelude.activity.RealtimePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,6 @@ public class GenerateInterviewReport {
     private final LlmPort llmPort;
     private final ReportParser interviewReportParser;
     private final InterviewReportAssembler interviewReportAssembler;
-    private final RealtimePort realtimePort;
 
     public Outcome execute(Long sessionId, Long accountId) {
         try {
@@ -65,7 +63,7 @@ public class GenerateInterviewReport {
                     session.getModelExecutionSnapshotId(),
                     "report",
                     PromptIds.REPORT,
-                    LlmPort.ResponseMode.JSON,
+                    LlmPort.ResponseMode.JSON_OBJECT,
                     List.of(
                         new LlmPort.Message("system", """
                                 你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
@@ -118,23 +116,10 @@ public class GenerateInterviewReport {
             String reportJson = objectMapper.writeValueAsString(structuredReport);
 
             interviewReportPort.completeReport(sessionId, reportJson);
-
-            // Broadcast report ready event
-            realtimePort.publish(sessionId, "report_ready", reportJson);
-            log.info("Successfully finished report generation and broadcasted for session {}", sessionId);
+            log.info("Successfully persisted report generation for session {}", sessionId);
             return Outcome.GENERATED;
         } catch (Exception e) {
             throw new ReportGenerationException(sessionId, e);
-        }
-    }
-
-    public void handleTerminalFailure(Long sessionId, Throwable error) {
-        log.error("Failed to generate report for session {}", sessionId, error);
-        realtimePort.publish(sessionId, "error", "报告生成失败，请稍后重试");
-        try {
-            interviewReportPort.restoreOngoing(sessionId);
-        } catch (Exception restoreException) {
-            log.error("Failed to restore session status for session {}", sessionId, restoreException);
         }
     }
 
@@ -195,7 +180,7 @@ public class GenerateInterviewReport {
                 session.getModelExecutionSnapshotId(),
                 "weaknesses",
                 PromptIds.REPORT,
-                LlmPort.ResponseMode.JSON,
+                LlmPort.ResponseMode.JSON_ARRAY,
                 List.of(
                     new LlmPort.Message("system", """
                         你是面试分析助手。请只输出严格 JSON 数组，不要输出 Markdown。

@@ -30,10 +30,10 @@ public class BackgroundJobRecoveryService {
     private final JobAttemptMapper attemptMapper;
     private final ApplicationEventPublisher eventPublisher;
 
-    public List<String> findStaleJobIds(LocalDateTime staleBefore, int limit) {
+    public List<String> findExpiredLeaseJobIds(LocalDateTime now, int limit) {
         return jobMapper.selectList(new LambdaQueryWrapper<BackgroundJob>()
                 .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-                .lt(BackgroundJob::getClaimedAt, staleBefore)
+                .le(BackgroundJob::getLeaseExpiresAt, now)
                 .last("LIMIT " + limit))
             .stream()
             .map(BackgroundJob::getJobId)
@@ -41,12 +41,12 @@ public class BackgroundJobRecoveryService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public RecoveryOutcome recover(String jobId, LocalDateTime staleBefore) {
+    public RecoveryOutcome recover(String jobId, LocalDateTime now) {
         BackgroundJob job = jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
             .eq(BackgroundJob::getJobId, jobId)
             .last("LIMIT 1"));
         if (job == null || !BackgroundJob.RUNNING.equals(job.getStatus())
-            || job.getClaimedAt() == null || !job.getClaimedAt().isBefore(staleBefore)) {
+            || job.getLeaseExpiresAt() == null || job.getLeaseExpiresAt().isAfter(now)) {
             return RecoveryOutcome.NOT_STALE;
         }
 
@@ -55,16 +55,18 @@ public class BackgroundJobRecoveryService {
             .eq(BackgroundJob::getJobId, jobId)
             .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
             .eq(BackgroundJob::getAttemptCount, job.getAttemptCount())
-            .lt(BackgroundJob::getClaimedAt, staleBefore);
+            .le(BackgroundJob::getLeaseExpiresAt, now);
         if (retry) {
             transition
                 .set(BackgroundJob::getStatus, BackgroundJob.PENDING)
                 .set(BackgroundJob::getClaimedAt, null)
+                .set(BackgroundJob::getLeaseExpiresAt, null)
                 .set(BackgroundJob::getLastError, INTERRUPTED);
         } else {
             transition
                 .set(BackgroundJob::getStatus, BackgroundJob.FAILED)
                 .set(BackgroundJob::getLastError, INTERRUPTED)
+                .set(BackgroundJob::getLeaseExpiresAt, null)
                 .set(BackgroundJob::getFinishedAt, LocalDateTime.now());
         }
 

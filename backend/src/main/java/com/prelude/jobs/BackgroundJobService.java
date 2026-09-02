@@ -9,6 +9,7 @@ import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
 import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
 import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
+import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobRequested;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
@@ -19,12 +20,19 @@ import com.prelude.jobs.persistence.JobAttemptMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PreDestroy;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -52,15 +60,36 @@ public class BackgroundJobService implements BackgroundJobOperations {
     private final BackgroundJobMapper jobMapper;
     private final JobAttemptMapper attemptMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final Duration leaseDuration;
+    private final Duration heartbeatInterval;
+    private final ScheduledExecutorService heartbeatExecutor;
 
     public BackgroundJobService(
         BackgroundJobMapper jobMapper,
         JobAttemptMapper attemptMapper,
-        ApplicationEventPublisher eventPublisher
+        ApplicationEventPublisher eventPublisher,
+        @Value("${prelude.jobs.lease-duration-seconds:120}") long leaseDurationSeconds,
+        @Value("${prelude.jobs.heartbeat-interval-seconds:30}") long heartbeatIntervalSeconds
     ) {
         this.jobMapper = jobMapper;
         this.attemptMapper = attemptMapper;
         this.eventPublisher = eventPublisher;
+        this.leaseDuration = Duration.ofSeconds(Math.max(30, leaseDurationSeconds));
+        long heartbeatSeconds = Math.max(1, heartbeatIntervalSeconds);
+        if (heartbeatSeconds >= this.leaseDuration.toSeconds()) {
+            throw new IllegalArgumentException("job heartbeat interval must be shorter than lease duration");
+        }
+        this.heartbeatInterval = Duration.ofSeconds(heartbeatSeconds);
+        this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "background-job-heartbeat");
+            thread.setDaemon(true);
+            return thread;
+        });
+    }
+
+    @PreDestroy
+    void shutdownHeartbeatExecutor() {
+        heartbeatExecutor.shutdownNow();
     }
 
     @Override
@@ -100,72 +129,111 @@ public class BackgroundJobService implements BackgroundJobOperations {
     @Transactional(rollbackFor = Exception.class)
     public ClaimOutcome claim(String jobId) {
         BackgroundJob job = requireJob(jobId);
+        int attemptNumber = job.getAttemptCount() + 1;
+        LocalDateTime claimedAt = LocalDateTime.now();
         int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
             .set(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-            .set(BackgroundJob::getAttemptCount, job.getAttemptCount() + 1)
-            .set(BackgroundJob::getClaimedAt, LocalDateTime.now())
+            .set(BackgroundJob::getAttemptCount, attemptNumber)
+            .set(BackgroundJob::getClaimedAt, claimedAt)
+            .set(BackgroundJob::getLeaseExpiresAt, claimedAt.plus(leaseDuration))
             .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.PENDING));
+            .eq(BackgroundJob::getStatus, BackgroundJob.PENDING)
+            .eq(BackgroundJob::getAttemptCount, job.getAttemptCount()));
         if (updated != 1) {
-            return ClaimOutcome.skip(job.getStatus(), "not pending");
+            return ClaimOutcome.skip(requireJob(jobId).getStatus(), "not pending");
         }
-        BackgroundJob claimed = requireJob(jobId);
         JobAttempt attempt = new JobAttempt();
         attempt.setJobId(jobId);
-        attempt.setAttemptNumber(claimed.getAttemptCount());
+        attempt.setAttemptNumber(attemptNumber);
         attempt.setStatus(JobAttempt.RUNNING);
-        attempt.setStartedAt(LocalDateTime.now());
+        attempt.setStartedAt(claimedAt);
         attemptMapper.insert(attempt);
-        return ClaimOutcome.start();
+        return ClaimOutcome.start(attemptNumber);
+    }
+
+    @Override
+    public boolean renewLease(String jobId, int attemptNumber) {
+        LocalDateTime now = LocalDateTime.now();
+        return jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
+            .set(BackgroundJob::getLeaseExpiresAt, now.plus(leaseDuration))
+            .eq(BackgroundJob::getJobId, jobId)
+            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
+            .eq(BackgroundJob::getAttemptCount, attemptNumber)) == 1;
+    }
+
+    @Override
+    public ExecutionLease keepLeaseAlive(String jobId, int attemptNumber) {
+        ScheduledFuture<?> heartbeat = heartbeatExecutor.scheduleAtFixedRate(
+            () -> {
+                try {
+                    renewLease(jobId, attemptNumber);
+                } catch (RuntimeException exception) {
+                    log.warn("Failed to renew lease for job {} attempt {}", jobId, attemptNumber, exception);
+                }
+            },
+            heartbeatInterval.toMillis(),
+            heartbeatInterval.toMillis(),
+            TimeUnit.MILLISECONDS
+        );
+        return () -> heartbeat.cancel(false);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void complete(String jobId) {
+    public void complete(String jobId, int attemptNumber) {
         BackgroundJob job = requireJob(jobId);
         int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
             .set(BackgroundJob::getStatus, BackgroundJob.SUCCEEDED)
+            .set(BackgroundJob::getLeaseExpiresAt, null)
             .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
             .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
+            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
+            .eq(BackgroundJob::getAttemptCount, attemptNumber));
         if (updated == 1) {
-            closeAttempt(jobId, job.getAttemptCount(), JobAttempt.SUCCEEDED, null);
+            closeAttempt(jobId, attemptNumber, JobAttempt.SUCCEEDED, null);
             eventPublisher.publishEvent(new BackgroundJobSucceeded(
                 job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId()));
         } else {
-            log.info("Ignoring duplicate completion for job {} (state={})", jobId, requireJob(jobId).getStatus());
+            log.info("Ignoring stale or duplicate completion for job {} attempt {}", jobId, attemptNumber);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public FailureOutcome fail(String jobId, Throwable failure) {
+    public FailureOutcome fail(String jobId, int attemptNumber, Throwable failure) {
         String sanitizedFailure = sanitizeFailure(failure);
         BackgroundJob job = requireJob(jobId);
+        if (!BackgroundJob.RUNNING.equals(job.getStatus()) || job.getAttemptCount() != attemptNumber) {
+            return FailureOutcome.NOT_RUNNING;
+        }
         if (job.getAttemptCount() < job.getMaxAttempts()) {
             int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
                 .set(BackgroundJob::getStatus, BackgroundJob.PENDING)
                 .set(BackgroundJob::getLastError, sanitizedFailure)
                 .set(BackgroundJob::getClaimedAt, null)
+                .set(BackgroundJob::getLeaseExpiresAt, null)
                 .eq(BackgroundJob::getJobId, jobId)
-                .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
+                .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
+                .eq(BackgroundJob::getAttemptCount, attemptNumber));
             if (updated != 1) {
                 return FailureOutcome.NOT_RUNNING;
             }
-            closeAttempt(jobId, job.getAttemptCount(), JobAttempt.FAILED, sanitizedFailure);
+            closeAttempt(jobId, attemptNumber, JobAttempt.FAILED, sanitizedFailure);
             eventPublisher.publishEvent(new BackgroundJobRequested(jobId));
             return FailureOutcome.RETRY_SCHEDULED;
         }
         int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
             .set(BackgroundJob::getStatus, BackgroundJob.FAILED)
             .set(BackgroundJob::getLastError, sanitizedFailure)
+            .set(BackgroundJob::getLeaseExpiresAt, null)
             .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
             .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING));
+            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
+            .eq(BackgroundJob::getAttemptCount, attemptNumber));
         if (updated != 1) {
             return FailureOutcome.NOT_RUNNING;
         }
-        closeAttempt(jobId, job.getAttemptCount(), JobAttempt.FAILED, sanitizedFailure);
+        closeAttempt(jobId, attemptNumber, JobAttempt.FAILED, sanitizedFailure);
         eventPublisher.publishEvent(new BackgroundJobFailed(
             job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId(), sanitizedFailure));
         return FailureOutcome.TERMINAL_FAILED;
@@ -173,7 +241,7 @@ public class BackgroundJobService implements BackgroundJobOperations {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean cancel(String jobId, Long accountId) {
+    public BackgroundJobView cancel(String jobId, Long accountId) {
         BackgroundJob job = jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
             .eq(BackgroundJob::getJobId, jobId)
             .last("LIMIT 1"));
@@ -186,7 +254,11 @@ public class BackgroundJobService implements BackgroundJobOperations {
             .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
             .eq(BackgroundJob::getJobId, jobId)
             .eq(BackgroundJob::getStatus, BackgroundJob.PENDING));
-        return updated == 1;
+        if (updated == 1) {
+            eventPublisher.publishEvent(new BackgroundJobCancelled(
+                job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId()));
+        }
+        return toView(requireJob(jobId));
     }
 
     @Override

@@ -40,7 +40,7 @@ public class ModelExecutionSnapshotService {
         var level = reasoningLevels.parse(command.reasoningLevel() == null
             ? profile.getReasoningLevel()
             : command.reasoningLevel());
-        if (!capabilityCatalog.capability(provider, model).supportedReasoningLevels().contains(level)) {
+        if (!modelProfileService.capabilityForProfile(profile, model).supportedReasoningLevels().contains(level)) {
             throw com.prelude.BusinessException.badRequest("所选模型不支持该思考深度");
         }
         validateFrozenFallbacks(provider, profile.getFallbackModelsJson(), level);

@@ -8,5 +8,6 @@ export type {
   LlmConfigPayload,
   LlmConfigResponse,
   LlmProviderResponse,
+  ModelCapabilityResponse,
   ReasoningLevel,
 } from './types'

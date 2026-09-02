@@ -21,6 +21,7 @@ public class BackgroundJob {
     private Integer maxAttempts;
     private String lastError;
     private LocalDateTime claimedAt;
+    private LocalDateTime leaseExpiresAt;
     private LocalDateTime finishedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

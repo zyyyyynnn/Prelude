@@ -1,18 +1,27 @@
+/** Reasoning levels come from the backend capability catalog — never guessed. */
+export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH'
+
+export type ModelCapabilityResponse = {
+  provider: string
+  model: string
+  reasoning: boolean
+  structuredOutput: boolean
+  toolCalling: boolean
+  streaming: boolean
+  vision: boolean
+  multilingual: boolean
+  longContext: boolean
+  embedding: boolean
+  nativeRealtimeVoice: boolean
+  supportedReasoningLevels: ReasoningLevel[]
+}
+
 export type LlmProviderResponse = {
   providerKey: string
   displayName: string
-  availableModels: string[]
-  enabled: number
+  customEndpoint: boolean
+  models: ModelCapabilityResponse[]
 }
-
-export type LlmProviderOption = {
-  providerKey: string
-  displayName: string
-  models: string[]
-}
-
-/** Reasoning levels come from the backend capability catalog — never guessed. */
-export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH'
 
 export type LlmConfigPayload = {
   provider: string
@@ -31,18 +40,25 @@ export type LlmConfigResponse = {
   apiKeyMasked: string | null
   reasoningLevel: ReasoningLevel
   fallbackModels: string[]
-  reasoningSupported: boolean
-  supportedReasoningLevels: ReasoningLevel[]
+  capability: ModelCapabilityResponse
 }
 
 export type LlmModelDiscoveryPayload = {
+  provider: string
   baseUrl: string
   apiKey?: string
 }
 
 export type LlmModelDiscoveryResponse = {
   baseUrl: string
-  models: string[]
+  models: ModelCapabilityResponse[]
+}
+
+export type LlmCapabilityDiscoveryPayload = {
+  provider: string
+  baseUrl: string
+  apiKey?: string
+  model: string
 }
 
 export type UserProfilePayload = {

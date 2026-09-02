@@ -31,7 +31,7 @@ public class LlmResumeParser implements ResumeParser {
                 snapshotRef.snapshotId(),
                 "resume-parse",
                 PromptIds.RESUME_PARSE,
-                LlmPort.ResponseMode.JSON,
+            LlmPort.ResponseMode.JSON_OBJECT,
                 List.of(
                     new LlmPort.Message("system", systemPrompt),
                     new LlmPort.Message("user", "请从以下中文简历文本中提取技能列表和项目经历：\n" + rawText)

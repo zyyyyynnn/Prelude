@@ -92,8 +92,6 @@ prelude:
         base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
         api-key: ${OPENAI_API_KEY:}
         embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
-      anthropic:
-        api-key: ${ANTHROPIC_API_KEY:}
     transport-retry-max-attempts: ${PRELUDE_LLM_TRANSPORT_RETRY_MAX_ATTEMPTS:3}
     egress:
       allow-http: ${PRELUDE_LLM_EGRESS_ALLOW_HTTP:false}

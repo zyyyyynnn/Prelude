@@ -12,11 +12,15 @@ public interface BackgroundJobOperations {
 
     ClaimOutcome claim(String jobId);
 
-    void complete(String jobId);
+    boolean renewLease(String jobId, int attemptNumber);
 
-    FailureOutcome fail(String jobId, Throwable failure);
+    ExecutionLease keepLeaseAlive(String jobId, int attemptNumber);
 
-    boolean cancel(String jobId, Long accountId);
+    void complete(String jobId, int attemptNumber);
+
+    FailureOutcome fail(String jobId, int attemptNumber, Throwable failure);
+
+    BackgroundJobView cancel(String jobId, Long accountId);
 
     BackgroundJobView view(String jobId, Long accountId);
 
@@ -42,15 +46,22 @@ public interface BackgroundJobOperations {
     /**
      * Result of an atomic PENDING → RUNNING claim.
      */
-    record ClaimOutcome(boolean claimed, String status, String reason) {
+    record ClaimOutcome(boolean claimed, String status, Integer attemptNumber, String reason) {
 
-        public static ClaimOutcome start() {
-            return new ClaimOutcome(true, "RUNNING", "claimed");
+        public static ClaimOutcome start(int attemptNumber) {
+            return new ClaimOutcome(true, "RUNNING", attemptNumber, "claimed");
         }
 
         public static ClaimOutcome skip(String status, String reason) {
-            return new ClaimOutcome(false, status, reason);
+            return new ClaimOutcome(false, status, null, reason);
         }
+    }
+
+    @FunctionalInterface
+    interface ExecutionLease extends AutoCloseable {
+
+        @Override
+        void close();
     }
 
     enum FailureOutcome {

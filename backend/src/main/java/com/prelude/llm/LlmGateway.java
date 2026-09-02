@@ -4,7 +4,7 @@ import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.api.SaveConfigurationCommand;
 import com.prelude.llm.api.ModelConfigurationView;
-import com.prelude.llm.api.ModelDescriptorView;
+import com.prelude.llm.api.ProviderDescriptorView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -50,12 +50,20 @@ public class LlmGateway implements LlmPort {
     }
 
     @Override
-    public List<ModelDescriptorView> listModels(Long accountId) {
+    public List<ProviderDescriptorView> listModels(Long accountId) {
         return profileService.listModels(accountId);
     }
 
     @Override
     public DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command) {
         return profileService.discoverCustomModels(accountId, command);
+    }
+
+    @Override
+    public com.prelude.llm.api.ModelCapabilityResponse discoverCustomModelCapability(
+        Long accountId,
+        DiscoverModelCapabilityCommand command
+    ) {
+        return profileService.discoverCustomModelCapability(accountId, command);
     }
 }

@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 @ConditionalOnProperty(prefix = "prelude.jobs", name = "scheduling-enabled", havingValue = "true", matchIfMissing = true)
 public class BackgroundJobMaintenanceScheduler {
 
-    private static final int STALE_RUNNING_MINUTES = 5;
     private static final int RECOVERY_BATCH = 100;
 
     private final BackgroundJobRecoveryService recoveryService;
@@ -26,10 +25,10 @@ public class BackgroundJobMaintenanceScheduler {
 
     @Scheduled(fixedDelayString = "${prelude.jobs.stale-recovery-delay-ms:60000}")
     public void recoverStaleRunning() {
-        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(STALE_RUNNING_MINUTES);
-        for (String jobId : recoveryService.findStaleJobIds(staleBefore, RECOVERY_BATCH)) {
+        LocalDateTime now = LocalDateTime.now();
+        for (String jobId : recoveryService.findExpiredLeaseJobIds(now, RECOVERY_BATCH)) {
             try {
-                recoveryService.recover(jobId, staleBefore);
+                recoveryService.recover(jobId, now);
             } catch (RuntimeException exception) {
                 log.warn("Stale job recovery failed for {}; retrying next pass", jobId, exception);
             }

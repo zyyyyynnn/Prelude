@@ -11,29 +11,25 @@ import java.util.Map;
 
 /**
  * Code-backed capability truth for the built-in models Prelude explicitly
- * supports. Custom OpenAI-compatible models remain conservative until a
- * future probe owned by the LLM module can establish more facts.
+ * supports. Models discovered from custom protocol endpoints remain
+ * conservative except for capability facts established by the LLM module's
+ * selected-model discovery path.
  */
 @Component
 public class ModelCapabilityCatalog {
 
-    public static final String CAPABILITY_VERSION = "2026-09-01";
+    public static final String CAPABILITY_VERSION = "2026-09-02";
 
     public static final String PROVIDER_DEEPSEEK = "deepseek";
-    public static final String PROVIDER_OPENAI = "openai";
-    public static final String PROVIDER_ANTHROPIC = "anthropic";
-    public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
 
     private static final List<ReasoningLevel> AUTO_ONLY = List.of(ReasoningLevel.AUTO);
-    private static final List<ReasoningLevel> ALL_REASONING = List.of(
-        ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.MEDIUM, ReasoningLevel.HIGH);
     private static final List<ReasoningLevel> DEEPSEEK_REASONING = List.of(
         ReasoningLevel.AUTO, ReasoningLevel.HIGH);
 
     private final Map<String, Map<String, ModelCapabilityResponse>> builtIns = builtIns();
 
     public ModelCapabilityResponse capability(String provider, String model) {
-        if (PROVIDER_OPENAI_COMPATIBLE.equals(provider)) {
+        if (CustomLlmProtocol.isCustom(provider)) {
             if (model == null || model.isBlank()) {
                 return custom(provider, "");
             }
@@ -57,28 +53,29 @@ public class ModelCapabilityCatalog {
         capability(provider, model.trim());
     }
 
-    public List<String> models(String provider) {
-        if (PROVIDER_OPENAI_COMPATIBLE.equals(provider)) {
+    public List<ModelCapabilityResponse> models(String provider) {
+        if (CustomLlmProtocol.isCustom(provider)) {
             return List.of();
         }
         Map<String, ModelCapabilityResponse> models = builtIns.get(provider);
         if (models == null) {
             throw BusinessException.badRequest("不支持的模型接入方式");
         }
-        return List.copyOf(models.keySet());
+        return List.copyOf(models.values());
     }
 
     public List<String> knownProviders() {
-        return List.of(PROVIDER_DEEPSEEK, PROVIDER_OPENAI, PROVIDER_ANTHROPIC, PROVIDER_OPENAI_COMPATIBLE);
+        return java.util.stream.Stream.concat(
+            java.util.stream.Stream.of(PROVIDER_DEEPSEEK),
+            CustomLlmProtocol.providerKeys().stream()
+        ).toList();
     }
 
     public String displayName(String provider) {
-        return Map.of(
-            PROVIDER_DEEPSEEK, "DeepSeek",
-            PROVIDER_OPENAI, "OpenAI",
-            PROVIDER_ANTHROPIC, "Anthropic",
-            PROVIDER_OPENAI_COMPATIBLE, "OpenAI 兼容端点"
-        ).get(provider);
+        if (PROVIDER_DEEPSEEK.equals(provider)) {
+            return "DeepSeek";
+        }
+        return CustomLlmProtocol.require(provider).displayName();
     }
 
     private Map<String, Map<String, ModelCapabilityResponse>> builtIns() {
@@ -86,30 +83,28 @@ public class ModelCapabilityCatalog {
 
         Map<String, ModelCapabilityResponse> deepseek = new LinkedHashMap<>();
         deepseek.put("deepseek-v4-pro", capability(PROVIDER_DEEPSEEK, "deepseek-v4-pro",
-            true, true, true, true, true, true, true, false, false, DEEPSEEK_REASONING));
+            true, true, true, true, false, false, true, false, false, DEEPSEEK_REASONING));
         deepseek.put("deepseek-v4-flash", capability(PROVIDER_DEEPSEEK, "deepseek-v4-flash",
-            true, true, true, true, true, true, true, false, false, DEEPSEEK_REASONING));
-        deepseek.put("deepseek-chat", capability(PROVIDER_DEEPSEEK, "deepseek-chat",
-            false, true, true, true, false, true, true, false, false, AUTO_ONLY));
-        deepseek.put("deepseek-reasoner", capability(PROVIDER_DEEPSEEK, "deepseek-reasoner",
-            true, true, false, true, false, true, true, false, false, DEEPSEEK_REASONING));
+            true, true, true, true, false, false, true, false, false, DEEPSEEK_REASONING));
         providers.put(PROVIDER_DEEPSEEK, Map.copyOf(deepseek));
 
-        providers.put(PROVIDER_OPENAI, Map.of(
-            "gpt-5.4", capability(PROVIDER_OPENAI, "gpt-5.4",
-                true, true, true, true, true, true, true, false, false, ALL_REASONING)
-        ));
-
-        providers.put(PROVIDER_ANTHROPIC, Map.of(
-            "claude-sonnet-4-6", capability(PROVIDER_ANTHROPIC, "claude-sonnet-4-6",
-                true, true, true, true, true, true, true, false, false, ALL_REASONING)
-        ));
         return Map.copyOf(providers);
     }
 
     private ModelCapabilityResponse custom(String provider, String model) {
+        return customCapability(provider, model, AUTO_ONLY);
+    }
+
+    ModelCapabilityResponse customCapability(
+        String provider,
+        String model,
+        List<ReasoningLevel> supportedReasoningLevels
+    ) {
+        List<ReasoningLevel> levels = supportedReasoningLevels == null || supportedReasoningLevels.isEmpty()
+            ? AUTO_ONLY
+            : List.copyOf(supportedReasoningLevels);
         return capability(provider, model,
-            false, false, false, true, false, false, false, false, false, AUTO_ONLY);
+            levels.size() > 1, false, false, true, false, false, false, false, false, levels);
     }
 
     private ModelCapabilityResponse capability(

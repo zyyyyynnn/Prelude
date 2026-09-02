@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 
 /**
- * Supplies egress constraints for the OpenAI-compatible custom endpoint
+ * Supplies egress constraints for account-configured model protocol endpoints.
  * transport. Spring AI's OkHttp client accepts interceptors, so the guarded
  * DNS + no-redirect policy is applied there — the only custom-endpoint HTTP
  * customization this module needs.

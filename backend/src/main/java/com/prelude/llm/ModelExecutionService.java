@@ -12,9 +12,6 @@ import com.prelude.llm.api.LlmPort.StreamSink;
 import com.prelude.llm.api.LlmPort.ToolBinding;
 import com.prelude.llm.api.LlmPort.Usage;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
-import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryConfig;
-import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -26,19 +23,14 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.retry.NonTransientAiException;
-import org.springframework.ai.retry.TransientAiException;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,28 +50,20 @@ public class ModelExecutionService {
     private final ModelExecutionSnapshotService snapshotService;
     private final ModelProfileService profileService;
     private final ModelCapabilityCatalog capabilityCatalog;
-    private final RetryRegistry retryRegistry;
-    private final int maxTransportAttempts;
+    private final LlmTransportRetry transportRetry;
 
     public ModelExecutionService(
         SpringAiModelFactory modelFactory,
         ModelExecutionSnapshotService snapshotService,
         ModelProfileService profileService,
         ModelCapabilityCatalog capabilityCatalog,
-        @Value("${prelude.llm.transport-retry-max-attempts:3}") int maxTransportAttempts
+        LlmTransportRetry transportRetry
     ) {
         this.modelFactory = modelFactory;
         this.snapshotService = snapshotService;
         this.profileService = profileService;
         this.capabilityCatalog = capabilityCatalog;
-        this.maxTransportAttempts = Math.max(1, maxTransportAttempts);
-        RetryConfig retryConfig = RetryConfig.custom()
-            .maxAttempts(this.maxTransportAttempts)
-            .intervalFunction(attempt -> Duration.ofSeconds(2L * attempt).toMillis())
-            .retryOnException(this::isTransientFailure)
-            .failAfterMaxAttempts(true)
-            .build();
-        this.retryRegistry = RetryRegistry.of(retryConfig);
+        this.transportRetry = transportRetry;
     }
 
     public CompletionResult complete(ModelExecutionRequest request) {
@@ -94,11 +78,12 @@ public class ModelExecutionService {
             List<ToolCallback> toolCallbacks = toToolCallbacks(request.tools());
             Prompt prompt = prompt(request, modelFactory.requestOptions(effective, request.responseMode()));
             try {
-                Retry retry = retryRegistry.retry("llm-transport-" + effective.getProvider() + "-" + model);
-                ChatResponse response = retry.executeSupplier(() -> call(chatModel, prompt, toolCallbacks));
+                ChatResponse response = transportRetry.execute(
+                    "chat-" + effective.getProvider() + "-" + model,
+                    () -> call(chatModel, prompt, toolCallbacks));
                 return new CompletionResult(extractContent(response), usageOf(effective, request, response));
             } catch (RuntimeException failure) {
-                if (!isTransientFailure(failure)) {
+                if (!transportRetry.isTransient(failure)) {
                     throw mapFailure(failure);
                 }
                 lastTransient = failure;
@@ -133,10 +118,10 @@ public class ModelExecutionService {
                             sink.onNext(delta);
                         }
                     });
-                if (maxTransportAttempts > 1) {
+                if (transportRetry.maxAttempts() > 1) {
                     execution = execution.retryWhen(reactor.util.retry.Retry
-                        .max(maxTransportAttempts - 1L)
-                        .filter(failure -> !emitted.get() && isTransientFailure(failure))
+                        .max(transportRetry.maxAttempts() - 1L)
+                        .filter(failure -> !emitted.get() && transportRetry.isTransient(failure))
                         .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
                 }
                 execution.blockLast(STREAM_TIMEOUT);
@@ -146,7 +131,7 @@ public class ModelExecutionService {
                 if (emitted.get()) {
                     throw mapFailure(failure);
                 }
-                if (!isTransientFailure(failure)) {
+                if (!transportRetry.isTransient(failure)) {
                     throw mapFailure(failure);
                 }
                 lastTransient = failure;
@@ -201,9 +186,6 @@ public class ModelExecutionService {
         var capability = capabilityCatalog.capability(snapshot.getProvider(), snapshot.getModel());
         if (streaming && !capability.streaming()) {
             throw BusinessException.badRequest("所选模型不支持流式输出");
-        }
-        if (request.responseMode() == LlmPort.ResponseMode.JSON && !capability.structuredOutput()) {
-            throw BusinessException.badRequest("所选模型不支持结构化输出");
         }
         if (request.attachments() != null && !request.attachments().isEmpty() && !capability.vision()) {
             throw BusinessException.badRequest("所选模型不支持图像输入");
@@ -313,49 +295,14 @@ public class ModelExecutionService {
             input, output, total);
     }
 
-    private boolean isTransientFailure(Throwable failure) {
-        for (Throwable current = failure; current != null; current = current.getCause()) {
-            if (current instanceof NonTransientAiException || current instanceof BusinessException) {
-                return false;
-            }
-            if (current instanceof TransientAiException
-                || current instanceof com.openai.errors.OpenAIIoException
-                || current instanceof com.anthropic.errors.AnthropicIoException
-                || current instanceof SocketTimeoutException
-                || current instanceof java.net.http.HttpTimeoutException
-                || current instanceof TimeoutException
-                || current instanceof ConnectException) {
-                return true;
-            }
-            if (current instanceof com.openai.errors.OpenAIServiceException service) {
-                return service.statusCode() == 429 || service.statusCode() >= 500;
-            }
-            if (current instanceof com.anthropic.errors.AnthropicServiceException service) {
-                return service.statusCode() == 429 || service.statusCode() >= 500;
-            }
-        }
-        return false;
-    }
-
-    private boolean isTimeout(Throwable failure) {
-        for (Throwable current = failure; current != null; current = current.getCause()) {
-            if (current instanceof SocketTimeoutException
-                || current instanceof java.net.http.HttpTimeoutException
-                || current instanceof TimeoutException) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private RuntimeException mapFailure(Throwable failure) {
         if (failure instanceof BusinessException business) {
             return business;
         }
-        if (isTimeout(failure)) {
+        if (transportRetry.isTimeout(failure)) {
             return new LlmTimeoutException("模型服务调用超时，请稍后重试");
         }
-        if (isTransientFailure(failure)) {
+        if (transportRetry.isTransient(failure)) {
             return new LlmServerException("模型服务暂时不可用，请稍后重试");
         }
         if (contains(failure, NonTransientAiException.class)) {

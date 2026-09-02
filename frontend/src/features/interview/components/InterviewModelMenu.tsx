@@ -48,8 +48,10 @@ export function InterviewModelMenu({
   onManage: () => void
 }) {
   const provider = providers.find((item) => item.providerKey === config.provider)
-  const models = [...new Set([config.model, ...(provider?.availableModels ?? [])])].filter(Boolean)
-  const reasoningSupported = config.reasoningSupported
+  const models = [...new Set([config.model, ...(provider?.models.map((item) => item.model) ?? [])])].filter(Boolean)
+  const capability = provider?.models.find((item) => item.model === config.model)
+    ?? (config.capability.model === config.model ? config.capability : undefined)
+  const reasoningSupported = capability?.reasoning ?? false
   const thinkingValue = config.reasoningLevel
   const ariaThinking = reasoningSupported ? `，思考深度：${REASONING_LABELS[thinkingValue]}` : ''
 
@@ -96,7 +98,7 @@ export function InterviewModelMenu({
               value={thinkingValue}
               onValueChange={(value) => onThinkingDepthChange(value as ReasoningLevel)}
             >
-              {config.supportedReasoningLevels.map((level) => (
+              {(capability?.supportedReasoningLevels ?? []).map((level) => (
                 <DropdownMenuRadioItem key={level} value={level}>
                   <span className="prelude-menu__item-label">{REASONING_LABELS[level]}</span>
                 </DropdownMenuRadioItem>

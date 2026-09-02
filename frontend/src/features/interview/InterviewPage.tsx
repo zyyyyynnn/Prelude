@@ -95,6 +95,14 @@ function InterviewSetup() {
     patch: Pick<LlmConfigPayload, 'model'> | Pick<LlmConfigPayload, 'reasoningLevel'>,
   ) {
     if (!llmConfig.data) return
+    if ('model' in patch) {
+      const provider = providers.data?.find((item) => item.providerKey === llmConfig.data.provider)
+      const capability = provider?.models.find((item) => item.model === patch.model)
+      if (capability && !capability.supportedReasoningLevels.includes(llmConfig.data.reasoningLevel)) {
+        feedback.notify('该模型不支持当前思考深度，请先显式选择兼容的思考深度', 'error')
+        return
+      }
+    }
     saveModel.mutate({
       provider: llmConfig.data.provider,
       customEndpointUrl: llmConfig.data.customEndpointUrl ?? undefined,
