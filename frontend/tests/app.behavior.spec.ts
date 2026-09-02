@@ -475,6 +475,61 @@ test('@smoke updates the prompt model depth before the save request completes', 
   expect((await resetRequest).postDataJSON()).toMatchObject({ reasoningLevel: 'AUTO' })
 })
 
+test('@smoke waits for model configuration persistence before starting an interview', async ({ page }) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+
+  let releaseSave!: () => void
+  const saveReleased = new Promise<void>((resolve) => {
+    releaseSave = resolve
+  })
+  let signalSaveStarted!: () => void
+  const saveStarted = new Promise<void>((resolve) => {
+    signalSaveStarted = resolve
+  })
+  await page.route('**/api/llm/config', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.fallback()
+      return
+    }
+    const body = route.request().postDataJSON() as Record<string, unknown>
+    signalSaveStarted()
+    await saveReleased
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok({
+        provider: (body as { provider?: string }).provider ?? 'deepseek',
+        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+        customEndpointUrl: null,
+        hasApiKey: false,
+        apiKeyMasked: null,
+        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        fallbackModels: [],
+        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
+      }),
+    })
+  })
+
+  await page.goto('/interview')
+  await selectContext(page, '选择简历', '作品集简历.pdf')
+  await selectContext(page, '选择岗位', '前端工程师')
+  const start = page.getByRole('button', { name: '开始面试' })
+  await expect(start).toBeEnabled()
+
+  await page.getByRole('button', { name: /模型：/ }).click()
+  await page.getByRole('menuitem', { name: /思考深度/ }).hover()
+  await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
+  await saveStarted
+
+  await expect(start).toBeDisabled()
+  expect(state.requests.some((request) => request.path === '/api/interview/start')).toBe(false)
+
+  releaseSave()
+  await expect(page.getByText('模型配置已更新')).toBeVisible()
+  await expect(start).toBeEnabled()
+})
+
 test('@smoke persists pinned and hidden sessions per account', async ({ page }) => {
   const state: ApiState = {
     requests: [],

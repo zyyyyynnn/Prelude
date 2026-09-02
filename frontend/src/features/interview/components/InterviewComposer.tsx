@@ -116,7 +116,7 @@ export function InterviewSetupComposer({
   const [jdEnabled, setJdEnabled] = useState(false)
   const selectedResume = resumes.find((item) => item.id === resumeId)
   const selectedPosition = positions.find((item) => item.id === positionId)
-  const canStart = Boolean(selectedResume && selectedPosition) && !creating
+  const canStart = Boolean(selectedResume && selectedPosition) && !savingModel && !creating
 
   async function uploadFiles(files: FileList | null) {
     if (!files) return
