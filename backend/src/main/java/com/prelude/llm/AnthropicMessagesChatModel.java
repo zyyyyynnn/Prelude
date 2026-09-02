@@ -124,6 +124,7 @@ final class AnthropicMessagesChatModel implements ChatModel {
         payload.put("max_tokens", DEFAULT_MAX_TOKENS);
         payload.put("stream", stream);
         if (reasoningLevel != ModelCapabilityResponse.ReasoningLevel.AUTO) {
+            payload.put("thinking", Map.of("type", "adaptive"));
             payload.put("output_config", Map.of(
                 "effort", reasoningLevel.name().toLowerCase(java.util.Locale.ROOT)));
         }

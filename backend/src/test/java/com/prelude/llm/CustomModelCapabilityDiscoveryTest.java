@@ -97,6 +97,10 @@ class CustomModelCapabilityDiscoveryTest {
                       "low":{"supported":true},
                       "medium":{"supported":false},
                       "high":{"supported":true}
+                    },
+                    "thinking":{
+                      "supported":true,
+                      "types":{"adaptive":{"supported":true}}
                     }
                   }
                 }
@@ -109,6 +113,33 @@ class CustomModelCapabilityDiscoveryTest {
         assertThat(capability.reasoning()).isTrue();
         assertThat(capability.supportedReasoningLevels())
             .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH);
+    }
+
+    @Test
+    void anthropicEffortWithoutAdaptiveThinkingStaysAutoOnly() throws Exception {
+        start("/v1/models/account-model", exchange -> respond(exchange, 200, """
+            {
+              "id":"account-model",
+              "capabilities":{
+                "effort":{
+                  "supported":true,
+                  "low":{"supported":true},
+                  "medium":{"supported":true},
+                  "high":{"supported":true}
+                },
+                "thinking":{
+                  "supported":true,
+                  "types":{"adaptive":{"supported":false}}
+                }
+              }
+            }
+            """));
+
+        ModelCapabilityResponse capability = discovery().discover(
+            "anthropic-messages", root(), "account-key", "account-model");
+
+        assertThat(capability.reasoning()).isFalse();
+        assertThat(capability.supportedReasoningLevels()).containsExactly(ReasoningLevel.AUTO);
     }
 
     private CustomModelCapabilityDiscovery discovery() {

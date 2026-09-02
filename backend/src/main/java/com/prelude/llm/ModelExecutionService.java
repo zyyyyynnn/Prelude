@@ -183,6 +183,9 @@ public class ModelExecutionService {
         if (request.responseMode() == null) {
             throw BusinessException.badRequest("模型输出模式不能为空");
         }
+        if (streaming && request.tools() != null && !request.tools().isEmpty()) {
+            throw BusinessException.badRequest("当前不支持流式工具调用");
+        }
         var capability = capabilityCatalog.capability(snapshot.getProvider(), snapshot.getModel());
         if (streaming && !capability.streaming()) {
             throw BusinessException.badRequest("所选模型不支持流式输出");

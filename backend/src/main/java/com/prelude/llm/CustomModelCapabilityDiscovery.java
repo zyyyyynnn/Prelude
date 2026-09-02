@@ -68,8 +68,12 @@ public class CustomModelCapabilityDiscovery {
                     return conservative(provider, model);
                 }
                 JsonNode root = objectMapper.readTree(response.body().string());
-                JsonNode effort = root.path("capabilities").path("effort");
-                if (!effort.path("supported").asBoolean(false)) {
+                JsonNode capabilities = root.path("capabilities");
+                JsonNode effort = capabilities.path("effort");
+                JsonNode thinking = capabilities.path("thinking");
+                boolean adaptiveThinking = thinking.path("supported").asBoolean(false)
+                    && thinking.path("types").path("adaptive").path("supported").asBoolean(false);
+                if (!effort.path("supported").asBoolean(false) || !adaptiveThinking) {
                     return conservative(provider, model);
                 }
                 List<ReasoningLevel> levels = new ArrayList<>();
@@ -94,7 +98,7 @@ public class CustomModelCapabilityDiscovery {
     ) {
         if (probeOpenAiEffort(protocol, baseUrl, apiKey, model, "prelude_probe_invalid")
             != ProbeResult.UNSUPPORTED) {
-            log.info("OpenAI-compatible endpoint did not prove reasoning parameter recognition for model {}; using AUTO only",
+            log.info("Custom OpenAI endpoint did not prove reasoning parameter recognition for model {}; using AUTO only",
                 model);
             return conservative(provider, model);
         }
@@ -104,7 +108,7 @@ public class CustomModelCapabilityDiscovery {
             ProbeResult result = probeOpenAiEffort(
                 protocol, baseUrl, apiKey, model, level.name().toLowerCase(java.util.Locale.ROOT));
             if (result == ProbeResult.INCONCLUSIVE) {
-                log.info("OpenAI-compatible reasoning probe was inconclusive for model {}; using AUTO only", model);
+                log.info("Custom OpenAI reasoning probe was inconclusive for model {}; using AUTO only", model);
                 return conservative(provider, model);
             }
             if (result == ProbeResult.SUPPORTED) {

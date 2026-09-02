@@ -106,6 +106,52 @@ class SpringAiExecutionContractTest {
     }
 
     @Test
+    void deepSeekBuiltInUsesTheFrozenModelAndReasoningOnTheRealWireContract() throws Exception {
+        AtomicReference<String> requestPath = new AtomicReference<>();
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            requestPath.set(exchange.getRequestURI().getPath());
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, """
+                {"id":"deepseek-test","object":"chat.completion","created":1,"model":"deepseek-v4-pro",
+                 "choices":[{"index":0,"message":{"role":"assistant","content":"deepseek-ok"},"finish_reason":"stop"}],
+                 "usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}
+                """);
+        });
+        server.start();
+
+        ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        CustomLlmEgressPolicy policy = new CustomLlmEgressPolicy(
+            true, true, Set.of(server.getAddress().getPort()), Dns.SYSTEM);
+        SpringAiModelFactory factory = new SpringAiModelFactory(
+            "sk-system",
+            "http://127.0.0.1:" + server.getAddress().getPort(),
+            policy,
+            new EgressHttpClientFactory(policy),
+            catalog,
+            new tools.jackson.databind.ObjectMapper()
+        );
+        ModelExecutionSnapshot snapshot = snapshot("deepseek", "deepseek-v4-pro", "HIGH", null);
+        ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
+        ModelProfileService profileService = mock(ModelProfileService.class);
+        when(snapshotService.require(1L)).thenReturn(snapshot);
+        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn("sk-account");
+        ModelExecutionService service = new ModelExecutionService(
+            factory, snapshotService, profileService, catalog, new LlmTransportRetry(1));
+
+        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.JSON_OBJECT));
+
+        assertThat(result.content()).isEqualTo("deepseek-ok");
+        assertThat(result.usage().model()).isEqualTo("deepseek-v4-pro");
+        assertThat(requestPath.get()).isEqualTo("/chat/completions");
+        assertThat(requestBody.get())
+            .contains("\"model\":\"deepseek-v4-pro\"")
+            .contains("\"reasoning_effort\":\"high\"")
+            .contains("\"response_format\":{\"type\":\"json_object\"}");
+    }
+
+    @Test
     void customEndpointTransientFailuresProduceExactlyThreeActualHttpRequests() throws Exception {
         AtomicInteger requests = new AtomicInteger();
         startOpenAiStub(exchange -> {
@@ -230,7 +276,43 @@ class SpringAiExecutionContractTest {
             "anthropic-messages", "account-discovered-model", server.getAddress().getPort(), 1, "MEDIUM");
         service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
 
+        assertThat(requestBody.get()).contains("\"thinking\":{\"type\":\"adaptive\"}");
         assertThat(requestBody.get()).contains("\"output_config\":{\"effort\":\"medium\"}");
+    }
+
+    @Test
+    void streamingToolsAreRejectedInsteadOfSilentlyDiscarded() {
+        AtomicInteger subscriptions = new AtomicInteger();
+        ChatModel model = new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Flux<ChatResponse> stream(Prompt prompt) {
+                subscriptions.incrementAndGet();
+                return Flux.just(response("unexpected"));
+            }
+        };
+        ModelExecutionService service = fakeService(
+            model, snapshot("deepseek", "deepseek-v4-pro", "AUTO", null), 1);
+        LlmPort.ToolBinding tool = new LlmPort.ToolBinding(
+            "noop", "noop", "{\"type\":\"object\"}", ignored -> "ok");
+        LlmPort.ModelExecutionRequest streamingToolRequest = new LlmPort.ModelExecutionRequest(
+            1L,
+            "test",
+            "test.prompt",
+            LlmPort.ResponseMode.PLAIN_TEXT,
+            List.of(new LlmPort.Message("user", "hello")),
+            List.of(),
+            List.of(tool)
+        );
+
+        assertThatThrownBy(() -> service.stream(streamingToolRequest, sink(new ArrayList<>())))
+            .isInstanceOf(BusinessException.class)
+            .hasMessage("当前不支持流式工具调用");
+        assertThat(subscriptions).hasValue(0);
     }
 
     @Test
