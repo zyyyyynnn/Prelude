@@ -40,6 +40,7 @@ public class LlmController {
                 request.customEndpointUrl(),
                 request.apiKey(),
                 request.reasoningLevel(),
+                request.maxOutputTokens(),
                 request.fallbackModels()
             )));
     }
@@ -67,6 +68,7 @@ public class LlmController {
         String customEndpointUrl,
         String apiKey,
         String reasoningLevel,
+        Integer maxOutputTokens,
         List<String> fallbackModels
     ) {
     }

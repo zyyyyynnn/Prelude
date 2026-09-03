@@ -68,10 +68,11 @@ class ModelExecutionSnapshotTest {
 
         // Later profile mutation: the frozen snapshot must not change.
         llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
-            "deepseek", "deepseek-v4-flash", null, null, "AUTO", java.util.List.of()));
+            "deepseek", "deepseek-v4-flash", null, null, "AUTO", 8192, java.util.List.of()));
         ModelExecutionSnapshot reloaded = snapshotMapper.selectById(ref.snapshotId());
         assertThat(reloaded.getModel()).isEqualTo("deepseek-v4-pro");
         assertThat(reloaded.getReasoningLevel()).isEqualTo("HIGH");
+        assertThat(reloaded.getEffectiveParametersJson()).contains("\"maxOutputTokens\":4096");
     }
 
     @Test
@@ -107,13 +108,14 @@ class ModelExecutionSnapshotTest {
     }
 
     @Test
-    void unsupportedReasoningLevelIsRejectedNotDowngraded() {
-        assertThatThrownBy(() -> reasoningLevels.parse("xhigh"))
-            .isInstanceOf(com.prelude.BusinessException.class)
-            .hasMessage("思考深度仅支持 AUTO、LOW、MEDIUM、HIGH");
+    void reasoningVocabularyIncludesExtraHighAndMaxWithoutGuessingUnknownValues() {
+        assertThat(reasoningLevels.parse("xhigh"))
+            .isEqualTo(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.XHIGH);
+        assertThat(reasoningLevels.parse("max"))
+            .isEqualTo(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.MAX);
         assertThatThrownBy(() -> reasoningLevels.parse("ultra"))
             .isInstanceOf(com.prelude.BusinessException.class)
-            .hasMessage("思考深度仅支持 AUTO、LOW、MEDIUM、HIGH");
+            .hasMessage("思考深度仅支持 AUTO、LOW、MEDIUM、HIGH、XHIGH、MAX");
         assertThat(reasoningLevels.parse("AUTO")).isEqualTo(
             com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO);
     }
@@ -123,7 +125,7 @@ class ModelExecutionSnapshotTest {
     void byokCredentialIsEncryptedAtRestAndMaskedOnRead() {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
         llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
-            "deepseek", "deepseek-v4-pro", null, "sk-live-secret-123456", "AUTO", java.util.List.of()));
+            "deepseek", "deepseek-v4-pro", null, "sk-live-secret-123456", "AUTO", 4096, java.util.List.of()));
 
         ProviderCredential stored = credentialMapper.selectOne(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProviderCredential>()
@@ -143,13 +145,13 @@ class ModelExecutionSnapshotTest {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
         llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
-            "deepseek", "deepseek-v4-pro", null, "sk-immutable-A", "AUTO", java.util.List.of()));
+            "deepseek", "deepseek-v4-pro", null, "sk-immutable-A", "AUTO", 4096, java.util.List.of()));
         ModelExecutionSnapshotRef snapshotARef = llmPort.freezeSnapshot(
             new LlmPort.FreezeSnapshotCommand(accountId, null, null));
         ModelExecutionSnapshot snapshotA = snapshotMapper.selectById(snapshotARef.snapshotId());
 
         llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
-            "deepseek", "deepseek-v4-pro", null, "sk-immutable-B", "AUTO", java.util.List.of()));
+            "deepseek", "deepseek-v4-pro", null, "sk-immutable-B", "AUTO", 4096, java.util.List.of()));
         ModelExecutionSnapshotRef snapshotBRef = llmPort.freezeSnapshot(
             new LlmPort.FreezeSnapshotCommand(accountId, null, null));
         ModelExecutionSnapshot snapshotB = snapshotMapper.selectById(snapshotBRef.snapshotId());
@@ -214,7 +216,7 @@ class ModelExecutionSnapshotTest {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
         assertThatThrownBy(() -> llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
-            "deepseek", "deepseek-unknown", null, null, "AUTO", java.util.List.of())))
+            "deepseek", "deepseek-unknown", null, null, "AUTO", 4096, java.util.List.of())))
             .isInstanceOf(com.prelude.BusinessException.class)
             .hasMessage("当前接入方式不支持该模型");
     }
@@ -230,6 +232,7 @@ class ModelExecutionSnapshotTest {
         profile.setProvider(provider);
         profile.setModel(model);
         profile.setReasoningLevel(reasoningLevel);
+        profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         profile.setCustomEndpointUrl(customEndpointUrl);
         profile.setFallbackModelsJson("[]");
         if (customEndpointUrl != null) {

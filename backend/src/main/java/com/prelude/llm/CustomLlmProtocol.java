@@ -9,7 +9,7 @@ import java.util.List;
 public enum CustomLlmProtocol {
     OPENAI_RESPONSES("openai-responses", "OpenAI Responses", "/responses"),
     OPENAI_CHAT_COMPLETIONS("openai-chat-completions", "OpenAI Chat Completions", "/chat/completions"),
-    ANTHROPIC_MESSAGES("anthropic-messages", "Anthropic Messages", "/messages");
+    ANTHROPIC_MESSAGES("anthropic-messages", "Anthropic Messages", "/v1/messages");
 
     private final String providerKey;
     private final String displayName;

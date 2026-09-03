@@ -26,6 +26,8 @@ public record ModelCapabilityResponse(
         AUTO,
         LOW,
         MEDIUM,
-        HIGH
+        HIGH,
+        XHIGH,
+        MAX
     }
 }

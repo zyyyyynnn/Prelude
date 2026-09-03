@@ -157,6 +157,7 @@ class ReportJobCompletionMySqlTest {
         profile.setProvider(ModelCapabilityCatalog.PROVIDER_DEEPSEEK);
         profile.setModel("deepseek-v4-pro");
         profile.setReasoningLevel("AUTO");
+        profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         profile.setFallbackModelsJson("[]");
         profileMapper.insert(profile);
 
@@ -166,7 +167,7 @@ class ReportJobCompletionMySqlTest {
         snapshot.setProvider(ModelCapabilityCatalog.PROVIDER_DEEPSEEK);
         snapshot.setModel("deepseek-v4-pro");
         snapshot.setReasoningLevel("AUTO");
-        snapshot.setEffectiveParametersJson("{}");
+        snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
         snapshot.setFallbackModelsJson("[]");
         snapshotMapper.insert(snapshot);

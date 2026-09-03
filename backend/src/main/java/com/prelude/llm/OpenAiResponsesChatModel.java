@@ -40,6 +40,7 @@ final class OpenAiResponsesChatModel implements ChatModel {
     private final String apiKey;
     private final String model;
     private final ModelCapabilityResponse.ReasoningLevel reasoningLevel;
+    private final int maxOutputTokens;
     private final okhttp3.OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
 
@@ -48,6 +49,7 @@ final class OpenAiResponsesChatModel implements ChatModel {
         String apiKey,
         String model,
         String reasoningLevel,
+        int maxOutputTokens,
         okhttp3.OkHttpClient httpClient,
         ObjectMapper objectMapper
     ) {
@@ -55,6 +57,7 @@ final class OpenAiResponsesChatModel implements ChatModel {
         this.apiKey = apiKey;
         this.model = model;
         this.reasoningLevel = ModelCapabilityResponse.ReasoningLevel.valueOf(reasoningLevel);
+        this.maxOutputTokens = maxOutputTokens;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
     }
@@ -124,6 +127,7 @@ final class OpenAiResponsesChatModel implements ChatModel {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("input", prompt.getInstructions().stream().map(this::inputMessage).toList());
+        payload.put("max_output_tokens", maxOutputTokens);
         payload.put("stream", stream);
         if (reasoningLevel != ModelCapabilityResponse.ReasoningLevel.AUTO) {
             payload.put("reasoning", Map.of(

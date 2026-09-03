@@ -78,8 +78,6 @@ public interface LlmPort {
     interface StreamSink {
 
         void onNext(String delta);
-
-        void onUsage(Usage usage);
     }
 
     record CompletionResult(String content, Usage usage) {

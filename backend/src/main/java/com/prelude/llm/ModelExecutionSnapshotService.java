@@ -51,9 +51,9 @@ public class ModelExecutionSnapshotService {
         snapshot.setProvider(provider);
         snapshot.setModel(model);
         snapshot.setReasoningLevel(level.name());
-        snapshot.setEffectiveParametersJson(profile.getEffectiveParametersJson() == null
-            ? "{}"
-            : profile.getEffectiveParametersJson());
+        ModelExecutionParameters executionParameters = ModelExecutionParameters.fromProfileJson(
+            profile.getEffectiveParametersJson(), objectMapper);
+        snapshot.setEffectiveParametersJson(executionParameters.toJson(objectMapper));
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
         snapshot.setFallbackModelsJson(profile.getFallbackModelsJson() == null
             ? "[]"

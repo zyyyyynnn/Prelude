@@ -11,9 +11,10 @@ import com.prelude.llm.api.LlmPort.ModelExecutionRequest;
 import com.prelude.llm.api.LlmPort.StreamSink;
 import com.prelude.llm.api.LlmPort.ToolBinding;
 import com.prelude.llm.api.LlmPort.Usage;
+import com.prelude.llm.api.LlmUsageRecorded;
+import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -22,13 +23,18 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,19 +57,23 @@ public class ModelExecutionService {
     private final ModelProfileService profileService;
     private final ModelCapabilityCatalog capabilityCatalog;
     private final LlmTransportRetry transportRetry;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
     public ModelExecutionService(
         SpringAiModelFactory modelFactory,
         ModelExecutionSnapshotService snapshotService,
         ModelProfileService profileService,
         ModelCapabilityCatalog capabilityCatalog,
-        LlmTransportRetry transportRetry
+        LlmTransportRetry transportRetry,
+        ApplicationEventPublisher eventPublisher
     ) {
         this.modelFactory = modelFactory;
         this.snapshotService = snapshotService;
         this.profileService = profileService;
         this.capabilityCatalog = capabilityCatalog;
         this.transportRetry = transportRetry;
+        this.eventPublisher = eventPublisher;
     }
 
     public CompletionResult complete(ModelExecutionRequest request) {
@@ -76,18 +86,16 @@ public class ModelExecutionService {
             validateRequest(effective, request, false);
             ChatModel chatModel = modelFactory.chatModel(effective, apiKey);
             List<ToolCallback> toolCallbacks = toToolCallbacks(request.tools());
-            Prompt prompt = prompt(request, modelFactory.requestOptions(effective, request.responseMode()));
+            ChatOptions options = withToolCallbacks(
+                modelFactory.requestOptions(effective, request.responseMode()), toolCallbacks);
+            Prompt prompt = prompt(request, options);
             try {
-                ChatResponse response = transportRetry.execute(
-                    "chat-" + effective.getProvider() + "-" + model,
-                    () -> call(chatModel, prompt, toolCallbacks));
-                return new CompletionResult(extractContent(response), usageOf(effective, request, response));
-            } catch (RuntimeException failure) {
-                if (!transportRetry.isTransient(failure)) {
-                    throw mapFailure(failure);
-                }
-                lastTransient = failure;
-                log.warn("Model execution exhausted transport retry for model {} (snapshot {})",
+                LogicalCompletion completion = completeLogicalTurn(chatModel, prompt, effective, request);
+                publishUsage(effective, request, completion.usage());
+                return new CompletionResult(completion.content(), completion.usage());
+            } catch (InitialTransportFailure failure) {
+                lastTransient = failure.transportFailure();
+                log.warn("Model execution exhausted transport retry before tool execution for model {} (snapshot {})",
                     model, effective.getId());
             }
         }
@@ -112,7 +120,7 @@ public class ModelExecutionService {
                 Flux<ChatResponse> execution = chatModel.stream(prompt)
                     .doOnNext(response -> {
                         latest.set(response);
-                        String delta = extractDelta(response);
+                        String delta = extractDelta(effective, response);
                         if (delta != null && !delta.isEmpty()) {
                             emitted.set(true);
                             sink.onNext(delta);
@@ -125,7 +133,10 @@ public class ModelExecutionService {
                         .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
                 }
                 execution.blockLast(STREAM_TIMEOUT);
-                sink.onUsage(usageOf(effective, request, latest.get()));
+                ChatResponse terminal = latest.get();
+                if (hasProviderUsage(terminal)) {
+                    publishUsage(effective, request, usageOf(effective, request, terminal));
+                }
                 return;
             } catch (RuntimeException failure) {
                 if (emitted.get()) {
@@ -144,16 +155,56 @@ public class ModelExecutionService {
             : lastTransient);
     }
 
-    private ChatResponse call(ChatModel chatModel, Prompt prompt, List<ToolCallback> toolCallbacks) {
-        if (toolCallbacks.isEmpty()) {
-            return chatModel.call(prompt);
+    private LogicalCompletion completeLogicalTurn(
+        ChatModel chatModel,
+        Prompt initialPrompt,
+        ModelExecutionSnapshot snapshot,
+        ModelExecutionRequest request
+    ) {
+        Prompt prompt = initialPrompt;
+        UsageAccumulator usage = new UsageAccumulator();
+        ChatResponse response;
+        try {
+            response = callModel(chatModel, prompt, snapshot);
+        } catch (RuntimeException failure) {
+            if (transportRetry.isTransient(failure)) {
+                throw new InitialTransportFailure(failure);
+            }
+            throw mapFailure(failure);
         }
-        return ChatClient.builder(chatModel)
-            .defaultTools(toolCallbacks.toArray())
-            .build()
-            .prompt(prompt)
-            .call()
-            .chatResponse();
+        usage.add(response);
+
+        while (response.hasToolCalls()) {
+            ToolExecutionResult toolResult = toolCallingManager.executeToolCalls(prompt, response);
+            prompt = new Prompt(toolResult.conversationHistory(), prompt.getOptions());
+            try {
+                response = callModel(chatModel, prompt, snapshot);
+            } catch (RuntimeException failure) {
+                // A tool side effect has already committed. Never restart this logical
+                // turn on a fallback model; only this continuation transport was retried.
+                throw mapFailure(failure);
+            }
+            usage.add(response);
+        }
+
+        Usage logicalUsage = usage.toUsage(snapshot, request);
+        return new LogicalCompletion(extractContent(snapshot, response), logicalUsage);
+    }
+
+    private ChatResponse callModel(ChatModel chatModel, Prompt prompt, ModelExecutionSnapshot snapshot) {
+        return transportRetry.execute(
+            "chat-" + snapshot.getProvider() + "-" + snapshot.getModel(),
+            () -> chatModel.call(prompt));
+    }
+
+    private ChatOptions withToolCallbacks(ChatOptions options, List<ToolCallback> toolCallbacks) {
+        if (toolCallbacks.isEmpty()) {
+            return options;
+        }
+        if (!(options instanceof ToolCallingChatOptions toolOptions)) {
+            throw BusinessException.badRequest("所选模型运行时不支持工具调用");
+        }
+        return toolOptions.mutate().toolCallbacks(toolCallbacks).build();
     }
 
     private List<ToolCallback> toToolCallbacks(List<ToolBinding> tools) {
@@ -187,6 +238,17 @@ public class ModelExecutionService {
             throw BusinessException.badRequest("当前不支持流式工具调用");
         }
         var capability = capabilityCatalog.capability(snapshot.getProvider(), snapshot.getModel());
+        if (!CustomLlmProtocol.isCustom(snapshot.getProvider())) {
+            ModelCapabilityResponse.ReasoningLevel reasoningLevel;
+            try {
+                reasoningLevel = ModelCapabilityResponse.ReasoningLevel.valueOf(snapshot.getReasoningLevel());
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalStateException("Frozen reasoning level is invalid", exception);
+            }
+            if (!capability.supportedReasoningLevels().contains(reasoningLevel)) {
+                throw BusinessException.badRequest("所选模型不支持该思考深度");
+            }
+        }
         if (streaming && !capability.streaming()) {
             throw BusinessException.badRequest("所选模型不支持流式输出");
         }
@@ -268,20 +330,43 @@ public class ModelExecutionService {
         return copy;
     }
 
-    private String extractContent(ChatResponse response) {
-        if (response == null || response.getResult() == null
-            || response.getResult().getOutput() == null
+    private String extractContent(ModelExecutionSnapshot snapshot, ChatResponse response) {
+        if (response == null) {
+            throw BusinessException.badRequest("模型服务返回内容为空");
+        }
+        if ("anthropic-messages".equals(snapshot.getProvider())) {
+            for (int index = response.getResults().size() - 1; index >= 0; index--) {
+                var output = response.getResults().get(index).getOutput();
+                if (output != null && isVisibleAnthropicOutput(output)
+                    && output.getText() != null && !output.getText().isBlank()) {
+                    return output.getText();
+                }
+            }
+            throw BusinessException.badRequest("模型服务返回内容为空");
+        }
+        if (response.getResult() == null || response.getResult().getOutput() == null
             || response.getResult().getOutput().getText() == null) {
             throw BusinessException.badRequest("模型服务返回内容为空");
         }
         return response.getResult().getOutput().getText();
     }
 
-    private String extractDelta(ChatResponse response) {
+    private String extractDelta(ModelExecutionSnapshot snapshot, ChatResponse response) {
         if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
             return null;
         }
+        if ("anthropic-messages".equals(snapshot.getProvider())
+            && !isVisibleAnthropicOutput(response.getResult().getOutput())) {
+            return null;
+        }
         return response.getResult().getOutput().getText();
+    }
+
+    private boolean isVisibleAnthropicOutput(AssistantMessage output) {
+        var metadata = output.getMetadata();
+        return !metadata.containsKey("thinking")
+            && !metadata.containsKey("signature")
+            && !metadata.containsKey("data");
     }
 
     private Usage usageOf(ModelExecutionSnapshot snapshot, ModelExecutionRequest request, ChatResponse response) {
@@ -296,6 +381,34 @@ public class ModelExecutionService {
         }
         return new Usage(snapshot.getId(), request.purpose(), snapshot.getProvider(), snapshot.getModel(),
             input, output, total);
+    }
+
+    private boolean hasProviderUsage(ChatResponse response) {
+        return response != null
+            && response.getMetadata() != null
+            && response.getMetadata().getUsage() != null;
+    }
+
+    private void publishUsage(ModelExecutionSnapshot snapshot, ModelExecutionRequest request, Usage usage) {
+        LlmUsageRecorded event = new LlmUsageRecorded(
+            snapshot.getAccountId(),
+            snapshot.getId(),
+            request.purpose(),
+            request.promptId(),
+            snapshot.getProvider(),
+            snapshot.getModel(),
+            usage.inputTokens(),
+            usage.outputTokens(),
+            usage.totalTokens(),
+            Instant.now(),
+            null
+        );
+        try {
+            eventPublisher.publishEvent(event);
+        } catch (RuntimeException listenerFailure) {
+            log.warn("LLM usage listener failed for snapshot {}; business execution remains successful ({})",
+                snapshot.getId(), listenerFailure.getClass().getSimpleName());
+        }
     }
 
     private RuntimeException mapFailure(Throwable failure) {
@@ -321,5 +434,49 @@ public class ModelExecutionService {
             }
         }
         return false;
+    }
+
+    private record LogicalCompletion(String content, Usage usage) {
+    }
+
+    private static final class InitialTransportFailure extends RuntimeException {
+
+        private InitialTransportFailure(RuntimeException transportFailure) {
+            super(transportFailure);
+        }
+
+        private RuntimeException transportFailure() {
+            return (RuntimeException) getCause();
+        }
+    }
+
+    private static final class UsageAccumulator {
+
+        private Long inputTokens;
+        private Long outputTokens;
+        private Long totalTokens;
+
+        void add(ChatResponse response) {
+            if (response == null || response.getMetadata() == null || response.getMetadata().getUsage() == null) {
+                return;
+            }
+            var usage = response.getMetadata().getUsage();
+            inputTokens = add(inputTokens, usage.getPromptTokens());
+            outputTokens = add(outputTokens, usage.getCompletionTokens());
+            totalTokens = add(totalTokens, usage.getTotalTokens());
+        }
+
+        Usage toUsage(ModelExecutionSnapshot snapshot, ModelExecutionRequest request) {
+            return new Usage(
+                snapshot.getId(), request.purpose(), snapshot.getProvider(), snapshot.getModel(),
+                inputTokens, outputTokens, totalTokens);
+        }
+
+        private Long add(Long current, Number next) {
+            if (next == null) {
+                return current;
+            }
+            return (current == null ? 0L : current) + next.longValue();
+        }
     }
 }

@@ -19,13 +19,13 @@ const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
   longContext: true,
   embedding: false,
   nativeRealtimeVoice: false,
-  supportedReasoningLevels: ['AUTO', 'HIGH'],
+  supportedReasoningLevels: ['AUTO', 'LOW', 'HIGH', 'MAX'],
 })
 
 const customCapability = (
   provider: string,
   model: string,
-  supportedReasoningLevels: Array<'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH'> = ['AUTO'],
+  supportedReasoningLevels: Array<'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'> = ['AUTO'],
 ) => ({
   provider,
   model,
@@ -201,7 +201,7 @@ async function respond(route: Route, state: ApiState) {
     data = customCapability(
       (body as { provider?: string }).provider ?? 'openai-chat-completions',
       (body as { model?: string }).model ?? 'account-discovered-model',
-      ['AUTO', 'HIGH'],
+      ['AUTO', 'LOW', 'MEDIUM', 'HIGH', 'XHIGH', 'MAX'],
     )
   else if (path === '/api/attachments' && method === 'POST')
     data = {
@@ -219,6 +219,7 @@ async function respond(route: Route, state: ApiState) {
       hasApiKey: false,
       apiKeyMasked: null,
       reasoningLevel: 'AUTO',
+      maxOutputTokens: 4096,
       fallbackModels: [],
       capability: deepSeekCapability(),
     }
@@ -236,6 +237,7 @@ async function respond(route: Route, state: ApiState) {
       hasApiKey: true,
       apiKeyMasked: 'sk-***',
       reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+      maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
       fallbackModels: [],
       capability:
         ((body as { provider?: string }).provider ?? 'deepseek') === 'deepseek'
@@ -393,6 +395,7 @@ test('@smoke centers the async button indicator without resizing the control', a
         hasApiKey: false,
         apiKeyMasked: null,
         reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
         fallbackModels: [],
         capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
@@ -447,6 +450,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
         hasApiKey: false,
         apiKeyMasked: null,
         reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
         fallbackModels: [],
         capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
@@ -505,6 +509,7 @@ test('@smoke waits for model configuration persistence before starting an interv
         hasApiKey: false,
         apiKeyMasked: null,
         reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
         fallbackModels: [],
         capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
@@ -1012,6 +1017,8 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
   await page.getByLabel('Base URL').fill('https://api.openai.com/v1/chat/completions/')
   await page.getByLabel('模型', { exact: true }).fill('account-discovered-model')
   await page.getByLabel('API Key', { exact: true }).fill('sk-test')
+  await page.getByRole('combobox', { name: '最大回复长度' }).click()
+  await page.getByRole('option', { name: '长回复 · 8,192 tokens' }).click()
   await page.getByRole('button', { name: '保存设置' }).click()
   await expect(page.getByText('LLM 配置已保存')).toBeVisible()
   const save = state.requests.find(
@@ -1023,6 +1030,7 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
     model: 'account-discovered-model',
     apiKey: 'sk-test',
     reasoningLevel: 'AUTO',
+    maxOutputTokens: 8192,
     fallbackModels: [],
   })
 })
@@ -1047,7 +1055,11 @@ test('@byok discovers selected custom model reasoning levels from the backend', 
   ).toBe(true)
   await page.getByRole('combobox', { name: '思考深度' }).click()
   await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '低', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '中', exact: true })).toBeVisible()
   await expect(page.getByRole('option', { name: '高', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '超高', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '最大', exact: true })).toBeVisible()
 })
 
 test('@byok keeps only default reasoning when an OpenAI capability probe is inconclusive', async ({ page }) => {

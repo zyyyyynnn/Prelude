@@ -30,7 +30,7 @@ class ModelProfileCustomCapabilityTest {
 
         var result = fixture.service().saveConfiguration(7L, new SaveConfigurationCommand(
             "openai-chat-completions", "account-model", "https://example.com/v1",
-            null, "HIGH", List.of()));
+            null, "HIGH", 4096, List.of()));
 
         assertThat(result.reasoningLevel()).isEqualTo("HIGH");
         assertThat(result.capability().supportedReasoningLevels())
@@ -50,7 +50,7 @@ class ModelProfileCustomCapabilityTest {
 
         assertThatThrownBy(() -> fixture.service().saveConfiguration(7L, new SaveConfigurationCommand(
             "openai-chat-completions", "account-model", "https://example.com/v1",
-            null, "HIGH", List.of())))
+            null, "HIGH", 4096, List.of())))
             .isInstanceOf(BusinessException.class)
             .hasMessage("所选模型不支持该思考深度");
 

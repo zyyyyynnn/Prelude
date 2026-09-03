@@ -11,9 +11,9 @@ export const customProviderProtocol = {
     placeholder: '例如：https://api.openai.com/v1',
   },
   'anthropic-messages': {
-    endpointSuffix: '/messages',
+    endpointSuffix: '/v1/messages',
     modelDiscovery: true,
-    placeholder: '例如：https://api.anthropic.com/v1',
+    placeholder: '例如：https://api.anthropic.com',
   },
 } as const
 

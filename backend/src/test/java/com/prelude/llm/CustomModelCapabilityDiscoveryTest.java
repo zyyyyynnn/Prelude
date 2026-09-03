@@ -34,8 +34,10 @@ class CustomModelCapabilityDiscoveryTest {
         start("/v1/responses", exchange -> {
             requests.incrementAndGet();
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(body).contains("\"input\":\"OK\"").contains("\"max_output_tokens\":16");
             if (body.contains("\"effort\":\"prelude_probe_invalid\"")
-                || body.contains("\"effort\":\"medium\"")) {
+                || body.contains("\"effort\":\"medium\"")
+                || body.contains("\"effort\":\"xhigh\"")) {
                 respond(exchange, 400, "{\"error\":{\"message\":\"unsupported effort\"}}");
             } else {
                 respond(exchange, 200, "{\"output_text\":\"OK\"}");
@@ -45,10 +47,10 @@ class CustomModelCapabilityDiscoveryTest {
         ModelCapabilityResponse capability = discovery().discover(
             "openai-responses", root(), "account-key", "account-model");
 
-        assertThat(requests).hasValue(4);
+        assertThat(requests).hasValue(6);
         assertThat(capability.reasoning()).isTrue();
         assertThat(capability.supportedReasoningLevels())
-            .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH);
+            .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH, ReasoningLevel.MAX);
     }
 
     @Test
@@ -96,7 +98,9 @@ class CustomModelCapabilityDiscoveryTest {
                       "supported":true,
                       "low":{"supported":true},
                       "medium":{"supported":false},
-                      "high":{"supported":true}
+                      "high":{"supported":true},
+                      "xhigh":{"supported":false},
+                      "max":{"supported":true}
                     },
                     "thinking":{
                       "supported":true,
@@ -108,11 +112,11 @@ class CustomModelCapabilityDiscoveryTest {
         });
 
         ModelCapabilityResponse capability = discovery().discover(
-            "anthropic-messages", root(), "account-key", "account-model");
+            "anthropic-messages", anthropicRoot(), "account-key", "account-model");
 
         assertThat(capability.reasoning()).isTrue();
         assertThat(capability.supportedReasoningLevels())
-            .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH);
+            .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH, ReasoningLevel.MAX);
     }
 
     @Test
@@ -136,7 +140,7 @@ class CustomModelCapabilityDiscoveryTest {
             """));
 
         ModelCapabilityResponse capability = discovery().discover(
-            "anthropic-messages", root(), "account-key", "account-model");
+            "anthropic-messages", anthropicRoot(), "account-key", "account-model");
 
         assertThat(capability.reasoning()).isFalse();
         assertThat(capability.supportedReasoningLevels()).containsExactly(ReasoningLevel.AUTO);
@@ -153,6 +157,10 @@ class CustomModelCapabilityDiscoveryTest {
 
     private String root() {
         return "http://127.0.0.1:" + server.getAddress().getPort() + "/v1";
+    }
+
+    private String anthropicRoot() {
+        return "http://127.0.0.1:" + server.getAddress().getPort();
     }
 
     private void start(String path, com.sun.net.httpserver.HttpHandler handler) throws IOException {

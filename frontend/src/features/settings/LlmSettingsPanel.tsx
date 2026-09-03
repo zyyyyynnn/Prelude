@@ -154,6 +154,18 @@ function LlmSettingsForm({
               />
             </Field>
           ) : null}
+          <Field label="最大回复长度" htmlFor="llm-max-output-tokens">
+            <Select
+              id="llm-max-output-tokens"
+              value={String(state.draft.maxOutputTokens ?? 4096)}
+              options={[
+                { value: '4096', label: '常规 · 4,096 tokens' },
+                { value: '8192', label: '长回复 · 8,192 tokens' },
+                { value: '32768', label: '深度分析 · 32,768 tokens' },
+              ]}
+              onValueChange={(value) => state.update('maxOutputTokens', Number(value))}
+            />
+          </Field>
         </div>
       </section>
       {state.testMessage && (

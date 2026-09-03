@@ -4,21 +4,23 @@ import com.prelude.BusinessException;
 import com.prelude.llm.api.LlmPort.ResponseMode;
 import com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.anthropic.backends.AnthropicBackend;
+import com.anthropic.client.AnthropicClient;
+import com.anthropic.client.AnthropicClientImpl;
+import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.OutputConfig;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientImpl;
 import com.openai.core.ClientOptions;
+import com.openai.credential.BearerTokenCredential;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.ai.deepseek.DeepSeekChatOptions;
-import org.springframework.ai.deepseek.api.DeepSeekApi;
-import org.springframework.ai.deepseek.api.ResponseFormat;
-import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.retry.RetryPolicy;
-import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -72,11 +74,13 @@ public class SpringAiModelFactory {
 
     public ChatOptions requestOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
         return switch (snapshot.getProvider()) {
-            case ModelCapabilityCatalog.PROVIDER_DEEPSEEK -> deepSeekOptions(snapshot, responseMode);
-            case "openai-chat-completions" -> openAiOptions(snapshot, responseMode);
-            case "openai-responses", "anthropic-messages" -> ChatOptions.builder()
+            case ModelCapabilityCatalog.PROVIDER_DEEPSEEK, "openai-chat-completions" ->
+                openAiOptions(snapshot, responseMode);
+            case "openai-responses" -> ChatOptions.builder()
                 .model(snapshot.getModel())
+                .maxTokens(executionParameters(snapshot).maxOutputTokens())
                 .build();
+            case "anthropic-messages" -> anthropicOptions(snapshot);
             default -> throw BusinessException.badRequest("不支持的模型接入方式");
         };
     }
@@ -85,37 +89,30 @@ public class SpringAiModelFactory {
         String key = apiKey != null && !apiKey.isBlank()
             ? apiKey
             : requireSystemKey(deepSeekApiKey, "DeepSeek");
-        DeepSeekApi api = DeepSeekApi.builder().baseUrl(deepSeekBaseUrl).apiKey(key).build();
-        return new DeepSeekChatModel(
-            api,
-            deepSeekOptions(snapshot, ResponseMode.PLAIN_TEXT),
-            DefaultToolCallingManager.builder().build(),
-            new RetryTemplate(RetryPolicy.builder().maxRetries(0).build()),
-            io.micrometer.observation.ObservationRegistry.NOOP
+        OpenAIClient client = OpenAiSetup.setupSyncClient(
+            deepSeekBaseUrl,
+            null,
+            BearerTokenCredential.create(key),
+            null,
+            null,
+            null,
+            false,
+            false,
+            null,
+            CALL_TIMEOUT,
+            ZERO_RETRIES,
+            null,
+            java.util.Map.of(),
+            io.micrometer.observation.ObservationRegistry.NOOP,
+            io.micrometer.core.instrument.Metrics.globalRegistry,
+            java.util.List.of()
         );
-    }
-
-    private DeepSeekChatOptions deepSeekOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
-        DeepSeekChatOptions.Builder builder = DeepSeekChatOptions.builder()
-            .model(requireDeepSeekModel(snapshot.getModel()));
-        ReasoningLevel level = ReasoningLevel.valueOf(snapshot.getReasoningLevel());
-        if (level == ReasoningLevel.HIGH) {
-            builder.reasoningEffortHigh();
-        }
-        if (responseMode == ResponseMode.JSON_OBJECT
-            && capabilityCatalog.capability(snapshot.getProvider(), snapshot.getModel()).structuredOutput()) {
-            builder.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build());
-        }
-        return builder.build();
-    }
-
-    private DeepSeekApi.ChatModel requireDeepSeekModel(String model) {
-        for (DeepSeekApi.ChatModel known : DeepSeekApi.ChatModel.values()) {
-            if (known.getValue().equals(model) || known.getName().equalsIgnoreCase(model)) {
-                return known;
-            }
-        }
-        throw BusinessException.badRequest("DeepSeek 不支持该模型");
+        return OpenAiChatModel.builder()
+            .openAiClient(client)
+            .openAiClientAsync(client.async())
+            .options(openAiOptions(snapshot, ResponseMode.PLAIN_TEXT))
+            .observationRegistry(io.micrometer.observation.ObservationRegistry.NOOP)
+            .build();
     }
 
     private ChatModel openAiChatCompletions(ModelExecutionSnapshot snapshot, String apiKey) {
@@ -149,6 +146,7 @@ public class SpringAiModelFactory {
             apiKey,
             snapshot.getModel(),
             snapshot.getReasoningLevel(),
+            executionParameters(snapshot).maxOutputTokens(),
             egressHttpClientFactory.runtimeClient(),
             objectMapper
         );
@@ -157,18 +155,44 @@ public class SpringAiModelFactory {
     private ChatModel anthropicMessages(ModelExecutionSnapshot snapshot, String apiKey) {
         requireCustomApiKey(apiKey);
         URI root = egressPolicy.requireValidRoot(snapshot.getCustomEndpointUrl());
-        return new AnthropicMessagesChatModel(
-            trimTrailingSlash(root.toString()),
-            apiKey,
-            snapshot.getModel(),
-            snapshot.getReasoningLevel(),
-            egressHttpClientFactory.runtimeClient(),
-            objectMapper
-        );
+        String baseUrl = trimTrailingSlash(root.toString());
+        AnthropicBackend backend = AnthropicBackend.builder()
+            .baseUrl(baseUrl)
+            .apiKey(apiKey)
+            .build();
+        com.anthropic.core.http.HttpClient transport = new com.anthropic.client.okhttp.OkHttpClient(
+            egressHttpClientFactory.runtimeClient(), backend);
+        com.anthropic.core.ClientOptions clientOptions = com.anthropic.core.ClientOptions.builder()
+            .httpClient(transport)
+            .baseUrl(baseUrl)
+            .timeout(CALL_TIMEOUT)
+            .maxRetries(ZERO_RETRIES)
+            .build();
+        AnthropicClient client = new AnthropicClientImpl(clientOptions);
+        return AnthropicChatModel.builder()
+            .anthropicClient(client)
+            .anthropicClientAsync(client.async())
+            .options(anthropicOptions(snapshot))
+            .observationRegistry(io.micrometer.observation.ObservationRegistry.NOOP)
+            .build();
+    }
+
+    private AnthropicChatOptions anthropicOptions(ModelExecutionSnapshot snapshot) {
+        AnthropicChatOptions.Builder builder = AnthropicChatOptions.builder()
+            .model(Model.of(snapshot.getModel()))
+            .maxTokens(executionParameters(snapshot).maxOutputTokens());
+        ReasoningLevel level = ReasoningLevel.valueOf(snapshot.getReasoningLevel());
+        if (level != ReasoningLevel.AUTO) {
+            builder.thinkingAdaptive()
+                .effort(OutputConfig.Effort.of(level.name().toLowerCase(java.util.Locale.ROOT)));
+        }
+        return builder.build();
     }
 
     private OpenAiChatOptions openAiOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
-        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder().model(snapshot.getModel());
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
+            .model(snapshot.getModel())
+            .maxTokens(executionParameters(snapshot).maxOutputTokens());
         ReasoningLevel level = ReasoningLevel.valueOf(snapshot.getReasoningLevel());
         if (level != ReasoningLevel.AUTO) {
             builder.reasoningEffort(level.name().toLowerCase(java.util.Locale.ROOT));
@@ -180,6 +204,10 @@ public class SpringAiModelFactory {
                 .build());
         }
         return builder.build();
+    }
+
+    private ModelExecutionParameters executionParameters(ModelExecutionSnapshot snapshot) {
+        return ModelExecutionParameters.fromFrozenJson(snapshot.getEffectiveParametersJson(), objectMapper);
     }
 
     private void requireCustomApiKey(String apiKey) {

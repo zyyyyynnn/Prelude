@@ -30,7 +30,11 @@ public class CustomModelCapabilityDiscovery {
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final List<ReasoningLevel> PROBE_LEVELS = List.of(
-        ReasoningLevel.LOW, ReasoningLevel.MEDIUM, ReasoningLevel.HIGH);
+        ReasoningLevel.LOW,
+        ReasoningLevel.MEDIUM,
+        ReasoningLevel.HIGH,
+        ReasoningLevel.XHIGH,
+        ReasoningLevel.MAX);
 
     private final ModelCapabilityCatalog capabilityCatalog;
     private final CustomLlmEgressPolicy egressPolicy;
@@ -53,6 +57,7 @@ public class CustomModelCapabilityDiscovery {
     ) {
         try {
             okhttp3.HttpUrl url = okhttp3.HttpUrl.get(baseUrl).newBuilder()
+                .addPathSegment("v1")
                 .addPathSegment("models")
                 .addPathSegment(model)
                 .build();
@@ -81,6 +86,8 @@ public class CustomModelCapabilityDiscovery {
                 addIfSupported(levels, effort, "low", ReasoningLevel.LOW);
                 addIfSupported(levels, effort, "medium", ReasoningLevel.MEDIUM);
                 addIfSupported(levels, effort, "high", ReasoningLevel.HIGH);
+                addIfSupported(levels, effort, "xhigh", ReasoningLevel.XHIGH);
+                addIfSupported(levels, effort, "max", ReasoningLevel.MAX);
                 return capabilityCatalog.customCapability(provider, model, levels);
             }
         } catch (Exception exception) {
@@ -131,10 +138,12 @@ public class CustomModelCapabilityDiscovery {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("model", model);
             if (protocol == CustomLlmProtocol.OPENAI_RESPONSES) {
-                payload.put("input", "Reply OK.");
+                payload.put("input", "OK");
+                payload.put("max_output_tokens", 16);
                 payload.put("reasoning", Map.of("effort", effort));
             } else {
-                payload.put("messages", List.of(Map.of("role", "user", "content", "Reply OK.")));
+                payload.put("messages", List.of(Map.of("role", "user", "content", "OK")));
+                payload.put("max_tokens", 1);
                 payload.put("reasoning_effort", effort);
             }
             Request request = new Request.Builder()

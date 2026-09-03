@@ -14,6 +14,7 @@ public record ModelConfigurationView(
     boolean hasApiKey,
     String apiKeyMasked,
     String reasoningLevel,
+    Integer maxOutputTokens,
     List<String> fallbackModels,
     ModelCapabilityResponse capability
 ) {

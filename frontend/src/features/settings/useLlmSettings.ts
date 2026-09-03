@@ -28,6 +28,7 @@ export function useLlmSettings(
     model: config.model,
     apiKey: undefined,
     reasoningLevel: config.reasoningLevel,
+    maxOutputTokens: config.maxOutputTokens,
     fallbackModels: config.fallbackModels,
   })
   const [models, setModels] = useState<ModelCapabilityResponse[]>(() => {
@@ -71,6 +72,7 @@ export function useLlmSettings(
         customEndpointUrl: result.customEndpointUrl ?? '',
         model: result.model,
         reasoningLevel: result.reasoningLevel,
+        maxOutputTokens: result.maxOutputTokens,
         fallbackModels: result.fallbackModels,
       }))
       setModels(() => {
@@ -210,4 +212,6 @@ export const REASONING_LABELS: Record<ReasoningLevel, string> = {
   LOW: '低',
   MEDIUM: '中',
   HIGH: '高',
+  XHIGH: '超高',
+  MAX: '最大',
 }

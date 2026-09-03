@@ -59,6 +59,7 @@ class ModelProfileConcurrencyTest {
         profile.setProvider(provider);
         profile.setModel(model);
         profile.setReasoningLevel("AUTO");
+        profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         profile.setFallbackModelsJson("[]");
         try {
             profileMapper.insert(profile);

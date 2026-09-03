@@ -127,6 +127,7 @@ public class ModelProfileService {
         if (!capability.supportedReasoningLevels().contains(level)) {
             throw BusinessException.badRequest("所选模型不支持该思考深度");
         }
+        ModelExecutionParameters executionParameters = ModelExecutionParameters.resolve(command.maxOutputTokens());
 
         List<String> fallbackModels = validateFallbackModels(
             provider, model, level, command.fallbackModels());
@@ -148,6 +149,7 @@ public class ModelProfileService {
         profile.setCredentialId(credentialId);
         profile.setCustomEndpointUrl(customEndpointUrl);
         profile.setReasoningLevel(level.name());
+        profile.setEffectiveParametersJson(executionParameters.toJson(objectMapper));
         profile.setModelCapabilityJson(CustomLlmProtocol.isCustom(provider) ? toCapabilityJson(capability) : null);
         profile.setFallbackModelsJson(toJson(fallbackModels));
         if (existing == null) {
@@ -176,6 +178,8 @@ public class ModelProfileService {
             masked = credential == null ? null : secretCipher.mask(credential.getApiKeyEncrypted());
         }
         ModelCapabilityResponse capability = capabilityForProfile(profile, profile.getModel());
+        ModelExecutionParameters executionParameters = ModelExecutionParameters.fromProfileJson(
+            profile.getEffectiveParametersJson(), objectMapper);
         return new ModelConfigurationView(
             profile.getProvider(),
             profile.getModel(),
@@ -183,6 +187,7 @@ public class ModelProfileService {
             hasApiKey,
             masked,
             profile.getReasoningLevel(),
+            executionParameters.maxOutputTokens(),
             fromJson(profile.getFallbackModelsJson()),
             capability
         );
@@ -216,7 +221,9 @@ public class ModelProfileService {
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("API Key 不能为空");
         }
-        String modelsUrl = baseUrl + MODELS_PATH;
+        String modelsUrl = baseUrl + (protocol == CustomLlmProtocol.ANTHROPIC_MESSAGES
+            ? "/v1" + MODELS_PATH
+            : MODELS_PATH);
         egressPolicy.validateConfiguredEndpoint(modelsUrl);
         Request.Builder requestBuilder = new Request.Builder().url(modelsUrl).get();
         if (protocol == CustomLlmProtocol.ANTHROPIC_MESSAGES) {
@@ -319,7 +326,8 @@ public class ModelProfileService {
         String model = "deepseek-v4-pro";
         ModelCapabilityResponse capability = capabilityCatalog.capability(provider, model);
         return new ModelConfigurationView(
-            provider, model, null, false, null, "AUTO", List.of(),
+            provider, model, null, false, null, "AUTO",
+            ModelExecutionParameters.DEFAULT_MAX_OUTPUT_TOKENS, List.of(),
             capability);
     }
 

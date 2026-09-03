@@ -107,11 +107,6 @@ public class RunInterviewTurn {
                 public void onNext(String delta) {
                     appendAndSend(assistantReply, sink, delta);
                 }
-
-                @Override
-                public void onUsage(LlmPort.Usage usage) {
-                    // telemetry handoff only; #46 owns persistence
-                }
             }
         );
     }

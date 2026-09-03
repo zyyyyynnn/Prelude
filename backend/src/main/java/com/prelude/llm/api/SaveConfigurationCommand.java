@@ -12,6 +12,7 @@ public record SaveConfigurationCommand(
     String customEndpointUrl,
     String apiKey,
     String reasoningLevel,
+    Integer maxOutputTokens,
     List<String> fallbackModels
 ) {
 

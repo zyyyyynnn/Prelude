@@ -14,7 +14,7 @@ const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
   longContext: true,
   embedding: false,
   nativeRealtimeVoice: false,
-  supportedReasoningLevels: ['AUTO', 'HIGH'],
+  supportedReasoningLevels: ['AUTO', 'LOW', 'HIGH', 'MAX'],
 })
 
 const providers = [
@@ -78,6 +78,7 @@ async function installApi(page: Page) {
       hasApiKey: false,
       apiKeyMasked: null,
       reasoningLevel: 'AUTO',
+      maxOutputTokens: 4096,
       fallbackModels: [],
       capability: deepSeekCapability(),
     }

@@ -49,8 +49,8 @@ function capability(
   }
 }
 
-const deepSeekPro = capability('deepseek', 'deepseek-v4-pro', ['AUTO', 'HIGH'])
-const deepSeekFlash = capability('deepseek', 'deepseek-v4-flash', ['AUTO', 'HIGH'])
+const deepSeekPro = capability('deepseek', 'deepseek-v4-pro', ['AUTO', 'LOW', 'HIGH', 'MAX'])
+const deepSeekFlash = capability('deepseek', 'deepseek-v4-flash', ['AUTO', 'LOW', 'HIGH', 'MAX'])
 export const demoProviders: LlmProviderResponse[] = [
   {
     providerKey: 'deepseek',
@@ -191,6 +191,7 @@ export function createDemoState(): DemoState {
       hasApiKey: false,
       apiKeyMasked: null,
       reasoningLevel: 'HIGH',
+      maxOutputTokens: 4096,
       fallbackModels: [],
       capability: deepSeekPro,
     },
@@ -337,6 +338,7 @@ async function respond(route: Route, state: DemoState) {
       provider: saved.provider ?? state.llmConfig.provider,
       model: saved.model ?? state.llmConfig.model,
       reasoningLevel: saved.reasoningLevel ?? state.llmConfig.reasoningLevel,
+      maxOutputTokens: saved.maxOutputTokens ?? state.llmConfig.maxOutputTokens,
     }
     return fulfillJson(route, state.llmConfig)
   }

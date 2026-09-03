@@ -18,13 +18,13 @@ import java.util.Map;
 @Component
 public class ModelCapabilityCatalog {
 
-    public static final String CAPABILITY_VERSION = "2026-09-02";
+    public static final String CAPABILITY_VERSION = "2026-09-03";
 
     public static final String PROVIDER_DEEPSEEK = "deepseek";
 
     private static final List<ReasoningLevel> AUTO_ONLY = List.of(ReasoningLevel.AUTO);
     private static final List<ReasoningLevel> DEEPSEEK_REASONING = List.of(
-        ReasoningLevel.AUTO, ReasoningLevel.HIGH);
+        ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH, ReasoningLevel.MAX);
 
     private final Map<String, Map<String, ModelCapabilityResponse>> builtIns = builtIns();
 
@@ -83,9 +83,9 @@ public class ModelCapabilityCatalog {
 
         Map<String, ModelCapabilityResponse> deepseek = new LinkedHashMap<>();
         deepseek.put("deepseek-v4-pro", capability(PROVIDER_DEEPSEEK, "deepseek-v4-pro",
-            true, true, true, true, false, false, true, false, false, DEEPSEEK_REASONING));
+            true, true, true, true, false, true, true, false, false, DEEPSEEK_REASONING));
         deepseek.put("deepseek-v4-flash", capability(PROVIDER_DEEPSEEK, "deepseek-v4-flash",
-            true, true, true, true, false, false, true, false, false, DEEPSEEK_REASONING));
+            true, true, true, true, false, true, true, false, false, DEEPSEEK_REASONING));
         providers.put(PROVIDER_DEEPSEEK, Map.copyOf(deepseek));
 
         return Map.copyOf(providers);

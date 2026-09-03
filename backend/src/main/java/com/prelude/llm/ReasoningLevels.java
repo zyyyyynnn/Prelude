@@ -8,14 +8,14 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Formal reasoning vocabulary: AUTO/LOW/MEDIUM/HIGH. Anything else is invalid;
+ * Formal reasoning vocabulary: AUTO/LOW/MEDIUM/HIGH/XHIGH/MAX. Anything else is invalid;
  * providers map these levels onto their real parameters and unsupported levels
  * are rejected instead of being silently downgraded.
  */
 @Component
 public class ReasoningLevels {
 
-    private static final Set<String> VALID = Set.of("AUTO", "LOW", "MEDIUM", "HIGH");
+    private static final Set<String> VALID = Set.of("AUTO", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX");
 
     public ReasoningLevel parse(String value) {
         if (value == null || value.isBlank()) {
@@ -23,7 +23,7 @@ public class ReasoningLevels {
         }
         String normalized = value.trim().toUpperCase(Locale.ROOT);
         if (!VALID.contains(normalized)) {
-            throw BusinessException.badRequest("思考深度仅支持 AUTO、LOW、MEDIUM、HIGH");
+            throw BusinessException.badRequest("思考深度仅支持 AUTO、LOW、MEDIUM、HIGH、XHIGH、MAX");
         }
         return ReasoningLevel.valueOf(normalized);
     }

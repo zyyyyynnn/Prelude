@@ -102,7 +102,9 @@ class CustomModelDiscoveryTest {
             new LlmPort.DiscoverModelsCommand(protocol.providerKey(), configuredUrl, "account-key")
         );
 
-        assertThat(result.baseUrl()).isEqualTo("http://127.0.0.1:" + port + "/v1");
+        String expectedRoot = "http://127.0.0.1:" + port
+            + (protocol == CustomLlmProtocol.ANTHROPIC_MESSAGES ? "" : "/v1");
+        assertThat(result.baseUrl()).isEqualTo(expectedRoot);
         assertThat(result.models()).singleElement().satisfies(model -> {
             assertThat(model.provider()).isEqualTo(protocol.providerKey());
             assertThat(model.model()).isEqualTo("account-discovered-model");

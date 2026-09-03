@@ -1,5 +1,5 @@
 /** Reasoning levels come from the backend capability catalog — never guessed. */
-export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH'
+export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
 
 export type ModelCapabilityResponse = {
   provider: string
@@ -29,6 +29,7 @@ export type LlmConfigPayload = {
   customEndpointUrl?: string
   apiKey?: string
   reasoningLevel?: ReasoningLevel | null
+  maxOutputTokens?: number
   fallbackModels?: string[]
 }
 
@@ -39,6 +40,7 @@ export type LlmConfigResponse = {
   hasApiKey: boolean
   apiKeyMasked: string | null
   reasoningLevel: ReasoningLevel
+  maxOutputTokens: number
   fallbackModels: string[]
   capability: ModelCapabilityResponse
 }
