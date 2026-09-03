@@ -61,7 +61,7 @@ class BackgroundJobLifecycleTest {
     }
 
     private String uniqueOperationKey() {
-        return "report.generate:session:" + System.nanoTime();
+        return "test.lifecycle:operation:" + System.nanoTime();
     }
 
     private BackgroundJob stored(String jobId) {
@@ -82,7 +82,7 @@ class BackgroundJobLifecycleTest {
     void requestPersistsPendingJobAndDurablePublication() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 42L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", accountId, 42L, uniqueOperationKey(), "{}"));
 
         BackgroundJob job = stored(ref.jobId());
         assertThat(job.getStatus()).isEqualTo(BackgroundJob.PENDING);
@@ -97,7 +97,7 @@ class BackgroundJobLifecycleTest {
         long accountId = createAccount();
         String operationKey = uniqueOperationKey();
         BackgroundJobRequest request = new BackgroundJobRequest(
-            "report.generate", accountId, 43L, operationKey, "{}");
+            "test.lifecycle", accountId, 43L, operationKey, "{}");
 
         BackgroundJobRef first = jobs.request(request);
         BackgroundJobRef second = jobs.request(request);
@@ -113,7 +113,7 @@ class BackgroundJobLifecycleTest {
     void duplicateDeliveryAbsorbsBusinessSideEffects() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 45L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", accountId, 45L, uniqueOperationKey(), "{}"));
 
         ClaimOutcome first = jobs.claim(ref.jobId());
         jobs.complete(ref.jobId(), first.attemptNumber());
@@ -135,7 +135,7 @@ class BackgroundJobLifecycleTest {
     void boundedRetryReturnsToPendingAndRepublishesUntilExhausted() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 46L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", accountId, 46L, uniqueOperationKey(), "{}"));
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             ClaimOutcome claim = jobs.claim(ref.jobId());
@@ -165,7 +165,7 @@ class BackgroundJobLifecycleTest {
     void persistedFailureSummaryRedactsSecretsAtTheJobsBoundary() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 47L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", accountId, 47L, uniqueOperationKey(), "{}"));
         ClaimOutcome claim = jobs.claim(ref.jobId());
         assertThat(claim.claimed()).isTrue();
 
@@ -185,7 +185,7 @@ class BackgroundJobLifecycleTest {
         long owner = createAccount();
         long other = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", owner, 48L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", owner, 48L, uniqueOperationKey(), "{}"));
 
         assertThatThrownBy(() -> jobs.view(ref.jobId(), other))
             .isInstanceOf(com.prelude.BusinessException.class)
@@ -199,7 +199,7 @@ class BackgroundJobLifecycleTest {
     void staleRunningRecoveryInterruptsTheAttemptAndRedispatches() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 49L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", accountId, 49L, uniqueOperationKey(), "{}"));
         ClaimOutcome claim = jobs.claim(ref.jobId());
         assertThat(claim.claimed()).isTrue();
 
@@ -222,7 +222,7 @@ class BackgroundJobLifecycleTest {
     void cancellationReturnsAndPublishesTheAuthoritativeTerminalState() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 50L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", accountId, 50L, uniqueOperationKey(), "{}"));
 
         BackgroundJobView cancelled = jobs.cancel(ref.jobId(), accountId);
 
@@ -238,7 +238,7 @@ class BackgroundJobLifecycleTest {
     void expiredFinalLeasePublishesTheSameTerminalFailureEventAsWorkerFailure() {
         long accountId = createAccount();
         BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, 51L, uniqueOperationKey(), "{}"));
+            "test.lifecycle", accountId, 51L, uniqueOperationKey(), "{}"));
         ClaimOutcome claim = jobs.claim(ref.jobId());
         BackgroundJob running = stored(ref.jobId());
         running.setMaxAttempts(claim.attemptNumber());

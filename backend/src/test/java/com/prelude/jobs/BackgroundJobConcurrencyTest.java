@@ -192,8 +192,8 @@ class BackgroundJobConcurrencyTest {
 
     private BackgroundJobRef request(long accountId, long subjectId) {
         return jobs.request(new BackgroundJobRequest(
-            "report.generate", accountId, subjectId,
-            "report.generate:test:" + System.nanoTime(), "{}"));
+            "test.concurrent", accountId, subjectId,
+            "test.concurrent:operation:" + System.nanoTime(), "{}"));
     }
 
     private BackgroundJob stored(String jobId) {

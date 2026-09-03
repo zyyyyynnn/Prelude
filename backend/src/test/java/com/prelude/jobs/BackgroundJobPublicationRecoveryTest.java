@@ -58,10 +58,10 @@ class BackgroundJobPublicationRecoveryTest {
 
         long accountId = createAccount();
         var job = jobs.request(new BackgroundJobRequest(
-            "report.generate",
+            "test.publication",
             accountId,
             401L,
-            "report.generate:publication-recovery:" + System.nanoTime(),
+            "test.publication:recovery:" + System.nanoTime(),
             "{}"
         ));
 
