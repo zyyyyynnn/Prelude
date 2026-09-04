@@ -55,6 +55,8 @@ export type InterviewSessionDetailResponse = {
   targetPosition?: string
   status?: string
   currentStage?: InterviewStageName
+  model?: string
+  reasoningLevel?: string
   summaryReport?: string
   stages: InterviewStageRecord[]
   messages: InterviewMessageRecord[]

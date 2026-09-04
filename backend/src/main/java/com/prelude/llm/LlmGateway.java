@@ -30,6 +30,11 @@ public class LlmGateway implements LlmPort {
     }
 
     @Override
+    public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
+        return snapshotService.configurationFor(accountId, snapshotId);
+    }
+
+    @Override
     public CompletionResult complete(ModelExecutionRequest request) {
         return executionService.complete(request);
     }

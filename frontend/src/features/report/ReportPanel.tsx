@@ -64,8 +64,8 @@ function StructuredReport({ report }: { report: StructuredInterviewReport }) {
       </section>
       <TrainingPlan plan={report.trainingPlan} />
       <section className="report-section structured-report__advice">
-        <p>总结建议</p>
-        <h2>{report.finalAdvice}</h2>
+        <h2>总结建议</h2>
+        <p>{report.finalAdvice}</p>
       </section>
     </article>
   )
@@ -106,20 +106,49 @@ function ScoreCard({ report }: { report: StructuredInterviewReport }) {
 }
 
 function StagePerformanceList({ stages }: { stages: StructuredStagePerformance[] }) {
+  const [index, setIndex] = useState(0)
+  if (!stages.length)
+    return (
+      <section className="report-section">
+        <header>
+          <p>阶段复盘</p>
+          <h2>分阶段表现</h2>
+        </header>
+        <p className="report-empty-copy">当前报告没有可复盘的阶段表现。</p>
+      </section>
+    )
   return (
-    <section className="report-section">
+    <section className="report-section stage-performance-carousel">
       <header className="report-section__header">
         <div>
           <p>阶段复盘</p>
           <h2>分阶段表现</h2>
         </div>
+        <ReportCarouselNavigation
+          ariaLabel="阶段复盘导航"
+          index={index}
+          count={stages.length}
+          previousLabel="上一阶段"
+          nextLabel="下一阶段"
+          onPrevious={() => setIndex((value) => value - 1)}
+          onNext={() => setIndex((value) => value + 1)}
+        />
       </header>
       <div className="stage-performance-list">
-        {stages.map((stage) => (
-          <article className="stage-performance" key={stage.stageName}>
+        {stages.map((stage, stageIndex) => (
+          <article
+            className={`stage-performance${stageIndex === index ? ' is-active' : ''}`}
+            aria-hidden={stageIndex !== index}
+            key={stage.stageName}
+          >
             <header>
-              <h3>{stageLabels[stage.stageName]}</h3>
-              <span className="status-badge">
+              <div>
+                <span className="stage-performance__index">
+                  第 {String(stageIndex + 1).padStart(2, '0')} 阶段
+                </span>
+                <h3>{stageLabels[stage.stageName]}</h3>
+              </div>
+              <span className="report-inline-score">
                 {stage.score == null ? '暂无评分' : `${stage.score.toFixed(1)} / 10`}
               </span>
             </header>
@@ -133,6 +162,50 @@ function StagePerformanceList({ stages }: { stages: StructuredStagePerformance[]
         ))}
       </div>
     </section>
+  )
+}
+
+function ReportCarouselNavigation({
+  ariaLabel,
+  index,
+  count,
+  previousLabel,
+  nextLabel,
+  onPrevious,
+  onNext,
+}: {
+  ariaLabel: string
+  index: number
+  count: number
+  previousLabel: string
+  nextLabel: string
+  onPrevious: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className="report-carousel__nav" role="group" aria-label={ariaLabel}>
+      <span className="report-carousel__counter" aria-live="polite">
+        {index + 1} / {count}
+      </span>
+      <Button
+        size="icon"
+        variant="ghost"
+        aria-label={previousLabel}
+        disabled={index === 0}
+        onClick={onPrevious}
+      >
+        <ChevronLeft />
+      </Button>
+      <Button
+        size="icon"
+        variant="ghost"
+        aria-label={nextLabel}
+        disabled={index === count - 1}
+        onClick={onNext}
+      >
+        <ChevronRight />
+      </Button>
+    </div>
   )
 }
 
@@ -169,36 +242,22 @@ function QuestionReviewList({ reviews }: { reviews: StructuredQuestionReview[] }
           <p>回答证据</p>
           <h2>逐题复盘</h2>
         </div>
-        <div className="question-review-carousel__nav" aria-label="逐题复盘导航">
-          <span className="question-review-carousel__counter" aria-live="polite">
-            {index + 1} / {reviews.length}
-          </span>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="上一题"
-            disabled={index === 0}
-            onClick={() => setIndex((value) => value - 1)}
-          >
-            <ChevronLeft size={16} />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="下一题"
-            disabled={index === reviews.length - 1}
-            onClick={() => setIndex((value) => value + 1)}
-          >
-            <ChevronRight size={16} />
-          </Button>
-        </div>
+        <ReportCarouselNavigation
+          ariaLabel="逐题复盘导航"
+          index={index}
+          count={reviews.length}
+          previousLabel="上一题"
+          nextLabel="下一题"
+          onPrevious={() => setIndex((value) => value - 1)}
+          onNext={() => setIndex((value) => value + 1)}
+        />
       </header>
       <article className="question-review">
         <header>
           <span>
             第 {index + 1} 题 · {stageLabels[active.stageName]}
           </span>
-          <span className="status-badge">
+          <span className="report-inline-score">
             {active.score == null ? '暂无评分' : `${active.score.toFixed(1)} / 10`}
           </span>
         </header>

@@ -3,6 +3,7 @@ package com.prelude.interview.application;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
+import com.prelude.llm.api.LlmPort.FrozenModelConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class InterviewResponseAssembler {
         InterviewSession session,
         List<InterviewStage> stages,
         List<InterviewMessage> messages,
+        FrozenModelConfiguration modelConfiguration,
         List<InterviewAttachmentView> attachments
     ) {
         String currentStage = stages.isEmpty()
@@ -40,6 +42,8 @@ public class InterviewResponseAssembler {
             session.getTargetPosition(),
             session.getStatus(),
             currentStage,
+            modelConfiguration.model(),
+            modelConfiguration.reasoningLevel(),
             session.getSummaryReport(),
             stages.stream().map(this::toStageItem).toList(),
             messages.stream().map(this::toMessageItem).toList(),

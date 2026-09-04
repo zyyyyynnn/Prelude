@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, RefreshCw, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui'
 import { useFeedback } from '@/shared/ui/feedback'
 import { deleteResume, fetchResumes, uploadResume } from './api'
@@ -82,7 +82,6 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
             {resumes.data.map((resume) => (
               <article className="resume-row" key={resume.id}>
                 <div className="resume-row__main">
-                  <FileText aria-hidden="true" />
                   <div className="resume-row__title-wrap">
                     <h3 className="resume-item__title">{resume.fileName}</h3>
                     <p className="resume-item__hint">
@@ -94,9 +93,6 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
                         : '已解析'}{' '}
                       · {resume.sessionCount ?? 0} 场面试
                     </p>
-                    <div className="resume-item__badges">
-                      {resume.inUse && <span className="status-badge">正在使用</span>}
-                    </div>
                   </div>
                 </div>
                 <Button

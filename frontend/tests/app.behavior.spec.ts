@@ -1138,6 +1138,14 @@ const report = JSON.stringify({
       negativeSignals: ['容量数据不足'],
       improvementSuggestions: ['补充量化依据'],
     },
+    {
+      stageName: 'deep_dive',
+      score: 7.6,
+      summary: '追问中的取舍说明仍可加强',
+      positiveSignals: ['能够识别关键约束'],
+      negativeSignals: ['缺少成本数据'],
+      improvementSuggestions: ['补充方案对比'],
+    },
   ],
   questionReviews: [
     {
@@ -1167,6 +1175,8 @@ test('@smoke renders structured reports without resume mutation controls', async
       targetPosition: '平台工程师',
       status: 'finished',
       currentStage: 'closing',
+      model: 'deepseek-v4-flash',
+      reasoningLevel: 'HIGH',
       summaryReport: report,
       stages: [],
       messages: [{ id: 1, role: 'assistant', content: '本场面试已结束。' }],
@@ -1177,6 +1187,8 @@ test('@smoke renders structured reports without resume mutation controls', async
   }
   await installApi(page, state)
   await page.goto('/interview?session=11')
+  await expect(page.getByText('deepseek-v4-flash · 高', { exact: true })).toBeVisible()
+  await expect(page.getByText('本场模型已锁定', { exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: '报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await expect(page.getByText('8.1')).toBeVisible()
@@ -1184,9 +1196,121 @@ test('@smoke renders structured reports without resume mutation controls', async
   const viewToggle = page.getByRole('group', { name: '工作区视图' })
   await expect(viewToggle.getByRole('button', { name: '面试' })).toHaveCount(1)
   await expect(viewToggle.getByRole('button', { name: '报告' })).toHaveCount(1)
+  await expect(page.locator('.status-badge')).toHaveCount(0)
+  const sharedUiMetrics = await page.evaluate(() => {
+    const parse = (value: string) => {
+      const channels = value
+        .match(/[\d.]+/g)!
+        .slice(0, 3)
+        .map(Number)
+      return value.startsWith('color(srgb') ? channels.map((channel) => channel * 255) : channels
+    }
+    const luminance = (value: string) => {
+      const [r, g, b] = parse(value).map((channel) => {
+        const normalized = channel / 255
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+      })
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    const contrast = (element: Element) => {
+      const style = getComputedStyle(element)
+      const foreground = luminance(style.color)
+      const background = luminance(style.backgroundColor)
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05)
+    }
+    const primary = document.querySelector<HTMLElement>('.app-sidebar__btn--primary')!
+    const activeProbe = document.createElement('button')
+    activeProbe.className = 'session-item-btn is-active'
+    document.body.append(activeProbe)
+    const durations = getComputedStyle(primary)
+      .transitionDuration.split(',')
+      .map((value) => Number.parseFloat(value) * (value.includes('ms') ? 1 : 1000))
+    const metrics = {
+      primaryContrast: contrast(primary),
+      activeContrast: contrast(activeProbe),
+      longestInteractionTransition: Math.max(...durations),
+    }
+    activeProbe.remove()
+    return metrics
+  })
+  expect(sharedUiMetrics.primaryContrast).toBeGreaterThanOrEqual(4.5)
+  expect(sharedUiMetrics.activeContrast).toBeGreaterThanOrEqual(4.5)
+  expect(sharedUiMetrics.longestInteractionTransition).toBeLessThanOrEqual(150)
+  const reportListMarker = await page.locator('.structured-report__traits li').first().evaluate((item) => {
+    const marker = getComputedStyle(item, '::before')
+    return marker.content
+  })
+  expect(reportListMarker).toBe('none')
+  const reportTypography = await page.locator('.structured-report').evaluate((surface) => {
+    const eyebrow = surface.querySelector<HTMLElement>('.structured-report__hero > p:first-child')!
+    const sectionTitle = surface.querySelector<HTMLElement>('.report-section h2')!
+    const adviceBody = surface.querySelector<HTMLElement>('.structured-report__advice > p')!
+    const titleStyle = getComputedStyle(sectionTitle)
+    return {
+      eyebrowFamily: getComputedStyle(eyebrow).fontFamily,
+      adviceBodyFamily: getComputedStyle(adviceBody).fontFamily,
+      sectionTitleLineHeight: Number.parseFloat(titleStyle.lineHeight),
+      sectionTitleSize: Number.parseFloat(titleStyle.fontSize),
+    }
+  })
+  expect(reportTypography.eyebrowFamily).toContain('Lora')
+  expect(reportTypography.adviceBodyFamily).toContain('Inter')
+  expect(reportTypography.sectionTitleLineHeight / reportTypography.sectionTitleSize).toBeLessThanOrEqual(1.3)
+  const stageNavigation = page.getByRole('group', { name: '阶段复盘导航' })
+  await expect(stageNavigation).toContainText('1 / 2')
+  await expect(page.locator('.stage-performance')).toHaveCount(2)
+  await expect(page.locator('.stage-performance.is-active')).toContainText('技术问答')
+  await expect(page.locator('.stage-performance.is-active .report-inline-score')).toHaveCSS(
+    'font-family',
+    /Lora/,
+  )
+  await expect(page.locator('.stage-performance.is-active h4').first()).toHaveCSS(
+    'font-family',
+    /Lora/,
+  )
+  await stageNavigation.getByRole('button', { name: '下一阶段' }).click()
+  await expect(stageNavigation).toContainText('2 / 2')
+  await expect(page.locator('.stage-performance.is-active')).toContainText('深度追问')
+  await expect(page.locator('.question-review__body')).toHaveCSS('overflow', 'visible')
+  await expect(page.locator('.question-review__body')).toHaveCSS('max-block-size', 'none')
+
+  const reviewSurfaces = await page.evaluate(() => {
+    const stage = getComputedStyle(document.querySelector('.stage-performance.is-active')!)
+    const question = getComputedStyle(document.querySelector('.question-review')!)
+    return {
+      background: [stage.backgroundColor, question.backgroundColor],
+      radius: [stage.borderRadius, question.borderRadius],
+      padding: [stage.paddingInlineStart, question.paddingInlineStart],
+    }
+  })
+  expect(new Set(reviewSurfaces.background).size).toBe(1)
+  expect(new Set(reviewSurfaces.radius).size).toBe(1)
+  expect(new Set(reviewSurfaces.padding).size).toBe(1)
+
+  await page.setViewportSize({ width: 880, height: 781 })
+  for (const selector of [
+    '.stage-performance.is-active .stage-performance__signals',
+    '.structured-report__traits > div',
+    '.training-plan__grid',
+  ]) {
+    const adaptiveColumns = await page.locator(selector).first().evaluate((grid) => {
+      const style = getComputedStyle(grid)
+      const minimum = Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          '--layout-report-column-min-inline-size',
+        ),
+      )
+      return style.gridTemplateColumns
+        .split(' ')
+        .every((column) => Number.parseFloat(column) >= minimum)
+    })
+    expect(adaptiveColumns).toBe(true)
+  }
   await page.emulateMedia({ media: 'print' })
   await page.locator('body').evaluate((body) => body.classList.add('is-printing-report'))
   await expect(page.locator('.app-layout__main')).toHaveCSS('overflow', 'visible')
+  await expect(page.locator('.stage-performance').first()).toBeVisible()
+  await expect(page.locator('.stage-performance').last()).toBeVisible()
   await page.locator('body').evaluate((body) => body.classList.remove('is-printing-report'))
   await page.emulateMedia({ media: 'screen' })
   await page.evaluate(() => {
@@ -1259,6 +1383,23 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   expect(typography.value.numeric).toBe('tabular-nums')
   expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
   expect(typography.meta.family).toContain('Inter')
+
+  const weaknessLayout = await page.locator('.analytics-weakness-item').evaluate((item) => {
+    const title = item.querySelector<HTMLElement>('.analytics-weakness-item__title')!
+    const summary = item.querySelector<HTMLElement>('.analytics-weakness-item__summary')!
+    const descriptions = item.querySelector<HTMLElement>('.analytics-weakness-item__descriptions')!
+    return {
+      headingLayout: getComputedStyle(title.parentElement!).display,
+      titleLeft: title.getBoundingClientRect().left,
+      summaryLeft: summary.getBoundingClientRect().left,
+      descriptionLeft: descriptions.getBoundingClientRect().left,
+      descriptionListStyle: getComputedStyle(descriptions).listStyleType,
+    }
+  })
+  expect(weaknessLayout.headingLayout).toBe('grid')
+  expect(weaknessLayout.summaryLeft).toBeGreaterThan(weaknessLayout.titleLeft)
+  expect(Math.abs(weaknessLayout.descriptionLeft - weaknessLayout.titleLeft)).toBeLessThan(1)
+  expect(weaknessLayout.descriptionListStyle).toBe('none')
 })
 
 test('@smoke degrades malformed structured reports to safe plain text', async ({ page }) => {

@@ -11,6 +11,8 @@ public interface LlmPort {
 
     ModelExecutionSnapshotRef freezeSnapshot(FreezeSnapshotCommand command);
 
+    FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId);
+
     CompletionResult complete(ModelExecutionRequest request);
 
     void stream(ModelExecutionRequest request, StreamSink sink);
@@ -33,6 +35,9 @@ public interface LlmPort {
         String reasoningLevel,
         String requestedModel
     ) {
+    }
+
+    record FrozenModelConfiguration(String model, String reasoningLevel) {
     }
 
     record ModelExecutionRequest(

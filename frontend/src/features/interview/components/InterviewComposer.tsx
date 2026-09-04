@@ -263,6 +263,7 @@ export function InterviewAnswerComposer({
   sessionId,
   resumeName,
   positionName,
+  modelName,
   attachments,
   jdMatched,
   disabled,
@@ -275,6 +276,7 @@ export function InterviewAnswerComposer({
   sessionId: number
   resumeName?: string
   positionName: string
+  modelName: string
   attachments: AttachmentItem[]
   jdMatched: boolean
   disabled: boolean
@@ -420,7 +422,7 @@ export function InterviewAnswerComposer({
         <div className="prompt-bar__rail">
           <LockedInterviewContextButton />
           <PromptBarFact
-            label="本场模型已锁定"
+            label={modelName}
             icon={<Terminal aria-hidden="true" />}
           />
           {jdMatched && (

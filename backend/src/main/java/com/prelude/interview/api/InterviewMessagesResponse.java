@@ -7,6 +7,8 @@ public record InterviewMessagesResponse(
     String targetPosition,
     String status,
     String currentStage,
+    String model,
+    String reasoningLevel,
     String summaryReport,
     List<InterviewStageItemResponse> stages,
     List<InterviewMessageItemResponse> messages,

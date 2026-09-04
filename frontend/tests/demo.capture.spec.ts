@@ -40,7 +40,7 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
     '我会按订单、库存和履约能力拆分边界，通过事件驱动降低同步耦合，并为关键链路设置幂等与补偿。',
   )
   await page.getByRole('button', { name: '发送' }).click()
-  await expect(page.locator('.workspace-header .status-badge')).toHaveText('收尾')
+  await expect(page.locator('.status-badge')).toHaveCount(0)
   await expect(page.getByText('边界分析很清楚。最后请总结你会如何验证容量目标与故障恢复能力。')).toBeVisible()
   await expectActiveInterviewGeometry(page)
   await expectNoCriticalAccessibilityViolations(page)

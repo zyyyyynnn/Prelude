@@ -181,6 +181,8 @@ export function createDemoState(): DemoState {
       ],
       resumeId: 1,
       positionId: 1,
+      model: 'deepseek-v4-pro',
+      reasoningLevel: 'HIGH',
       jdText: '负责 Java 服务端架构、稳定性建设与性能优化。',
       attachments: [],
     },

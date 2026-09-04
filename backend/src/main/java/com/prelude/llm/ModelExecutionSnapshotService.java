@@ -1,12 +1,15 @@
 package com.prelude.llm;
 
+import com.prelude.BusinessException;
 import com.prelude.llm.api.LlmPort.FreezeSnapshotCommand;
+import com.prelude.llm.api.LlmPort.FrozenModelConfiguration;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
 import com.prelude.llm.persistence.ModelExecutionSnapshotMapper;
 import com.prelude.llm.persistence.ModelProfile;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -72,6 +75,15 @@ public class ModelExecutionSnapshotService {
                 org.springframework.http.HttpStatus.NOT_FOUND, "model_snapshot_not_found", "模型执行快照不存在");
         }
         return snapshot;
+    }
+
+    public FrozenModelConfiguration configurationFor(Long accountId, Long snapshotId) {
+        ModelExecutionSnapshot snapshot = require(snapshotId);
+        if (!accountId.equals(snapshot.getAccountId())) {
+            throw new BusinessException(
+                HttpStatus.NOT_FOUND, "model_snapshot_not_found", "模型执行快照不存在");
+        }
+        return new FrozenModelConfiguration(snapshot.getModel(), snapshot.getReasoningLevel());
     }
 
     private void validateFrozenFallbacks(

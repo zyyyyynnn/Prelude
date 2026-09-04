@@ -182,6 +182,34 @@ test('@dark restores the governed dark theme before rendering', async ({ page })
   expect(colors.every((value) => value.trim().length > 0)).toBe(true)
 })
 
+test('@dark suppresses transitions while applying theme changes', async ({ page }) => {
+  await installApi(page)
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '主题' }).click()
+  await page.evaluate(() => {
+    window.addEventListener(
+      'prelude-theme-change',
+      () => {
+        document.documentElement.dataset.themeGuardObserved = String(
+          document.documentElement.classList.contains('is-theme-transitioning'),
+        )
+      },
+      { once: true },
+    )
+  })
+  await page.getByRole('radio', { name: /暗色/ }).click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(page.locator('html')).toHaveAttribute('data-theme-guard-observed', 'true')
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+      ),
+  )
+  await expect(page.locator('html')).not.toHaveClass(/is-theme-transitioning/)
+})
+
 test('@visual keeps no-data pages lightweight and typographically consistent', async ({ page }) => {
   await installApi(page)
   await page.route('**/api/analytics/radar', async (route) => {
@@ -336,6 +364,18 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     .locator('.app-sidebar')
     .evaluate((sidebar) => sidebar.getBoundingClientRect().width)
   await page.getByRole('button', { name: '收起侧栏' }).click()
+  const collapsingSidebar = await page.locator('.app-sidebar').evaluate(async (sidebar) => {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    await new Promise((resolve) => setTimeout(resolve, 40))
+    return {
+      width: sidebar.getBoundingClientRect().width,
+      targetWidth: Number.parseFloat(
+        getComputedStyle(sidebar).getPropertyValue('--layout-sidebar-collapsed-inline-size'),
+      ),
+    }
+  })
+  expect(collapsingSidebar.width).toBeLessThan(expandedSidebarWidth)
+  expect(collapsingSidebar.width).toBeGreaterThan(collapsingSidebar.targetWidth)
   await page.locator('.app-sidebar').evaluate(async (sidebar) => {
     await Promise.all(sidebar.getAnimations().map((animation) => animation.finished))
   })
@@ -344,14 +384,18 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.app-sidebar__btn > svg')).every(
       (icon) => icon.getBoundingClientRect().width > 0 && icon.getBoundingClientRect().height > 0,
     ),
-    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every(
-      (label) => label.getBoundingClientRect().width === 0,
-    ),
+    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every((label) => {
+      const style = getComputedStyle(label)
+      return style.visibility === 'hidden' && style.opacity === '0'
+    }),
   }))
   expect(collapsedSidebar.width).toBeLessThan(expandedSidebarWidth)
   expect(collapsedSidebar.iconsVisible).toBe(true)
   expect(collapsedSidebar.labelsHidden).toBe(true)
   await page.getByRole('button', { name: '展开侧栏' }).click()
+  await page.locator('.app-sidebar').evaluate(async (sidebar) => {
+    await Promise.all(sidebar.getAnimations().map((animation) => animation.finished))
+  })
   await expectIconCentered(page.getByRole('button', { name: /模型：/ }))
   await page.screenshot({
     path: test.info().outputPath('interview-desktop.png'),
@@ -482,11 +526,47 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await expect(
     page.locator('.settings-inline-actions--header').getByRole('button', { name: '上传简历' }),
   ).toBeVisible()
+  await expect(page.locator('.resume-row__main > svg')).toHaveCount(0)
+  const resumePadding = await page.locator('.resume-row').first().evaluate((row) => {
+    const style = getComputedStyle(row)
+    return [style.paddingInlineStart, style.paddingInlineEnd]
+  })
+  expect(resumePadding[0]).toBe(resumePadding[1])
   await page.getByRole('button', { name: '岗位管理' }).click()
   await expect(
     page.locator('.settings-inline-actions--header').getByRole('button', { name: '创建岗位' }),
   ).toBeVisible()
   await expect(page.locator('.position-settings__item svg')).toHaveCount(0)
+  const positionWorkspace = await page.locator('.position-settings__workspace').evaluate((workspace) => {
+    const [catalog, form] = Array.from(workspace.children)
+    const catalogRect = catalog.getBoundingClientRect()
+    const formRect = form.getBoundingClientRect()
+    const catalogStyle = getComputedStyle(catalog)
+    const formStyle = getComputedStyle(form)
+    const catalogTitle = catalog.querySelector<HTMLElement>('.settings-section__title')!
+    const firstItem = catalog.querySelector<HTMLElement>('.position-settings__item-name')!
+    return {
+      alignedTop: Math.abs(catalogRect.top - formRect.top) < 1,
+      sideBySide: formRect.left > catalogRect.right,
+      matchingPadding: catalogStyle.paddingInlineStart === formStyle.paddingInlineStart,
+      matchingRadius: catalogStyle.borderRadius === formStyle.borderRadius,
+      matchingSurface: catalogStyle.backgroundColor === formStyle.backgroundColor,
+      contentAligned:
+        Math.abs(catalogTitle.getBoundingClientRect().left - firstItem.getBoundingClientRect().left) < 1,
+    }
+  })
+  expect(positionWorkspace).toEqual({
+    alignedTop: true,
+    sideBySide: true,
+    matchingPadding: true,
+    matchingRadius: true,
+    matchingSurface: true,
+    contentAligned: true,
+  })
+  await expect(page.locator('.position-settings__item-name').first()).toHaveCSS(
+    'font-family',
+    /Noto Serif SC/,
+  )
   const positionFields = await page.locator('.position-settings__fields').evaluate((container) => {
     const fields = Array.from(container.children).map((field) => field.getBoundingClientRect())
     return {
@@ -502,6 +582,16 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await page.getByRole('button', { name: '模型管理' }).click()
   const modelSelect = page.getByLabel('模型', { exact: true })
   await expect(modelSelect).toHaveAttribute('role', 'combobox')
+  const modelSelectionLayout = await page
+    .locator('.llm-model-selection-grid')
+    .evaluate((container) => {
+      const fields = Array.from(container.children).map((field) => field.getBoundingClientRect())
+      return {
+        sameRow: Math.abs(fields[0].top - fields[1].top) < 1,
+        sameWidth: Math.abs(fields[0].width - fields[1].width) < 1,
+      }
+    })
+  expect(modelSelectionLayout).toEqual({ sameRow: true, sameWidth: true })
   await modelSelect.click()
   const modelOptions = page.getByRole('option')
   await expect(modelOptions.first()).toBeVisible()
@@ -571,7 +661,7 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
   await header.getByRole('button', { name: '报告' }).click()
   await expect(header.getByRole('button', { name: '导出 PDF' })).toBeVisible()
   await expect(header.getByRole('button', { name: '面试' })).toBeVisible()
-  await expect(header.locator('.status-badge')).toBeVisible()
+  await expect(header.locator('.status-badge')).toHaveCount(0)
 
   const geometry = await header
     .locator('.workspace-header__main')

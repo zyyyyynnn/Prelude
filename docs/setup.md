@@ -17,10 +17,12 @@ docker compose up -d mysql redis rabbitmq versitygw
 后端：
 
 ```powershell
-mvn -f backend/pom.xml spring-boot:run
+mvn -f backend/pom.xml -Dspring-boot.run.profiles=dev spring-boot:run
 ```
 
 健康检查：`http://127.0.0.1:8080/actuator/health`。
+
+`dev` profile 会加载 `data-dev.sql`，提供 `demo / 123456` 以及一场包含完整消息、阶段、报告、评分和薄弱点的前端工程师面试记录。
 
 前端：
 

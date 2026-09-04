@@ -57,6 +57,8 @@ final class InterviewApiMapper {
             details.targetPosition(),
             details.status(),
             details.currentStage(),
+            details.model(),
+            details.reasoningLevel(),
             details.summaryReport(),
             details.stages().stream().map(InterviewApiMapper::toResponse).toList(),
             details.messages().stream().map(InterviewApiMapper::toResponse).toList(),

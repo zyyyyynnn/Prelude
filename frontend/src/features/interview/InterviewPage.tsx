@@ -8,6 +8,7 @@ import { printInterviewReport, ReportPanel } from '@/features/report'
 import {
   fetchLlmConfig,
   fetchProviders,
+  REASONING_LABELS,
   saveLlmConfig,
   useSettings,
   type LlmConfigPayload,
@@ -249,6 +250,7 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
                   sessionId={sessionId}
                   resumeName={resumeName}
                   positionName={current.targetPosition ?? '当前岗位'}
+                  modelName={frozenModelLabel(current.model, current.reasoningLevel)}
                   attachments={current.attachments ?? []}
                   jdMatched={Boolean(current.jdText?.trim())}
                   disabled={current.status === 'finished'}
@@ -265,4 +267,13 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
       </div>
     </div>
   )
+}
+
+function frozenModelLabel(model?: string, reasoningLevel?: string) {
+  const knownLevel = reasoningLevel && reasoningLevel in REASONING_LABELS
+    ? REASONING_LABELS[reasoningLevel as keyof typeof REASONING_LABELS]
+    : reasoningLevel
+  return knownLevel
+    ? `${model ?? '模型信息不可用'} · ${knownLevel}`
+    : model ?? '模型信息不可用'
 }

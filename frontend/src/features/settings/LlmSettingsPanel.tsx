@@ -36,17 +36,38 @@ function LlmSettingsForm({
     : '内置接入方式使用系统配置的服务地址。'
   return (
     <div className="panel-content-wrapper">
-      <Field label="接入方式" htmlFor="llm-provider">
-        <Select
-          id="llm-provider"
-          value={state.draft.provider}
-          options={state.providers.map((provider) => ({
-            value: provider.providerKey,
-            label: provider.displayName,
-          }))}
-          onValueChange={state.selectProvider}
-        />
-      </Field>
+      <div className="llm-model-selection-grid">
+        <Field label="接入方式" htmlFor="llm-provider">
+          <Select
+            id="llm-provider"
+            value={state.draft.provider}
+            options={state.providers.map((provider) => ({
+              value: provider.providerKey,
+              label: provider.displayName,
+            }))}
+            onValueChange={state.selectProvider}
+          />
+        </Field>
+        <Field label="模型" htmlFor="llm-model">
+          {state.models.length ? (
+            <Select
+              id="llm-model"
+              value={state.draft.model}
+              options={[...new Set([state.draft.model, ...state.models.map((item) => item.model)])]
+                .filter(Boolean)
+                .map((model) => ({ value: model, label: model }))}
+              onValueChange={state.selectModel}
+            />
+          ) : (
+            <Input
+              id="llm-model"
+              value={state.draft.model}
+              placeholder="输入模型 ID"
+              onChange={(event) => state.update('model', event.target.value)}
+            />
+          )}
+        </Field>
+      </div>
       {state.custom && (
         <Field label="Base URL" htmlFor="llm-base-url" hint={endpointHint}>
           <div className="endpoint-row">
@@ -70,25 +91,6 @@ function LlmSettingsForm({
           </div>
         </Field>
       )}
-      <Field label="模型" htmlFor="llm-model">
-        {state.models.length ? (
-          <Select
-            id="llm-model"
-            value={state.draft.model}
-            options={[...new Set([state.draft.model, ...state.models.map((item) => item.model)])]
-              .filter(Boolean)
-              .map((model) => ({ value: model, label: model }))}
-            onValueChange={state.selectModel}
-          />
-        ) : (
-          <Input
-            id="llm-model"
-            value={state.draft.model}
-            placeholder="输入模型 ID"
-            onChange={(event) => state.update('model', event.target.value)}
-          />
-        )}
-      </Field>
       <Field
         label="API Key"
         htmlFor="llm-api-key"
