@@ -38,7 +38,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Sole transport-retry owner for model execution. Provider SDK retries are
@@ -114,15 +113,15 @@ public class ModelExecutionService {
         RuntimeException lastTransient = null;
 
         for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
+            UsageAccumulator usage = new UsageAccumulator();
             validateRequest(effective, request, true);
             ChatModel chatModel = modelFactory.chatModel(effective, apiKey);
             Prompt prompt = prompt(request, modelFactory.requestOptions(effective, request.responseMode()));
             AtomicBoolean emitted = new AtomicBoolean(false);
-            AtomicReference<ChatResponse> latest = new AtomicReference<>();
             try {
                 Flux<ChatResponse> execution = chatModel.stream(prompt)
                     .doOnNext(response -> {
-                        latest.set(response);
+                        usage.add(response);
                         String delta = extractDelta(effective, response);
                         if (delta != null && !delta.isEmpty()) {
                             emitted.set(true);
@@ -136,12 +135,10 @@ public class ModelExecutionService {
                         .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
                 }
                 execution.blockLast(STREAM_TIMEOUT);
-                ChatResponse terminal = latest.get();
-                if (hasProviderUsage(terminal)) {
-                    publishUsage(effective, request, usageOf(effective, request, terminal));
-                }
+                flushObservedUsage(effective, request, usage);
                 return;
             } catch (RuntimeException failure) {
+                flushObservedUsage(effective, request, usage);
                 if (emitted.get()) {
                     throw mapFailure(failure);
                 }

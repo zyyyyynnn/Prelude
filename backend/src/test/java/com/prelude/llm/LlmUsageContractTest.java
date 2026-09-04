@@ -96,6 +96,41 @@ class LlmUsageContractTest {
     }
 
     @Test
+    void failedStreamStillEmitsUsageThatArrivedBeforeTheFailure() {
+        AtomicInteger events = new AtomicInteger();
+        AtomicReference<LlmUsageRecorded> captured = new AtomicReference<>();
+        ChatModel model = new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Flux<ChatResponse> stream(Prompt prompt) {
+                return Flux.concat(
+                    Flux.just(response("partial", 4, 2)),
+                    Flux.error(new TransientAiException("stream failed after usage")));
+            }
+        };
+        ModelExecutionService service = service(model, event -> {
+            if (event instanceof LlmUsageRecorded usage) {
+                events.incrementAndGet();
+                captured.set(usage);
+            }
+        });
+        StringBuilder output = new StringBuilder();
+
+        assertThatThrownBy(() -> service.stream(request(), output::append))
+            .isInstanceOf(LlmServerException.class);
+
+        assertThat(output).hasToString("partial");
+        assertThat(events).hasValue(1);
+        assertThat(captured.get().inputTokens()).isEqualTo(4L);
+        assertThat(captured.get().outputTokens()).isEqualTo(2L);
+        assertThat(captured.get().totalTokens()).isEqualTo(6L);
+    }
+
+    @Test
     void usageListenerFailureCannotTurnSuccessfulModelExecutionIntoFailure() {
         ModelExecutionService service = service(
             prompt -> response("business-ok", 1, 1),
