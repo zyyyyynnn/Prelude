@@ -2,7 +2,8 @@
 
 <!--
 说明本 PR 最终交付了什么，以及为什么值得合入。
-只描述当前结果，不记录开发阶段、Review 过程、测试流水账或 Issue 编号。
+只描述当前结果，不记录开发阶段、Review 过程、测试流水账或 Issue 编号/链接。
+禁止使用 `Closes`、`Fixes`、`Resolves`、`Refs` 等 Issue 关联标识。
 -->
 
 ## 架构
@@ -23,5 +24,5 @@
 
 <!--
 仅承载无法自然归入以上章节、但对长期维护仍然必要的信息；否则删除。
-验证结果由 GitHub Checks / Actions 表达，Issue 关系由 GitHub Development 原生关系表达。
+验证结果由 GitHub Checks / Actions 表达，Issue 关系只由 GitHub Development 原生关系维护。
 -->
