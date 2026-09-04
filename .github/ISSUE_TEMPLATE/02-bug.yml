@@ -1,0 +1,57 @@
+name: Bug
+description: 可复现的错误、回归或与既定契约不一致的行为
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        标题使用 `fix(<scope>): <problem statement>`，描述问题本身而不是解决方案。
+        一个 Issue 只描述一个可复现问题。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题
+      description: 描述当前错误行为、影响及出现条件。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现
+      description: 给出最小、稳定、可重复的复现步骤。
+      placeholder: |
+        1. ……
+        2. ……
+        3. ……
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望
+      description: 描述既定契约下应出现的正确行为。
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境
+      description: 仅填写与问题相关的版本、平台、浏览器、Provider 或运行条件。
+      placeholder: |
+        - Branch / Commit:
+        - Runtime / Browser:
+        - 其他相关条件:
+    validations:
+      required: false
+
+  - type: textarea
+    id: supplement
+    attributes:
+      label: 补充
+      description: 日志、截图、最小复现仓库或其他必要上下文。
+    validations:
+      required: false
