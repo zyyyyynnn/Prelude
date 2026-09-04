@@ -1,6 +1,6 @@
-name: Bug
+# yaml-language-server: $schema=https://www.schemastore.org/github-issue-forms.json
+name: Bug / Regression
 description: 可复现的错误、回归或与既定契约不一致的行为
-title: ""
 body:
   - type: markdown
     attributes:
