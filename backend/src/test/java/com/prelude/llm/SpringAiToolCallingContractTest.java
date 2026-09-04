@@ -53,6 +53,7 @@ class SpringAiToolCallingContractTest {
     void continuationTransportRetryDoesNotReplayCommittedToolAndAggregatesUsage() {
         AtomicInteger modelCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
+        AtomicInteger usageEvents = new AtomicInteger();
         AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
         ChatModel model = prompt -> {
             int call = modelCalls.incrementAndGet();
@@ -67,7 +68,7 @@ class SpringAiToolCallingContractTest {
             }
             return response("The tool returned 42.", 3, 2);
         };
-        ApplicationEventPublisher events = eventPublisher(usageEvent);
+        ApplicationEventPublisher events = eventPublisher(usageEvent, usageEvents);
         ModelExecutionService service = service(snapshot(), 2, events, effective -> model);
 
         LlmPort.CompletionResult result = service.complete(request(tool("double_value", arguments -> {
@@ -81,6 +82,7 @@ class SpringAiToolCallingContractTest {
         assertThat(result.usage().inputTokens()).isEqualTo(5L);
         assertThat(result.usage().outputTokens()).isEqualTo(3L);
         assertThat(result.usage().totalTokens()).isEqualTo(8L);
+        assertThat(usageEvents).hasValue(1);
         assertThat(usageEvent.get()).isNotNull();
         assertThat(usageEvent.get().inputTokens()).isEqualTo(5L);
         assertThat(usageEvent.get().outputTokens()).isEqualTo(3L);
@@ -92,6 +94,8 @@ class SpringAiToolCallingContractTest {
         AtomicInteger primaryCalls = new AtomicInteger();
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
+        AtomicInteger usageEvents = new AtomicInteger();
+        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             int call = primaryCalls.incrementAndGet();
             if (call == 1) {
@@ -106,7 +110,7 @@ class SpringAiToolCallingContractTest {
         ModelExecutionSnapshot snapshot = snapshot();
         snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
         ModelExecutionService service = service(
-            snapshot, 2, mock(ApplicationEventPublisher.class),
+            snapshot, 2, eventPublisher(usageEvent, usageEvents),
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
 
         assertThatThrownBy(() -> service.complete(request(tool("commit_side_effect", arguments -> {
@@ -118,6 +122,11 @@ class SpringAiToolCallingContractTest {
         assertThat(primaryCalls).hasValue(3);
         assertThat(fallbackCalls).hasValue(0);
         assertThat(toolCalls).hasValue(1);
+        assertThat(usageEvents).hasValue(1);
+        assertThat(usageEvent.get().model()).isEqualTo("deepseek-v4-pro");
+        assertThat(usageEvent.get().inputTokens()).isEqualTo(1L);
+        assertThat(usageEvent.get().outputTokens()).isEqualTo(1L);
+        assertThat(usageEvent.get().totalTokens()).isEqualTo(2L);
     }
 
     @Test
@@ -125,6 +134,8 @@ class SpringAiToolCallingContractTest {
         AtomicInteger primaryCalls = new AtomicInteger();
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
+        AtomicInteger usageEvents = new AtomicInteger();
+        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             primaryCalls.incrementAndGet();
             throw new TransientAiException("primary unavailable");
@@ -136,7 +147,7 @@ class SpringAiToolCallingContractTest {
         ModelExecutionSnapshot snapshot = snapshot();
         snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
         ModelExecutionService service = service(
-            snapshot, 2, mock(ApplicationEventPublisher.class),
+            snapshot, 2, eventPublisher(usageEvent, usageEvents),
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
 
         LlmPort.CompletionResult result = service.complete(request(tool("unused", arguments -> {
@@ -148,6 +159,8 @@ class SpringAiToolCallingContractTest {
         assertThat(primaryCalls).hasValue(2);
         assertThat(fallbackCalls).hasValue(1);
         assertThat(toolCalls).hasValue(0);
+        assertThat(usageEvents).hasValue(1);
+        assertThat(usageEvent.get().model()).isEqualTo("deepseek-v4-flash");
     }
 
     @Test
@@ -155,6 +168,8 @@ class SpringAiToolCallingContractTest {
         AtomicInteger primaryCalls = new AtomicInteger();
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
+        AtomicInteger usageEvents = new AtomicInteger();
+        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             primaryCalls.incrementAndGet();
             return toolRequest("call-1", "fail_tool", "{}", 1, 1);
@@ -165,8 +180,15 @@ class SpringAiToolCallingContractTest {
         };
         ModelExecutionSnapshot snapshot = snapshot();
         snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
+        ApplicationEventPublisher failingUsageListener = event -> {
+            if (event instanceof LlmUsageRecorded usage) {
+                usageEvents.incrementAndGet();
+                usageEvent.set(usage);
+                throw new IllegalStateException("telemetry unavailable");
+            }
+        };
         ModelExecutionService service = service(
-            snapshot, 3, mock(ApplicationEventPublisher.class),
+            snapshot, 3, failingUsageListener,
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
 
         assertThatThrownBy(() -> service.complete(request(tool("fail_tool", arguments -> {
@@ -179,6 +201,8 @@ class SpringAiToolCallingContractTest {
         assertThat(primaryCalls).hasValue(1);
         assertThat(fallbackCalls).hasValue(0);
         assertThat(toolCalls).hasValue(1);
+        assertThat(usageEvents).hasValue(1);
+        assertThat(usageEvent.get().totalTokens()).isEqualTo(2L);
     }
 
     @Test
@@ -273,9 +297,13 @@ class SpringAiToolCallingContractTest {
         );
     }
 
-    private ApplicationEventPublisher eventPublisher(AtomicReference<LlmUsageRecorded> captured) {
+    private ApplicationEventPublisher eventPublisher(
+        AtomicReference<LlmUsageRecorded> captured,
+        AtomicInteger eventCount
+    ) {
         return event -> {
             if (event instanceof LlmUsageRecorded usage) {
+                eventCount.incrementAndGet();
                 captured.set(usage);
             }
         };

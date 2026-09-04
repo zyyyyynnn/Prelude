@@ -1,5 +1,6 @@
 package com.prelude.llm;
 
+import com.prelude.LlmServerException;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.LlmUsageRecorded;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
@@ -12,6 +13,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.context.ApplicationEventPublisher;
 import reactor.core.publisher.Flux;
 
@@ -20,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -104,6 +107,24 @@ class LlmUsageContractTest {
 
         assertThat(result.content()).isEqualTo("business-ok");
         assertThat(result.usage().totalTokens()).isEqualTo(2L);
+    }
+
+    @Test
+    void transportFailureBeforeAnyProviderResponseEmitsNoUsage() {
+        AtomicInteger events = new AtomicInteger();
+        ModelExecutionService service = service(
+            prompt -> {
+                throw new TransientAiException("provider unavailable");
+            },
+            event -> {
+                if (event instanceof LlmUsageRecorded) {
+                    events.incrementAndGet();
+                }
+            });
+
+        assertThatThrownBy(() -> service.complete(request()))
+            .isInstanceOf(LlmServerException.class);
+        assertThat(events).hasValue(0);
     }
 
     private ModelExecutionService service(ChatModel model, ApplicationEventPublisher publisher) {

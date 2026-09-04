@@ -82,6 +82,7 @@ public class ModelExecutionService {
         RuntimeException lastTransient = null;
 
         for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
+            UsageAccumulator usage = new UsageAccumulator();
             validateRequest(effective, request, false);
             ChatModel chatModel = modelFactory.chatModel(effective, apiKey);
             List<ToolCallback> toolCallbacks = toToolCallbacks(request.tools());
@@ -89,13 +90,17 @@ public class ModelExecutionService {
                 modelFactory.requestOptions(effective, request.responseMode()), toolCallbacks);
             Prompt prompt = prompt(request, options);
             try {
-                LogicalCompletion completion = completeLogicalTurn(chatModel, prompt, effective, request);
-                publishUsage(effective, request, completion.usage());
+                LogicalCompletion completion = completeLogicalTurn(chatModel, prompt, effective, request, usage);
+                flushObservedUsage(effective, request, usage);
                 return new CompletionResult(completion.content(), completion.usage());
             } catch (InitialTransportFailure failure) {
+                flushObservedUsage(effective, request, usage);
                 lastTransient = failure.transportFailure();
                 log.warn("Model execution exhausted transport retry before tool execution for model {} (snapshot {})",
                     effective.getModel(), effective.getId());
+            } catch (RuntimeException failure) {
+                flushObservedUsage(effective, request, usage);
+                throw failure;
             }
         }
         throw mapFailure(lastTransient == null
@@ -157,10 +162,10 @@ public class ModelExecutionService {
         ChatModel chatModel,
         Prompt initialPrompt,
         ModelExecutionSnapshot snapshot,
-        ModelExecutionRequest request
+        ModelExecutionRequest request,
+        UsageAccumulator usage
     ) {
         Prompt prompt = initialPrompt;
-        UsageAccumulator usage = new UsageAccumulator();
         ChatResponse response;
         try {
             response = callModel(chatModel, prompt, snapshot);
@@ -187,6 +192,16 @@ public class ModelExecutionService {
 
         Usage logicalUsage = usage.toUsage(snapshot, request);
         return new LogicalCompletion(extractContent(snapshot, response), logicalUsage);
+    }
+
+    private void flushObservedUsage(
+        ModelExecutionSnapshot snapshot,
+        ModelExecutionRequest request,
+        UsageAccumulator usage
+    ) {
+        if (usage.observed()) {
+            publishUsage(snapshot, request, usage.toUsage(snapshot, request));
+        }
     }
 
     private ChatResponse callModel(ChatModel chatModel, Prompt prompt, ModelExecutionSnapshot snapshot) {
@@ -395,7 +410,7 @@ public class ModelExecutionService {
         try {
             eventPublisher.publishEvent(event);
         } catch (RuntimeException listenerFailure) {
-            log.warn("LLM usage listener failed for snapshot {}; business execution remains successful ({})",
+            log.warn("LLM usage listener failed for snapshot {}; business execution result is unchanged ({})",
                 snapshot.getId(), listenerFailure.getClass().getSimpleName());
         }
     }
@@ -441,6 +456,7 @@ public class ModelExecutionService {
 
     private static final class UsageAccumulator {
 
+        private boolean observed;
         private Long inputTokens;
         private Long outputTokens;
         private Long totalTokens;
@@ -449,10 +465,15 @@ public class ModelExecutionService {
             if (response == null || response.getMetadata() == null || response.getMetadata().getUsage() == null) {
                 return;
             }
+            observed = true;
             var usage = response.getMetadata().getUsage();
             inputTokens = add(inputTokens, usage.getPromptTokens());
             outputTokens = add(outputTokens, usage.getCompletionTokens());
             totalTokens = add(totalTokens, usage.getTotalTokens());
+        }
+
+        boolean observed() {
+            return observed;
         }
 
         Usage toUsage(ModelExecutionSnapshot snapshot, ModelExecutionRequest request) {
