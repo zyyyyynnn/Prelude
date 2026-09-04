@@ -16,8 +16,7 @@ import lombok.RequiredArgsConstructor;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.core.type.TypeReference;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -25,6 +24,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Account-scoped model configuration: ProviderCredential (BYOK, AES-GCM at
@@ -47,7 +47,9 @@ public class ModelProfileService {
     private final CustomModelCapabilityDiscovery capabilityDiscovery;
     private final CustomLlmEgressPolicy egressPolicy;
     private final EgressHttpClientFactory egressHttpClientFactory;
+    private final ModelCapabilityJson capabilityJson;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
     public ModelProfile requireProfile(Long accountId) {
         ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
@@ -81,7 +83,6 @@ public class ModelProfileService {
         return secretCipher.decrypt(credential.getApiKeyEncrypted());
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public ModelConfigurationView saveConfiguration(Long accountId, SaveConfigurationCommand command) {
         String provider = command.provider();
         if (!capabilityCatalog.knownProviders().contains(provider)) {
@@ -121,7 +122,7 @@ public class ModelProfileService {
         }
 
         ModelCapabilityResponse capability = CustomLlmProtocol.isCustom(provider)
-            ? capabilityDiscovery.discover(provider, customEndpointUrl, effectiveApiKey, model)
+            ? capabilityDiscovery.discover(accountId, provider, customEndpointUrl, effectiveApiKey, model)
             : capabilityCatalog.capability(provider, model);
         ModelCapabilityResponse.ReasoningLevel level = reasoningLevels.parse(command.reasoningLevel());
         if (!capability.supportedReasoningLevels().contains(level)) {
@@ -129,38 +130,14 @@ public class ModelProfileService {
         }
         ModelExecutionParameters executionParameters = ModelExecutionParameters.resolve(command.maxOutputTokens());
 
-        List<String> fallbackModels = validateFallbackModels(
-            provider, model, level, command.fallbackModels());
+        List<ModelCapabilityResponse> fallbackCapabilities = validateFallbackCapabilities(
+            accountId, provider, customEndpointUrl, effectiveApiKey, model, level, command.fallbackModels());
 
-        Long credentialId;
-        if (newKey) {
-            credentialId = createCredential(accountId, provider, credentialScope,
-                secretCipher.encrypt(command.apiKey()));
-        } else if (clearKey) {
-            credentialId = null;
-        } else {
-            credentialId = reusableCredentialId;
-        }
-
-        ModelProfile profile = existing == null ? new ModelProfile() : existing;
-        profile.setAccountId(accountId);
-        profile.setProvider(provider);
-        profile.setModel(model);
-        profile.setCredentialId(credentialId);
-        profile.setCustomEndpointUrl(customEndpointUrl);
-        profile.setReasoningLevel(level.name());
-        profile.setEffectiveParametersJson(executionParameters.toJson(objectMapper));
-        profile.setModelCapabilityJson(CustomLlmProtocol.isCustom(provider) ? toCapabilityJson(capability) : null);
-        profile.setFallbackModelsJson(toJson(fallbackModels));
-        if (existing == null) {
-            try {
-                profileMapper.insert(profile);
-            } catch (org.springframework.dao.DuplicateKeyException race) {
-                throw BusinessException.revisionConflict("模型配置已被其他请求更新，请重试");
-            }
-        } else {
-            profileMapper.updateById(profile);
-        }
+        PreparedConfiguration prepared = new PreparedConfiguration(
+            provider, customEndpointUrl, model, credentialScope, level, executionParameters,
+            capability, fallbackCapabilities, newKey, clearKey, reusableCredentialId,
+            existing == null ? null : existing.getId());
+        transactionTemplate.executeWithoutResult(status -> persistConfiguration(accountId, command, prepared));
         return currentConfiguration(accountId);
     }
 
@@ -188,7 +165,9 @@ public class ModelProfileService {
             masked,
             profile.getReasoningLevel(),
             executionParameters.maxOutputTokens(),
-            fromJson(profile.getFallbackModelsJson()),
+            capabilityJson.readList(profile.getFallbackCapabilitiesJson()).stream()
+                .map(ModelCapabilityResponse::model)
+                .toList(),
             capability
         );
     }
@@ -269,20 +248,23 @@ public class ModelProfileService {
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("API Key 不能为空");
         }
-        return capabilityDiscovery.discover(command.provider(), baseUrl, apiKey, model);
+        return capabilityDiscovery.discover(accountId, command.provider(), baseUrl, apiKey, model);
     }
 
     ModelCapabilityResponse capabilityForProfile(ModelProfile profile, String model) {
-        if (!CustomLlmProtocol.isCustom(profile.getProvider()) || !profile.getModel().equals(model)) {
+        if (!CustomLlmProtocol.isCustom(profile.getProvider())) {
             return capabilityCatalog.capability(profile.getProvider(), model);
         }
-        ModelCapabilityResponse stored = fromCapabilityJson(profile.getModelCapabilityJson());
-        if (stored == null
-            || !profile.getProvider().equals(stored.provider())
-            || !model.equals(stored.model())) {
-            return capabilityCatalog.capability(profile.getProvider(), model);
+        if (profile.getModel().equals(model)) {
+            ModelCapabilityResponse stored = capabilityJson.read(profile.getModelCapabilityJson());
+            if (profile.getProvider().equals(stored.provider()) && model.equals(stored.model())) {
+                return stored;
+            }
         }
-        return stored;
+        return capabilityJson.readList(profile.getFallbackCapabilitiesJson()).stream()
+            .filter(capability -> profile.getProvider().equals(capability.provider()) && model.equals(capability.model()))
+            .findFirst()
+            .orElseThrow(() -> BusinessException.badRequest("所选模型能力尚未确认，请先保存模型配置"));
     }
 
     private String activeKeyForScope(Long accountId, String provider, String baseUrl) {
@@ -331,8 +313,11 @@ public class ModelProfileService {
             capability);
     }
 
-    private List<String> validateFallbackModels(
+    private List<ModelCapabilityResponse> validateFallbackCapabilities(
+        Long accountId,
         String provider,
+        String customEndpointUrl,
+        String apiKey,
         String primaryModel,
         ModelCapabilityResponse.ReasoningLevel reasoningLevel,
         List<String> requested
@@ -340,7 +325,7 @@ public class ModelProfileService {
         if (requested == null || requested.isEmpty()) {
             return List.of();
         }
-        List<String> validated = new ArrayList<>();
+        List<ModelCapabilityResponse> validated = new ArrayList<>();
         for (String raw : requested) {
             if (raw == null || raw.isBlank()) {
                 throw BusinessException.badRequest("回退模型不能为空");
@@ -349,17 +334,71 @@ public class ModelProfileService {
             if (model.equals(primaryModel)) {
                 throw BusinessException.badRequest("主模型不能同时出现在回退模型中");
             }
-            if (validated.contains(model)) {
+            if (validated.stream().anyMatch(capability -> capability.model().equals(model))) {
                 throw BusinessException.badRequest("回退模型不能重复");
             }
             capabilityCatalog.requireSupportedModel(provider, model);
-            if (!capabilityCatalog.capability(provider, model)
-                .supportedReasoningLevels().contains(reasoningLevel)) {
+            ModelCapabilityResponse capability = CustomLlmProtocol.isCustom(provider)
+                ? capabilityDiscovery.discover(accountId, provider, customEndpointUrl, apiKey, model)
+                : capabilityCatalog.capability(provider, model);
+            if (!capability.supportedReasoningLevels().contains(reasoningLevel)) {
                 throw BusinessException.badRequest("回退模型不支持所选思考深度");
             }
-            validated.add(model);
+            validated.add(capability);
         }
         return List.copyOf(validated);
+    }
+
+    private void persistConfiguration(
+        Long accountId,
+        SaveConfigurationCommand command,
+        PreparedConfiguration prepared
+    ) {
+        ModelProfile current = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
+            .eq(ModelProfile::getAccountId, accountId)
+            .last("LIMIT 1 FOR UPDATE"));
+        if ((prepared.expectedProfileId() == null && current != null)
+            || (prepared.expectedProfileId() != null
+            && (current == null || !prepared.expectedProfileId().equals(current.getId())))) {
+            throw BusinessException.revisionConflict("模型配置已被其他请求更新，请重试");
+        }
+
+        Long credentialId;
+        if (prepared.newKey()) {
+            credentialId = createCredential(accountId, prepared.provider(), prepared.credentialScope(),
+                secretCipher.encrypt(command.apiKey()));
+        } else if (prepared.clearKey()) {
+            credentialId = null;
+        } else {
+            Long currentCredentialId = reusableActiveCredentialId(
+                current, accountId, prepared.provider(), prepared.credentialScope());
+            if (!Objects.equals(currentCredentialId, prepared.reusableCredentialId())) {
+                throw BusinessException.revisionConflict("模型凭据已被更新，请重试");
+            }
+            credentialId = currentCredentialId;
+        }
+
+        ModelProfile profile = current == null ? new ModelProfile() : current;
+        profile.setAccountId(accountId);
+        profile.setProvider(prepared.provider());
+        profile.setModel(prepared.model());
+        profile.setCredentialId(credentialId);
+        profile.setCustomEndpointUrl(prepared.customEndpointUrl());
+        profile.setReasoningLevel(prepared.reasoningLevel().name());
+        profile.setEffectiveParametersJson(prepared.executionParameters().toJson(objectMapper));
+        profile.setModelCapabilityJson(CustomLlmProtocol.isCustom(prepared.provider())
+            ? capabilityJson.write(prepared.capability())
+            : null);
+        profile.setFallbackCapabilitiesJson(capabilityJson.writeList(prepared.fallbackCapabilities()));
+        if (current == null) {
+            try {
+                profileMapper.insert(profile);
+            } catch (org.springframework.dao.DuplicateKeyException race) {
+                throw BusinessException.revisionConflict("模型配置已被其他请求更新，请重试");
+            }
+        } else {
+            profileMapper.updateById(profile);
+        }
     }
 
     private String normalizeRoot(String input, String provider) {
@@ -400,43 +439,20 @@ public class ModelProfileService {
         }
     }
 
-    private String toJson(List<String> value) {
-        try {
-            return objectMapper.writeValueAsString(value == null ? List.of() : value);
-        } catch (Exception exception) {
-            throw BusinessException.badRequest("配置序列化失败");
-        }
-    }
-
-    private List<String> fromJson(String json) {
-        if (json == null || json.isBlank()) {
-            return List.of();
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {
-            });
-        } catch (Exception exception) {
-            return List.of();
-        }
-    }
-
-    private String toCapabilityJson(ModelCapabilityResponse capability) {
-        try {
-            return objectMapper.writeValueAsString(capability);
-        } catch (Exception exception) {
-            throw BusinessException.badRequest("模型能力序列化失败");
-        }
-    }
-
-    private ModelCapabilityResponse fromCapabilityJson(String json) {
-        if (json == null || json.isBlank()) {
-            return null;
-        }
-        try {
-            return objectMapper.readValue(json, ModelCapabilityResponse.class);
-        } catch (Exception exception) {
-            return null;
-        }
+    private record PreparedConfiguration(
+        String provider,
+        String customEndpointUrl,
+        String model,
+        String credentialScope,
+        ModelCapabilityResponse.ReasoningLevel reasoningLevel,
+        ModelExecutionParameters executionParameters,
+        ModelCapabilityResponse capability,
+        List<ModelCapabilityResponse> fallbackCapabilities,
+        boolean newKey,
+        boolean clearKey,
+        Long reusableCredentialId,
+        Long expectedProfileId
+    ) {
     }
 
 }

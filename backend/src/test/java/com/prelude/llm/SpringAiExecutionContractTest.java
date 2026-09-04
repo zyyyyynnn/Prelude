@@ -3,6 +3,7 @@ package com.prelude.llm;
 import com.prelude.BusinessException;
 import com.prelude.LlmServerException;
 import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -64,6 +65,7 @@ class SpringAiExecutionContractTest {
         assertThat(deepseekPlain.getModel()).isEqualTo("deepseek-v4-pro");
         assertThat(deepseekPlain.getReasoningEffort()).isEqualTo("high");
         assertThat(deepseekPlain.getMaxTokens()).isEqualTo(4096);
+        assertThat(deepseekPlain.getMaxCompletionTokens()).isNull();
         assertThat(deepseekPlain.getResponseFormat()).isNull();
         assertThat(deepseekObject.getResponseFormat().getType())
             .isEqualTo(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT);
@@ -95,7 +97,8 @@ class SpringAiExecutionContractTest {
             LlmPort.ResponseMode.PLAIN_TEXT);
         assertThat(customExtraHigh.getReasoningEffort()).isEqualTo("xhigh");
         assertThat(customMax.getReasoningEffort()).isEqualTo("max");
-        assertThat(customMax.getMaxTokens()).isEqualTo(4096);
+        assertThat(customMax.getMaxCompletionTokens()).isEqualTo(4096);
+        assertThat(customMax.getMaxTokens()).isNull();
 
         ChatOptions responses = factory.requestOptions(
             snapshot("openai-responses", "discovered-responses-model", "AUTO", "https://example.com/v1"),
@@ -153,6 +156,7 @@ class SpringAiExecutionContractTest {
             policy,
             new EgressHttpClientFactory(policy),
             catalog,
+            new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper()),
             new tools.jackson.databind.ObjectMapper()
         );
         for (String level : List.of("AUTO", "LOW", "HIGH", "MAX")) {
@@ -168,6 +172,7 @@ class SpringAiExecutionContractTest {
         assertThat(requestBodies.get(0))
             .contains("\"model\":\"deepseek-v4-pro\"")
             .contains("\"max_tokens\":4096")
+            .doesNotContain("\"max_completion_tokens\"")
             .doesNotContain("reasoning_effort");
         assertThat(requestBodies.get(1))
             .contains("\"reasoning_effort\":\"low\"");
@@ -230,6 +235,31 @@ class SpringAiExecutionContractTest {
     }
 
     @Test
+    void frozenCustomVisionCapabilityDrivesRuntimeValidationInsteadOfTheGenericCatalog() {
+        ModelExecutionSnapshot snapshot = snapshot(
+            "anthropic-messages", "account-model", "AUTO", "https://example.com");
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
+        snapshot.setModelCapabilityJson(capabilityJson.write(
+            new ModelCapabilityCatalog().customCapability(
+                "anthropic-messages",
+                "account-model",
+                List.of(ModelCapabilityResponse.ReasoningLevel.AUTO),
+                true,
+                true)));
+        ModelExecutionService service = fakeService(successfulCallModel("vision-ok"), snapshot, 1);
+        LlmPort.ModelExecutionRequest request = new LlmPort.ModelExecutionRequest(
+            1L,
+            "vision-contract",
+            "vision.contract",
+            LlmPort.ResponseMode.PLAIN_TEXT,
+            List.of(new LlmPort.Message("user", "describe")),
+            List.of(new LlmPort.Attachment("image.png", "image/png", new byte[]{1, 2, 3})),
+            List.of());
+
+        assertThat(service.complete(request).content()).isEqualTo("vision-ok");
+    }
+
+    @Test
     void customChatCompletionsCanRequestSemanticJsonWithoutNativeStructuredOutput() throws Exception {
         AtomicInteger requests = new AtomicInteger();
         AtomicReference<String> requestBody = new AtomicReference<>();
@@ -244,7 +274,10 @@ class SpringAiExecutionContractTest {
 
         assertThat(result.content()).isEqualTo("{\"ok\":true}");
         assertThat(requests).hasValue(1);
-        assertThat(requestBody.get()).doesNotContain("response_format");
+        assertThat(requestBody.get())
+            .contains("\"max_completion_tokens\":4096")
+            .doesNotContain("\"max_tokens\"")
+            .doesNotContain("response_format");
     }
 
     @Test
@@ -338,7 +371,9 @@ class SpringAiExecutionContractTest {
         assertThat(result.content()).isEqualTo("anthropic-ok");
         assertThat(requestBody.get()).contains("\"thinking\":{\"type\":\"adaptive\"}");
         assertThat(requestBody.get()).contains("\"output_config\":{\"effort\":\"medium\"}");
-        assertThat(requestBody.get()).contains("\"max_tokens\":4096");
+        assertThat(requestBody.get())
+            .contains("\"max_tokens\":4096")
+            .doesNotContain("\"max_completion_tokens\"");
     }
 
     @Test
@@ -479,7 +514,7 @@ class SpringAiExecutionContractTest {
             }
         };
         ModelExecutionSnapshot snapshot = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
-        snapshot.setFallbackModelsJson("[]");
+        snapshot.setFallbackCapabilitiesJson("[]");
         ModelExecutionService service = fakeService(model, snapshot, 3);
         List<String> deltas = new ArrayList<>();
 
@@ -495,9 +530,11 @@ class SpringAiExecutionContractTest {
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
         ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
         ModelExecutionSnapshot frozen = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
         frozen.setEffectiveParametersJson("{\"maxOutputTokens\":8192}");
-        frozen.setFallbackModelsJson("[\"deepseek-v4-flash\"]");
+        frozen.setFallbackCapabilitiesJson(capabilityJson.writeList(List.of(
+            catalog.capability("deepseek", "deepseek-v4-flash"))));
         when(snapshotService.require(1L)).thenReturn(frozen);
         when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
         List<String> executionParameters = new ArrayList<>();
@@ -516,7 +553,7 @@ class SpringAiExecutionContractTest {
             return successfulCallModel("fallback-ok");
         });
         ModelExecutionService service = new ModelExecutionService(
-            factory, snapshotService, profileService, catalog, new LlmTransportRetry(1),
+            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(1),
             mock(ApplicationEventPublisher.class));
 
         LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
@@ -555,12 +592,12 @@ class SpringAiExecutionContractTest {
         ModelProfileService profileService = mock(ModelProfileService.class);
         when(snapshotService.require(1L)).thenReturn(snapshot);
         when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn("sk-test");
-        ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
         CustomLlmEgressPolicy policy = new CustomLlmEgressPolicy(
             true, true, Set.of(port), Dns.SYSTEM);
         SpringAiModelFactory factory = factoryFor(policy);
         return new ModelExecutionService(
-            factory, snapshotService, profileService, catalog, new LlmTransportRetry(attempts),
+            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(attempts),
             mock(ApplicationEventPublisher.class));
     }
 
@@ -573,16 +610,18 @@ class SpringAiExecutionContractTest {
         when(factory.chatModel(any(), nullable(String.class))).thenReturn(model);
         when(factory.requestOptions(any(), any())).thenReturn(
             OpenAiChatOptions.builder().model(snapshot.getModel()).build());
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
         return new ModelExecutionService(
-            factory, snapshotService, profileService, new ModelCapabilityCatalog(), new LlmTransportRetry(attempts),
+            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(attempts),
             mock(ApplicationEventPublisher.class));
     }
 
     private SpringAiModelFactory factoryFor(CustomLlmEgressPolicy policy) {
         ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        tools.jackson.databind.ObjectMapper objectMapper = new tools.jackson.databind.ObjectMapper();
         return new SpringAiModelFactory(
             "", "https://api.deepseek.com",
-            policy, new EgressHttpClientFactory(policy), catalog, new tools.jackson.databind.ObjectMapper());
+            policy, new EgressHttpClientFactory(policy), catalog, new ModelCapabilityJson(objectMapper), objectMapper);
     }
 
     private void startOpenAiStub(com.sun.net.httpserver.HttpHandler handler) throws IOException {
@@ -627,7 +666,27 @@ class SpringAiExecutionContractTest {
         snapshot.setReasoningLevel(reasoning);
         snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
-        snapshot.setFallbackModelsJson("[]");
+        ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        ModelCapabilityResponse capability;
+        if (CustomLlmProtocol.isCustom(provider)) {
+            capability = catalog.customCapability(
+                provider,
+                model,
+                List.of(
+                    ModelCapabilityResponse.ReasoningLevel.AUTO,
+                    ModelCapabilityResponse.ReasoningLevel.LOW,
+                    ModelCapabilityResponse.ReasoningLevel.MEDIUM,
+                    ModelCapabilityResponse.ReasoningLevel.HIGH,
+                    ModelCapabilityResponse.ReasoningLevel.XHIGH,
+                    ModelCapabilityResponse.ReasoningLevel.MAX));
+        } else if ("deepseek-v4-pro".equals(model) || "deepseek-v4-flash".equals(model)) {
+            capability = catalog.capability(provider, model);
+        } else {
+            capability = catalog.customCapability(provider, model, List.of(ModelCapabilityResponse.ReasoningLevel.AUTO));
+        }
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
+        snapshot.setModelCapabilityJson(capabilityJson.write(capability));
+        snapshot.setFallbackCapabilitiesJson("[]");
         snapshot.setCustomEndpointUrl(endpoint);
         return snapshot;
     }

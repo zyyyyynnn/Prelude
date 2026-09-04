@@ -21,7 +21,8 @@ public class ModelExecutionSnapshot {
     private String reasoningLevel;
     private String effectiveParametersJson;
     private String capabilityVersion;
-    private String fallbackModelsJson;
+    private String modelCapabilityJson;
+    private String fallbackCapabilitiesJson;
     private Long credentialId;
     private String customEndpointUrl;
     private LocalDateTime createdAt;

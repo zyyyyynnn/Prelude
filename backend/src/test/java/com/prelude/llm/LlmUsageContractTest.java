@@ -116,11 +116,12 @@ class LlmUsageContractTest {
         when(factory.chatModel(any(), nullable(String.class))).thenReturn(model);
         when(factory.requestOptions(any(), any())).thenReturn(
             OpenAiChatOptions.builder().model("deepseek-v4-pro").maxTokens(4096).build());
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
         return new ModelExecutionService(
             factory,
             snapshotService,
             profileService,
-            new ModelCapabilityCatalog(),
+            capabilityJson,
             new LlmTransportRetry(1),
             publisher
         );
@@ -148,7 +149,10 @@ class LlmUsageContractTest {
         snapshot.setReasoningLevel("AUTO");
         snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
-        snapshot.setFallbackModelsJson("[]");
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
+        snapshot.setModelCapabilityJson(capabilityJson.write(
+            new ModelCapabilityCatalog().capability("deepseek", "deepseek-v4-pro")));
+        snapshot.setFallbackCapabilitiesJson("[]");
         return snapshot;
     }
 

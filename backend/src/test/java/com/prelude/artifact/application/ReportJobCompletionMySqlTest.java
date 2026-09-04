@@ -158,7 +158,7 @@ class ReportJobCompletionMySqlTest {
         profile.setModel("deepseek-v4-pro");
         profile.setReasoningLevel("AUTO");
         profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
-        profile.setFallbackModelsJson("[]");
+        profile.setFallbackCapabilitiesJson("[]");
         profileMapper.insert(profile);
 
         ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
@@ -169,7 +169,13 @@ class ReportJobCompletionMySqlTest {
         snapshot.setReasoningLevel("AUTO");
         snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
-        snapshot.setFallbackModelsJson("[]");
+        snapshot.setModelCapabilityJson("""
+            {"provider":"deepseek","model":"deepseek-v4-pro","reasoning":true,
+             "structuredOutput":true,"toolCalling":true,"streaming":true,"vision":false,
+             "multilingual":true,"longContext":true,"embedding":false,"nativeRealtimeVoice":false,
+             "supportedReasoningLevels":["AUTO","LOW","HIGH","MAX"]}
+            """);
+        snapshot.setFallbackCapabilitiesJson("[]");
         snapshotMapper.insert(snapshot);
 
         InterviewSession session = new InterviewSession();

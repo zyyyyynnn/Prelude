@@ -93,7 +93,9 @@ class CustomModelDiscoveryTest {
             capabilityDiscovery,
             policy,
             httpClientFactory,
-            objectMapper
+            new ModelCapabilityJson(objectMapper),
+            objectMapper,
+            mock(org.springframework.transaction.support.TransactionTemplate.class)
         );
         String configuredUrl = "http://127.0.0.1:" + port + configuredPath;
 

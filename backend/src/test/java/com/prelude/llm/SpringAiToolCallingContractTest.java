@@ -4,6 +4,10 @@ import com.prelude.LlmServerException;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.LlmUsageRecorded;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import okhttp3.Dns;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -17,7 +21,12 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,6 +39,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class SpringAiToolCallingContractTest {
+
+    private HttpServer server;
+
+    @AfterEach
+    void stopServer() {
+        if (server != null) {
+            server.stop(0);
+        }
+    }
 
     @Test
     void continuationTransportRetryDoesNotReplayCommittedToolAndAggregatesUsage() {
@@ -86,7 +104,7 @@ class SpringAiToolCallingContractTest {
             return response("must-not-run", 1, 1);
         };
         ModelExecutionSnapshot snapshot = snapshot();
-        snapshot.setFallbackModelsJson("[\"deepseek-v4-flash\"]");
+        snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
         ModelExecutionService service = service(
             snapshot, 2, mock(ApplicationEventPublisher.class),
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
@@ -116,7 +134,7 @@ class SpringAiToolCallingContractTest {
             return response("fallback-ok", 1, 1);
         };
         ModelExecutionSnapshot snapshot = snapshot();
-        snapshot.setFallbackModelsJson("[\"deepseek-v4-flash\"]");
+        snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
         ModelExecutionService service = service(
             snapshot, 2, mock(ApplicationEventPublisher.class),
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
@@ -146,7 +164,7 @@ class SpringAiToolCallingContractTest {
             return response("must-not-run", 1, 1);
         };
         ModelExecutionSnapshot snapshot = snapshot();
-        snapshot.setFallbackModelsJson("[\"deepseek-v4-flash\"]");
+        snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
         ModelExecutionService service = service(
             snapshot, 3, mock(ApplicationEventPublisher.class),
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
@@ -161,6 +179,70 @@ class SpringAiToolCallingContractTest {
         assertThat(primaryCalls).hasValue(1);
         assertThat(fallbackCalls).hasValue(0);
         assertThat(toolCalls).hasValue(1);
+    }
+
+    @Test
+    void deepSeekWireContinuationReplaysReasoningToolCallAndToolResultExactlyOnce() throws Exception {
+        List<String> requestBodies = new ArrayList<>();
+        AtomicInteger requests = new AtomicInteger();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/chat/completions", exchange -> {
+            requestBodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            if (requests.incrementAndGet() == 1) {
+                respond(exchange, 200, """
+                    {"id":"deepseek-tool-1","object":"chat.completion","created":1,"model":"deepseek-v4-pro",
+                     "choices":[{"index":0,"message":{"role":"assistant","content":null,
+                       "reasoning_content":"I should use the tool.",
+                       "tool_calls":[{"id":"call-1","type":"function","function":{"name":"double_value","arguments":"{\\\"value\\\":21}"}}]},
+                       "finish_reason":"tool_calls"}],
+                     "usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}
+                    """);
+            } else {
+                respond(exchange, 200, """
+                    {"id":"deepseek-tool-2","object":"chat.completion","created":2,"model":"deepseek-v4-pro",
+                     "choices":[{"index":0,"message":{"role":"assistant","content":"The tool returned 42."},"finish_reason":"stop"}],
+                     "usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}
+                    """);
+            }
+        });
+        server.start();
+
+        int port = server.getAddress().getPort();
+        CustomLlmEgressPolicy policy = new CustomLlmEgressPolicy(true, true, Set.of(port), Dns.SYSTEM);
+        ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        tools.jackson.databind.ObjectMapper objectMapper = new tools.jackson.databind.ObjectMapper();
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(objectMapper);
+        SpringAiModelFactory factory = new SpringAiModelFactory(
+            "sk-system",
+            "http://127.0.0.1:" + port,
+            policy,
+            new EgressHttpClientFactory(policy),
+            catalog,
+            capabilityJson,
+            objectMapper);
+        ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
+        ModelProfileService profileService = mock(ModelProfileService.class);
+        when(snapshotService.require(1L)).thenReturn(snapshot());
+        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
+        ModelExecutionService service = new ModelExecutionService(
+            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(2),
+            mock(ApplicationEventPublisher.class));
+        AtomicInteger toolCalls = new AtomicInteger();
+
+        LlmPort.CompletionResult result = service.complete(request(tool("double_value", arguments -> {
+            toolCalls.incrementAndGet();
+            return "42";
+        })));
+
+        assertThat(result.content()).isEqualTo("The tool returned 42.");
+        assertThat(toolCalls).hasValue(1);
+        assertThat(requests).hasValue(2);
+        assertThat(requestBodies.get(1))
+            .contains("\"role\":\"assistant\"")
+            .contains("\"reasoning_content\":\"I should use the tool.\"")
+            .contains("\"tool_calls\"")
+            .contains("\"role\":\"tool\"")
+            .contains("42");
     }
 
     private ModelExecutionService service(
@@ -180,11 +262,12 @@ class SpringAiToolCallingContractTest {
             ModelExecutionSnapshot effective = invocation.getArgument(0);
             return OpenAiChatOptions.builder().model(effective.getModel()).maxTokens(4096).build();
         });
+        ModelCapabilityJson capabilityJson = capabilityJson();
         return new ModelExecutionService(
             factory,
             snapshotService,
             profileService,
-            new ModelCapabilityCatalog(),
+            capabilityJson,
             new LlmTransportRetry(attempts),
             eventPublisher
         );
@@ -229,8 +312,28 @@ class SpringAiToolCallingContractTest {
         snapshot.setReasoningLevel("AUTO");
         snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
-        snapshot.setFallbackModelsJson("[]");
+        snapshot.setModelCapabilityJson(capabilityJson().write(
+            new ModelCapabilityCatalog().capability("deepseek", "deepseek-v4-pro")));
+        snapshot.setFallbackCapabilitiesJson("[]");
         return snapshot;
+    }
+
+    private String fallbackCapabilities() {
+        return capabilityJson().writeList(List.of(
+            new ModelCapabilityCatalog().capability("deepseek", "deepseek-v4-flash")));
+    }
+
+    private ModelCapabilityJson capabilityJson() {
+        return new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
+    }
+
+    private void respond(HttpExchange exchange, int status, String body) throws IOException {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (var output = exchange.getResponseBody()) {
+            output.write(bytes);
+        }
     }
 
     private ChatResponse toolRequest(

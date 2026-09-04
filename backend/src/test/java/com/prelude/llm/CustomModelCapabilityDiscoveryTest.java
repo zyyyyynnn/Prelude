@@ -45,7 +45,7 @@ class CustomModelCapabilityDiscoveryTest {
         });
 
         ModelCapabilityResponse capability = discovery().discover(
-            "openai-responses", root(), "account-key", "account-model");
+            7L, "openai-responses", root(), "account-key", "account-model");
 
         assertThat(requests).hasValue(6);
         assertThat(capability.reasoning()).isTrue();
@@ -58,11 +58,13 @@ class CustomModelCapabilityDiscoveryTest {
         AtomicInteger requests = new AtomicInteger();
         start("/v1/chat/completions", exchange -> {
             requests.incrementAndGet();
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(body).contains("\"max_completion_tokens\":16").doesNotContain("\"max_tokens\"");
             respond(exchange, 500, "{\"error\":{\"message\":\"temporary\"}}");
         });
 
         ModelCapabilityResponse capability = discovery().discover(
-            "openai-chat-completions", root(), "account-key", "account-model");
+            7L, "openai-chat-completions", root(), "account-key", "account-model");
 
         assertThat(requests).hasValue(1);
         assertThat(capability.reasoning()).isFalse();
@@ -78,7 +80,7 @@ class CustomModelCapabilityDiscoveryTest {
         });
 
         ModelCapabilityResponse capability = discovery().discover(
-            "openai-chat-completions", root(), "account-key", "account-model");
+            7L, "openai-chat-completions", root(), "account-key", "account-model");
 
         assertThat(requests).hasValue(1);
         assertThat(capability.reasoning()).isFalse();
@@ -105,16 +107,21 @@ class CustomModelCapabilityDiscoveryTest {
                     "thinking":{
                       "supported":true,
                       "types":{"adaptive":{"supported":true}}
-                    }
+                    },
+                    "image_input":{"supported":true},
+                    "structured_outputs":{"supported":true}
                   }
                 }
                 """);
         });
 
         ModelCapabilityResponse capability = discovery().discover(
-            "anthropic-messages", anthropicRoot(), "account-key", "account-model");
+            7L, "anthropic-messages", anthropicRoot(), "account-key", "account-model");
 
         assertThat(capability.reasoning()).isTrue();
+        assertThat(capability.vision()).isTrue();
+        assertThat(capability.structuredOutput()).isTrue();
+        assertThat(capability.toolCalling()).isFalse();
         assertThat(capability.supportedReasoningLevels())
             .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH, ReasoningLevel.MAX);
     }
@@ -140,10 +147,33 @@ class CustomModelCapabilityDiscoveryTest {
             """));
 
         ModelCapabilityResponse capability = discovery().discover(
-            "anthropic-messages", anthropicRoot(), "account-key", "account-model");
+            7L, "anthropic-messages", anthropicRoot(), "account-key", "account-model");
 
         assertThat(capability.reasoning()).isFalse();
         assertThat(capability.supportedReasoningLevels()).containsExactly(ReasoningLevel.AUTO);
+    }
+
+    @Test
+    void repeatedSelectedModelProbeReusesTheBackendConfirmedResultForTheSameCredential() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        start("/v1/chat/completions", exchange -> {
+            requests.incrementAndGet();
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            if (body.contains("prelude_probe_invalid")) {
+                respond(exchange, 400, "{\"error\":{\"message\":\"unsupported effort\"}}");
+            } else {
+                respond(exchange, 200, "{\"choices\":[]}");
+            }
+        });
+        CustomModelCapabilityDiscovery discovery = discovery();
+
+        ModelCapabilityResponse first = discovery.discover(
+            7L, "openai-chat-completions", root(), "account-key", "account-model");
+        ModelCapabilityResponse second = discovery.discover(
+            7L, "openai-chat-completions", root(), "account-key", "account-model");
+
+        assertThat(second).isEqualTo(first);
+        assertThat(requests).hasValue(6);
     }
 
     private CustomModelCapabilityDiscovery discovery() {

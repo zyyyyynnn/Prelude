@@ -43,6 +43,7 @@ public class SpringAiModelFactory {
     private final CustomLlmEgressPolicy egressPolicy;
     private final EgressHttpClientFactory egressHttpClientFactory;
     private final ModelCapabilityCatalog capabilityCatalog;
+    private final ModelCapabilityJson capabilityJson;
     private final ObjectMapper objectMapper;
 
     public SpringAiModelFactory(
@@ -51,6 +52,7 @@ public class SpringAiModelFactory {
         CustomLlmEgressPolicy egressPolicy,
         EgressHttpClientFactory egressHttpClientFactory,
         ModelCapabilityCatalog capabilityCatalog,
+        ModelCapabilityJson capabilityJson,
         ObjectMapper objectMapper
     ) {
         this.deepSeekApiKey = deepSeekApiKey;
@@ -58,6 +60,7 @@ public class SpringAiModelFactory {
         this.egressPolicy = egressPolicy;
         this.egressHttpClientFactory = egressHttpClientFactory;
         this.capabilityCatalog = capabilityCatalog;
+        this.capabilityJson = capabilityJson;
         this.objectMapper = objectMapper;
     }
 
@@ -74,8 +77,8 @@ public class SpringAiModelFactory {
 
     public ChatOptions requestOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
         return switch (snapshot.getProvider()) {
-            case ModelCapabilityCatalog.PROVIDER_DEEPSEEK, "openai-chat-completions" ->
-                openAiOptions(snapshot, responseMode);
+            case ModelCapabilityCatalog.PROVIDER_DEEPSEEK -> deepSeekOptions(snapshot, responseMode);
+            case "openai-chat-completions" -> openAiChatCompletionsOptions(snapshot, responseMode);
             case "openai-responses" -> ChatOptions.builder()
                 .model(snapshot.getModel())
                 .maxTokens(executionParameters(snapshot).maxOutputTokens())
@@ -110,7 +113,7 @@ public class SpringAiModelFactory {
         return OpenAiChatModel.builder()
             .openAiClient(client)
             .openAiClientAsync(client.async())
-            .options(openAiOptions(snapshot, ResponseMode.PLAIN_TEXT))
+            .options(deepSeekOptions(snapshot, ResponseMode.PLAIN_TEXT))
             .observationRegistry(io.micrometer.observation.ObservationRegistry.NOOP)
             .build();
     }
@@ -133,7 +136,7 @@ public class SpringAiModelFactory {
         return OpenAiChatModel.builder()
             .openAiClient(client)
             .openAiClientAsync(client.async())
-            .options(openAiOptions(snapshot, ResponseMode.PLAIN_TEXT))
+            .options(openAiChatCompletionsOptions(snapshot, ResponseMode.PLAIN_TEXT))
             .observationRegistry(io.micrometer.observation.ObservationRegistry.NOOP)
             .build();
     }
@@ -189,21 +192,45 @@ public class SpringAiModelFactory {
         return builder.build();
     }
 
-    private OpenAiChatOptions openAiOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
+    private OpenAiChatOptions deepSeekOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
         OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
             .model(snapshot.getModel())
             .maxTokens(executionParameters(snapshot).maxOutputTokens());
+        applyOpenAiReasoning(builder, snapshot);
+        applyOpenAiJsonObject(builder, snapshot, responseMode);
+        return builder.build();
+    }
+
+    private OpenAiChatOptions openAiChatCompletionsOptions(
+        ModelExecutionSnapshot snapshot,
+        ResponseMode responseMode
+    ) {
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
+            .model(snapshot.getModel())
+            .maxCompletionTokens(executionParameters(snapshot).maxOutputTokens());
+        applyOpenAiReasoning(builder, snapshot);
+        applyOpenAiJsonObject(builder, snapshot, responseMode);
+        return builder.build();
+    }
+
+    private void applyOpenAiReasoning(OpenAiChatOptions.Builder builder, ModelExecutionSnapshot snapshot) {
         ReasoningLevel level = ReasoningLevel.valueOf(snapshot.getReasoningLevel());
         if (level != ReasoningLevel.AUTO) {
             builder.reasoningEffort(level.name().toLowerCase(java.util.Locale.ROOT));
         }
+    }
+
+    private void applyOpenAiJsonObject(
+        OpenAiChatOptions.Builder builder,
+        ModelExecutionSnapshot snapshot,
+        ResponseMode responseMode
+    ) {
         if (responseMode == ResponseMode.JSON_OBJECT
-            && capabilityCatalog.capability(snapshot.getProvider(), snapshot.getModel()).structuredOutput()) {
+            && capabilityJson.read(snapshot.getModelCapabilityJson()).structuredOutput()) {
             builder.responseFormat(OpenAiChatModel.ResponseFormat.builder()
                 .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
                 .build());
         }
-        return builder.build();
     }
 
     private ModelExecutionParameters executionParameters(ModelExecutionSnapshot snapshot) {

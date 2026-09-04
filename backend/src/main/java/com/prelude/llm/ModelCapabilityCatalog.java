@@ -100,11 +100,21 @@ public class ModelCapabilityCatalog {
         String model,
         List<ReasoningLevel> supportedReasoningLevels
     ) {
+        return customCapability(provider, model, supportedReasoningLevels, false, false);
+    }
+
+    ModelCapabilityResponse customCapability(
+        String provider,
+        String model,
+        List<ReasoningLevel> supportedReasoningLevels,
+        boolean structuredOutput,
+        boolean vision
+    ) {
         List<ReasoningLevel> levels = supportedReasoningLevels == null || supportedReasoningLevels.isEmpty()
             ? AUTO_ONLY
             : List.copyOf(supportedReasoningLevels);
         return capability(provider, model,
-            levels.size() > 1, false, false, true, false, false, false, false, false, levels);
+            levels.size() > 1, structuredOutput, false, true, vision, false, false, false, false, levels);
     }
 
     private ModelCapabilityResponse capability(

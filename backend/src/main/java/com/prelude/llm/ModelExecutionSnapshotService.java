@@ -1,6 +1,7 @@
 package com.prelude.llm;
 
 import com.prelude.llm.api.LlmPort.FreezeSnapshotCommand;
+import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
 import com.prelude.llm.persistence.ModelExecutionSnapshotMapper;
@@ -8,7 +9,6 @@ import com.prelude.llm.persistence.ModelProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -24,8 +24,8 @@ public class ModelExecutionSnapshotService {
 
     private final ModelProfileService modelProfileService;
     private final ModelExecutionSnapshotMapper snapshotMapper;
-    private final ModelCapabilityCatalog capabilityCatalog;
     private final ReasoningLevels reasoningLevels;
+    private final ModelCapabilityJson capabilityJson;
     private final ObjectMapper objectMapper;
 
     @Transactional(rollbackFor = Exception.class)
@@ -35,15 +35,17 @@ public class ModelExecutionSnapshotService {
             ? profile.getModel()
             : command.requestedModel().trim();
         String provider = profile.getProvider();
-        capabilityCatalog.requireSupportedModel(provider, model);
+        ModelCapabilityResponse capability = modelProfileService.capabilityForProfile(profile, model);
 
         var level = reasoningLevels.parse(command.reasoningLevel() == null
             ? profile.getReasoningLevel()
             : command.reasoningLevel());
-        if (!modelProfileService.capabilityForProfile(profile, model).supportedReasoningLevels().contains(level)) {
+        if (!capability.supportedReasoningLevels().contains(level)) {
             throw com.prelude.BusinessException.badRequest("所选模型不支持该思考深度");
         }
-        validateFrozenFallbacks(provider, profile.getFallbackModelsJson(), level);
+        List<ModelCapabilityResponse> fallbackCapabilities = capabilityJson.readList(
+            profile.getFallbackCapabilitiesJson());
+        validateFrozenFallbacks(provider, fallbackCapabilities, level);
 
         ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
         snapshot.setAccountId(command.accountId());
@@ -55,9 +57,8 @@ public class ModelExecutionSnapshotService {
             profile.getEffectiveParametersJson(), objectMapper);
         snapshot.setEffectiveParametersJson(executionParameters.toJson(objectMapper));
         snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
-        snapshot.setFallbackModelsJson(profile.getFallbackModelsJson() == null
-            ? "[]"
-            : profile.getFallbackModelsJson());
+        snapshot.setModelCapabilityJson(capabilityJson.write(capability));
+        snapshot.setFallbackCapabilitiesJson(capabilityJson.writeList(fallbackCapabilities));
         snapshot.setCredentialId(profile.getCredentialId());
         snapshot.setCustomEndpointUrl(profile.getCustomEndpointUrl());
         snapshotMapper.insert(snapshot);
@@ -75,25 +76,14 @@ public class ModelExecutionSnapshotService {
 
     private void validateFrozenFallbacks(
         String provider,
-        String fallbackModelsJson,
+        List<ModelCapabilityResponse> fallbackCapabilities,
         com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel reasoningLevel
     ) {
-        if (fallbackModelsJson == null || fallbackModelsJson.isBlank()
-            || "[]".equals(fallbackModelsJson.trim())) {
-            return;
-        }
-        final List<String> fallbackModels;
-        try {
-            fallbackModels = objectMapper.readValue(
-                fallbackModelsJson, new TypeReference<List<String>>() {
-                });
-        } catch (Exception exception) {
-            throw com.prelude.BusinessException.badRequest("模型回退配置无效，请重新保存模型配置");
-        }
-        for (String fallbackModel : fallbackModels) {
-            capabilityCatalog.requireSupportedModel(provider, fallbackModel);
-            if (!capabilityCatalog.capability(provider, fallbackModel)
-                .supportedReasoningLevels().contains(reasoningLevel)) {
+        for (ModelCapabilityResponse fallback : fallbackCapabilities) {
+            if (!provider.equals(fallback.provider())) {
+                throw com.prelude.BusinessException.badRequest("回退模型不能跨 Provider 边界");
+            }
+            if (!fallback.supportedReasoningLevels().contains(reasoningLevel)) {
                 throw com.prelude.BusinessException.badRequest("回退模型不支持所选思考深度");
             }
         }

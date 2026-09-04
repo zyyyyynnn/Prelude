@@ -105,6 +105,7 @@ class ModelExecutionSnapshotTest {
         assertThat(frozen.getProvider()).isEqualTo("openai-chat-completions");
         assertThat(frozen.getCustomEndpointUrl()).isEqualTo("https://example.com/v1");
         assertThat(frozen.getCredentialId()).isEqualTo(credential.getId());
+        assertThat(frozen.getModelCapabilityJson()).contains("account-model");
     }
 
     @Test
@@ -208,6 +209,60 @@ class ModelExecutionSnapshotTest {
 
         ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
         assertThat(frozen.getReasoningLevel()).isEqualTo("HIGH");
+        assertThat(frozen.getModelCapabilityJson()).contains("HIGH");
+
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            new ModelCapabilityCatalog().customCapability(
+                "openai-chat-completions", "custom-model",
+                java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO))));
+        profileMapper.updateById(profile);
+
+        ModelExecutionSnapshot reloaded = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(reloaded.getModelCapabilityJson()).contains("HIGH");
+        ModelExecutionSnapshotRef nextRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "AUTO", null));
+        assertThat(snapshotMapper.selectById(nextRef.snapshotId()).getModelCapabilityJson())
+            .doesNotContain("HIGH");
+    }
+
+    @Test
+    @Transactional
+    void frozenAnthropicVisionCapabilityIgnoresLaterProfileCapabilityMutation() throws Exception {
+        long accountId = createAccountAndProfile(
+            "anthropic-messages", "account-model", "AUTO", "https://example.com");
+        ModelProfile profile = profileMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelProfile>()
+                .eq(ModelProfile::getAccountId, accountId)
+                .last("LIMIT 1"));
+        ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            catalog.customCapability(
+                "anthropic-messages",
+                "account-model",
+                java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO),
+                true,
+                true)));
+        profileMapper.updateById(profile);
+
+        ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "AUTO", null));
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(objectMapper);
+        ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(capabilityJson.read(frozen.getModelCapabilityJson()).vision()).isTrue();
+
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            catalog.customCapability(
+                "anthropic-messages",
+                "account-model",
+                java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO))));
+        profileMapper.updateById(profile);
+
+        assertThat(capabilityJson.read(snapshotMapper.selectById(ref.snapshotId()).getModelCapabilityJson()).vision())
+            .isTrue();
+        ModelExecutionSnapshotRef nextRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "AUTO", null));
+        assertThat(capabilityJson.read(snapshotMapper.selectById(nextRef.snapshotId()).getModelCapabilityJson()).vision())
+            .isFalse();
     }
 
     @Test
@@ -234,7 +289,7 @@ class ModelExecutionSnapshotTest {
         profile.setReasoningLevel(reasoningLevel);
         profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
         profile.setCustomEndpointUrl(customEndpointUrl);
-        profile.setFallbackModelsJson("[]");
+        profile.setFallbackCapabilitiesJson("[]");
         if (customEndpointUrl != null) {
             ProviderCredential credential = new ProviderCredential();
             credential.setAccountId(account.getId());
@@ -243,6 +298,14 @@ class ModelExecutionSnapshotTest {
             credential.setApiKeyEncrypted("encoded");
             credentialMapper.insert(credential);
             profile.setCredentialId(credential.getId());
+            try {
+                profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+                    new ModelCapabilityCatalog().customCapability(
+                        provider, model,
+                        java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO))));
+            } catch (Exception exception) {
+                throw new AssertionError(exception);
+            }
         }
         profileMapper.insert(profile);
         return account.getId();

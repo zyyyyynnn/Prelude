@@ -1,5 +1,7 @@
 package com.prelude.llm;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,10 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Duration;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,13 +41,22 @@ public class CustomModelCapabilityDiscovery {
         ReasoningLevel.HIGH,
         ReasoningLevel.XHIGH,
         ReasoningLevel.MAX);
+    private final Cache<ProbeKey, ModelCapabilityResponse> confirmedCapabilities = Caffeine.newBuilder()
+        .maximumSize(128)
+        .expireAfterWrite(Duration.ofMinutes(2))
+        .build();
 
     private final ModelCapabilityCatalog capabilityCatalog;
     private final CustomLlmEgressPolicy egressPolicy;
     private final EgressHttpClientFactory egressHttpClientFactory;
     private final ObjectMapper objectMapper;
 
-    public ModelCapabilityResponse discover(String provider, String baseUrl, String apiKey, String model) {
+    public ModelCapabilityResponse discover(long accountId, String provider, String baseUrl, String apiKey, String model) {
+        ProbeKey key = new ProbeKey(accountId, provider, baseUrl, model, fingerprint(apiKey));
+        return confirmedCapabilities.get(key, ignored -> discoverUncached(provider, baseUrl, apiKey, model));
+    }
+
+    private ModelCapabilityResponse discoverUncached(String provider, String baseUrl, String apiKey, String model) {
         CustomLlmProtocol protocol = CustomLlmProtocol.require(provider);
         return switch (protocol) {
             case ANTHROPIC_MESSAGES -> discoverAnthropic(provider, baseUrl, apiKey, model);
@@ -76,10 +91,13 @@ public class CustomModelCapabilityDiscovery {
                 JsonNode capabilities = root.path("capabilities");
                 JsonNode effort = capabilities.path("effort");
                 JsonNode thinking = capabilities.path("thinking");
+                boolean structuredOutput = capabilities.path("structured_outputs").path("supported").asBoolean(false);
+                boolean vision = capabilities.path("image_input").path("supported").asBoolean(false);
                 boolean adaptiveThinking = thinking.path("supported").asBoolean(false)
                     && thinking.path("types").path("adaptive").path("supported").asBoolean(false);
                 if (!effort.path("supported").asBoolean(false) || !adaptiveThinking) {
-                    return conservative(provider, model);
+                    return capabilityCatalog.customCapability(
+                        provider, model, List.of(ReasoningLevel.AUTO), structuredOutput, vision);
                 }
                 List<ReasoningLevel> levels = new ArrayList<>();
                 levels.add(ReasoningLevel.AUTO);
@@ -88,7 +106,7 @@ public class CustomModelCapabilityDiscovery {
                 addIfSupported(levels, effort, "high", ReasoningLevel.HIGH);
                 addIfSupported(levels, effort, "xhigh", ReasoningLevel.XHIGH);
                 addIfSupported(levels, effort, "max", ReasoningLevel.MAX);
-                return capabilityCatalog.customCapability(provider, model, levels);
+                return capabilityCatalog.customCapability(provider, model, levels, structuredOutput, vision);
             }
         } catch (Exception exception) {
             log.info("Anthropic capability discovery was inconclusive for model {}; using AUTO only", model);
@@ -143,7 +161,7 @@ public class CustomModelCapabilityDiscovery {
                 payload.put("reasoning", Map.of("effort", effort));
             } else {
                 payload.put("messages", List.of(Map.of("role", "user", "content", "OK")));
-                payload.put("max_tokens", 1);
+                payload.put("max_completion_tokens", 16);
                 payload.put("reasoning_effort", effort);
             }
             Request request = new Request.Builder()
@@ -180,6 +198,18 @@ public class CustomModelCapabilityDiscovery {
 
     private ModelCapabilityResponse conservative(String provider, String model) {
         return capabilityCatalog.customCapability(provider, model, List.of(ReasoningLevel.AUTO));
+    }
+
+    private String fingerprint(String apiKey) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(apiKey.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to fingerprint provider credential", exception);
+        }
+    }
+
+    private record ProbeKey(long accountId, String provider, String baseUrl, String model, String credentialFingerprint) {
     }
 
     private enum ProbeResult {

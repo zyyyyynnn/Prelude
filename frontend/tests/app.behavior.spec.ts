@@ -1062,7 +1062,7 @@ test('@byok discovers selected custom model reasoning levels from the backend', 
   await expect(page.getByRole('option', { name: '最大', exact: true })).toBeVisible()
 })
 
-test('@byok keeps only default reasoning when an OpenAI capability probe is inconclusive', async ({ page }) => {
+test('@byok keeps the backend conservative capability when a selected-model probe is unavailable', async ({ page }) => {
   const state: ApiState = { requests: [] }
   await installApi(page, state)
   await page.route('**/api/llm/config/discover-capabilities', async (route) => {

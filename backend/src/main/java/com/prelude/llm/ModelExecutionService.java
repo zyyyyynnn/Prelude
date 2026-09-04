@@ -55,7 +55,7 @@ public class ModelExecutionService {
     private final SpringAiModelFactory modelFactory;
     private final ModelExecutionSnapshotService snapshotService;
     private final ModelProfileService profileService;
-    private final ModelCapabilityCatalog capabilityCatalog;
+    private final ModelCapabilityJson capabilityJson;
     private final LlmTransportRetry transportRetry;
     private final ApplicationEventPublisher eventPublisher;
     private final ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
@@ -64,14 +64,14 @@ public class ModelExecutionService {
         SpringAiModelFactory modelFactory,
         ModelExecutionSnapshotService snapshotService,
         ModelProfileService profileService,
-        ModelCapabilityCatalog capabilityCatalog,
+        ModelCapabilityJson capabilityJson,
         LlmTransportRetry transportRetry,
         ApplicationEventPublisher eventPublisher
     ) {
         this.modelFactory = modelFactory;
         this.snapshotService = snapshotService;
         this.profileService = profileService;
-        this.capabilityCatalog = capabilityCatalog;
+        this.capabilityJson = capabilityJson;
         this.transportRetry = transportRetry;
         this.eventPublisher = eventPublisher;
     }
@@ -81,8 +81,7 @@ public class ModelExecutionService {
         String apiKey = profileService.resolveApiKey(snapshot.getAccountId(), snapshot.getCredentialId());
         RuntimeException lastTransient = null;
 
-        for (String model : executionCandidates(snapshot)) {
-            ModelExecutionSnapshot effective = withModel(snapshot, model);
+        for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
             validateRequest(effective, request, false);
             ChatModel chatModel = modelFactory.chatModel(effective, apiKey);
             List<ToolCallback> toolCallbacks = toToolCallbacks(request.tools());
@@ -96,7 +95,7 @@ public class ModelExecutionService {
             } catch (InitialTransportFailure failure) {
                 lastTransient = failure.transportFailure();
                 log.warn("Model execution exhausted transport retry before tool execution for model {} (snapshot {})",
-                    model, effective.getId());
+                    effective.getModel(), effective.getId());
             }
         }
         throw mapFailure(lastTransient == null
@@ -109,8 +108,7 @@ public class ModelExecutionService {
         String apiKey = profileService.resolveApiKey(snapshot.getAccountId(), snapshot.getCredentialId());
         RuntimeException lastTransient = null;
 
-        for (String model : executionCandidates(snapshot)) {
-            ModelExecutionSnapshot effective = withModel(snapshot, model);
+        for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
             validateRequest(effective, request, true);
             ChatModel chatModel = modelFactory.chatModel(effective, apiKey);
             Prompt prompt = prompt(request, modelFactory.requestOptions(effective, request.responseMode()));
@@ -147,7 +145,7 @@ public class ModelExecutionService {
                 }
                 lastTransient = failure;
                 log.warn("Model stream exhausted transport retry before first delta for model {} (snapshot {})",
-                    model, effective.getId());
+                    effective.getModel(), effective.getId());
             }
         }
         throw mapFailure(lastTransient == null
@@ -237,17 +235,15 @@ public class ModelExecutionService {
         if (streaming && request.tools() != null && !request.tools().isEmpty()) {
             throw BusinessException.badRequest("当前不支持流式工具调用");
         }
-        var capability = capabilityCatalog.capability(snapshot.getProvider(), snapshot.getModel());
-        if (!CustomLlmProtocol.isCustom(snapshot.getProvider())) {
-            ModelCapabilityResponse.ReasoningLevel reasoningLevel;
-            try {
-                reasoningLevel = ModelCapabilityResponse.ReasoningLevel.valueOf(snapshot.getReasoningLevel());
-            } catch (IllegalArgumentException exception) {
-                throw new IllegalStateException("Frozen reasoning level is invalid", exception);
-            }
-            if (!capability.supportedReasoningLevels().contains(reasoningLevel)) {
-                throw BusinessException.badRequest("所选模型不支持该思考深度");
-            }
+        ModelCapabilityResponse capability = frozenCapability(snapshot);
+        ModelCapabilityResponse.ReasoningLevel reasoningLevel;
+        try {
+            reasoningLevel = ModelCapabilityResponse.ReasoningLevel.valueOf(snapshot.getReasoningLevel());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException("Frozen reasoning level is invalid", exception);
+        }
+        if (!capability.supportedReasoningLevels().contains(reasoningLevel)) {
+            throw BusinessException.badRequest("所选模型不支持该思考深度");
         }
         if (streaming && !capability.streaming()) {
             throw BusinessException.badRequest("所选模型不支持流式输出");
@@ -260,28 +256,23 @@ public class ModelExecutionService {
         }
     }
 
-    private List<String> executionCandidates(ModelExecutionSnapshot snapshot) {
-        List<String> candidates = new ArrayList<>();
-        candidates.add(snapshot.getModel());
-        for (String model : parseFallback(snapshot.getFallbackModelsJson())) {
-            if (!candidates.contains(model)) {
-                candidates.add(model);
+    private List<ModelExecutionSnapshot> executionCandidates(ModelExecutionSnapshot snapshot) {
+        List<ModelExecutionSnapshot> candidates = new ArrayList<>();
+        candidates.add(snapshot);
+        for (ModelCapabilityResponse fallback : capabilityJson.readList(snapshot.getFallbackCapabilitiesJson())) {
+            if (candidates.stream().noneMatch(candidate -> candidate.getModel().equals(fallback.model()))) {
+                candidates.add(withModel(snapshot, fallback));
             }
         }
         return List.copyOf(candidates);
     }
 
-    private List<String> parseFallback(String json) {
-        if (json == null || json.isBlank() || "[]".equals(json.trim())) {
-            return List.of();
+    private ModelCapabilityResponse frozenCapability(ModelExecutionSnapshot snapshot) {
+        ModelCapabilityResponse capability = capabilityJson.read(snapshot.getModelCapabilityJson());
+        if (!snapshot.getProvider().equals(capability.provider()) || !snapshot.getModel().equals(capability.model())) {
+            throw new IllegalStateException("Frozen model capability does not match the execution snapshot");
         }
-        try {
-            return new tools.jackson.databind.ObjectMapper()
-                .readValue(json, new tools.jackson.core.type.TypeReference<List<String>>() {
-                });
-        } catch (Exception exception) {
-            throw new IllegalStateException("Frozen fallback model list is invalid", exception);
-        }
+        return capability;
     }
 
     private Prompt prompt(ModelExecutionRequest request, ChatOptions options) {
@@ -311,20 +302,18 @@ public class ModelExecutionService {
         return UserMessage.builder().text(content).media(media).build();
     }
 
-    private ModelExecutionSnapshot withModel(ModelExecutionSnapshot snapshot, String model) {
-        if (model.equals(snapshot.getModel())) {
-            return snapshot;
-        }
+    private ModelExecutionSnapshot withModel(ModelExecutionSnapshot snapshot, ModelCapabilityResponse capability) {
         ModelExecutionSnapshot copy = new ModelExecutionSnapshot();
         copy.setId(snapshot.getId());
         copy.setAccountId(snapshot.getAccountId());
         copy.setProfileId(snapshot.getProfileId());
         copy.setProvider(snapshot.getProvider());
-        copy.setModel(model);
+        copy.setModel(capability.model());
         copy.setReasoningLevel(snapshot.getReasoningLevel());
         copy.setEffectiveParametersJson(snapshot.getEffectiveParametersJson());
         copy.setCapabilityVersion(snapshot.getCapabilityVersion());
-        copy.setFallbackModelsJson(snapshot.getFallbackModelsJson());
+        copy.setModelCapabilityJson(capabilityJson.write(capability));
+        copy.setFallbackCapabilitiesJson(snapshot.getFallbackCapabilitiesJson());
         copy.setCredentialId(snapshot.getCredentialId());
         copy.setCustomEndpointUrl(snapshot.getCustomEndpointUrl());
         return copy;

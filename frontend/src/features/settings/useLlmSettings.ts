@@ -98,25 +98,8 @@ export function useLlmSettings(
         return [...withoutCurrent, capability]
       })
     },
-    onError: (_error, model) => {
-      setModels((current) => {
-        const fallback: ModelCapabilityResponse = {
-          provider: draft.provider,
-          model,
-          reasoning: false,
-          structuredOutput: false,
-          toolCalling: false,
-          streaming: true,
-          vision: false,
-          multilingual: false,
-          longContext: false,
-          embedding: false,
-          nativeRealtimeVoice: false,
-          supportedReasoningLevels: ['AUTO'],
-        }
-        return [...current.filter((item) => item.model !== model), fallback]
-      })
-      feedback.notify('模型能力检测失败，仅保留默认思考深度', 'info')
+    onError: () => {
+      feedback.notify('模型能力检测失败；未确认能力前仅可使用服务端已返回的能力', 'info')
     },
   })
   const discover = useMutation({
