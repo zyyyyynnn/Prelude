@@ -1,0 +1,44 @@
+name: Governance / CI / Docs
+description: 工程治理、CI 门禁、文档规范、发布与仓库级约束
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        标题同样使用 `<type>(<scope>): <semantic title>`。
+        只维护长期有效的治理规则，不维护项目进度、阶段状态或验证流水账。
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 描述需要建立或收敛的治理结果。
+    validations:
+      required: true
+
+  - type: textarea
+    id: specification
+    attributes:
+      label: 规范
+      description: 记录执行时不得偏离的仓库、工具链、质量门禁或文档规则。
+    validations:
+      required: true
+
+  - type: textarea
+    id: design
+    attributes:
+      label: 设计
+      description: 仅在治理方案本身存在结构、职责或流程设计时填写。
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收
+      description: 使用 checklist 表达治理结果，不填写 CI run 或测试数量。
+      placeholder: |
+        - [ ] ……
+        - [ ] ……
+    validations:
+      required: true
