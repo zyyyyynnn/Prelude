@@ -1,6 +1,6 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-issue-forms.json
 name: Governance / CI / Docs
 description: 工程治理、CI 门禁、文档规范、发布与仓库级约束
-title: ""
 body:
   - type: markdown
     attributes:

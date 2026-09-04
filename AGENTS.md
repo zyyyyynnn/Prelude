@@ -56,6 +56,11 @@
 - **脚本与编码**：命令行默认使用 PowerShell。文本读写默认显式使用 UTF-8。
 - **环境依赖预警**：若方案依赖 PowerShell 5.1、Windows Server、特定终端或特定编码行为，必须明确说明。
 
+### GitHub 内容治理
+- 创建或更新 Issue、PR 前，必须读取仓库默认分支上的 `.github/ISSUE_TEMPLATE/*`、`.github/pull_request_template.md` 与 `CONTRIBUTING.md`；长期功能分支中的副本可能滞后，不得据此恢复旧格式。
+- PR 正文只描述最终交付、必要架构与稳定契约。禁止写入 Issue 编号或链接，尤其禁止 `Closes`、`Fixes`、`Resolves`、`Refs` 等关联标识；Issue 关系只通过 GitHub Development 原生关系维护。
+- CI、测试、Review 与开发过程不进入 PR 正文；验证事实只由 GitHub Checks / Actions 表达。
+
 ## 6. 多步骤任务处理
 - 默认一次性完成所有直接相关且信息充足的步骤，不为普通中间步骤反复确认。
 - **边界停顿**：仅当后续步骤依赖人为选择、外部执行结果、或属于高风险操作时，才停在边界点并明确说明下一步需要什么。
