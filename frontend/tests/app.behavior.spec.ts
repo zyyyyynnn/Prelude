@@ -432,13 +432,33 @@ test('@smoke centers the async button indicator without resizing the control', a
 
 test('@smoke updates the prompt model depth before the save request completes', async ({ page }) => {
   const state: ApiState = { requests: [] }
+  const putBodies: Record<string, unknown>[] = []
   await installApi(page, state)
   await page.route('**/api/llm/config', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: ok({
+          provider: 'deepseek',
+          model: 'deepseek-v4-pro',
+          customEndpointUrl: null,
+          hasApiKey: false,
+          apiKeyMasked: null,
+          reasoningLevel: 'AUTO',
+          maxOutputTokens: 8192,
+          fallbackModels: ['deepseek-v4-flash'],
+          capability: deepSeekCapability(),
+        }),
+      })
+      return
+    }
     if (route.request().method() !== 'PUT') {
       await route.fallback()
       return
     }
     const body = route.request().postDataJSON() as Record<string, unknown>
+    putBodies.push(body)
     await new Promise((resolve) => setTimeout(resolve, 400))
     await route.fulfill({
       status: 200,
@@ -451,7 +471,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
         apiKeyMasked: null,
         reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
         maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
-        fallbackModels: [],
+        fallbackModels: (body as { fallbackModels?: string[] }).fallbackModels ?? [],
         capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
     })
@@ -466,6 +486,11 @@ test('@smoke updates the prompt model depth before the save request completes', 
   modelTrigger = page.getByRole('button', { name: /模型：/ })
   expect(await modelTrigger.textContent()).toContain('deepseek-v4-pro · 高')
   await expect(page.getByText('模型配置已更新')).toBeVisible()
+  expect(putBodies[0]).toMatchObject({
+    reasoningLevel: 'HIGH',
+    maxOutputTokens: 8192,
+    fallbackModels: ['deepseek-v4-flash'],
+  })
 
   await modelTrigger.click()
   await page.getByRole('menuitem', { name: /思考深度/ }).hover()
@@ -476,7 +501,11 @@ test('@smoke updates the prompt model depth before the save request completes', 
   expect(await page.getByRole('button', { name: /模型：/ }).textContent()).toContain(
     'deepseek-v4-pro · 默认',
   )
-  expect((await resetRequest).postDataJSON()).toMatchObject({ reasoningLevel: 'AUTO' })
+  expect((await resetRequest).postDataJSON()).toMatchObject({
+    reasoningLevel: 'AUTO',
+    maxOutputTokens: 8192,
+    fallbackModels: ['deepseek-v4-flash'],
+  })
 })
 
 test('@smoke waits for model configuration persistence before starting an interview', async ({ page }) => {

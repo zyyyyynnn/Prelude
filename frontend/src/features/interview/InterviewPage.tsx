@@ -109,6 +109,7 @@ function InterviewSetup() {
       model: 'model' in patch ? patch.model : llmConfig.data.model,
       reasoningLevel:
         'reasoningLevel' in patch ? patch.reasoningLevel : llmConfig.data.reasoningLevel,
+      maxOutputTokens: llmConfig.data.maxOutputTokens,
       fallbackModels: llmConfig.data.fallbackModels,
     })
   }
