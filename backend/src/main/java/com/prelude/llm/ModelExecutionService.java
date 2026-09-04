@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -370,26 +371,6 @@ public class ModelExecutionService {
             && !metadata.containsKey("data");
     }
 
-    private Usage usageOf(ModelExecutionSnapshot snapshot, ModelExecutionRequest request, ChatResponse response) {
-        Long input = null;
-        Long output = null;
-        Long total = null;
-        if (response != null && response.getMetadata() != null && response.getMetadata().getUsage() != null) {
-            var usage = response.getMetadata().getUsage();
-            input = usage.getPromptTokens() == null ? null : usage.getPromptTokens().longValue();
-            output = usage.getCompletionTokens() == null ? null : usage.getCompletionTokens().longValue();
-            total = usage.getTotalTokens() == null ? null : usage.getTotalTokens().longValue();
-        }
-        return new Usage(snapshot.getId(), request.purpose(), snapshot.getProvider(), snapshot.getModel(),
-            input, output, total);
-    }
-
-    private boolean hasProviderUsage(ChatResponse response) {
-        return response != null
-            && response.getMetadata() != null
-            && response.getMetadata().getUsage() != null;
-    }
-
     private void publishUsage(ModelExecutionSnapshot snapshot, ModelExecutionRequest request, Usage usage) {
         LlmUsageRecorded event = new LlmUsageRecorded(
             snapshot.getAccountId(),
@@ -459,11 +440,14 @@ public class ModelExecutionService {
         private Long totalTokens;
 
         void add(ChatResponse response) {
-            if (response == null || response.getMetadata() == null || response.getMetadata().getUsage() == null) {
+            if (response == null || response.getMetadata() == null) {
+                return;
+            }
+            var usage = response.getMetadata().getUsage();
+            if (usage == null || usage instanceof EmptyUsage) {
                 return;
             }
             observed = true;
-            var usage = response.getMetadata().getUsage();
             inputTokens = add(inputTokens, usage.getPromptTokens());
             outputTokens = add(outputTokens, usage.getCompletionTokens());
             totalTokens = add(totalTokens, usage.getTotalTokens());

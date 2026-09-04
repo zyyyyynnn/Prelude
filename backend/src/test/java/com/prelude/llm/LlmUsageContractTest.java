@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -61,6 +62,48 @@ class LlmUsageContractTest {
             assertThat(usage.occurredAt()).isNotNull();
             assertThat(usage.estimatedCost()).isNull();
         });
+    }
+
+    @Test
+    void successfulCompletionWithEmptyUsageEmitsNoUsageEvent() {
+        AtomicInteger events = new AtomicInteger();
+        ModelExecutionService service = service(
+            prompt -> response("ok", new EmptyUsage()),
+            event -> {
+                if (event instanceof LlmUsageRecorded) {
+                    events.incrementAndGet();
+                }
+            });
+
+        LlmPort.CompletionResult result = service.complete(request());
+
+        assertThat(result.content()).isEqualTo("ok");
+        assertThat(result.usage().inputTokens()).isNull();
+        assertThat(result.usage().outputTokens()).isNull();
+        assertThat(result.usage().totalTokens()).isNull();
+        assertThat(events).hasValue(0);
+    }
+
+    @Test
+    void authoritativeZeroTokenUsageStillEmitsOneUsageEvent() {
+        AtomicInteger events = new AtomicInteger();
+        AtomicReference<LlmUsageRecorded> captured = new AtomicReference<>();
+        ModelExecutionService service = service(
+            prompt -> response("ok", new DefaultUsage(0, 0, 0)),
+            event -> {
+                if (event instanceof LlmUsageRecorded usage) {
+                    events.incrementAndGet();
+                    captured.set(usage);
+                }
+            });
+
+        LlmPort.CompletionResult result = service.complete(request());
+
+        assertThat(result.content()).isEqualTo("ok");
+        assertThat(events).hasValue(1);
+        assertThat(captured.get().inputTokens()).isZero();
+        assertThat(captured.get().outputTokens()).isZero();
+        assertThat(captured.get().totalTokens()).isZero();
     }
 
     @Test
@@ -128,6 +171,36 @@ class LlmUsageContractTest {
         assertThat(captured.get().inputTokens()).isEqualTo(4L);
         assertThat(captured.get().outputTokens()).isEqualTo(2L);
         assertThat(captured.get().totalTokens()).isEqualTo(6L);
+    }
+
+    @Test
+    void failedStreamWithOnlyEmptyUsageEmitsNoUsageEvent() {
+        AtomicInteger events = new AtomicInteger();
+        ChatModel model = new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Flux<ChatResponse> stream(Prompt prompt) {
+                return Flux.concat(
+                    Flux.just(response("partial", new EmptyUsage())),
+                    Flux.error(new TransientAiException("stream failed before provider usage")));
+            }
+        };
+        ModelExecutionService service = service(model, event -> {
+            if (event instanceof LlmUsageRecorded) {
+                events.incrementAndGet();
+            }
+        });
+        StringBuilder output = new StringBuilder();
+
+        assertThatThrownBy(() -> service.stream(request(), output::append))
+            .isInstanceOf(LlmServerException.class);
+
+        assertThat(output).hasToString("partial");
+        assertThat(events).hasValue(0);
     }
 
     @Test
@@ -213,11 +286,15 @@ class LlmUsageContractTest {
     }
 
     private ChatResponse response(String content, int inputTokens, int outputTokens) {
+        return response(content, new DefaultUsage(inputTokens, outputTokens, inputTokens + outputTokens));
+    }
+
+    private ChatResponse response(String content, org.springframework.ai.chat.metadata.Usage usage) {
         return new ChatResponse(
             List.of(new Generation(new AssistantMessage(content))),
             ChatResponseMetadata.builder()
                 .model("deepseek-v4-pro")
-                .usage(new DefaultUsage(inputTokens, outputTokens, inputTokens + outputTokens))
+                .usage(usage)
                 .build()
         );
     }
