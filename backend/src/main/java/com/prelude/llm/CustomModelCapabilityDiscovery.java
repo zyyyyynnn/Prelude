@@ -91,13 +91,12 @@ public class CustomModelCapabilityDiscovery {
                 JsonNode capabilities = root.path("capabilities");
                 JsonNode effort = capabilities.path("effort");
                 JsonNode thinking = capabilities.path("thinking");
-                boolean structuredOutput = capabilities.path("structured_outputs").path("supported").asBoolean(false);
                 boolean vision = capabilities.path("image_input").path("supported").asBoolean(false);
                 boolean adaptiveThinking = thinking.path("supported").asBoolean(false)
                     && thinking.path("types").path("adaptive").path("supported").asBoolean(false);
                 if (!effort.path("supported").asBoolean(false) || !adaptiveThinking) {
                     return capabilityCatalog.customCapability(
-                        provider, model, List.of(ReasoningLevel.AUTO), structuredOutput, vision);
+                        provider, model, List.of(ReasoningLevel.AUTO), false, vision);
                 }
                 List<ReasoningLevel> levels = new ArrayList<>();
                 levels.add(ReasoningLevel.AUTO);
@@ -106,7 +105,9 @@ public class CustomModelCapabilityDiscovery {
                 addIfSupported(levels, effort, "high", ReasoningLevel.HIGH);
                 addIfSupported(levels, effort, "xhigh", ReasoningLevel.XHIGH);
                 addIfSupported(levels, effort, "max", ReasoningLevel.MAX);
-                return capabilityCatalog.customCapability(provider, model, levels, structuredOutput, vision);
+                // Anthropic structured_outputs requires a concrete JSON schema. Prelude currently
+                // carries response semantics here, not a provider-native schema, so it is not exposed.
+                return capabilityCatalog.customCapability(provider, model, levels, false, vision);
             }
         } catch (Exception exception) {
             log.info("Anthropic capability discovery was inconclusive for model {}; using AUTO only", model);

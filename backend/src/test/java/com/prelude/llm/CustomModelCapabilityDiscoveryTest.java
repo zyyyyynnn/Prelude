@@ -120,7 +120,7 @@ class CustomModelCapabilityDiscoveryTest {
 
         assertThat(capability.reasoning()).isTrue();
         assertThat(capability.vision()).isTrue();
-        assertThat(capability.structuredOutput()).isTrue();
+        assertThat(capability.structuredOutput()).isFalse();
         assertThat(capability.toolCalling()).isFalse();
         assertThat(capability.supportedReasoningLevels())
             .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH, ReasoningLevel.MAX);

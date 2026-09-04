@@ -240,7 +240,7 @@ class ModelExecutionSnapshotTest {
                 "anthropic-messages",
                 "account-model",
                 java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO),
-                true,
+                false,
                 true)));
         profileMapper.updateById(profile);
 
