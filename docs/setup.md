@@ -22,7 +22,7 @@ mvn -f backend/pom.xml -Dspring-boot.run.profiles=dev spring-boot:run
 
 健康检查：`http://127.0.0.1:8080/actuator/health`。
 
-`dev` profile 会加载 `data-dev.sql`，提供 `demo / 123456` 以及一场包含完整消息、阶段、报告、评分和薄弱点的前端工程师面试记录。
+`dev` profile 会加载 `data-dev.sql`，提供 `demo / 123456`、三份匿名岗位简历、三场完整历史面试与一场进行中会话，覆盖 Java 后端、前端和算法岗位。每次开发启动只重置 `demo` 账户的验收数据，其他本地账户保持不变。
 
 前端：
 
@@ -54,7 +54,7 @@ git diff --check
 
 集成验证由 CI 与本地 Docker 基础设施共同提供环境变量：
 
-- `PRELUDE_MYSQL_SMOKE=true`：空 MySQL 8.4 执行 Flyway 建立当前 schema 并启动应用上下文。
+- `PRELUDE_MYSQL_SMOKE=true`：MySQL 8.4 执行当前 Flyway baseline，并验证数据库集成契约与 `demo` 验收数据的确定性重置。
 - `PRELUDE_IDENTITY_SMOKE=true`：基于真实 MySQL 与 Redis 验证注册登录、Session rotation/revoke、CSRF、Origin 与 profile revision 契约。
 - `PRELUDE_S3_SMOKE=true`：通过 Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
 

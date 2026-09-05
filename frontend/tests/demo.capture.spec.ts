@@ -30,25 +30,25 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
   await expect.poll(() => state.requests.some(({ path }) => path === '/api/auth/login')).toBe(true)
   await expect(page).toHaveURL(/\/interview$/)
 
-  await selectContext(page, '选择简历', 'Java 后端候选人简历.pdf')
+  await selectContext(page, '选择简历', 'Java 后端工程师简历.pdf')
   await selectContext(page, '选择岗位', 'Java 后端工程师')
   await page.getByRole('button', { name: '开始面试' }).click()
-  await expect(page).toHaveURL(/session=42/)
-  await expect(page.getByText('请结合实际项目，说明你会如何拆分高并发订单系统的服务边界。')).toBeVisible()
+  await expect(page).toHaveURL(/session=62/)
+  await expect(page.getByText('如果下周接手这条链路，你会优先补哪一项可靠性验证？')).toBeVisible()
 
   await page.getByLabel('面试回答').fill(
-    '我会按订单、库存和履约能力拆分边界，通过事件驱动降低同步耦合，并为关键链路设置幂等与补偿。',
+    '我会先做消息中间件短时不可用的演练，记录积压量、恢复耗时和重复消费比例，再据此设置告警阈值，并验证人工补偿入口确实可用。',
   )
   await page.getByRole('button', { name: '发送' }).click()
   await expect(page.locator('.status-badge')).toHaveCount(0)
-  await expect(page.getByText('边界分析很清楚。最后请总结你会如何验证容量目标与故障恢复能力。')).toBeVisible()
+  await expect(page.getByText('本场面试已结束，可以生成报告。')).toBeVisible()
   await expectActiveInterviewGeometry(page)
   await expectNoCriticalAccessibilityViolations(page)
   await capture(page, 'active-interview.png')
 
   await page.getByRole('button', { name: '生成报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
-  await expect(page.getByText('8.5')).toBeVisible()
+  await expect(page.getByText('6.3')).toBeVisible()
   await expectStructuredReportGeometry(page)
   await expectNoCriticalAccessibilityViolations(page)
   await capture(page, 'structured-report.png')
@@ -56,7 +56,7 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
   await page.getByRole('link', { name: '数据看板' }).click()
   await expect(page.getByRole('heading', { name: '能力雷达' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
-  await expect(page.getByText('容量估算')).toBeVisible()
+  await expect(page.getByText('故障恢复量化')).toBeVisible()
   await expectAnalyticsGeometry(page)
   await expectNoCriticalAccessibilityViolations(page)
   await capture(page, 'populated-analytics.png')
@@ -79,9 +79,9 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
     '/api/llm/providers',
     '/api/llm/config',
     '/api/interview/start',
-    '/api/interview/42/messages',
-    '/api/interview/42/chat',
-    '/api/interview/42/finish',
+    '/api/interview/62/messages',
+    '/api/interview/62/chat',
+    '/api/interview/62/finish',
     '/api/analytics/radar',
     '/api/analytics/trend',
     '/api/analytics/weaknesses',

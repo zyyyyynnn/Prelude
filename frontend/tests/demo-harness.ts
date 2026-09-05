@@ -80,63 +80,87 @@ export const demoProviders: LlmProviderResponse[] = [
 
 const report = JSON.stringify({
   summary: {
-    fitAssessment: '具备扎实的后端工程能力，能够清晰拆分系统边界。',
-    actionRecommendation: '继续强化容量估算与故障演练的量化表达。',
-    overallRisk: '高并发场景的容量依据仍需补充。',
+    fitAssessment: '具备中级 Java 后端岗位所需的事务、幂等和异步处理经验。',
+    actionRecommendation: '可进入下一轮，并重点验证故障演练与容量分析。',
+    overallRisk: '恢复流程完整，但恢复时间目标和积压阈值缺少历史量化。',
   },
-  scores: { technical: 8.6, expression: 8.2, logic: 8.8, overall: 8.5 },
+  scores: { technical: 6, expression: 7, logic: 6, overall: 6.3 },
   stagePerformances: [
     {
       stageName: 'warmup',
-      score: 8.1,
-      summary: '背景介绍完整，项目职责表达清楚。',
-      positiveSignals: ['能够快速概括项目目标与个人贡献'],
-      negativeSignals: ['业务指标可以更量化'],
-      improvementSuggestions: ['用结果数据补充项目影响'],
+      score: 7,
+      summary: '职责和性能结果表达清楚。',
+      positiveSignals: ['说明了负责范围和 P99 改善'],
+      negativeSignals: ['数据采集周期未说明'],
+      improvementSuggestions: ['补充指标观察窗口'],
     },
     {
       stageName: 'technical',
-      score: 8.7,
-      summary: '服务边界、数据一致性和缓存策略分析扎实。',
-      positiveSignals: ['边界清晰', '能够识别一致性风险'],
-      negativeSignals: ['容量估算证据不足'],
-      improvementSuggestions: ['补充峰值流量与资源预算'],
+      score: 7,
+      summary: '能够给出可落地的幂等方案。',
+      positiveSignals: ['使用唯一键和事务状态推进'],
+      negativeSignals: ['首次失败状态处理略简略'],
+      improvementSuggestions: ['补充失败重试状态机'],
+    },
+    {
+      stageName: 'deep_dive',
+      score: 6,
+      summary: '理解事务消息恢复路径。',
+      positiveSignals: ['提出出站消息和消费去重'],
+      negativeSignals: ['未量化最长恢复时间'],
+      improvementSuggestions: ['定义恢复时间和积压阈值'],
     },
     {
       stageName: 'closing',
-      score: 8.4,
-      summary: '复盘结构完整，能够主动指出方案权衡。',
-      positiveSignals: ['结论明确'],
-      negativeSignals: [],
-      improvementSuggestions: ['保持量化表达'],
+      score: 6,
+      summary: '能将改进方向落到演练。',
+      positiveSignals: ['提出中间件故障演练'],
+      negativeSignals: ['尚未给出验收目标值'],
+      improvementSuggestions: ['为演练设定可验证目标'],
     },
   ],
   questionReviews: [
     {
-      stageName: 'technical',
-      question: '如何拆分高并发订单系统的服务边界？',
-      answerSummary: '按业务能力拆分，并通过事件驱动降低同步耦合。',
-      score: 9,
-      scoringReason: '边界意识明确，也覆盖了数据一致性。',
-      improvementSuggestion: '补充容量目标和失败恢复时间。',
+      stageName: 'warmup',
+      question: '请先介绍你在订单履约服务中负责的范围，以及你如何判断改造是否有效。',
+      answerSummary: '我负责下单后的履约接口和异步任务。改造前先记录接口 P95、P99 和失败率，完成索引与批量查询调整后，核心接口 P99 从 480ms 降到 210ms，错误率保持在千分之一以内。',
+      score: 7,
+      scoringReason: '结果和个人职责都清楚，可以再说明数据采集周期。',
+      improvementSuggestion: '补充性能数据的采集周期和样本量。',
     },
     {
       stageName: 'technical',
-      question: '缓存与数据库不一致时如何处理？',
-      answerSummary: '采用失效优先、重试补偿和可观测告警。',
-      score: 8.3,
-      scoringReason: '覆盖了主要异常路径。',
-      improvementSuggestion: '说明不同一致性等级的选择条件。',
+      question: '同一个支付回调重复到达时，你如何保证订单状态只推进一次？',
+      answerSummary: '我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。重复请求命中唯一键后读取已有结果，不再重复发履约消息。',
+      score: 7,
+      scoringReason: '幂等键和事务边界明确，还可以补充首次处理失败后的重试状态。',
+      improvementSuggestion: '说明首次处理失败时幂等记录如何回到可重试状态。',
+    },
+    {
+      stageName: 'deep_dive',
+      question: '如果数据库事务提交成功，但消息发布失败，你会怎样恢复？',
+      answerSummary: '我会在本地事务中同时写出站消息，由后台任务扫描未发布记录并重试；消费者仍按业务键去重。以前的项目只看重试成功率，没有明确统计最长恢复时间，这是我会补上的指标。',
+      score: 6,
+      scoringReason: '恢复路径合理，但最长恢复时间和积压告警阈值仍需量化。',
+      improvementSuggestion: '给出最长恢复时间、积压阈值和人工介入条件。',
+    },
+    {
+      stageName: 'closing',
+      question: '如果下周接手这条链路，你会优先补哪一项可靠性验证？',
+      answerSummary: '我会先做消息中间件短时不可用的演练，记录积压量、恢复耗时和重复消费比例，再据此设置告警阈值，并验证人工补偿入口确实可用。',
+      score: 6,
+      scoringReason: '收尾具体，后续应把恢复目标写进演练验收标准。',
+      improvementSuggestion: '把恢复目标写成故障演练的通过条件。',
     },
   ],
-  strengths: ['系统边界意识', '结构化表达', '风险识别'],
-  weaknesses: ['容量估算', '量化证据'],
+  strengths: ['能说明事务和幂等边界', '性能数据表达具体'],
+  weaknesses: ['故障恢复量化：尚未定义最长恢复时间和积压告警阈值。'],
   trainingPlan: {
-    threeDay: ['完成一次订单系统容量估算练习'],
-    sevenDay: ['复盘缓存一致性与故障恢复方案'],
-    nextInterviewFocus: ['用指标说明架构权衡'],
+    threeDay: ['整理一次消息发布失败的恢复时序图'],
+    sevenDay: ['完成带恢复时间指标的故障演练'],
+    nextInterviewFocus: ['异步链路恢复目标与告警设计'],
   },
-  finalAdvice: '保持当前结构化表达方式，并用流量、延迟和恢复目标增强方案可信度。',
+  finalAdvice: '保持当前工程化表达，并用恢复时间、积压量和人工介入条件补全可靠性论证。',
 })
 
 export function createDemoState(): DemoState {
@@ -145,28 +169,52 @@ export function createDemoState(): DemoState {
     requests: [],
     sessions: [
       {
-        sessionId: 41,
-        targetPosition: '平台工程师',
+        sessionId: 58,
+        targetPosition: '算法工程师',
         status: 'finished',
         currentStage: 'closing',
-        createdAt: '2026-08-22T09:30:00+08:00',
+        createdAt: '2026-09-04T09:00:00+08:00',
+      },
+      {
+        sessionId: 57,
+        targetPosition: '前端工程师',
+        status: 'finished',
+        currentStage: 'closing',
+        createdAt: '2026-09-03T14:00:00+08:00',
+      },
+      {
+        sessionId: 56,
+        targetPosition: 'Java 后端工程师',
+        status: 'finished',
+        currentStage: 'closing',
+        createdAt: '2026-09-03T10:00:00+08:00',
       },
     ],
     session: {
-      sessionId: 42,
+      sessionId: 62,
       targetPosition: 'Java 后端工程师',
       status: 'ongoing',
-      currentStage: 'technical',
+      currentStage: 'closing',
       summaryReport: '',
       stages: [
         {
           stageName: 'warmup',
-          startedAt: '2026-08-30T09:00:00+08:00',
-          endedAt: '2026-08-30T09:05:00+08:00',
+          startedAt: '2026-09-05T10:00:00+08:00',
+          endedAt: '2026-09-05T10:08:00+08:00',
         },
         {
           stageName: 'technical',
-          startedAt: '2026-08-30T09:05:00+08:00',
+          startedAt: '2026-09-05T10:08:00+08:00',
+          endedAt: '2026-09-05T10:16:00+08:00',
+        },
+        {
+          stageName: 'deep_dive',
+          startedAt: '2026-09-05T10:16:00+08:00',
+          endedAt: '2026-09-05T10:25:00+08:00',
+        },
+        {
+          stageName: 'closing',
+          startedAt: '2026-09-05T10:25:00+08:00',
           endedAt: null,
         },
       ],
@@ -174,16 +222,64 @@ export function createDemoState(): DemoState {
         {
           id: 1,
           role: 'assistant',
-          content: '请结合实际项目，说明你会如何拆分高并发订单系统的服务边界。',
+          content: '请先介绍你在订单履约服务中负责的范围，以及你如何判断改造是否有效。',
           seqNum: 1,
-          createdAt: '2026-08-30T09:06:00+08:00',
+          createdAt: '2026-09-05T10:01:00+08:00',
+        },
+        {
+          id: 2,
+          role: 'user',
+          content: '我负责下单后的履约接口和异步任务。改造前先记录接口 P95、P99 和失败率，完成索引与批量查询调整后，核心接口 P99 从 480ms 降到 210ms，错误率保持在千分之一以内。',
+          seqNum: 2,
+          createdAt: '2026-09-05T10:04:00+08:00',
+          score: 7,
+          hint: '结果和个人职责都清楚，可以再说明数据采集周期。',
+        },
+        {
+          id: 3,
+          role: 'assistant',
+          content: '同一个支付回调重复到达时，你如何保证订单状态只推进一次？',
+          seqNum: 4,
+          createdAt: '2026-09-05T10:09:00+08:00',
+        },
+        {
+          id: 4,
+          role: 'user',
+          content: '我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。重复请求命中唯一键后读取已有结果，不再重复发履约消息。',
+          seqNum: 5,
+          createdAt: '2026-09-05T10:13:00+08:00',
+          score: 7,
+          hint: '幂等键和事务边界明确，还可以补充首次处理失败后的重试状态。',
+        },
+        {
+          id: 5,
+          role: 'assistant',
+          content: '如果数据库事务提交成功，但消息发布失败，你会怎样恢复？',
+          seqNum: 7,
+          createdAt: '2026-09-05T10:17:00+08:00',
+        },
+        {
+          id: 6,
+          role: 'user',
+          content: '我会在本地事务中同时写出站消息，由后台任务扫描未发布记录并重试；消费者仍按业务键去重。以前的项目只看重试成功率，没有明确统计最长恢复时间，这是我会补上的指标。',
+          seqNum: 8,
+          createdAt: '2026-09-05T10:22:00+08:00',
+          score: 6,
+          hint: '恢复路径合理，但最长恢复时间和积压告警阈值仍需量化。',
+        },
+        {
+          id: 7,
+          role: 'assistant',
+          content: '如果下周接手这条链路，你会优先补哪一项可靠性验证？',
+          seqNum: 10,
+          createdAt: '2026-09-05T10:26:00+08:00',
         },
       ],
       resumeId: 1,
       positionId: 1,
       model: 'deepseek-v4-pro',
-      reasoningLevel: 'HIGH',
-      jdText: '负责 Java 服务端架构、稳定性建设与性能优化。',
+      reasoningLevel: 'AUTO',
+      jdText: '维护订单与履约服务，要求熟悉 MySQL、Redis、消息队列和可观测性。',
       attachments: [],
     },
     llmConfig: {
@@ -192,7 +288,7 @@ export function createDemoState(): DemoState {
       customEndpointUrl: null,
       hasApiKey: false,
       apiKeyMasked: null,
-      reasoningLevel: 'HIGH',
+      reasoningLevel: 'AUTO',
       maxOutputTokens: 4096,
       fallbackModels: [],
       capability: deepSeekPro,
@@ -233,37 +329,26 @@ async function respond(route: Route, state: DemoState) {
   }
   if (/\/api\/interview\/\d+\/chat$/.test(path) && method === 'POST') {
     const answer = (body as { content?: string } | null)?.content?.trim() || '候选人回答'
-    const assistant = '边界分析很清楚。最后请总结你会如何验证容量目标与故障恢复能力。'
+    const assistant = '本场面试已结束，可以生成报告。'
     state.session.messages = [
       ...state.session.messages,
       {
-        id: 2,
+        id: 8,
         role: 'user',
         content: answer,
-        seqNum: 2,
-        createdAt: '2026-08-30T09:08:00+08:00',
-        score: 8.6,
-        hint: '结构完整，可继续补充容量数据。',
+        seqNum: 11,
+        createdAt: '2026-09-05T10:30:00+08:00',
+        score: 6,
+        hint: '收尾具体，后续应把恢复目标写进演练验收标准。',
       },
       {
-        id: 3,
+        id: 9,
         role: 'assistant',
         content: assistant,
-        seqNum: 3,
-        createdAt: '2026-08-30T09:08:10+08:00',
+        seqNum: 12,
+        createdAt: '2026-09-05T10:30:10+08:00',
       },
     ]
-    state.session.currentStage = 'closing'
-    state.session.stages = state.session.stages.map((stage) =>
-      stage.stageName === 'technical'
-        ? { ...stage, endedAt: '2026-08-30T09:08:00+08:00' }
-        : stage,
-    )
-    state.session.stages.push({
-      stageName: 'closing',
-      startedAt: '2026-08-30T09:08:00+08:00',
-      endedAt: null,
-    })
     state.sessions = state.sessions.map((item) =>
       item.sessionId === state.session.sessionId ? sessionSummary(state.session) : item,
     )
@@ -272,7 +357,7 @@ async function respond(route: Route, state: DemoState) {
       contentType: 'text/event-stream',
       body: [
         `event: message\ndata: ${assistant}`,
-        'event: judge\ndata: {"score":8.6,"hint":"结构完整，可继续补充容量数据。"}',
+        'event: judge\ndata: {"score":6,"hint":"收尾具体，后续应把恢复目标写进演练验收标准。"}',
         '',
       ].join('\n\n'),
     })
@@ -283,7 +368,7 @@ async function respond(route: Route, state: DemoState) {
     state.session.summaryReport = report
     state.session.stages = state.session.stages.map((stage) =>
       stage.stageName === 'closing'
-        ? { ...stage, endedAt: '2026-08-30T09:10:00+08:00' }
+        ? { ...stage, endedAt: '2026-09-05T10:31:00+08:00' }
         : stage,
     )
     state.sessions = state.sessions.map((item) =>
@@ -309,17 +394,24 @@ async function respond(route: Route, state: DemoState) {
     return fulfillJson(route, [
       {
         id: 1,
-        fileName: 'Java 后端候选人简历.pdf',
-        createdAt: '2026-08-20T10:00:00+08:00',
-        sessionCount: 3,
+        fileName: 'Java 后端工程师简历.pdf',
+        createdAt: '2026-09-03T09:00:00+08:00',
+        sessionCount: 1,
         inUse: true,
       },
       {
         id: 2,
-        fileName: '项目经历补充.pdf',
-        createdAt: '2026-08-25T16:30:00+08:00',
-        sessionCount: 0,
-        inUse: false,
+        fileName: '前端工程师简历.pdf',
+        createdAt: '2026-09-03T09:05:00+08:00',
+        sessionCount: 1,
+        inUse: true,
+      },
+      {
+        id: 3,
+        fileName: '算法工程师简历.pdf',
+        createdAt: '2026-09-03T09:10:00+08:00',
+        sessionCount: 2,
+        inUse: true,
       },
     ])
   if (path === '/api/user/profile' && method === 'GET')
@@ -328,7 +420,7 @@ async function respond(route: Route, state: DemoState) {
       username: 'demo',
       email: 'demo@prelude.local',
       avatarUrl: null,
-      themePreference: 'light',
+      themePreference: 'system',
       revision: 0,
     })
   if (path === '/api/llm/providers' && method === 'GET') return fulfillJson(route, demoProviders)
@@ -345,21 +437,18 @@ async function respond(route: Route, state: DemoState) {
     return fulfillJson(route, state.llmConfig)
   }
   if (path === '/api/analytics/radar' && method === 'GET')
-    return fulfillJson(route, { technical: 8.6, expression: 8.2, logic: 8.8, sessionCount: 6 })
+    return fulfillJson(route, { technical: 6.7, expression: 6, logic: 6.3, sessionCount: 3 })
   if (path === '/api/analytics/trend' && method === 'GET')
     return fulfillJson(route, [
-      { sessionId: 36, createdAt: '2026-07-26T10:00:00+08:00', technical: 6.8, expression: 7.1, logic: 7.2 },
-      { sessionId: 37, createdAt: '2026-08-02T10:00:00+08:00', technical: 7.2, expression: 7.3, logic: 7.5 },
-      { sessionId: 38, createdAt: '2026-08-09T10:00:00+08:00', technical: 7.6, expression: 7.5, logic: 7.9 },
-      { sessionId: 39, createdAt: '2026-08-16T10:00:00+08:00', technical: 7.9, expression: 7.8, logic: 8.1 },
-      { sessionId: 40, createdAt: '2026-08-23T10:00:00+08:00', technical: 8.2, expression: 8, logic: 8.4 },
-      { sessionId: 42, createdAt: '2026-08-30T10:00:00+08:00', technical: 8.6, expression: 8.2, logic: 8.8 },
+      { sessionId: 56, createdAt: '2026-09-03T10:00:00+08:00', technical: 6, expression: 7, logic: 6 },
+      { sessionId: 57, createdAt: '2026-09-03T14:00:00+08:00', technical: 8, expression: 6, logic: 7 },
+      { sessionId: 58, createdAt: '2026-09-04T09:00:00+08:00', technical: 6, expression: 5, logic: 6 },
     ])
   if (path === '/api/analytics/weaknesses' && method === 'GET')
     return fulfillJson(route, [
-      { category: '容量估算', count: 3, descriptions: ['需要补充峰值流量和资源预算。'] },
-      { category: '故障恢复', count: 2, descriptions: ['需要明确恢复时间与恢复点目标。'] },
-      { category: '量化表达', count: 1, descriptions: ['用指标说明架构权衡。'] },
+      { category: '故障恢复量化', count: 1, descriptions: ['尚未定义最长恢复时间和积压告警阈值。'] },
+      { category: '可访问性验证', count: 1, descriptions: ['尚未建立自动化扫描和读屏回归清单。'] },
+      { category: '线上实验归因', count: 1, descriptions: ['已有实验缺少分层结果和置信区间。'] },
     ])
 
   return fulfillProblem(route, 501, 'not_implemented', `Demo harness 未处理 ${method} ${path}`)
@@ -371,7 +460,7 @@ function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessi
     targetPosition: session.targetPosition,
     status: session.status,
     currentStage: session.currentStage,
-    createdAt: '2026-08-30T09:00:00+08:00',
+    createdAt: '2026-09-05T10:00:00+08:00',
     summaryReport: session.summaryReport,
   }
 }
