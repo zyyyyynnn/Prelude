@@ -5,31 +5,32 @@ import com.prelude.BusinessException;
 import java.util.Arrays;
 import java.util.List;
 
+/** The three user-configured HTTP protocol contracts supported by Prelude. */
 public enum CustomLlmProtocol {
-    OPENAI_RESPONSES("openai-responses", "/responses", true),
-    OPENAI_CHAT_COMPLETIONS("openai-chat-completions", "/chat/completions", true),
-    ANTHROPIC_MESSAGES("anthropic-messages", "/messages", false);
+    OPENAI_RESPONSES("openai-responses", "OpenAI Responses", "/responses"),
+    OPENAI_CHAT_COMPLETIONS("openai-chat-completions", "OpenAI Chat Completions", "/chat/completions"),
+    ANTHROPIC_MESSAGES("anthropic-messages", "Anthropic Messages", "/v1/messages");
 
     private final String providerKey;
+    private final String displayName;
     private final String endpointSuffix;
-    private final boolean modelDiscoverySupported;
 
-    CustomLlmProtocol(String providerKey, String endpointSuffix, boolean modelDiscoverySupported) {
+    CustomLlmProtocol(String providerKey, String displayName, String endpointSuffix) {
         this.providerKey = providerKey;
+        this.displayName = displayName;
         this.endpointSuffix = endpointSuffix;
-        this.modelDiscoverySupported = modelDiscoverySupported;
     }
 
     public String providerKey() {
         return providerKey;
     }
 
-    public String endpointSuffix() {
-        return endpointSuffix;
+    public String displayName() {
+        return displayName;
     }
 
-    public boolean supportsModelDiscovery() {
-        return modelDiscoverySupported;
+    public String endpointSuffix() {
+        return endpointSuffix;
     }
 
     public static boolean isCustom(String providerKey) {

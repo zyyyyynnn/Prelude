@@ -21,12 +21,7 @@ import { InterviewContextMenu, LockedInterviewContextButton } from './InterviewC
 import { InterviewModelMenu } from './InterviewModelMenu'
 import { PromptBar } from './PromptBar'
 
-const thinkingLabels: Record<string, string> = {
-  low: '低',
-  medium: '中',
-  high: '高',
-  xhigh: '极高',
-}
+import type { ReasoningLevel } from '@/features/settings'
 
 function PromptBarFact({ label, icon }: { label: string; icon: ReactNode }) {
   return (
@@ -101,7 +96,7 @@ export function InterviewSetupComposer({
   onUploadAttachment: (file: File) => Promise<AttachmentItem>
   onDeleteAttachment: (id: number) => Promise<void>
   onModelChange: (model: string) => void
-  onThinkingDepthChange: (depth: string | null) => void
+  onThinkingDepthChange: (depth: ReasoningLevel | null) => void
   onManageModel: (providerKey?: string) => void
   onNewResume: () => void
   onNewPosition: () => void
@@ -109,7 +104,7 @@ export function InterviewSetupComposer({
     resumeId: number
     positionId: number
     jdText?: string
-    llmModel?: string
+    requestedModel?: string
     attachmentIds?: number[]
   }) => void
 }) {
@@ -121,7 +116,7 @@ export function InterviewSetupComposer({
   const [jdEnabled, setJdEnabled] = useState(false)
   const selectedResume = resumes.find((item) => item.id === resumeId)
   const selectedPosition = positions.find((item) => item.id === positionId)
-  const canStart = Boolean(selectedResume && selectedPosition) && !creating
+  const canStart = Boolean(selectedResume && selectedPosition) && !savingModel && !creating
 
   async function uploadFiles(files: FileList | null) {
     if (!files) return
@@ -152,7 +147,7 @@ export function InterviewSetupComposer({
       resumeId: selectedResume.id,
       positionId: selectedPosition.id,
       jdText: jdEnabled && normalizedJd ? normalizedJd : undefined,
-      llmModel: llmConfig.model,
+      requestedModel: llmConfig.model,
       attachmentIds: attachments.length ? attachments.map((item) => item.id) : undefined,
     })
   }
@@ -268,9 +263,8 @@ export function InterviewAnswerComposer({
   sessionId,
   resumeName,
   positionName,
+  modelName,
   attachments,
-  model,
-  thinkingDepth,
   jdMatched,
   disabled,
   sending,
@@ -282,9 +276,8 @@ export function InterviewAnswerComposer({
   sessionId: number
   resumeName?: string
   positionName: string
+  modelName: string
   attachments: AttachmentItem[]
-  model: string
-  thinkingDepth?: string
   jdMatched: boolean
   disabled: boolean
   sending: boolean
@@ -303,8 +296,6 @@ export function InterviewAnswerComposer({
     onError,
     onTerminalError: () => setVoice(false),
   })
-  const thinkingLabel = thinkingDepth ? (thinkingLabels[thinkingDepth] ?? thinkingDepth) : '默认'
-
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const value = answer.trim()
@@ -431,7 +422,7 @@ export function InterviewAnswerComposer({
         <div className="prompt-bar__rail">
           <LockedInterviewContextButton />
           <PromptBarFact
-            label={`${model} · ${thinkingLabel}`}
+            label={modelName}
             icon={<Terminal aria-hidden="true" />}
           />
           {jdMatched && (

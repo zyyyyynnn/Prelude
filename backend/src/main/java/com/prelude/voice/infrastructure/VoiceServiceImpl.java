@@ -3,8 +3,8 @@ package com.prelude.voice.infrastructure;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.interview.application.port.VoicePort;
-import com.prelude.llm.VoiceModelAccessPort;
-import com.prelude.llm.VoiceModelAccessPort.VoiceModelAccess;
+import com.prelude.llm.api.VoiceModelAccessPort;
+import com.prelude.llm.api.VoiceModelAccessPort.VoiceModelAccess;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -33,7 +33,7 @@ public class VoiceServiceImpl implements VoicePort {
     @Override
     public String speechToText(Long accountId, Long sessionId, byte[] audioBytes, String filename) {
         try {
-            VoiceModelAccess access = voiceModelAccessPort.resolveForAccount(accountId);
+            VoiceModelAccess access = voiceModelAccessPort.resolveForAccount(accountId, null);
             String url = access.baseUrl() + "/audio/transcriptions";
 
             RequestBody fileBody = RequestBody.create(audioBytes, MediaType.parse("audio/webm"));
@@ -65,7 +65,7 @@ public class VoiceServiceImpl implements VoicePort {
     @Override
     public byte[] textToSpeech(Long accountId, String text) {
         try {
-            VoiceModelAccess access = voiceModelAccessPort.resolveForAccount(accountId);
+            VoiceModelAccess access = voiceModelAccessPort.resolveForAccount(accountId, null);
             String url = access.baseUrl() + "/audio/speech";
 
             Map<String, Object> payload = new HashMap<>();

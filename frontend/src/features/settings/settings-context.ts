@@ -5,7 +5,7 @@ export type SettingsIntent = 'upload-resume' | 'create-position'
 
 export type SettingsOpenRequest = {
   section?: SettingsSection
-  providerKey?: string
+  provider?: string
   intent?: SettingsIntent
 }
 

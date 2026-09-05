@@ -50,6 +50,19 @@ public class CustomLlmEgressPolicy {
         this.delegateDns = delegateDns;
     }
 
+    /**
+     * Validates a custom endpoint root and returns it as a URI for runtime
+     * model construction. Same SSRF rules as configuration-time validation.
+     */
+    public java.net.URI requireValidRoot(String endpoint) {
+        validateConfiguredEndpoint(endpoint);
+        try {
+            return java.net.URI.create(endpoint);
+        } catch (IllegalArgumentException exception) {
+            throw BusinessException.badRequest("Base URL 格式不正确");
+        }
+    }
+
     public void validateConfiguredEndpoint(String endpoint) {
         HttpUrl url;
         try {

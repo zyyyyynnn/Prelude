@@ -8,9 +8,6 @@ public record InterviewSessionItemResponse(
     String status,
     LocalDateTime createdAt,
     String currentStage,
-    String llmProvider,
-    String llmModel,
-    String llmThinkingDepth,
     String summaryReport
 ) {
 }

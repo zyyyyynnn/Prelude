@@ -12,9 +12,7 @@ public class InterviewSession {
     private Long resumeId;
     private Long positionId;
     private String targetPosition;
-    private String llmProvider;
-    private String llmModel;
-    private String llmThinkingDepth;
+    private Long modelExecutionSnapshotId;
     private String status;
     private String summary;
     private String summaryReport;

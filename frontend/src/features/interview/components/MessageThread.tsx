@@ -33,7 +33,7 @@ export function MessageThread({
             key={`${message.id}-${message.createdAt ?? index}`}
           >
             <div className="message-bubble__head">
-              <span className="status-badge">{message.role === 'assistant' ? '面试官' : '我'}</span>
+              <span className="message-role">{message.role === 'assistant' ? '面试官' : '我'}</span>
               {message.score != null && (
                 <span className="message-score">{message.score.toFixed(1)} / 10</span>
               )}

@@ -6,7 +6,7 @@ public record StartInterviewCommand(
     Long resumeId,
     Long positionId,
     String jdText,
-    String llmModel,
+    String requestedModel,
     List<Long> attachmentIds
 ) {
 }

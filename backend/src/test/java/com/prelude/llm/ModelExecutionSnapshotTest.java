@@ -1,0 +1,316 @@
+package com.prelude.llm;
+
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionSnapshotRef;
+import com.prelude.llm.api.ModelConfigurationView;
+import com.prelude.llm.api.SaveConfigurationCommand;
+import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.persistence.ModelExecutionSnapshotMapper;
+import com.prelude.llm.persistence.ModelProfile;
+import com.prelude.llm.persistence.ModelProfileMapper;
+import com.prelude.llm.persistence.ProviderCredential;
+import com.prelude.llm.persistence.ProviderCredentialMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Transactional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+/**
+ * Model execution snapshots against real MySQL: a snapshot freezes provider,
+ * model, reasoning, capability version, credential and endpoint; a later
+ * profile mutation never rewrites an existing snapshot, and the execution
+ * candidates never cross provider/credential boundaries.
+ */
+@EnabledIfEnvironmentVariable(named = "PRELUDE_MYSQL_SMOKE", matches = "true")
+@SpringBootTest
+class ModelExecutionSnapshotTest {
+
+    @Autowired
+    private LlmPort llmPort;
+
+    @Autowired
+    private ModelProfileService profileService;
+
+    @Autowired
+    private ModelProfileMapper profileMapper;
+
+    @Autowired
+    private ModelExecutionSnapshotMapper snapshotMapper;
+
+    @Autowired
+    private ProviderCredentialMapper credentialMapper;
+
+    @Autowired
+    private ReasoningLevels reasoningLevels;
+
+    @Autowired
+    private tools.jackson.databind.ObjectMapper objectMapper;
+
+    @Test
+    @Transactional
+    void frozenSnapshotIgnoresLaterProfileMutation() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+
+        ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null));
+        ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(frozen.getModel()).isEqualTo("deepseek-v4-pro");
+        assertThat(frozen.getReasoningLevel()).isEqualTo("HIGH");
+        assertThat(frozen.getCapabilityVersion())
+            .isEqualTo(ModelCapabilityCatalog.CAPABILITY_VERSION);
+
+        // Later profile mutation: the frozen snapshot must not change.
+        llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-v4-flash", null, null, "AUTO", 8192, java.util.List.of()));
+        ModelExecutionSnapshot reloaded = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(reloaded.getModel()).isEqualTo("deepseek-v4-pro");
+        assertThat(reloaded.getReasoningLevel()).isEqualTo("HIGH");
+        assertThat(reloaded.getEffectiveParametersJson()).contains("\"maxOutputTokens\":4096");
+    }
+
+    @Test
+    @Transactional
+    void requestedModelOverrideFreezesTheComposerSelection() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+
+        ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, "deepseek-v4-flash"));
+
+        ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(frozen.getModel()).isEqualTo("deepseek-v4-flash");
+    }
+
+    @Test
+    @Transactional
+    void customEndpointSnapshotFreezesScopeAndCredential() {
+        long accountId = createAccountAndProfile(
+            "openai-chat-completions", "account-model", "AUTO", "https://example.com/v1");
+        ProviderCredential credential = credentialMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProviderCredential>()
+                .eq(ProviderCredential::getAccountId, accountId)
+                .eq(ProviderCredential::getScopeKey, "https://example.com/v1")
+                .last("LIMIT 1"));
+
+        ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
+
+        ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(frozen.getProvider()).isEqualTo("openai-chat-completions");
+        assertThat(frozen.getCustomEndpointUrl()).isEqualTo("https://example.com/v1");
+        assertThat(frozen.getCredentialId()).isEqualTo(credential.getId());
+        assertThat(frozen.getModelCapabilityJson()).contains("account-model");
+    }
+
+    @Test
+    void reasoningVocabularyIncludesExtraHighAndMaxWithoutGuessingUnknownValues() {
+        assertThat(reasoningLevels.parse("xhigh"))
+            .isEqualTo(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.XHIGH);
+        assertThat(reasoningLevels.parse("max"))
+            .isEqualTo(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.MAX);
+        assertThatThrownBy(() -> reasoningLevels.parse("ultra"))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasMessage("思考深度仅支持 AUTO、LOW、MEDIUM、HIGH、XHIGH、MAX");
+        assertThat(reasoningLevels.parse("AUTO")).isEqualTo(
+            com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO);
+    }
+
+    @Test
+    @Transactional
+    void byokCredentialIsEncryptedAtRestAndMaskedOnRead() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+        llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-v4-pro", null, "sk-live-secret-123456", "AUTO", 4096, java.util.List.of()));
+
+        ProviderCredential stored = credentialMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProviderCredential>()
+                .eq(ProviderCredential::getAccountId, accountId)
+                .last("LIMIT 1"));
+        assertThat(stored.getApiKeyEncrypted()).doesNotContain("sk-live-secret");
+        assertThat(stored.getApiKeyEncrypted()).isNotBlank();
+
+        ModelConfigurationView view = llmPort.currentConfiguration(accountId);
+        assertThat(view.apiKeyMasked()).doesNotContain("sk-live-secret");
+        assertThat(view.apiKeyMasked()).startsWith("****");
+    }
+
+    @Test
+    @Transactional
+    void rotatingAKeyCreatesANewCredentialAndKeepsTheFrozenSnapshotOnTheOldSecret() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+
+        llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-v4-pro", null, "sk-immutable-A", "AUTO", 4096, java.util.List.of()));
+        ModelExecutionSnapshotRef snapshotARef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
+        ModelExecutionSnapshot snapshotA = snapshotMapper.selectById(snapshotARef.snapshotId());
+
+        llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-v4-pro", null, "sk-immutable-B", "AUTO", 4096, java.util.List.of()));
+        ModelExecutionSnapshotRef snapshotBRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
+        ModelExecutionSnapshot snapshotB = snapshotMapper.selectById(snapshotBRef.snapshotId());
+
+        assertThat(snapshotA.getCredentialId()).isNotEqualTo(snapshotB.getCredentialId());
+        assertThat(profileService.resolveApiKey(accountId, snapshotA.getCredentialId())).isEqualTo("sk-immutable-A");
+        assertThat(profileService.resolveApiKey(accountId, snapshotB.getCredentialId())).isEqualTo("sk-immutable-B");
+
+        java.util.List<ProviderCredential> credentials = credentialMapper.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ProviderCredential>()
+                .eq(ProviderCredential::getAccountId, accountId)
+                .eq(ProviderCredential::getProvider, "deepseek")
+                .eq(ProviderCredential::getScopeKey, ProviderCredential.SYSTEM_SCOPE)
+                .orderByAsc(ProviderCredential::getId));
+        assertThat(credentials).hasSize(2);
+        assertThat(credentials).allSatisfy(stored -> {
+            assertThat(stored.getApiKeyEncrypted()).doesNotContain("sk-immutable-A");
+            assertThat(stored.getApiKeyEncrypted()).doesNotContain("sk-immutable-B");
+        });
+    }
+
+    @Test
+    @Transactional
+    void unsupportedReasoningIsRejectedInsteadOfSilentlyDowngraded() {
+        long accountId = createAccountAndProfile(
+            "openai-chat-completions", "custom-model", "AUTO", "https://example.com/v1");
+
+        assertThatThrownBy(() -> llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null)))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasMessage("所选模型不支持该思考深度");
+    }
+
+    @Test
+    @Transactional
+    void confirmedCustomReasoningCapabilityIsUsedWhenFreezingTheRun() throws Exception {
+        long accountId = createAccountAndProfile(
+            "openai-chat-completions", "custom-model", "AUTO", "https://example.com/v1");
+        ModelProfile profile = profileMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelProfile>()
+                .eq(ModelProfile::getAccountId, accountId)
+                .last("LIMIT 1"));
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            new ModelCapabilityCatalog().customCapability(
+                "openai-chat-completions",
+                "custom-model",
+                java.util.List.of(
+                    com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO,
+                    com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.HIGH))));
+        profileMapper.updateById(profile);
+
+        ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "HIGH", null));
+
+        ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(frozen.getReasoningLevel()).isEqualTo("HIGH");
+        assertThat(frozen.getModelCapabilityJson()).contains("HIGH");
+
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            new ModelCapabilityCatalog().customCapability(
+                "openai-chat-completions", "custom-model",
+                java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO))));
+        profileMapper.updateById(profile);
+
+        ModelExecutionSnapshot reloaded = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(reloaded.getModelCapabilityJson()).contains("HIGH");
+        ModelExecutionSnapshotRef nextRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "AUTO", null));
+        assertThat(snapshotMapper.selectById(nextRef.snapshotId()).getModelCapabilityJson())
+            .doesNotContain("HIGH");
+    }
+
+    @Test
+    @Transactional
+    void frozenAnthropicVisionCapabilityIgnoresLaterProfileCapabilityMutation() throws Exception {
+        long accountId = createAccountAndProfile(
+            "anthropic-messages", "account-model", "AUTO", "https://example.com");
+        ModelProfile profile = profileMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelProfile>()
+                .eq(ModelProfile::getAccountId, accountId)
+                .last("LIMIT 1"));
+        ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            catalog.customCapability(
+                "anthropic-messages",
+                "account-model",
+                java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO),
+                false,
+                true)));
+        profileMapper.updateById(profile);
+
+        ModelExecutionSnapshotRef ref = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "AUTO", null));
+        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(objectMapper);
+        ModelExecutionSnapshot frozen = snapshotMapper.selectById(ref.snapshotId());
+        assertThat(capabilityJson.read(frozen.getModelCapabilityJson()).vision()).isTrue();
+
+        profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+            catalog.customCapability(
+                "anthropic-messages",
+                "account-model",
+                java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO))));
+        profileMapper.updateById(profile);
+
+        assertThat(capabilityJson.read(snapshotMapper.selectById(ref.snapshotId()).getModelCapabilityJson()).vision())
+            .isTrue();
+        ModelExecutionSnapshotRef nextRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, "AUTO", null));
+        assertThat(capabilityJson.read(snapshotMapper.selectById(nextRef.snapshotId()).getModelCapabilityJson()).vision())
+            .isFalse();
+    }
+
+    @Test
+    @Transactional
+    void unknownBuiltInModelIsRejectedInsteadOfInheritingProviderCapabilities() {
+        long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
+
+        assertThatThrownBy(() -> llmPort.saveConfiguration(accountId, new SaveConfigurationCommand(
+            "deepseek", "deepseek-unknown", null, null, "AUTO", 4096, java.util.List.of())))
+            .isInstanceOf(com.prelude.BusinessException.class)
+            .hasMessage("当前接入方式不支持该模型");
+    }
+
+    private long createAccountAndProfile(String provider, String model,
+                                         String reasoningLevel, String customEndpointUrl) {
+        com.prelude.identity.Account account = new com.prelude.identity.Account();
+        account.setUsername("llm-" + provider + "-" + System.nanoTime());
+        account.setRevision(0L);
+        accountMapper.insert(account);
+        ModelProfile profile = new ModelProfile();
+        profile.setAccountId(account.getId());
+        profile.setProvider(provider);
+        profile.setModel(model);
+        profile.setReasoningLevel(reasoningLevel);
+        profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
+        profile.setCustomEndpointUrl(customEndpointUrl);
+        profile.setFallbackCapabilitiesJson("[]");
+        if (customEndpointUrl != null) {
+            ProviderCredential credential = new ProviderCredential();
+            credential.setAccountId(account.getId());
+            credential.setProvider(provider);
+            credential.setScopeKey(customEndpointUrl);
+            credential.setApiKeyEncrypted("encoded");
+            credentialMapper.insert(credential);
+            profile.setCredentialId(credential.getId());
+            try {
+                profile.setModelCapabilityJson(objectMapper.writeValueAsString(
+                    new ModelCapabilityCatalog().customCapability(
+                        provider, model,
+                        java.util.List.of(com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel.AUTO))));
+            } catch (Exception exception) {
+                throw new AssertionError(exception);
+            }
+        }
+        profileMapper.insert(profile);
+        return account.getId();
+    }
+
+    @Autowired
+    private com.prelude.identity.AccountMapper accountMapper;
+}

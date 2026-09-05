@@ -13,7 +13,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   function openSettings(next: SettingsOpenRequest = {}) {
     setRequest({
       section: next.section ?? 'profile',
-      providerKey: next.providerKey,
+      provider: next.provider,
       intent: next.intent,
       requestId: Date.now(),
     })
@@ -26,7 +26,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       <SettingsModal
         open={open}
         section={request.section}
-        providerKey={request.providerKey}
+        provider={request.provider}
         intent={request.intent}
         requestId={request.requestId}
         onSectionChange={(section) =>

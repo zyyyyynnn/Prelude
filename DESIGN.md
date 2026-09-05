@@ -14,6 +14,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - `--color-surface-muted`：弱强调表面。
 - `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。
 - `--color-brand`、`--color-brand-light`：品牌强调。
+- `--color-accent-solid`、`--color-accent-solid-hover`、`--color-accent-text`、`--color-text-on-accent`：从品牌色派生的交互角色，分别用于实心动作、悬停、选中态文本与其前景；品牌本色不直接承担小号文本或实心动作的对比度职责。
 - `--color-border`、`--color-border-warm`：边界。
 - `--color-focus-field`、`--color-focus-action`：字段与动作焦点。
 - `--color-error`：错误与破坏性动作。
@@ -22,7 +23,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 ### Spacing And Size
 
-间距使用 `--spacing-xs` 至 `--spacing-2xl` 阶梯。基础控件高度为 `--ui-height-base`，紧凑控件高度为 `--ui-height-compact`。布局宽度、Header 高度和内容行宽使用对应 `--layout-*`、`--header-height` 与 `--content-*` token。
+间距使用 `--spacing-xs` 至 `--spacing-2xl` 阶梯。基础控件高度为 `--ui-height-base`，紧凑控件高度为 `--ui-height-compact`，标准边界使用 `--border-width-default`。布局宽度、Header 高度和内容行宽使用对应 `--layout-*`、`--header-height` 与 `--content-*` token。
 
 固定格式控件通过稳定高度、宽度或 grid track 保持布局。文本在容器内自然换行或截断，并由 Tooltip 提供完整值。
 
@@ -40,7 +41,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - 品牌、标题、表单控件与关键操作使用 `--font-serif`。
 - 正文、说明和数据文本使用 `--font-sans`。
 - 代码、日志和 token 名称使用 `--font-mono`。
-- 字号使用 `--font-size-xs` 至 `--font-size-2xl` 阶梯，组件内部采用紧凑标题尺度。
+- 字号使用 `--font-size-xs` 至 `--font-size-2xl` 阶梯，字重使用 `--font-weight-*` 语义阶梯，行高使用 `--line-height-*` 语义阶梯，组件内部采用紧凑标题尺度。
 
 ### Motion
 
@@ -80,7 +81,7 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 
 ## Source Adoption
 
-shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮层交互语义。[Beautiful UI](https://www.beautifului.dev/) Prompt Bar 组合用于面试输入区。组件视觉统一由本文件和 Prelude Design Tokens 定义。
+shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮层交互语义。[Beautiful UI](https://www.beautifului.dev/) Prompt Bar 组合用于面试输入区。品牌字体由 Fontsource 本地可变字体资产提供，运行时不依赖远端字体服务。组件视觉统一由本文件和 Prelude Design Tokens 定义。
 
 ## Validation
 

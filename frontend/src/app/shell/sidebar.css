@@ -8,13 +8,14 @@
   inline-size: var(--layout-sidebar-inline-size);
   block-size: 100vh;
   background-color: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  border-inline-end: var(--border-width-default) solid var(--color-border);
   overflow-x: hidden;
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: var(--z-index-sidebar);
   font-family: var(--font-serif);
+  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
 }
 .app-sidebar.is-collapsed {
   inline-size: var(--layout-sidebar-collapsed-inline-size);
@@ -32,7 +33,9 @@
   gap: var(--spacing-sm);
   overflow: hidden;
   white-space: nowrap;
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  transition:
+    inline-size var(--motion-duration-base) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
   inline-size: var(--layout-sidebar-brand-inline-size);
   opacity: 1;
 }
@@ -51,7 +54,7 @@
 }
 .app-sidebar__title {
   font-family: var(--font-serif);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
@@ -64,7 +67,6 @@
   flex-shrink: 0;
 }
 .app-sidebar.is-collapsed .sidebar-label {
-  inline-size: 0;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -78,9 +80,30 @@
   justify-content: center;
   width: var(--ui-height-md);
   height: var(--ui-height-md);
-  border: 1px solid transparent;
+  border: var(--border-width-default) solid transparent;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+  position: relative;
+}
+.app-sidebar__toggle-icons {
+  position: relative;
+  inline-size: var(--spacing-4-5);
+  block-size: var(--spacing-4-5);
+}
+.app-sidebar__toggle-icon {
+  position: absolute;
+  inset: 0;
+  inline-size: var(--spacing-4-5);
+  block-size: var(--spacing-4-5);
+  opacity: 0;
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
+.app-sidebar__toggle-icon--collapse,
+.app-sidebar.is-collapsed .app-sidebar__toggle-icon--expand {
+  opacity: 1;
+}
+.app-sidebar.is-collapsed .app-sidebar__toggle-icon--collapse {
+  opacity: 0;
 }
 .app-sidebar__toggle:hover {
   background-color: var(--color-surface-hover);
@@ -103,16 +126,16 @@
   border-radius: var(--radius-md);
   font-family: var(--font-serif);
   font-size: var(--font-size-md);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
-    background-color var(--motion-duration-base) var(--motion-ease-standard),
-    color var(--motion-duration-base) var(--motion-ease-standard);
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
-  border: 1px solid transparent;
+  border: var(--border-width-default) solid transparent;
 }
 .app-sidebar__btn > svg {
   inline-size: var(--sidebar-icon-glyph-size);
@@ -121,16 +144,16 @@
 }
 .app-sidebar__btn--primary {
   font-family: var(--font-serif);
-  background-color: var(--color-brand);
-  color: var(--color-surface);
+  background-color: var(--color-accent-solid);
+  color: var(--color-text-on-accent);
   box-shadow: var(--shadow-ring);
 }
 .app-sidebar__btn--primary:hover {
-  background-color: color-mix(in srgb, var(--color-brand) 85%, var(--color-surface));
+  background-color: var(--color-accent-solid-hover);
 }
 .app-sidebar__actions {
   padding-block-end: var(--spacing-md);
-  border-block-end: 1px solid var(--color-border);
+  border-block-end: var(--border-width-default) solid var(--color-border);
 }
 .app-sidebar__btn--icon:hover,
 .app-sidebar__btn--tool:hover,
@@ -140,8 +163,8 @@
 }
 .app-sidebar__btn.is-active {
   background-color: var(--color-surface-muted);
-  color: var(--color-brand);
-  font-weight: 600;
+  color: var(--color-accent-text);
+  font-weight: var(--font-weight-semibold);
 }
 .app-sidebar__workspace-area {
   flex: 1;
@@ -175,7 +198,7 @@
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 0;
+  padding-inline-end: 0;
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
 }
@@ -194,13 +217,13 @@
 .session-group + .session-group {
   margin-top: var(--spacing-md);
   padding-top: var(--spacing-md);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-default) solid var(--color-border);
 }
 .session-group__label {
   margin: 0 var(--spacing-sm) var(--spacing-sm);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.03em;
 }
 .session-list {
@@ -213,7 +236,7 @@
 }
 .session-item-btn {
   width: 100%;
-  text-align: left;
+  text-align: start;
   background: transparent;
   padding: 0 var(--spacing-sm);
   height: var(--ui-height-md);
@@ -226,14 +249,14 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-family: var(--font-serif);
-  line-height: 1;
+  line-height: var(--line-height-solid);
   transition:
-    background-color var(--motion-duration-base) var(--motion-ease-standard),
-    color var(--motion-duration-base) var(--motion-ease-standard);
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid transparent;
+  border: var(--border-width-default) solid transparent;
 }
 .session-item-btn:hover {
   background-color: var(--color-surface-hover);
@@ -241,8 +264,8 @@
 }
 .session-item-btn.is-active {
   background-color: var(--color-surface-muted);
-  color: var(--color-brand);
-  font-weight: 500;
+  color: var(--color-accent-text);
+  font-weight: var(--font-weight-medium);
 }
 .session-item-btn.is-loading {
   cursor: progress;
@@ -264,7 +287,8 @@
 .session-group__empty {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
-  margin: 0 0 0 var(--spacing-sm);
+  margin: 0;
+  margin-inline-start: var(--spacing-sm);
 }
 .app-sidebar__tools {
   display: flex;
@@ -285,21 +309,21 @@
 }
 .session-item-actions {
   position: absolute;
-  right: var(--spacing-1-5);
+  inset-inline-end: var(--spacing-1-5);
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
   opacity: 0;
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
   background: linear-gradient(
     90deg,
     transparent 0%,
     var(--color-surface) 25%,
     var(--color-surface) 100%
   );
-  padding-left: var(--spacing-sm);
+  padding-inline-start: var(--spacing-sm);
 }
 .session-item-wrapper:has(.session-item-btn.is-active) .session-item-actions {
   background: linear-gradient(
@@ -333,10 +357,10 @@
 }
 .pin-indicator {
   position: absolute;
-  right: var(--spacing-sm);
+  inset-inline-end: var(--spacing-sm);
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-brand);
+  color: var(--color-accent-text);
   opacity: 0.8;
   pointer-events: none;
   display: flex;
@@ -351,10 +375,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
+  border: var(--border-width-default) solid transparent;
   transition:
-    background-color var(--motion-duration-base) var(--motion-ease-standard),
-    color var(--motion-duration-base) var(--motion-ease-standard);
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 .action-btn:hover {
   color: var(--color-text-primary);
@@ -366,10 +390,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
   .app-sidebar__brand,
   .sidebar-label,
   .app-sidebar__sessions,
-  .app-sidebar__collapsed-actions {
+  .app-sidebar__collapsed-actions,
+  .app-sidebar__toggle-icon {
     transition: none;
   }
 }

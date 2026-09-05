@@ -86,88 +86,90 @@ export function PositionManagementPanel() {
           {editing ? '保存岗位' : '创建岗位'}
         </Button>
       </div>
-      <section className="position-settings__catalog" aria-label="岗位列表">
-        <h3 className="position-settings__section-title">可选岗位</h3>
-        {positions.isPending ? (
-          <div className="empty-state">正在读取岗位…</div>
-        ) : positions.isError ? (
-          <div className="empty-state">
-            <p>{positions.error.message}</p>
-            <Button variant="secondary" onClick={() => void positions.refetch()}>
-              <RefreshCw aria-hidden="true" />
-              重新加载
-            </Button>
-          </div>
-        ) : (
-          <div className="position-settings__list">
-            {positions.data?.map((position) => (
-              <div className="position-settings__item" key={position.id}>
-                <span>{position.name}</span>
-                {position.editable ? (
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`编辑 ${position.name}`}
-                    onClick={() => edit(position)}
-                  >
-                    <Pencil aria-hidden="true" />
-                  </Button>
-                ) : (
-                  <span className="status-badge">内置</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-      <form id="position-settings-form" className="position-settings__form" onSubmit={submit}>
-        <div className="position-settings__form-heading">
-          <h3 className="position-settings__section-title">{editing ? '编辑岗位' : '新建岗位'}</h3>
-          {editing && (
-            <Button
-              type="button"
-              size="compact"
-              variant="ghost"
-              onClick={() => {
-                setEditing(null)
-                setDraft(emptyDraft)
-              }}
-            >
-              <Plus aria-hidden="true" />
-              新建
-            </Button>
+      <div className="position-settings__workspace">
+        <section className="position-settings__catalog" aria-label="岗位列表">
+          <h3 className="settings-section__title">岗位库</h3>
+          {positions.isPending ? (
+            <div className="empty-state">正在读取岗位…</div>
+          ) : positions.isError ? (
+            <div className="empty-state">
+              <p>{positions.error.message}</p>
+              <Button variant="secondary" onClick={() => void positions.refetch()}>
+                <RefreshCw aria-hidden="true" />
+                重新加载
+              </Button>
+            </div>
+          ) : (
+            <div className="position-settings__list">
+              {positions.data?.map((position) => (
+                <div className="position-settings__item" key={position.id}>
+                  <span className="position-settings__item-name">{position.name}</span>
+                  {position.editable && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`编辑 ${position.name}`}
+                      onClick={() => edit(position)}
+                    >
+                      <Pencil aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
-        </div>
-        <div className="position-settings__fields">
-          <Field label="岗位名称" htmlFor="position-name">
-            <Input
-              id="position-name"
-              autoFocus
-              maxLength={100}
-              value={draft.name}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, name: event.target.value }))
-              }
-            />
-          </Field>
-          <Field
-            label="面试侧重点"
-            htmlFor="position-prompt"
-            hint="描述需要重点考察的能力、追问方式与面试风格。"
-          >
-            <Textarea
-              id="position-prompt"
-              maxLength={4000}
-              rows={3}
-              value={draft.systemPrompt}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, systemPrompt: event.target.value }))
-              }
-            />
-          </Field>
-        </div>
-      </form>
+        </section>
+        <form id="position-settings-form" className="position-settings__form" onSubmit={submit}>
+          <div className="position-settings__form-heading">
+            <h3 className="settings-section__title">
+              {editing ? '编辑岗位' : '新建岗位'}
+            </h3>
+            {editing && (
+              <Button
+                type="button"
+                size="compact"
+                variant="ghost"
+                onClick={() => {
+                  setEditing(null)
+                  setDraft(emptyDraft)
+                }}
+              >
+                <Plus aria-hidden="true" />
+                新建
+              </Button>
+            )}
+          </div>
+          <div className="position-settings__fields">
+            <Field label="岗位名称" htmlFor="position-name">
+              <Input
+                id="position-name"
+                autoFocus
+                maxLength={100}
+                value={draft.name}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, name: event.target.value }))
+                }
+              />
+            </Field>
+            <Field
+              label="面试侧重点"
+              htmlFor="position-prompt"
+              hint="描述需要重点考察的能力、追问方式与面试风格。"
+            >
+              <Textarea
+                id="position-prompt"
+                maxLength={4000}
+                rows={7}
+                value={draft.systemPrompt}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, systemPrompt: event.target.value }))
+                }
+              />
+            </Field>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

@@ -1,23 +1,23 @@
-.position-settings {
+.position-settings__workspace {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: start;
   gap: var(--spacing-lg);
 }
 .position-settings__form {
+  flex: 2 1 var(--layout-position-form-min-inline-size);
   display: grid;
   align-content: start;
-  gap: var(--spacing-sm);
-  padding-block-start: var(--spacing-lg);
-  border-block-start: 1px solid var(--color-border);
-}
-.position-settings__section-title {
-  margin: 0;
-  color: var(--color-text-primary);
-  font: 500 var(--font-size-sm)/1.35 var(--font-serif);
+  gap: var(--spacing-lg);
+  min-inline-size: 0;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-whisper);
 }
 .position-settings__form-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-md);
 }
@@ -28,27 +28,46 @@
   gap: var(--spacing-md);
 }
 .position-settings__catalog {
+  flex: 1 1 var(--layout-position-catalog-min-inline-size);
   min-inline-size: 0;
   display: grid;
-  gap: var(--spacing-sm);
+  align-content: start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-whisper);
 }
 .position-settings__list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--spacing-sm);
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--layout-position-item-min-inline-size)), 1fr)
+  );
 }
 .position-settings__item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--spacing-sm);
-  min-block-size: var(--ui-height-md);
-  padding-inline: var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
+  min-block-size: var(--ui-height-compact);
+  padding-inline: 0;
+  border-block-end: var(--border-width-default) solid var(--color-border);
+  background: transparent;
 }
-.position-settings__item:hover {
+.position-settings__item:last-child {
+  border-block-end: 0;
+}
+.position-settings__item:has(button):hover {
+  border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
+}
+.position-settings__item-name {
+  min-inline-size: 0;
+  overflow: hidden;
   color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-compact)
+    var(--font-serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

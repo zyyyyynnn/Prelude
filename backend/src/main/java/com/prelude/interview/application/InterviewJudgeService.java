@@ -5,13 +5,10 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.LlmSelection;
 import com.prelude.interview.application.port.InterviewMessageRepository;
-import com.prelude.llm.ChatPort;
-import com.prelude.llm.ChatRequest;
-import com.prelude.llm.LlmPurpose;
-import com.prelude.llm.PromptIds;
-import com.prelude.llm.PromptRegistry;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.PromptIds;
+import com.prelude.llm.api.PromptRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,7 +26,7 @@ public class InterviewJudgeService {
 
     private static final String ROLE_ASSISTANT = "assistant";
     private final InterviewMessageRepository interviewMessageRepository;
-    private final ChatPort chatPort;
+    private final LlmPort llmPort;
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final PromptRegistry promptRegistry;
@@ -83,19 +80,20 @@ public class InterviewJudgeService {
             "面试官提出的问题：" + questionContent + "\n" +
             "候选人的回答：" + userMsg.getContent() + "\n";
 
-        String judgeOutput = chatPort.complete(ChatRequest.snapshot(
-            session.getAccountId(),
-            session.getId(),
-            LlmPurpose.JUDGE,
-            PromptIds.JUDGE,
-            List.of(
-                Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", userPrompt)
-            ),
-            new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-            Map.of("response_format", Map.of("type", "json_object"))
-        ));
-        return parseJudgeOutput(judgeOutput);
+        LlmPort.CompletionResult completion = llmPort.complete(
+            new LlmPort.ModelExecutionRequest(
+                session.getModelExecutionSnapshotId(),
+                "judge",
+                PromptIds.JUDGE,
+                LlmPort.ResponseMode.JSON_OBJECT,
+                List.of(
+                    new LlmPort.Message("system", systemPrompt),
+                    new LlmPort.Message("user", userPrompt)
+                ),
+                List.of(),
+                List.of()
+            ));
+        return parseJudgeOutput(completion.content());
     }
 
     private JudgeResult parseJudgeOutput(String judgeOutput) throws JacksonException {

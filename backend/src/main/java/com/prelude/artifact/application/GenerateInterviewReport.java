@@ -9,23 +9,17 @@ import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
 import com.prelude.artifact.domain.ScoreHistory;
 import com.prelude.artifact.domain.AccountWeakness;
-import com.prelude.llm.LlmSelection;
 import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.artifact.application.port.InsightRepository;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
-import com.prelude.llm.ChatPort;
-import com.prelude.llm.ChatRequest;
-import com.prelude.llm.LlmPurpose;
-import com.prelude.llm.PromptIds;
-import com.prelude.activity.RealtimePort;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.PromptIds;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -36,102 +30,90 @@ public class GenerateInterviewReport {
 
     private final ObjectMapper objectMapper;
     private final InterviewReportPort interviewReportPort;
-    private final InsightRepository insightRepository;
-    private final ChatPort chatPort;
+    private final LlmPort llmPort;
     private final ReportParser interviewReportParser;
     private final InterviewReportAssembler interviewReportAssembler;
-    private final RealtimePort realtimePort;
 
-    public Outcome execute(Long sessionId, Long accountId) {
+    public GenerationResult execute(Long sessionId, Long accountId) {
         try {
 
             log.info("Processing report generation for session {} and account {}", sessionId, accountId);
             InterviewSession session = interviewReportPort.findSession(sessionId);
             if (session == null) {
-                log.warn("Session {} not found, skipping", sessionId);
-                return Outcome.SKIPPED;
+                throw new IllegalStateException("Interview session does not exist: " + sessionId);
             }
             if (!STATUS_GENERATING.equals(session.getStatus())) {
-                log.info("Session {} status is '{}', expected '{}'; skipping duplicate or stale job",
-                    sessionId, session.getStatus(), STATUS_GENERATING);
-                return Outcome.SKIPPED;
+                if ("finished".equals(session.getStatus())
+                    && session.getSummaryReport() != null && !session.getSummaryReport().isBlank()) {
+                    log.info("Session {} already has a completed report; treating delivery as idempotent", sessionId);
+                    return new GenerationResult(
+                        Outcome.SKIPPED, session.getSummaryReport(), null, List.of());
+                }
+                throw new IllegalStateException(
+                    "Report job requires a generating interview session; session=" + sessionId
+                        + ", status=" + session.getStatus());
             }
 
             List<InterviewMessage> messages = interviewReportPort.listMessages(sessionId);
             String prompt = buildFinishPrompt(session, messages);
-            String reportContent = chatPort.complete(ChatRequest.snapshot(
-                session.getAccountId(), session.getId(),
-                LlmPurpose.REPORT,
-                PromptIds.REPORT,
-                List.of(
-                    Map.of("role", "system", "content", """
-                            你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
-                            JSON Schema（不得增加 overall、stage score、question score 或 weaknesses）：
-                            {
-                              "summary": {
-                                "fitAssessment": "岗位适配判断",
-                                "actionRecommendation": "继续投递或专项训练建议",
-                                "overallRisk": "总体风险"
-                              },
-                              "scores": {
-                                "technical": 1-10 的整数,
-                                "expression": 1-10 的整数,
-                                "logic": 1-10 的整数
-                              },
-                              "stagePerformances": [{
-                                "stageName": "warmup|technical|deep_dive|closing",
-                                "summary": "阶段总结",
-                                "positiveSignals": ["正向信号"],
-                                "negativeSignals": ["风险信号"],
-                                "improvementSuggestions": ["改进建议"]
-                              }],
-                              "strengths": ["核心优势"],
-                              "trainingPlan": {
-                                "threeDay": ["3 天补强"],
-                                "sevenDay": ["7 天专项"],
-                                "nextInterviewFocus": ["下次模拟重点"]
-                              },
-                              "finalAdvice": "总结建议",
-                              "reportMarkdown": "完整 Markdown 报告"
-                            }
-                        三个评分必须使用 1-10 整数范围。
-                        """),
-                    Map.of("role", "user", "content", prompt)
-                ),
-                new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-                Map.of("response_format", Map.of("type", "json_object"))
-            ));
+            LlmPort.CompletionResult reportCompletion = llmPort.complete(
+                new LlmPort.ModelExecutionRequest(
+                    session.getModelExecutionSnapshotId(),
+                    "report",
+                    PromptIds.REPORT,
+                    LlmPort.ResponseMode.JSON_OBJECT,
+                    List.of(
+                        new LlmPort.Message("system", """
+                                你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
+                                JSON Schema（不得增加 overall、stage score、question score 或 weaknesses）：
+                                {
+                                  "summary": {
+                                    "fitAssessment": "岗位适配判断",
+                                    "actionRecommendation": "继续投递或专项训练建议",
+                                    "overallRisk": "总体风险"
+                                  },
+                                  "scores": {
+                                    "technical": 1-10 的整数,
+                                    "expression": 1-10 的整数,
+                                    "logic": 1-10 的整数
+                                  },
+                                  "stagePerformances": [{
+                                    "stageName": "warmup|technical|deep_dive|closing",
+                                    "summary": "阶段总结",
+                                    "positiveSignals": ["正向信号"],
+                                    "negativeSignals": ["风险信号"],
+                                    "improvementSuggestions": ["改进建议"]
+                                  }],
+                                  "strengths": ["核心优势"],
+                                  "trainingPlan": {
+                                    "threeDay": ["3 天补强"],
+                                    "sevenDay": ["7 天专项"],
+                                    "nextInterviewFocus": ["下次模拟重点"]
+                                  },
+                                  "finalAdvice": "总结建议",
+                                  "reportMarkdown": "完整 Markdown 报告"
+                                }
+                            三个评分必须使用 1-10 整数范围。
+                            """),
+                        new LlmPort.Message("user", prompt)
+                    ),
+                    List.of(),
+                    List.of()
+                ));
 
-            InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportContent);
-            interviewReportPort.closeCurrentStage(sessionId);
-            persistScoreHistory(session, reportDraft);
-            persistWeaknesses(session, reportDraft.reportMarkdown());
-
+            InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportCompletion.content());
+            ScoreHistory scoreHistory = scoreHistory(session, reportDraft);
+            List<AccountWeakness> weaknesses = extractWeaknessesBestEffort(session, reportDraft.reportMarkdown());
             List<InterviewStage> stages = interviewReportPort.listStages(sessionId);
-            List<AccountWeakness> weaknesses = insightRepository.listWeaknessesBySession(sessionId);
             StructuredInterviewReport structuredReport = interviewReportAssembler.assemble(
                 reportDraft, stages, messages, weaknesses
             );
             String reportJson = objectMapper.writeValueAsString(structuredReport);
 
-            interviewReportPort.completeReport(sessionId, reportJson);
-
-            // Broadcast report ready event
-            realtimePort.publish(sessionId, "report_ready", reportJson);
-            log.info("Successfully finished report generation and broadcasted for session {}", sessionId);
-            return Outcome.COMPLETED;
+            log.info("Successfully prepared report generation for session {}", sessionId);
+            return new GenerationResult(Outcome.GENERATED, reportJson, scoreHistory, weaknesses);
         } catch (Exception e) {
             throw new ReportGenerationException(sessionId, e);
-        }
-    }
-
-    public void handleTerminalFailure(Long sessionId, Throwable error) {
-        log.error("Failed to generate report for session {}", sessionId, error);
-        realtimePort.publish(sessionId, "error", "报告生成失败，请稍后重试");
-        try {
-            interviewReportPort.restoreOngoing(sessionId);
-        } catch (Exception restoreException) {
-            log.error("Failed to restore session status for session {}", sessionId, restoreException);
         }
     }
 
@@ -162,47 +144,44 @@ public class GenerateInterviewReport {
         return builder.toString();
     }
 
-    private void persistScoreHistory(InterviewSession session, InterviewReportDraft report) {
-        try {
-            ScoreHistory score = new ScoreHistory();
-            score.setAccountId(session.getAccountId());
-            score.setSessionId(session.getId());
-            score.setTechnicalScore(report.scores().technical());
-            score.setExpressionScore(report.scores().expression());
-            score.setLogicScore(report.scores().logic());
-
-            insightRepository.replaceScore(score);
-        } catch (Exception exception) {
-            log.warn("Failed to persist score history for session {}", session.getId(), exception);
-        }
+    private ScoreHistory scoreHistory(InterviewSession session, InterviewReportDraft report) {
+        ScoreHistory score = new ScoreHistory();
+        score.setAccountId(session.getAccountId());
+        score.setSessionId(session.getId());
+        score.setTechnicalScore(report.scores().technical());
+        score.setExpressionScore(report.scores().expression());
+        score.setLogicScore(report.scores().logic());
+        return score;
     }
 
-    private void persistWeaknesses(InterviewSession session, String report) {
+    private List<AccountWeakness> extractWeaknessesBestEffort(InterviewSession session, String report) {
         try {
-            List<AccountWeakness> weaknesses = extractWeaknesses(session, report);
-            insightRepository.replaceWeaknesses(session.getId(), weaknesses);
+            return extractWeaknesses(session, report);
         } catch (Exception exception) {
-            log.warn("Failed to persist weaknesses for session {}", session.getId(), exception);
+            log.warn("Failed to extract weaknesses for session {}", session.getId(), exception);
+            return List.of();
         }
     }
 
     private List<AccountWeakness> extractWeaknesses(InterviewSession session, String report) throws Exception {
-        String content = chatPort.complete(ChatRequest.snapshot(
-            session.getAccountId(), session.getId(),
-            LlmPurpose.REPORT,
-            PromptIds.REPORT,
-            List.of(
-                Map.of("role", "system", "content", """
-                    你是面试分析助手。请只输出严格 JSON 数组，不要输出 Markdown。
-                    每个元素必须包含 category 和 description 两个字段。
-                    示例：[{"category":"JVM 内存模型","description":"对堆、栈和 GC 场景回答不完整"}]
-                    """),
-                Map.of("role", "user", "content", "请从以下面试报告中提取 1 到 5 个候选人的薄弱点：\n" + report)
-            ),
-            new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-            null
-        ));
-        String json = stripJsonFence(content);
+        LlmPort.CompletionResult weaknessCompletion = llmPort.complete(
+            new LlmPort.ModelExecutionRequest(
+                session.getModelExecutionSnapshotId(),
+                "weaknesses",
+                PromptIds.REPORT,
+                LlmPort.ResponseMode.JSON_ARRAY,
+                List.of(
+                    new LlmPort.Message("system", """
+                        你是面试分析助手。请只输出严格 JSON 数组，不要输出 Markdown。
+                        每个元素必须包含 category 和 description 两个字段。
+                        示例：[{"category":"JVM 内存模型","description":"对堆、栈和 GC 场景回答不完整"}]
+                        """),
+                    new LlmPort.Message("user", "请从以下面试报告中提取 1 到 5 个候选人的薄弱点：\n" + report)
+                ),
+                List.of(),
+                List.of()
+            ));
+        String json = stripJsonFence(weaknessCompletion.content());
         List<WeaknessExtractionItem> items = objectMapper.readValue(json, new TypeReference<>() {});
         ArrayList<AccountWeakness> weaknesses = new ArrayList<>();
         for (WeaknessExtractionItem item : items) {
@@ -243,8 +222,19 @@ public class GenerateInterviewReport {
     private record WeaknessExtractionItem(String category, String description) {}
 
     public enum Outcome {
-        COMPLETED,
+        GENERATED,
         SKIPPED
+    }
+
+    public record GenerationResult(
+        Outcome outcome,
+        String reportJson,
+        ScoreHistory scoreHistory,
+        List<AccountWeakness> weaknesses
+    ) {
+        public GenerationResult {
+            weaknesses = weaknesses == null ? List.of() : List.copyOf(weaknesses);
+        }
     }
 
     public static class ReportGenerationException extends RuntimeException {

@@ -2,14 +2,11 @@ package com.prelude.interview.application;
 
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.LlmSelection;
 import com.prelude.interview.application.port.InterviewMessageRepository;
 import com.prelude.interview.application.port.InterviewSessionRepository;
-import com.prelude.llm.ChatPort;
-import com.prelude.llm.ChatRequest;
-import com.prelude.llm.LlmPurpose;
-import com.prelude.llm.PromptIds;
-import com.prelude.llm.PromptRegistry;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.PromptIds;
+import com.prelude.llm.api.PromptRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,7 +26,7 @@ public class InterviewSummaryService {
 
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewMessageRepository interviewMessageRepository;
-    private final ChatPort chatPort;
+    private final LlmPort llmPort;
     private final PromptRegistry promptRegistry;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
@@ -66,18 +63,20 @@ public class InterviewSummaryService {
             "已有摘要历史：" + (existingSummary != null ? existingSummary : "无") + "\n" +
             "新增面试记录：\n" + builder;
 
-        return chatPort.complete(ChatRequest.snapshot(
-            session.getAccountId(),
-            session.getId(),
-            LlmPurpose.CHAT,
-            PromptIds.SUMMARY,
-            List.of(
-                Map.of("role", "system", "content", promptRegistry.load(PromptIds.SUMMARY)),
-                Map.of("role", "user", "content", prompt)
-            ),
-            new LlmSelection(session.getLlmProvider(), session.getLlmModel()),
-            null
-        ));
+        LlmPort.CompletionResult completion = llmPort.complete(
+            new LlmPort.ModelExecutionRequest(
+                session.getModelExecutionSnapshotId(),
+                "summary",
+                PromptIds.SUMMARY,
+                LlmPort.ResponseMode.PLAIN_TEXT,
+                List.of(
+                    new LlmPort.Message("system", promptRegistry.load(PromptIds.SUMMARY)),
+                    new LlmPort.Message("user", prompt)
+                ),
+                List.of(),
+                List.of()
+            ));
+        return completion.content();
     }
 
     private List<InterviewMessage> dialogMessages(Long sessionId) {

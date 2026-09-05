@@ -28,7 +28,7 @@ const titles: Record<SettingsSection, string> = {
 export function SettingsModal({
   open,
   section,
-  providerKey,
+  provider,
   intent,
   requestId,
   onSectionChange,
@@ -36,7 +36,7 @@ export function SettingsModal({
 }: {
   open: boolean
   section: SettingsSection
-  providerKey?: string
+  provider?: string
   intent?: SettingsIntent
   requestId: number
   onSectionChange: (section: SettingsSection) => void
@@ -120,7 +120,7 @@ export function SettingsModal({
                 key={intent === 'create-position' ? `create-${requestId}` : 'manage'}
               />
             )}
-            {section === 'llm' && <LlmSettingsPanel providerKey={providerKey} />}
+            {section === 'llm' && <LlmSettingsPanel providerKey={provider} />}
             {section === 'theme' && <ThemePanel />}
           </div>
         </main>

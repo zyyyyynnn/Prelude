@@ -3,14 +3,3 @@ INSERT INTO `position_template` (`name`, `system_prompt`) VALUES
 ('前端工程师', '你是一名前端工程师岗位的面试官，请重点考察候选人在 React、TypeScript、浏览器原理、工程化和交互实现方面的理解。提问风格客观直接，注重场景化追问。'),
 ('算法工程师', '你是一名算法工程师岗位的面试官，请重点考察候选人在数据结构、算法设计和机器学习基础方面的理解与表达。请根据候选人回答逐步加深难度。') AS new
 ON DUPLICATE KEY UPDATE `system_prompt` = new.`system_prompt`;
-
-INSERT INTO `llm_provider_config` (`provider_key`, `display_name`, `base_url`, `available_models`, `enabled`) VALUES
-('deepseek', 'DeepSeek', 'https://api.deepseek.com/chat/completions', '["deepseek-v4-pro","deepseek-v4-flash"]', 1),
-('openai-responses', 'OpenAI Responses', '', '[]', 1),
-('openai-chat-completions', 'OpenAI Chat Completions', '', '[]', 1),
-('anthropic-messages', 'Anthropic Messages', '', '[]', 1) AS new
-ON DUPLICATE KEY UPDATE
-  `display_name` = new.`display_name`,
-  `base_url` = new.`base_url`,
-  `available_models` = new.`available_models`,
-  `enabled` = new.`enabled`;
