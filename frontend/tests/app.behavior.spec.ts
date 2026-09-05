@@ -1332,7 +1332,7 @@ test('@smoke renders analytics charts and recent-score labels from the React das
     const path = new URL(route.request().url()).pathname
     const data =
       path.endsWith('/radar')
-        ? { technical: 8.2, expression: 7.6, logic: 8.4, sessionCount: 5 }
+        ? { technical: 7.5, expression: 6.5, logic: 8, sessionCount: 2 }
         : path.endsWith('/trend')
           ? [
               { sessionId: 1, createdAt: '2026-08-01T00:00:00Z', technical: 7, expression: 6, logic: 8 },
@@ -1349,9 +1349,9 @@ test('@smoke renders analytics charts and recent-score labels from the React das
 
   await expect(page.getByRole('heading', { name: '能力雷达' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
-  await expect(page.getByRole('img', { name: /技术能力 8\.2/ })).toHaveCount(1)
+  await expect(page.getByRole('img', { name: /技术能力 7\.5/ })).toHaveCount(1)
   await expect(page.getByRole('img', { name: '最近 2 场面试的分数趋势' })).toHaveCount(1)
-  await expect(page.getByText('最近 5 场均分')).toHaveCount(3)
+  await expect(page.getByText('最近 2 场均分')).toHaveCount(3)
   await expect(page.getByText('结构')).toBeVisible()
   await expect(page.getByText('走势')).toBeVisible()
   await expect(page.getByText('聚合')).toBeVisible()

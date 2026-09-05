@@ -83,7 +83,7 @@ async function installApi(page: Page) {
       capability: deepSeekCapability(),
     }
     else if (path === '/api/analytics/radar')
-      data = { technical: 8, expression: 7.5, logic: 8.5, sessionCount: 5 }
+      data = { technical: 8, expression: 7, logic: 9, sessionCount: 1 }
     else if (path === '/api/analytics/trend')
       data = [
         {
@@ -151,6 +151,7 @@ test('@smoke keeps the complete product routes operational', async ({ page }) =>
   await expect(page.getByRole('dialog', { name: '全局设置' })).toBeHidden()
   await page.getByRole('link', { name: '数据看板' }).click()
   await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
+  await expect(page.getByText('最近 1 场均分')).toHaveCount(3)
 })
 
 test('@byok exposes only the four governed provider protocols', async ({ page }) => {

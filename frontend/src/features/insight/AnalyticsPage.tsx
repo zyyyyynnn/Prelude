@@ -80,7 +80,7 @@ export function AnalyticsPage() {
                 <article className="analytics-score-card" key={label}>
                   <p className="analytics-score-card__label">{label}</p>
                   <strong className="analytics-score-card__value">{value.toFixed(1)}</strong>
-                  <p className="analytics-score-card__meta">最近 5 场均分</p>
+                  <p className="analytics-score-card__meta">最近 {radar.data.sessionCount} 场均分</p>
                 </article>
               ))}
             </div>
