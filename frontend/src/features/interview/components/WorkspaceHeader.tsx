@@ -2,13 +2,6 @@ import { Download } from 'lucide-react'
 import { Button, IconTooltip, SegmentedControl } from '@/shared/ui'
 import type { InterviewStageName } from '../types'
 
-const stageLabels: Record<InterviewStageName, string> = {
-  warmup: '破冰',
-  technical: '技术问答',
-  deep_dive: '深挖追问',
-  closing: '收尾',
-}
-
 export function WorkspaceHeader({
   title,
   stage = 'warmup',
@@ -47,13 +40,6 @@ export function WorkspaceHeader({
               {headerTitle}
             </h1>
           </IconTooltip>
-          <span className="status-badge">
-            {status === 'generating'
-              ? '报告生成中'
-              : status === 'finished'
-                ? '已完成'
-                : stageLabels[stage]}
-          </span>
         </div>
         <div className="workspace-header__right">
           {showGenerateButton && (

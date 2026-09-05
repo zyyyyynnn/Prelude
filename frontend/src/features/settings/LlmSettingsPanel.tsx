@@ -1,7 +1,7 @@
 import { Eye, EyeOff, RefreshCw, Trash2 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Field, IconTooltip, Input, Select } from '@/shared/ui'
-import { useLlmSettings } from './useLlmSettings'
+import { REASONING_LABELS, useLlmSettings } from './useLlmSettings'
 import { fetchLlmConfig, fetchProviders } from './api'
 
 export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
@@ -14,7 +14,7 @@ export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
     return <div className="empty-state">{error?.message ?? '模型配置不可用'}</div>
   return (
     <LlmSettingsForm
-      key={`${providerKey ?? config.data.providerKey}:${config.data.baseUrl}:${config.data.model}`}
+      key={`${providerKey ?? config.data.provider}:${config.data.customEndpointUrl}:${config.data.model}`}
       config={config.data}
       providers={providers.data}
       providerKey={providerKey}
@@ -25,37 +25,57 @@ export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
 function LlmSettingsForm({
   config,
   providers,
-  providerKey,
 }: {
   config: Awaited<ReturnType<typeof fetchLlmConfig>>
   providers: Awaited<ReturnType<typeof fetchProviders>>
   providerKey?: string
 }) {
-  const state = useLlmSettings(config, providers, providerKey)
+  const state = useLlmSettings(config, providers)
   const endpointHint = state.protocol
     ? `填写接口根地址，系统会请求 ${state.protocol.endpointSuffix}。`
-    : 'DeepSeek 使用系统配置的服务地址。'
+    : '内置接入方式使用系统配置的服务地址。'
   return (
     <div className="panel-content-wrapper">
-      <Field label="服务协议" htmlFor="llm-provider">
-        <Select
-          id="llm-provider"
-          value={state.draft.providerKey}
-          options={state.providers.map((provider) => ({
-            value: provider.providerKey,
-            label: provider.displayName,
-          }))}
-          onValueChange={state.selectProvider}
-        />
-      </Field>
+      <div className="llm-model-selection-grid">
+        <Field label="接入方式" htmlFor="llm-provider">
+          <Select
+            id="llm-provider"
+            value={state.draft.provider}
+            options={state.providers.map((provider) => ({
+              value: provider.providerKey,
+              label: provider.displayName,
+            }))}
+            onValueChange={state.selectProvider}
+          />
+        </Field>
+        <Field label="模型" htmlFor="llm-model">
+          {state.models.length ? (
+            <Select
+              id="llm-model"
+              value={state.draft.model}
+              options={[...new Set([state.draft.model, ...state.models.map((item) => item.model)])]
+                .filter(Boolean)
+                .map((model) => ({ value: model, label: model }))}
+              onValueChange={state.selectModel}
+            />
+          ) : (
+            <Input
+              id="llm-model"
+              value={state.draft.model}
+              placeholder="输入模型 ID"
+              onChange={(event) => state.update('model', event.target.value)}
+            />
+          )}
+        </Field>
+      </div>
       {state.custom && (
         <Field label="Base URL" htmlFor="llm-base-url" hint={endpointHint}>
           <div className="endpoint-row">
             <Input
               id="llm-base-url"
-              value={state.draft.baseUrl ?? ''}
+              value={state.draft.customEndpointUrl ?? ''}
               placeholder={state.protocol?.placeholder}
-              onChange={(event) => state.update('baseUrl', event.target.value)}
+              onChange={(event) => state.update('customEndpointUrl', event.target.value)}
             />
             {state.protocol?.modelDiscovery && (
               <Button
@@ -71,25 +91,6 @@ function LlmSettingsForm({
           </div>
         </Field>
       )}
-      <Field label="模型" htmlFor="llm-model">
-        {state.models.length ? (
-          <Select
-            id="llm-model"
-            value={state.draft.model}
-            options={[...new Set([state.draft.model, ...state.models])]
-              .filter(Boolean)
-              .map((model) => ({ value: model, label: model }))}
-            onValueChange={(value) => state.update('model', value)}
-          />
-        ) : (
-          <Input
-            id="llm-model"
-            value={state.draft.model}
-            placeholder="输入模型 ID"
-            onChange={(event) => state.update('model', event.target.value)}
-          />
-        )}
-      </Field>
       <Field
         label="API Key"
         htmlFor="llm-api-key"
@@ -137,33 +138,34 @@ function LlmSettingsForm({
       <section className="settings-form-section">
         <h3 className="settings-form-section__title">高级设置</h3>
         <div className="advanced-grid">
-          <Field label="最大回复长度" htmlFor="llm-max-tokens">
+          {state.selectedCapability
+          && (state.custom
+            || state.selectedCapability.reasoning
+            || !state.selectedCapability.supportedReasoningLevels.includes(
+              state.draft.reasoningLevel ?? 'AUTO',
+            )) ? (
+            <Field label="思考深度" htmlFor="llm-reasoning-level">
+              <Select
+                id="llm-reasoning-level"
+                value={state.draft.reasoningLevel ?? ''}
+                options={state.reasoningLevels.map((level) => ({
+                  value: level,
+                  label: REASONING_LABELS[level],
+                }))}
+                onValueChange={(value) => state.update('reasoningLevel', value as never)}
+              />
+            </Field>
+          ) : null}
+          <Field label="最大回复长度" htmlFor="llm-max-output-tokens">
             <Select
-              id="llm-max-tokens"
-              value={state.draft.maxTokens ? String(state.draft.maxTokens) : ''}
+              id="llm-max-output-tokens"
+              value={String(state.draft.maxOutputTokens ?? 4096)}
               options={[
-                { value: '', label: '模型默认' },
-                { value: '4096', label: '常规 (4096)' },
-                { value: '8192', label: '长回复 (8192)' },
-                { value: '32768', label: '深度分析 (32768)' },
+                { value: '4096', label: '常规 · 4,096 tokens' },
+                { value: '8192', label: '长回复 · 8,192 tokens' },
+                { value: '32768', label: '深度分析 · 32,768 tokens' },
               ]}
-              onValueChange={(value) =>
-                state.update('maxTokens', value ? Number(value) : undefined)
-              }
-            />
-          </Field>
-          <Field label="思考深度" htmlFor="llm-thinking-depth">
-            <Select
-              id="llm-thinking-depth"
-              value={state.draft.thinkingDepth ?? ''}
-              options={[
-                { value: '', label: '默认' },
-                { value: 'low', label: '低' },
-                { value: 'medium', label: '中' },
-                { value: 'high', label: '高' },
-                { value: 'xhigh', label: '极高' },
-              ]}
-              onValueChange={(value) => state.update('thinkingDepth', value || null)}
+              onValueChange={(value) => state.update('maxOutputTokens', Number(value))}
             />
           </Field>
         </div>
@@ -174,15 +176,7 @@ function LlmSettingsForm({
         </p>
       )}
       <div className="settings-inline-actions settings-inline-actions--header">
-        <Button
-          variant="secondary"
-          loading={state.testing}
-          disabled={state.saving}
-          onClick={state.test}
-        >
-          测试连接
-        </Button>
-        <Button loading={state.saving} disabled={state.testing} onClick={state.save}>
+        <Button loading={state.saving} onClick={state.save}>
           保存设置
         </Button>
       </div>

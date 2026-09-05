@@ -8,26 +8,6 @@ public interface AccountMapper extends BaseMapper<Account> {
 
     @Update("""
         UPDATE `user_account`
-        SET `llm_provider` = #{providerKey},
-            `llm_base_url` = #{baseUrl},
-            `llm_model` = #{model},
-            `llm_api_key_encrypted` = #{encryptedApiKey},
-            `llm_max_tokens` = #{maxTokens},
-            `llm_thinking_depth` = #{thinkingDepth}
-        WHERE `id` = #{accountId}
-        """)
-    int updateLlmConfiguration(
-        @Param("accountId") Long accountId,
-        @Param("providerKey") String providerKey,
-        @Param("baseUrl") String baseUrl,
-        @Param("model") String model,
-        @Param("encryptedApiKey") String encryptedApiKey,
-        @Param("maxTokens") Integer maxTokens,
-        @Param("thinkingDepth") String thinkingDepth
-    );
-
-    @Update("""
-        UPDATE `user_account`
         SET `username` = #{username},
             `email` = #{email},
             `theme_preference` = #{themePreference},

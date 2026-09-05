@@ -1,42 +1,50 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useFeedback } from '@/shared/ui/feedback'
-import { discoverModels, saveLlmConfig, testLlmConfig } from './api'
+import { discoverCapabilities, discoverModels, saveLlmConfig } from './api'
 import {
   getCustomProviderMeta,
   isCustomProvider,
   normalizeCustomBaseUrl,
 } from './provider-protocol'
-import type { LlmConfigPayload, LlmConfigResponse, LlmProviderResponse } from './types'
+import type {
+  LlmConfigPayload,
+  LlmConfigResponse,
+  ModelCapabilityResponse,
+  LlmProviderResponse,
+  ReasoningLevel,
+} from './types'
 
 export function useLlmSettings(
   config: LlmConfigResponse,
   providers: LlmProviderResponse[],
-  requestedProviderKey?: string,
 ) {
   const feedback = useFeedback()
   const client = useQueryClient()
-  const initialProviderKey = providers.some((item) => item.providerKey === requestedProviderKey)
-    ? requestedProviderKey!
-    : config.providerKey
-  const initialProvider = providers.find((item) => item.providerKey === initialProviderKey)
-  const currentProviderSelected = initialProviderKey === config.providerKey
+  const initialProvider = config.provider
   const [draft, setDraft] = useState<LlmConfigPayload>({
-    providerKey: initialProviderKey,
-    baseUrl: currentProviderSelected ? (config.baseUrl ?? '') : '',
-    model: currentProviderSelected ? config.model : (initialProvider?.availableModels[0] ?? ''),
-    maxTokens: config.maxTokens ?? undefined,
-    thinkingDepth: config.thinkingDepth,
+    provider: initialProvider,
+    customEndpointUrl: config.customEndpointUrl ?? '',
+    model: config.model,
+    apiKey: undefined,
+    reasoningLevel: config.reasoningLevel,
+    maxOutputTokens: config.maxOutputTokens,
+    fallbackModels: config.fallbackModels,
   })
-  const [models, setModels] = useState<string[]>(
-    () => initialProvider?.availableModels ?? [],
-  )
+  const [models, setModels] = useState<ModelCapabilityResponse[]>(() => {
+    const provider = providers.find((item) => item.providerKey === config.provider)
+    if (provider?.models.length) return provider.models
+    return config.capability.model === config.model ? [config.capability] : []
+  })
   const [showKey, setShowKey] = useState(false)
   const [testMessage, setTestMessage] = useState('')
 
-  const provider = providers.find((item) => item.providerKey === draft.providerKey)
-  const protocol = getCustomProviderMeta(draft.providerKey)
-  const custom = isCustomProvider(draft.providerKey)
+  const custom = isCustomProvider(draft.provider)
+  const protocol = getCustomProviderMeta(draft.provider)
+  const selectedCapability = models.find((item) => item.model === draft.model)
+    ?? (config.provider === draft.provider && config.model === draft.model ? config.capability : undefined)
+  const reasoningLevels = selectedCapability?.supportedReasoningLevels ?? []
+
   const update = <K extends keyof LlmConfigPayload>(key: K, value: LlmConfigPayload[K]) => {
     setDraft((current) => ({ ...current, [key]: value }))
     setTestMessage('')
@@ -44,8 +52,12 @@ export function useLlmSettings(
   const payload = useMemo(
     () => ({
       ...draft,
-      baseUrl: custom ? normalizeCustomBaseUrl(draft.baseUrl ?? '', draft.providerKey) : undefined,
+      customEndpointUrl: custom
+        ? normalizeCustomBaseUrl(draft.customEndpointUrl ?? '', draft.provider)
+        : undefined,
       apiKey: draft.apiKey?.trim() || undefined,
+      reasoningLevel: draft.reasoningLevel,
+      fallbackModels: draft.fallbackModels ?? [],
     }),
     [custom, draft],
   )
@@ -57,36 +69,49 @@ export function useLlmSettings(
       setDraft((current) => ({
         ...current,
         apiKey: undefined,
-        baseUrl: result.baseUrl ?? '',
+        customEndpointUrl: result.customEndpointUrl ?? '',
         model: result.model,
-        maxTokens: result.maxTokens ?? undefined,
-        thinkingDepth: result.thinkingDepth,
+        reasoningLevel: result.reasoningLevel,
+        maxOutputTokens: result.maxOutputTokens,
+        fallbackModels: result.fallbackModels,
       }))
+      setModels(() => {
+        const provider = providers.find((item) => item.providerKey === result.provider)
+        if (provider?.models.length) return provider.models
+        return [result.capability]
+      })
       feedback.notify('LLM 配置已保存', 'success')
     },
     onError: (error) => feedback.notify(error.message, 'error'),
   })
-  const test = useMutation({
-    mutationFn: () => testLlmConfig(payload),
-    onSuccess: (result) => {
-      setTestMessage(result.message)
-      feedback.notify(result.message, result.ok ? 'success' : 'error')
+  const capabilityProbe = useMutation({
+    mutationFn: (model: string) =>
+      discoverCapabilities({
+        provider: draft.provider,
+        baseUrl: payload.customEndpointUrl ?? '',
+        apiKey: payload.apiKey,
+        model,
+      }),
+    onSuccess: (capability) => {
+      setModels((current) => {
+        const withoutCurrent = current.filter((item) => item.model !== capability.model)
+        return [...withoutCurrent, capability]
+      })
     },
-    onError: (error) => {
-      setTestMessage(error.message)
-      feedback.notify(error.message, 'error')
+    onError: () => {
+      feedback.notify('模型能力检测失败；未确认能力前仅可使用服务端已返回的能力', 'info')
     },
   })
   const discover = useMutation({
     mutationFn: () =>
       discoverModels({
-        providerKey: draft.providerKey,
-        baseUrl: payload.baseUrl ?? '',
+        provider: draft.provider,
+        baseUrl: payload.customEndpointUrl ?? '',
         apiKey: payload.apiKey,
       }),
     onSuccess: (result) => {
       setModels(result.models)
-      setDraft((current) => ({ ...current, baseUrl: result.baseUrl }))
+      setDraft((current) => ({ ...current, customEndpointUrl: result.baseUrl }))
       feedback.notify(
         result.models.length ? '模型列表已更新' : '未读取到模型，可手动填写模型 ID',
         result.models.length ? 'success' : 'info',
@@ -95,50 +120,81 @@ export function useLlmSettings(
     onError: (error) => feedback.notify(error.message, 'error'),
   })
 
-  function selectProvider(providerKey: string) {
-    const next = providers.find((item) => item.providerKey === providerKey)
+  function selectProvider(provider: string) {
+    const next = providers.find((item) => item.providerKey === provider)
     setDraft((current) => ({
       ...current,
-      providerKey,
+      provider,
       model: '',
-      baseUrl: isCustomProvider(providerKey) ? '' : undefined,
+      customEndpointUrl: isCustomProvider(provider) ? '' : undefined,
       apiKey: undefined,
     }))
-    setModels(next?.availableModels ?? [])
+    setModels(next?.models ?? [])
     setTestMessage('')
   }
+  function selectModel(model: string) {
+    update('model', model)
+    if (isCustomProvider(draft.provider) && model.trim() && payload.customEndpointUrl) {
+      capabilityProbe.mutate(model.trim())
+    }
+  }
   function validate() {
-    if (!draft.providerKey || !draft.model.trim()) {
+    if (!draft.provider || !draft.model.trim()) {
       feedback.notify('请选择接入方式并填写模型', 'error')
       return false
     }
-    if (custom && !payload.baseUrl) {
+    if (custom && !payload.customEndpointUrl) {
       feedback.notify('请填写 Base URL', 'error')
+      return false
+    }
+    const level = draft.reasoningLevel ?? 'AUTO'
+    if (selectedCapability && !selectedCapability.supportedReasoningLevels.includes(level)) {
+      feedback.notify('当前思考深度与所选模型不兼容，请显式选择该模型支持的思考深度', 'error')
+      return false
+    }
+    if (!selectedCapability && level !== 'AUTO') {
+      feedback.notify('所选模型能力尚未确认，不能沿用当前思考深度', 'error')
+      return false
+    }
+    return true
+  }
+  function validateDiscovery() {
+    if (!custom || !payload.customEndpointUrl) {
+      feedback.notify('请先填写 Base URL', 'error')
       return false
     }
     return true
   }
   return {
     config,
-    providers: providers.filter((item) => item.enabled === 1),
-    provider,
+    providers,
     protocol,
     custom,
     draft,
     models,
+    selectedCapability,
+    reasoningLevels,
     showKey,
     testMessage,
     saving: save.isPending,
-    testing: test.isPending,
     discovering: discover.isPending,
     update,
     selectProvider,
+    selectModel,
     setShowKey,
     save: () => validate() && save.mutate(),
-    test: () => validate() && test.mutate(),
     discover: () => {
       if (!protocol?.modelDiscovery) return
-      if (validate()) discover.mutate()
+      if (validateDiscovery()) discover.mutate()
     },
   }
+}
+
+export const REASONING_LABELS: Record<ReasoningLevel, string> = {
+  AUTO: '默认',
+  LOW: '低',
+  MEDIUM: '中',
+  HIGH: '高',
+  XHIGH: '超高',
+  MAX: '最大',
 }

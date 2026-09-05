@@ -2,30 +2,45 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { installAnonymousSession } from './auth-bootstrap'
 
+const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
+  provider: 'deepseek',
+  model,
+  reasoning: true,
+  structuredOutput: true,
+  toolCalling: true,
+  streaming: true,
+  vision: false,
+  multilingual: true,
+  longContext: true,
+  embedding: false,
+  nativeRealtimeVoice: false,
+  supportedReasoningLevels: ['AUTO', 'LOW', 'HIGH', 'MAX'],
+})
+
 const providers = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    availableModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
-    enabled: 1,
+    customEndpoint: false,
+    models: [deepSeekCapability(), deepSeekCapability('deepseek-v4-flash')],
   },
   {
     providerKey: 'openai-responses',
     displayName: 'OpenAI Responses',
-    availableModels: ['gpt-5.4'],
-    enabled: 1,
+    customEndpoint: true,
+    models: [],
   },
   {
     providerKey: 'openai-chat-completions',
     displayName: 'OpenAI Chat Completions',
-    availableModels: ['gpt-4.1'],
-    enabled: 1,
+    customEndpoint: true,
+    models: [],
   },
   {
     providerKey: 'anthropic-messages',
     displayName: 'Anthropic Messages',
-    availableModels: ['claude-sonnet-4-6'],
-    enabled: 1,
+    customEndpoint: true,
+    models: [],
   },
 ]
 
@@ -40,8 +55,6 @@ async function installApi(page: Page) {
           targetPosition: 'Java 后端工程师',
           status: 'ongoing',
           currentStage: 'warmup',
-          llmProvider: 'deepseek',
-          llmModel: 'deepseek-v4-pro',
         },
       ]
     else if (path === '/api/position/list') data = [{ id: 1, name: 'Java 后端工程师' }]
@@ -59,16 +72,18 @@ async function installApi(page: Page) {
     else if (path === '/api/llm/providers') data = providers
     else if (path === '/api/llm/config')
       data = {
-        providerKey: 'deepseek',
-        baseUrl: null,
-        model: 'deepseek-v4-pro',
-        hasApiKey: false,
-        apiKeyMasked: null,
-        maxTokens: null,
-        thinkingDepth: null,
-      }
+      provider: 'deepseek',
+      model: 'deepseek-v4-pro',
+      customEndpointUrl: null,
+      hasApiKey: false,
+      apiKeyMasked: null,
+      reasoningLevel: 'AUTO',
+      maxOutputTokens: 4096,
+      fallbackModels: [],
+      capability: deepSeekCapability(),
+    }
     else if (path === '/api/analytics/radar')
-      data = { technical: 8, expression: 7.5, logic: 8.5, sessionCount: 5 }
+      data = { technical: 8, expression: 7, logic: 9, sessionCount: 1 }
     else if (path === '/api/analytics/trend')
       data = [
         {
@@ -99,7 +114,6 @@ async function installApi(page: Page) {
         messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
         resumeId: 1,
         positionId: 1,
-        llmThinkingDepth: null,
         attachments: [],
       }
     await route.fulfill({
@@ -137,6 +151,7 @@ test('@smoke keeps the complete product routes operational', async ({ page }) =>
   await expect(page.getByRole('dialog', { name: '全局设置' })).toBeHidden()
   await page.getByRole('link', { name: '数据看板' }).click()
   await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
+  await expect(page.getByText('最近 1 场均分')).toHaveCount(3)
 })
 
 test('@byok exposes only the four governed provider protocols', async ({ page }) => {
@@ -144,7 +159,7 @@ test('@byok exposes only the four governed provider protocols', async ({ page })
   await page.goto('/interview')
   await page.getByRole('button', { name: '设置' }).click()
   await page.getByRole('button', { name: '模型管理' }).click()
-  const select = page.getByLabel('服务协议')
+  const select = page.getByLabel('接入方式')
   await select.click()
   const options = page.getByRole('option')
   await expect(options).toHaveCount(4)
@@ -166,6 +181,34 @@ test('@dark restores the governed dark theme before rendering', async ({ page })
     return [style.getPropertyValue('--color-bg'), style.getPropertyValue('--color-text-primary')]
   })
   expect(colors.every((value) => value.trim().length > 0)).toBe(true)
+})
+
+test('@dark suppresses transitions while applying theme changes', async ({ page }) => {
+  await installApi(page)
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '主题' }).click()
+  await page.evaluate(() => {
+    window.addEventListener(
+      'prelude-theme-change',
+      () => {
+        document.documentElement.dataset.themeGuardObserved = String(
+          document.documentElement.classList.contains('is-theme-transitioning'),
+        )
+      },
+      { once: true },
+    )
+  })
+  await page.getByRole('radio', { name: /暗色/ }).click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(page.locator('html')).toHaveAttribute('data-theme-guard-observed', 'true')
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+      ),
+  )
+  await expect(page.locator('html')).not.toHaveClass(/is-theme-transitioning/)
 })
 
 test('@visual keeps no-data pages lightweight and typographically consistent', async ({ page }) => {
@@ -322,6 +365,18 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     .locator('.app-sidebar')
     .evaluate((sidebar) => sidebar.getBoundingClientRect().width)
   await page.getByRole('button', { name: '收起侧栏' }).click()
+  const collapsingSidebar = await page.locator('.app-sidebar').evaluate(async (sidebar) => {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    await new Promise((resolve) => setTimeout(resolve, 40))
+    return {
+      width: sidebar.getBoundingClientRect().width,
+      targetWidth: Number.parseFloat(
+        getComputedStyle(sidebar).getPropertyValue('--layout-sidebar-collapsed-inline-size'),
+      ),
+    }
+  })
+  expect(collapsingSidebar.width).toBeLessThan(expandedSidebarWidth)
+  expect(collapsingSidebar.width).toBeGreaterThan(collapsingSidebar.targetWidth)
   await page.locator('.app-sidebar').evaluate(async (sidebar) => {
     await Promise.all(sidebar.getAnimations().map((animation) => animation.finished))
   })
@@ -330,14 +385,18 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.app-sidebar__btn > svg')).every(
       (icon) => icon.getBoundingClientRect().width > 0 && icon.getBoundingClientRect().height > 0,
     ),
-    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every(
-      (label) => label.getBoundingClientRect().width === 0,
-    ),
+    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every((label) => {
+      const style = getComputedStyle(label)
+      return style.visibility === 'hidden' && style.opacity === '0'
+    }),
   }))
   expect(collapsedSidebar.width).toBeLessThan(expandedSidebarWidth)
   expect(collapsedSidebar.iconsVisible).toBe(true)
   expect(collapsedSidebar.labelsHidden).toBe(true)
   await page.getByRole('button', { name: '展开侧栏' }).click()
+  await page.locator('.app-sidebar').evaluate(async (sidebar) => {
+    await Promise.all(sidebar.getAnimations().map((animation) => animation.finished))
+  })
   await expectIconCentered(page.getByRole('button', { name: /模型：/ }))
   await page.screenshot({
     path: test.info().outputPath('interview-desktop.png'),
@@ -410,7 +469,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await modelTrigger.click()
   const modelMenu = page.locator('.prelude-menu--structured[data-open]')
   await expect(modelMenu).toBeVisible()
-  await expect(page.getByRole('menuitem', { name: /服务协议/ })).toHaveCount(0)
+  await expect(page.getByRole('menuitem', { name: /接入方式/ })).toHaveCount(0)
   await expect(page.getByRole('menuitem', { name: /^模型\s/ })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: /思考深度/ })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: '管理模型' })).toBeVisible()
@@ -468,11 +527,47 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await expect(
     page.locator('.settings-inline-actions--header').getByRole('button', { name: '上传简历' }),
   ).toBeVisible()
+  await expect(page.locator('.resume-row__main > svg')).toHaveCount(0)
+  const resumePadding = await page.locator('.resume-row').first().evaluate((row) => {
+    const style = getComputedStyle(row)
+    return [style.paddingInlineStart, style.paddingInlineEnd]
+  })
+  expect(resumePadding[0]).toBe(resumePadding[1])
   await page.getByRole('button', { name: '岗位管理' }).click()
   await expect(
     page.locator('.settings-inline-actions--header').getByRole('button', { name: '创建岗位' }),
   ).toBeVisible()
   await expect(page.locator('.position-settings__item svg')).toHaveCount(0)
+  const positionWorkspace = await page.locator('.position-settings__workspace').evaluate((workspace) => {
+    const [catalog, form] = Array.from(workspace.children)
+    const catalogRect = catalog.getBoundingClientRect()
+    const formRect = form.getBoundingClientRect()
+    const catalogStyle = getComputedStyle(catalog)
+    const formStyle = getComputedStyle(form)
+    const catalogTitle = catalog.querySelector<HTMLElement>('.settings-section__title')!
+    const firstItem = catalog.querySelector<HTMLElement>('.position-settings__item-name')!
+    return {
+      alignedTop: Math.abs(catalogRect.top - formRect.top) < 1,
+      sideBySide: formRect.left > catalogRect.right,
+      matchingPadding: catalogStyle.paddingInlineStart === formStyle.paddingInlineStart,
+      matchingRadius: catalogStyle.borderRadius === formStyle.borderRadius,
+      matchingSurface: catalogStyle.backgroundColor === formStyle.backgroundColor,
+      contentAligned:
+        Math.abs(catalogTitle.getBoundingClientRect().left - firstItem.getBoundingClientRect().left) < 1,
+    }
+  })
+  expect(positionWorkspace).toEqual({
+    alignedTop: true,
+    sideBySide: true,
+    matchingPadding: true,
+    matchingRadius: true,
+    matchingSurface: true,
+    contentAligned: true,
+  })
+  await expect(page.locator('.position-settings__item-name').first()).toHaveCSS(
+    'font-family',
+    /Noto Serif SC/,
+  )
   const positionFields = await page.locator('.position-settings__fields').evaluate((container) => {
     const fields = Array.from(container.children).map((field) => field.getBoundingClientRect())
     return {
@@ -488,11 +583,21 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await page.getByRole('button', { name: '模型管理' }).click()
   const modelSelect = page.getByLabel('模型', { exact: true })
   await expect(modelSelect).toHaveAttribute('role', 'combobox')
+  const modelSelectionLayout = await page
+    .locator('.llm-model-selection-grid')
+    .evaluate((container) => {
+      const fields = Array.from(container.children).map((field) => field.getBoundingClientRect())
+      return {
+        sameRow: Math.abs(fields[0].top - fields[1].top) < 1,
+        sameWidth: Math.abs(fields[0].width - fields[1].width) < 1,
+      }
+    })
+  expect(modelSelectionLayout).toEqual({ sameRow: true, sameWidth: true })
   await modelSelect.click()
   const modelOptions = page.getByRole('option')
   await expect(modelOptions.first()).toBeVisible()
   await page.keyboard.press('Escape')
-  const providerSelect = page.getByLabel('服务协议')
+  const providerSelect = page.getByLabel('接入方式')
   await providerSelect.click()
   const providerOptions = page.getByRole('option')
   await expect(providerOptions).toHaveCount(4)
@@ -522,8 +627,6 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
             targetPosition: longTitle,
             status: 'finished',
             currentStage: 'closing',
-            llmProvider: 'deepseek',
-            llmModel: 'deepseek-v4-pro',
           },
         ],
       }),
@@ -559,7 +662,7 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
   await header.getByRole('button', { name: '报告' }).click()
   await expect(header.getByRole('button', { name: '导出 PDF' })).toBeVisible()
   await expect(header.getByRole('button', { name: '面试' })).toBeVisible()
-  await expect(header.locator('.status-badge')).toBeVisible()
+  await expect(header.locator('.status-badge')).toHaveCount(0)
 
   const geometry = await header
     .locator('.workspace-header__main')

@@ -80,7 +80,7 @@ export function AnalyticsPage() {
                 <article className="analytics-score-card" key={label}>
                   <p className="analytics-score-card__label">{label}</p>
                   <strong className="analytics-score-card__value">{value.toFixed(1)}</strong>
-                  <p className="analytics-score-card__meta">最近 5 场均分</p>
+                  <p className="analytics-score-card__meta">最近 {radar.data.sessionCount} 场均分</p>
                 </article>
               ))}
             </div>
@@ -92,7 +92,7 @@ export function AnalyticsPage() {
                     <h2 className="analytics-panel__title">能力雷达</h2>
                     <p className="analytics-panel__lead">展示最近面试在三项核心维度上的平均水平。</p>
                   </div>
-                  <span className="status-badge">{radar.data.sessionCount} 场</span>
+                  <span className="analytics-panel__meta">{radar.data.sessionCount} 场</span>
                 </div>
                 <Radar data={radar.data} />
               </section>
@@ -114,17 +114,15 @@ export function AnalyticsPage() {
                   <h2 className="analytics-panel__title">薄弱点列表</h2>
                   <p className="analytics-panel__lead">按出现频率汇总薄弱点。</p>
                 </div>
-                <span className="status-badge">{weaknesses.data?.length ?? 0} 类问题</span>
+                <span className="analytics-panel__meta">{weaknesses.data?.length ?? 0} 类问题</span>
               </div>
               <div className="analytics-weakness-list">
                 {weaknesses.data?.length ? (
                   weaknesses.data.map((item) => (
                     <article className="analytics-weakness-item" key={item.category}>
                       <div className="analytics-weakness-item__head">
-                        <div>
-                          <h3 className="analytics-weakness-item__title">{item.category}</h3>
-                          <p className="analytics-weakness-item__summary">出现 {item.count} 次</p>
-                        </div>
+                        <h3 className="analytics-weakness-item__title">{item.category}</h3>
+                        <p className="analytics-weakness-item__summary">出现 {item.count} 次</p>
                       </div>
                       <ul className="analytics-weakness-item__descriptions">
                         {item.descriptions.map((description) => (

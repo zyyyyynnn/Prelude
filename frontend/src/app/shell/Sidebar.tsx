@@ -120,7 +120,10 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
             aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
             onClick={() => setCollapsed((value) => !value)}
           >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            <span className="app-sidebar__toggle-icons" aria-hidden="true">
+              <ChevronLeft className="app-sidebar__toggle-icon app-sidebar__toggle-icon--collapse" />
+              <ChevronRight className="app-sidebar__toggle-icon app-sidebar__toggle-icon--expand" />
+            </span>
           </button>
         </IconTooltip>
       </header>

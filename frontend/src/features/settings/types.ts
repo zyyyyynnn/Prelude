@@ -1,64 +1,67 @@
+/** Reasoning levels come from the backend capability catalog — never guessed. */
+export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
+
+export type ModelCapabilityResponse = {
+  provider: string
+  model: string
+  reasoning: boolean
+  structuredOutput: boolean
+  toolCalling: boolean
+  streaming: boolean
+  vision: boolean
+  multilingual: boolean
+  longContext: boolean
+  embedding: boolean
+  nativeRealtimeVoice: boolean
+  supportedReasoningLevels: ReasoningLevel[]
+}
+
 export type LlmProviderResponse = {
   providerKey: string
   displayName: string
-  availableModels: string[]
-  enabled: number
-}
-
-export type LlmProviderOption = {
-  providerKey: string
-  displayName: string
-  models: string[]
+  customEndpoint: boolean
+  models: ModelCapabilityResponse[]
 }
 
 export type LlmConfigPayload = {
-  providerKey: string
-  baseUrl?: string
+  provider: string
   model: string
+  customEndpointUrl?: string
   apiKey?: string
-  maxTokens?: number
-  thinkingDepth?: string | null
+  reasoningLevel?: ReasoningLevel | null
+  maxOutputTokens?: number
+  fallbackModels?: string[]
 }
 
 export type LlmConfigResponse = {
-  providerKey: string
-  baseUrl: string | null
+  provider: string
   model: string
+  customEndpointUrl: string | null
   hasApiKey: boolean
   apiKeyMasked: string | null
-  maxTokens: number | null
-  thinkingDepth: string | null
+  reasoningLevel: ReasoningLevel
+  maxOutputTokens: number
+  fallbackModels: string[]
+  capability: ModelCapabilityResponse
 }
 
 export type LlmModelDiscoveryPayload = {
-  providerKey: string
+  provider: string
   baseUrl: string
   apiKey?: string
 }
 
 export type LlmModelDiscoveryResponse = {
-  providerKey: string
   baseUrl: string
-  models: string[]
+  models: ModelCapabilityResponse[]
 }
 
-export type LlmConfigTestPayload = {
-  providerKey?: string
-  baseUrl?: string
-  model?: string
+export type LlmCapabilityDiscoveryPayload = {
+  provider: string
+  baseUrl: string
   apiKey?: string
-  maxTokens?: number
-  thinkingDepth?: string | null
-}
-
-export type LlmConfigTestResponse = {
-  providerKey: string
   model: string
-  ok: boolean
-  message: string
 }
-
-export type ThemePreference = 'light' | 'dark' | 'system'
 
 export type UserProfilePayload = {
   username?: string
@@ -69,7 +72,6 @@ export type UserProfilePayload = {
   expectedRevision: number
   operationId: string
 }
-
 export type UserProfileResponse = {
   accountId: number
   username?: string
@@ -78,3 +80,5 @@ export type UserProfileResponse = {
   themePreference?: ThemePreference
   revision: number
 }
+
+export type ThemePreference = 'light' | 'dark' | 'system'

@@ -1,8 +1,7 @@
 package com.prelude.llm.api;
 
 import com.prelude.Result;
-import com.prelude.llm.api.LlmProviderResponse;
-import com.prelude.llm.LlmConfigPort;
+import com.prelude.identity.api.CurrentAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,30 +17,79 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LlmController {
 
-    private final LlmConfigPort llmConfigPort;
+    private final LlmPort llmPort;
+    private final CurrentAccount currentAccount;
 
     @GetMapping("/providers")
-    public Result<List<LlmProviderResponse>> providers() {
-        return Result.success(llmConfigPort.listProviders());
+    public Result<List<ProviderDescriptorView>> providers() {
+        return Result.success(llmPort.listModels(currentAccount.requireId()));
     }
 
     @GetMapping("/config")
-    public Result<UserLlmConfigResponse> config() {
-        return Result.success(llmConfigPort.getCurrentUserConfig());
+    public Result<ModelConfigurationView> config() {
+        return Result.success(llmPort.currentConfiguration(currentAccount.requireId()));
     }
 
     @PutMapping("/config")
-    public Result<UserLlmConfigResponse> updateConfig(@jakarta.validation.Valid @RequestBody UserLlmConfigRequest request) {
-        return Result.success(llmConfigPort.saveCurrentUserConfig(request));
-    }
-
-    @PostMapping("/config/test")
-    public Result<LlmConfigTestResponse> testConfig(@RequestBody(required = false) LlmConfigTestRequest request) {
-        return Result.success(llmConfigPort.testConfig(request));
+    public Result<ModelConfigurationView> updateConfig(
+        @jakarta.validation.Valid @RequestBody UpdateConfigurationRequest request) {
+        return Result.success(llmPort.saveConfiguration(currentAccount.requireId(),
+            new SaveConfigurationCommand(
+                request.provider(),
+                request.model(),
+                request.customEndpointUrl(),
+                request.apiKey(),
+                request.reasoningLevel(),
+                request.maxOutputTokens(),
+                request.fallbackModels()
+            )));
     }
 
     @PostMapping("/config/discover-models")
-    public Result<LlmModelDiscoveryResponse> discoverModels(@jakarta.validation.Valid @RequestBody LlmModelDiscoveryRequest request) {
-        return Result.success(llmConfigPort.discoverModels(request));
+    public Result<LlmPort.DiscoveredModelsView> discoverModels(
+        @jakarta.validation.Valid @RequestBody DiscoverModelsRequest request) {
+        return Result.success(llmPort.discoverCustomModels(currentAccount.requireId(),
+            new LlmPort.DiscoverModelsCommand(request.provider(), request.baseUrl(), request.apiKey())));
+    }
+
+    @PostMapping("/config/discover-capabilities")
+    public Result<ModelCapabilityResponse> discoverCapabilities(
+        @jakarta.validation.Valid @RequestBody DiscoverModelCapabilityRequest request) {
+        return Result.success(llmPort.discoverCustomModelCapability(currentAccount.requireId(),
+            new LlmPort.DiscoverModelCapabilityCommand(
+                request.provider(), request.baseUrl(), request.apiKey(), request.model())));
+    }
+
+    public record UpdateConfigurationRequest(
+        @jakarta.validation.constraints.NotBlank(message = "provider 不能为空")
+        String provider,
+        @jakarta.validation.constraints.NotBlank(message = "model 不能为空")
+        String model,
+        String customEndpointUrl,
+        String apiKey,
+        String reasoningLevel,
+        Integer maxOutputTokens,
+        List<String> fallbackModels
+    ) {
+    }
+
+    public record DiscoverModelsRequest(
+        @jakarta.validation.constraints.NotBlank(message = "provider 不能为空")
+        String provider,
+        @jakarta.validation.constraints.NotBlank(message = "baseUrl 不能为空")
+        String baseUrl,
+        String apiKey
+    ) {
+    }
+
+    public record DiscoverModelCapabilityRequest(
+        @jakarta.validation.constraints.NotBlank(message = "provider 不能为空")
+        String provider,
+        @jakarta.validation.constraints.NotBlank(message = "baseUrl 不能为空")
+        String baseUrl,
+        String apiKey,
+        @jakarta.validation.constraints.NotBlank(message = "model 不能为空")
+        String model
+    ) {
     }
 }

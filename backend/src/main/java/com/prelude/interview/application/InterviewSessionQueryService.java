@@ -6,6 +6,7 @@ import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
 import com.prelude.interview.application.port.InterviewMessageRepository;
 import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.llm.api.LlmPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ public class InterviewSessionQueryService {
     private final InterviewResponseAssembler interviewResponseAssembler;
     private final InterviewSessionAccess sessionAccess;
     private final AttachmentContextPort attachmentContextPort;
+    private final LlmPort llmPort;
 
     public List<InterviewSessionSummary> listCurrentUserSessions() {
         return interviewSessionRepository.listByUser(sessionAccess.currentAccountId())
@@ -34,12 +36,15 @@ public class InterviewSessionQueryService {
         InterviewSession session = sessionAccess.requireOwned(sessionId, sessionAccess.currentAccountId());
         List<InterviewStage> stages = interviewStageManager.listStages(sessionId);
         List<InterviewMessage> messages = interviewMessageRepository.listBySession(sessionId);
+        LlmPort.FrozenModelConfiguration modelConfiguration = llmPort.frozenConfiguration(
+            session.getAccountId(), session.getModelExecutionSnapshotId());
         List<InterviewAttachmentView> attachments = attachmentContextPort
             .list(session.getAccountId(), "interview", sessionId)
             .stream()
             .map(item -> new InterviewAttachmentView(
                 item.id(), item.fileName(), item.mediaType(), item.size(), item.image()))
             .toList();
-        return interviewResponseAssembler.toMessagesResponse(session, stages, messages, attachments);
+        return interviewResponseAssembler.toMessagesResponse(
+            session, stages, messages, modelConfiguration, attachments);
     }
 }

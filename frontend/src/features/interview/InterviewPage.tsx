@@ -8,6 +8,7 @@ import { printInterviewReport, ReportPanel } from '@/features/report'
 import {
   fetchLlmConfig,
   fetchProviders,
+  REASONING_LABELS,
   saveLlmConfig,
   useSettings,
   type LlmConfigPayload,
@@ -17,7 +18,7 @@ import { fetchPositions } from '@/features/template'
 import { Button } from '@/shared/ui'
 import { RoseThree } from '@/shared/brand/RoseThree'
 import { useFeedback } from '@/shared/ui/feedback'
-import { fetchSessions, startInterview } from './api'
+import { startInterview } from './api'
 import { InterviewAnswerComposer, InterviewSetupComposer } from './components/InterviewComposer'
 import { MessageThread } from './components/MessageThread'
 import { WorkspaceHeader } from './components/WorkspaceHeader'
@@ -68,7 +69,7 @@ function InterviewSetup() {
           ? {
               ...current,
               model: payload.model,
-              thinkingDepth: payload.thinkingDepth ?? null,
+              reasoningLevel: payload.reasoningLevel ?? current.reasoningLevel,
             }
           : current,
       )
@@ -91,15 +92,26 @@ function InterviewSetup() {
     },
     onError: (error) => feedback.notify(error.message, 'error'),
   })
-  function updateModel(patch: Pick<LlmConfigPayload, 'model'> | Pick<LlmConfigPayload, 'thinkingDepth'>) {
+  function updateModel(
+    patch: Pick<LlmConfigPayload, 'model'> | Pick<LlmConfigPayload, 'reasoningLevel'>,
+  ) {
     if (!llmConfig.data) return
+    if ('model' in patch) {
+      const provider = providers.data?.find((item) => item.providerKey === llmConfig.data.provider)
+      const capability = provider?.models.find((item) => item.model === patch.model)
+      if (capability && !capability.supportedReasoningLevels.includes(llmConfig.data.reasoningLevel)) {
+        feedback.notify('该模型不支持当前思考深度，请先显式选择兼容的思考深度', 'error')
+        return
+      }
+    }
     saveModel.mutate({
-      providerKey: llmConfig.data.providerKey,
-      baseUrl: llmConfig.data.baseUrl ?? undefined,
+      provider: llmConfig.data.provider,
+      customEndpointUrl: llmConfig.data.customEndpointUrl ?? undefined,
       model: 'model' in patch ? patch.model : llmConfig.data.model,
-      maxTokens: llmConfig.data.maxTokens ?? undefined,
-      thinkingDepth:
-        'thinkingDepth' in patch ? patch.thinkingDepth : llmConfig.data.thinkingDepth,
+      reasoningLevel:
+        'reasoningLevel' in patch ? patch.reasoningLevel : llmConfig.data.reasoningLevel,
+      maxOutputTokens: llmConfig.data.maxOutputTokens,
+      fallbackModels: llmConfig.data.fallbackModels,
     })
   }
   const error = positions.error || resumes.error || llmConfig.error || providers.error
@@ -141,8 +153,8 @@ function InterviewSetup() {
               onUploadAttachment={(file) => upload.mutateAsync(file)}
               onDeleteAttachment={(id) => removeAttachment.mutateAsync(id)}
               onModelChange={(model) => updateModel({ model })}
-              onThinkingDepthChange={(thinkingDepth) => updateModel({ thinkingDepth })}
-              onManageModel={(providerKey) => openSettings({ section: 'llm', providerKey })}
+              onThinkingDepthChange={(reasoningLevel) => updateModel({ reasoningLevel: reasoningLevel ?? undefined })}
+              onManageModel={(provider) => openSettings({ section: 'llm', provider })}
               onNewResume={() =>
                 openSettings({ section: 'resumes', intent: 'upload-resume' })
               }
@@ -162,10 +174,6 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
   const feedback = useFeedback()
   const [exporting, setExporting] = useState(false)
   const controller = useInterviewSession(sessionId, (message) => feedback.notify(message, 'error'))
-  const sessions = useQuery({
-    queryKey: ['interview-sessions'],
-    queryFn: ({ signal }) => fetchSessions(signal),
-  })
   const resumes = useQuery({
     queryKey: ['resumes'],
     queryFn: ({ signal }) => fetchResumes(signal),
@@ -184,7 +192,6 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
       </div>
     )
   const current = controller.current
-  const summary = sessions.data?.find((item) => item.sessionId === sessionId)
   const resumeName = resumes.data?.find((item) => item.id === current.resumeId)?.fileName
   const hasReport = Boolean(current.summaryReport)
   async function exportReport() {
@@ -243,9 +250,8 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
                   sessionId={sessionId}
                   resumeName={resumeName}
                   positionName={current.targetPosition ?? '当前岗位'}
+                  modelName={frozenModelLabel(current.model, current.reasoningLevel)}
                   attachments={current.attachments ?? []}
-                  model={summary?.llmModel ?? '默认模型'}
-                  thinkingDepth={current.llmThinkingDepth ?? summary?.llmThinkingDepth}
                   jdMatched={Boolean(current.jdText?.trim())}
                   disabled={current.status === 'finished'}
                   sending={controller.sending}
@@ -261,4 +267,13 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
       </div>
     </div>
   )
+}
+
+function frozenModelLabel(model?: string, reasoningLevel?: string) {
+  const knownLevel = reasoningLevel && reasoningLevel in REASONING_LABELS
+    ? REASONING_LABELS[reasoningLevel as keyof typeof REASONING_LABELS]
+    : reasoningLevel
+  return knownLevel
+    ? `${model ?? '模型信息不可用'} · ${knownLevel}`
+    : model ?? '模型信息不可用'
 }

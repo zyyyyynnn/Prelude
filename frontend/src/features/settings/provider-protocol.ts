@@ -1,3 +1,4 @@
+/** Protocol-level endpoint conventions only. Model IDs/capabilities come from the backend. */
 export const customProviderProtocol = {
   'openai-responses': {
     endpointSuffix: '/responses',
@@ -10,9 +11,9 @@ export const customProviderProtocol = {
     placeholder: '例如：https://api.openai.com/v1',
   },
   'anthropic-messages': {
-    endpointSuffix: '/messages',
-    modelDiscovery: false,
-    placeholder: '例如：https://api.anthropic.com/v1',
+    endpointSuffix: '/v1/messages',
+    modelDiscovery: true,
+    placeholder: '例如：https://api.anthropic.com',
   },
 } as const
 
@@ -23,15 +24,15 @@ export function isCustomProvider(providerKey: string): providerKey is CustomProv
 }
 
 export function normalizeCustomBaseUrl(baseUrl: string, providerKey: string): string {
-  let value = (baseUrl || '').trim().replace(/\/+$/, '')
+  const value = (baseUrl || '').trim().replace(/\/+$/, '')
   if (!isCustomProvider(providerKey)) {
     return value
   }
   const suffix = customProviderProtocol[providerKey].endpointSuffix
   if (value.endsWith(suffix)) {
-    value = value.slice(0, -suffix.length)
+    return value.slice(0, -suffix.length).replace(/\/+$/, '')
   }
-  return value.replace(/\/+$/, '')
+  return value
 }
 
 export function getCustomProviderMeta(providerKey: string) {

@@ -7,30 +7,64 @@ type ApiState = {
   requests: Array<{ path: string; method: string; body: unknown }>
 }
 
+const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
+  provider: 'deepseek',
+  model,
+  reasoning: true,
+  structuredOutput: true,
+  toolCalling: true,
+  streaming: true,
+  vision: false,
+  multilingual: true,
+  longContext: true,
+  embedding: false,
+  nativeRealtimeVoice: false,
+  supportedReasoningLevels: ['AUTO', 'LOW', 'HIGH', 'MAX'],
+})
+
+const customCapability = (
+  provider: string,
+  model: string,
+  supportedReasoningLevels: Array<'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'> = ['AUTO'],
+) => ({
+  provider,
+  model,
+  reasoning: supportedReasoningLevels.length > 1,
+  structuredOutput: false,
+  toolCalling: false,
+  streaming: true,
+  vision: false,
+  multilingual: false,
+  longContext: false,
+  embedding: false,
+  nativeRealtimeVoice: false,
+  supportedReasoningLevels,
+})
+
 const providers = [
   {
     providerKey: 'deepseek',
     displayName: 'DeepSeek',
-    availableModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
-    enabled: 1,
+    customEndpoint: false,
+    models: [deepSeekCapability(), deepSeekCapability('deepseek-v4-flash')],
   },
   {
     providerKey: 'openai-responses',
     displayName: 'OpenAI Responses',
-    availableModels: ['gpt-5.4'],
-    enabled: 1,
+    customEndpoint: true,
+    models: [],
   },
   {
     providerKey: 'openai-chat-completions',
     displayName: 'OpenAI Chat Completions',
-    availableModels: ['gpt-4.1'],
-    enabled: 1,
+    customEndpoint: true,
+    models: [],
   },
   {
     providerKey: 'anthropic-messages',
     displayName: 'Anthropic Messages',
-    availableModels: ['claude-sonnet-4-6'],
-    enabled: 1,
+    customEndpoint: true,
+    models: [],
   },
 ]
 
@@ -153,6 +187,22 @@ async function respond(route: Route, state: ApiState) {
       revision: 0,
     }
   else if (path === '/api/llm/providers') data = providers
+  else if (path === '/api/llm/config/discover-models' && method === 'POST')
+    data = {
+      baseUrl: (body as { baseUrl?: string }).baseUrl ?? '',
+      models: [
+        customCapability(
+          (body as { provider?: string }).provider ?? 'openai-chat-completions',
+          'account-discovered-model',
+        ),
+      ],
+    }
+  else if (path === '/api/llm/config/discover-capabilities' && method === 'POST')
+    data = customCapability(
+      (body as { provider?: string }).provider ?? 'openai-chat-completions',
+      (body as { model?: string }).model ?? 'account-discovered-model',
+      ['AUTO', 'LOW', 'MEDIUM', 'HIGH', 'XHIGH', 'MAX'],
+    )
   else if (path === '/api/attachments' && method === 'POST')
     data = {
       id: 51,
@@ -163,13 +213,15 @@ async function respond(route: Route, state: ApiState) {
     }
   else if (path === '/api/llm/config' && method === 'GET')
     data = {
-      providerKey: 'deepseek',
-      baseUrl: null,
+      provider: 'deepseek',
       model: 'deepseek-v4-pro',
+      customEndpointUrl: null,
       hasApiKey: false,
       apiKeyMasked: null,
-      maxTokens: null,
-      thinkingDepth: null,
+      reasoningLevel: 'AUTO',
+      maxOutputTokens: 4096,
+      fallbackModels: [],
+      capability: deepSeekCapability(),
     }
   else if (path === '/api/interview/start')
     data = {
@@ -179,11 +231,24 @@ async function respond(route: Route, state: ApiState) {
     }
   else if (path === '/api/llm/config' && method === 'PUT')
     data = {
-      ...(body as object),
+      provider: (body as { provider?: string }).provider ?? 'deepseek',
+      model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+      customEndpointUrl: (body as { customEndpointUrl?: string }).customEndpointUrl ?? null,
       hasApiKey: true,
       apiKeyMasked: 'sk-***',
-      maxTokens: (body as { maxTokens?: number }).maxTokens ?? null,
-      thinkingDepth: (body as { thinkingDepth?: string }).thinkingDepth ?? null,
+      reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+      maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
+      fallbackModels: [],
+      capability:
+        ((body as { provider?: string }).provider ?? 'deepseek') === 'deepseek'
+          ? deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro')
+          : customCapability(
+              (body as { provider?: string }).provider ?? 'openai-chat-completions',
+              (body as { model?: string }).model ?? 'account-discovered-model',
+              (body as { reasoningLevel?: string }).reasoningLevel === 'HIGH'
+                ? ['AUTO', 'HIGH']
+                : ['AUTO'],
+            ),
     }
   await route.fulfill({
     status: 200,
@@ -233,7 +298,7 @@ test('@smoke sends the selected prompt bar context when starting an interview', 
     resumeId: 2,
     positionId: 2,
     jdText: '负责复杂交互与前端架构。',
-    llmModel: 'deepseek-v4-pro',
+    requestedModel: 'deepseek-v4-pro',
     attachmentIds: [51],
   })
 })
@@ -300,7 +365,7 @@ test('@smoke routes prompt bar management actions into global settings', async (
   await page.getByRole('button', { name: /模型：deepseek-v4-pro，思考深度：默认/ }).click()
   await page.getByRole('menuitem', { name: '管理模型' }).click()
   await expect(page.getByRole('heading', { name: '模型管理' })).toBeVisible()
-  await expect(page.getByLabel('服务协议')).toContainText('DeepSeek')
+  await expect(page.getByLabel('接入方式')).toContainText('DeepSeek')
   await expect(page.getByText(/个可用模型/)).toHaveCount(0)
   await expect(page.getByText('尚未保存 API Key')).toHaveCount(0)
   await expect(page.getByRole('status')).toHaveCount(0)
@@ -324,12 +389,15 @@ test('@smoke centers the async button indicator without resizing the control', a
       status: 200,
       contentType: 'application/json',
       body: ok({
-        ...body,
-        baseUrl: body.baseUrl ?? null,
+        provider: (body as { provider?: string }).provider ?? 'deepseek',
+        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+        customEndpointUrl: null,
         hasApiKey: false,
         apiKeyMasked: null,
-        maxTokens: body.maxTokens ?? null,
-        thinkingDepth: body.thinkingDepth ?? null,
+        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
+        fallbackModels: [],
+        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
     })
   })
@@ -364,24 +432,47 @@ test('@smoke centers the async button indicator without resizing the control', a
 
 test('@smoke updates the prompt model depth before the save request completes', async ({ page }) => {
   const state: ApiState = { requests: [] }
+  const putBodies: Record<string, unknown>[] = []
   await installApi(page, state)
   await page.route('**/api/llm/config', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: ok({
+          provider: 'deepseek',
+          model: 'deepseek-v4-pro',
+          customEndpointUrl: null,
+          hasApiKey: false,
+          apiKeyMasked: null,
+          reasoningLevel: 'AUTO',
+          maxOutputTokens: 8192,
+          fallbackModels: ['deepseek-v4-flash'],
+          capability: deepSeekCapability(),
+        }),
+      })
+      return
+    }
     if (route.request().method() !== 'PUT') {
       await route.fallback()
       return
     }
     const body = route.request().postDataJSON() as Record<string, unknown>
+    putBodies.push(body)
     await new Promise((resolve) => setTimeout(resolve, 400))
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: ok({
-        ...body,
-        baseUrl: body.baseUrl ?? null,
+        provider: (body as { provider?: string }).provider ?? 'deepseek',
+        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+        customEndpointUrl: null,
         hasApiKey: false,
         apiKeyMasked: null,
-        maxTokens: body.maxTokens ?? null,
-        thinkingDepth: body.thinkingDepth ?? null,
+        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
+        fallbackModels: (body as { fallbackModels?: string[] }).fallbackModels ?? [],
+        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
       }),
     })
   })
@@ -395,6 +486,11 @@ test('@smoke updates the prompt model depth before the save request completes', 
   modelTrigger = page.getByRole('button', { name: /模型：/ })
   expect(await modelTrigger.textContent()).toContain('deepseek-v4-pro · 高')
   await expect(page.getByText('模型配置已更新')).toBeVisible()
+  expect(putBodies[0]).toMatchObject({
+    reasoningLevel: 'HIGH',
+    maxOutputTokens: 8192,
+    fallbackModels: ['deepseek-v4-flash'],
+  })
 
   await modelTrigger.click()
   await page.getByRole('menuitem', { name: /思考深度/ }).hover()
@@ -405,7 +501,67 @@ test('@smoke updates the prompt model depth before the save request completes', 
   expect(await page.getByRole('button', { name: /模型：/ }).textContent()).toContain(
     'deepseek-v4-pro · 默认',
   )
-  expect((await resetRequest).postDataJSON()).toMatchObject({ thinkingDepth: null })
+  expect((await resetRequest).postDataJSON()).toMatchObject({
+    reasoningLevel: 'AUTO',
+    maxOutputTokens: 8192,
+    fallbackModels: ['deepseek-v4-flash'],
+  })
+})
+
+test('@smoke waits for model configuration persistence before starting an interview', async ({ page }) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+
+  let releaseSave!: () => void
+  const saveReleased = new Promise<void>((resolve) => {
+    releaseSave = resolve
+  })
+  let signalSaveStarted!: () => void
+  const saveStarted = new Promise<void>((resolve) => {
+    signalSaveStarted = resolve
+  })
+  await page.route('**/api/llm/config', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.fallback()
+      return
+    }
+    const body = route.request().postDataJSON() as Record<string, unknown>
+    signalSaveStarted()
+    await saveReleased
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok({
+        provider: (body as { provider?: string }).provider ?? 'deepseek',
+        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
+        customEndpointUrl: null,
+        hasApiKey: false,
+        apiKeyMasked: null,
+        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
+        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
+        fallbackModels: [],
+        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
+      }),
+    })
+  })
+
+  await page.goto('/interview')
+  await selectContext(page, '选择简历', '作品集简历.pdf')
+  await selectContext(page, '选择岗位', '前端工程师')
+  const start = page.getByRole('button', { name: '开始面试' })
+  await expect(start).toBeEnabled()
+
+  await page.getByRole('button', { name: /模型：/ }).click()
+  await page.getByRole('menuitem', { name: /思考深度/ }).hover()
+  await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
+  await saveStarted
+
+  await expect(start).toBeDisabled()
+  expect(state.requests.some((request) => request.path === '/api/interview/start')).toBe(false)
+
+  releaseSave()
+  await expect(page.getByText('模型配置已更新')).toBeVisible()
+  await expect(start).toBeEnabled()
 })
 
 test('@smoke persists pinned and hidden sessions per account', async ({ page }) => {
@@ -458,7 +614,6 @@ test('@smoke streams an interview answer with bounded context', async ({ page })
       messages: [{ id: 1, role: 'assistant', content: '请描述你的服务拆分原则。' }],
       resumeId: 1,
       positionId: 1,
-      llmThinkingDepth: 'high',
       attachments: [],
     },
   }
@@ -886,24 +1041,85 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
   await page.goto('/interview')
   await page.getByRole('button', { name: '设置' }).click()
   await page.getByRole('button', { name: '模型管理' }).click()
-  await page.getByLabel('服务协议').click()
-  await page.getByRole('option', { name: 'OpenAI Responses' }).click()
-  await page.getByLabel('Base URL').fill('https://api.openai.com/v1/responses/')
-  await page.getByLabel('模型', { exact: true }).click()
-  await page.getByRole('option', { name: 'gpt-5.4' }).click()
+  await page.getByLabel('接入方式').click()
+  await page.getByRole('option', { name: 'OpenAI Chat Completions' }).click()
+  await page.getByLabel('Base URL').fill('https://api.openai.com/v1/chat/completions/')
+  await page.getByLabel('模型', { exact: true }).fill('account-discovered-model')
   await page.getByLabel('API Key', { exact: true }).fill('sk-test')
+  await page.getByRole('combobox', { name: '最大回复长度' }).click()
+  await page.getByRole('option', { name: '长回复 · 8,192 tokens' }).click()
   await page.getByRole('button', { name: '保存设置' }).click()
   await expect(page.getByText('LLM 配置已保存')).toBeVisible()
   const save = state.requests.find(
     (request) => request.path === '/api/llm/config' && request.method === 'PUT',
   )
   expect(save?.body).toEqual({
-    providerKey: 'openai-responses',
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-5.4',
+    provider: 'openai-chat-completions',
+    customEndpointUrl: 'https://api.openai.com/v1',
+    model: 'account-discovered-model',
     apiKey: 'sk-test',
-    thinkingDepth: null,
+    reasoningLevel: 'AUTO',
+    maxOutputTokens: 8192,
+    fallbackModels: [],
   })
+})
+
+test('@byok discovers selected custom model reasoning levels from the backend', async ({ page }) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '模型管理' }).click()
+  await page.getByLabel('接入方式').click()
+  await page.getByRole('option', { name: 'OpenAI Chat Completions' }).click()
+  await page.getByLabel('Base URL').fill('https://api.openai.com/v1')
+  await page.getByLabel('API Key', { exact: true }).fill('sk-test')
+  await page.getByRole('button', { name: '检测模型' }).click()
+
+  await page.getByLabel('模型', { exact: true }).click()
+  await page.getByRole('option', { name: 'account-discovered-model' }).click()
+
+  await expect.poll(() =>
+    state.requests.some((request) => request.path === '/api/llm/config/discover-capabilities'),
+  ).toBe(true)
+  await page.getByRole('combobox', { name: '思考深度' }).click()
+  await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '低', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '中', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '高', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '超高', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '最大', exact: true })).toBeVisible()
+})
+
+test('@byok keeps the backend conservative capability when a selected-model probe is unavailable', async ({ page }) => {
+  const state: ApiState = { requests: [] }
+  await installApi(page, state)
+  await page.route('**/api/llm/config/discover-capabilities', async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({
+        type: 'about:blank',
+        title: 'Service Unavailable',
+        status: 503,
+        detail: 'capability probe unavailable',
+      }),
+    })
+  })
+  await page.goto('/interview')
+  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '模型管理' }).click()
+  await page.getByLabel('接入方式').click()
+  await page.getByRole('option', { name: 'OpenAI Responses' }).click()
+  await page.getByLabel('Base URL').fill('https://api.openai.com/v1')
+  await page.getByLabel('API Key', { exact: true }).fill('sk-test')
+  await page.getByRole('button', { name: '检测模型' }).click()
+  await page.getByLabel('模型', { exact: true }).click()
+  await page.getByRole('option', { name: 'account-discovered-model' }).click()
+
+  await page.getByRole('combobox', { name: '思考深度' }).click()
+  await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: '高', exact: true })).toHaveCount(0)
 })
 
 const report = JSON.stringify({
@@ -921,6 +1137,14 @@ const report = JSON.stringify({
       positiveSignals: ['边界清晰'],
       negativeSignals: ['容量数据不足'],
       improvementSuggestions: ['补充量化依据'],
+    },
+    {
+      stageName: 'deep_dive',
+      score: 7.6,
+      summary: '追问中的取舍说明仍可加强',
+      positiveSignals: ['能够识别关键约束'],
+      negativeSignals: ['缺少成本数据'],
+      improvementSuggestions: ['补充方案对比'],
     },
   ],
   questionReviews: [
@@ -951,17 +1175,20 @@ test('@smoke renders structured reports without resume mutation controls', async
       targetPosition: '平台工程师',
       status: 'finished',
       currentStage: 'closing',
+      model: 'deepseek-v4-flash',
+      reasoningLevel: 'HIGH',
       summaryReport: report,
       stages: [],
       messages: [{ id: 1, role: 'assistant', content: '本场面试已结束。' }],
       resumeId: 1,
       positionId: 1,
-      llmThinkingDepth: null,
       attachments: [],
     },
   }
   await installApi(page, state)
   await page.goto('/interview?session=11')
+  await expect(page.getByText('deepseek-v4-flash · 高', { exact: true })).toBeVisible()
+  await expect(page.getByText('本场模型已锁定', { exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: '报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await expect(page.getByText('8.1')).toBeVisible()
@@ -969,9 +1196,121 @@ test('@smoke renders structured reports without resume mutation controls', async
   const viewToggle = page.getByRole('group', { name: '工作区视图' })
   await expect(viewToggle.getByRole('button', { name: '面试' })).toHaveCount(1)
   await expect(viewToggle.getByRole('button', { name: '报告' })).toHaveCount(1)
+  await expect(page.locator('.status-badge')).toHaveCount(0)
+  const sharedUiMetrics = await page.evaluate(() => {
+    const parse = (value: string) => {
+      const channels = value
+        .match(/[\d.]+/g)!
+        .slice(0, 3)
+        .map(Number)
+      return value.startsWith('color(srgb') ? channels.map((channel) => channel * 255) : channels
+    }
+    const luminance = (value: string) => {
+      const [r, g, b] = parse(value).map((channel) => {
+        const normalized = channel / 255
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+      })
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    const contrast = (element: Element) => {
+      const style = getComputedStyle(element)
+      const foreground = luminance(style.color)
+      const background = luminance(style.backgroundColor)
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05)
+    }
+    const primary = document.querySelector<HTMLElement>('.app-sidebar__btn--primary')!
+    const activeProbe = document.createElement('button')
+    activeProbe.className = 'session-item-btn is-active'
+    document.body.append(activeProbe)
+    const durations = getComputedStyle(primary)
+      .transitionDuration.split(',')
+      .map((value) => Number.parseFloat(value) * (value.includes('ms') ? 1 : 1000))
+    const metrics = {
+      primaryContrast: contrast(primary),
+      activeContrast: contrast(activeProbe),
+      longestInteractionTransition: Math.max(...durations),
+    }
+    activeProbe.remove()
+    return metrics
+  })
+  expect(sharedUiMetrics.primaryContrast).toBeGreaterThanOrEqual(4.5)
+  expect(sharedUiMetrics.activeContrast).toBeGreaterThanOrEqual(4.5)
+  expect(sharedUiMetrics.longestInteractionTransition).toBeLessThanOrEqual(150)
+  const reportListMarker = await page.locator('.structured-report__traits li').first().evaluate((item) => {
+    const marker = getComputedStyle(item, '::before')
+    return marker.content
+  })
+  expect(reportListMarker).toBe('none')
+  const reportTypography = await page.locator('.structured-report').evaluate((surface) => {
+    const eyebrow = surface.querySelector<HTMLElement>('.structured-report__hero > p:first-child')!
+    const sectionTitle = surface.querySelector<HTMLElement>('.report-section h2')!
+    const adviceBody = surface.querySelector<HTMLElement>('.structured-report__advice > p')!
+    const titleStyle = getComputedStyle(sectionTitle)
+    return {
+      eyebrowFamily: getComputedStyle(eyebrow).fontFamily,
+      adviceBodyFamily: getComputedStyle(adviceBody).fontFamily,
+      sectionTitleLineHeight: Number.parseFloat(titleStyle.lineHeight),
+      sectionTitleSize: Number.parseFloat(titleStyle.fontSize),
+    }
+  })
+  expect(reportTypography.eyebrowFamily).toContain('Lora')
+  expect(reportTypography.adviceBodyFamily).toContain('Inter')
+  expect(reportTypography.sectionTitleLineHeight / reportTypography.sectionTitleSize).toBeLessThanOrEqual(1.3)
+  const stageNavigation = page.getByRole('group', { name: '阶段复盘导航' })
+  await expect(stageNavigation).toContainText('1 / 2')
+  await expect(page.locator('.stage-performance')).toHaveCount(2)
+  await expect(page.locator('.stage-performance.is-active')).toContainText('技术问答')
+  await expect(page.locator('.stage-performance.is-active .report-inline-score')).toHaveCSS(
+    'font-family',
+    /Lora/,
+  )
+  await expect(page.locator('.stage-performance.is-active h4').first()).toHaveCSS(
+    'font-family',
+    /Lora/,
+  )
+  await stageNavigation.getByRole('button', { name: '下一阶段' }).click()
+  await expect(stageNavigation).toContainText('2 / 2')
+  await expect(page.locator('.stage-performance.is-active')).toContainText('深度追问')
+  await expect(page.locator('.question-review__body')).toHaveCSS('overflow', 'visible')
+  await expect(page.locator('.question-review__body')).toHaveCSS('max-block-size', 'none')
+
+  const reviewSurfaces = await page.evaluate(() => {
+    const stage = getComputedStyle(document.querySelector('.stage-performance.is-active')!)
+    const question = getComputedStyle(document.querySelector('.question-review')!)
+    return {
+      background: [stage.backgroundColor, question.backgroundColor],
+      radius: [stage.borderRadius, question.borderRadius],
+      padding: [stage.paddingInlineStart, question.paddingInlineStart],
+    }
+  })
+  expect(new Set(reviewSurfaces.background).size).toBe(1)
+  expect(new Set(reviewSurfaces.radius).size).toBe(1)
+  expect(new Set(reviewSurfaces.padding).size).toBe(1)
+
+  await page.setViewportSize({ width: 880, height: 781 })
+  for (const selector of [
+    '.stage-performance.is-active .stage-performance__signals',
+    '.structured-report__traits > div',
+    '.training-plan__grid',
+  ]) {
+    const adaptiveColumns = await page.locator(selector).first().evaluate((grid) => {
+      const style = getComputedStyle(grid)
+      const minimum = Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          '--layout-report-column-min-inline-size',
+        ),
+      )
+      return style.gridTemplateColumns
+        .split(' ')
+        .every((column) => Number.parseFloat(column) >= minimum)
+    })
+    expect(adaptiveColumns).toBe(true)
+  }
   await page.emulateMedia({ media: 'print' })
   await page.locator('body').evaluate((body) => body.classList.add('is-printing-report'))
   await expect(page.locator('.app-layout__main')).toHaveCSS('overflow', 'visible')
+  await expect(page.locator('.stage-performance').first()).toBeVisible()
+  await expect(page.locator('.stage-performance').last()).toBeVisible()
   await page.locator('body').evaluate((body) => body.classList.remove('is-printing-report'))
   await page.emulateMedia({ media: 'screen' })
   await page.evaluate(() => {
@@ -993,7 +1332,7 @@ test('@smoke renders analytics charts and recent-score labels from the React das
     const path = new URL(route.request().url()).pathname
     const data =
       path.endsWith('/radar')
-        ? { technical: 8.2, expression: 7.6, logic: 8.4, sessionCount: 5 }
+        ? { technical: 7.5, expression: 6.5, logic: 8, sessionCount: 2 }
         : path.endsWith('/trend')
           ? [
               { sessionId: 1, createdAt: '2026-08-01T00:00:00Z', technical: 7, expression: 6, logic: 8 },
@@ -1010,9 +1349,9 @@ test('@smoke renders analytics charts and recent-score labels from the React das
 
   await expect(page.getByRole('heading', { name: '能力雷达' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
-  await expect(page.getByRole('img', { name: /技术能力 8\.2/ })).toHaveCount(1)
+  await expect(page.getByRole('img', { name: /技术能力 7\.5/ })).toHaveCount(1)
   await expect(page.getByRole('img', { name: '最近 2 场面试的分数趋势' })).toHaveCount(1)
-  await expect(page.getByText('最近 5 场均分')).toHaveCount(3)
+  await expect(page.getByText('最近 2 场均分')).toHaveCount(3)
   await expect(page.getByText('结构')).toBeVisible()
   await expect(page.getByText('走势')).toBeVisible()
   await expect(page.getByText('聚合')).toBeVisible()
@@ -1044,6 +1383,23 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   expect(typography.value.numeric).toBe('tabular-nums')
   expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
   expect(typography.meta.family).toContain('Inter')
+
+  const weaknessLayout = await page.locator('.analytics-weakness-item').evaluate((item) => {
+    const title = item.querySelector<HTMLElement>('.analytics-weakness-item__title')!
+    const summary = item.querySelector<HTMLElement>('.analytics-weakness-item__summary')!
+    const descriptions = item.querySelector<HTMLElement>('.analytics-weakness-item__descriptions')!
+    return {
+      headingLayout: getComputedStyle(title.parentElement!).display,
+      titleLeft: title.getBoundingClientRect().left,
+      summaryLeft: summary.getBoundingClientRect().left,
+      descriptionLeft: descriptions.getBoundingClientRect().left,
+      descriptionListStyle: getComputedStyle(descriptions).listStyleType,
+    }
+  })
+  expect(weaknessLayout.headingLayout).toBe('grid')
+  expect(weaknessLayout.summaryLeft).toBeGreaterThan(weaknessLayout.titleLeft)
+  expect(Math.abs(weaknessLayout.descriptionLeft - weaknessLayout.titleLeft)).toBeLessThan(1)
+  expect(weaknessLayout.descriptionListStyle).toBe('none')
 })
 
 test('@smoke degrades malformed structured reports to safe plain text', async ({ page }) => {

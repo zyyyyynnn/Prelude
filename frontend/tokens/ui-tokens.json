@@ -23,6 +23,10 @@
         "color-line-decor-light",
         "color-brand",
         "color-brand-light",
+        "color-accent-solid",
+        "color-accent-solid-hover",
+        "color-accent-text",
+        "color-text-on-accent",
         "color-coral",
         "color-error",
         "color-focus-field",
@@ -88,6 +92,7 @@
       "description": "动效 token（时长、缓动、过渡组合）。",
       "tokens": [
         "motion-duration-base",
+        "motion-duration-fast",
         "motion-duration-slow",
         "motion-duration-thinking",
         "motion-ease-standard",
@@ -101,7 +106,7 @@
     },
     "font": {
       "prefix": "font",
-      "description": "字体族与字号阶梯。",
+      "description": "字体族、字号、字重与行高阶梯。",
       "tokens": [
         "font-serif",
         "font-sans",
@@ -112,8 +117,24 @@
         "font-size-md",
         "font-size-lg",
         "font-size-xl",
-        "font-size-2xl"
+        "font-size-2xl",
+        "font-weight-regular",
+        "font-weight-medium",
+        "font-weight-semibold",
+        "line-height-solid",
+        "line-height-display",
+        "line-height-tight",
+        "line-height-heading",
+        "line-height-compact",
+        "line-height-base",
+        "line-height-relaxed",
+        "line-height-copy"
       ]
+    },
+    "border": {
+      "prefix": "border",
+      "description": "标准边界宽度。",
+      "tokens": ["border-width-default"]
     },
     "ui-height": {
       "prefix": "ui-height",
@@ -137,13 +158,23 @@
         "layout-workspace-content-max-inline-size",
         "layout-dashboard-card-min-inline-size",
         "layout-form-field-min-inline-size",
-        "layout-list-title-min-inline-size"
+        "layout-list-title-min-inline-size",
+        "layout-position-catalog-min-inline-size",
+        "layout-position-form-min-inline-size",
+        "layout-position-item-min-inline-size",
+        "layout-report-column-min-inline-size",
+        "layout-report-label-inline-size",
+        "layout-report-counter-min-inline-size"
       ]
     },
     "content": {
       "prefix": "content",
       "description": "消息与浮层的可读内容宽度。",
-      "tokens": ["content-message-max-inline-size", "content-tooltip-max-inline-size"]
+      "tokens": [
+        "content-message-max-inline-size",
+        "content-report-reading-max-inline-size",
+        "content-tooltip-max-inline-size"
+      ]
     },
     "z-index": {
       "prefix": "z-index",

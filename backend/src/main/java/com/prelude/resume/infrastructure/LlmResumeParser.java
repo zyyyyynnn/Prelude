@@ -3,11 +3,9 @@ package com.prelude.resume.infrastructure;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.BusinessException;
-import com.prelude.llm.ChatPort;
-import com.prelude.llm.ChatRequest;
-import com.prelude.llm.LlmPurpose;
-import com.prelude.llm.PromptRegistry;
-import com.prelude.llm.PromptIds;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.PromptRegistry;
+import com.prelude.llm.api.PromptIds;
 import com.prelude.resume.application.port.ResumeParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,22 +17,29 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LlmResumeParser implements ResumeParser {
 
-    private final ChatPort chatPort;
+    private final LlmPort llmPort;
     private final PromptRegistry promptRegistry;
     private final ObjectMapper objectMapper;
 
     @Override
     public ParsedResume parse(Long accountId, String rawText) {
         String systemPrompt = promptRegistry.load(PromptIds.RESUME_PARSE);
-        String content = chatPort.complete(ChatRequest.currentUser(
-            accountId,
-            LlmPurpose.PARSE,
-            PromptIds.RESUME_PARSE,
-            List.of(
-                Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", "请从以下中文简历文本中提取技能列表和项目经历：\n" + rawText)
-            )
-        ));
+        var snapshotRef = llmPort.freezeSnapshot(
+            new LlmPort.FreezeSnapshotCommand(accountId, null, null));
+        LlmPort.CompletionResult completion = llmPort.complete(
+            new LlmPort.ModelExecutionRequest(
+                snapshotRef.snapshotId(),
+                "resume-parse",
+                PromptIds.RESUME_PARSE,
+            LlmPort.ResponseMode.JSON_OBJECT,
+                List.of(
+                    new LlmPort.Message("system", systemPrompt),
+                    new LlmPort.Message("user", "请从以下中文简历文本中提取技能列表和项目经历：\n" + rawText)
+                ),
+                List.of(),
+                List.of()
+            ));
+        String content = completion.content();
         try {
             ParsePayload payload = objectMapper.readValue(stripFence(content), ParsePayload.class);
             List<ParsedProject> projects = payload.projects() == null ? List.of() : payload.projects().stream()

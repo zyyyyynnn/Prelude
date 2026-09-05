@@ -29,6 +29,16 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
   }
 }
 
+for (const file of [
+  path.join(root, 'index.html'),
+  ...walk(sourceRoot).filter((item) => /\.(css|ts|tsx)$/.test(item)),
+]) {
+  const source = fs.readFileSync(file, 'utf8')
+  if (!/fonts\.(?:googleapis|gstatic)\.com/i.test(source)) continue
+  const relative = path.relative(root, file).replaceAll('\\', '/')
+  violations.push(`${relative}: remote font dependency`)
+}
+
 const overlays = fs.readFileSync(path.join(sourceRoot, 'shared', 'ui', 'overlay.tsx'), 'utf8')
 if (!overlays.includes('Tooltip.Provider') && !overlays.includes('Tooltip.Root')) {
   violations.push('shared/ui/overlay.tsx: Base UI tooltip primitive is required')
