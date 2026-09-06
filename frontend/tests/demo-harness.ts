@@ -123,7 +123,8 @@ const report = JSON.stringify({
     {
       stageName: 'warmup',
       question: '请先介绍你在订单履约服务中负责的范围，以及你如何判断改造是否有效。',
-      answerSummary: '我负责下单后的履约接口和异步任务。改造前先记录接口 P95、P99 和失败率，完成索引与批量查询调整后，核心接口 P99 从 480ms 降到 210ms，错误率保持在千分之一以内。',
+      answerSummary:
+        '我负责下单后的履约接口和异步任务。改造前先记录接口 P95、P99 和失败率，完成索引与批量查询调整后，核心接口 P99 从 480ms 降到 210ms，错误率保持在千分之一以内。',
       score: 7,
       scoringReason: '结果和个人职责都清楚，可以再说明数据采集周期。',
       improvementSuggestion: '补充性能数据的采集周期和样本量。',
@@ -131,7 +132,8 @@ const report = JSON.stringify({
     {
       stageName: 'technical',
       question: '同一个支付回调重复到达时，你如何保证订单状态只推进一次？',
-      answerSummary: '我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。重复请求命中唯一键后读取已有结果，不再重复发履约消息。',
+      answerSummary:
+        '我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。重复请求命中唯一键后读取已有结果，不再重复发履约消息。',
       score: 7,
       scoringReason: '幂等键和事务边界明确，还可以补充首次处理失败后的重试状态。',
       improvementSuggestion: '说明首次处理失败时幂等记录如何回到可重试状态。',
@@ -139,7 +141,8 @@ const report = JSON.stringify({
     {
       stageName: 'deep_dive',
       question: '如果数据库事务提交成功，但消息发布失败，你会怎样恢复？',
-      answerSummary: '我会在本地事务中同时写出站消息，由后台任务扫描未发布记录并重试；消费者仍按业务键去重。以前的项目只看重试成功率，没有明确统计最长恢复时间，这是我会补上的指标。',
+      answerSummary:
+        '我会在本地事务中同时写出站消息，由后台任务扫描未发布记录并重试；消费者仍按业务键去重。以前的项目只看重试成功率，没有明确统计最长恢复时间，这是我会补上的指标。',
       score: 6,
       scoringReason: '恢复路径合理，但最长恢复时间和积压告警阈值仍需量化。',
       improvementSuggestion: '给出最长恢复时间、积压阈值和人工介入条件。',
@@ -147,7 +150,8 @@ const report = JSON.stringify({
     {
       stageName: 'closing',
       question: '如果下周接手这条链路，你会优先补哪一项可靠性验证？',
-      answerSummary: '我会先做消息中间件短时不可用的演练，记录积压量、恢复耗时和重复消费比例，再据此设置告警阈值，并验证人工补偿入口确实可用。',
+      answerSummary:
+        '我会先做消息中间件短时不可用的演练，记录积压量、恢复耗时和重复消费比例，再据此设置告警阈值，并验证人工补偿入口确实可用。',
       score: 6,
       scoringReason: '收尾具体，后续应把恢复目标写进演练验收标准。',
       improvementSuggestion: '把恢复目标写成故障演练的通过条件。',
@@ -229,7 +233,8 @@ export function createDemoState(): DemoState {
         {
           id: 2,
           role: 'user',
-          content: '我负责下单后的履约接口和异步任务。改造前先记录接口 P95、P99 和失败率，完成索引与批量查询调整后，核心接口 P99 从 480ms 降到 210ms，错误率保持在千分之一以内。',
+          content:
+            '我负责下单后的履约接口和异步任务。改造前先记录接口 P95、P99 和失败率，完成索引与批量查询调整后，核心接口 P99 从 480ms 降到 210ms，错误率保持在千分之一以内。',
           seqNum: 2,
           createdAt: '2026-09-05T10:04:00+08:00',
           score: 7,
@@ -245,7 +250,8 @@ export function createDemoState(): DemoState {
         {
           id: 4,
           role: 'user',
-          content: '我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。重复请求命中唯一键后读取已有结果，不再重复发履约消息。',
+          content:
+            '我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。重复请求命中唯一键后读取已有结果，不再重复发履约消息。',
           seqNum: 5,
           createdAt: '2026-09-05T10:13:00+08:00',
           score: 7,
@@ -261,7 +267,8 @@ export function createDemoState(): DemoState {
         {
           id: 6,
           role: 'user',
-          content: '我会在本地事务中同时写出站消息，由后台任务扫描未发布记录并重试；消费者仍按业务键去重。以前的项目只看重试成功率，没有明确统计最长恢复时间，这是我会补上的指标。',
+          content:
+            '我会在本地事务中同时写出站消息，由后台任务扫描未发布记录并重试；消费者仍按业务键去重。以前的项目只看重试成功率，没有明确统计最长恢复时间，这是我会补上的指标。',
           seqNum: 8,
           createdAt: '2026-09-05T10:22:00+08:00',
           score: 6,
@@ -305,13 +312,15 @@ async function respond(route: Route, state: DemoState) {
   const path = new URL(request.url()).pathname
   const method = request.method()
   const rawBody = request.postData()
-  const body = rawBody && request.headers()['content-type']?.includes('application/json')
-    ? (JSON.parse(rawBody) as unknown)
-    : null
+  const body =
+    rawBody && request.headers()['content-type']?.includes('application/json')
+      ? (JSON.parse(rawBody) as unknown)
+      : null
   state.requests.push({ path, method, body })
 
   if (path === '/api/auth/me' && method === 'GET') {
-    if (!state.authenticated) return fulfillProblem(route, 401, 'authentication_required', '请先登录')
+    if (!state.authenticated)
+      return fulfillProblem(route, 401, 'authentication_required', '请先登录')
     return fulfillJson(route, { accountId: 1, username: 'demo' })
   }
   if (path === '/api/auth/login' && method === 'POST') {
@@ -324,8 +333,14 @@ async function respond(route: Route, state: DemoState) {
   }
   if (path === '/api/interview/start' && method === 'POST') {
     const active = sessionSummary(state.session)
-    state.sessions = [active, ...state.sessions.filter((item) => item.sessionId !== active.sessionId)]
-    return fulfillJson(route, { sessionId: state.session.sessionId, currentStage: state.session.currentStage })
+    state.sessions = [
+      active,
+      ...state.sessions.filter((item) => item.sessionId !== active.sessionId),
+    ]
+    return fulfillJson(route, {
+      sessionId: state.session.sessionId,
+      currentStage: state.session.currentStage,
+    })
   }
   if (/\/api\/interview\/\d+\/chat$/.test(path) && method === 'POST') {
     const answer = (body as { content?: string } | null)?.content?.trim() || '候选人回答'
@@ -367,9 +382,7 @@ async function respond(route: Route, state: DemoState) {
     state.session.status = 'finished'
     state.session.summaryReport = report
     state.session.stages = state.session.stages.map((stage) =>
-      stage.stageName === 'closing'
-        ? { ...stage, endedAt: '2026-09-05T10:31:00+08:00' }
-        : stage,
+      stage.stageName === 'closing' ? { ...stage, endedAt: '2026-09-05T10:31:00+08:00' } : stage,
     )
     state.sessions = state.sessions.map((item) =>
       item.sessionId === state.session.sessionId ? sessionSummary(state.session) : item,
@@ -440,13 +453,35 @@ async function respond(route: Route, state: DemoState) {
     return fulfillJson(route, { technical: 6.7, expression: 6, logic: 6.3, sessionCount: 3 })
   if (path === '/api/analytics/trend' && method === 'GET')
     return fulfillJson(route, [
-      { sessionId: 56, createdAt: '2026-09-03T10:00:00+08:00', technical: 6, expression: 7, logic: 6 },
-      { sessionId: 57, createdAt: '2026-09-03T14:00:00+08:00', technical: 8, expression: 6, logic: 7 },
-      { sessionId: 58, createdAt: '2026-09-04T09:00:00+08:00', technical: 6, expression: 5, logic: 6 },
+      {
+        sessionId: 56,
+        createdAt: '2026-09-03T10:00:00+08:00',
+        technical: 6,
+        expression: 7,
+        logic: 6,
+      },
+      {
+        sessionId: 57,
+        createdAt: '2026-09-03T14:00:00+08:00',
+        technical: 8,
+        expression: 6,
+        logic: 7,
+      },
+      {
+        sessionId: 58,
+        createdAt: '2026-09-04T09:00:00+08:00',
+        technical: 6,
+        expression: 5,
+        logic: 6,
+      },
     ])
   if (path === '/api/analytics/weaknesses' && method === 'GET')
     return fulfillJson(route, [
-      { category: '故障恢复量化', count: 1, descriptions: ['尚未定义最长恢复时间和积压告警阈值。'] },
+      {
+        category: '故障恢复量化',
+        count: 1,
+        descriptions: ['尚未定义最长恢复时间和积压告警阈值。'],
+      },
       { category: '可访问性验证', count: 1, descriptions: ['尚未建立自动化扫描和读屏回归清单。'] },
       { category: '线上实验归因', count: 1, descriptions: ['已有实验缺少分层结果和置信区间。'] },
     ])

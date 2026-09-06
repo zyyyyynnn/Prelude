@@ -99,7 +99,10 @@ function InterviewSetup() {
     if ('model' in patch) {
       const provider = providers.data?.find((item) => item.providerKey === llmConfig.data.provider)
       const capability = provider?.models.find((item) => item.model === patch.model)
-      if (capability && !capability.supportedReasoningLevels.includes(llmConfig.data.reasoningLevel)) {
+      if (
+        capability &&
+        !capability.supportedReasoningLevels.includes(llmConfig.data.reasoningLevel)
+      ) {
         feedback.notify('该模型不支持当前思考深度，请先显式选择兼容的思考深度', 'error')
         return
       }
@@ -153,11 +156,11 @@ function InterviewSetup() {
               onUploadAttachment={(file) => upload.mutateAsync(file)}
               onDeleteAttachment={(id) => removeAttachment.mutateAsync(id)}
               onModelChange={(model) => updateModel({ model })}
-              onThinkingDepthChange={(reasoningLevel) => updateModel({ reasoningLevel: reasoningLevel ?? undefined })}
-              onManageModel={(provider) => openSettings({ section: 'llm', provider })}
-              onNewResume={() =>
-                openSettings({ section: 'resumes', intent: 'upload-resume' })
+              onThinkingDepthChange={(reasoningLevel) =>
+                updateModel({ reasoningLevel: reasoningLevel ?? undefined })
               }
+              onManageModel={(provider) => openSettings({ section: 'llm', provider })}
+              onNewResume={() => openSettings({ section: 'resumes', intent: 'upload-resume' })}
               onNewPosition={() =>
                 openSettings({ section: 'positions', intent: 'create-position' })
               }
@@ -214,12 +217,12 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
           status={current.status}
           hasReport={hasReport}
           showingReport={controller.showReport}
-           sending={controller.sending}
-           finishing={controller.finishing}
-           exporting={exporting}
-           onFinish={controller.finish}
-           onExportReport={() => void exportReport()}
-           onToggleReport={controller.setShowReport}
+          sending={controller.sending}
+          finishing={controller.finishing}
+          exporting={exporting}
+          onFinish={controller.finish}
+          onExportReport={() => void exportReport()}
+          onToggleReport={controller.setShowReport}
         />
         <div className="workspace-active__main">
           {current.status === 'generating' && !hasReport ? (
@@ -270,10 +273,9 @@ function InterviewSession({ sessionId }: { sessionId: number }) {
 }
 
 function frozenModelLabel(model?: string, reasoningLevel?: string) {
-  const knownLevel = reasoningLevel && reasoningLevel in REASONING_LABELS
-    ? REASONING_LABELS[reasoningLevel as keyof typeof REASONING_LABELS]
-    : reasoningLevel
-  return knownLevel
-    ? `${model ?? '模型信息不可用'} · ${knownLevel}`
-    : model ?? '模型信息不可用'
+  const knownLevel =
+    reasoningLevel && reasoningLevel in REASONING_LABELS
+      ? REASONING_LABELS[reasoningLevel as keyof typeof REASONING_LABELS]
+      : reasoningLevel
+  return knownLevel ? `${model ?? '模型信息不可用'} · ${knownLevel}` : (model ?? '模型信息不可用')
 }

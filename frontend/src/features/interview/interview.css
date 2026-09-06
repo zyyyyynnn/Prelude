@@ -214,8 +214,7 @@
   align-items: center;
   gap: var(--spacing-sm);
   color: var(--color-text-secondary);
-  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid)
-    var(--font-serif);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
 }
 .prompt-bar__status-dot {
   inline-size: var(--prompt-bar-status-dot-size);

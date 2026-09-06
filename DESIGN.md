@@ -88,8 +88,7 @@ shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮�
 UI 改动执行：
 
 ```powershell
-npm --prefix frontend run typecheck
-npm --prefix frontend run lint
+npm --prefix frontend run check
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
 npm --prefix frontend run verify:dark

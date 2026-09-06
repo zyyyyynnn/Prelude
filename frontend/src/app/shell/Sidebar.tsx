@@ -173,7 +173,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
                               aria-label={`${failed ? '重试打开会话' : group.finished ? '打开已结束会话' : '打开会话'} ${session.targetPosition || session.positionName || '未命名岗位'}`}
                               aria-busy={loading || undefined}
                               onClick={() => {
-                                // eslint-disable-next-line react-hooks/refs -- This runs only after a user click.
+                                // oxlint-disable-next-line react-hooks/refs -- This runs only after a user click.
                                 sessionRequest.current?.abort()
                                 const controller = new AbortController()
                                 sessionRequest.current = controller
@@ -276,7 +276,10 @@ function SidebarLink({
   const link = (
     <NavLink
       className={({ isActive }) =>
-        cn('app-sidebar__btn app-sidebar__btn--tool ui-action ui-action-nav', isActive && 'is-active')
+        cn(
+          'app-sidebar__btn app-sidebar__btn--tool ui-action ui-action-nav',
+          isActive && 'is-active',
+        )
       }
       to={to}
       aria-label={label}

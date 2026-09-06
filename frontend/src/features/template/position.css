@@ -66,8 +66,7 @@
   min-inline-size: 0;
   overflow: hidden;
   color: var(--color-text-primary);
-  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-compact)
-    var(--font-serif);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-compact) var(--font-serif);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

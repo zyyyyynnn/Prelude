@@ -15,10 +15,7 @@ export function PositionManagementPanel() {
   const [draft, setDraft] = useState(emptyDraft)
   const positions = useQuery({ queryKey: ['positions'], queryFn: fetchPositions })
   const save = useMutation({
-    mutationFn: () =>
-      editing
-        ? updatePosition(editing.id, draft)
-        : createPosition(draft),
+    mutationFn: () => (editing ? updatePosition(editing.id, draft) : createPosition(draft)),
     onSuccess: () => {
       feedback.notify(editing ? '岗位已更新' : '岗位已创建', 'success')
       setEditing(null)
@@ -122,9 +119,7 @@ export function PositionManagementPanel() {
         </section>
         <form id="position-settings-form" className="position-settings__form" onSubmit={submit}>
           <div className="position-settings__form-heading">
-            <h3 className="settings-section__title">
-              {editing ? '编辑岗位' : '新建岗位'}
-            </h3>
+            <h3 className="settings-section__title">{editing ? '编辑岗位' : '新建岗位'}</h3>
             {editing && (
               <Button
                 type="button"

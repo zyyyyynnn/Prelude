@@ -80,7 +80,9 @@ export function AnalyticsPage() {
                 <article className="analytics-score-card" key={label}>
                   <p className="analytics-score-card__label">{label}</p>
                   <strong className="analytics-score-card__value">{value.toFixed(1)}</strong>
-                  <p className="analytics-score-card__meta">最近 {radar.data.sessionCount} 场均分</p>
+                  <p className="analytics-score-card__meta">
+                    最近 {radar.data.sessionCount} 场均分
+                  </p>
                 </article>
               ))}
             </div>
@@ -90,7 +92,9 @@ export function AnalyticsPage() {
                   <div>
                     <p className="analytics-panel__eyebrow">结构</p>
                     <h2 className="analytics-panel__title">能力雷达</h2>
-                    <p className="analytics-panel__lead">展示最近面试在三项核心维度上的平均水平。</p>
+                    <p className="analytics-panel__lead">
+                      展示最近面试在三项核心维度上的平均水平。
+                    </p>
                   </div>
                   <span className="analytics-panel__meta">{radar.data.sessionCount} 场</span>
                 </div>
@@ -179,50 +183,47 @@ function useChart(createOption: () => echarts.EChartsCoreOption, dependency: unk
 }
 
 function Radar({ data }: { data: AnalyticsRadarResponse }) {
-  const ref = useChart(
-    () => {
-      const brand = cssVar('--chart-technical', 'var(--color-brand)')
-      const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
-      const border = cssVar('--color-border-warm', 'var(--color-border)')
-      const ring = cssVar('--color-ring', 'var(--color-border)')
-      const serif = cssToken('--font-serif', 'serif')
-      return {
-        animation: false,
-        radar: {
-          radius: '64%',
-          splitNumber: 5,
-          indicator: [
-            { name: '技术能力', max: 10 },
-            { name: '表达清晰度', max: 10 },
-            { name: '逻辑思维', max: 10 },
-          ],
-          splitArea: { show: false },
-          axisName: {
-            color: secondary,
-            fontFamily: serif,
-            fontSize: cssVarNumber('--font-size-sm', 14),
-            fontWeight: 500,
-          },
-          splitLine: { lineStyle: { color: border } },
-          axisLine: { lineStyle: { color: ring } },
-        },
-        series: [
-          {
-            type: 'radar',
-            data: [
-              {
-                value: [data.technical, data.expression, data.logic],
-                areaStyle: { color: brand, opacity: 0.16 },
-                lineStyle: { color: brand, width: 2 },
-                itemStyle: { color: brand },
-              },
-            ],
-          },
+  const ref = useChart(() => {
+    const brand = cssVar('--chart-technical', 'var(--color-brand)')
+    const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
+    const border = cssVar('--color-border-warm', 'var(--color-border)')
+    const ring = cssVar('--color-ring', 'var(--color-border)')
+    const serif = cssToken('--font-serif', 'serif')
+    return {
+      animation: false,
+      radar: {
+        radius: '64%',
+        splitNumber: 5,
+        indicator: [
+          { name: '技术能力', max: 10 },
+          { name: '表达清晰度', max: 10 },
+          { name: '逻辑思维', max: 10 },
         ],
-      }
-    },
-    data,
-  )
+        splitArea: { show: false },
+        axisName: {
+          color: secondary,
+          fontFamily: serif,
+          fontSize: cssVarNumber('--font-size-sm', 14),
+          fontWeight: 500,
+        },
+        splitLine: { lineStyle: { color: border } },
+        axisLine: { lineStyle: { color: ring } },
+      },
+      series: [
+        {
+          type: 'radar',
+          data: [
+            {
+              value: [data.technical, data.expression, data.logic],
+              areaStyle: { color: brand, opacity: 0.16 },
+              lineStyle: { color: brand, width: 2 },
+              itemStyle: { color: brand },
+            },
+          ],
+        },
+      ],
+    }
+  }, data)
   return (
     <div
       className="analytics-chart"
@@ -234,105 +235,102 @@ function Radar({ data }: { data: AnalyticsRadarResponse }) {
 }
 
 function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
-  const ref = useChart(
-    () => {
-      const technical = cssVar('--chart-technical', 'var(--color-brand)')
-      const expression = cssVar('--chart-expression', 'var(--color-coral)')
-      const logic = cssVar('--chart-logic', 'var(--color-ring-deep)')
-      const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
-      const tertiary = cssVar('--color-text-tertiary', 'var(--color-text-tertiary)')
-      const border = cssVar('--color-border-warm', 'var(--color-border)')
-      const ring = cssVar('--color-ring', 'var(--color-border)')
-      const surface = cssVar('--color-surface', 'var(--color-bg)')
-      const input = cssVar('--color-input', 'var(--color-border)')
-      const text = cssVar('--color-text-primary', 'var(--color-text-primary)')
-      const serif = cssToken('--font-serif', 'serif')
-      const sans = cssToken('--font-sans', 'sans-serif')
-      return {
-        animation: false,
-        tooltip: {
-          trigger: 'axis',
-          className: 'ui-chart-tooltip',
-          backgroundColor: surface,
-          borderColor: input,
-          borderWidth: 1,
-          padding: [cssVarNumber('--spacing-xs', 4), cssVarNumber('--spacing-sm', 8)],
-          textStyle: {
-            color: text,
-            fontFamily: sans,
-            fontSize: cssVarNumber('--font-size-sm', 14),
-          },
-          extraCssText: cssDeclarations({
-            'border-radius': 'var(--radius-md)',
-            'box-shadow': 'var(--shadow-whisper)',
-          }),
-          formatter: (params: unknown) => formatTrendTooltip(params, data),
+  const ref = useChart(() => {
+    const technical = cssVar('--chart-technical', 'var(--color-brand)')
+    const expression = cssVar('--chart-expression', 'var(--color-coral)')
+    const logic = cssVar('--chart-logic', 'var(--color-ring-deep)')
+    const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
+    const tertiary = cssVar('--color-text-tertiary', 'var(--color-text-tertiary)')
+    const border = cssVar('--color-border-warm', 'var(--color-border)')
+    const ring = cssVar('--color-ring', 'var(--color-border)')
+    const surface = cssVar('--color-surface', 'var(--color-bg)')
+    const input = cssVar('--color-input', 'var(--color-border)')
+    const text = cssVar('--color-text-primary', 'var(--color-text-primary)')
+    const serif = cssToken('--font-serif', 'serif')
+    const sans = cssToken('--font-sans', 'sans-serif')
+    return {
+      animation: false,
+      tooltip: {
+        trigger: 'axis',
+        className: 'ui-chart-tooltip',
+        backgroundColor: surface,
+        borderColor: input,
+        borderWidth: 1,
+        padding: [cssVarNumber('--spacing-xs', 4), cssVarNumber('--spacing-sm', 8)],
+        textStyle: {
+          color: text,
+          fontFamily: sans,
+          fontSize: cssVarNumber('--font-size-sm', 14),
         },
-        legend: {
-          bottom: cssVarNumber('--spacing-xs', 4),
-          textStyle: {
-            color: secondary,
-            fontFamily: serif,
-            fontSize: cssVarNumber('--font-size-xs', 13),
-            fontWeight: 500,
-          },
+        extraCssText: cssDeclarations({
+          'border-radius': 'var(--radius-md)',
+          'box-shadow': 'var(--shadow-whisper)',
+        }),
+        formatter: (params: unknown) => formatTrendTooltip(params, data),
+      },
+      legend: {
+        bottom: cssVarNumber('--spacing-xs', 4),
+        textStyle: {
+          color: secondary,
+          fontFamily: serif,
+          fontSize: cssVarNumber('--font-size-xs', 13),
+          fontWeight: 500,
         },
-        grid: {
-          ...TREND_GRID,
+      },
+      grid: {
+        ...TREND_GRID,
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: data.map((item) => formatDate(item.createdAt, 'MM/DD')),
+        axisLine: { lineStyle: { color: ring } },
+        axisLabel: {
+          color: tertiary,
+          fontFamily: sans,
+          fontSize: cssVarNumber('--font-size-xs', 13),
         },
-        xAxis: {
-          type: 'category',
-          boundaryGap: false,
-          data: data.map((item) => formatDate(item.createdAt, 'MM/DD')),
-          axisLine: { lineStyle: { color: ring } },
-          axisLabel: {
-            color: tertiary,
-            fontFamily: sans,
-            fontSize: cssVarNumber('--font-size-xs', 13),
-          },
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: 10,
+        axisLine: { lineStyle: { color: ring } },
+        axisLabel: {
+          color: tertiary,
+          fontFamily: sans,
+          fontSize: cssVarNumber('--font-size-xs', 13),
         },
-        yAxis: {
-          type: 'value',
-          min: 0,
-          max: 10,
-          axisLine: { lineStyle: { color: ring } },
-          axisLabel: {
-            color: tertiary,
-            fontFamily: sans,
-            fontSize: cssVarNumber('--font-size-xs', 13),
-          },
-          splitLine: { lineStyle: { color: border } },
+        splitLine: { lineStyle: { color: border } },
+      },
+      series: [
+        {
+          name: '技术能力',
+          type: 'line',
+          smooth: true,
+          data: data.map((item) => item.technical),
+          lineStyle: { color: technical, width: 2 },
+          itemStyle: { color: technical },
         },
-        series: [
-          {
-            name: '技术能力',
-            type: 'line',
-            smooth: true,
-            data: data.map((item) => item.technical),
-            lineStyle: { color: technical, width: 2 },
-            itemStyle: { color: technical },
-          },
-          {
-            name: '表达清晰度',
-            type: 'line',
-            smooth: true,
-            data: data.map((item) => item.expression),
-            lineStyle: { color: expression, width: 2 },
-            itemStyle: { color: expression },
-          },
-          {
-            name: '逻辑思维',
-            type: 'line',
-            smooth: true,
-            data: data.map((item) => item.logic),
-            lineStyle: { color: logic, width: 2 },
-            itemStyle: { color: logic },
-          },
-        ],
-      }
-    },
-    data,
-  )
+        {
+          name: '表达清晰度',
+          type: 'line',
+          smooth: true,
+          data: data.map((item) => item.expression),
+          lineStyle: { color: expression, width: 2 },
+          itemStyle: { color: expression },
+        },
+        {
+          name: '逻辑思维',
+          type: 'line',
+          smooth: true,
+          data: data.map((item) => item.logic),
+          lineStyle: { color: logic, width: 2 },
+          itemStyle: { color: logic },
+        },
+      ],
+    }
+  }, data)
   return (
     <div
       className="analytics-chart"

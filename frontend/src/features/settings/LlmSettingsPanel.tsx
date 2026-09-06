@@ -138,10 +138,10 @@ function LlmSettingsForm({
       <section className="settings-form-section">
         <h3 className="settings-form-section__title">高级设置</h3>
         <div className="advanced-grid">
-          {state.selectedCapability
-          && (state.custom
-            || state.selectedCapability.reasoning
-            || !state.selectedCapability.supportedReasoningLevels.includes(
+          {state.selectedCapability &&
+          (state.custom ||
+            state.selectedCapability.reasoning ||
+            !state.selectedCapability.supportedReasoningLevels.includes(
               state.draft.reasoningLevel ?? 'AUTO',
             )) ? (
             <Field label="思考深度" htmlFor="llm-reasoning-level">
