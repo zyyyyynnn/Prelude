@@ -22,6 +22,7 @@ import {
   type InterviewSessionItem,
 } from '@/features/interview'
 import { useAuth } from '@/features/auth'
+import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui'
 import { useFeedback } from '@/shared/ui/feedback'
 
@@ -108,7 +109,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   ]
 
   return (
-    <aside className={`app-sidebar${collapsed ? ' is-collapsed' : ''}`}>
+    <aside className={cn('app-sidebar', collapsed && 'is-collapsed')}>
       <header className="app-sidebar__header">
         <div className="app-sidebar__brand">
           <BrandMetaballs className="app-sidebar__logo" />
@@ -144,7 +145,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
 
         <div className="app-sidebar__workspace-area">
           <div
-            className={`app-sidebar__sessions scrollable${collapsed ? '' : ' is-visible'}`}
+            className={cn('app-sidebar__sessions scrollable', !collapsed && 'is-visible')}
             aria-hidden={collapsed}
           >
             {sessions.isPending && <p className="session-group__empty">正在加载会话</p>}
@@ -163,7 +164,12 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
                         return (
                           <li className="session-item-wrapper" key={session.sessionId}>
                             <button
-                              className={`session-item-btn ui-action ui-action-nav${active ? ' is-active' : ''}${loading ? ' is-loading' : ''}${failed ? ' is-error' : ''}`}
+                              className={cn(
+                                'session-item-btn ui-action ui-action-nav',
+                                active && 'is-active',
+                                loading && 'is-loading',
+                                failed && 'is-error',
+                              )}
                               aria-label={`${failed ? '重试打开会话' : group.finished ? '打开已结束会话' : '打开会话'} ${session.targetPosition || session.positionName || '未命名岗位'}`}
                               aria-busy={loading || undefined}
                               onClick={() => {
@@ -223,7 +229,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
           </div>
 
           <div
-            className={`app-sidebar__collapsed-actions${collapsed ? ' is-visible' : ''}`}
+            className={cn('app-sidebar__collapsed-actions', collapsed && 'is-visible')}
             aria-hidden={!collapsed}
           >
             <SidebarLink collapsed to="/interview" label="工作区" icon={<PanelLeft size={20} />} />
@@ -270,7 +276,7 @@ function SidebarLink({
   const link = (
     <NavLink
       className={({ isActive }) =>
-        `app-sidebar__btn app-sidebar__btn--tool ui-action ui-action-nav${isActive ? ' is-active' : ''}`
+        cn('app-sidebar__btn app-sidebar__btn--tool ui-action ui-action-nav', isActive && 'is-active')
       }
       to={to}
       aria-label={label}

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { cn } from '@/shared/lib/cn'
 
 export type SegmentedControlItem<Value extends string = string> = {
   value: Value
@@ -29,7 +30,7 @@ export function SegmentedControl<Value extends string>({
     <div className="segmented-control" role="group" aria-label={ariaLabel} style={style}>
       {items.map((item) => (
         <button
-          className={`segmented-control__item${item.value === value ? ' is-active' : ''}`}
+          className={cn('segmented-control__item', item.value === value && 'is-active')}
           key={item.value}
           type="button"
           aria-pressed={item.value === value}
