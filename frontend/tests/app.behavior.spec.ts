@@ -75,60 +75,66 @@ async function installApi(page: Page, state: ApiState) {
 }
 
 async function installVoiceHarness(page: Page, delayMedia = false) {
-  await page.addInitScript(({ delayed }) => {
-    const voiceState = { closed: 0, recorderStarts: 0, stoppedTracks: 0 }
-    class MockWebSocket {
-      static OPEN = 1
-      readyState = MockWebSocket.OPEN
-      binaryType = ''
-      onopen: ((event: Event) => void) | null = null
-      onmessage: ((event: MessageEvent) => void) | null = null
-      onerror: ((event: Event) => void) | null = null
-      onclose: ((event: CloseEvent) => void) | null = null
-      constructor() {
-        ;(window as unknown as { voiceSocket: MockWebSocket }).voiceSocket = this
-        setTimeout(() => this.onopen?.(new Event('open')), 0)
+  await page.addInitScript(
+    ({ delayed }) => {
+      const voiceState = { closed: 0, recorderStarts: 0, stoppedTracks: 0 }
+      class MockWebSocket {
+        static OPEN = 1
+        readyState = MockWebSocket.OPEN
+        binaryType = ''
+        onopen: ((event: Event) => void) | null = null
+        onmessage: ((event: MessageEvent) => void) | null = null
+        onerror: ((event: Event) => void) | null = null
+        onclose: ((event: CloseEvent) => void) | null = null
+        constructor() {
+          ;(window as unknown as { voiceSocket: MockWebSocket }).voiceSocket = this
+          setTimeout(() => this.onopen?.(new Event('open')), 0)
+        }
+        send() {}
+        close() {
+          voiceState.closed += 1
+          this.readyState = 3
+          this.onclose?.(new CloseEvent('close'))
+        }
       }
-      send() {}
-      close() {
-        voiceState.closed += 1
-        this.readyState = 3
-        this.onclose?.(new CloseEvent('close'))
+      class MockMediaRecorder {
+        state = 'inactive'
+        ondataavailable: ((event: BlobEvent) => void) | null = null
+        onstop: (() => void) | null = null
+        start() {
+          voiceState.recorderStarts += 1
+          this.state = 'recording'
+        }
+        stop() {
+          this.state = 'inactive'
+          this.onstop?.()
+        }
       }
-    }
-    class MockMediaRecorder {
-      state = 'inactive'
-      ondataavailable: ((event: BlobEvent) => void) | null = null
-      onstop: (() => void) | null = null
-      start() {
-        voiceState.recorderStarts += 1
-        this.state = 'recording'
-      }
-      stop() {
-        this.state = 'inactive'
-        this.onstop?.()
-      }
-    }
-    const media = {
-      getTracks: () => [{ stop: () => (voiceState.stoppedTracks += 1) }],
-    } as unknown as MediaStream
-    let releaseMedia: (() => void) | undefined
-    Object.defineProperty(window, 'WebSocket', { configurable: true, value: MockWebSocket })
-    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: MockMediaRecorder })
-    Object.defineProperty(navigator, 'mediaDevices', {
-      configurable: true,
-      value: {
-        getUserMedia: () =>
-          delayed
-            ? new Promise<MediaStream>((resolve) => {
-                releaseMedia = () => resolve(media)
-              })
-            : Promise.resolve(media),
-      },
-    })
-    ;(window as unknown as { voiceState: typeof voiceState }).voiceState = voiceState
-    ;(window as unknown as { releaseMedia: () => void }).releaseMedia = () => releaseMedia?.()
-  }, { delayed: delayMedia })
+      const media = {
+        getTracks: () => [{ stop: () => (voiceState.stoppedTracks += 1) }],
+      } as unknown as MediaStream
+      let releaseMedia: (() => void) | undefined
+      Object.defineProperty(window, 'WebSocket', { configurable: true, value: MockWebSocket })
+      Object.defineProperty(window, 'MediaRecorder', {
+        configurable: true,
+        value: MockMediaRecorder,
+      })
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: {
+          getUserMedia: () =>
+            delayed
+              ? new Promise<MediaStream>((resolve) => {
+                  releaseMedia = () => resolve(media)
+                })
+              : Promise.resolve(media),
+        },
+      })
+      ;(window as unknown as { voiceState: typeof voiceState }).voiceState = voiceState
+      ;(window as unknown as { releaseMedia: () => void }).releaseMedia = () => releaseMedia?.()
+    },
+    { delayed: delayMedia },
+  )
 }
 
 async function respond(route: Route, state: ApiState) {
@@ -309,7 +315,13 @@ test('@smoke presents request failures as a dismissible top system toast', async
     await route.fulfill({
       status: 503,
       contentType: 'application/problem+json',
-      body: JSON.stringify({ type: 'about:blank', title: 'service_unavailable', status: 503, detail: '服务暂不可用', code: 'service_unavailable' }),
+      body: JSON.stringify({
+        type: 'about:blank',
+        title: 'service_unavailable',
+        status: 503,
+        detail: '服务暂不可用',
+        code: 'service_unavailable',
+      }),
     })
   })
   await page.goto('/login')
@@ -319,7 +331,9 @@ test('@smoke presents request failures as a dismissible top system toast', async
 
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '服务暂不可用' })
   await toast.evaluate((element) => {
-    const closeButton = element.querySelector<HTMLButtonElement>('button[aria-label="关闭系统提示"]')
+    const closeButton = element.querySelector<HTMLButtonElement>(
+      'button[aria-label="关闭系统提示"]',
+    )
     if (!closeButton) throw new Error('系统提示缺少可访问的关闭按钮')
     closeButton.click()
   })
@@ -430,7 +444,9 @@ test('@smoke centers the async button indicator without resizing the control', a
   expect((await save.boundingBox())!.width).toBe(idleWidth)
 })
 
-test('@smoke updates the prompt model depth before the save request completes', async ({ page }) => {
+test('@smoke updates the prompt model depth before the save request completes', async ({
+  page,
+}) => {
   const state: ApiState = { requests: [] }
   const putBodies: Record<string, unknown>[] = []
   await installApi(page, state)
@@ -508,7 +524,9 @@ test('@smoke updates the prompt model depth before the save request completes', 
   })
 })
 
-test('@smoke waits for model configuration persistence before starting an interview', async ({ page }) => {
+test('@smoke waits for model configuration persistence before starting an interview', async ({
+  page,
+}) => {
   const state: ApiState = { requests: [] }
   await installApi(page, state)
 
@@ -699,7 +717,13 @@ test('@smoke keeps the active session when a requested session fails and retries
       await route.fulfill({
         status: 503,
         contentType: 'application/json',
-        body: JSON.stringify({ type: 'about:blank', title: 'service_unavailable', status: 503, detail: '会话 B 暂时不可用', code: 'service_unavailable' }),
+        body: JSON.stringify({
+          type: 'about:blank',
+          title: 'service_unavailable',
+          status: 503,
+          detail: '会话 B 暂时不可用',
+          code: 'service_unavailable',
+        }),
       })
       return
     }
@@ -714,7 +738,11 @@ test('@smoke keeps the active session when a requested session fails and retries
         summaryReport: null,
         stages: [],
         messages: [
-          { id: sessionId, role: 'assistant', content: sessionId === 11 ? 'A 正在显示' : 'B 已加载' },
+          {
+            id: sessionId,
+            role: 'assistant',
+            content: sessionId === 11 ? 'A 正在显示' : 'B 已加载',
+          },
         ],
         resumeId: 1,
         positionId: 1,
@@ -735,7 +763,9 @@ test('@smoke keeps the active session when a requested session fails and retries
   await expect(page.getByText('B 已加载')).toBeVisible()
 })
 
-test('@smoke prevents a late session request from overwriting the latest target', async ({ page }) => {
+test('@smoke prevents a late session request from overwriting the latest target', async ({
+  page,
+}) => {
   const state: ApiState = {
     requests: [],
     sessions: [
@@ -801,8 +831,7 @@ test('@smoke auto-starts a prefetched empty session once under StrictMode', asyn
         currentStage: 'technical',
         summaryReport: null,
         stages: [],
-        messages:
-          sessionId === 11 ? [{ id: 11, role: 'assistant', content: 'A 正在显示' }] : [],
+        messages: sessionId === 11 ? [{ id: 11, role: 'assistant', content: 'A 正在显示' }] : [],
         resumeId: 1,
         positionId: 1,
         attachments: [],
@@ -846,7 +875,13 @@ test('@smoke restores the authoritative session after stream failure under Stric
     await route.fulfill({
       status: 503,
       contentType: 'application/json',
-      body: JSON.stringify({ type: 'about:blank', title: 'service_unavailable', status: 503, detail: '流式服务暂不可用', code: 'service_unavailable' }),
+      body: JSON.stringify({
+        type: 'about:blank',
+        title: 'service_unavailable',
+        status: 503,
+        detail: '流式服务暂不可用',
+        code: 'service_unavailable',
+      }),
     })
   })
 
@@ -880,7 +915,13 @@ test('@smoke expires authentication when the SSE handshake returns 401', async (
     await route.fulfill({
       status: 401,
       contentType: 'application/problem+json',
-      body: JSON.stringify({ type: 'about:blank', title: 'authentication_required', status: 401, detail: '登录已失效', code: 'authentication_required' }),
+      body: JSON.stringify({
+        type: 'about:blank',
+        title: 'authentication_required',
+        status: 401,
+        detail: '登录已失效',
+        code: 'authentication_required',
+      }),
     })
   })
 
@@ -915,7 +956,11 @@ test('@smoke isolates account-scoped queries when a previous principal completes
     })
   })
   await page.route('**/api/auth/login', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: ok({ accountId: 2 }) })
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok({ accountId: 2 }),
+    })
   })
 
   try {
@@ -940,7 +985,9 @@ test('@smoke isolates account-scoped queries when a previous principal completes
   }
 })
 
-test('@smoke releases voice resources and returns to text mode after a terminal error', async ({ page }) => {
+test('@smoke releases voice resources and returns to text mode after a terminal error', async ({
+  page,
+}) => {
   const state: ApiState = {
     requests: [],
     session: {
@@ -965,10 +1012,13 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
   await talk.dispatchEvent('pointerdown')
   await expect(talk).toHaveText('松开发送')
   await page.evaluate(() => {
-    const socket = (window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } })
-      .voiceSocket
+    const socket = (
+      window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } }
+    ).voiceSocket
     socket.onmessage(
-      new MessageEvent('message', { data: JSON.stringify({ type: 'error', message: '语音服务终止' }) }),
+      new MessageEvent('message', {
+        data: JSON.stringify({ type: 'error', message: '语音服务终止' }),
+      }),
     )
   })
 
@@ -976,13 +1026,16 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
   await expect(page.getByText('语音服务终止')).toBeVisible()
   await expect
     .poll(() =>
-      page.evaluate(() => (window as unknown as { voiceState: { closed: number } }).voiceState.closed),
+      page.evaluate(
+        () => (window as unknown as { voiceState: { closed: number } }).voiceState.closed,
+      ),
     )
     .toBeGreaterThan(0)
   await expect
     .poll(() =>
       page.evaluate(
-        () => (window as unknown as { voiceState: { stoppedTracks: number } }).voiceState.stoppedTracks,
+        () =>
+          (window as unknown as { voiceState: { stoppedTracks: number } }).voiceState.stoppedTracks,
       ),
     )
     .toBeGreaterThan(0)
@@ -1012,10 +1065,13 @@ test('@smoke releases media that arrives after voice mode closes', async ({ page
   const talk = page.locator('.prompt-bar__voice-button')
   await talk.dispatchEvent('pointerdown')
   await page.evaluate(() => {
-    const socket = (window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } })
-      .voiceSocket
+    const socket = (
+      window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } }
+    ).voiceSocket
     socket.onmessage(
-      new MessageEvent('message', { data: JSON.stringify({ type: 'error', message: '语音服务终止' }) }),
+      new MessageEvent('message', {
+        data: JSON.stringify({ type: 'error', message: '语音服务终止' }),
+      }),
     )
   })
   await expect(page.getByPlaceholder('输入回答…')).toBeVisible()
@@ -1024,13 +1080,15 @@ test('@smoke releases media that arrives after voice mode closes', async ({ page
   await expect
     .poll(() =>
       page.evaluate(
-        () => (window as unknown as { voiceState: { stoppedTracks: number } }).voiceState.stoppedTracks,
+        () =>
+          (window as unknown as { voiceState: { stoppedTracks: number } }).voiceState.stoppedTracks,
       ),
     )
     .toBe(1)
   expect(
     await page.evaluate(
-      () => (window as unknown as { voiceState: { recorderStarts: number } }).voiceState.recorderStarts,
+      () =>
+        (window as unknown as { voiceState: { recorderStarts: number } }).voiceState.recorderStarts,
     ),
   ).toBe(0)
 })
@@ -1064,7 +1122,9 @@ test('@byok sends the exact custom provider DTO', async ({ page }) => {
   })
 })
 
-test('@byok discovers selected custom model reasoning levels from the backend', async ({ page }) => {
+test('@byok discovers selected custom model reasoning levels from the backend', async ({
+  page,
+}) => {
   const state: ApiState = { requests: [] }
   await installApi(page, state)
   await page.goto('/interview')
@@ -1079,9 +1139,11 @@ test('@byok discovers selected custom model reasoning levels from the backend', 
   await page.getByLabel('模型', { exact: true }).click()
   await page.getByRole('option', { name: 'account-discovered-model' }).click()
 
-  await expect.poll(() =>
-    state.requests.some((request) => request.path === '/api/llm/config/discover-capabilities'),
-  ).toBe(true)
+  await expect
+    .poll(() =>
+      state.requests.some((request) => request.path === '/api/llm/config/discover-capabilities'),
+    )
+    .toBe(true)
   await page.getByRole('combobox', { name: '思考深度' }).click()
   await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
   await expect(page.getByRole('option', { name: '低', exact: true })).toBeVisible()
@@ -1091,7 +1153,9 @@ test('@byok discovers selected custom model reasoning levels from the backend', 
   await expect(page.getByRole('option', { name: '最大', exact: true })).toBeVisible()
 })
 
-test('@byok keeps the backend conservative capability when a selected-model probe is unavailable', async ({ page }) => {
+test('@byok keeps the backend conservative capability when a selected-model probe is unavailable', async ({
+  page,
+}) => {
   const state: ApiState = { requests: [] }
   await installApi(page, state)
   await page.route('**/api/llm/config/discover-capabilities', async (route) => {
@@ -1236,10 +1300,13 @@ test('@smoke renders structured reports without resume mutation controls', async
   expect(sharedUiMetrics.primaryContrast).toBeGreaterThanOrEqual(4.5)
   expect(sharedUiMetrics.activeContrast).toBeGreaterThanOrEqual(4.5)
   expect(sharedUiMetrics.longestInteractionTransition).toBeLessThanOrEqual(150)
-  const reportListMarker = await page.locator('.structured-report__traits li').first().evaluate((item) => {
-    const marker = getComputedStyle(item, '::before')
-    return marker.content
-  })
+  const reportListMarker = await page
+    .locator('.structured-report__traits li')
+    .first()
+    .evaluate((item) => {
+      const marker = getComputedStyle(item, '::before')
+      return marker.content
+    })
   expect(reportListMarker).toBe('none')
   const reportTypography = await page.locator('.structured-report').evaluate((surface) => {
     const eyebrow = surface.querySelector<HTMLElement>('.structured-report__hero > p:first-child')!
@@ -1255,7 +1322,9 @@ test('@smoke renders structured reports without resume mutation controls', async
   })
   expect(reportTypography.eyebrowFamily).toContain('Lora')
   expect(reportTypography.adviceBodyFamily).toContain('Inter')
-  expect(reportTypography.sectionTitleLineHeight / reportTypography.sectionTitleSize).toBeLessThanOrEqual(1.3)
+  expect(
+    reportTypography.sectionTitleLineHeight / reportTypography.sectionTitleSize,
+  ).toBeLessThanOrEqual(1.3)
   const stageNavigation = page.getByRole('group', { name: '阶段复盘导航' })
   await expect(stageNavigation).toContainText('1 / 2')
   await expect(page.locator('.stage-performance')).toHaveCount(2)
@@ -1293,17 +1362,20 @@ test('@smoke renders structured reports without resume mutation controls', async
     '.structured-report__traits > div',
     '.training-plan__grid',
   ]) {
-    const adaptiveColumns = await page.locator(selector).first().evaluate((grid) => {
-      const style = getComputedStyle(grid)
-      const minimum = Number.parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue(
-          '--layout-report-column-min-inline-size',
-        ),
-      )
-      return style.gridTemplateColumns
-        .split(' ')
-        .every((column) => Number.parseFloat(column) >= minimum)
-    })
+    const adaptiveColumns = await page
+      .locator(selector)
+      .first()
+      .evaluate((grid) => {
+        const style = getComputedStyle(grid)
+        const minimum = Number.parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            '--layout-report-column-min-inline-size',
+          ),
+        )
+        return style.gridTemplateColumns
+          .split(' ')
+          .every((column) => Number.parseFloat(column) >= minimum)
+      })
     expect(adaptiveColumns).toBe(true)
   }
   await page.emulateMedia({ media: 'print' })
@@ -1330,15 +1402,26 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   await installApi(page, state)
   await page.route('**/api/analytics/**', async (route) => {
     const path = new URL(route.request().url()).pathname
-    const data =
-      path.endsWith('/radar')
-        ? { technical: 7.5, expression: 6.5, logic: 8, sessionCount: 2 }
-        : path.endsWith('/trend')
-          ? [
-              { sessionId: 1, createdAt: '2026-08-01T00:00:00Z', technical: 7, expression: 6, logic: 8 },
-              { sessionId: 2, createdAt: '2026-08-08T00:00:00Z', technical: 8, expression: 7, logic: 8 },
-            ]
-          : [{ category: '容量估算', count: 2, descriptions: ['补充量化依据。'] }]
+    const data = path.endsWith('/radar')
+      ? { technical: 7.5, expression: 6.5, logic: 8, sessionCount: 2 }
+      : path.endsWith('/trend')
+        ? [
+            {
+              sessionId: 1,
+              createdAt: '2026-08-01T00:00:00Z',
+              technical: 7,
+              expression: 6,
+              logic: 8,
+            },
+            {
+              sessionId: 2,
+              createdAt: '2026-08-08T00:00:00Z',
+              technical: 8,
+              expression: 7,
+              logic: 8,
+            },
+          ]
+        : [{ category: '容量估算', count: 2, descriptions: ['补充量化依据。'] }]
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -1356,27 +1439,30 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   await expect(page.getByText('走势')).toBeVisible()
   await expect(page.getByText('聚合')).toBeVisible()
 
-  const typography = await page.locator('.analytics-score-card').first().evaluate((card) => {
-    const label = getComputedStyle(card.querySelector('.analytics-score-card__label')!)
-    const value = getComputedStyle(card.querySelector('.analytics-score-card__value')!)
-    const meta = getComputedStyle(card.querySelector('.analytics-score-card__meta')!)
-    return {
-      label: {
-        family: label.fontFamily,
-        size: label.fontSize,
-        weight: label.fontWeight,
-      },
-      value: {
-        family: value.fontFamily,
-        numeric: value.fontVariantNumeric,
-      },
-      meta: {
-        family: meta.fontFamily,
-        size: meta.fontSize,
-        weight: meta.fontWeight,
-      },
-    }
-  })
+  const typography = await page
+    .locator('.analytics-score-card')
+    .first()
+    .evaluate((card) => {
+      const label = getComputedStyle(card.querySelector('.analytics-score-card__label')!)
+      const value = getComputedStyle(card.querySelector('.analytics-score-card__value')!)
+      const meta = getComputedStyle(card.querySelector('.analytics-score-card__meta')!)
+      return {
+        label: {
+          family: label.fontFamily,
+          size: label.fontSize,
+          weight: label.fontWeight,
+        },
+        value: {
+          family: value.fontFamily,
+          numeric: value.fontVariantNumeric,
+        },
+        meta: {
+          family: meta.fontFamily,
+          size: meta.fontSize,
+          weight: meta.fontWeight,
+        },
+      }
+    })
   expect(typography.label).toMatchObject({ size: '14px', weight: '500' })
   expect(typography.label.family).toContain('Lora')
   expect(typography.value.family).toContain('Lora')

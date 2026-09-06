@@ -1,13 +1,6 @@
 import { Dialog } from '@base-ui/react'
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-import {
-  CheckCircle2,
-  Info,
-  Loader2,
-  OctagonX,
-  TriangleAlert,
-  X,
-} from 'lucide-react'
+import { CheckCircle2, Info, Loader2, OctagonX, TriangleAlert, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { Button } from './button'
 

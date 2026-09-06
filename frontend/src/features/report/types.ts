@@ -49,4 +49,5 @@ export type StructuredInterviewReport = {
 }
 
 export type ParsedInterviewReport =
-  { kind: 'structured'; report: StructuredInterviewReport } | { kind: 'plain'; text: string }
+  | { kind: 'structured'; report: StructuredInterviewReport }
+  | { kind: 'plain'; text: string }

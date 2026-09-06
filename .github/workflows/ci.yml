@@ -86,10 +86,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: voidzero-dev/setup-vp@v1.19.0
         with:
+          version: '0.3.0'
           node-version: '24'
-          cache: npm
+          working-directory: frontend
+          run-install: 'false'
+          cache: 'true'
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
@@ -103,6 +106,13 @@ jobs:
       - name: Verify frontend
         working-directory: frontend
         run: npm run check
+
+      - name: Verify frontend architecture and UI contracts
+        working-directory: frontend
+        run: |
+          npm run verify:architecture
+          npm run verify:ui
+          npm run verify:tokens
 
       - name: Build production frontend
         working-directory: frontend

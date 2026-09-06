@@ -45,7 +45,13 @@ function ContextAttachment({
   onRemove?: () => void
 }) {
   const Icon =
-    kind === 'resume' ? FileText : kind === 'position' ? Briefcase : kind === 'image' ? Image : Paperclip
+    kind === 'resume'
+      ? FileText
+      : kind === 'position'
+        ? Briefcase
+        : kind === 'image'
+          ? Image
+          : Paperclip
   const kindLabel =
     kind === 'resume' ? '简历' : kind === 'position' ? '岗位' : kind === 'image' ? '图片' : '附件'
   return (
@@ -420,13 +426,8 @@ export function InterviewAnswerComposer({
       leftActions={
         <div className="prompt-bar__rail">
           <LockedInterviewContextButton />
-          <PromptBarFact
-            label={modelName}
-            icon={<Terminal aria-hidden="true" />}
-          />
-          {jdMatched && (
-            <PromptBarFact label="JD 匹配" icon={<ScanSearch aria-hidden="true" />} />
-          )}
+          <PromptBarFact label={modelName} icon={<Terminal aria-hidden="true" />} />
+          {jdMatched && <PromptBarFact label="JD 匹配" icon={<ScanSearch aria-hidden="true" />} />}
         </div>
       }
       rightActions={actions}

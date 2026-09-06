@@ -37,8 +37,7 @@ npm --prefix frontend run dev
 
 ```powershell
 mvn -f backend/pom.xml clean test
-npm --prefix frontend run typecheck
-npm --prefix frontend run lint
+npm --prefix frontend run check
 npm --prefix frontend run verify:architecture
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
@@ -47,6 +46,7 @@ npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:a11y
 npm --prefix frontend run verify:visual
 npm --prefix frontend run build
+npm --prefix frontend run verify:production
 npm --prefix frontend run test:smoke
 npm --prefix frontend audit --omit=dev
 git diff --check

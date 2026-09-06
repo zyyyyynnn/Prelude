@@ -4,7 +4,8 @@
 
 | 门禁 | 验证范围 |
 | --- | --- |
-| `npm run check` | TypeScript、ESLint、架构、UI 与 token 静态门禁 |
+| `npm run check` | Vite+ 统一的格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
+| `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界 |
 | `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项 |
 | `npm run verify:tokens` | token 声明完整性、基础控件不变量、语义阴影与层级唯一性 |
 | `npm run verify:production` | 生产产物不包含开发态组件检查面 |

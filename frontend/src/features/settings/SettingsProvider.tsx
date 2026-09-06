@@ -1,10 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { SettingsModal } from './SettingsModal'
-import {
-  SettingsContext,
-  type SettingsOpenRequest,
-  type SettingsRequest,
-} from './settings-context'
+import { SettingsContext, type SettingsOpenRequest, type SettingsRequest } from './settings-context'
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)

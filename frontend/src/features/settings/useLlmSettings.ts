@@ -15,10 +15,7 @@ import type {
   ReasoningLevel,
 } from './types'
 
-export function useLlmSettings(
-  config: LlmConfigResponse,
-  providers: LlmProviderResponse[],
-) {
+export function useLlmSettings(config: LlmConfigResponse, providers: LlmProviderResponse[]) {
   const feedback = useFeedback()
   const client = useQueryClient()
   const initialProvider = config.provider
@@ -41,8 +38,11 @@ export function useLlmSettings(
 
   const custom = isCustomProvider(draft.provider)
   const protocol = getCustomProviderMeta(draft.provider)
-  const selectedCapability = models.find((item) => item.model === draft.model)
-    ?? (config.provider === draft.provider && config.model === draft.model ? config.capability : undefined)
+  const selectedCapability =
+    models.find((item) => item.model === draft.model) ??
+    (config.provider === draft.provider && config.model === draft.model
+      ? config.capability
+      : undefined)
   const reasoningLevels = selectedCapability?.supportedReasoningLevels ?? []
 
   const update = <K extends keyof LlmConfigPayload>(key: K, value: LlmConfigPayload[K]) => {

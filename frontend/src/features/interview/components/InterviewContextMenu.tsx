@@ -100,10 +100,7 @@ export function InterviewContextMenu({
     >
       <DropdownMenuGroup>
         <DropdownMenuItem disabled={uploading} onClick={onUpload}>
-          <ContextMenuLabel
-            icon={<Paperclip />}
-            label={uploading ? '正在上传…' : '上传附件'}
-          />
+          <ContextMenuLabel icon={<Paperclip />} label={uploading ? '正在上传…' : '上传附件'} />
         </DropdownMenuItem>
         <DropdownMenuSubmenu
           trigger={
@@ -133,11 +130,7 @@ export function InterviewContextMenu({
         </DropdownMenuSubmenu>
         <DropdownMenuSubmenu
           trigger={
-            <SubmenuLabel
-              icon={<Briefcase />}
-              label="选择岗位"
-              detail={positionName ?? '未选择'}
-            />
+            <SubmenuLabel icon={<Briefcase />} label="选择岗位" detail={positionName ?? '未选择'} />
           }
         >
           <DropdownMenuRadioGroup

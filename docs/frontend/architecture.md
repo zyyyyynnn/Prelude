@@ -2,7 +2,7 @@
 
 ## Runtime
 
-Prelude 前端是由 Vite 构建的 React SPA。React Router 管理路由与 URL，TanStack Query 管理服务端状态，组件状态保留在最接近使用位置的 React 组件中。
+Prelude 前端是由 Vite+ 统一驱动开发、检查、构建与预览的 React SPA。React Router 管理路由与 URL，TanStack Query 管理服务端状态，组件状态保留在最接近使用位置的 React 组件中。
 
 ```text
 frontend/src/
@@ -49,9 +49,8 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 ## 验证
 
-- `npm run typecheck`：严格 TypeScript 检查。
-- `npm run lint`：ESLint、typescript-eslint 与 React Hooks 规则。
-- `npm run build`：执行 Vite 生产构建；TypeScript 静态检查由 `npm run check` 负责。
+- `npm run check`：由 Vite+ 统一执行 Oxfmt、Oxlint type-aware lint 与 TypeScript 类型检查。
+- `npm run build`：由 Vite+ 执行生产构建。
 - `npm run test:smoke`：在 React 开发 StrictMode 下通过真实浏览器验证核心行为与客户端路由。
 - `npm run verify:architecture`：目录与依赖方向。
 - `npm run verify:ui`、`verify:tokens`：UI 结构与 token 契约。

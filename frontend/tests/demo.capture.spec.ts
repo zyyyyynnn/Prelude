@@ -3,11 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import {
-  createDemoState,
-  DEMO_VIEWPORT,
-  installDemoHarness,
-} from './demo-harness'
+import { createDemoState, DEMO_VIEWPORT, installDemoHarness } from './demo-harness'
 
 const screenshotDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -36,9 +32,11 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
   await expect(page).toHaveURL(/session=62/)
   await expect(page.getByText('如果下周接手这条链路，你会优先补哪一项可靠性验证？')).toBeVisible()
 
-  await page.getByLabel('面试回答').fill(
-    '我会先做消息中间件短时不可用的演练，记录积压量、恢复耗时和重复消费比例，再据此设置告警阈值，并验证人工补偿入口确实可用。',
-  )
+  await page
+    .getByLabel('面试回答')
+    .fill(
+      '我会先做消息中间件短时不可用的演练，记录积压量、恢复耗时和重复消费比例，再据此设置告警阈值，并验证人工补偿入口确实可用。',
+    )
   await page.getByRole('button', { name: '发送' }).click()
   await expect(page.locator('.status-badge')).toHaveCount(0)
   await expect(page.getByText('本场面试已结束，可以生成报告。')).toBeVisible()

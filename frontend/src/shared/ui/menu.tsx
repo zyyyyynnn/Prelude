@@ -76,13 +76,7 @@ export function DropdownMenuRadioGroup({
   )
 }
 
-export function DropdownMenuRadioItem({
-  value,
-  children,
-}: {
-  value: string
-  children: ReactNode
-}) {
+export function DropdownMenuRadioItem({ value, children }: { value: string; children: ReactNode }) {
   return (
     <Menu.RadioItem className="prelude-menu__item" value={value} closeOnClick>
       {children}

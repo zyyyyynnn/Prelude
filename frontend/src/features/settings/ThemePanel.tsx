@@ -27,7 +27,11 @@ function ThemeForm({ initial, revision }: { initial: ThemePreference; revision: 
   const feedback = useFeedback()
   const save = useMutation({
     mutationFn: () =>
-      saveProfile({ themePreference: value, expectedRevision: revision, operationId: crypto.randomUUID() }),
+      saveProfile({
+        themePreference: value,
+        expectedRevision: revision,
+        operationId: crypto.randomUUID(),
+      }),
     onSuccess: (data) => {
       client.setQueryData(['profile'], data)
       applyTheme(data.themePreference ?? value)

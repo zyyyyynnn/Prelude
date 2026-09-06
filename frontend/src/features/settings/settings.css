@@ -133,10 +133,7 @@
 }
 .llm-model-selection-grid {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(var(--layout-form-field-min-inline-size), 1fr)
-  );
+  grid-template-columns: repeat(auto-fit, minmax(var(--layout-form-field-min-inline-size), 1fr));
   gap: var(--spacing-md);
 }
 .settings-form-section {

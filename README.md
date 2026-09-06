@@ -56,7 +56,7 @@ README 只展示系统职责分层；16 个应用模块的完整边界与依赖�
 
 | 层级 | 技术 | 职责 |
 | --- | --- | --- |
-| 前端应用 | React 19、React Router、TypeScript、Vite | 页面组合、路由导航、类型契约和生产构建 |
+| 前端应用 | React 19、React Router、TypeScript、Vite+ | 页面组合、路由导航、类型契约和统一前端工具链 |
 | 界面基础 | Base UI、Tailwind CSS | 浮层、焦点与键盘交互原语，以及设计令牌和布局样式 |
 | 服务端状态 | TanStack Query | 请求生命周期、缓存、失效与乐观更新 |
 | 模块化后端 | Java 21、Spring Boot 4.1、Spring Modulith | 接口边界、模块化业务用例与依赖拓扑验证 |

@@ -1,9 +1,5 @@
 import { Input as InputPrimitive } from '@base-ui/react/input'
-import type {
-  InputHTMLAttributes,
-  ReactNode,
-  TextareaHTMLAttributes,
-} from 'react'
+import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 import { cn } from '@/shared/lib/cn'
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
