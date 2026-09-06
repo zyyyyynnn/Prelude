@@ -4,13 +4,13 @@ import type {
   ReactNode,
   TextareaHTMLAttributes,
 } from 'react'
-import { classNames } from '@/shared/lib/class-names'
+import { cn } from '@/shared/lib/cn'
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <InputPrimitive
       data-slot="input"
-      className={classNames('prelude-input', 'ui-field-control', className)}
+      className={cn('prelude-input', 'ui-field-control', className)}
       {...props}
     />
   )
@@ -19,7 +19,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   return (
     <textarea
       data-slot="textarea"
-      className={classNames('prelude-textarea', 'ui-field-control', className)}
+      className={cn('prelude-textarea', 'ui-field-control', className)}
       {...props}
     />
   )

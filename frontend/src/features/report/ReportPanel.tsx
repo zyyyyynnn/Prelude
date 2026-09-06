@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui'
 import { parseInterviewReport } from './parse-interview-report'
 import type {
@@ -137,7 +138,7 @@ function StagePerformanceList({ stages }: { stages: StructuredStagePerformance[]
       <div className="stage-performance-list">
         {stages.map((stage, stageIndex) => (
           <article
-            className={`stage-performance${stageIndex === index ? ' is-active' : ''}`}
+            className={cn('stage-performance', stageIndex === index && 'is-active')}
             aria-hidden={stageIndex !== index}
             key={stage.stageName}
           >

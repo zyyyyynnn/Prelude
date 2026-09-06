@@ -1,6 +1,6 @@
 import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import type { ButtonHTMLAttributes } from 'react'
-import { classNames } from '@/shared/lib/class-names'
+import { cn } from '@/shared/lib/cn'
 
 export function Button({
   className,
@@ -18,7 +18,7 @@ export function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={classNames(
+      className={cn(
         'prelude-button',
         `prelude-button--${variant}`,
         `prelude-button--${size}`,

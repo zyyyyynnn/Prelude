@@ -5,7 +5,7 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react'
-import { classNames } from '@/shared/lib/class-names'
+import { cn } from '@/shared/lib/cn'
 
 /*
  * Adapted from Beautiful UI's Prompt Bar.
@@ -50,7 +50,7 @@ export function PromptBar({
 
   return (
     <form
-      className={classNames(
+      className={cn(
         'prompt-bar',
         placement === 'centered' ? 'is-centered' : 'is-bottom',
         disabled && 'is-disabled',

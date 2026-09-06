@@ -1,7 +1,7 @@
 import { Dialog, Tooltip } from '@base-ui/react'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { classNames } from '@/shared/lib/class-names'
+import { cn } from '@/shared/lib/cn'
 
 export function IconTooltip({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -36,7 +36,7 @@ export function Modal({
       <Dialog.Portal>
         <Dialog.Backdrop className="prelude-dialog__backdrop" />
         <Dialog.Viewport className="prelude-dialog__viewport">
-          <Dialog.Popup className={classNames('prelude-dialog', className)}>
+          <Dialog.Popup className={cn('prelude-dialog', className)}>
             <Dialog.Title className="sr-only">{title}</Dialog.Title>
             {showClose && (
               <Dialog.Close

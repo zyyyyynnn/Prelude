@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
+import { cn } from '@/shared/lib/cn'
 import { Button, Field, IconTooltip, Input } from '@/shared/ui'
 import { useFeedback } from '@/shared/ui/feedback'
 import { login, register } from './api'
@@ -89,14 +90,14 @@ export function LoginPage() {
 
             <div className="segmented-control" role="group" aria-label="账号操作">
               <button
-                className={mode === 'login' ? 'is-active' : ''}
+                className={cn(mode === 'login' && 'is-active')}
                 type="button"
                 onClick={() => switchMode('login')}
               >
                 登录
               </button>
               <button
-                className={mode === 'register' ? 'is-active' : ''}
+                className={cn(mode === 'register' && 'is-active')}
                 type="button"
                 onClick={() => switchMode('register')}
               >
@@ -145,7 +146,7 @@ export function LoginPage() {
               </Field>
 
               <div
-                className={`auth-email-field${mode === 'register' ? ' is-visible' : ''}`}
+                className={cn('auth-email-field', mode === 'register' && 'is-visible')}
                 aria-hidden={mode !== 'register'}
               >
                 <Field label="邮箱" htmlFor="auth-email">

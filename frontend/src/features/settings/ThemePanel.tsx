@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui'
 import { useFeedback } from '@/shared/ui/feedback'
 import { fetchProfile, saveProfile } from './api'
@@ -46,7 +47,10 @@ function ThemeForm({ initial, revision }: { initial: ThemePreference; revision: 
             type="button"
             role="radio"
             aria-checked={value === option.value}
-            className={`theme-option ui-action ui-action-selectable${value === option.value ? ' is-active' : ''}`}
+            className={cn(
+              'theme-option ui-action ui-action-selectable',
+              value === option.value && 'is-active',
+            )}
             onClick={() => {
               setValue(option.value)
               applyTheme(option.value)

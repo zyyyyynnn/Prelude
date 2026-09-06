@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '@/features/auth'
 import { ResumeManagementPanel } from '@/features/resume'
 import { PositionManagementPanel } from '@/features/template'
+import { cn } from '@/shared/lib/cn'
 import { Modal } from '@/shared/ui'
 import { LlmSettingsPanel } from './LlmSettingsPanel'
 import { ProfilePanel } from './ProfilePanel'
@@ -142,7 +143,7 @@ function TabButton({
 }) {
   return (
     <button
-      className={`settings-sidebar__item ui-action ui-action-nav${active ? ' is-active' : ''}`}
+      className={cn('settings-sidebar__item ui-action ui-action-nav', active && 'is-active')}
       aria-current={active ? 'page' : undefined}
       onClick={onClick}
     >
