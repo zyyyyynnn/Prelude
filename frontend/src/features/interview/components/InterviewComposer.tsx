@@ -14,6 +14,7 @@ import type { AttachmentItem } from '@/features/assets'
 import type { ResumeItem } from '@/features/resume'
 import type { LlmConfigResponse, LlmProviderResponse } from '@/features/settings'
 import type { PositionTemplate } from '@/features/template'
+import { cn } from '@/shared/lib/cn'
 import { Button, IconTooltip } from '@/shared/ui'
 import type { InterviewMessageRecord } from '../types'
 import { useVoiceInterview } from '../useVoiceInterview'
@@ -308,7 +309,7 @@ export function InterviewAnswerComposer({
     <div className="prompt-bar__voice-mode">
       <div className="prompt-bar__voice-area">
         <div className="prompt-bar__voice-status">
-          <span className={`prompt-bar__status-dot is-${voiceState.status}`} />
+          <span className={cn('prompt-bar__status-dot', `is-${voiceState.status}`)} />
           <span>
             {voiceState.recording
               ? '正在聆听'
@@ -320,7 +321,7 @@ export function InterviewAnswerComposer({
           </span>
         </div>
         <div
-          className={voiceState.recording ? 'prompt-bar__wave is-active' : 'prompt-bar__wave'}
+          className={cn('prompt-bar__wave', voiceState.recording && 'is-active')}
           aria-hidden="true"
         >
           {Array.from({ length: 9 }, (_, index) => (
@@ -349,9 +350,7 @@ export function InterviewAnswerComposer({
       </IconTooltip>
       <Button
         type="button"
-        className={
-          voiceState.recording ? 'prompt-bar__voice-button is-pressed' : 'prompt-bar__voice-button'
-        }
+        className={cn('prompt-bar__voice-button', voiceState.recording && 'is-pressed')}
         disabled={disabled || sending}
         onPointerDown={() => void voiceState.startRecording()}
         onPointerUp={voiceState.stopRecording}

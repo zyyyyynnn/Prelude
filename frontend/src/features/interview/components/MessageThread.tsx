@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { cn } from '@/shared/lib/cn'
 import type { InterviewMessageRecord } from '../types'
 
 export function MessageThread({
@@ -29,7 +30,7 @@ export function MessageThread({
       {visible.length ? (
         visible.map((message, index) => (
           <article
-            className={`message-bubble message-bubble--${message.role}`}
+            className={cn('message-bubble', `message-bubble--${message.role}`)}
             key={`${message.id}-${message.createdAt ?? index}`}
           >
             <div className="message-bubble__head">

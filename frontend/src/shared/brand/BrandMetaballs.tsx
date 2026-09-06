@@ -1,5 +1,6 @@
 import { Metaballs } from '@paper-design/shaders-react'
 import { useEffect, useState } from 'react'
+import { cn } from '@/shared/lib/cn'
 
 const colorNames = [
   '--brand-metaballs-1',
@@ -28,7 +29,7 @@ export function BrandMetaballs({ className = '' }: { className?: string }) {
     colors: colorNames.map(cssColor),
   }
   return (
-    <div className={`brand-metaballs ${className}`} aria-hidden="true">
+    <div className={cn('brand-metaballs', className)} aria-hidden="true">
       <Metaballs
         colorBack={palette.background}
         colors={palette.colors}

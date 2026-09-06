@@ -1,7 +1,7 @@
 import { Menu } from '@base-ui/react/menu'
 import { Check } from 'lucide-react'
 import type { ReactElement, ReactNode } from 'react'
-import { classNames } from '@/shared/lib/class-names'
+import { cn } from '@/shared/lib/cn'
 
 export function DropdownMenu({
   trigger,
@@ -26,7 +26,7 @@ export function DropdownMenu({
           sideOffset={6}
           align={align}
         >
-          <Menu.Popup className={classNames('prelude-menu', className)}>{children}</Menu.Popup>
+          <Menu.Popup className={cn('prelude-menu', className)}>{children}</Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
@@ -136,7 +136,7 @@ export function DropdownMenuItem({
 }) {
   return (
     <Menu.Item
-      className={classNames('prelude-menu__item', className)}
+      className={cn('prelude-menu__item', className)}
       disabled={disabled}
       onClick={onClick}
     >

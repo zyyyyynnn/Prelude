@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { cn } from '@/shared/lib/cn'
 
 const config = {
   particleCount: 76,
@@ -55,7 +56,7 @@ export function RoseThree({ className, speedMultiplier = 1 }: { className?: stri
 
   return (
     <svg
-      className={`rose-three-loader${className ? ` ${className}` : ''}`}
+      className={cn('rose-three-loader', className)}
       viewBox="0 0 100 100"
       fill="none"
       aria-hidden="true"

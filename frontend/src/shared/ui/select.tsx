@@ -1,6 +1,6 @@
 import { Select as BaseSelect } from '@base-ui/react/select'
 import { Check, ChevronDown } from 'lucide-react'
-import { classNames } from '@/shared/lib/class-names'
+import { cn } from '@/shared/lib/cn'
 
 export type SelectOption = {
   value: string
@@ -41,7 +41,7 @@ export function Select({
         id={id}
         data-slot="select-trigger"
         aria-label={ariaLabel}
-        className={classNames('prelude-select', 'ui-field-control', className)}
+        className={cn('prelude-select', 'ui-field-control', className)}
       >
         <BaseSelect.Value />
         <BaseSelect.Icon className="prelude-select__icon">
