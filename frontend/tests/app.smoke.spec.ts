@@ -72,16 +72,16 @@ async function installApi(page: Page) {
     else if (path === '/api/llm/providers') data = providers
     else if (path === '/api/llm/config')
       data = {
-      provider: 'deepseek',
-      model: 'deepseek-v4-pro',
-      customEndpointUrl: null,
-      hasApiKey: false,
-      apiKeyMasked: null,
-      reasoningLevel: 'AUTO',
-      maxOutputTokens: 4096,
-      fallbackModels: [],
-      capability: deepSeekCapability(),
-    }
+        provider: 'deepseek',
+        model: 'deepseek-v4-pro',
+        customEndpointUrl: null,
+        hasApiKey: false,
+        apiKeyMasked: null,
+        reasoningLevel: 'AUTO',
+        maxOutputTokens: 4096,
+        fallbackModels: [],
+        capability: deepSeekCapability(),
+      }
     else if (path === '/api/analytics/radar')
       data = { technical: 8, expression: 7, logic: 9, sessionCount: 1 }
     else if (path === '/api/analytics/trend')
@@ -205,7 +205,9 @@ test('@dark suppresses transitions while applying theme changes', async ({ page 
   await page.evaluate(
     () =>
       new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
       ),
   )
   await expect(page.locator('html')).not.toHaveClass(/is-theme-transitioning/)
@@ -305,7 +307,10 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
   expect(registerGeometry.buttonGap).toBeLessThanOrEqual(40)
   expect(Math.abs(registerGeometry.buttonTop - loginGeometry.buttonTop)).toBeLessThan(1)
   await page.evaluate(
-    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
   )
   await page.screenshot({ path: test.info().outputPath('register-desktop.png'), fullPage: true })
 })
@@ -385,10 +390,12 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.app-sidebar__btn > svg')).every(
       (icon) => icon.getBoundingClientRect().width > 0 && icon.getBoundingClientRect().height > 0,
     ),
-    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every((label) => {
-      const style = getComputedStyle(label)
-      return style.visibility === 'hidden' && style.opacity === '0'
-    }),
+    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every(
+      (label) => {
+        const style = getComputedStyle(label)
+        return style.visibility === 'hidden' && style.opacity === '0'
+      },
+    ),
   }))
   expect(collapsedSidebar.width).toBeLessThan(expandedSidebarWidth)
   expect(collapsedSidebar.iconsVisible).toBe(true)
@@ -409,31 +416,44 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(resumeMenuItem).toBeVisible()
   await expect(positionMenuItem).toBeVisible()
   await expect(jdMenuItem).toBeVisible()
-  const contextMenuGeometry = await page.locator('.prelude-menu').first().evaluate((menu) => {
-    const items = Array.from(menu.querySelectorAll<HTMLElement>('.prelude-menu__item'))
-    const iconLefts = items.map((item) => item.querySelector<HTMLElement>('.prelude-menu__icon')?.getBoundingClientRect().left)
-    const details = items
-      .map((item) => item.querySelector<HTMLElement>('.prelude-menu__detail')?.getBoundingClientRect())
-      .filter((box): box is DOMRect => Boolean(box))
-    const statusesShareRow = items
-      .map((item) => {
-        const label = item.querySelector<HTMLElement>('.prelude-menu__label')
-        const detail = item.querySelector<HTMLElement>('.prelude-menu__detail')
-        if (!label || !detail) return true
-        const labelBox = label.getBoundingClientRect()
-        const detailBox = detail.getBoundingClientRect()
-        return Math.abs(labelBox.top + labelBox.height / 2 - (detailBox.top + detailBox.height / 2)) < 1
-      })
-      .every(Boolean)
-    return {
-      iconColumnsAligned: iconLefts.every((left) => left !== undefined && Math.abs(left - iconLefts[0]!) < 1),
-      statusColumnsAligned: details.every(
-        (box) =>
-          Math.abs(box.left - details[0].left) < 1 && Math.abs(box.right - details[0].right) < 1,
-      ),
-      statusesShareRow,
-    }
-  })
+  const contextMenuGeometry = await page
+    .locator('.prelude-menu')
+    .first()
+    .evaluate((menu) => {
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('.prelude-menu__item'))
+      const iconLefts = items.map(
+        (item) =>
+          item.querySelector<HTMLElement>('.prelude-menu__icon')?.getBoundingClientRect().left,
+      )
+      const details = items
+        .map((item) =>
+          item.querySelector<HTMLElement>('.prelude-menu__detail')?.getBoundingClientRect(),
+        )
+        .filter((box): box is DOMRect => Boolean(box))
+      const statusesShareRow = items
+        .map((item) => {
+          const label = item.querySelector<HTMLElement>('.prelude-menu__label')
+          const detail = item.querySelector<HTMLElement>('.prelude-menu__detail')
+          if (!label || !detail) return true
+          const labelBox = label.getBoundingClientRect()
+          const detailBox = detail.getBoundingClientRect()
+          return (
+            Math.abs(labelBox.top + labelBox.height / 2 - (detailBox.top + detailBox.height / 2)) <
+            1
+          )
+        })
+        .every(Boolean)
+      return {
+        iconColumnsAligned: iconLefts.every(
+          (left) => left !== undefined && Math.abs(left - iconLefts[0]!) < 1,
+        ),
+        statusColumnsAligned: details.every(
+          (box) =>
+            Math.abs(box.left - details[0].left) < 1 && Math.abs(box.right - details[0].right) < 1,
+        ),
+        statusesShareRow,
+      }
+    })
   expect(contextMenuGeometry).toEqual({
     iconColumnsAligned: true,
     statusColumnsAligned: true,
@@ -474,15 +494,19 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(page.getByRole('menuitem', { name: /思考深度/ })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: '管理模型' })).toBeVisible()
   const modelMenuGeometry = await modelMenu.evaluate((menu) => {
-    const rows = Array.from(menu.querySelectorAll<HTMLElement>(':scope > [role="group"] > .prelude-menu__item'))
+    const rows = Array.from(
+      menu.querySelectorAll<HTMLElement>(':scope > [role="group"] > .prelude-menu__item'),
+    )
     const details = rows
-      .map((row) => row.querySelector<HTMLElement>('.prelude-menu__detail')?.getBoundingClientRect())
+      .map((row) =>
+        row.querySelector<HTMLElement>('.prelude-menu__detail')?.getBoundingClientRect(),
+      )
       .filter((box): box is DOMRect => Boolean(box))
     return {
       detailColumnsAligned: details.every((box) => Math.abs(box.right - details[0].right) < 1),
-      optionRowsUseThreeColumnGrid: rows.slice(0, 2).every(
-        (row) => getComputedStyle(row).gridTemplateColumns.split(' ').length === 3,
-      ),
+      optionRowsUseThreeColumnGrid: rows
+        .slice(0, 2)
+        .every((row) => getComputedStyle(row).gridTemplateColumns.split(' ').length === 3),
       decorativeIconCount: menu.querySelectorAll('.prelude-menu__icon').length,
       manageIconCount: menu.querySelectorAll('.prelude-menu__manage-icon').length,
     }
@@ -528,34 +552,41 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
     page.locator('.settings-inline-actions--header').getByRole('button', { name: '上传简历' }),
   ).toBeVisible()
   await expect(page.locator('.resume-row__main > svg')).toHaveCount(0)
-  const resumePadding = await page.locator('.resume-row').first().evaluate((row) => {
-    const style = getComputedStyle(row)
-    return [style.paddingInlineStart, style.paddingInlineEnd]
-  })
+  const resumePadding = await page
+    .locator('.resume-row')
+    .first()
+    .evaluate((row) => {
+      const style = getComputedStyle(row)
+      return [style.paddingInlineStart, style.paddingInlineEnd]
+    })
   expect(resumePadding[0]).toBe(resumePadding[1])
   await page.getByRole('button', { name: '岗位管理' }).click()
   await expect(
     page.locator('.settings-inline-actions--header').getByRole('button', { name: '创建岗位' }),
   ).toBeVisible()
   await expect(page.locator('.position-settings__item svg')).toHaveCount(0)
-  const positionWorkspace = await page.locator('.position-settings__workspace').evaluate((workspace) => {
-    const [catalog, form] = Array.from(workspace.children)
-    const catalogRect = catalog.getBoundingClientRect()
-    const formRect = form.getBoundingClientRect()
-    const catalogStyle = getComputedStyle(catalog)
-    const formStyle = getComputedStyle(form)
-    const catalogTitle = catalog.querySelector<HTMLElement>('.settings-section__title')!
-    const firstItem = catalog.querySelector<HTMLElement>('.position-settings__item-name')!
-    return {
-      alignedTop: Math.abs(catalogRect.top - formRect.top) < 1,
-      sideBySide: formRect.left > catalogRect.right,
-      matchingPadding: catalogStyle.paddingInlineStart === formStyle.paddingInlineStart,
-      matchingRadius: catalogStyle.borderRadius === formStyle.borderRadius,
-      matchingSurface: catalogStyle.backgroundColor === formStyle.backgroundColor,
-      contentAligned:
-        Math.abs(catalogTitle.getBoundingClientRect().left - firstItem.getBoundingClientRect().left) < 1,
-    }
-  })
+  const positionWorkspace = await page
+    .locator('.position-settings__workspace')
+    .evaluate((workspace) => {
+      const [catalog, form] = Array.from(workspace.children)
+      const catalogRect = catalog.getBoundingClientRect()
+      const formRect = form.getBoundingClientRect()
+      const catalogStyle = getComputedStyle(catalog)
+      const formStyle = getComputedStyle(form)
+      const catalogTitle = catalog.querySelector<HTMLElement>('.settings-section__title')!
+      const firstItem = catalog.querySelector<HTMLElement>('.position-settings__item-name')!
+      return {
+        alignedTop: Math.abs(catalogRect.top - formRect.top) < 1,
+        sideBySide: formRect.left > catalogRect.right,
+        matchingPadding: catalogStyle.paddingInlineStart === formStyle.paddingInlineStart,
+        matchingRadius: catalogStyle.borderRadius === formStyle.borderRadius,
+        matchingSurface: catalogStyle.backgroundColor === formStyle.backgroundColor,
+        contentAligned:
+          Math.abs(
+            catalogTitle.getBoundingClientRect().left - firstItem.getBoundingClientRect().left,
+          ) < 1,
+      }
+    })
   expect(positionWorkspace).toEqual({
     alignedTop: true,
     sideBySide: true,
@@ -613,7 +644,8 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
 }) => {
   await page.setViewportSize({ width: 1200, height: 800 })
   await installApi(page)
-  const longTitle = '资深全栈工程师（Java 后端 × React 前端 · 平台架构与高并发稳定性方向 · 负责人级）'
+  const longTitle =
+    '资深全栈工程师（Java 后端 × React 前端 · 平台架构与高并发稳定性方向 · 负责人级）'
   await page.route('**/api/interview/sessions', async (route) => {
     await route.fulfill({
       status: 200,
@@ -664,22 +696,20 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
   await expect(header.getByRole('button', { name: '面试' })).toBeVisible()
   await expect(header.locator('.status-badge')).toHaveCount(0)
 
-  const geometry = await header
-    .locator('.workspace-header__main')
-    .evaluate((main) => {
-      const titleArea = main.querySelector<HTMLElement>('.workspace-header__title-area')!
-      const right = main.querySelector<HTMLElement>('.workspace-header__right')!
-      const title = main.querySelector<HTMLElement>('.workspace-header__title')!
-      const titleBox = title.getBoundingClientRect()
-      return {
-        titleAreaRight: titleArea.getBoundingClientRect().right,
-        rightLeft: right.getBoundingClientRect().left,
-        titleRight: titleBox.right,
-        truncated: title.scrollWidth > title.clientWidth,
-        titleAreaTop: titleArea.getBoundingClientRect().top,
-        rightTop: right.getBoundingClientRect().top,
-      }
-    })
+  const geometry = await header.locator('.workspace-header__main').evaluate((main) => {
+    const titleArea = main.querySelector<HTMLElement>('.workspace-header__title-area')!
+    const right = main.querySelector<HTMLElement>('.workspace-header__right')!
+    const title = main.querySelector<HTMLElement>('.workspace-header__title')!
+    const titleBox = title.getBoundingClientRect()
+    return {
+      titleAreaRight: titleArea.getBoundingClientRect().right,
+      rightLeft: right.getBoundingClientRect().left,
+      titleRight: titleBox.right,
+      truncated: title.scrollWidth > title.clientWidth,
+      titleAreaTop: titleArea.getBoundingClientRect().top,
+      rightTop: right.getBoundingClientRect().top,
+    }
+  })
 
   // The left group never overlaps the right controls; the title is the only
   // shrinkable element and stays inside its allocation (single header row).

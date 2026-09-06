@@ -15,7 +15,9 @@ export function applyTheme(value: ThemePreference) {
   document.documentElement.classList.toggle('dark', dark)
   void document.documentElement.offsetHeight
   requestAnimationFrame(() =>
-    requestAnimationFrame(() => document.documentElement.classList.remove('is-theme-transitioning')),
+    requestAnimationFrame(() =>
+      document.documentElement.classList.remove('is-theme-transitioning'),
+    ),
   )
   window.dispatchEvent(new CustomEvent('prelude-theme-change', { detail: { theme: value, dark } }))
 }

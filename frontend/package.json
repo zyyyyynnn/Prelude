@@ -3,13 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "check": "npm run typecheck && npm run lint && npm run verify:architecture && npm run verify:ui && npm run verify:tokens",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings=0",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test:serve": "vite --host 127.0.0.1 --port 4173",
+    "dev": "vp dev",
+    "check": "vp check",
+    "build": "vp build",
+    "preview": "vp preview",
+    "test:serve": "vp dev --host 127.0.0.1 --port 4173",
     "test:smoke": "playwright test --grep @smoke --workers=1",
     "verify:architecture": "node scripts/verify-architecture.cjs",
     "verify:ui": "node scripts/verify-ui-guardrails.cjs",
@@ -42,25 +40,21 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@eslint/js": "10.0.1",
     "@playwright/test": "1.62.1",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "@vitejs/plugin-react": "6.1.1",
-    "eslint": "10.9.1",
-    "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-react-refresh": "0.5.5",
-    "globals": "17.11.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.68.0",
-    "vite": "8.2.2"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
+    "vite-plus": "0.3.0"
   },
   "overrides": {
-    "nanoid": "3.3.18"
+    "nanoid": "3.3.18",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0"
   },
   "engines": {
-    "node": ">=22.22.0"
+    "node": "^22.22.0 || >=24.11.0"
   },
   "packageManager": "npm@12.0.2"
 }

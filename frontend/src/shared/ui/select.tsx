@@ -54,7 +54,10 @@ export function Select({
           sideOffset={4}
           alignItemWithTrigger={false}
         >
-          <BaseSelect.Popup data-slot="select-content" className="prelude-menu prelude-select-popup">
+          <BaseSelect.Popup
+            data-slot="select-content"
+            className="prelude-menu prelude-select-popup"
+          >
             <BaseSelect.List data-slot="select-list" className="prelude-select__list">
               {options.map((option) => (
                 <BaseSelect.Item
@@ -64,10 +67,7 @@ export function Select({
                   data-slot="select-item"
                   className="prelude-menu__item prelude-select__item"
                 >
-                  <BaseSelect.ItemIndicator
-                    className="prelude-menu__indicator"
-                    aria-hidden="true"
-                  >
+                  <BaseSelect.ItemIndicator className="prelude-menu__indicator" aria-hidden="true">
                     <Check />
                   </BaseSelect.ItemIndicator>
                   <BaseSelect.ItemText className="prelude-menu__item-label">

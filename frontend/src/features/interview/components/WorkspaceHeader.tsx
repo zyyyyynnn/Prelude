@@ -36,7 +36,10 @@ export function WorkspaceHeader({
       <div className="workspace-header__main">
         <div className="workspace-header__title-area">
           <IconTooltip label={headerTitle}>
-            <h1 className="workspace-header__title workspace-header__title--truncated" aria-label={headerTitle}>
+            <h1
+              className="workspace-header__title workspace-header__title--truncated"
+              aria-label={headerTitle}
+            >
               {headerTitle}
             </h1>
           </IconTooltip>
@@ -56,11 +59,7 @@ export function WorkspaceHeader({
           )}
           {hasReport && showingReport && (
             <div className="workspace-header__actions">
-              <Button
-                variant="secondary"
-                loading={exporting}
-                onClick={onExportReport}
-              >
+              <Button variant="secondary" loading={exporting} onClick={onExportReport}>
                 <Download size={15} />
                 导出 PDF
               </Button>
@@ -68,10 +67,12 @@ export function WorkspaceHeader({
           )}
           {hasReport && (
             <SegmentedControl
-              items={[
-                { value: 'interview', label: '面试' },
-                { value: 'report', label: '报告' },
-              ] as const}
+              items={
+                [
+                  { value: 'interview', label: '面试' },
+                  { value: 'report', label: '报告' },
+                ] as const
+              }
               value={showingReport ? 'report' : 'interview'}
               onValueChange={(value) => onToggleReport(value === 'report')}
               ariaLabel="工作区视图"

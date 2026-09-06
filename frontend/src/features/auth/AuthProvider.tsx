@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+// oxlint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const value = use(AuthContext)
   if (!value) throw new Error('AuthProvider is missing')

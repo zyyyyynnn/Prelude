@@ -1,9 +1,10 @@
+import { ChevronDown, ChevronRight, Settings } from 'lucide-react'
 import {
-  ChevronDown,
-  ChevronRight,
-  Settings,
-} from 'lucide-react'
-import { REASONING_LABELS, type LlmConfigResponse, type LlmProviderResponse, type ReasoningLevel } from '@/features/settings'
+  REASONING_LABELS,
+  type LlmConfigResponse,
+  type LlmProviderResponse,
+  type ReasoningLevel,
+} from '@/features/settings'
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -14,15 +15,7 @@ import {
   DropdownMenuSubmenu,
 } from '@/shared/ui'
 
-function MenuRow({
-  label,
-  value,
-  submenu,
-}: {
-  label: string
-  value?: string
-  submenu?: boolean
-}) {
+function MenuRow({ label, value, submenu }: { label: string; value?: string; submenu?: boolean }) {
   return (
     <>
       <span className="prelude-menu__label">{label}</span>
@@ -48,9 +41,12 @@ export function InterviewModelMenu({
   onManage: () => void
 }) {
   const provider = providers.find((item) => item.providerKey === config.provider)
-  const models = [...new Set([config.model, ...(provider?.models.map((item) => item.model) ?? [])])].filter(Boolean)
-  const capability = provider?.models.find((item) => item.model === config.model)
-    ?? (config.capability.model === config.model ? config.capability : undefined)
+  const models = [
+    ...new Set([config.model, ...(provider?.models.map((item) => item.model) ?? [])]),
+  ].filter(Boolean)
+  const capability =
+    provider?.models.find((item) => item.model === config.model) ??
+    (config.capability.model === config.model ? config.capability : undefined)
   const reasoningSupported = capability?.reasoning ?? false
   const thinkingValue = config.reasoningLevel
   const ariaThinking = reasoningSupported ? `，思考深度：${REASONING_LABELS[thinkingValue]}` : ''
@@ -75,9 +71,7 @@ export function InterviewModelMenu({
       }
     >
       <DropdownMenuGroup>
-        <DropdownMenuSubmenu
-          trigger={<MenuRow label="模型" value={config.model} submenu />}
-        >
+        <DropdownMenuSubmenu trigger={<MenuRow label="模型" value={config.model} submenu />}>
           <DropdownMenuRadioGroup value={config.model} onValueChange={onModelChange}>
             {models.length ? (
               models.map((model) => (

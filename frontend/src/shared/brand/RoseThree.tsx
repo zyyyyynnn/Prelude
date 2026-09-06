@@ -15,7 +15,13 @@ const config = {
   roseScale: 3.25,
 }
 
-export function RoseThree({ className, speedMultiplier = 1 }: { className?: string; speedMultiplier?: number }) {
+export function RoseThree({
+  className,
+  speedMultiplier = 1,
+}: {
+  className?: string
+  speedMultiplier?: number
+}) {
   const groupRef = useRef<SVGGElement>(null)
   const pathRef = useRef<SVGPathElement>(null)
   const particleRefs = useRef<Array<SVGCircleElement | null>>([])

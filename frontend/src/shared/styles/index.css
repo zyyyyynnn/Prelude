@@ -194,7 +194,6 @@
   --brand-metaballs-bg: #f5f1ec;
   --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
 
-
   --motion-duration-fast: 150ms;
   --motion-duration-base: 300ms;
   --motion-duration-slow: 600ms;
@@ -348,8 +347,7 @@ body {
     320px 320px;
   background-blend-mode: normal, normal, multiply;
   color: var(--color-text-primary);
-  font: var(--font-weight-regular) var(--font-size-md)/var(--line-height-relaxed)
-    var(--font-sans);
+  font: var(--font-weight-regular) var(--font-size-md)/var(--line-height-relaxed) var(--font-sans);
 }
 
 @layer base {
@@ -956,8 +954,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   min-height: var(--ui-height-md);
   padding: 0 var(--spacing-md);
   border-radius: var(--radius-md);
-  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid)
-    var(--font-serif);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
   cursor: pointer;
   transition: var(--motion-transition-surface);
 }
@@ -1058,8 +1055,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   background: var(--color-text-primary);
   color: var(--color-surface);
   box-shadow: var(--shadow-whisper);
-  font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-heading)
-    var(--font-sans);
+  font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-heading) var(--font-sans);
 }
 .prelude-menu-positioner {
   z-index: var(--z-index-menu);
@@ -1373,8 +1369,7 @@ html[data-input-intent='keyboard']
 .confirm-dialog__title {
   margin: 0;
   color: var(--color-text-primary);
-  font: var(--font-weight-semibold) var(--font-size-lg)/var(--line-height-tight)
-    var(--font-serif);
+  font: var(--font-weight-semibold) var(--font-size-lg)/var(--line-height-tight) var(--font-serif);
 }
 .confirm-dialog__description {
   margin: var(--spacing-sm) 0 0;
@@ -1446,9 +1441,7 @@ html[data-input-intent='keyboard']
   position: absolute;
   inset-block: var(--spacing-xs);
   inset-inline-start: var(--spacing-xs);
-  inline-size: calc(
-    (100% - (var(--spacing-xs) * 2)) / var(--segmented-count)
-  );
+  inline-size: calc((100% - (var(--spacing-xs) * 2)) / var(--segmented-count));
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   box-shadow: var(--shadow-ring);
@@ -1469,8 +1462,7 @@ html[data-input-intent='keyboard']
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
-  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid)
-    var(--font-serif);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
   cursor: pointer;
   transition: color var(--motion-duration-fast) var(--motion-ease-standard);
 }
