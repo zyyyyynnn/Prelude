@@ -12,17 +12,8 @@ import type {
 } from './types'
 
 export { useSettings } from './settings-context'
-export type { SettingsIntent, SettingsSection } from './settings-context'
 export { REASONING_LABELS } from './types'
-export type {
-  LlmConfigPayload,
-  LlmConfigResponse,
-  LlmProviderResponse,
-  ModelCapabilityResponse,
-  ReasoningLevel,
-  UserProfilePayload,
-  UserProfileResponse,
-} from './types'
+export type { LlmConfigPayload, LlmConfigResponse, LlmProviderResponse } from './types'
 
 export const fetchProviders = () => apiRequest<LlmProviderResponse[]>('/llm/providers')
 export const fetchLlmConfig = () => apiRequest<LlmConfigResponse>('/llm/config')

@@ -70,7 +70,7 @@ export function groupSessions<T extends SessionListItem>(
   }
 }
 
-export const SESSION_PREFERENCES_KEY = 'prelude-interview-session-preferences'
+const SESSION_PREFERENCES_KEY = 'prelude-interview-session-preferences'
 
 // Legacy unscoped keys, read once for migration then removed on the next write.
 const UNSCOPED_PINNED_KEY = 'pinnedSessionIds'
@@ -81,7 +81,7 @@ export type SessionPreferences = {
   hiddenIds: number[]
 }
 
-export function sessionPreferencesKey(accountScope: string) {
+function sessionPreferencesKey(accountScope: string) {
   return `${SESSION_PREFERENCES_KEY}:${encodeURIComponent(accountScope)}`
 }
 

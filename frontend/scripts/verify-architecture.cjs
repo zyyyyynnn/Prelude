@@ -6,7 +6,7 @@ const path = require('node:path')
 
 const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..')
 const sourceRoot = path.join(root, 'src')
-const allowedRoots = new Set(['app', 'devtools', 'features', 'shared'])
+const allowedRoots = new Set(['app', 'features', 'shared'])
 const blockedPackages = [
   'vue',
   'vue-router',
@@ -52,7 +52,7 @@ function walk(directory) {
 
 for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
   if (entry.isDirectory() && !allowedRoots.has(entry.name)) {
-    violations.push(`src/${entry.name}: source must live under app, devtools, features, or shared`)
+    violations.push(`src/${entry.name}: source must live under app, features, or shared`)
   }
 }
 
@@ -89,9 +89,6 @@ for (const file of walk(sourceRoot).filter((item) => sourceExtensions.has(path.e
       if (targetParts[1] !== sourceFeature && targetParts.length > 2) {
         violations.push(`${relative}: cross-feature imports must use @/features/${targetParts[1]}`)
       }
-    }
-    if (relative.startsWith('devtools/') && /^app(\/|$)/.test(resolved)) {
-      violations.push(`${relative}: devtools cannot import ${specifier}`)
     }
   }
 }
