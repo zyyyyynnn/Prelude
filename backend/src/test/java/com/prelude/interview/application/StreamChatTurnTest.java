@@ -1,14 +1,14 @@
 package com.prelude.interview.application;
 
-import com.prelude.BusinessException;
 import com.prelude.activity.RealtimeConnection;
 import com.prelude.activity.RealtimePort;
 import com.prelude.identity.api.SessionValidity;
-import com.prelude.identity.api.CurrentAccount;
+import com.prelude.interview.application.port.InterviewTurnPort;
+import com.prelude.interview.application.port.InterviewTurnResult;
+import com.prelude.interview.application.port.InterviewTurnSink;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,9 +27,7 @@ import static org.mockito.Mockito.when;
 class StreamChatTurnTest {
 
     private final InterviewSessionAccess sessionAccess = mock(InterviewSessionAccess.class);
-    private final RunInterviewTurn runInterviewTurn = mock(RunInterviewTurn.class);
-    private final InterviewJudgeService interviewJudgeService = mock(InterviewJudgeService.class);
-    private final InterviewSummaryService interviewSummaryService = mock(InterviewSummaryService.class);
+    private final InterviewTurnPort interviewTurnPort = mock(InterviewTurnPort.class);
     private final RealtimePort realtimePort = mock(RealtimePort.class);
     private final RealtimeConnection connection = mock(RealtimeConnection.class);
     private final SessionValidity sessionValidity = mock(SessionValidity.class);
@@ -40,9 +38,7 @@ class StreamChatTurnTest {
         when(sessionAccess.currentAccountId()).thenReturn(7L);
         return new StreamChatTurn(
             sessionAccess,
-            runInterviewTurn,
-            interviewJudgeService,
-            interviewSummaryService,
+            interviewTurnPort,
             Runnable::run,
             realtimePort,
             sessionValidity
@@ -53,10 +49,8 @@ class StreamChatTurnTest {
     void aRevokedSessionStopsTheStreamAtTheNextSendBoundary() {
         StreamChatTurn streamChatTurn = streamChatTurn(false);
         AtomicReference<InterviewTurnSink> sink = new AtomicReference<>();
-        when(runInterviewTurn.execute(any(), any())).thenAnswer(invocation -> {
+        when(interviewTurnPort.execute(any(), any())).thenAnswer(invocation -> {
             sink.set(invocation.getArgument(1));
-            // The turn implementation streams through the sink; the wrapper's send
-            // boundary detects the revoked session and aborts the turn.
             sink.get().assistantDelta("authenticated business delta");
             return null;
         });
@@ -71,16 +65,19 @@ class StreamChatTurnTest {
     @Test
     void anActiveSessionKeepsStreamingBusinessData() {
         StreamChatTurn streamChatTurn = streamChatTurn(true);
-        when(runInterviewTurn.execute(any(), any())).thenAnswer(invocation -> {
+        when(interviewTurnPort.execute(any(), any())).thenAnswer(invocation -> {
             InterviewTurnSink sink = invocation.getArgument(1);
             sink.assistantDelta("business delta");
             return new InterviewTurnResult(
-                mock(com.prelude.interview.domain.InterviewSession.class), null, "business delta");
+                mock(com.prelude.interview.domain.InterviewSession.class),
+                mock(com.prelude.interview.domain.InterviewMessage.class),
+                "business delta");
         });
-        when(interviewJudgeService.judgeAndPersist(any(), any())).thenReturn(Optional.empty());
+        when(interviewTurnPort.judgeAndPersist(any(), any())).thenReturn(java.util.Optional.empty());
 
         streamChatTurn.execute(51L, "回答", false, "auth-session-1");
 
         verify(connection).send("message", "business delta");
+        verify(interviewTurnPort).summarizeIfNeeded(any());
     }
 }

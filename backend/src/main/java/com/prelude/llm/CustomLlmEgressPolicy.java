@@ -17,6 +17,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+/**
+ * SSRF guard for account-configured custom model endpoints.
+ * Rejects non-HTTPS roots (unless explicitly allowed), non-approved ports,
+ * internal host suffixes, and resolved non-public addresses. Configuration-time
+ * validation and runtime DNS lookup share the same rules.
+ */
 @Component
 public class CustomLlmEgressPolicy {
 
@@ -126,17 +132,54 @@ public class CustomLlmEgressPolicy {
         int first = Byte.toUnsignedInt(bytes[0]);
         int second = Byte.toUnsignedInt(bytes[1]);
         int third = Byte.toUnsignedInt(bytes[2]);
-        if (first == 0 || first == 10 || first == 127 || first >= 224) return false;
-        if (first == 100 && second >= 64 && second <= 127) return false;
-        if (first == 169 && second == 254) return false;
-        if (first == 172 && second >= 16 && second <= 31) return false;
-        if (first == 192 && second == 0 && third == 0) return false;
-        if (first == 192 && second == 0 && third == 2) return false;
-        if (first == 192 && second == 168) return false;
-        if (first == 198 && (second == 18 || second == 19)) return false;
-        if (first == 198 && second == 51 && third == 100) return false;
-        return !(first == 203 && second == 0 && third == 113);
+        for (Ipv4Range range : BLOCKED_IPV4_RANGES) {
+            if (range.contains(first, second, third)) {
+                return false;
+            }
+        }
+        return true;
     }
+
+    /** Blocked reserved IPv4 range. -1 leaves that octet unconstrained. */
+    private record Ipv4Range(
+        int firstMin,
+        int firstMax,
+        int secondMin,
+        int secondMax,
+        int thirdMin,
+        int thirdMax
+    ) {
+
+        boolean contains(int first, int second, int third) {
+            return inRange(first, firstMin, firstMax)
+                && inRange(second, secondMin, secondMax)
+                && inRange(third, thirdMin, thirdMax);
+        }
+
+        private static boolean inRange(int value, int min, int max) {
+            return (min < 0 || value >= min) && (max < 0 || value <= max);
+        }
+    }
+
+    private static final Ipv4Range[] BLOCKED_IPV4_RANGES = {
+        // This network, private, loopback, multicast/reserved
+        new Ipv4Range(0, 0, -1, -1, -1, -1),
+        new Ipv4Range(10, 10, -1, -1, -1, -1),
+        new Ipv4Range(127, 127, -1, -1, -1, -1),
+        new Ipv4Range(224, 255, -1, -1, -1, -1),
+        // CGNAT, link-local, private
+        new Ipv4Range(100, 100, 64, 127, -1, -1),
+        new Ipv4Range(169, 169, 254, 254, -1, -1),
+        new Ipv4Range(172, 172, 16, 31, -1, -1),
+        // IETF protocol assignments, TEST-NET-1, private
+        new Ipv4Range(192, 192, 0, 0, 0, 0),
+        new Ipv4Range(192, 192, 0, 0, 2, 2),
+        new Ipv4Range(192, 192, 168, 168, -1, -1),
+        // Benchmarking, TEST-NET-2, TEST-NET-3
+        new Ipv4Range(198, 198, 18, 19, -1, -1),
+        new Ipv4Range(198, 198, 51, 51, 100, 100),
+        new Ipv4Range(203, 203, 0, 0, 113, 113),
+    };
 
     private boolean isPublicIpv6(byte[] bytes) {
         int first = Byte.toUnsignedInt(bytes[0]);
@@ -150,16 +193,18 @@ public class CustomLlmEgressPolicy {
         if (first == 0x20 && second == 0x02) return false;
         if (isNat64WellKnownPrefix(bytes)) return false;
         if ((first & 0xfe) == 0xfc) return false;
-        if (first == 0x20 && second == 0x01) {
-            int third = Byte.toUnsignedInt(bytes[2]);
-            int fourth = Byte.toUnsignedInt(bytes[3]);
-            if ((third == 0x00 && fourth == 0x00)
-                || (third == 0x0d && fourth == 0xb8)
-                || (third == 0x00 && (fourth == 0x02 || fourth == 0x10))) {
-                return false;
-            }
+        if (first == 0x20 && second == 0x01 && isBlocked2001Block(bytes)) {
+            return false;
         }
         return true;
+    }
+
+    private static boolean isBlocked2001Block(byte[] bytes) {
+        int third = Byte.toUnsignedInt(bytes[2]);
+        int fourth = Byte.toUnsignedInt(bytes[3]);
+        return (third == 0x00 && fourth == 0x00)
+            || (third == 0x0d && fourth == 0xb8)
+            || (third == 0x00 && (fourth == 0x02 || fourth == 0x10));
     }
 
     private boolean isIpv4Mapped(byte[] bytes) {

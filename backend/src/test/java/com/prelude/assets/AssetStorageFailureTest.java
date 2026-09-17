@@ -4,8 +4,6 @@ import com.prelude.BusinessException;
 import com.prelude.assets.domain.AssetStatus;
 import com.prelude.assets.persistence.Asset;
 import com.prelude.assets.persistence.AssetMapper;
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
 import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.application.AvatarPublication;
 import com.prelude.identity.application.ProfileService;
@@ -13,6 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -59,7 +63,7 @@ class AssetStorageFailureTest {
     private AssetMapper assetMapper;
 
     @Autowired
-    private AccountMapper accountMapper;
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private ProfileService profileService;
@@ -120,11 +124,16 @@ class AssetStorageFailureTest {
     }
 
     private long createAccount(String prefix) {
-        Account account = new Account();
-        account.setUsername(prefix + "-" + UUID.randomUUID());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                "INSERT INTO user_account (username, revision) VALUES (?, 0)",
+                Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, prefix + "-" + UUID.randomUUID());
+            return ps;
+        }, keyHolder);
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
     }
 
     private void authenticate(long accountId) {

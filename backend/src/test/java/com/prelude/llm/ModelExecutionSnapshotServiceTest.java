@@ -21,7 +21,7 @@ class ModelExecutionSnapshotServiceTest {
         snapshot.setModel("deepseek-v4-flash");
         when(mapper.selectById(42L)).thenReturn(snapshot);
         ModelExecutionSnapshotService service = new ModelExecutionSnapshotService(
-            null, mapper, null, null, null);
+            null, mapper, null, null, null, null);
 
         snapshot.setReasoningLevel("HIGH");
 

@@ -5,6 +5,9 @@ import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.activity.RealtimePort;
 import com.prelude.activity.SseSessionStream;
+import com.prelude.interview.application.port.InterviewTurnCommand;
+import com.prelude.interview.application.port.InterviewTurnPort;
+import com.prelude.interview.application.port.InterviewTurnResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,9 +24,7 @@ public class StreamChatTurn {
     private static final long SSE_TIMEOUT_MS = 120000L;
 
     private final InterviewSessionAccess sessionAccess;
-    private final RunInterviewTurn runInterviewTurn;
-    private final InterviewJudgeService interviewJudgeService;
-    private final InterviewSummaryService interviewSummaryService;
+    private final InterviewTurnPort interviewTurnPort;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
     private final RealtimePort realtimePort;
@@ -48,7 +49,7 @@ public class StreamChatTurn {
         SseSessionStream stream
     ) {
         try {
-            InterviewTurnResult result = runInterviewTurn.execute(
+            InterviewTurnResult result = interviewTurnPort.execute(
                 new InterviewTurnCommand(
                     sessionId,
                     accountId,
@@ -70,7 +71,7 @@ public class StreamChatTurn {
                 return;
             }
             triggerAsyncJudge(result.session(), result.userMessage(), stream);
-            interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session());
+            interviewTurnPort.summarizeIfNeeded(result.session());
         } catch (RuntimeException error) {
             completeWithError(stream, error.getMessage() == null ? "连接已断开，请重试" : error.getMessage());
         }
@@ -93,7 +94,7 @@ public class StreamChatTurn {
     ) {
         sseTaskExecutor.execute(() -> {
             try {
-                interviewJudgeService.judgeAndPersist(session, userMessage)
+                interviewTurnPort.judgeAndPersist(session, userMessage)
                     .ifPresent(result -> sendJudgeEvent(stream, result.json()));
                 stream.complete();
             } catch (RuntimeException error) {

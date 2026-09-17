@@ -6,6 +6,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.port.InterviewMessageRepository;
+import com.prelude.interview.application.port.JudgeResult;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
@@ -149,8 +150,5 @@ public class InterviewJudgeService {
             trimmed = trimmed.substring(0, trimmed.length() - 3);
         }
         return trimmed.trim();
-    }
-
-    public record JudgeResult(int score, String hint, String json) {
     }
 }

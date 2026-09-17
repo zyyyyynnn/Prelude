@@ -152,11 +152,12 @@ class ModelProfileCustomCapabilityTest {
             credentialMapper,
             profileMapper,
             cipher,
+            new ProviderCredentialResolver(credentialMapper, cipher),
             new ModelCapabilityCatalog(),
             new ReasoningLevels(),
             capabilityDiscovery,
+            new CustomModelCatalogClient(egressPolicy, clients, new ModelCapabilityCatalog(), objectMapper),
             egressPolicy,
-            clients,
             capabilityJson,
             objectMapper,
             transactionTemplate

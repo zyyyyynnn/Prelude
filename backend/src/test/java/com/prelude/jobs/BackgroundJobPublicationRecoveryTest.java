@@ -1,7 +1,5 @@
 package com.prelude.jobs;
 
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
 import org.junit.jupiter.api.Test;
@@ -11,10 +9,14 @@ import org.springframework.amqp.rabbit.core.RabbitMessageOperations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,9 +38,6 @@ class BackgroundJobPublicationRecoveryTest {
 
     @Autowired
     private BackgroundJobOperations jobs;
-
-    @Autowired
-    private AccountMapper accountMapper;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -90,11 +89,16 @@ class BackgroundJobPublicationRecoveryTest {
     }
 
     private long createAccount() {
-        Account account = new Account();
-        account.setUsername("publication-recovery-" + System.nanoTime());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                "INSERT INTO user_account (username, revision) VALUES (?, 0)",
+                Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, "publication-recovery-" + System.nanoTime());
+            return ps;
+        }, keyHolder);
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
     }
 
     private long incompletePublicationRows(String jobId) {

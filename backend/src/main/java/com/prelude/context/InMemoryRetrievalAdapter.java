@@ -1,6 +1,6 @@
 package com.prelude.context;
 
-import com.prelude.llm.EmbedPort;
+import com.prelude.llm.api.EmbedPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

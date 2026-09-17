@@ -1,6 +1,5 @@
 package com.prelude.artifact.application;
 
-import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.artifact.domain.ScoreHistory;
 import com.prelude.artifact.domain.AccountWeakness;

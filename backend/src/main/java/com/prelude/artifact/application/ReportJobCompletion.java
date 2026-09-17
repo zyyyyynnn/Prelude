@@ -41,27 +41,18 @@ public class ReportJobCompletion {
         }
 
         interviewReportPort.closeCurrentStage(sessionId);
-        persistInsightsBestEffort(sessionId, result);
         if (!interviewReportPort.completeReport(sessionId, result.reportJson())) {
             throw new IllegalStateException(
                 "Report session lost generating state before finalization: " + sessionId);
         }
+        persistInsights(sessionId, result);
         return true;
     }
 
-    private void persistInsightsBestEffort(Long sessionId, GenerationResult result) {
-        try {
-            if (result.scoreHistory() != null) {
-                insightRepository.replaceScore(result.scoreHistory());
-            }
-        } catch (RuntimeException exception) {
-            log.warn("Failed to persist score history for session {}", sessionId, exception);
+    private void persistInsights(Long sessionId, GenerationResult result) {
+        if (result.scoreHistory() != null) {
+            insightRepository.replaceScore(result.scoreHistory());
         }
-        try {
-            insightRepository.replaceWeaknesses(sessionId, result.weaknesses());
-        } catch (RuntimeException exception) {
-            log.warn("Failed to persist weaknesses for session {}", sessionId, exception);
-        }
+        insightRepository.replaceWeaknesses(sessionId, result.weaknesses());
     }
-
 }

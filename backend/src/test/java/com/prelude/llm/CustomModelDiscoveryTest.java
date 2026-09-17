@@ -88,11 +88,12 @@ class CustomModelDiscoveryTest {
             mock(ProviderCredentialMapper.class),
             mock(ModelProfileMapper.class),
             mock(ProviderSecretCipher.class),
+            new ProviderCredentialResolver(mock(ProviderCredentialMapper.class), mock(ProviderSecretCipher.class)),
             catalog,
             new ReasoningLevels(),
             capabilityDiscovery,
+            new CustomModelCatalogClient(policy, httpClientFactory, catalog, objectMapper),
             policy,
-            httpClientFactory,
             new ModelCapabilityJson(objectMapper),
             objectMapper,
             mock(org.springframework.transaction.support.TransactionTemplate.class)

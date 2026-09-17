@@ -113,7 +113,7 @@ public class InterviewStageManager {
         }
     }
 
-    public int assistantRepliesInCurrentStage(Long sessionId) {
+    int assistantRepliesInCurrentStage(Long sessionId) {
         InterviewStage stage = currentOrLatestStage(sessionId);
         List<InterviewMessage> messages = listMessages(sessionId);
         if (stage == null || stage.getStartedAt() == null) {

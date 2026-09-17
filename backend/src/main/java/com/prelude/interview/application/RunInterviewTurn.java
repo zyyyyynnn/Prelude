@@ -4,7 +4,11 @@ import com.prelude.BusinessException;
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
+import com.prelude.interview.application.port.InterviewContextPort;
 import com.prelude.interview.application.port.InterviewMessageRepository;
+import com.prelude.interview.application.port.InterviewTurnCommand;
+import com.prelude.interview.application.port.InterviewTurnResult;
+import com.prelude.interview.application.port.InterviewTurnSink;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.PromptIds;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +29,7 @@ public class RunInterviewTurn {
     private final InterviewMessageRepository interviewMessageRepository;
     private final LlmPort llmPort;
     private final InterviewStageManager interviewStageManager;
-    private final InterviewContextService interviewContextService;
+    private final InterviewContextPort interviewContextService;
     private final InterviewMessageService interviewMessageService;
     private final AttachmentContextPort attachmentContextPort;
 

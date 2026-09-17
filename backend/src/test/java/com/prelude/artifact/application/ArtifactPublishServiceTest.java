@@ -5,16 +5,16 @@ import com.prelude.artifact.api.ArtifactCommandApi;
 import com.prelude.artifact.api.ArtifactQueryApi;
 import com.prelude.artifact.api.ArtifactVersionRef;
 import com.prelude.artifact.domain.ArtifactVersion;
-import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.AssetMapper;
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,10 +37,7 @@ class ArtifactPublishServiceTest {
     private com.prelude.artifact.persistence.ArtifactVersionMapper artifactVersionMapper;
 
     @Autowired
-    private AccountMapper accountMapper;
-
-    @Autowired
-    private AssetMapper assetMapper;
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void repeatedPublishingCreatesIncreasingImmutableVersions() {
@@ -84,22 +81,29 @@ class ArtifactPublishServiceTest {
     }
 
     private long createAccount() {
-        Account account = new Account();
-        account.setUsername("artifact-" + UUID.randomUUID());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                "INSERT INTO user_account (username, revision) VALUES (?, 0)",
+                Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, "artifact-" + UUID.randomUUID());
+            return ps;
+        }, keyHolder);
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
     }
 
     private long createReadyAsset(long accountId) {
-        Asset asset = new Asset();
-        asset.setAccountId(accountId);
-        asset.setKind("report");
-        asset.setObjectKey(UUID.randomUUID().toString());
-        asset.setMediaType("application/pdf");
-        asset.setByteSize(128L);
-        asset.setStatus(AssetStatus.READY);
-        assetMapper.insert(asset);
-        return asset.getId();
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                "INSERT INTO asset (account_id, kind, object_key, media_type, byte_size, status) VALUES (?, 'report', ?, 'application/pdf', 128, 'READY')",
+                Statement.RETURN_GENERATED_KEYS);
+            ps.setLong(1, accountId);
+            ps.setString(2, UUID.randomUUID().toString());
+            return ps;
+        }, keyHolder);
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
     }
 }

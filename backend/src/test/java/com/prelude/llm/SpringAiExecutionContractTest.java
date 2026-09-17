@@ -529,6 +529,7 @@ class SpringAiExecutionContractTest {
         SpringAiModelFactory factory = mock(SpringAiModelFactory.class);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
         ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
         ModelExecutionSnapshot frozen = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
@@ -536,7 +537,7 @@ class SpringAiExecutionContractTest {
         frozen.setFallbackCapabilitiesJson(capabilityJson.writeList(List.of(
             catalog.capability("deepseek", "deepseek-v4-flash"))));
         when(snapshotService.require(1L)).thenReturn(frozen);
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         List<String> executionParameters = new ArrayList<>();
         when(factory.requestOptions(any(), any())).thenAnswer(invocation -> {
             ModelExecutionSnapshot effective = invocation.getArgument(0);
@@ -552,8 +553,7 @@ class SpringAiExecutionContractTest {
             }
             return successfulCallModel("fallback-ok");
         });
-        ModelExecutionService service = new ModelExecutionService(
-            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(1),
+        ModelExecutionService service = new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson, new LlmTransportRetry(1),
             mock(ApplicationEventPublisher.class));
 
         LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
@@ -590,14 +590,14 @@ class SpringAiExecutionContractTest {
             provider, model, reasoning, endpointRoot);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         when(snapshotService.require(1L)).thenReturn(snapshot);
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn("sk-test");
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn("sk-test");
         ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
         CustomLlmEgressPolicy policy = new CustomLlmEgressPolicy(
             true, true, Set.of(port), Dns.SYSTEM);
         SpringAiModelFactory factory = factoryFor(policy);
-        return new ModelExecutionService(
-            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(attempts),
+        return new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson, new LlmTransportRetry(attempts),
             mock(ApplicationEventPublisher.class));
     }
 
@@ -605,14 +605,14 @@ class SpringAiExecutionContractTest {
         SpringAiModelFactory factory = mock(SpringAiModelFactory.class);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         when(snapshotService.require(1L)).thenReturn(snapshot);
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         when(factory.chatModel(any(), nullable(String.class))).thenReturn(model);
         when(factory.requestOptions(any(), any())).thenReturn(
             OpenAiChatOptions.builder().model(snapshot.getModel()).build());
         ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
-        return new ModelExecutionService(
-            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(attempts),
+        return new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson, new LlmTransportRetry(attempts),
             mock(ApplicationEventPublisher.class));
     }
 

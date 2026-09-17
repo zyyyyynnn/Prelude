@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 /**
  * Durable background job execution: atomic claims, attempt records, bounded
@@ -47,15 +46,6 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 public class BackgroundJobService implements BackgroundJobOperations {
-
-    private static final int MAX_FAILURE_SUMMARY_LENGTH = 1024;
-    private static final Pattern BEARER_SECRET = Pattern.compile("(?i)(bearer\\s+)[^\\s,;]+");
-    private static final Pattern NAMED_SECRET = Pattern.compile(
-        "(?i)((?:api[-_ ]?key|authorization|token|secret)\\s*[:=]\\s*)[^\\s,;]+"
-    );
-    private static final Pattern OPENAI_STYLE_SECRET = Pattern.compile("\\bsk-[A-Za-z0-9_-]{8,}\\b");
-    private static final Pattern URL_CREDENTIALS = Pattern.compile("(?i)(https?://)[^\\s/@]+@");
-    private static final Pattern URL_QUERY = Pattern.compile("(?i)(https?://[^\\s?#]+)\\?[^\\s]+");
 
     private final BackgroundJobMapper jobMapper;
     private final JobAttemptMapper attemptMapper;
@@ -202,7 +192,7 @@ public class BackgroundJobService implements BackgroundJobOperations {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public FailureOutcome fail(String jobId, int attemptNumber, Throwable failure) {
-        String sanitizedFailure = sanitizeFailure(failure);
+        String sanitizedFailure = JobFailureRedaction.sanitize(failure);
         BackgroundJob job = requireJob(jobId);
         if (!BackgroundJob.RUNNING.equals(job.getStatus()) || job.getAttemptCount() != attemptNumber) {
             return FailureOutcome.NOT_RUNNING;
@@ -302,20 +292,5 @@ public class BackgroundJobService implements BackgroundJobOperations {
             throw new BusinessException(HttpStatus.NOT_FOUND, "job_not_found", "任务不存在");
         }
         return job;
-    }
-
-    private String sanitizeFailure(Throwable failure) {
-        String message = failure == null || failure.getMessage() == null || failure.getMessage().isBlank()
-            ? failure == null ? "Unknown failure" : failure.getClass().getSimpleName()
-            : failure.getMessage();
-        String safe = message.replaceAll("[\\r\\n\\t]+", " ").replaceAll("\\p{Cntrl}", " ");
-        safe = URL_CREDENTIALS.matcher(safe).replaceAll("$1[REDACTED]@");
-        safe = URL_QUERY.matcher(safe).replaceAll("$1?[REDACTED]");
-        safe = BEARER_SECRET.matcher(safe).replaceAll("$1[REDACTED]");
-        safe = NAMED_SECRET.matcher(safe).replaceAll("$1[REDACTED]");
-        safe = OPENAI_STYLE_SECRET.matcher(safe).replaceAll("[REDACTED]");
-        return safe.length() <= MAX_FAILURE_SUMMARY_LENGTH
-            ? safe
-            : safe.substring(0, MAX_FAILURE_SUMMARY_LENGTH);
     }
 }

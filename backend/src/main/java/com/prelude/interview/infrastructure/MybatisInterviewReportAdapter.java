@@ -1,17 +1,16 @@
 package com.prelude.interview.infrastructure;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
 import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.interview.infrastructure.persistence.InterviewMessageMapper;
+import com.prelude.interview.application.InterviewStageManager;
+import com.prelude.interview.application.port.InterviewMessageRepository;
+import com.prelude.interview.application.port.InterviewStageRepository;
 import com.prelude.interview.infrastructure.persistence.InterviewSessionMapper;
-import com.prelude.interview.infrastructure.persistence.InterviewStageMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -22,8 +21,9 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
     private static final String STATUS_ONGOING = "ongoing";
 
     private final InterviewSessionMapper interviewSessionMapper;
-    private final InterviewMessageMapper interviewMessageMapper;
-    private final InterviewStageMapper interviewStageMapper;
+    private final InterviewMessageRepository interviewMessageRepository;
+    private final InterviewStageRepository interviewStageRepository;
+    private final InterviewStageManager interviewStageManager;
 
     @Override
     public InterviewSession findSession(Long sessionId) {
@@ -32,30 +32,17 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
 
     @Override
     public List<InterviewMessage> listMessages(Long sessionId) {
-        return interviewMessageMapper.selectList(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId)
-            .orderByAsc(InterviewMessage::getSeqNum));
+        return interviewMessageRepository.listBySession(sessionId);
     }
 
     @Override
     public void closeCurrentStage(Long sessionId) {
-        InterviewStage stage = interviewStageMapper.selectOne(new LambdaQueryWrapper<InterviewStage>()
-            .eq(InterviewStage::getSessionId, sessionId)
-            .isNull(InterviewStage::getEndedAt)
-            .orderByDesc(InterviewStage::getStartedAt)
-            .last("LIMIT 1"));
-        if (stage != null) {
-            stage.setEndedAt(LocalDateTime.now());
-            interviewStageMapper.updateById(stage);
-        }
+        interviewStageManager.closeCurrentStage(sessionId);
     }
 
     @Override
     public List<InterviewStage> listStages(Long sessionId) {
-        return interviewStageMapper.selectList(new LambdaQueryWrapper<InterviewStage>()
-            .eq(InterviewStage::getSessionId, sessionId)
-            .orderByAsc(InterviewStage::getStartedAt)
-            .orderByAsc(InterviewStage::getId));
+        return interviewStageRepository.listBySession(sessionId);
     }
 
     @Override

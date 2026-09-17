@@ -3,13 +3,11 @@ package com.prelude.template.application;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
-import com.prelude.template.api.PositionTemplateResponse;
 import com.prelude.template.domain.PositionTemplate;
 import com.prelude.template.infrastructure.persistence.PositionTemplateMapper;
-import com.prelude.template.application.PositionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -21,21 +19,16 @@ public class PositionServiceImpl implements PositionService {
     private final CurrentAccount currentAccount;
 
     @Override
-    public List<PositionTemplateResponse> listPositions() {
+    public List<PositionTemplate> listPositions() {
         Long accountId = currentAccountId();
         return positionTemplateMapper.selectList(new LambdaQueryWrapper<PositionTemplate>()
-                .and(query -> query.isNull(PositionTemplate::getAccountId)
-                    .or().eq(PositionTemplate::getAccountId, accountId))
-                .orderByAsc(PositionTemplate::getId))
-            .stream()
-            .map(position -> new PositionTemplateResponse(
-                position.getId(), position.getName(), position.getSystemPrompt(),
-                accountId.equals(position.getAccountId())))
-            .toList();
+            .and(query -> query.isNull(PositionTemplate::getAccountId)
+                .or().eq(PositionTemplate::getAccountId, accountId))
+            .orderByAsc(PositionTemplate::getId));
     }
 
     @Override
-    public PositionTemplateResponse createPosition(String name, String systemPrompt) {
+    public PositionTemplate createPosition(String name, String systemPrompt) {
         Long accountId = currentAccountId();
         String normalizedName = name.trim();
         Long count = positionTemplateMapper.selectCount(new LambdaQueryWrapper<PositionTemplate>()
@@ -48,12 +41,11 @@ public class PositionServiceImpl implements PositionService {
         position.setName(normalizedName);
         position.setSystemPrompt(systemPrompt.trim());
         positionTemplateMapper.insert(position);
-        return new PositionTemplateResponse(
-            position.getId(), position.getName(), position.getSystemPrompt(), true);
+        return position;
     }
 
     @Override
-    public PositionTemplateResponse updatePosition(Long positionId, String name, String systemPrompt) {
+    public PositionTemplate updatePosition(Long positionId, String name, String systemPrompt) {
         Long accountId = currentAccountId();
         PositionTemplate position = requireOwned(accountId, positionId);
         String normalizedName = name.trim();
@@ -64,8 +56,7 @@ public class PositionServiceImpl implements PositionService {
         position.setName(normalizedName);
         position.setSystemPrompt(systemPrompt.trim());
         positionTemplateMapper.updateById(position);
-        return new PositionTemplateResponse(
-            position.getId(), position.getName(), position.getSystemPrompt(), true);
+        return position;
     }
 
     @Override

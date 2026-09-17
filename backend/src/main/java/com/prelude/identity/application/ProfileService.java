@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
 import com.prelude.identity.Account;
 import com.prelude.identity.AccountMapper;
-import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.AvatarStoragePort;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.UserProfileRequest;

@@ -246,10 +246,10 @@ class SpringAiToolCallingContractTest {
             objectMapper);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         when(snapshotService.require(1L)).thenReturn(snapshot());
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
-        ModelExecutionService service = new ModelExecutionService(
-            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(2),
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
+        ModelExecutionService service = new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson, new LlmTransportRetry(2),
             mock(ApplicationEventPublisher.class));
         AtomicInteger toolCalls = new AtomicInteger();
 
@@ -278,8 +278,9 @@ class SpringAiToolCallingContractTest {
         SpringAiModelFactory factory = mock(SpringAiModelFactory.class);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         when(snapshotService.require(1L)).thenReturn(snapshot);
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         when(factory.chatModel(any(), nullable(String.class)))
             .thenAnswer(invocation -> modelForSnapshot.apply(invocation.getArgument(0)));
         when(factory.requestOptions(any(), any())).thenAnswer(invocation -> {
@@ -287,11 +288,7 @@ class SpringAiToolCallingContractTest {
             return OpenAiChatOptions.builder().model(effective.getModel()).maxTokens(4096).build();
         });
         ModelCapabilityJson capabilityJson = capabilityJson();
-        return new ModelExecutionService(
-            factory,
-            snapshotService,
-            profileService,
-            capabilityJson,
+        return new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson,
             new LlmTransportRetry(attempts),
             eventPublisher
         );

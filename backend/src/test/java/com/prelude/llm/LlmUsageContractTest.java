@@ -239,18 +239,15 @@ class LlmUsageContractTest {
         SpringAiModelFactory factory = mock(SpringAiModelFactory.class);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         ModelExecutionSnapshot snapshot = snapshot();
         when(snapshotService.require(1L)).thenReturn(snapshot);
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         when(factory.chatModel(any(), nullable(String.class))).thenReturn(model);
         when(factory.requestOptions(any(), any())).thenReturn(
             OpenAiChatOptions.builder().model("deepseek-v4-pro").maxTokens(4096).build());
         ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
-        return new ModelExecutionService(
-            factory,
-            snapshotService,
-            profileService,
-            capabilityJson,
+        return new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson,
             new LlmTransportRetry(1),
             publisher
         );
