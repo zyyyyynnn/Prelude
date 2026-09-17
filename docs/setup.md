@@ -52,6 +52,8 @@ npm --prefix frontend audit --omit=dev
 git diff --check
 ```
 
+以上 `npm --prefix frontend run X` 均以仓库根为工作目录；在 `frontend/` 下执行时改用 `npm run X`。
+
 集成验证由 CI 与本地 Docker 基础设施共同提供环境变量：
 
 - `PRELUDE_MYSQL_SMOKE=true`：MySQL 8.4 执行当前 Flyway baseline，并验证数据库集成契约与 `demo` 验收数据的确定性重置。

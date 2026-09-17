@@ -25,7 +25,7 @@ frontend/src/
 | `interview` | 开面配置、会话、文字流、语音编排与报告入口 |
 | `report` | 报告解析、展示与 PDF 打印导出 |
 | `insight` | 面试趋势、能力分数与薄弱点 |
-| `settings` | 用户资料、简历、岗位、模型与主题的统一管理入口 |
+| `settings` | 用户资料、主题与面试设置的管理入口；简历数据归 `resume`、岗位数据归 `template`，`settings` 只做跨模块管理入口 |
 
 ## 状态所有权
 
@@ -45,15 +45,8 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 `shared/ui` 中的 Button、Field 与表单控件采用 shadcn source ownership 结构，Modal、Menu 与 Tooltip 使用 Base UI。面试输入区的 Prompt Bar 采用 [Beautiful UI](https://www.beautifului.dev/) 组合模式，来源记录位于 `frontend/beautiful-ui.sources.json`。Prompt Bar 负责附件、简历、岗位、JD 与模型选择；管理动作统一进入设置弹窗。所有 UI 源码使用 Prelude token 与 `DESIGN.md` 视觉语言。
 
-样式组合由 `app/styles.css` 负责：它装配 Tailwind、应用扫描范围、共享样式、应用外壳样式和各 feature 样式。`shared/styles/index.css` 只拥有 token、主题、重置、全局排版、焦点状态和可复用 UI/layout primitive；业务页面的样式必须留在对应的 `features/*` 或 `app/shell` owner 中。`verify:architecture` 同时检查源码依赖和 CSS 本地 `@import`，阻止 shared 反向引入应用或 feature 样式。
+样式组合由 `frontend/src/app/styles.css` 负责：它装配 Tailwind、应用扫描范围、共享样式、应用外壳样式和各 feature 样式。`shared/styles/index.css` 只拥有 token、主题、重置、全局排版、焦点状态和可复用 UI/layout primitive；业务页面的样式必须留在对应的 `features/*` 或 `app/shell` owner 中。`verify:architecture` 同时检查源码依赖和 CSS 本地 `@import`，阻止 shared 反向引入应用或 feature 样式。
 
 ## 验证
 
-- `npm run check`：由 Vite+ 统一执行 Oxfmt、Oxlint type-aware lint 与 TypeScript 类型检查。
-- `npm run build`：由 Vite+ 执行生产构建。
-- `npm run test:smoke`：在 React 开发 StrictMode 下通过真实浏览器验证核心行为与客户端路由。
-- `npm run verify:architecture`：目录与依赖方向。
-- `npm run verify:ui`、`verify:tokens`：UI 结构与 token 契约。
-- `npm run verify:byok`、`verify:dark`：BYOK 与主题行为。
-- `npm run verify:a11y`、`verify:visual`：浏览器可访问性、布局与 Tooltip 对比度。
-- `npm audit --omit=dev`：生产依赖漏洞门禁。
+完整验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准。

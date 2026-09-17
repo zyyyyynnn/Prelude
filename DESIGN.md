@@ -85,17 +85,6 @@ shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮�
 
 ## Validation
 
-UI 改动执行：
-
-```powershell
-npm --prefix frontend run check
-npm --prefix frontend run verify:ui
-npm --prefix frontend run verify:tokens
-npm --prefix frontend run verify:dark
-npm --prefix frontend run verify:a11y
-npm --prefix frontend run verify:visual
-npm --prefix frontend run build
-npm --prefix frontend run test:smoke
-```
+UI 改动验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准。
 
 视觉审查以本文件和 `frontend/src/shared/styles/index.css` 的 token 定义为准。
