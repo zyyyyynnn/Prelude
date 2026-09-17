@@ -88,7 +88,7 @@ jobs:
 
       - uses: voidzero-dev/setup-vp@v1.19.0
         with:
-          version: '0.3.0'
+          version: '0.3.2'
           node-version: '24'
           working-directory: frontend
           run-install: 'false'
