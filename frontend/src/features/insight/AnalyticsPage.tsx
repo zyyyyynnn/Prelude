@@ -10,9 +10,10 @@ import {
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { RefreshCw } from 'lucide-react'
-import { Button } from '@/shared/ui'
+import { Button } from '@/shared/ui/button'
 import { fetchRadar, fetchTrend, fetchWeaknesses } from './api'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint } from './types'
+import './analytics.css'
 
 echarts.use([
   LineChart,

@@ -79,6 +79,7 @@
         "shadow-app-menu-active",
         "shadow-inset",
         "shadow-brand-logo",
+        "shadow-brand-metaballs",
         "shadow-login-card",
         "shadow-login-logo",
         "shadow-autofill-surface"
@@ -210,8 +211,7 @@
         "brand-metaballs-3",
         "brand-metaballs-4",
         "brand-metaballs-5",
-        "brand-metaballs-bg",
-        "brand-metaballs-shadow"
+        "brand-metaballs-bg"
       ]
     },
     "component-tailwind-theme": {

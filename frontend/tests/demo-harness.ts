@@ -1,14 +1,84 @@
 import type { Page, Route } from '@playwright/test'
-import type {
-  InterviewSessionDetailResponse,
-  InterviewSessionItem,
-} from '../src/features/interview/types'
-import type {
-  LlmConfigResponse,
-  LlmProviderResponse,
-  ModelCapabilityResponse,
-  ReasoningLevel,
-} from '../src/features/settings/types'
+
+export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
+
+export type ModelCapabilityResponse = {
+  provider: string
+  model: string
+  reasoning: boolean
+  structuredOutput: boolean
+  toolCalling: boolean
+  streaming: boolean
+  vision: boolean
+  multilingual: boolean
+  longContext: boolean
+  embedding: boolean
+  nativeRealtimeVoice: boolean
+  supportedReasoningLevels: ReasoningLevel[]
+}
+
+export type LlmProviderResponse = {
+  providerKey: string
+  displayName: string
+  customEndpoint: boolean
+  models: ModelCapabilityResponse[]
+}
+
+export type LlmConfigResponse = {
+  provider: string
+  model: string
+  customEndpointUrl: string | null
+  hasApiKey: boolean
+  apiKeyMasked: string | null
+  reasoningLevel: ReasoningLevel
+  maxOutputTokens: number
+  fallbackModels: string[]
+  capability?: ModelCapabilityResponse
+}
+
+export type InterviewSessionItem = {
+  sessionId: number
+  targetPosition?: string
+  positionName?: string
+  status?: string
+  currentStage?: 'warmup' | 'technical' | 'deep_dive' | 'closing'
+  createdAt?: string
+  summaryReport?: string
+}
+
+export type InterviewSessionDetailResponse = {
+  sessionId: number
+  targetPosition?: string
+  status?: string
+  currentStage?: 'warmup' | 'technical' | 'deep_dive' | 'closing'
+  model?: string
+  reasoningLevel?: string
+  summaryReport?: string
+  stages: {
+    stageName: 'warmup' | 'technical' | 'deep_dive' | 'closing'
+    startedAt?: string
+    endedAt?: string | null
+  }[]
+  messages: {
+    id: number
+    role: 'system' | 'user' | 'assistant'
+    content: string
+    seqNum?: number
+    createdAt?: string
+    score?: number
+    hint?: string
+  }[]
+  resumeId?: number
+  positionId?: number
+  jdText?: string
+  attachments: {
+    id: number
+    fileName: string
+    mediaType: string
+    size: number
+    image: boolean
+  }[]
+}
 
 export const DEMO_VIEWPORT = { width: 1440, height: 900 } as const
 

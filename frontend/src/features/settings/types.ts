@@ -1,6 +1,15 @@
 /** Reasoning levels come from the backend capability catalog — never guessed. */
 export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
 
+export const REASONING_LABELS: Record<ReasoningLevel, string> = {
+  AUTO: '默认',
+  LOW: '低',
+  MEDIUM: '中',
+  HIGH: '高',
+  XHIGH: '超高',
+  MAX: '最大',
+}
+
 export type ModelCapabilityResponse = {
   provider: string
   model: string

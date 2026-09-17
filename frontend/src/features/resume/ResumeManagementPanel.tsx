@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Trash2 } from 'lucide-react'
-import { Button } from '@/shared/ui'
-import { useFeedback } from '@/shared/ui/feedback'
-import { deleteResume, fetchResumes, uploadResume } from './api'
+import { Button } from '@/shared/ui/button'
+import { useFeedback } from '@/shared/ui/feedback-context'
+import { deleteResume, fetchResumes, uploadResume } from './index'
+import './resume.css'
 
 export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: number }) {
   const input = useRef<HTMLInputElement>(null)

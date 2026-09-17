@@ -1,5 +1,5 @@
 @theme {
-  /* 色彩 — 直接引用现有 :root 变量 */
+  /* Color — re-export the existing :root tokens into Tailwind theme. */
   --color-brand: var(--color-brand);
   --color-brand-light: var(--color-brand-light);
   --color-accent-solid: var(--color-accent-solid);
@@ -26,7 +26,7 @@
   --color-line-decor: var(--color-line-decor);
   --color-line-decor-light: var(--color-line-decor-light);
 
-  /* 间距 */
+  /* Spacing */
   --spacing-xs: var(--spacing-xs);
   --spacing-sm: var(--spacing-sm);
   --spacing-md: var(--spacing-md);
@@ -34,27 +34,27 @@
   --spacing-xl: var(--spacing-xl);
   --spacing-2xl: var(--spacing-2xl);
 
-  /* 圆角 */
+  /* Radius */
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
   --radius-2xl: var(--radius-2xl);
 
-  /* 字体 */
+  /* Typography */
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
-  /* 阴影 */
+  /* Shadow */
   --shadow-modal: var(--shadow-modal);
   --shadow-whisper: var(--shadow-whisper);
 
-  /* 动效 */
+  /* Motion */
   --ease-standard: var(--motion-ease-standard);
   --animate-duration-base: var(--motion-duration-base);
 
-  /* 组件语义色彩桥接 */
+  /* Bridge product colors onto the shadcn semantic palette. */
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text-primary);
   --color-card: var(--card);
@@ -73,7 +73,7 @@
   --color-destructive-foreground: var(--color-surface);
   --color-input: var(--color-border-warm);
 
-  /* 组件基础圆角 */
+  /* Default component radius */
   --radius: var(--radius-md);
 
   --color-mask-overlay: var(--mask-overlay);
@@ -131,7 +131,7 @@
   --color-line-decor: #c8c6be;
   --color-line-decor-light: #dddbd3;
 
-  /* ── 组件语义 Token（映射到项目暖色调体系） ── */
+  /* ── Component semantic tokens (mapped to the warm product palette) ── */
   --background: var(--color-bg);
   --foreground: var(--color-text-primary);
   --card: var(--color-surface);
@@ -192,7 +192,7 @@
   --brand-metaballs-4: #5f463b;
   --brand-metaballs-5: #2f241f;
   --brand-metaballs-bg: #f5f1ec;
-  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
+  --shadow-brand-metaballs: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
 
   --motion-duration-fast: 150ms;
   --motion-duration-base: 300ms;
@@ -321,7 +321,7 @@
   --brand-metaballs-4: #d0aa98;
   --brand-metaballs-5: #ead3c5;
   --brand-metaballs-bg: #201814;
-  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-3) 18%, transparent);
+  --shadow-brand-metaballs: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-3) 18%, transparent);
 }
 
 * {
@@ -591,7 +591,7 @@ a {
   line-height: 1.4;
 }
 
-/* shadcn Label / FormLabel 品牌衬线体 */
+/* shadcn Label / FormLabel use the brand serif face. */
 label,
 [data-slot='label'] {
   font-family: var(--font-serif);
@@ -641,6 +641,14 @@ label,
   width: 100% !important;
   height: 100% !important;
   border-radius: inherit;
+}
+
+.brand-metaballs__shader {
+  width: 100%;
+  height: 100%;
+  background: var(--brand-metaballs-bg);
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-brand-metaballs);
 }
 
 .rose-three-loader {
@@ -802,7 +810,7 @@ label,
 }
 
 /* ==========================================================================
-   Workspace Layout System (全局工作区骨架锁死)
+   Workspace layout shell — locked application frame
    ========================================================================== */
 .workspace-page {
   flex: 1;

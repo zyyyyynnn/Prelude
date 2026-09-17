@@ -284,7 +284,7 @@
 }
 
 .interview-workspace {
-  /* 页面级语义变量：把本视图独有的尺寸集中声明，便于审查与未来重构。 */
+  /* View-local size tokens only; keep reviewable in one place. */
   --workspace-content-max-inline-size: var(--layout-workspace-content-max-inline-size);
   --workspace-generating-card-max-inline-size: 480px;
   --workspace-generating-title-font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
@@ -444,7 +444,7 @@
 }
 
 .message-thread {
-  /* 消息流的几何约束：bubble 按内容宽度控制，不使用控件高度倍数。 */
+  /* Bubble width follows content; do not derive from control height. */
   --message-bubble-gap: var(--spacing-sm);
   --message-bubble-max-inline-size: min(80%, var(--content-message-max-inline-size));
 

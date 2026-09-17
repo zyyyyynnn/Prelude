@@ -11,6 +11,7 @@ export function applyTheme(value: ThemePreference) {
   localStorage.setItem(STORAGE_KEY, value)
   const dark =
     value === 'dark' || (value === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+  // Double rAF after the forced reflow so the transition class only covers the color flip.
   document.documentElement.classList.add('is-theme-transitioning')
   document.documentElement.classList.toggle('dark', dark)
   void document.documentElement.offsetHeight

@@ -1,14 +1,142 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
-import { Button } from '@/shared/ui'
-import { parseInterviewReport } from './parse-interview-report'
+import './report.css'
 import type {
+  ParsedInterviewReport,
+  ReportStageName,
   StructuredInterviewReport,
   StructuredQuestionReview,
   StructuredStagePerformance,
   StructuredTrainingPlan,
 } from './types'
+
+const stageNames = new Set<ReportStageName>(['warmup', 'technical', 'deep_dive', 'closing'])
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function requiredText(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+function strings(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function score(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 10
+    ? Math.round(value * 10) / 10
+    : null
+}
+
+function stageName(value: unknown): ReportStageName | null {
+  return typeof value === 'string' && stageNames.has(value as ReportStageName)
+    ? (value as ReportStageName)
+    : null
+}
+
+function stagePerformances(value: unknown): StructuredStagePerformance[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(isRecord).flatMap((item) => {
+    const name = stageName(item.stageName)
+    const summary = requiredText(item.summary)
+    if (!name || !summary) return []
+    return [
+      {
+        stageName: name,
+        score: score(item.score),
+        summary,
+        positiveSignals: strings(item.positiveSignals),
+        negativeSignals: strings(item.negativeSignals),
+        improvementSuggestions: strings(item.improvementSuggestions),
+      },
+    ]
+  })
+}
+
+function questionReviews(value: unknown): StructuredQuestionReview[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(isRecord).flatMap((item) => {
+    const name = stageName(item.stageName)
+    const question = requiredText(item.question)
+    const answerSummary = requiredText(item.answerSummary)
+    const scoringReason = requiredText(item.scoringReason)
+    const improvementSuggestion = requiredText(item.improvementSuggestion)
+    if (!name || !question || !answerSummary || !scoringReason || !improvementSuggestion) return []
+    return [
+      {
+        stageName: name,
+        question,
+        answerSummary,
+        score: score(item.score),
+        scoringReason,
+        improvementSuggestion,
+      },
+    ]
+  })
+}
+
+// Incomplete core structure falls back to plain text — never invent scores.
+function parseInterviewReport(source: string): ParsedInterviewReport {
+  const raw = source?.trim() || ''
+  if (!raw.startsWith('{')) return { kind: 'plain', text: raw }
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!isRecord(parsed) || !isRecord(parsed.summary) || !isRecord(parsed.scores)) {
+      return { kind: 'plain', text: raw }
+    }
+    const summary = parsed.summary
+    const dimensions = parsed.scores
+    const fitAssessment = requiredText(summary.fitAssessment)
+    const actionRecommendation = requiredText(summary.actionRecommendation)
+    const overallRisk = requiredText(summary.overallRisk)
+    const technical = score(dimensions.technical)
+    const expression = score(dimensions.expression)
+    const logic = score(dimensions.logic)
+    const overall = score(dimensions.overall)
+    const finalAdvice = requiredText(parsed.finalAdvice)
+    if (
+      !fitAssessment ||
+      !actionRecommendation ||
+      !overallRisk ||
+      technical == null ||
+      expression == null ||
+      logic == null ||
+      overall == null ||
+      !finalAdvice
+    ) {
+      return { kind: 'plain', text: raw }
+    }
+
+    const plan = isRecord(parsed.trainingPlan) ? parsed.trainingPlan : {}
+    return {
+      kind: 'structured',
+      report: {
+        summary: { fitAssessment, actionRecommendation, overallRisk },
+        scores: { technical, expression, logic, overall },
+        stagePerformances: stagePerformances(parsed.stagePerformances),
+        questionReviews: questionReviews(parsed.questionReviews),
+        strengths: strings(parsed.strengths),
+        weaknesses: strings(parsed.weaknesses),
+        trainingPlan: {
+          threeDay: strings(plan.threeDay),
+          sevenDay: strings(plan.sevenDay),
+          nextInterviewFocus: strings(plan.nextInterviewFocus),
+        },
+        finalAdvice,
+      },
+    }
+  } catch {
+    return { kind: 'plain', text: raw }
+  }
+}
 
 const stageLabels = {
   warmup: '破冰',
@@ -32,7 +160,7 @@ export function ReportPanel({ source }: { source: string }) {
   )
 }
 
-function StructuredReport({ report }: { report: StructuredInterviewReport }) {
+export function StructuredReport({ report }: { report: StructuredInterviewReport }) {
   return (
     <article className="structured-report">
       <header className="structured-report__hero">
@@ -72,7 +200,7 @@ function StructuredReport({ report }: { report: StructuredInterviewReport }) {
   )
 }
 
-function ScoreCard({ report }: { report: StructuredInterviewReport }) {
+export function ScoreCard({ report }: { report: StructuredInterviewReport }) {
   const items = [
     ['技术能力', report.scores.technical],
     ['表达清晰度', report.scores.expression],
@@ -97,7 +225,7 @@ function ScoreCard({ report }: { report: StructuredInterviewReport }) {
             <span>{label}</span>
             <strong>{value.toFixed(1)}</strong>
             <div className="report-score-item__track" aria-hidden="true">
-              <span style={{ inlineSize: `${value * 10}%` }} />
+              <span style={{ '--report-score-fill': `${value * 10}%` } as CSSProperties} />
             </div>
           </div>
         ))}
@@ -106,7 +234,7 @@ function ScoreCard({ report }: { report: StructuredInterviewReport }) {
   )
 }
 
-function StagePerformanceList({ stages }: { stages: StructuredStagePerformance[] }) {
+export function StagePerformanceList({ stages }: { stages: StructuredStagePerformance[] }) {
   const [index, setIndex] = useState(0)
   if (!stages.length)
     return (
@@ -166,7 +294,7 @@ function StagePerformanceList({ stages }: { stages: StructuredStagePerformance[]
   )
 }
 
-function ReportCarouselNavigation({
+export function ReportCarouselNavigation({
   ariaLabel,
   index,
   count,
@@ -188,29 +316,35 @@ function ReportCarouselNavigation({
       <span className="report-carousel__counter" aria-live="polite">
         {index + 1} / {count}
       </span>
-      <Button
-        size="icon"
-        variant="ghost"
+      <button
+        type="button"
+        data-slot="button"
+        className="prelude-button prelude-button--ghost prelude-button--icon ui-action"
         aria-label={previousLabel}
         disabled={index === 0}
         onClick={onPrevious}
       >
-        <ChevronLeft />
-      </Button>
-      <Button
-        size="icon"
-        variant="ghost"
+        <span className="prelude-button__content">
+          <ChevronLeft />
+        </span>
+      </button>
+      <button
+        type="button"
+        data-slot="button"
+        className="prelude-button prelude-button--ghost prelude-button--icon ui-action"
         aria-label={nextLabel}
         disabled={index === count - 1}
         onClick={onNext}
       >
-        <ChevronRight />
-      </Button>
+        <span className="prelude-button__content">
+          <ChevronRight />
+        </span>
+      </button>
     </div>
   )
 }
 
-function Signal({ title, items }: { title: string; items: string[] }) {
+export function Signal({ title, items }: { title: string; items: string[] }) {
   return items.length ? (
     <section className="stage-performance__signal">
       <h4>{title}</h4>
@@ -223,7 +357,7 @@ function Signal({ title, items }: { title: string; items: string[] }) {
   ) : null
 }
 
-function QuestionReviewList({ reviews }: { reviews: StructuredQuestionReview[] }) {
+export function QuestionReviewList({ reviews }: { reviews: StructuredQuestionReview[] }) {
   const [index, setIndex] = useState(0)
   if (!reviews.length)
     return (
@@ -275,7 +409,7 @@ function QuestionReviewList({ reviews }: { reviews: StructuredQuestionReview[] }
   )
 }
 
-function ReviewDetail({ label, value }: { label: string; value: string }) {
+export function ReviewDetail({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt>{label}</dt>
@@ -284,7 +418,7 @@ function ReviewDetail({ label, value }: { label: string; value: string }) {
   )
 }
 
-function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
+export function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
   const groups = [
     ['3 天补强', plan.threeDay],
     ['7 天专项', plan.sevenDay],
@@ -317,7 +451,7 @@ function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
   )
 }
 
-function Trait({ title, items, empty }: { title: string; items: string[]; empty: string }) {
+export function Trait({ title, items, empty }: { title: string; items: string[]; empty: string }) {
   return (
     <section className="structured-report__trait">
       <h3>{title}</h3>
@@ -332,4 +466,24 @@ function Trait({ title, items, empty }: { title: string; items: string[]; empty:
       )}
     </section>
   )
+}
+
+const printingClass = 'is-printing-report'
+
+async function printReport(title: string) {
+  const previousTitle = document.title
+  document.title = title
+  document.body.classList.add(printingClass)
+
+  try {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    window.print()
+  } finally {
+    document.body.classList.remove(printingClass)
+    document.title = previousTitle
+  }
+}
+
+export async function printInterviewReport(title = '面试训练报告') {
+  return printReport(title)
 }

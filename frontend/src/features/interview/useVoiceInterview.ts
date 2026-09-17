@@ -24,6 +24,7 @@ export function useVoiceInterview({
   const recorder = useRef<MediaRecorder | null>(null)
   const stream = useRef<MediaStream | null>(null)
   const assistantId = useRef<number | null>(null)
+  // closing: intentional teardown. terminal: fatal error already reported — suppress double exit.
   const closing = useRef(false)
   const terminal = useRef(false)
   const reportMessage = useEffectEvent(onMessage)

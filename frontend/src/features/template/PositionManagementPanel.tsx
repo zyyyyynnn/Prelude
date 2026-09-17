@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { Button, Field, Input, Textarea } from '@/shared/ui'
-import { useFeedback } from '@/shared/ui/feedback'
-import { createPosition, deletePosition, fetchPositions, updatePosition } from './api'
+import { Button } from '@/shared/ui/button'
+import { Field, Input, Textarea } from '@/shared/ui/field'
+import { useFeedback } from '@/shared/ui/feedback-context'
+import { createPosition, deletePosition, fetchPositions, updatePosition } from './index'
 import type { PositionTemplate } from './types'
+import './position.css'
 
 const emptyDraft = { name: '', systemPrompt: '' }
 

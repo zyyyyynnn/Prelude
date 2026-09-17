@@ -1,4 +1,10 @@
-import type { AttachmentItem } from '@/features/assets'
+export type InterviewAttachment = {
+  id: number
+  fileName: string
+  mediaType: string
+  size: number
+  image: boolean
+}
 
 export type InterviewStageName = 'warmup' | 'technical' | 'deep_dive' | 'closing'
 
@@ -63,10 +69,40 @@ export type InterviewSessionDetailResponse = {
   resumeId?: number
   positionId?: number
   jdText?: string
-  attachments: AttachmentItem[]
+  attachments: InterviewAttachment[]
 }
 
 export type InterviewChatRequest = {
   content: string
   messages?: InterviewMessageRecord[]
+}
+
+export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
+
+export const REASONING_LABELS: Record<ReasoningLevel, string> = {
+  AUTO: '默认',
+  LOW: '低',
+  MEDIUM: '中',
+  HIGH: '高',
+  XHIGH: '超高',
+  MAX: '最大',
+}
+
+export type InterviewModelCapability = {
+  model: string
+  reasoning?: boolean
+  supportedReasoningLevels?: ReasoningLevel[]
+}
+
+export type InterviewModelConfig = {
+  model: string
+  provider: string
+  reasoningLevel: ReasoningLevel
+  capability: InterviewModelCapability
+}
+
+export type InterviewModelProvider = {
+  providerKey: string
+  displayName?: string
+  models: InterviewModelCapability[]
 }

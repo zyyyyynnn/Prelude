@@ -420,6 +420,7 @@ test('@smoke centers the async button indicator without resizing the control', a
   await page.getByRole('button', { name: '模型管理' }).click()
 
   const save = page.getByRole('button', { name: '保存设置' })
+  await expect(save).toBeVisible()
   const idleWidth = (await save.boundingBox())!.width
   await save.click()
   await expect(save).toHaveAttribute('aria-busy', 'true')

@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Bell } from 'lucide-react'
-import { Button, Field, IconTooltip, Input, Modal, Select, Textarea } from '@/shared/ui'
+import { Button } from '@/shared/ui/button'
+import { Field, Input, Textarea } from '@/shared/ui/field'
+import { IconTooltip, Modal } from '@/shared/ui/overlay'
+import { Select } from '@/shared/ui/select'
 
 export function ComponentLab() {
   const [dialogOpen, setDialogOpen] = useState(false)
