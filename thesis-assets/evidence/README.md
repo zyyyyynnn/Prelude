@@ -1,6 +1,6 @@
 # 论文证据层索引
 
-本目录是项目实现与论文正文之间的证据层。当前事实和写作边界以 `../meta/final-evidence-lock.md` 为准；本文件只负责终态导航。
+本目录是项目实现与论文正文之间的证据层。当前事实和写作边界以 `../meta/final-evidence-lock.md` 为准；本文件只负责终态导航。多处并列同一证据清单时，以 `test-data/test-evidence-matrix.md` 为主。
 
 ## 当前证据入口
 

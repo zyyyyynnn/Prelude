@@ -17,7 +17,7 @@
 | 第 7 页 | 核心实现一：SSE 流式面试 | `fig-4.x-sse-streaming-flow.png`、SSE 代码片段 | 第四章 | 说明后端 SseEmitter 流式推送、前端 rAF 缓冲渲染和结束收口。 | 候选图4.x，正文采用前再冻结图号 |
 | 第 8 页 | 核心实现二：Structured Output | JSON Schema / 解析降级代码片段 | 第四章 | 说明旧正则评分风险，当前使用结构化输出、反序列化和分数降级。 | 对比新旧方案 |
 | 第 9 页 | 核心实现三：可靠性保护 | Redis 限流、Resilience4j、fallback 测试 | 第四章 | 说明限流、熔断、SSE 恢复，以及 openai-compatible 不静默 fallback 的边界。 | 限缩为机制与测试保护，不写高并发通过 |
-| 第 10 页 | 测试验证 | `thesis-assets/evidence/test-data/functional-cases-2026-06.md`、`thesis-assets/evidence/test-data/quality-gates-2026-07-13.md`、`thesis-assets/evidence/test-data/test-evidence-matrix.md` | 第五章 | 展示 TC-01 至 TC-12、后端测试、前端构建、Sentrux、覆盖率与 UI 自动化门禁。 | 结论边界见 `thesis-assets/meta/final-evidence-lock.md` |
+| 第 10 页 | 测试验证 | `thesis-assets/evidence/test-data/functional-cases-2026-07-15.md`、`thesis-assets/evidence/test-data/quality-gates-2026-07-15.md`、`thesis-assets/evidence/test-data/test-evidence-matrix.md` | 第五章 | 展示 TC-01 至 TC-15、后端测试、前端构建、Sentrux、覆盖率与 UI 自动化门禁。 | 结论边界见 `thesis-assets/meta/final-evidence-lock.md` |
 | 第 11 页 | Bug 复盘 | `thesis-assets/evidence/bug-evidence/archive/01-demo-proxy.md`、`thesis-assets/evidence/bug-evidence/archive/02-mysql-preflight.md` | 第四章、第五章 | 讲历史代理错连和 MySQL 未就绪两个真实问题，突出配置契约和启动前置校验。 | 只讲 1-2 个重点 |
 | 第 12 页 | 系统展示路线 | `start-dev.bat`、当前 README / setup | 全文 | 按登录、主工作台、简历、面试、报告、看板、LLM 配置、设置展示。 | 准备离线截图兜底 |
 | 第 13 页 | 总结与不足 | 第六章总结、局限与改进方向 | 第六章 | 总结闭环、SSE、Structured Output、可靠性保护、Docker 编排和证据化测试；说明语音和并发压测不足。 | 收束到可扩展方向 |
