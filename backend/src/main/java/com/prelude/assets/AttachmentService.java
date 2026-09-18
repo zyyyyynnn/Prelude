@@ -6,7 +6,6 @@ import com.prelude.BusinessException;
 import com.prelude.assets.api.AssetRef;
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.assets.api.AttachmentSnapshot;
-import com.prelude.assets.domain.AssetStatus;
 import com.prelude.assets.persistence.Asset;
 import com.prelude.assets.persistence.AssetMapper;
 import com.prelude.assets.persistence.AttachmentMapper;
@@ -22,6 +21,9 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Interview-context attachments. Binary content lives only in the referenced
@@ -120,10 +122,9 @@ public class AttachmentService implements AttachmentContextPort {
         if (rows.size() != ids.size()) {
             throw BusinessException.badRequest("附件不存在、已使用或无权访问");
         }
-        return ids.stream()
-            .map(id -> rows.stream().filter(row -> id.equals(row.getId())).findFirst().orElseThrow())
-            .map(this::toSnapshot)
-            .toList();
+        Map<Long, StoredAttachment> byId = rows.stream()
+            .collect(Collectors.toMap(StoredAttachment::getId, Function.identity()));
+        return toSnapshots(ids.stream().map(byId::get).toList());
     }
 
     @Override
@@ -145,14 +146,11 @@ public class AttachmentService implements AttachmentContextPort {
 
     @Override
     public List<AttachmentSnapshot> list(Long accountId, String scopeType, Long scopeId) {
-        return attachmentMapper.selectList(new LambdaQueryWrapper<StoredAttachment>()
-                .eq(StoredAttachment::getAccountId, accountId)
-                .eq(StoredAttachment::getScopeType, scopeType)
-                .eq(StoredAttachment::getScopeId, scopeId)
-                .orderByAsc(StoredAttachment::getId))
-            .stream()
-            .map(this::toSnapshot)
-            .toList();
+        return toSnapshots(attachmentMapper.selectList(new LambdaQueryWrapper<StoredAttachment>()
+            .eq(StoredAttachment::getAccountId, accountId)
+            .eq(StoredAttachment::getScopeType, scopeType)
+            .eq(StoredAttachment::getScopeId, scopeId)
+            .orderByAsc(StoredAttachment::getId)));
     }
 
     @Override
@@ -176,12 +174,25 @@ public class AttachmentService implements AttachmentContextPort {
         return ids;
     }
 
-    private AttachmentSnapshot toSnapshot(StoredAttachment stored) {
-        Asset asset = assetMapper.selectById(stored.getAssetId());
-        if (asset == null) {
-            throw BusinessException.notFound("资产不存在");
+    private List<AttachmentSnapshot> toSnapshots(List<StoredAttachment> storedRows) {
+        if (storedRows.isEmpty()) {
+            return List.of();
         }
-        return toSnapshot(stored, asset);
+        List<Long> assetIds = storedRows.stream()
+            .map(StoredAttachment::getAssetId)
+            .distinct()
+            .toList();
+        Map<Long, Asset> assetsById = assetMapper.selectBatchIds(assetIds).stream()
+            .collect(Collectors.toMap(Asset::getId, Function.identity()));
+        return storedRows.stream()
+            .map(stored -> {
+                Asset asset = assetsById.get(stored.getAssetId());
+                if (asset == null) {
+                    throw BusinessException.notFound("资产不存在");
+                }
+                return toSnapshot(stored, asset);
+            })
+            .toList();
     }
 
     private AttachmentSnapshot toSnapshot(StoredAttachment stored, Asset asset) {

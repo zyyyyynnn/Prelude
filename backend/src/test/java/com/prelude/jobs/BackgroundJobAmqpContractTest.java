@@ -1,14 +1,12 @@
 package com.prelude.jobs;
 
 import com.prelude.artifact.application.GenerateInterviewReport;
-import com.prelude.artifact.application.port.InsightRepository;
 import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.interview.domain.InterviewSession;
 import com.prelude.jobs.infrastructure.RabbitMqConfig;
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -53,9 +51,6 @@ class BackgroundJobAmqpContractTest {
     private BackgroundJobOperations jobs;
 
     @Autowired
-    private com.prelude.identity.AccountMapper accountMapper;
-
-    @Autowired
     private RabbitTemplate rabbitTemplate;
 
     @Autowired
@@ -76,9 +71,6 @@ class BackgroundJobAmqpContractTest {
     @MockitoBean
     private InterviewReportPort interviewReportPort;
 
-    @MockitoBean
-    private InsightRepository insightRepository;
-
     @BeforeEach
     void prepare() {
         listenerRegistry.getListenerContainers().forEach(container -> container.stop());
@@ -88,13 +80,8 @@ class BackgroundJobAmqpContractTest {
             .thenReturn(new GenerateInterviewReport.GenerationResult(
                 GenerateInterviewReport.Outcome.GENERATED, "{}", null, List.of()));
         when(interviewReportPort.completeReport(anyLong(), anyString())).thenReturn(true);
-        when(interviewReportPort.findSession(anyLong())).thenAnswer(invocation -> {
-            InterviewSession session = new InterviewSession();
-            session.setId(invocation.getArgument(0));
-            session.setStatus("finished");
-            session.setSummaryReport("{}");
-            return session;
-        });
+        when(interviewReportPort.findSession(anyLong())).thenAnswer(invocation ->
+            SessionFixtures.create(invocation.getArgument(0), "finished", "{}"));
         listenerRegistry.getListenerContainers().forEach(container -> container.start());
     }
 
@@ -106,7 +93,7 @@ class BackgroundJobAmqpContractTest {
     @Test
     void externalizedRequestIsDecodedToTheAuthoritativeJobIdAndExecuted() throws Exception {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
+        var ref = jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
             "report.generate", accountId, 301L,
             "report.generate:amqp:" + System.nanoTime(), "{}"));
 
@@ -130,11 +117,7 @@ class BackgroundJobAmqpContractTest {
     }
 
     private long createAccount() {
-        com.prelude.identity.Account account = new com.prelude.identity.Account();
-        account.setUsername("jobs-amqp-" + System.nanoTime());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        return AccountFixtures.create(jdbcTemplate, "jobs-amqp");
     }
 
     private void awaitCompletedPublication(String jobId) {

@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
 import com.prelude.identity.Account;
 import com.prelude.identity.AccountMapper;
-import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.AvatarStoragePort;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.UserProfileRequest;
@@ -51,18 +50,7 @@ public class ProfileService {
         String oldPassword = normalizeNullable(request.getOldPassword());
         String newPassword = normalizeNullable(request.getNewPassword());
 
-        if (request.getUsername() != null && username == null) {
-            throw BusinessException.badRequest("用户名不能为空");
-        }
-        if (request.getEmail() != null && email == null) {
-            throw BusinessException.badRequest("邮箱不能为空");
-        }
-        if (themePreference != null && !THEME_PREFERENCES.contains(themePreference)) {
-            throw BusinessException.badRequest("主题设置不正确");
-        }
-        if ((oldPassword == null) != (newPassword == null)) {
-            throw BusinessException.badRequest("请同时提供旧密码和新密码");
-        }
+        validateProfileRequest(request, username, email, themePreference, oldPassword, newPassword);
 
         boolean changed = false;
         String newUsername = account.getUsername();
@@ -70,14 +58,9 @@ public class ProfileService {
         String newThemePreference = account.getThemePreference();
         String newPasswordHash = account.getPasswordHash();
 
-        if (username != null && !username.equals(account.getUsername())) {
-            long count = accountMapper.selectCount(new LambdaQueryWrapper<Account>()
-                .eq(Account::getUsername, username)
-                .ne(Account::getId, account.getId()));
-            if (count > 0) {
-                throw BusinessException.badRequest("用户名已存在");
-            }
-            newUsername = username;
+        String resolvedUsername = resolveUpdatedUsername(account, username);
+        if (resolvedUsername != null) {
+            newUsername = resolvedUsername;
             changed = true;
         }
 
@@ -91,15 +74,9 @@ public class ProfileService {
             changed = true;
         }
 
-        if (oldPassword != null) {
-            if (account.getPasswordHash() == null
-                || !passwordEncoder.matches(oldPassword, account.getPasswordHash())) {
-                throw BusinessException.badRequest("旧密码错误");
-            }
-            if (passwordEncoder.matches(newPassword, account.getPasswordHash())) {
-                throw BusinessException.badRequest("新密码不能与旧密码相同");
-            }
-            newPasswordHash = passwordEncoder.encode(newPassword);
+        String resolvedPasswordHash = resolveUpdatedPassword(account, oldPassword, newPassword);
+        if (resolvedPasswordHash != null) {
+            newPasswordHash = resolvedPasswordHash;
             changed = true;
         }
 
@@ -184,6 +161,49 @@ public class ProfileService {
             throw BusinessException.unauthorized("请先登录");
         }
         return account;
+    }
+
+    private void validateProfileRequest(UserProfileRequest request, String username, String email,
+                                       String themePreference, String oldPassword, String newPassword) {
+        if (request.getUsername() != null && username == null) {
+            throw BusinessException.badRequest("用户名不能为空");
+        }
+        if (request.getEmail() != null && email == null) {
+            throw BusinessException.badRequest("邮箱不能为空");
+        }
+        if (themePreference != null && !THEME_PREFERENCES.contains(themePreference)) {
+            throw BusinessException.badRequest("主题设置不正确");
+        }
+        if ((oldPassword == null) != (newPassword == null)) {
+            throw BusinessException.badRequest("请同时提供旧密码和新密码");
+        }
+    }
+
+    private String resolveUpdatedUsername(Account account, String username) {
+        if (username == null || username.equals(account.getUsername())) {
+            return null;
+        }
+        long count = accountMapper.selectCount(new LambdaQueryWrapper<Account>()
+            .eq(Account::getUsername, username)
+            .ne(Account::getId, account.getId()));
+        if (count > 0) {
+            throw BusinessException.badRequest("用户名已存在");
+        }
+        return username;
+    }
+
+    private String resolveUpdatedPassword(Account account, String oldPassword, String newPassword) {
+        if (oldPassword == null) {
+            return null;
+        }
+        if (account.getPasswordHash() == null
+            || !passwordEncoder.matches(oldPassword, account.getPasswordHash())) {
+            throw BusinessException.badRequest("旧密码错误");
+        }
+        if (passwordEncoder.matches(newPassword, account.getPasswordHash())) {
+            throw BusinessException.badRequest("新密码不能与旧密码相同");
+        }
+        return passwordEncoder.encode(newPassword);
     }
 
     private String normalizeNullable(String value) {

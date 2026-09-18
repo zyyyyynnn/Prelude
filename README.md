@@ -75,15 +75,15 @@ shadcn/ui 与 Beautiful UI 仅提供已采用组件的源码结构或组合参�
 ### 环境要求
 
 - Windows 11 与 PowerShell 7+
-- Java 21、Maven
-- Node.js 22.22+、npm 12
+- Java 与 Maven，具体要求见 `backend/pom.xml`
+- Node.js 与 npm，具体要求见 `frontend/package.json`
 - Docker Desktop
 
 ### 启动基础设施
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up -d mysql redis rabbitmq
+docker compose up -d mysql redis rabbitmq versitygw
 ```
 
 ### 启动应用
@@ -91,7 +91,7 @@ docker compose up -d mysql redis rabbitmq
 分别在两个 PowerShell 窗口启动后端和前端：
 
 ```powershell
-mvn -f backend/pom.xml spring-boot:run
+mvn -f backend/pom.xml -Dspring-boot.run.profiles=dev spring-boot:run
 ```
 
 ```powershell
@@ -103,15 +103,7 @@ npm --prefix frontend run dev
 
 ## 验证
 
-```powershell
-mvn -f backend/pom.xml clean test
-npm --prefix frontend ci
-npm --prefix frontend run check
-npm --prefix frontend run build
-npm --prefix frontend run test:smoke
-```
-
-CI 还会执行生产产物、自带密钥契约、暗色主题、可访问性、代表性视觉与运行时依赖审计。GitHub 仅以 `backend` 和 `frontend` 两个职责域作为必需检查项。
+完整验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准，CI 执行与之对齐。GitHub 仅以 `backend` 和 `frontend` 两个职责域作为必需检查项。
 
 ## 仓库结构
 

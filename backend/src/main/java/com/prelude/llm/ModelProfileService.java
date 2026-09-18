@@ -13,14 +13,10 @@ import com.prelude.llm.persistence.ModelProfileMapper;
 import com.prelude.llm.persistence.ProviderCredential;
 import com.prelude.llm.persistence.ProviderCredentialMapper;
 import lombok.RequiredArgsConstructor;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,50 +33,21 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ModelProfileService {
 
-    private static final String MODELS_PATH = "/models";
-
     private final ProviderCredentialMapper credentialMapper;
     private final ModelProfileMapper profileMapper;
     private final ProviderSecretCipher secretCipher;
+    private final ProviderCredentialResolver credentialResolver;
     private final ModelCapabilityCatalog capabilityCatalog;
     private final ReasoningLevels reasoningLevels;
     private final CustomModelCapabilityDiscovery capabilityDiscovery;
+    private final CustomModelCatalogClient catalogClient;
     private final CustomLlmEgressPolicy egressPolicy;
-    private final EgressHttpClientFactory egressHttpClientFactory;
     private final ModelCapabilityJson capabilityJson;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
 
-    public ModelProfile requireProfile(Long accountId) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
-        if (profile == null) {
-            throw BusinessException.badRequest("请先配置模型服务");
-        }
-        return profile;
-    }
-
-    public String resolveApiKey(Long accountId, ModelProfile profile) {
-        if (profile.getCredentialId() == null) {
-            return null;
-        }
-        ProviderCredential credential = credentialMapper.selectById(profile.getCredentialId());
-        if (credential == null || !accountId.equals(credential.getAccountId())) {
-            throw BusinessException.badRequest("模型凭据不可用，请重新配置");
-        }
-        return secretCipher.decrypt(credential.getApiKeyEncrypted());
-    }
-
     public String resolveApiKey(Long accountId, Long credentialId) {
-        if (credentialId == null) {
-            return null;
-        }
-        ProviderCredential credential = credentialMapper.selectById(credentialId);
-        if (credential == null || !accountId.equals(credential.getAccountId())) {
-            throw BusinessException.badRequest("模型凭据不可用，请重新配置");
-        }
-        return secretCipher.decrypt(credential.getApiKeyEncrypted());
+        return credentialResolver.resolve(accountId, credentialId);
     }
 
     public ModelConfigurationView saveConfiguration(Long accountId, SaveConfigurationCommand command) {
@@ -93,7 +60,7 @@ public class ModelProfileService {
             if (command.customEndpointUrl() == null || command.customEndpointUrl().isBlank()) {
                 throw BusinessException.badRequest("自定义端点必须填写 Base URL");
             }
-            customEndpointUrl = normalizeRoot(command.customEndpointUrl(), provider);
+            customEndpointUrl = EndpointRoots.normalize(command.customEndpointUrl(), provider);
             egressPolicy.validateConfiguredEndpoint(customEndpointUrl);
         }
         String model = command.model() == null ? "" : command.model().trim();
@@ -172,7 +139,7 @@ public class ModelProfileService {
         );
     }
 
-    public List<ProviderDescriptorView> listModels(Long accountId) {
+    public List<ProviderDescriptorView> listModels() {
         List<ProviderDescriptorView> descriptors = new ArrayList<>();
         for (String provider : capabilityCatalog.knownProviders()) {
             boolean customEndpoint = CustomLlmProtocol.isCustom(provider);
@@ -192,7 +159,7 @@ public class ModelProfileService {
      */
     public DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command) {
         CustomLlmProtocol protocol = CustomLlmProtocol.require(command.provider());
-        String baseUrl = normalizeRoot(command.baseUrl(), command.provider());
+        String baseUrl = EndpointRoots.normalize(command.baseUrl(), command.provider());
         String apiKey = command.apiKey();
         if (apiKey == null || apiKey.isBlank()) {
             apiKey = activeKeyForScope(accountId, command.provider(), baseUrl);
@@ -200,35 +167,7 @@ public class ModelProfileService {
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("API Key 不能为空");
         }
-        String modelsUrl = baseUrl + (protocol == CustomLlmProtocol.ANTHROPIC_MESSAGES
-            ? "/v1" + MODELS_PATH
-            : MODELS_PATH);
-        egressPolicy.validateConfiguredEndpoint(modelsUrl);
-        Request.Builder requestBuilder = new Request.Builder().url(modelsUrl).get();
-        if (protocol == CustomLlmProtocol.ANTHROPIC_MESSAGES) {
-            requestBuilder
-                .addHeader("x-api-key", apiKey)
-                .addHeader("anthropic-version", "2023-06-01");
-        } else {
-            requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
-        }
-        Request request = requestBuilder.build();
-        try (Response response = egressHttpClientFactory.discoveryClient()
-            .newCall(request).execute()) {
-            if (response.code() == 401 || response.code() == 403) {
-                throw BusinessException.badRequest("鉴权失败，请检查 API Key");
-            }
-            if (!response.isSuccessful()) {
-                throw BusinessException.badRequest("Base URL 不可达或模型列表接口返回异常：" + response.code());
-            }
-            String body = response.body() == null ? "" : response.body().string();
-            List<ModelCapabilityResponse> models = parseDiscoveredModels(command.provider(), body);
-            return new DiscoveredModelsView(baseUrl, models);
-        } catch (BusinessException exception) {
-            throw exception;
-        } catch (IOException exception) {
-            throw BusinessException.badRequest("Base URL 不可达，请检查 Base URL");
-        }
+        return new DiscoveredModelsView(baseUrl, catalogClient.listModels(protocol, baseUrl, apiKey));
     }
 
     public ModelCapabilityResponse discoverCustomModelCapability(
@@ -236,7 +175,7 @@ public class ModelProfileService {
         com.prelude.llm.api.LlmPort.DiscoverModelCapabilityCommand command
     ) {
         CustomLlmProtocol.require(command.provider());
-        String baseUrl = normalizeRoot(command.baseUrl(), command.provider());
+        String baseUrl = EndpointRoots.normalize(command.baseUrl(), command.provider());
         String model = command.model() == null ? "" : command.model().trim();
         if (model.isBlank()) {
             throw BusinessException.badRequest("模型不能为空");
@@ -252,19 +191,7 @@ public class ModelProfileService {
     }
 
     ModelCapabilityResponse capabilityForProfile(ModelProfile profile, String model) {
-        if (!CustomLlmProtocol.isCustom(profile.getProvider())) {
-            return capabilityCatalog.capability(profile.getProvider(), model);
-        }
-        if (profile.getModel().equals(model)) {
-            ModelCapabilityResponse stored = capabilityJson.read(profile.getModelCapabilityJson());
-            if (profile.getProvider().equals(stored.provider()) && model.equals(stored.model())) {
-                return stored;
-            }
-        }
-        return capabilityJson.readList(profile.getFallbackCapabilitiesJson()).stream()
-            .filter(capability -> profile.getProvider().equals(capability.provider()) && model.equals(capability.model()))
-            .findFirst()
-            .orElseThrow(() -> BusinessException.badRequest("所选模型能力尚未确认，请先保存模型配置"));
+        return ProfileCapabilities.capabilityForProfile(profile, model, capabilityCatalog, capabilityJson);
     }
 
     private String activeKeyForScope(Long accountId, String provider, String baseUrl) {
@@ -398,44 +325,6 @@ public class ModelProfileService {
             }
         } else {
             profileMapper.updateById(profile);
-        }
-    }
-
-    private String normalizeRoot(String input, String provider) {
-        try {
-            URI uri = URI.create(input.trim());
-            String path = uri.getPath() == null ? "" : pathTrim(uri.getPath());
-            if (CustomLlmProtocol.isCustom(provider)) {
-                path = stripEndpointSuffix(path, CustomLlmProtocol.require(provider).endpointSuffix());
-            }
-            return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(),
-                path.isBlank() ? null : path, null, null).toString();
-        } catch (Exception exception) {
-            throw BusinessException.badRequest("Base URL 格式不正确");
-        }
-    }
-
-    private String pathTrim(String path) {
-        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
-    }
-
-    private String stripEndpointSuffix(String path, String suffix) {
-        return path.endsWith(suffix) ? pathTrim(path.substring(0, path.length() - suffix.length())) : path;
-    }
-
-    private List<ModelCapabilityResponse> parseDiscoveredModels(String provider, String body) {
-        try {
-            List<ModelCapabilityResponse> models = new ArrayList<>();
-            tools.jackson.databind.JsonNode root = objectMapper.readTree(body);
-            for (tools.jackson.databind.JsonNode node : root.path("data")) {
-                String id = node.path("id").asString(null);
-                if (id != null && !id.isBlank()) {
-                    models.add(capabilityCatalog.capability(provider, id));
-                }
-            }
-            return List.copyOf(models);
-        } catch (Exception exception) {
-            throw BusinessException.badRequest("模型列表响应格式不正确");
         }
     }
 

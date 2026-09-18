@@ -2,8 +2,8 @@ package com.prelude.interview.application;
 
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.assets.api.AttachmentSnapshot;
-import com.prelude.template.api.port.PositionCatalogPort;
-import com.prelude.template.api.port.PositionCatalogPort.PositionSnapshot;
+import com.prelude.position.api.port.PositionCatalogPort;
+import com.prelude.position.api.port.PositionCatalogPort.PositionSnapshot;
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.interview.domain.InterviewSession;

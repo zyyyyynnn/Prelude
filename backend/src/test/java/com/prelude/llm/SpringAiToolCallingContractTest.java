@@ -1,8 +1,8 @@
 package com.prelude.llm;
 
-import com.prelude.LlmServerException;
 import com.prelude.llm.api.LlmPort;
-import com.prelude.llm.api.LlmUsageRecorded;
+import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.LlmFixtures;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -54,7 +54,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger modelCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel model = prompt -> {
             int call = modelCalls.incrementAndGet();
             if (call == 1) {
@@ -95,7 +95,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             int call = primaryCalls.incrementAndGet();
             if (call == 1) {
@@ -113,11 +113,10 @@ class SpringAiToolCallingContractTest {
             snapshot, 2, eventPublisher(usageEvent, usageEvents),
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
 
-        assertThatThrownBy(() -> service.complete(request(tool("commit_side_effect", arguments -> {
+        ExceptionFixtures.assertLlmServerException(() -> service.complete(request(tool("commit_side_effect", arguments -> {
             toolCalls.incrementAndGet();
             return "committed";
-        }))))
-            .isInstanceOf(LlmServerException.class);
+        }))));
 
         assertThat(primaryCalls).hasValue(3);
         assertThat(fallbackCalls).hasValue(0);
@@ -135,7 +134,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             primaryCalls.incrementAndGet();
             throw new TransientAiException("primary unavailable");
@@ -169,7 +168,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             primaryCalls.incrementAndGet();
             return toolRequest("call-1", "fail_tool", "{}", 1, 1);
@@ -181,7 +180,8 @@ class SpringAiToolCallingContractTest {
         ModelExecutionSnapshot snapshot = snapshot();
         snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
         ApplicationEventPublisher failingUsageListener = event -> {
-            if (event instanceof LlmUsageRecorded usage) {
+            LlmFixtures.UsageRecordView usage = LlmFixtures.asUsageRecord(event);
+            if (usage != null) {
                 usageEvents.incrementAndGet();
                 usageEvent.set(usage);
                 throw new IllegalStateException("telemetry unavailable");
@@ -246,10 +246,10 @@ class SpringAiToolCallingContractTest {
             objectMapper);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         when(snapshotService.require(1L)).thenReturn(snapshot());
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
-        ModelExecutionService service = new ModelExecutionService(
-            factory, snapshotService, profileService, capabilityJson, new LlmTransportRetry(2),
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
+        ModelExecutionService service = new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson, new LlmTransportRetry(2),
             mock(ApplicationEventPublisher.class));
         AtomicInteger toolCalls = new AtomicInteger();
 
@@ -278,8 +278,9 @@ class SpringAiToolCallingContractTest {
         SpringAiModelFactory factory = mock(SpringAiModelFactory.class);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
+        ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         when(snapshotService.require(1L)).thenReturn(snapshot);
-        when(profileService.resolveApiKey(anyLong(), nullable(Long.class))).thenReturn(null);
+        when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         when(factory.chatModel(any(), nullable(String.class)))
             .thenAnswer(invocation -> modelForSnapshot.apply(invocation.getArgument(0)));
         when(factory.requestOptions(any(), any())).thenAnswer(invocation -> {
@@ -287,22 +288,19 @@ class SpringAiToolCallingContractTest {
             return OpenAiChatOptions.builder().model(effective.getModel()).maxTokens(4096).build();
         });
         ModelCapabilityJson capabilityJson = capabilityJson();
-        return new ModelExecutionService(
-            factory,
-            snapshotService,
-            profileService,
-            capabilityJson,
+        return new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson,
             new LlmTransportRetry(attempts),
             eventPublisher
         );
     }
 
     private ApplicationEventPublisher eventPublisher(
-        AtomicReference<LlmUsageRecorded> captured,
+        AtomicReference<LlmFixtures.UsageRecordView> captured,
         AtomicInteger eventCount
     ) {
         return event -> {
-            if (event instanceof LlmUsageRecorded usage) {
+            LlmFixtures.UsageRecordView usage = LlmFixtures.asUsageRecord(event);
+            if (usage != null) {
                 eventCount.incrementAndGet();
                 captured.set(usage);
             }

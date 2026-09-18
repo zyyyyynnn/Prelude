@@ -1,13 +1,39 @@
-export { SettingsProvider } from './SettingsProvider'
-export { useSettings } from './settings-context'
-export { initializeTheme } from './theme'
-export { fetchLlmConfig, fetchProviders, saveLlmConfig } from './api'
-export { REASONING_LABELS } from './useLlmSettings'
-export type { SettingsIntent, SettingsSection } from './settings-context'
-export type {
+import { apiRequest } from '@/shared/api/client'
+import type {
   LlmConfigPayload,
   LlmConfigResponse,
+  LlmCapabilityDiscoveryPayload,
+  LlmModelDiscoveryPayload,
+  LlmModelDiscoveryResponse,
   LlmProviderResponse,
   ModelCapabilityResponse,
-  ReasoningLevel,
+  UserProfilePayload,
+  UserProfileResponse,
 } from './types'
+
+export { useSettings } from './settings-context'
+export { REASONING_LABELS } from './types'
+export type { LlmConfigPayload, LlmConfigResponse, LlmProviderResponse } from './types'
+
+export const fetchProviders = () => apiRequest<LlmProviderResponse[]>('/llm/providers')
+export const fetchLlmConfig = () => apiRequest<LlmConfigResponse>('/llm/config')
+export const saveLlmConfig = (payload: LlmConfigPayload) =>
+  apiRequest<LlmConfigResponse>('/llm/config', { method: 'PUT', body: JSON.stringify(payload) })
+export const discoverModels = (payload: LlmModelDiscoveryPayload) =>
+  apiRequest<LlmModelDiscoveryResponse>('/llm/config/discover-models', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+export const discoverCapabilities = (payload: LlmCapabilityDiscoveryPayload) =>
+  apiRequest<ModelCapabilityResponse>('/llm/config/discover-capabilities', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+export const fetchProfile = () => apiRequest<UserProfileResponse>('/user/profile')
+export const saveProfile = (payload: UserProfilePayload) =>
+  apiRequest<UserProfileResponse>('/user/profile', { method: 'PUT', body: JSON.stringify(payload) })
+export function uploadAvatar(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return apiRequest<UserProfileResponse>('/user/avatar', { method: 'POST', body: form })
+}

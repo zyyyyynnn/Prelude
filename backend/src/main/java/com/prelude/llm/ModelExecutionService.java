@@ -54,7 +54,7 @@ public class ModelExecutionService {
 
     private final SpringAiModelFactory modelFactory;
     private final ModelExecutionSnapshotService snapshotService;
-    private final ModelProfileService profileService;
+    private final ProviderCredentialResolver credentialResolver;
     private final ModelCapabilityJson capabilityJson;
     private final LlmTransportRetry transportRetry;
     private final ApplicationEventPublisher eventPublisher;
@@ -63,14 +63,14 @@ public class ModelExecutionService {
     public ModelExecutionService(
         SpringAiModelFactory modelFactory,
         ModelExecutionSnapshotService snapshotService,
-        ModelProfileService profileService,
+        ProviderCredentialResolver credentialResolver,
         ModelCapabilityJson capabilityJson,
         LlmTransportRetry transportRetry,
         ApplicationEventPublisher eventPublisher
     ) {
         this.modelFactory = modelFactory;
         this.snapshotService = snapshotService;
-        this.profileService = profileService;
+        this.credentialResolver = credentialResolver;
         this.capabilityJson = capabilityJson;
         this.transportRetry = transportRetry;
         this.eventPublisher = eventPublisher;
@@ -78,7 +78,7 @@ public class ModelExecutionService {
 
     public CompletionResult complete(ModelExecutionRequest request) {
         ModelExecutionSnapshot snapshot = snapshotService.require(request.snapshotId());
-        String apiKey = profileService.resolveApiKey(snapshot.getAccountId(), snapshot.getCredentialId());
+        String apiKey = credentialResolver.resolve(snapshot.getAccountId(), snapshot.getCredentialId());
         RuntimeException lastTransient = null;
 
         for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
@@ -110,7 +110,7 @@ public class ModelExecutionService {
 
     public void stream(ModelExecutionRequest request, StreamSink sink) {
         ModelExecutionSnapshot snapshot = snapshotService.require(request.snapshotId());
-        String apiKey = profileService.resolveApiKey(snapshot.getAccountId(), snapshot.getCredentialId());
+        String apiKey = credentialResolver.resolve(snapshot.getAccountId(), snapshot.getCredentialId());
         RuntimeException lastTransient = null;
 
         for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
@@ -468,6 +468,70 @@ public class ModelExecutionService {
                 return current;
             }
             return (current == null ? 0L : current) + next.longValue();
+        }
+    }
+
+    /**
+     * Public {@link LlmPort} bean. Lives in this file so execution stays free
+     * of profile configuration without adding another source node.
+     */
+    @Service
+    @lombok.RequiredArgsConstructor
+    public static class PortAdapter implements LlmPort {
+
+        private final ModelExecutionSnapshotService snapshotService;
+        private final ModelExecutionService executionService;
+        private final ModelProfileService profileService;
+
+        @Override
+        public com.prelude.llm.api.ModelExecutionSnapshotRef freezeSnapshot(FreezeSnapshotCommand command) {
+            return snapshotService.freeze(command);
+        }
+
+        @Override
+        public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
+            return snapshotService.frozenConfiguration(accountId, snapshotId);
+        }
+
+        @Override
+        public CompletionResult complete(ModelExecutionRequest request) {
+            return executionService.complete(request);
+        }
+
+        @Override
+        public void stream(ModelExecutionRequest request, StreamSink sink) {
+            executionService.stream(request, sink);
+        }
+
+        @Override
+        public com.prelude.llm.api.ModelConfigurationView currentConfiguration(Long accountId) {
+            return profileService.currentConfiguration(accountId);
+        }
+
+        @Override
+        public com.prelude.llm.api.ModelConfigurationView saveConfiguration(
+            Long accountId,
+            com.prelude.llm.api.SaveConfigurationCommand command
+        ) {
+            return profileService.saveConfiguration(accountId, command);
+        }
+
+        @Override
+        public java.util.List<com.prelude.llm.api.ProviderDescriptorView> listModels() {
+            return profileService.listModels();
+        }
+
+        @Override
+        public DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command) {
+            return profileService.discoverCustomModels(accountId, command);
+        }
+
+        @Override
+        public ModelCapabilityResponse discoverCustomModelCapability(
+            Long accountId,
+            DiscoverModelCapabilityCommand command
+        ) {
+            return profileService.discoverCustomModelCapability(accountId, command);
         }
     }
 }

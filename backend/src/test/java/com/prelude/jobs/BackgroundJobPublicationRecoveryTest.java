@@ -1,9 +1,7 @@
 package com.prelude.jobs;
 
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
+import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.amqp.AmqpException;
@@ -14,7 +12,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,9 +35,6 @@ class BackgroundJobPublicationRecoveryTest {
     private BackgroundJobOperations jobs;
 
     @Autowired
-    private AccountMapper accountMapper;
-
-    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -57,7 +51,7 @@ class BackgroundJobPublicationRecoveryTest {
             .convertAndSend(anyString(), anyString(), any(), anyMap());
 
         long accountId = createAccount();
-        var job = jobs.request(new BackgroundJobRequest(
+        var job = jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
             "test.publication",
             accountId,
             401L,
@@ -90,11 +84,7 @@ class BackgroundJobPublicationRecoveryTest {
     }
 
     private long createAccount() {
-        Account account = new Account();
-        account.setUsername("publication-recovery-" + System.nanoTime());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        return AccountFixtures.create(jdbcTemplate, "publication-recovery");
     }
 
     private long incompletePublicationRows(String jobId) {

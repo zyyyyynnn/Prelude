@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Trash2 } from 'lucide-react'
-import { Button } from '@/shared/ui'
-import { useFeedback } from '@/shared/ui/feedback'
-import { deleteResume, fetchResumes, uploadResume } from './api'
+import { Button } from '@/shared/ui/button'
+import { useFeedback } from '@/shared/ui/feedback-context'
+import { deleteResume, fetchResumes, uploadResume } from './index'
+import './resume.css'
 
 export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: number }) {
   const input = useRef<HTMLInputElement>(null)
@@ -83,8 +84,8 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
               <article className="resume-row" key={resume.id}>
                 <div className="resume-row__main">
                   <div className="resume-row__title-wrap">
-                    <h3 className="resume-item__title">{resume.fileName}</h3>
-                    <p className="resume-item__hint">
+                    <h3 className="resume-row__title">{resume.fileName}</h3>
+                    <p className="resume-row__hint">
                       {resume.createdAt
                         ? new Intl.DateTimeFormat('zh-CN', {
                             dateStyle: 'medium',

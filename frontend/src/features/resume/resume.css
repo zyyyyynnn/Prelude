@@ -30,13 +30,13 @@
   gap: var(--spacing-xs);
   min-inline-size: var(--layout-list-title-min-inline-size);
 }
-.resume-item__title {
+.resume-row__title {
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
-.resume-item__hint {
+.resume-row__hint {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);

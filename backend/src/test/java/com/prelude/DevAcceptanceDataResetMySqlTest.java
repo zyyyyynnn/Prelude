@@ -3,6 +3,7 @@ package com.prelude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -214,11 +215,8 @@ class DevAcceptanceDataResetMySqlTest {
         assertThat(count("SELECT COUNT(*) FROM user_account WHERE id = ?", preservedAccountId)).isOne();
         assertThat(count("SELECT COUNT(*) FROM position_template WHERE account_id = ?", preservedAccountId)).isOne();
         assertThat(count("SELECT COUNT(*) FROM asset WHERE id = ?", preservedAssetId)).isOne();
-        assertThatThrownBy(() -> jobs.dispatchedJob(oldJobId))
-            .isInstanceOfSatisfying(BusinessException.class, exception -> {
-                assertThat(exception.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
-                assertThat(exception.getCode()).isEqualTo("job_not_found");
-            });
+        ExceptionFixtures.assertBusinessException(() -> jobs.dispatchedJob(oldJobId), "job_not_found")
+            .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND);
     }
 
     private void assertCanonicalDataset() throws Exception {

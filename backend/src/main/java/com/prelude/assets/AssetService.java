@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.prelude.BusinessException;
 import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.infrastructure.S3StorageConfiguration;
 import com.prelude.assets.persistence.Asset;
 import com.prelude.assets.persistence.AssetMapper;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,7 @@ public class AssetService {
 
     private final AssetMapper assetMapper;
     private final ObjectStoragePort objectStoragePort;
-    private final S3StorageConfiguration.S3StorageProperties s3Properties;
+    private final S3StorageProperties s3Properties;
 
     public Asset createPending(Long accountId, String kind, String mediaType, long byteSize) {
         Asset asset = new Asset();

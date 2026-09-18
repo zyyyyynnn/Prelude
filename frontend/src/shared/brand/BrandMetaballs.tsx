@@ -37,13 +37,7 @@ export function BrandMetaballs({ className = '' }: { className?: string }) {
         scale={1}
         size={1}
         speed={1.7}
-        style={{
-          width: '100%',
-          height: '100%',
-          backgroundColor: palette.background,
-          borderRadius: 'var(--radius-3xl)',
-          boxShadow: 'var(--brand-metaballs-shadow)',
-        }}
+        className="brand-metaballs__shader"
       />
     </div>
   )

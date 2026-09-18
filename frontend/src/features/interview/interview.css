@@ -173,29 +173,11 @@
   max-inline-size: calc(var(--ui-height-compact) * 7);
   opacity: 0.72;
 }
-.prompt-bar__add {
-  inline-size: var(--ui-height-compact);
-  block-size: var(--ui-height-compact);
-}
-.prompt-bar__add.prelude-button--icon {
-  width: var(--ui-height-compact);
-  height: var(--ui-height-compact);
-  min-height: var(--ui-height-compact);
-  padding: 0;
-}
-.prompt-bar__add:hover:not(:disabled) {
-  background: var(--color-surface-muted);
-  color: var(--color-text-primary);
-}
 .prompt-bar__locked-trigger {
   display: inline-flex;
 }
 .prompt-bar__jd {
   min-inline-size: auto;
-}
-.prompt-bar__primary-action {
-  flex-shrink: 0;
-  padding-inline: var(--spacing-lg);
 }
 .prompt-bar__voice-mode {
   inline-size: 100%;
@@ -229,15 +211,6 @@
 }
 .prompt-bar__status-dot.is-speaking {
   background: var(--color-brand);
-  box-shadow: var(--shadow-ring-deep);
-}
-.prompt-bar__voice-button {
-  padding: 0 var(--spacing-lg);
-  font-family: var(--font-serif);
-  user-select: none;
-}
-.prompt-bar__voice-button.is-pressed {
-  transform: translateY(var(--prompt-bar-press-offset));
   box-shadow: var(--shadow-ring-deep);
 }
 .prompt-bar__wave {
@@ -284,7 +257,7 @@
 }
 
 .interview-workspace {
-  /* 页面级语义变量：把本视图独有的尺寸集中声明，便于审查与未来重构。 */
+  /* View-local size tokens only; keep reviewable in one place. */
   --workspace-content-max-inline-size: var(--layout-workspace-content-max-inline-size);
   --workspace-generating-card-max-inline-size: 480px;
   --workspace-generating-title-font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
@@ -444,7 +417,7 @@
 }
 
 .message-thread {
-  /* 消息流的几何约束：bubble 按内容宽度控制，不使用控件高度倍数。 */
+  /* Bubble width follows content; do not derive from control height. */
   --message-bubble-gap: var(--spacing-sm);
   --message-bubble-max-inline-size: min(80%, var(--content-message-max-inline-size));
 

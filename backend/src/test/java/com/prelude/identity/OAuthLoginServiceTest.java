@@ -2,6 +2,7 @@ package com.prelude.identity;
 
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.application.PendingOAuthBinding;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -9,7 +10,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.mock.web.MockHttpSession;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -165,10 +165,9 @@ class OAuthLoginServiceTest {
         when(oauthBindingMapper.insert(any(OAuthBinding.class)))
             .thenThrow(new DuplicateKeyException("unique violation"));
 
-        assertThatThrownBy(() ->
-            oauthLoginService.resolveLogin("google", "subject-goog", null, session))
-            .isInstanceOf(com.prelude.BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "oauth_binding_conflict");
+        ExceptionFixtures.assertBusinessException(() ->
+            oauthLoginService.resolveLogin("google", "subject-goog", null, session),
+            "oauth_binding_conflict");
 
         // The dead intent is cleared, but the failed binding was never created.
         assertThat(session.getAttribute(OAuthLoginService.PENDING_ATTRIBUTE)).isNull();
@@ -192,10 +191,9 @@ class OAuthLoginServiceTest {
         when(oauthBindingMapper.insert(any(OAuthBinding.class)))
             .thenThrow(new DuplicateKeyException("unique violation"));
 
-        assertThatThrownBy(() ->
-            oauthLoginService.resolveLogin("github", "subject-x", null, session))
-            .isInstanceOf(com.prelude.BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "oauth_binding_conflict");
+        ExceptionFixtures.assertBusinessException(() ->
+            oauthLoginService.resolveLogin("github", "subject-x", null, session),
+            "oauth_binding_conflict");
     }
 
     @Test

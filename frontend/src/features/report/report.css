@@ -135,6 +135,7 @@
 .report-score-item__track span {
   display: block;
   block-size: 100%;
+  inline-size: var(--report-score-fill, 0%);
   max-inline-size: 100%;
   background: var(--color-brand);
   border-radius: inherit;

@@ -1,5 +1,5 @@
 @theme {
-  /* 色彩 — 直接引用现有 :root 变量 */
+  /* Color — re-export the existing :root tokens into Tailwind theme. */
   --color-brand: var(--color-brand);
   --color-brand-light: var(--color-brand-light);
   --color-accent-solid: var(--color-accent-solid);
@@ -26,7 +26,7 @@
   --color-line-decor: var(--color-line-decor);
   --color-line-decor-light: var(--color-line-decor-light);
 
-  /* 间距 */
+  /* Spacing */
   --spacing-xs: var(--spacing-xs);
   --spacing-sm: var(--spacing-sm);
   --spacing-md: var(--spacing-md);
@@ -34,27 +34,26 @@
   --spacing-xl: var(--spacing-xl);
   --spacing-2xl: var(--spacing-2xl);
 
-  /* 圆角 */
+  /* Radius */
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
   --radius-2xl: var(--radius-2xl);
 
-  /* 字体 */
+  /* Typography */
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
-  /* 阴影 */
+  /* Shadow */
   --shadow-modal: var(--shadow-modal);
   --shadow-whisper: var(--shadow-whisper);
 
-  /* 动效 */
+  /* Motion */
   --ease-standard: var(--motion-ease-standard);
-  --animate-duration-base: var(--motion-duration-base);
 
-  /* 组件语义色彩桥接 */
+  /* Bridge product colors onto the shadcn semantic palette. */
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text-primary);
   --color-card: var(--card);
@@ -73,7 +72,7 @@
   --color-destructive-foreground: var(--color-surface);
   --color-input: var(--color-border-warm);
 
-  /* 组件基础圆角 */
+  /* Default component radius */
   --radius: var(--radius-md);
 
   --color-mask-overlay: var(--mask-overlay);
@@ -131,7 +130,7 @@
   --color-line-decor: #c8c6be;
   --color-line-decor-light: #dddbd3;
 
-  /* ── 组件语义 Token（映射到项目暖色调体系） ── */
+  /* ── Component semantic tokens (mapped to the warm product palette) ── */
   --background: var(--color-bg);
   --foreground: var(--color-text-primary);
   --card: var(--color-surface);
@@ -192,7 +191,7 @@
   --brand-metaballs-4: #5f463b;
   --brand-metaballs-5: #2f241f;
   --brand-metaballs-bg: #f5f1ec;
-  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
+  --shadow-brand-metaballs: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
 
   --motion-duration-fast: 150ms;
   --motion-duration-base: 300ms;
@@ -321,7 +320,7 @@
   --brand-metaballs-4: #d0aa98;
   --brand-metaballs-5: #ead3c5;
   --brand-metaballs-bg: #201814;
-  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-3) 18%, transparent);
+  --shadow-brand-metaballs: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-3) 18%, transparent);
 }
 
 * {
@@ -566,14 +565,14 @@ a {
   line-height: 1.58;
 }
 
-.panel {
+.lab-panel {
   border: var(--border-width-default) solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-whisper);
 }
 
-.panel__head {
+.lab-panel__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -582,16 +581,16 @@ a {
   padding: var(--spacing-md) 0;
 }
 
-.panel__head--compact {
+.lab-panel__head--compact {
   align-items: center;
 }
 
-.panel__title {
+.lab-panel__title {
   font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
   line-height: 1.4;
 }
 
-/* shadcn Label / FormLabel 品牌衬线体 */
+/* shadcn Label / FormLabel use the brand serif face. */
 label,
 [data-slot='label'] {
   font-family: var(--font-serif);
@@ -641,6 +640,14 @@ label,
   width: 100% !important;
   height: 100% !important;
   border-radius: inherit;
+}
+
+.brand-metaballs__shader {
+  width: 100%;
+  height: 100%;
+  background: var(--brand-metaballs-bg);
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-brand-metaballs);
 }
 
 .rose-three-loader {
@@ -784,10 +791,6 @@ label,
   align-items: center;
   margin-top: var(--spacing-lg);
 }
-.login-card__submit {
-  inline-size: 100%;
-}
-
 /* Custom scrollbar for scrollable areas */
 .scrollable {
   scrollbar-width: thin;
@@ -802,7 +805,7 @@ label,
 }
 
 /* ==========================================================================
-   Workspace Layout System (全局工作区骨架锁死)
+   Workspace layout shell — locked application frame
    ========================================================================== */
 .workspace-page {
   flex: 1;
@@ -1146,10 +1149,10 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .prelude-menu--structured.prelude-menu--model .prelude-menu__chevron {
   grid-column: 3;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__manage-item {
+.prelude-menu--structured.prelude-menu--model .prelude-menu__item--leading-icon {
   grid-template-columns: var(--spacing-4-5) minmax(0, 1fr);
 }
-.prelude-menu__manage-icon {
+.prelude-menu__icon--leading {
   inline-size: var(--spacing-3-5);
   block-size: var(--spacing-3-5);
   color: var(--color-text-tertiary);
@@ -1277,7 +1280,38 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   width: var(--ui-height-md);
   padding: 0;
 }
-.button-spinner {
+.prelude-button--icon-compact {
+  inline-size: var(--ui-height-compact);
+  block-size: var(--ui-height-compact);
+  width: var(--ui-height-compact);
+  height: var(--ui-height-compact);
+  min-height: var(--ui-height-compact);
+  padding: 0;
+}
+.prelude-button--icon-compact:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+}
+.prelude-button--action {
+  flex-shrink: 0;
+  padding-inline: var(--spacing-lg);
+}
+.prelude-button--hold {
+  padding: 0 var(--spacing-lg);
+  font-family: var(--font-serif);
+  user-select: none;
+}
+.prelude-button--hold[data-pressed] {
+  transform: translateY(var(--spacing-0-5));
+  box-shadow: var(--shadow-ring-deep);
+}
+.prelude-dialog--workspace {
+  max-inline-size: min(var(--layout-settings-dialog-max-inline-size), 90vw);
+  block-size: 60vh;
+  min-block-size: var(--layout-settings-dialog-min-block-size);
+  border-color: transparent;
+}
+.prelude-button__spinner {
   position: absolute;
   inset: 0;
   width: var(--spacing-md);
@@ -1293,10 +1327,10 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     transform: rotate(360deg);
   }
 }
-.toaster [data-sonner-toast] {
+.prelude-toaster [data-sonner-toast] {
   pointer-events: auto;
 }
-.toaster [data-sonner-toast].prelude-toast {
+.prelude-toaster [data-sonner-toast].prelude-toast {
   min-block-size: calc(var(--ui-height-md) + var(--spacing-md));
   padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) var(--spacing-md);
   border-color: transparent;
@@ -1306,18 +1340,18 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   box-shadow: var(--shadow-whisper);
   font: var(--font-size-sm)/var(--line-height-base) var(--font-serif);
 }
-.toaster [data-sonner-toast] .prelude-toast__description {
+.prelude-toaster [data-sonner-toast] .prelude-toast__description {
   color: var(--color-text-secondary);
 }
-.toaster [data-sonner-toast] .prelude-toast__action {
+.prelude-toaster [data-sonner-toast] .prelude-toast__action {
   background: var(--color-accent-solid);
   color: var(--color-text-on-accent);
 }
-.toaster [data-sonner-toast] .prelude-toast__cancel {
+.prelude-toaster [data-sonner-toast] .prelude-toast__cancel {
   background: var(--color-surface-muted);
   color: var(--color-text-secondary);
 }
-.toaster [data-sonner-toast][data-styled='true'] .prelude-toast__close {
+.prelude-toaster [data-sonner-toast][data-styled='true'] .prelude-toast__close {
   top: 50%;
   inset-inline-end: var(--spacing-sm);
   bottom: auto;
@@ -1331,7 +1365,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-tertiary);
   box-shadow: none;
 }
-.toaster [data-sonner-toast][data-styled='true']:hover .prelude-toast__close:hover {
+.prelude-toaster [data-sonner-toast][data-styled='true']:hover .prelude-toast__close:hover {
   border-color: transparent;
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
@@ -1340,17 +1374,17 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   animation: control-spin var(--motion-duration-slow) linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .button-spinner,
+  .prelude-button__spinner,
   .prelude-toast__loader {
     animation: none;
   }
 }
 html:not([data-input-intent])
-  .toaster
+  .prelude-toaster
   [data-sonner-toast][data-styled='true']
   .prelude-toast__close:focus-visible,
 html[data-input-intent='keyboard']
-  .toaster
+  .prelude-toaster
   [data-sonner-toast][data-styled='true']
   .prelude-toast__close:focus {
   border-color: var(--color-focus-action);
@@ -1419,7 +1453,7 @@ html[data-input-intent='keyboard']
   background: transparent;
   color: var(--color-text-tertiary);
 }
-.segmented-control {
+.prelude-segmented-control {
   --segmented-index: 0;
   --segmented-count: 2;
   --segmented-active-opacity: 0;
@@ -1434,10 +1468,10 @@ html[data-input-intent='keyboard']
   border-radius: var(--radius-md);
   background: var(--color-surface-muted);
 }
-.segmented-control[style] {
+.prelude-segmented-control[style] {
   --segmented-active-opacity: 1;
 }
-.segmented-control::before {
+.prelude-segmented-control::before {
   position: absolute;
   inset-block: var(--spacing-xs);
   inset-inline-start: var(--spacing-xs);
@@ -1453,7 +1487,7 @@ html[data-input-intent='keyboard']
     transform var(--motion-duration-fast) var(--motion-ease-standard),
     opacity var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.segmented-control button {
+.prelude-segmented-control button {
   position: relative;
   z-index: 1;
   min-inline-size: var(--ui-segmented-item-min-inline-size);
@@ -1466,17 +1500,17 @@ html[data-input-intent='keyboard']
   cursor: pointer;
   transition: color var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.segmented-control button.is-active,
-.segmented-control button[aria-pressed='true'] {
+.prelude-segmented-control button.is-active,
+.prelude-segmented-control button[aria-pressed='true'] {
   color: var(--color-text-primary);
 }
-.segmented-control:not([style]) button.is-active {
+.prelude-segmented-control:not([style]) button.is-active {
   background: var(--color-surface);
   box-shadow: var(--shadow-ring);
 }
 @media (prefers-reduced-motion: reduce) {
-  .segmented-control::before,
-  .segmented-control button {
+  .prelude-segmented-control::before,
+  .prelude-segmented-control button {
     transition: none;
   }
 }

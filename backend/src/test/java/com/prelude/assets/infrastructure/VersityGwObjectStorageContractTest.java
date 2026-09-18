@@ -1,7 +1,8 @@
 package com.prelude.assets.infrastructure;
 
 import com.prelude.assets.ObjectStoragePort;
-import com.prelude.assets.infrastructure.S3StorageConfiguration.S3StorageProperties;import org.junit.jupiter.api.AfterAll;
+import com.prelude.assets.S3StorageProperties;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

@@ -1,18 +1,13 @@
 import { Dialog } from '@base-ui/react'
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { CheckCircle2, Info, Loader2, OctagonX, TriangleAlert, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { Button } from './button'
+import { FeedbackContext, type ConfirmOptions, type NoticeTone } from './feedback-context'
 
-type NoticeTone = 'info' | 'success' | 'warning' | 'error'
-type ConfirmOptions = { title?: string; message: string; confirmText?: string; danger?: boolean }
+export { useFeedback } from './feedback-context'
+export type { ConfirmOptions, FeedbackApi, NoticeTone } from './feedback-context'
 
-type FeedbackApi = {
-  notify: (message: string, tone?: NoticeTone) => void
-  confirm: (options: ConfirmOptions) => Promise<boolean>
-}
-
-const FeedbackContext = createContext<FeedbackApi | null>(null)
 const NOTICE_DURATION = 2000
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
@@ -42,7 +37,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         position="top-center"
         theme="light"
         closeButton
-        className="toaster"
+        className="prelude-toaster"
         icons={{
           success: <CheckCircle2 size={16} />,
           info: <Info size={16} />,
@@ -95,10 +90,4 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       </Dialog.Root>
     </FeedbackContext.Provider>
   )
-}
-
-export function useFeedback() {
-  const value = useContext(FeedbackContext)
-  if (!value) throw new Error('FeedbackProvider is missing')
-  return value
 }

@@ -8,7 +8,7 @@ public record AttachmentResponse(
     boolean image
 ) {
 
-    static AttachmentResponse from(AttachmentSnapshot attachment) {
+    public static AttachmentResponse from(AttachmentSnapshot attachment) {
         return new AttachmentResponse(
             attachment.id(), attachment.fileName(), attachment.mediaType(),
             attachment.size(), attachment.image()

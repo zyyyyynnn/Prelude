@@ -1,19 +1,16 @@
 package com.prelude.identity;
 
-import com.prelude.BusinessException;
-import com.prelude.identity.api.LoginRequest;
-import com.prelude.identity.api.RegisterRequest;
 import com.prelude.identity.application.AuthenticationService;
-import com.prelude.identity.application.PendingOAuthBinding;
+import com.prelude.identity.application.OAuthLoginService;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import com.prelude.identity.application.OAuthLoginService;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -47,7 +44,7 @@ class AuthenticationServiceTest {
     void registrationStoresAnArgon2idPasswordHash() {
         when(accountMapper.selectCount(any())).thenReturn(0L);
 
-        authenticationService.register(command());
+        authenticationService.register(AccountFixtures.registerRequest("candidate", "correct-horse"));
 
         ArgumentCaptor<Account> created = ArgumentCaptor.forClass(Account.class);
         verify(accountMapper).insert(created.capture());
@@ -58,70 +55,56 @@ class AuthenticationServiceTest {
 
     @Test
     void correctPasswordAuthenticatesAndWrongPasswordIsRejected() {
-        AccountPrincipal principal = authenticationService.login(request("correct-horse"), null, session);
+        AccountPrincipal principal = authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), null, session);
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
-        assertThatThrownBy(() -> authenticationService.login(request("wrong-password"), null, session))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "invalid_credentials");
+        ExceptionFixtures.assertBusinessException(
+            () -> authenticationService.login(AccountFixtures.loginRequest("candidate", "wrong-password"), null, session),
+            "invalid_credentials");
     }
 
     @Test
     void oauthOnlyAccountsWithoutPasswordHashCannotPasswordLogin() {
         account.setPasswordHash(null);
 
-        assertThatThrownBy(() -> authenticationService.login(request("correct-horse"), null, session))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "invalid_credentials");
+        ExceptionFixtures.assertBusinessException(
+            () -> authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), null, session),
+            "invalid_credentials");
     }
 
     @Test
     void pendingOAuthBindingMatchingTheAccountEmailIsCompletedOnPasswordLogin() {
         account.setEmail("owner@example.com");
 
-        PendingOAuthBinding pending = new PendingOAuthBinding("google", "subject-1", "OWNER@example.com");
-        session.setAttribute(OAuthLoginService.PENDING_ATTRIBUTE, pending);
-        AccountPrincipal principal = authenticationService.login(request("correct-horse"), pending, session);
+        var pending = AccountFixtures.pendingOAuthBinding("google", "subject-1", "OWNER@example.com");
+        session.setAttribute(AccountFixtures.PENDING_ATTRIBUTE, pending);
+        AccountPrincipal principal = authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
         verify(oauthLoginService).createBindingExact("google", "subject-1", account.getId());
         // One-shot: the completed intent must not survive the rotated session.
-        assertThat(session.getAttribute(OAuthLoginService.PENDING_ATTRIBUTE)).isNull();
+        assertThat(session.getAttribute(AccountFixtures.PENDING_ATTRIBUTE)).isNull();
     }
 
     @Test
     void pendingIntentSurvivesWhenTheProvenAccountDoesNotMatch() {
         account.setEmail("owner@example.com");
 
-        PendingOAuthBinding pending = new PendingOAuthBinding("google", "subject-1", "other@example.com");
-        session.setAttribute(OAuthLoginService.PENDING_ATTRIBUTE, pending);
-        authenticationService.login(request("correct-horse"), pending, session);
+        var pending = AccountFixtures.pendingOAuthBinding("google", "subject-1", "other@example.com");
+        session.setAttribute(AccountFixtures.PENDING_ATTRIBUTE, pending);
+        authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
 
         verify(oauthLoginService, never()).createBindingExact(any(), any(), any());
-        assertThat(session.getAttribute(OAuthLoginService.PENDING_ATTRIBUTE)).isEqualTo(pending);
+        assertThat(session.getAttribute(AccountFixtures.PENDING_ATTRIBUTE)).isEqualTo(pending);
     }
 
     @Test
     void pendingOAuthBindingForADifferentAccountIsNotBound() {
         account.setEmail("owner@example.com");
 
-        PendingOAuthBinding pending = new PendingOAuthBinding("google", "subject-1", "other@example.com");
-        authenticationService.login(request("correct-horse"), pending, session);
+        var pending = AccountFixtures.pendingOAuthBinding("google", "subject-1", "other@example.com");
+        authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
 
         verify(oauthLoginService, never()).createBindingExact(any(), any(), any());
-    }
-
-    private RegisterRequest command() {
-        RegisterRequest request = new RegisterRequest();
-        request.setUsername("candidate");
-        request.setPassword("correct-horse");
-        return request;
-    }
-
-    private LoginRequest request(String password) {
-        LoginRequest request = new LoginRequest();
-        request.setUsername("candidate");
-        request.setPassword(password);
-        return request;
     }
 }

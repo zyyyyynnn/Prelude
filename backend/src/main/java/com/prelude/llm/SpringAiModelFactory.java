@@ -145,7 +145,7 @@ public class SpringAiModelFactory {
         requireCustomApiKey(apiKey);
         URI root = egressPolicy.requireValidRoot(snapshot.getCustomEndpointUrl());
         return new OpenAiResponsesChatModel(
-            trimTrailingSlash(root.toString()),
+            EndpointRoots.trimTrailingSlash(root.toString()),
             apiKey,
             snapshot.getModel(),
             snapshot.getReasoningLevel(),
@@ -158,7 +158,7 @@ public class SpringAiModelFactory {
     private ChatModel anthropicMessages(ModelExecutionSnapshot snapshot, String apiKey) {
         requireCustomApiKey(apiKey);
         URI root = egressPolicy.requireValidRoot(snapshot.getCustomEndpointUrl());
-        String baseUrl = trimTrailingSlash(root.toString());
+        String baseUrl = EndpointRoots.trimTrailingSlash(root.toString());
         AnthropicBackend backend = AnthropicBackend.builder()
             .baseUrl(baseUrl)
             .apiKey(apiKey)
@@ -241,10 +241,6 @@ public class SpringAiModelFactory {
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("自定义端点 API Key 未配置");
         }
-    }
-
-    private String trimTrailingSlash(String value) {
-        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     private String requireSystemKey(String systemKey, String providerName) {

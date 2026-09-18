@@ -79,6 +79,7 @@
         "shadow-app-menu-active",
         "shadow-inset",
         "shadow-brand-logo",
+        "shadow-brand-metaballs",
         "shadow-login-card",
         "shadow-login-logo",
         "shadow-autofill-surface"
@@ -100,8 +101,7 @@
         "motion-transition-color",
         "motion-transition-surface",
         "motion-transition-opacity",
-        "motion-transition-transform",
-        "animate-duration-base"
+        "motion-transition-transform"
       ]
     },
     "font": {
@@ -210,8 +210,7 @@
         "brand-metaballs-3",
         "brand-metaballs-4",
         "brand-metaballs-5",
-        "brand-metaballs-bg",
-        "brand-metaballs-shadow"
+        "brand-metaballs-bg"
       ]
     },
     "component-tailwind-theme": {
@@ -238,7 +237,6 @@
         "input",
         "ring",
         "ease-standard",
-        "animate-duration-base",
         "color-background",
         "color-foreground",
         "color-card",

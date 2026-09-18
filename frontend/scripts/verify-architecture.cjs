@@ -4,9 +4,9 @@
 const fs = require('node:fs')
 const path = require('node:path')
 
-const root = path.resolve(__dirname, '..')
+const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..')
 const sourceRoot = path.join(root, 'src')
-const allowedRoots = new Set(['app', 'devtools', 'features', 'shared'])
+const allowedRoots = new Set(['app', 'features', 'shared'])
 const blockedPackages = [
   'vue',
   'vue-router',
@@ -18,7 +18,28 @@ const blockedPackages = [
   'jspdf',
 ]
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.vue', '.css'])
-const importPattern = /(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g
+const ts = require('typescript')
+
+function importSpecifiers(file, source) {
+  const specifiers = []
+  const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
+  function visit(node) {
+    let specifier
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      specifier = node.moduleSpecifier
+    } else if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
+    ) {
+      specifier = node.arguments[0]
+    }
+    if (specifier && ts.isStringLiteralLike(specifier)) specifiers.push(specifier.text)
+    ts.forEachChild(node, visit)
+  }
+  visit(tree)
+  return specifiers
+}
 const cssImportPattern = /@import\s+(?:url\(\s*)?['"]([^'"]+)['"]\s*\)?/g
 const violations = []
 
@@ -31,7 +52,7 @@ function walk(directory) {
 
 for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
   if (entry.isDirectory() && !allowedRoots.has(entry.name)) {
-    violations.push(`src/${entry.name}: source must live under app, devtools, features, or shared`)
+    violations.push(`src/${entry.name}: source must live under app, features, or shared`)
   }
 }
 
@@ -44,10 +65,12 @@ for (const file of walk(sourceRoot).filter((item) => sourceExtensions.has(path.e
     let cssMatch
     while ((cssMatch = cssImportPattern.exec(source)) !== null) specifiers.push(cssMatch[1])
   } else {
-    let match
-    while ((match = importPattern.exec(source)) !== null) specifiers.push(match[1])
+    specifiers.push(...importSpecifiers(file, source))
   }
   for (const specifier of specifiers) {
+    if (specifier === 'cn' && relative !== 'shared/lib/cn.ts') {
+      violations.push(`${relative}: cn must be imported from @/shared/lib/cn`)
+    }
     const resolved = specifier.startsWith('@/')
       ? specifier.slice(2)
       : specifier.startsWith('.')
@@ -66,9 +89,6 @@ for (const file of walk(sourceRoot).filter((item) => sourceExtensions.has(path.e
       if (targetParts[1] !== sourceFeature && targetParts.length > 2) {
         violations.push(`${relative}: cross-feature imports must use @/features/${targetParts[1]}`)
       }
-    }
-    if (relative.startsWith('devtools/') && /^app(\/|$)/.test(resolved)) {
-      violations.push(`${relative}: devtools cannot import ${specifier}`)
     }
   }
 }
