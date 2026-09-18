@@ -1,7 +1,7 @@
 package com.prelude.jobs;
 
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
+import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.amqp.AmqpException;
@@ -9,14 +9,9 @@ import org.springframework.amqp.rabbit.core.RabbitMessageOperations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
-import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +51,7 @@ class BackgroundJobPublicationRecoveryTest {
             .convertAndSend(anyString(), anyString(), any(), anyMap());
 
         long accountId = createAccount();
-        var job = jobs.request(new BackgroundJobRequest(
+        var job = jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
             "test.publication",
             accountId,
             401L,
@@ -89,16 +84,7 @@ class BackgroundJobPublicationRecoveryTest {
     }
 
     private long createAccount() {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(con -> {
-            PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO user_account (username, revision) VALUES (?, 0)",
-                Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, "publication-recovery-" + System.nanoTime());
-            return ps;
-        }, keyHolder);
-        Number key = keyHolder.getKey();
-        return key == null ? 0L : key.longValue();
+        return AccountFixtures.create(jdbcTemplate, "publication-recovery");
     }
 
     private long incompletePublicationRows(String jobId) {

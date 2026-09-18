@@ -27,7 +27,7 @@
 | `shadcn/no-arbitrary-values` | error | 禁止任意值 utility；使用 DESIGN 间距/圆角/尺寸阶梯 |
 | `shadcn/no-inline-styles` | error | 禁止内联样式与 `<style>`；仅允许文档化的运行时 CSS 变量（当前：`--report-score-fill`） |
 | `shadcn/require-static-classes` | error | 类名必须为静态字面量，门禁可读 |
-| `shadcn/no-restyle` | warn（调用点） | 禁止用 className 改写 DS 外观；全局因 BEM 页面类保持 warn。对 `Button` / `Input` / `Textarea` / `Select` / Menu 项 / `IconTooltip` / `Modal` / `SegmentedControl` 配置 contracts：**仅允许 layout**，并 deny `spacing` / `color` / `typography` / `shape` / `effects` 中与组件所有权冲突的类别 |
+| `shadcn/no-restyle` | error | 禁止用 className 改写 DS 外观。对 `Button` / `Input` / `Textarea` / `Select` / Menu 项 / `IconTooltip` / `Dialog` / `SegmentedControl` 配置 contracts：**仅允许 layout**，并 deny `spacing` / `color` / `typography` / `shape` / `effects` 中与组件所有权冲突的类别 |
 | `shadcn/no-unknown-classes` | warn | Tailwind 无法生成的类名；与 BEM 选择器架构冲突，保持 warn |
 
 **例外范围（仅组件实现层）**：`src/shared/ui/**` 关闭 `no-restyle`、`no-arbitrary-values`、`require-static-classes`——primitive 自身拥有样式；调用点仍受上述 contracts 与 token 规则约束。`no-raw-colors` 与 `no-inline-styles` 在实现层仍生效。

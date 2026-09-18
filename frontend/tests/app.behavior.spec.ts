@@ -426,7 +426,9 @@ test('@smoke centers the async button indicator without resizing the control', a
   await expect(save).toHaveAttribute('aria-busy', 'true')
   const loading = await save.evaluate((button) => {
     const control = button.getBoundingClientRect()
-    const spinner = button.querySelector<HTMLElement>('.button-spinner')!.getBoundingClientRect()
+    const spinner = button
+      .querySelector<HTMLElement>('.prelude-button__spinner')!
+      .getBoundingClientRect()
     const content = button.querySelector<HTMLElement>('.prelude-button__content')!
     return {
       width: control.width,
@@ -1009,7 +1011,7 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
 
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '切换到语音输入' }).click()
-  const talk = page.locator('.prompt-bar__voice-button')
+  const talk = page.locator('.prelude-button--hold')
   await talk.dispatchEvent('pointerdown')
   await expect(talk).toHaveText('松开发送')
   await page.evaluate(() => {
@@ -1063,7 +1065,7 @@ test('@smoke releases media that arrives after voice mode closes', async ({ page
 
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '切换到语音输入' }).click()
-  const talk = page.locator('.prompt-bar__voice-button')
+  const talk = page.locator('.prelude-button--hold')
   await talk.dispatchEvent('pointerdown')
   await page.evaluate(() => {
     const socket = (
@@ -1257,7 +1259,7 @@ test('@smoke renders structured reports without resume mutation controls', async
   await page.getByRole('button', { name: '报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await expect(page.getByText('8.1')).toBeVisible()
-  await expect(page.getByRole('button', { name: '导出 PDF' })).toHaveCount(1)
+  await expect(page.getByRole('button', { name: '打印报告' })).toHaveCount(1)
   const viewToggle = page.getByRole('group', { name: '工作区视图' })
   await expect(viewToggle.getByRole('button', { name: '面试' })).toHaveCount(1)
   await expect(viewToggle.getByRole('button', { name: '报告' })).toHaveCount(1)
@@ -1391,7 +1393,7 @@ test('@smoke renders structured reports without resume mutation controls', async
       document.body.dataset.printCalled = 'true'
     }
   })
-  await page.getByRole('button', { name: '导出 PDF' }).click()
+  await page.getByRole('button', { name: '打印报告' }).click()
   await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true')
   await expect(page.locator('body')).not.toHaveClass(/is-printing-report/)
 })

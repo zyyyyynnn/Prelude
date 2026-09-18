@@ -84,8 +84,8 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
               <article className="resume-row" key={resume.id}>
                 <div className="resume-row__main">
                   <div className="resume-row__title-wrap">
-                    <h3 className="resume-item__title">{resume.fileName}</h3>
-                    <p className="resume-item__hint">
+                    <h3 className="resume-row__title">{resume.fileName}</h3>
+                    <p className="resume-row__hint">
                       {resume.createdAt
                         ? new Intl.DateTimeFormat('zh-CN', {
                             dateStyle: 'medium',

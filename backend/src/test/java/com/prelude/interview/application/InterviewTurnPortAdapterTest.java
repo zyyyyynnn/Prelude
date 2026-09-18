@@ -1,12 +1,6 @@
 package com.prelude.interview.application;
 
-import com.prelude.interview.application.port.InterviewTurnCommand;
-import com.prelude.interview.application.port.InterviewTurnPort;
-import com.prelude.interview.application.port.InterviewTurnResult;
-import com.prelude.interview.application.port.InterviewTurnSink;
-import com.prelude.interview.application.port.JudgeResult;
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.domain.InterviewSession;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -23,15 +17,14 @@ class InterviewTurnPortAdapterTest {
     private final RunInterviewTurn runInterviewTurn = mock(RunInterviewTurn.class);
     private final InterviewJudgeService interviewJudgeService = mock(InterviewJudgeService.class);
     private final InterviewSummaryService interviewSummaryService = mock(InterviewSummaryService.class);
-    private final InterviewTurnPort port = new InterviewTurnPortAdapter(
+    private final InterviewTurnPortAdapter port = new InterviewTurnPortAdapter(
         runInterviewTurn, interviewJudgeService, interviewSummaryService);
 
     @Test
     void executeDelegatesToRunInterviewTurn() {
-        InterviewTurnCommand command = new InterviewTurnCommand(1L, 2L, "hi", false, false);
-        InterviewTurnSink sink = delta -> {
-        };
-        InterviewTurnResult expected = new InterviewTurnResult(new InterviewSession(), new InterviewMessage(), "ok");
+        var command = SessionFixtures.turnCommand(1L, 2L, "hi", false, false);
+        var sink = SessionFixtures.noopSink();
+        var expected = SessionFixtures.turnResult(SessionFixtures.create(1L), SessionFixtures.message(), "ok");
         when(runInterviewTurn.execute(any(), any())).thenReturn(expected);
 
         assertThat(port.execute(command, sink)).isSameAs(expected);
@@ -40,12 +33,12 @@ class InterviewTurnPortAdapterTest {
 
     @Test
     void judgeAndPersistMapsScoreAndHint() {
-        InterviewSession session = new InterviewSession();
-        InterviewMessage message = new InterviewMessage();
+        var session = SessionFixtures.create(1L);
+        var message = SessionFixtures.message();
         when(interviewJudgeService.judgeAndPersist(session, message))
-            .thenReturn(Optional.of(new JudgeResult(8, "hint", "{\"score\":8}")));
+            .thenReturn(Optional.of(SessionFixtures.judgeResult(8, "hint", "{\"score\":8}")));
 
-        Optional<JudgeResult> outcome = port.judgeAndPersist(session, message);
+        var outcome = port.judgeAndPersist(session, message);
 
         assertThat(outcome).isPresent();
         assertThat(outcome.get().score()).isEqualTo(8);
@@ -55,7 +48,7 @@ class InterviewTurnPortAdapterTest {
 
     @Test
     void summarizeIfNeededDelegates() {
-        InterviewSession session = new InterviewSession();
+        var session = SessionFixtures.create(1L);
         port.summarizeIfNeeded(session);
         verify(interviewSummaryService).triggerAsyncSummarizeIfNeeded(session);
     }

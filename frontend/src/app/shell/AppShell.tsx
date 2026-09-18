@@ -116,6 +116,14 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   }
 
   const startNewInterview = () => void navigate('/interview')
+  const handleSelectSession = (session: InterviewSessionItem) => {
+    // oxlint-disable-next-line react-hooks/refs -- This runs only after a user click.
+    sessionRequest.current?.abort()
+    const controller = new AbortController()
+    sessionRequest.current = controller
+    void openSession(session, controller)
+  }
+
   const sessionGroups = [
     { label: '进行中', items: grouped.active, finished: false },
     { label: '已完成', items: grouped.finished, finished: true },
@@ -164,80 +172,20 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
             {sessions.isPending && <p className="session-group__empty">正在加载会话</p>}
             {!sessions.isPending &&
               sessionGroups.map((group) => (
-                <section className="session-group" key={group.label} aria-label={group.label}>
-                  <p className="session-group__label">{group.label}</p>
-                  {group.items.length ? (
-                    <ul className="session-list">
-                      {group.items.map((session) => {
-                        const pinned = preferences.pinnedIds.includes(session.sessionId)
-                        const active =
-                          activeId === session.sessionId && location.pathname === '/interview'
-                        const loading = loadingSessionId === session.sessionId
-                        const failed = failedSessionId === session.sessionId
-                        return (
-                          <li className="session-item-wrapper" key={session.sessionId}>
-                            <button
-                              className={cn(
-                                'session-item-btn ui-action ui-action-nav',
-                                active && 'is-active',
-                                loading && 'is-loading',
-                                failed && 'is-error',
-                              )}
-                              aria-label={`${failed ? '重试打开会话' : group.finished ? '打开已结束会话' : '打开会话'} ${session.targetPosition || session.positionName || '未命名岗位'}`}
-                              aria-busy={loading || undefined}
-                              onClick={() => {
-                                // oxlint-disable-next-line react-hooks/refs -- This runs only after a user click.
-                                sessionRequest.current?.abort()
-                                const controller = new AbortController()
-                                sessionRequest.current = controller
-                                void openSession(session, controller)
-                              }}
-                            >
-                              <span className="session-item__name">
-                                {session.targetPosition || session.positionName || '未命名岗位'}
-                              </span>
-                              {(loading || failed) && (
-                                <span className="session-item__state">
-                                  {loading ? '加载中' : '加载失败'}
-                                </span>
-                              )}
-                            </button>
-                            {pinned && (
-                              <Pin
-                                className="pin-indicator"
-                                size={12}
-                                fill="currentColor"
-                                aria-hidden="true"
-                              />
-                            )}
-                            <div className="session-item-actions">
-                              <IconTooltip label={pinned ? '取消置顶' : '置顶会话'}>
-                                <button
-                                  className="action-btn ui-action ui-action-icon"
-                                  aria-label={pinned ? '取消置顶' : '置顶会话'}
-                                  onClick={() => togglePin(session.sessionId)}
-                                >
-                                  <Pin size={14} fill={pinned ? 'currentColor' : 'none'} />
-                                </button>
-                              </IconTooltip>
-                              <IconTooltip label="删除会话">
-                                <button
-                                  className="action-btn delete-btn ui-action ui-action-danger"
-                                  aria-label="删除会话"
-                                  onClick={() => void removeSession(session)}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </IconTooltip>
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="session-group__empty">暂无会话</p>
-                  )}
-                </section>
+                <SidebarSessionSection
+                  key={group.label}
+                  label={group.label}
+                  items={group.items}
+                  isFinished={group.finished}
+                  activeId={activeId}
+                  currentPath={location.pathname}
+                  loadingSessionId={loadingSessionId}
+                  failedSessionId={failedSessionId}
+                  pinnedIds={preferences.pinnedIds}
+                  onOpen={handleSelectSession}
+                  onTogglePin={togglePin}
+                  onRemove={(session) => void removeSession(session)}
+                />
               ))}
           </div>
 
@@ -302,4 +250,125 @@ function SidebarLink({
     </NavLink>
   )
   return collapsed ? <IconTooltip label={label}>{link}</IconTooltip> : link
+}
+
+function SidebarSessionItem({
+  session,
+  isFinished,
+  isActive,
+  isLoading,
+  isFailed,
+  isPinned,
+  onOpen,
+  onTogglePin,
+  onRemove,
+}: {
+  session: InterviewSessionItem
+  isFinished: boolean
+  isActive: boolean
+  isLoading: boolean
+  isFailed: boolean
+  isPinned: boolean
+  onOpen: (session: InterviewSessionItem) => void
+  onTogglePin: (sessionId: number) => void
+  onRemove: (session: InterviewSessionItem) => void
+}) {
+  const sessionName = session.targetPosition || session.positionName || '未命名岗位'
+  const actionPrefix = isFailed ? '重试打开会话' : isFinished ? '打开已结束会话' : '打开会话'
+
+  return (
+    <li className="session-item-wrapper">
+      <button
+        className={cn(
+          'session-item-btn ui-action ui-action-nav',
+          isActive && 'is-active',
+          isLoading && 'is-loading',
+          isFailed && 'is-error',
+        )}
+        aria-label={`${actionPrefix} ${sessionName}`}
+        aria-busy={isLoading || undefined}
+        onClick={() => onOpen(session)}
+      >
+        <span className="session-item__name">{sessionName}</span>
+        {(isLoading || isFailed) && (
+          <span className="session-item__state">{isLoading ? '加载中' : '加载失败'}</span>
+        )}
+      </button>
+      {isPinned && (
+        <Pin className="pin-indicator" size={12} fill="currentColor" aria-hidden="true" />
+      )}
+      <div className="session-item-actions">
+        <IconTooltip label={isPinned ? '取消置顶' : '置顶会话'}>
+          <button
+            className="action-btn ui-action ui-action-icon"
+            aria-label={isPinned ? '取消置顶' : '置顶会话'}
+            onClick={() => onTogglePin(session.sessionId)}
+          >
+            <Pin size={14} fill={isPinned ? 'currentColor' : 'none'} />
+          </button>
+        </IconTooltip>
+        <IconTooltip label="删除会话">
+          <button
+            className="action-btn delete-btn ui-action ui-action-danger"
+            aria-label="删除会话"
+            onClick={() => onRemove(session)}
+          >
+            <Trash2 size={14} />
+          </button>
+        </IconTooltip>
+      </div>
+    </li>
+  )
+}
+
+function SidebarSessionSection({
+  label,
+  items,
+  isFinished,
+  activeId,
+  currentPath,
+  loadingSessionId,
+  failedSessionId,
+  pinnedIds,
+  onOpen,
+  onTogglePin,
+  onRemove,
+}: {
+  label: string
+  items: InterviewSessionItem[]
+  isFinished: boolean
+  activeId: number | null
+  currentPath: string
+  loadingSessionId: number | null
+  failedSessionId: number | null
+  pinnedIds: number[]
+  onOpen: (session: InterviewSessionItem) => void
+  onTogglePin: (sessionId: number) => void
+  onRemove: (session: InterviewSessionItem) => void
+}) {
+  return (
+    <section className="session-group" aria-label={label}>
+      <p className="session-group__label">{label}</p>
+      {items.length ? (
+        <ul className="session-list">
+          {items.map((session) => (
+            <SidebarSessionItem
+              key={session.sessionId}
+              session={session}
+              isFinished={isFinished}
+              isActive={activeId === session.sessionId && currentPath === '/interview'}
+              isLoading={loadingSessionId === session.sessionId}
+              isFailed={failedSessionId === session.sessionId}
+              isPinned={pinnedIds.includes(session.sessionId)}
+              onOpen={onOpen}
+              onTogglePin={onTogglePin}
+              onRemove={onRemove}
+            />
+          ))}
+        </ul>
+      ) : (
+        <p className="session-group__empty">暂无会话</p>
+      )}
+    </section>
+  )
 }

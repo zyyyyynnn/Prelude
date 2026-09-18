@@ -5,7 +5,7 @@ import {
   Briefcase,
   ChevronDown,
   ChevronRight,
-  Download,
+  Printer,
   FileText,
   Image,
   Keyboard,
@@ -32,7 +32,7 @@ import {
   type LlmConfigPayload,
   type LlmConfigResponse,
 } from '@/features/settings'
-import { fetchPositions, type PositionTemplate } from '@/features/template'
+import { fetchPositions, type Position } from '@/features/position'
 import { RoseThree } from '@/shared/brand/RoseThree'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
@@ -64,6 +64,89 @@ import type {
 
 const MAX_CONTEXT_MESSAGES = 20
 
+function applyMessageUpdate(
+  existing: InterviewMessageRecord[] | null,
+  fallback: InterviewMessageRecord[] | undefined,
+  message: InterviewMessageRecord,
+  append: boolean,
+): InterviewMessageRecord[] {
+  const list = [...(existing ?? fallback ?? [])]
+  const index = list.findIndex((item) => item.id === message.id)
+  if (index < 0) {
+    list.push(message)
+  } else {
+    list[index] = {
+      ...list[index],
+      ...message,
+      content: append ? list[index].content + message.content : message.content,
+    }
+  }
+  return list
+}
+
+function handleInterviewStreamEvent(
+  event: { name: string; data: string },
+  assistantId: number,
+  sessionId: number,
+  client: ReturnType<typeof useQueryClient>,
+  callbacks: {
+    updateMessage: (msg: InterviewMessageRecord, append?: boolean) => void
+    setConnectionStatus: (status: string) => void
+    setMessages: (
+      updater: (prev: InterviewMessageRecord[] | null) => InterviewMessageRecord[] | null,
+    ) => void
+    setShowReport: (show: boolean) => void
+    onError: (msg: string) => void
+  },
+) {
+  const { name, data } = event
+  if (name === 'message') {
+    callbacks.updateMessage({ id: assistantId, role: 'assistant', content: data }, true)
+    return
+  }
+  if (name === 'status') {
+    callbacks.setConnectionStatus(
+      data.startsWith('reconnecting_')
+        ? `连接已断开，正在尝试第 ${data.split('_')[1]} 次重连`
+        : data === 'checking'
+          ? '正在核对会话状态'
+          : '',
+    )
+    return
+  }
+  if (name === 'sync') {
+    try {
+      const syncMessages = JSON.parse(data) as InterviewMessageRecord[]
+      callbacks.setMessages(() => syncMessages)
+    } catch {
+      callbacks.onError('会话同步数据无法解析')
+    }
+    return
+  }
+  if (name === 'report_ready') {
+    client.setQueryData<InterviewSessionDetailResponse>(['interview-session', sessionId], (old) =>
+      old ? { ...old, summaryReport: data, status: 'finished' } : old,
+    )
+    callbacks.setShowReport(true)
+    return
+  }
+  if (name === 'judge') {
+    try {
+      const result = JSON.parse(data) as { score?: number; hint?: string }
+      callbacks.setMessages((list) => {
+        const next = [...(list ?? [])]
+        const index = next.findLastIndex((item) => item.role === 'user')
+        if (index >= 0) next[index] = { ...next[index], score: result.score, hint: result.hint }
+        return next
+      })
+    } catch {
+      callbacks.onError('评分数据无法解析')
+    }
+    return
+  }
+  if (name === 'error') throw new Error(data)
+}
+
 function useInterviewSession(sessionId: number, onError: (message: string) => void) {
   const client = useQueryClient()
   const [messages, setMessages] = useState<InterviewMessageRecord[] | null>(null)
@@ -87,18 +170,7 @@ function useInterviewSession(sessionId: number, onError: (message: string) => vo
   )
 
   function updateMessage(message: InterviewMessageRecord, append = false) {
-    setMessages((existing) => {
-      const list = [...(existing ?? current?.messages ?? [])]
-      const index = list.findIndex((item) => item.id === message.id)
-      if (index < 0) list.push(message)
-      else
-        list[index] = {
-          ...list[index],
-          ...message,
-          content: append ? list[index].content + message.content : message.content,
-        }
-      return list
-    })
+    setMessages((existing) => applyMessageUpdate(existing, current?.messages, message, append))
   }
 
   const send = useMutation({
@@ -127,44 +199,14 @@ function useInterviewSession(sessionId: number, onError: (message: string) => vo
       await streamInterview(
         sessionId,
         { content, messages: context },
-        ({ name, data }) => {
-          if (name === 'message')
-            updateMessage({ id: assistantId, role: 'assistant', content: data }, true)
-          else if (name === 'status')
-            setConnectionStatus(
-              data.startsWith('reconnecting_')
-                ? `连接已断开，正在尝试第 ${data.split('_')[1]} 次重连`
-                : data === 'checking'
-                  ? '正在核对会话状态'
-                  : '',
-            )
-          else if (name === 'sync') {
-            try {
-              setMessages(JSON.parse(data) as InterviewMessageRecord[])
-            } catch {
-              onError('会话同步数据无法解析')
-            }
-          } else if (name === 'report_ready') {
-            client.setQueryData<InterviewSessionDetailResponse>(
-              ['interview-session', sessionId],
-              (old) => (old ? { ...old, summaryReport: data, status: 'finished' } : old),
-            )
-            setShowReport(true)
-          } else if (name === 'judge') {
-            try {
-              const result = JSON.parse(data) as { score?: number; hint?: string }
-              setMessages((list) => {
-                const next = [...(list ?? [])]
-                const index = next.findLastIndex((item) => item.role === 'user')
-                if (index >= 0)
-                  next[index] = { ...next[index], score: result.score, hint: result.hint }
-                return next
-              })
-            } catch {
-              onError('评分数据无法解析')
-            }
-          } else if (name === 'error') throw new Error(data)
-        },
+        (event) =>
+          handleInterviewStreamEvent(event, assistantId, sessionId, client, {
+            updateMessage,
+            setConnectionStatus,
+            setMessages,
+            setShowReport,
+            onError,
+          }),
         abort.current.signal,
         autoStart,
       )
@@ -243,9 +285,9 @@ export function WorkspaceHeader({
   showingReport,
   sending,
   finishing,
-  exporting = false,
+  printing = false,
   onFinish,
-  onExportReport,
+  onPrintReport,
   onToggleReport,
 }: {
   title?: string
@@ -255,9 +297,9 @@ export function WorkspaceHeader({
   showingReport: boolean
   sending: boolean
   finishing: boolean
-  exporting?: boolean
+  printing?: boolean
   onFinish: () => void
-  onExportReport: () => void
+  onPrintReport: () => void
   onToggleReport: (show: boolean) => void
 }) {
   const headerTitle = title?.trim() || '新面试会话'
@@ -292,9 +334,9 @@ export function WorkspaceHeader({
           )}
           {hasReport && showingReport && (
             <div className="workspace-header__actions">
-              <Button variant="secondary" loading={exporting} onClick={onExportReport}>
-                <Download size={15} />
-                导出 PDF
+              <Button variant="secondary" loading={printing} onClick={onPrintReport}>
+                <Printer size={15} />
+                打印报告
               </Button>
             </div>
           )}
@@ -364,7 +406,7 @@ export function InterviewModelMenu({
   return (
     <DropdownMenu
       side="top"
-      className="prelude-menu--structured prelude-menu--model"
+      layout="model"
       trigger={
         <button
           type="button"
@@ -413,8 +455,8 @@ export function InterviewModelMenu({
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem className="prelude-menu__manage-item" onClick={onManage}>
-          <Settings className="prelude-menu__manage-icon" aria-hidden="true" />
+        <DropdownMenuItem layout="leading-icon" onClick={onManage}>
+          <Settings className="prelude-menu__icon--leading" aria-hidden="true" />
           <span className="prelude-menu__item-label">管理模型</span>
         </DropdownMenuItem>
       </DropdownMenuGroup>
@@ -466,7 +508,7 @@ export function InterviewContextMenu({
   onNewPosition,
 }: {
   resumes: ResumeItem[]
-  positions: PositionTemplate[]
+  positions: Position[]
   resumeId: number | null
   positionId: number | null
   jdEnabled: boolean
@@ -484,15 +526,9 @@ export function InterviewContextMenu({
   return (
     <DropdownMenu
       side="top"
-      className="prelude-menu--structured"
+      layout="structured"
       trigger={
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="prompt-bar__add"
-          aria-label="添加面试上下文"
-        >
+        <Button type="button" size="icon-compact" variant="ghost" aria-label="添加面试上下文">
           <Plus aria-hidden="true" />
         </Button>
       }
@@ -571,9 +607,8 @@ export function LockedInterviewContextButton() {
       <span className="prompt-bar__locked-trigger" tabIndex={0}>
         <Button
           type="button"
-          size="icon"
+          size="icon-compact"
           variant="ghost"
-          className="prompt-bar__add"
           aria-label="面试上下文已锁定"
           disabled
         >
@@ -654,7 +689,7 @@ export function InterviewSetupComposer({
   onStart,
 }: {
   resumes: ResumeItem[]
-  positions: PositionTemplate[]
+  positions: Position[]
   llmConfig: InterviewModelConfig
   llmProviders: InterviewModelProvider[]
   uploadingAttachment: boolean
@@ -796,12 +831,7 @@ export function InterviewSetupComposer({
           </div>
         }
         rightActions={
-          <Button
-            type="submit"
-            loading={creating}
-            disabled={!canStart}
-            className="prompt-bar__primary-action"
-          >
+          <Button type="submit" loading={creating} disabled={!canStart} size="action">
             开始面试
           </Button>
         }
@@ -824,6 +854,13 @@ export function InterviewSetupComposer({
       />
     </>
   )
+}
+
+function voiceStatusLabel(status: string, recording: boolean): string {
+  if (recording) return '正在聆听'
+  if (status === 'processing') return '正在处理'
+  if (status === 'speaking') return '面试官正在回答'
+  return '语音模式已连接'
 }
 
 export function InterviewAnswerComposer({
@@ -876,15 +913,7 @@ export function InterviewAnswerComposer({
       <div className="prompt-bar__voice-area">
         <div className="prompt-bar__voice-status">
           <span className={cn('prompt-bar__status-dot', `is-${voiceState.status}`)} />
-          <span>
-            {voiceState.recording
-              ? '正在聆听'
-              : voiceState.status === 'processing'
-                ? '正在处理'
-                : voiceState.status === 'speaking'
-                  ? '面试官正在回答'
-                  : '语音模式已连接'}
-          </span>
+          <span>{voiceStatusLabel(voiceState.status, voiceState.recording)}</span>
         </div>
         <div
           className={cn('prompt-bar__wave', voiceState.recording && 'is-active')}
@@ -916,7 +945,8 @@ export function InterviewAnswerComposer({
       </IconTooltip>
       <Button
         type="button"
-        className={cn('prompt-bar__voice-button', voiceState.recording && 'is-pressed')}
+        size="hold"
+        pressed={voiceState.recording}
         disabled={disabled || sending}
         onPointerDown={() => void voiceState.startRecording()}
         onPointerUp={voiceState.stopRecording}
@@ -949,12 +979,7 @@ export function InterviewAnswerComposer({
           <Mic aria-hidden="true" />
         </Button>
       </IconTooltip>
-      <Button
-        type="submit"
-        loading={sending}
-        disabled={disabled || !answer.trim()}
-        className="prompt-bar__primary-action"
-      >
+      <Button type="submit" loading={sending} disabled={disabled || !answer.trim()} size="action">
         发送
       </Button>
     </>
@@ -1155,7 +1180,7 @@ export function InterviewSetup() {
 
 export function InterviewSession({ sessionId }: { sessionId: number }) {
   const feedback = useFeedback()
-  const [exporting, setExporting] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const controller = useInterviewSession(sessionId, (message) => feedback.notify(message, 'error'))
   const resumes = useQuery({
     queryKey: ['resumes'],
@@ -1177,15 +1202,15 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
   const current = controller.current
   const resumeName = resumes.data?.find((item) => item.id === current.resumeId)?.fileName
   const hasReport = Boolean(current.summaryReport)
-  async function exportReport() {
-    setExporting(true)
+  async function printReport() {
+    setPrinting(true)
     try {
       await printInterviewReport()
       feedback.notify('已打开系统打印窗口', 'success')
     } catch (error) {
-      feedback.notify(error instanceof Error ? error.message : '报告导出失败', 'error')
+      feedback.notify(error instanceof Error ? error.message : '报告打印失败', 'error')
     } finally {
-      setExporting(false)
+      setPrinting(false)
     }
   }
   return (
@@ -1199,9 +1224,9 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
           showingReport={controller.showReport}
           sending={controller.sending}
           finishing={controller.finishing}
-          exporting={exporting}
+          printing={printing}
           onFinish={controller.finish}
-          onExportReport={() => void exportReport()}
+          onPrintReport={() => void printReport()}
           onToggleReport={controller.setShowReport}
         />
         <div className="workspace-active__main">

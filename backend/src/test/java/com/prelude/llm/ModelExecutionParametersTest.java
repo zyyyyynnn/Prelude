@@ -1,6 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.BusinessException;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
@@ -21,10 +21,8 @@ class ModelExecutionParametersTest {
 
     @Test
     void outputBudgetRejectsValuesOutsideTheGovernedRange() {
-        assertThatThrownBy(() -> ModelExecutionParameters.resolve(0))
-            .isInstanceOf(BusinessException.class);
-        assertThatThrownBy(() -> ModelExecutionParameters.resolve(32769))
-            .isInstanceOf(BusinessException.class);
+        ExceptionFixtures.assertBusinessException(() -> ModelExecutionParameters.resolve(0));
+        ExceptionFixtures.assertBusinessException(() -> ModelExecutionParameters.resolve(32769));
     }
 
     @Test

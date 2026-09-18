@@ -1,18 +1,19 @@
 package com.prelude.llm;
 
-import com.prelude.identity.api.CurrentAccount;
-import com.prelude.llm.web.LlmController;
 import com.prelude.llm.api.LlmPort;
-import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.api.ProviderDescriptorView;
+import com.prelude.llm.web.LlmController;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.LlmFixtures;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,32 +26,15 @@ class LlmControllerContractTest {
     @Test
     void providersEndpointExposesTheCanonicalProviderAndModelCapabilityShape() throws Exception {
         LlmPort llmPort = mock(LlmPort.class);
-        CurrentAccount currentAccount = mock(CurrentAccount.class);
-        when(currentAccount.requireId()).thenReturn(7L);
+        var currentAccount = AccountFixtures.current(7L);
         when(llmPort.listModels()).thenReturn(List.of(
-            new ProviderDescriptorView(
+            LlmFixtures.providerDescriptor(
                 "deepseek",
                 "DeepSeek",
                 false,
-                List.of(new ModelCapabilityResponse(
-                    "deepseek",
-                    "deepseek-v4-pro",
-                    true,
-                    true,
-                    true,
-                    true,
-                    false,
-                    true,
-                    true,
-                    false,
-                    false,
-                    List.of(ModelCapabilityResponse.ReasoningLevel.AUTO,
-                        ModelCapabilityResponse.ReasoningLevel.LOW,
-                        ModelCapabilityResponse.ReasoningLevel.HIGH,
-                        ModelCapabilityResponse.ReasoningLevel.MAX)
-                ))
+                List.of(LlmFixtures.capability("deepseek", "deepseek-v4-pro"))
             ),
-            new ProviderDescriptorView(
+            LlmFixtures.providerDescriptor(
                 "openai-responses",
                 "OpenAI Responses",
                 true,
@@ -77,19 +61,12 @@ class LlmControllerContractTest {
     @Test
     void selectedCustomModelCapabilityEndpointReturnsBackendConfirmedReasoningLevels() throws Exception {
         LlmPort llmPort = mock(LlmPort.class);
-        CurrentAccount currentAccount = mock(CurrentAccount.class);
-        when(currentAccount.requireId()).thenReturn(7L);
-        when(llmPort.discoverCustomModelCapability(
-            org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.any()))
-            .thenReturn(new ModelCapabilityCatalog().customCapability(
+        var currentAccount = AccountFixtures.current(7L);
+        when(llmPort.discoverCustomModelCapability(eq(7L), any()))
+            .thenReturn(LlmFixtures.customCapability(
                 "openai-chat-completions",
                 "account-model",
-                List.of(ModelCapabilityResponse.ReasoningLevel.AUTO,
-                    ModelCapabilityResponse.ReasoningLevel.LOW,
-                    ModelCapabilityResponse.ReasoningLevel.MEDIUM,
-                    ModelCapabilityResponse.ReasoningLevel.HIGH,
-                    ModelCapabilityResponse.ReasoningLevel.XHIGH,
-                    ModelCapabilityResponse.ReasoningLevel.MAX)));
+                LlmFixtures.allReasoningLevels()));
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new LlmController(llmPort, currentAccount)).build();
 
         mvc.perform(post("/api/llm/config/discover-capabilities")
@@ -113,12 +90,11 @@ class LlmControllerContractTest {
     @Test
     void configurationWriteUsesCanonicalMaxOutputTokensField() throws Exception {
         LlmPort llmPort = mock(LlmPort.class);
-        CurrentAccount currentAccount = mock(CurrentAccount.class);
-        when(currentAccount.requireId()).thenReturn(7L);
-        when(llmPort.saveConfiguration(org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.any()))
-            .thenReturn(new com.prelude.llm.api.ModelConfigurationView(
+        var currentAccount = AccountFixtures.current(7L);
+        when(llmPort.saveConfiguration(eq(7L), any()))
+            .thenReturn(LlmFixtures.configView(
                 "deepseek", "deepseek-v4-pro", null, false, null, "HIGH", 8192, List.of(),
-                new ModelCapabilityCatalog().capability("deepseek", "deepseek-v4-pro")));
+                LlmFixtures.capability("deepseek", "deepseek-v4-pro")));
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new LlmController(llmPort, currentAccount)).build();
 
         mvc.perform(put("/api/llm/config")
@@ -135,9 +111,7 @@ class LlmControllerContractTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.maxOutputTokens").value(8192));
 
-        org.mockito.ArgumentCaptor<com.prelude.llm.api.SaveConfigurationCommand> command =
-            org.mockito.ArgumentCaptor.forClass(com.prelude.llm.api.SaveConfigurationCommand.class);
-        verify(llmPort).saveConfiguration(org.mockito.ArgumentMatchers.eq(7L), command.capture());
-        org.assertj.core.api.Assertions.assertThat(command.getValue().maxOutputTokens()).isEqualTo(8192);
+        int tokens = LlmFixtures.captureSavedMaxOutputTokens(llmPort, 7L);
+        assertThat(tokens).isEqualTo(8192);
     }
 }

@@ -159,7 +159,7 @@ export default defineConfig(({ mode }) => {
           },
         ],
         'shadcn/no-restyle': [
-          'warn',
+          'error',
           {
             // BEM page classes (e.g. login-card__submit) collide with Tailwind restyle detection.
             // DS components still get contracts below so appearance/spacing overrides fail loudly.
@@ -193,7 +193,7 @@ export default defineConfig(({ mode }) => {
                   'Menu items use the shared floating-surface chrome. Do not restyle item appearance.',
               },
               {
-                pattern: '^IconTooltip$|^Modal$',
+                pattern: '^IconTooltip$|^Dialog$',
                 allow: ['layout'],
                 deny: ['color', 'typography', 'shape', 'effects'],
                 message:

@@ -37,7 +37,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         position="top-center"
         theme="light"
         closeButton
-        className="toaster"
+        className="prelude-toaster"
         icons={{
           success: <CheckCircle2 size={16} />,
           info: <Info size={16} />,

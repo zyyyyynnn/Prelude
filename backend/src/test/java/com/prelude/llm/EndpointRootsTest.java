@@ -1,10 +1,9 @@
 package com.prelude.llm;
 
-import com.prelude.BusinessException;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class EndpointRootsTest {
 
@@ -28,8 +27,7 @@ class EndpointRootsTest {
 
     @Test
     void rejectsMalformedRoots() {
-        assertThatThrownBy(() -> EndpointRoots.normalize("not a url", CustomLlmProtocol.OPENAI_RESPONSES.providerKey()))
-            .isInstanceOf(BusinessException.class);
+        ExceptionFixtures.assertBusinessException(() -> EndpointRoots.normalize("not a url", CustomLlmProtocol.OPENAI_RESPONSES.providerKey()));
     }
 
     @Test

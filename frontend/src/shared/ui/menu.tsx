@@ -8,12 +8,14 @@ export function DropdownMenu({
   children,
   align = 'start',
   side = 'bottom',
+  layout,
   className,
 }: {
   trigger: ReactElement
   children: ReactNode
   align?: 'start' | 'center' | 'end'
   side?: 'top' | 'bottom' | 'left' | 'right' | 'inline-start' | 'inline-end'
+  layout?: 'structured' | 'model'
   className?: string
 }) {
   return (
@@ -26,7 +28,16 @@ export function DropdownMenu({
           sideOffset={6}
           align={align}
         >
-          <Menu.Popup className={cn('prelude-menu', className)}>{children}</Menu.Popup>
+          <Menu.Popup
+            className={cn(
+              'prelude-menu',
+              layout && 'prelude-menu--structured',
+              layout === 'model' && 'prelude-menu--model',
+              className,
+            )}
+          >
+            {children}
+          </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
@@ -120,17 +131,23 @@ export function DropdownMenuCheckboxItem({
 export function DropdownMenuItem({
   children,
   className,
+  layout,
   disabled,
   onClick,
 }: {
   children: ReactNode
   className?: string
+  layout?: 'leading-icon'
   disabled?: boolean
   onClick?: () => void
 }) {
   return (
     <Menu.Item
-      className={cn('prelude-menu__item', className)}
+      className={cn(
+        'prelude-menu__item',
+        layout === 'leading-icon' && 'prelude-menu__item--leading-icon',
+        className,
+      )}
       disabled={disabled}
       onClick={onClick}
     >

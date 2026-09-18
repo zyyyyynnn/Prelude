@@ -1,4 +1,4 @@
-import { Dialog, Tooltip } from '@base-ui/react'
+import { Dialog as BaseDialog, Tooltip } from '@base-ui/react'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
@@ -16,11 +16,12 @@ export function IconTooltip({ label, children }: { label: string; children: Reac
   )
 }
 
-export function Modal({
+export function Dialog({
   open,
   onOpenChange,
   title,
   className,
+  layout,
   showClose = true,
   children,
 }: {
@@ -28,28 +29,35 @@ export function Modal({
   onOpenChange: (open: boolean) => void
   title: string
   className?: string
+  layout?: 'workspace'
   showClose?: boolean
   children: ReactNode
 }) {
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Backdrop className="prelude-dialog__backdrop" />
-        <Dialog.Viewport className="prelude-dialog__viewport">
-          <Dialog.Popup className={cn('prelude-dialog', className)}>
-            <Dialog.Title className="sr-only">{title}</Dialog.Title>
+    <BaseDialog.Root open={open} onOpenChange={onOpenChange}>
+      <BaseDialog.Portal>
+        <BaseDialog.Backdrop className="prelude-dialog__backdrop" />
+        <BaseDialog.Viewport className="prelude-dialog__viewport">
+          <BaseDialog.Popup
+            className={cn(
+              'prelude-dialog',
+              layout === 'workspace' && 'prelude-dialog--workspace',
+              className,
+            )}
+          >
+            <BaseDialog.Title className="sr-only">{title}</BaseDialog.Title>
             {showClose && (
-              <Dialog.Close
+              <BaseDialog.Close
                 className="prelude-dialog__close ui-action ui-action-icon"
                 aria-label="关闭"
               >
                 <X size={18} />
-              </Dialog.Close>
+              </BaseDialog.Close>
             )}
             {children}
-          </Dialog.Popup>
-        </Dialog.Viewport>
-      </Dialog.Portal>
-    </Dialog.Root>
+          </BaseDialog.Popup>
+        </BaseDialog.Viewport>
+      </BaseDialog.Portal>
+    </BaseDialog.Root>
   )
 }

@@ -1,11 +1,8 @@
 package com.prelude.identity.web;
 
-import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.infrastructure.OAuthVerifiedEmailResolver;
-import com.prelude.identity.infrastructure.ProviderIdentityUser;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -39,7 +36,7 @@ import static org.mockito.Mockito.when;
 class OAuthLoginSuccessHandlerTest {
 
     private final OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
-    private final OAuthVerifiedEmailResolver emailResolver = mock(OAuthVerifiedEmailResolver.class);
+    private final OAuthVerifiedEmailResolver emailResolver = AccountFixtures.mockEmailResolver();
     private final SecurityContextRepository securityContextRepository = mock(SecurityContextRepository.class);
     private final SessionAuthenticationStrategy sessionAuthenticationStrategy = mock(SessionAuthenticationStrategy.class);
     private final OAuthLoginSuccessHandler handler = new OAuthLoginSuccessHandler(
@@ -53,7 +50,7 @@ class OAuthLoginSuccessHandlerTest {
     void keepSessionOnRequest() {
         request.setSession(session);
         when(oauthLoginService.resolveLogin(any(), any(), any(), any()))
-            .thenReturn(new AccountPrincipal(7L, "owner"));
+            .thenReturn(AccountFixtures.principal(7L, "owner"));
     }
 
     @Test
@@ -89,8 +86,8 @@ class OAuthLoginSuccessHandlerTest {
             List.of(new SimpleGrantedAuthority("ROLE_USER")),
             Map.of("id", 42, "login", "owner-login"), "id");
         var accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "token-1", null, null);
-        var authentication = token("github", new ProviderIdentityUser(githubUser, accessToken));
-        when(emailResolver.resolveVerifiedEmail(any(ProviderIdentityUser.class), eq(accessToken)))
+        var authentication = token("github", AccountFixtures.providerIdentityUser(githubUser, accessToken));
+        when(emailResolver.resolveVerifiedEmail(any(), eq(accessToken)))
             .thenReturn("owner@example.com");
 
         handler.onAuthenticationSuccess(request, response, authentication);

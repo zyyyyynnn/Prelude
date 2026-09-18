@@ -1,16 +1,9 @@
 package com.prelude.artifact.application;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.prelude.artifact.application.GenerateInterviewReport.GenerationResult;
-import com.prelude.artifact.application.GenerateInterviewReport.Outcome;
-import com.prelude.artifact.domain.AccountWeakness;
-import com.prelude.artifact.domain.ScoreHistory;
 import com.prelude.jobs.BackgroundJobRecoveryService;
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
-import com.prelude.jobs.persistence.BackgroundJob;
-import com.prelude.jobs.persistence.BackgroundJobMapper;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.ArtifactFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,15 +34,12 @@ class ReportJobCompletionMySqlTest {
     private BackgroundJobRecoveryService recoveryService;
 
     @Autowired
-    private BackgroundJobMapper jobMapper;
-
-    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Test
     void staleAttemptCannotCommitReportStateAfterReplacementClaim() {
         Fixture fixture = createFixture();
-        BackgroundJobRef ref = request(fixture.accountId(), fixture.sessionId());
+        var ref = request(fixture.accountId(), fixture.sessionId());
         int attemptOne = jobs.claim(ref.jobId()).attemptNumber();
         expireLease(ref.jobId());
         assertThat(recoveryService.recover(ref.jobId(), LocalDateTime.now()))
@@ -59,21 +49,21 @@ class ReportJobCompletionMySqlTest {
         assertThat(completion.complete(
             ref.jobId(), attemptOne, fixture.sessionId(), generated(fixture))).isFalse();
 
-        BackgroundJob replacement = storedJob(ref.jobId());
+        JobState replacement = storedJob(ref.jobId());
         assertThat(sessionStatus(fixture.sessionId())).isEqualTo("generating");
         assertThat(sessionSummaryReport(fixture.sessionId())).isNull();
-        assertThat(replacement.getStatus()).isEqualTo(BackgroundJob.RUNNING);
-        assertThat(replacement.getAttemptCount()).isEqualTo(attemptTwo);
+        assertThat(replacement.status()).isEqualTo("RUNNING");
+        assertThat(replacement.attemptCount()).isEqualTo(attemptTwo);
         assertThat(scoreRows(fixture.sessionId())).isZero();
         assertThat(weaknessRows(fixture.sessionId())).isZero();
 
         assertThat(completion.complete(
             ref.jobId(), attemptTwo, fixture.sessionId(), generated(fixture))).isTrue();
 
-        BackgroundJob succeeded = storedJob(ref.jobId());
+        JobState succeeded = storedJob(ref.jobId());
         assertThat(sessionStatus(fixture.sessionId())).isEqualTo("finished");
         assertThat(sessionSummaryReport(fixture.sessionId())).isEqualTo("{\"report\":\"ready\"}");
-        assertThat(succeeded.getStatus()).isEqualTo(BackgroundJob.SUCCEEDED);
+        assertThat(succeeded.status()).isEqualTo("SUCCEEDED");
         assertThat(scoreRows(fixture.sessionId())).isEqualTo(1);
         assertThat(weaknessRows(fixture.sessionId())).isEqualTo(1);
     }
@@ -81,7 +71,7 @@ class ReportJobCompletionMySqlTest {
     @Test
     void failedDomainFinalizationRollsBackTheJobSuccessTransition() {
         Fixture fixture = createFixture();
-        BackgroundJobRef ref = request(fixture.accountId(), fixture.sessionId());
+        var ref = request(fixture.accountId(), fixture.sessionId());
         int attemptNumber = jobs.claim(ref.jobId()).attemptNumber();
 
         updateSessionStatus(fixture.sessionId(), "ongoing");
@@ -91,9 +81,9 @@ class ReportJobCompletionMySqlTest {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("lost generating state");
 
-        BackgroundJob job = storedJob(ref.jobId());
-        assertThat(job.getStatus()).isEqualTo(BackgroundJob.RUNNING);
-        assertThat(job.getAttemptCount()).isEqualTo(attemptNumber);
+        JobState job = storedJob(ref.jobId());
+        assertThat(job.status()).isEqualTo("RUNNING");
+        assertThat(job.attemptCount()).isEqualTo(attemptNumber);
         assertThat(sessionStatus(fixture.sessionId())).isEqualTo("ongoing");
         assertThat(sessionSummaryReport(fixture.sessionId())).isNull();
         assertThat(scoreRows(fixture.sessionId())).isZero();
@@ -102,9 +92,7 @@ class ReportJobCompletionMySqlTest {
 
     private Fixture createFixture() {
         long nano = System.nanoTime();
-        long accountId = insert(
-            "INSERT INTO user_account (username, revision) VALUES (?, 0)",
-            "report-atomic-" + nano);
+        long accountId = AccountFixtures.create(jdbcTemplate, "report-atomic");
 
         long resumeId = insert(
             "INSERT INTO resume (account_id, file_name, raw_text, parsed_skills, parsed_projects) VALUES (?, ?, ?, ?, ?)",
@@ -166,8 +154,8 @@ class ReportJobCompletionMySqlTest {
             "UPDATE interview_session SET status = ? WHERE id = ?", status, sessionId);
     }
 
-    private BackgroundJobRef request(long accountId, long sessionId) {
-        return jobs.request(new BackgroundJobRequest(
+    private BackgroundJobOperations.BackgroundJobRef request(long accountId, long sessionId) {
+        return jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
             "report.generate",
             accountId,
             sessionId,
@@ -176,37 +164,24 @@ class ReportJobCompletionMySqlTest {
         ));
     }
 
-    private GenerationResult generated(Fixture fixture) {
-        ScoreHistory score = new ScoreHistory();
-        score.setAccountId(fixture.accountId());
-        score.setSessionId(fixture.sessionId());
-        score.setTechnicalScore(8);
-        score.setExpressionScore(7);
-        score.setLogicScore(9);
-
-        AccountWeakness weakness = new AccountWeakness();
-        weakness.setAccountId(fixture.accountId());
-        weakness.setSessionId(fixture.sessionId());
-        weakness.setCategory("system-design");
-        weakness.setDescription("needs stronger capacity evidence");
-        return new GenerationResult(
-            Outcome.GENERATED,
-            "{\"report\":\"ready\"}",
-            score,
-            List.of(weakness)
-        );
+    private GenerateInterviewReport.GenerationResult generated(Fixture fixture) {
+        return ArtifactFixtures.generationResult(fixture.accountId(), fixture.sessionId());
     }
 
     private void expireLease(String jobId) {
-        BackgroundJob job = storedJob(jobId);
-        job.setLeaseExpiresAt(LocalDateTime.now().minusSeconds(1));
-        jobMapper.updateById(job);
+        jdbcTemplate.update(
+            "UPDATE background_job SET lease_expires_at = ? WHERE job_id = ?",
+            LocalDateTime.now().minusSeconds(1), jobId);
     }
 
-    private BackgroundJob storedJob(String jobId) {
-        return jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getJobId, jobId)
-            .last("LIMIT 1"));
+    private JobState storedJob(String jobId) {
+        return jdbcTemplate.queryForObject(
+            "SELECT status, attempt_count FROM background_job WHERE job_id = ?",
+            (rs, rowNum) -> new JobState(rs.getString("status"), rs.getInt("attempt_count")),
+            jobId);
+    }
+
+    private record JobState(String status, int attemptCount) {
     }
 
     private long scoreRows(long sessionId) {

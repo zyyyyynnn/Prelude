@@ -1,10 +1,3 @@
-.settings-dialog {
-  max-inline-size: min(var(--layout-settings-dialog-max-inline-size), 90vw);
-  block-size: 60vh;
-  min-block-size: var(--layout-settings-dialog-min-block-size);
-  border-color: transparent;
-}
-
 .settings-layout {
   display: flex;
   width: 100%;
@@ -111,10 +104,10 @@
   font-size: var(--font-size-sm);
   line-height: var(--line-height-base);
 }
-.settings-dialog .field__label {
+.settings-layout .field__label {
   font-size: var(--font-size-sm);
 }
-.settings-dialog .field__hint {
+.settings-layout .field__hint {
   color: var(--color-text-tertiary);
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);

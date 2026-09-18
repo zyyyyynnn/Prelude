@@ -490,7 +490,7 @@ public class ModelExecutionService {
 
         @Override
         public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
-            return snapshotService.configurationFor(accountId, snapshotId);
+            return snapshotService.frozenConfiguration(accountId, snapshotId);
         }
 
         @Override

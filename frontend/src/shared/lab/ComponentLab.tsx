@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Field, Input, Textarea } from '@/shared/ui/field'
-import { IconTooltip, Modal } from '@/shared/ui/overlay'
+import { Dialog, IconTooltip } from '@/shared/ui/overlay'
 import { Select } from '@/shared/ui/select'
 
 export function ComponentLab() {
@@ -18,9 +18,9 @@ export function ComponentLab() {
       </header>
       <div className="workspace-page__content scrollable">
         <div className="page-grid">
-          <section className="panel">
-            <div className="panel__head">
-              <h2 className="panel__title">Button</h2>
+          <section className="lab-panel">
+            <div className="lab-panel__head">
+              <h2 className="lab-panel__title">Button</h2>
             </div>
             <div className="settings-inline-actions">
               <Button>主要操作</Button>
@@ -31,9 +31,9 @@ export function ComponentLab() {
               <Button disabled>不可用</Button>
             </div>
           </section>
-          <section className="panel">
-            <div className="panel__head">
-              <h2 className="panel__title">Field</h2>
+          <section className="lab-panel">
+            <div className="lab-panel__head">
+              <h2 className="lab-panel__title">Field</h2>
             </div>
             <div className="form-grid">
               <Field label="输入框" htmlFor="lab-input">
@@ -55,9 +55,9 @@ export function ComponentLab() {
               </Field>
             </div>
           </section>
-          <section className="panel">
-            <div className="panel__head">
-              <h2 className="panel__title">Overlay</h2>
+          <section className="lab-panel">
+            <div className="lab-panel__head">
+              <h2 className="lab-panel__title">Overlay</h2>
             </div>
             <div className="settings-inline-actions">
               <IconTooltip label="通知">
@@ -72,15 +72,15 @@ export function ComponentLab() {
           </section>
         </div>
       </div>
-      <Modal open={dialogOpen} onOpenChange={setDialogOpen} title="Dialog">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen} title="Dialog">
         <div className="panel-content-wrapper">
-          <h2 className="panel__title">Dialog</h2>
+          <h2 className="lab-panel__title">Dialog</h2>
           <p className="helper-text">Prelude 浮层组件</p>
           <div className="settings-inline-actions">
             <Button onClick={() => setDialogOpen(false)}>确认</Button>
           </div>
         </div>
-      </Modal>
+      </Dialog>
     </section>
   )
 }

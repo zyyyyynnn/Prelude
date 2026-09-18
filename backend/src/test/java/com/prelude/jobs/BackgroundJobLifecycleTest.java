@@ -1,16 +1,10 @@
 package com.prelude.jobs;
 
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
-import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
-import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
-import com.prelude.jobs.integration.BackgroundJobFailed;
-import com.prelude.jobs.integration.BackgroundJobCancelled;
-import com.prelude.jobs.integration.BackgroundJobSucceeded;
-import com.prelude.jobs.persistence.BackgroundJob;
 import com.prelude.jobs.persistence.BackgroundJobMapper;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.JobFixtures;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,31 +38,30 @@ class BackgroundJobLifecycleTest {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private com.prelude.identity.AccountMapper accountMapper;
-
-    @Autowired
     private BackgroundJobRecoveryService recoveryService;
 
     @Autowired
     private ApplicationEvents applicationEvents;
 
     private long createAccount() {
-        com.prelude.identity.Account account = new com.prelude.identity.Account();
-        account.setUsername("jobs-" + System.nanoTime());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        return AccountFixtures.create(jdbcTemplate, "jobs");
     }
 
     private String uniqueOperationKey() {
         return "test.lifecycle:operation:" + System.nanoTime();
     }
 
-    private BackgroundJob stored(String jobId) {
-        return jobMapper.selectOne(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BackgroundJob>()
-                .eq(BackgroundJob::getJobId, jobId)
-                .last("LIMIT 1"));
+    private BackgroundJobOperations.BackgroundJobRef requestJob(long accountId, long subjectId, String operationKey) {
+        return jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
+            "test.lifecycle", accountId, subjectId, operationKey, "{}"));
+    }
+
+    private BackgroundJobOperations.BackgroundJobRef requestJob(long accountId, long subjectId) {
+        return requestJob(accountId, subjectId, uniqueOperationKey());
+    }
+
+    private com.prelude.jobs.persistence.BackgroundJob stored(String jobId) {
+        return JobFixtures.stored(jobMapper, jobId);
     }
 
     private long publicationRowsFor(String jobId) {
@@ -81,11 +74,10 @@ class BackgroundJobLifecycleTest {
     @Test
     void requestPersistsPendingJobAndDurablePublication() {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", accountId, 42L, uniqueOperationKey(), "{}"));
+        var ref = requestJob(accountId, 42L);
 
-        BackgroundJob job = stored(ref.jobId());
-        assertThat(job.getStatus()).isEqualTo(BackgroundJob.PENDING);
+        var job = stored(ref.jobId());
+        assertThat(job.getStatus()).isEqualTo(JobFixtures.statusPending());
         assertThat(job.getAttemptCount()).isZero();
         // The dispatch event persisted in the same transaction: broker-down
         // recovery has a durable anchor.
@@ -96,83 +88,76 @@ class BackgroundJobLifecycleTest {
     void duplicateOperationKeyReturnsTheSameLogicalJobWithoutDuplicateWork() {
         long accountId = createAccount();
         String operationKey = uniqueOperationKey();
-        BackgroundJobRequest request = new BackgroundJobRequest(
-            "test.lifecycle", accountId, 43L, operationKey, "{}");
 
-        BackgroundJobRef first = jobs.request(request);
-        BackgroundJobRef second = jobs.request(request);
+        var first = requestJob(accountId, 43L, operationKey);
+        var second = requestJob(accountId, 43L, operationKey);
 
         assertThat(second.jobId()).isEqualTo(first.jobId());
-        long rows = jobMapper.selectCount(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BackgroundJob>()
-                .eq(BackgroundJob::getOperationKey, operationKey));
+        long rows = JobFixtures.countByOperationKey(jobMapper, operationKey);
         assertThat(rows).isEqualTo(1);
     }
 
     @Test
     void duplicateDeliveryAbsorbsBusinessSideEffects() {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", accountId, 45L, uniqueOperationKey(), "{}"));
+        var ref = requestJob(accountId, 45L);
 
-        ClaimOutcome first = jobs.claim(ref.jobId());
+        var first = jobs.claim(ref.jobId());
         jobs.complete(ref.jobId(), first.attemptNumber());
-        ClaimOutcome replay = jobs.claim(ref.jobId());
+        var replay = jobs.claim(ref.jobId());
 
         assertThat(first.claimed()).isTrue();
         assertThat(replay.claimed()).isFalse();
-        BackgroundJob job = stored(ref.jobId());
-        assertThat(job.getStatus()).isEqualTo(BackgroundJob.SUCCEEDED);
+        var job = stored(ref.jobId());
+        assertThat(job.getStatus()).isEqualTo(JobFixtures.statusSucceeded());
         assertThat(job.getAttemptCount()).isEqualTo(1);
-        assertThat(applicationEvents.stream(BackgroundJobSucceeded.class)
+        assertThat(applicationEvents.stream(JobFixtures.succeededEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
         jobs.complete(ref.jobId(), first.attemptNumber());
-        assertThat(applicationEvents.stream(BackgroundJobSucceeded.class)
+        assertThat(applicationEvents.stream(JobFixtures.succeededEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
 
     @Test
     void boundedRetryReturnsToPendingAndRepublishesUntilExhausted() {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", accountId, 46L, uniqueOperationKey(), "{}"));
+        var ref = requestJob(accountId, 46L);
 
         for (int attempt = 1; attempt <= 3; attempt++) {
-            ClaimOutcome claim = jobs.claim(ref.jobId());
+            var claim = jobs.claim(ref.jobId());
             assertThat(claim.claimed()).isTrue();
-            FailureOutcome outcome = jobs.fail(
+            var outcome = jobs.fail(
                 ref.jobId(), claim.attemptNumber(), new RuntimeException("transient failure"));
             assertThat(outcome).isEqualTo(attempt < 3
-                ? FailureOutcome.RETRY_SCHEDULED
-                : FailureOutcome.TERMINAL_FAILED);
+                ? BackgroundJobOperations.FailureOutcome.RETRY_SCHEDULED
+                : BackgroundJobOperations.FailureOutcome.TERMINAL_FAILED);
         }
 
-        BackgroundJob job = stored(ref.jobId());
+        var job = stored(ref.jobId());
         // Three attempts exhausted the max: terminal FAILED, no further dispatch.
-        assertThat(job.getStatus()).isEqualTo(BackgroundJob.FAILED);
+        assertThat(job.getStatus()).isEqualTo(JobFixtures.statusFailed());
         assertThat(job.getAttemptCount()).isEqualTo(3);
         // Original request + the two bounded retries produced durable publications.
         assertThat(publicationRowsFor(ref.jobId())).isGreaterThanOrEqualTo(3);
-        assertThat(applicationEvents.stream(BackgroundJobFailed.class)
+        assertThat(applicationEvents.stream(JobFixtures.failedEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
         assertThat(jobs.fail(ref.jobId(), 3, new RuntimeException("duplicate terminal failure")))
-            .isEqualTo(FailureOutcome.NOT_RUNNING);
-        assertThat(applicationEvents.stream(BackgroundJobFailed.class)
+            .isEqualTo(BackgroundJobOperations.FailureOutcome.NOT_RUNNING);
+        assertThat(applicationEvents.stream(JobFixtures.failedEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
 
     @Test
     void persistedFailureSummaryRedactsSecretsAtTheJobsBoundary() {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", accountId, 47L, uniqueOperationKey(), "{}"));
-        ClaimOutcome claim = jobs.claim(ref.jobId());
+        var ref = requestJob(accountId, 47L);
+        var claim = jobs.claim(ref.jobId());
         assertThat(claim.claimed()).isTrue();
 
         jobs.fail(ref.jobId(), claim.attemptNumber(), new RuntimeException(
             "Bearer secret-token apiKey=sk-supersecret123 https://user:pass@example.com/v1?token=abc"));
 
-        BackgroundJob job = stored(ref.jobId());
+        var job = stored(ref.jobId());
         assertThat(job.getLastError())
             .contains("Bearer [REDACTED]")
             .contains("apiKey=[REDACTED]")
@@ -184,63 +169,55 @@ class BackgroundJobLifecycleTest {
     void crossAccountJobAccessIsNotFoundEquivalent() {
         long owner = createAccount();
         long other = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", owner, 48L, uniqueOperationKey(), "{}"));
+        var ref = requestJob(owner, 48L);
 
-        assertThatThrownBy(() -> jobs.view(ref.jobId(), other))
-            .isInstanceOf(com.prelude.BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
-        assertThatThrownBy(() -> jobs.cancel(ref.jobId(), other))
-            .isInstanceOf(com.prelude.BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
+        ExceptionFixtures.assertBusinessException(() -> jobs.view(ref.jobId(), other), "not_found");
+        ExceptionFixtures.assertBusinessException(() -> jobs.cancel(ref.jobId(), other), "not_found");
     }
 
     @Test
     void staleRunningRecoveryInterruptsTheAttemptAndRedispatches() {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", accountId, 49L, uniqueOperationKey(), "{}"));
-        ClaimOutcome claim = jobs.claim(ref.jobId());
+        var ref = requestJob(accountId, 49L);
+        var claim = jobs.claim(ref.jobId());
         assertThat(claim.claimed()).isTrue();
 
-        BackgroundJob running = stored(ref.jobId());
+        var running = stored(ref.jobId());
         running.setLeaseExpiresAt(java.time.LocalDateTime.now().minusMinutes(1));
         jobMapper.updateById(running);
 
         recoveryService.recover(ref.jobId(), java.time.LocalDateTime.now());
 
-        BackgroundJob recovered = stored(ref.jobId());
+        var recovered = stored(ref.jobId());
         // The interrupted attempt was closed and the job redispatched via the
         // same reliable event path (a fresh durable publication exists).
-        assertThat(recovered.getStatus()).isEqualTo(BackgroundJob.PENDING);
+        assertThat(recovered.getStatus()).isEqualTo(JobFixtures.statusPending());
         assertThat(publicationRowsFor(ref.jobId())).isGreaterThanOrEqualTo(2);
-        BackgroundJobView view = jobs.view(ref.jobId(), accountId);
+        var view = jobs.view(ref.jobId(), accountId);
         assertThat(view.attemptCount()).isEqualTo(1);
     }
 
     @Test
     void cancellationReturnsAndPublishesTheAuthoritativeTerminalState() {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", accountId, 50L, uniqueOperationKey(), "{}"));
+        var ref = requestJob(accountId, 50L);
 
-        BackgroundJobView cancelled = jobs.cancel(ref.jobId(), accountId);
+        var cancelled = jobs.cancel(ref.jobId(), accountId);
 
-        assertThat(cancelled.status()).isEqualTo(BackgroundJob.CANCELLED);
-        assertThat(applicationEvents.stream(BackgroundJobCancelled.class)
+        assertThat(cancelled.status()).isEqualTo(JobFixtures.statusCancelled());
+        assertThat(applicationEvents.stream(JobFixtures.cancelledEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
-        assertThat(jobs.cancel(ref.jobId(), accountId).status()).isEqualTo(BackgroundJob.CANCELLED);
-        assertThat(applicationEvents.stream(BackgroundJobCancelled.class)
+        assertThat(jobs.cancel(ref.jobId(), accountId).status()).isEqualTo(JobFixtures.statusCancelled());
+        assertThat(applicationEvents.stream(JobFixtures.cancelledEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
 
     @Test
     void expiredFinalLeasePublishesTheSameTerminalFailureEventAsWorkerFailure() {
         long accountId = createAccount();
-        BackgroundJobRef ref = jobs.request(new BackgroundJobRequest(
-            "test.lifecycle", accountId, 51L, uniqueOperationKey(), "{}"));
-        ClaimOutcome claim = jobs.claim(ref.jobId());
-        BackgroundJob running = stored(ref.jobId());
+        var ref = requestJob(accountId, 51L);
+        var claim = jobs.claim(ref.jobId());
+        var running = stored(ref.jobId());
         running.setMaxAttempts(claim.attemptNumber());
         running.setLeaseExpiresAt(java.time.LocalDateTime.now().minusSeconds(1));
         jobMapper.updateById(running);
@@ -248,8 +225,8 @@ class BackgroundJobLifecycleTest {
         assertThat(recoveryService.recover(ref.jobId(), java.time.LocalDateTime.now()))
             .isEqualTo(BackgroundJobRecoveryService.RecoveryOutcome.TERMINAL_FAILED);
 
-        assertThat(stored(ref.jobId()).getStatus()).isEqualTo(BackgroundJob.FAILED);
-        assertThat(applicationEvents.stream(BackgroundJobFailed.class)
+        assertThat(stored(ref.jobId()).getStatus()).isEqualTo(JobFixtures.statusFailed());
+        assertThat(applicationEvents.stream(JobFixtures.failedEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }
 }

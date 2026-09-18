@@ -101,8 +101,7 @@
         "motion-transition-color",
         "motion-transition-surface",
         "motion-transition-opacity",
-        "motion-transition-transform",
-        "animate-duration-base"
+        "motion-transition-transform"
       ]
     },
     "font": {
@@ -238,7 +237,6 @@
         "input",
         "ring",
         "ease-standard",
-        "animate-duration-base",
         "color-background",
         "color-foreground",
         "color-card",

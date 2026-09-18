@@ -90,7 +90,7 @@ export function LoginPage() {
               </h1>
             </header>
 
-            <div className="segmented-control" role="group" aria-label="账号操作">
+            <div className="prelude-segmented-control" role="group" aria-label="账号操作">
               <button
                 className={cn(mode === 'login' && 'is-active')}
                 type="button"
@@ -165,7 +165,7 @@ export function LoginPage() {
               </div>
 
               <div className="login-card__actions">
-                <Button type="submit" className="login-card__submit" loading={busy}>
+                <Button type="submit" className="w-full" loading={busy}>
                   {mode === 'login' ? '登录' : '完成注册'}
                 </Button>
               </div>

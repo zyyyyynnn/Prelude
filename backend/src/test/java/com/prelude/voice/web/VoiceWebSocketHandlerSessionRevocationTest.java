@@ -1,13 +1,12 @@
 package com.prelude.voice.web;
 
 import com.prelude.identity.api.SessionValidity;
+import com.prelude.test.SessionFixtures;
 import com.prelude.voice.application.VoiceInterviewTurnService;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import tools.jackson.databind.ObjectMapper;
-
-import java.io.ByteArrayOutputStream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -57,7 +56,7 @@ class VoiceWebSocketHandlerSessionRevocationTest {
         when(socket.getId()).thenReturn("conn-1");
         when(socket.isOpen()).thenReturn(true);
         when(turnService.validateActiveSession(7L, 51L))
-            .thenReturn(new com.prelude.interview.domain.InterviewSession());
+            .thenReturn(SessionFixtures.create(51L));
 
         handler.handleTextMessage(socket,
             new TextMessage(objectMapper.writeValueAsString(java.util.Map.of("type", "start", "sessionId", 51))));

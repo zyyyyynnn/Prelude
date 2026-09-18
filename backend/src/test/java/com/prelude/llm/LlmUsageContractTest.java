@@ -1,9 +1,8 @@
 package com.prelude.llm;
 
-import com.prelude.LlmServerException;
 import com.prelude.llm.api.LlmPort;
-import com.prelude.llm.api.LlmUsageRecorded;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.LlmFixtures;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -35,11 +34,11 @@ class LlmUsageContractTest {
     @Test
     void successfulCompletionEmitsOneAuthoritativeUsageEvent() {
         AtomicInteger events = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> captured = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> captured = new AtomicReference<>();
         ApplicationEventPublisher publisher = event -> {
-            if (event instanceof LlmUsageRecorded usage) {
+            if (LlmFixtures.isUsageRecorded(event)) {
                 events.incrementAndGet();
-                captured.set(usage);
+                captured.set(LlmFixtures.asUsageRecord(event));
             }
         };
         ModelExecutionService service = service(
@@ -70,7 +69,7 @@ class LlmUsageContractTest {
         ModelExecutionService service = service(
             prompt -> response("ok", new EmptyUsage()),
             event -> {
-                if (event instanceof LlmUsageRecorded) {
+                if (LlmFixtures.isUsageRecorded(event)) {
                     events.incrementAndGet();
                 }
             });
@@ -87,13 +86,13 @@ class LlmUsageContractTest {
     @Test
     void authoritativeZeroTokenUsageStillEmitsOneUsageEvent() {
         AtomicInteger events = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> captured = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> captured = new AtomicReference<>();
         ModelExecutionService service = service(
             prompt -> response("ok", new DefaultUsage(0, 0, 0)),
             event -> {
-                if (event instanceof LlmUsageRecorded usage) {
+                if (LlmFixtures.isUsageRecorded(event)) {
                     events.incrementAndGet();
-                    captured.set(usage);
+                    captured.set(LlmFixtures.asUsageRecord(event));
                 }
             });
 
@@ -109,7 +108,7 @@ class LlmUsageContractTest {
     @Test
     void successfulStreamEmitsUsageOnlyAfterTerminalProviderMetadataArrives() {
         AtomicInteger events = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> captured = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> captured = new AtomicReference<>();
         ChatModel model = new ChatModel() {
             @Override
             public ChatResponse call(Prompt prompt) {
@@ -122,9 +121,9 @@ class LlmUsageContractTest {
             }
         };
         ModelExecutionService service = service(model, event -> {
-            if (event instanceof LlmUsageRecorded usage) {
+            if (LlmFixtures.isUsageRecorded(event)) {
                 events.incrementAndGet();
-                captured.set(usage);
+                captured.set(LlmFixtures.asUsageRecord(event));
             }
         });
         StringBuilder output = new StringBuilder();
@@ -141,7 +140,7 @@ class LlmUsageContractTest {
     @Test
     void failedStreamStillEmitsUsageThatArrivedBeforeTheFailure() {
         AtomicInteger events = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> captured = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> captured = new AtomicReference<>();
         ChatModel model = new ChatModel() {
             @Override
             public ChatResponse call(Prompt prompt) {
@@ -156,15 +155,14 @@ class LlmUsageContractTest {
             }
         };
         ModelExecutionService service = service(model, event -> {
-            if (event instanceof LlmUsageRecorded usage) {
+            if (LlmFixtures.isUsageRecorded(event)) {
                 events.incrementAndGet();
-                captured.set(usage);
+                captured.set(LlmFixtures.asUsageRecord(event));
             }
         });
         StringBuilder output = new StringBuilder();
 
-        assertThatThrownBy(() -> service.stream(request(), output::append))
-            .isInstanceOf(LlmServerException.class);
+        ExceptionFixtures.assertLlmServerException(() -> service.stream(request(), output::append));
 
         assertThat(output).hasToString("partial");
         assertThat(events).hasValue(1);
@@ -190,14 +188,13 @@ class LlmUsageContractTest {
             }
         };
         ModelExecutionService service = service(model, event -> {
-            if (event instanceof LlmUsageRecorded) {
+            if (LlmFixtures.isUsageRecorded(event)) {
                 events.incrementAndGet();
             }
         });
         StringBuilder output = new StringBuilder();
 
-        assertThatThrownBy(() -> service.stream(request(), output::append))
-            .isInstanceOf(LlmServerException.class);
+        ExceptionFixtures.assertLlmServerException(() -> service.stream(request(), output::append));
 
         assertThat(output).hasToString("partial");
         assertThat(events).hasValue(0);
@@ -225,13 +222,12 @@ class LlmUsageContractTest {
                 throw new TransientAiException("provider unavailable");
             },
             event -> {
-                if (event instanceof LlmUsageRecorded) {
+                if (LlmFixtures.isUsageRecorded(event)) {
                     events.incrementAndGet();
                 }
             });
 
-        assertThatThrownBy(() -> service.complete(request()))
-            .isInstanceOf(LlmServerException.class);
+        ExceptionFixtures.assertLlmServerException(() -> service.complete(request()));
         assertThat(events).hasValue(0);
     }
 
@@ -240,8 +236,8 @@ class LlmUsageContractTest {
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
         ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
-        ModelExecutionSnapshot snapshot = snapshot();
-        when(snapshotService.require(1L)).thenReturn(snapshot);
+        when(snapshotService.require(1L)).thenReturn(
+            LlmFixtures.snapshotWithDefaults(1L, 7L, 9L, "deepseek", "deepseek-v4-pro", "AUTO", 4096));
         when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         when(factory.chatModel(any(), nullable(String.class))).thenReturn(model);
         when(factory.requestOptions(any(), any())).thenReturn(
@@ -254,32 +250,8 @@ class LlmUsageContractTest {
     }
 
     private LlmPort.ModelExecutionRequest request() {
-        return new LlmPort.ModelExecutionRequest(
-            1L,
-            "usage-contract",
-            "usage.contract",
-            LlmPort.ResponseMode.PLAIN_TEXT,
-            List.of(new LlmPort.Message("user", "hello")),
-            List.of(),
-            List.of()
-        );
-    }
-
-    private ModelExecutionSnapshot snapshot() {
-        ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
-        snapshot.setId(1L);
-        snapshot.setAccountId(7L);
-        snapshot.setProfileId(9L);
-        snapshot.setProvider("deepseek");
-        snapshot.setModel("deepseek-v4-pro");
-        snapshot.setReasoningLevel("AUTO");
-        snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
-        snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
-        ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
-        snapshot.setModelCapabilityJson(capabilityJson.write(
-            new ModelCapabilityCatalog().capability("deepseek", "deepseek-v4-pro")));
-        snapshot.setFallbackCapabilitiesJson("[]");
-        return snapshot;
+        return LlmFixtures.executionRequest(
+            1L, "usage-contract", "usage.contract", LlmFixtures.responseModePlainText(), "hello");
     }
 
     private ChatResponse response(String content, int inputTokens, int outputTokens) {

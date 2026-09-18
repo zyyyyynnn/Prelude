@@ -2,20 +2,17 @@ package com.prelude.jobs;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
-import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
-import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
 import com.prelude.jobs.persistence.BackgroundJob;
 import com.prelude.jobs.persistence.BackgroundJobMapper;
-import com.prelude.jobs.persistence.JobAttempt;
 import com.prelude.jobs.persistence.JobAttemptMapper;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.JobFixtures;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,7 +41,7 @@ class BackgroundJobConcurrencyTest {
     private BackgroundJobRecoveryService recoveryService;
 
     @Autowired
-    private com.prelude.identity.AccountMapper accountMapper;
+    private JdbcTemplate jdbcTemplate;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
@@ -56,15 +53,15 @@ class BackgroundJobConcurrencyTest {
     @Test
     void concurrentClaimsHaveExactlyOneWinner() throws Exception {
         long accountId = createAccount();
-        BackgroundJobRef ref = request(accountId, 201L);
+        var ref = request(accountId, 201L);
         CyclicBarrier start = new CyclicBarrier(2);
 
-        List<Future<ClaimOutcome>> futures = List.of(
+        List<Future<BackgroundJobOperations.ClaimOutcome>> futures = List.of(
             executor.submit(raced(start, () -> jobs.claim(ref.jobId()))),
             executor.submit(raced(start, () -> jobs.claim(ref.jobId())))
         );
 
-        long winners = futures.stream().map(this::get).filter(ClaimOutcome::claimed).count();
+        long winners = futures.stream().map(this::get).filter(BackgroundJobOperations.ClaimOutcome::claimed).count();
         assertThat(winners).isEqualTo(1);
         assertThat(stored(ref.jobId()).getAttemptCount()).isEqualTo(1);
         assertThat(attempts(ref.jobId())).hasSize(1);
@@ -73,27 +70,27 @@ class BackgroundJobConcurrencyTest {
     @Test
     void cancelAndClaimRaceHasExactlyOneWinner() throws Exception {
         long accountId = createAccount();
-        BackgroundJobRef ref = request(accountId, 202L);
+        var ref = request(accountId, 202L);
         CyclicBarrier start = new CyclicBarrier(2);
 
-        Future<BackgroundJobView> cancel = executor.submit(raced(start, () -> jobs.cancel(ref.jobId(), accountId)));
-        Future<ClaimOutcome> claim = executor.submit(raced(start, () -> jobs.claim(ref.jobId())));
+        Future<BackgroundJobOperations.BackgroundJobView> cancel = executor.submit(raced(start, () -> jobs.cancel(ref.jobId(), accountId)));
+        Future<BackgroundJobOperations.ClaimOutcome> claim = executor.submit(raced(start, () -> jobs.claim(ref.jobId())));
 
-        boolean cancelled = BackgroundJob.CANCELLED.equals(cancel.get().status());
+        boolean cancelled = JobFixtures.statusCancelled().equals(cancel.get().status());
         boolean claimed = claim.get().claimed();
         assertThat(cancelled ^ claimed).isTrue();
         assertThat(stored(ref.jobId()).getStatus()).isEqualTo(cancelled
-            ? BackgroundJob.CANCELLED
-            : BackgroundJob.RUNNING);
+            ? JobFixtures.statusCancelled()
+            : JobFixtures.statusRunning());
     }
 
     @Test
     void completionAndStaleRecoveryCannotBothMutateTheAttempt() throws Exception {
         long accountId = createAccount();
-        BackgroundJobRef ref = request(accountId, 203L);
-        ClaimOutcome claim = jobs.claim(ref.jobId());
+        var ref = request(accountId, 203L);
+        var claim = jobs.claim(ref.jobId());
         assertThat(claim.claimed()).isTrue();
-        BackgroundJob job = stored(ref.jobId());
+        var job = stored(ref.jobId());
         job.setLeaseExpiresAt(LocalDateTime.now().minusMinutes(1));
         jobMapper.updateById(job);
         LocalDateTime now = LocalDateTime.now();
@@ -108,21 +105,21 @@ class BackgroundJobConcurrencyTest {
         complete.get();
         recover.get();
 
-        BackgroundJob finalJob = stored(ref.jobId());
-        JobAttempt attempt = attempts(ref.jobId()).getFirst();
-        if (BackgroundJob.SUCCEEDED.equals(finalJob.getStatus())) {
-            assertThat(attempt.getStatus()).isEqualTo(JobAttempt.SUCCEEDED);
+        var finalJob = stored(ref.jobId());
+        var attempt = attempts(ref.jobId()).getFirst();
+        if (JobFixtures.statusSucceeded().equals(finalJob.getStatus())) {
+            assertThat(JobFixtures.attemptStatus(attempt)).isEqualTo(JobFixtures.statusSucceeded());
         } else {
-            assertThat(finalJob.getStatus()).isEqualTo(BackgroundJob.PENDING);
-            assertThat(attempt.getStatus()).isEqualTo(JobAttempt.INTERRUPTED);
+            assertThat(finalJob.getStatus()).isEqualTo(JobFixtures.statusPending());
+            assertThat(JobFixtures.attemptStatus(attempt)).isEqualTo(JobFixtures.statusInterrupted());
         }
     }
 
     @Test
     void staleAttemptCannotCompleteFailOrRenewTheReplacementAttempt() {
         long accountId = createAccount();
-        BackgroundJobRef ref = request(accountId, 204L);
-        ClaimOutcome first = jobs.claim(ref.jobId());
+        var ref = request(accountId, 204L);
+        var first = jobs.claim(ref.jobId());
         assertThat(first.claimed()).isTrue();
 
         BackgroundJob running = stored(ref.jobId());
@@ -131,47 +128,47 @@ class BackgroundJobConcurrencyTest {
         assertThat(recoveryService.recover(ref.jobId(), LocalDateTime.now()))
             .isEqualTo(BackgroundJobRecoveryService.RecoveryOutcome.RETRY_SCHEDULED);
 
-        ClaimOutcome second = jobs.claim(ref.jobId());
+        var second = jobs.claim(ref.jobId());
         assertThat(second.claimed()).isTrue();
         assertThat(second.attemptNumber()).isEqualTo(first.attemptNumber() + 1);
 
         jobs.complete(ref.jobId(), first.attemptNumber());
         assertThat(jobs.fail(ref.jobId(), first.attemptNumber(), new RuntimeException("late worker")))
-            .isEqualTo(FailureOutcome.NOT_RUNNING);
+            .isEqualTo(BackgroundJobOperations.FailureOutcome.NOT_RUNNING);
         assertThat(jobs.renewLease(ref.jobId(), first.attemptNumber())).isFalse();
 
         BackgroundJob stillSecondAttempt = stored(ref.jobId());
-        assertThat(stillSecondAttempt.getStatus()).isEqualTo(BackgroundJob.RUNNING);
+        assertThat(stillSecondAttempt.getStatus()).isEqualTo(JobFixtures.statusRunning());
         assertThat(stillSecondAttempt.getAttemptCount()).isEqualTo(second.attemptNumber());
         assertThat(jobs.renewLease(ref.jobId(), second.attemptNumber())).isTrue();
 
         jobs.complete(ref.jobId(), second.attemptNumber());
         BackgroundJob completed = stored(ref.jobId());
-        assertThat(completed.getStatus()).isEqualTo(BackgroundJob.SUCCEEDED);
-        assertThat(attempts(ref.jobId())).extracting(JobAttempt::getStatus)
-            .containsExactly(JobAttempt.INTERRUPTED, JobAttempt.SUCCEEDED);
+        assertThat(completed.getStatus()).isEqualTo(JobFixtures.statusSucceeded());
+        assertThat(JobFixtures.attemptStatuses(attemptMapper, ref.jobId()))
+            .containsExactly(JobFixtures.statusInterrupted(), JobFixtures.statusSucceeded());
     }
 
     @Test
     void renewedLeaseIsNotRecoveredWhileAnExpiredLeaseIs() {
         long accountId = createAccount();
-        BackgroundJobRef activeRef = request(accountId, 205L);
-        ClaimOutcome active = jobs.claim(activeRef.jobId());
+        var activeRef = request(accountId, 205L);
+        var active = jobs.claim(activeRef.jobId());
         assertThat(jobs.renewLease(activeRef.jobId(), active.attemptNumber())).isTrue();
         assertThat(recoveryService.recover(activeRef.jobId(), LocalDateTime.now()))
             .isEqualTo(BackgroundJobRecoveryService.RecoveryOutcome.NOT_STALE);
-        assertThat(stored(activeRef.jobId()).getStatus()).isEqualTo(BackgroundJob.RUNNING);
+        assertThat(stored(activeRef.jobId()).getStatus()).isEqualTo(JobFixtures.statusRunning());
 
-        BackgroundJobRef expiredRef = request(accountId, 206L);
-        ClaimOutcome expired = jobs.claim(expiredRef.jobId());
+        var expiredRef = request(accountId, 206L);
+        var expired = jobs.claim(expiredRef.jobId());
         BackgroundJob expiredJob = stored(expiredRef.jobId());
         expiredJob.setLeaseExpiresAt(LocalDateTime.now().minusSeconds(1));
         jobMapper.updateById(expiredJob);
 
         assertThat(recoveryService.recover(expiredRef.jobId(), LocalDateTime.now()))
             .isEqualTo(BackgroundJobRecoveryService.RecoveryOutcome.RETRY_SCHEDULED);
-        assertThat(stored(expiredRef.jobId()).getStatus()).isEqualTo(BackgroundJob.PENDING);
-        assertThat(attempts(expiredRef.jobId()).getFirst().getStatus()).isEqualTo(JobAttempt.INTERRUPTED);
+        assertThat(stored(expiredRef.jobId()).getStatus()).isEqualTo(JobFixtures.statusPending());
+        assertThat(JobFixtures.attemptStatus(attempts(expiredRef.jobId()).getFirst())).isEqualTo(JobFixtures.statusInterrupted());
         assertThat(expired.attemptNumber()).isEqualTo(1);
     }
 
@@ -190,8 +187,8 @@ class BackgroundJobConcurrencyTest {
         }
     }
 
-    private BackgroundJobRef request(long accountId, long subjectId) {
-        return jobs.request(new BackgroundJobRequest(
+    private BackgroundJobOperations.BackgroundJobRef request(long accountId, long subjectId) {
+        return jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
             "test.concurrent", accountId, subjectId,
             "test.concurrent:operation:" + System.nanoTime(), "{}"));
     }
@@ -202,17 +199,11 @@ class BackgroundJobConcurrencyTest {
             .last("LIMIT 1"));
     }
 
-    private List<JobAttempt> attempts(String jobId) {
-        return attemptMapper.selectList(new LambdaQueryWrapper<JobAttempt>()
-            .eq(JobAttempt::getJobId, jobId)
-            .orderByAsc(JobAttempt::getAttemptNumber));
+    private List<?> attempts(String jobId) {
+        return JobFixtures.attempts(attemptMapper, jobId);
     }
 
     private long createAccount() {
-        com.prelude.identity.Account account = new com.prelude.identity.Account();
-        account.setUsername("jobs-race-" + System.nanoTime());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        return AccountFixtures.create(jdbcTemplate, "jobs-race");
     }
 }

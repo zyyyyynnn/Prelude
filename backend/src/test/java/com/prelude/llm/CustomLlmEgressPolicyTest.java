@@ -1,6 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.BusinessException;
+import com.prelude.test.ExceptionFixtures;
 import okhttp3.Dns;
 import org.junit.jupiter.api.Test;
 
@@ -24,9 +24,9 @@ class CustomLlmEgressPolicyTest {
             privateDns
         );
 
-        assertThatThrownBy(() -> policy.validateConfiguredEndpoint("https://models.example.com"))
-            .isInstanceOf(BusinessException.class)
-            .hasMessage("Base URL 域名无法解析或解析结果不安全");
+        ExceptionFixtures.assertBusinessExceptionMessage(
+            () -> policy.validateConfiguredEndpoint("https://models.example.com"),
+            "Base URL 域名无法解析或解析结果不安全");
     }
 
     @Test

@@ -45,7 +45,7 @@ const router = createBrowserRouter([
             import('./shell/AppShell'),
             import('@/features/settings/SettingsModal'),
             import('@/features/resume/ResumeManagementPanel'),
-            import('@/features/template/PositionManagementPanel'),
+            import('@/features/position/PositionManagementPanel'),
           ])
           return {
             Component: () => (

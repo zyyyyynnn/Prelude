@@ -1,9 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.llm.api.LlmPort;
-import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.persistence.ModelProfileMapper;
-import com.prelude.llm.persistence.ProviderCredentialMapper;
+import com.prelude.test.LlmFixtures;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import okhttp3.Dns;
@@ -85,10 +82,10 @@ class CustomModelDiscoveryTest {
         CustomModelCapabilityDiscovery capabilityDiscovery = new CustomModelCapabilityDiscovery(
             catalog, policy, httpClientFactory, objectMapper);
         ModelProfileService service = new ModelProfileService(
-            mock(ProviderCredentialMapper.class),
-            mock(ModelProfileMapper.class),
+            LlmFixtures.mockCredentialMapper(),
+            LlmFixtures.mockProfileMapper(),
             mock(ProviderSecretCipher.class),
-            new ProviderCredentialResolver(mock(ProviderCredentialMapper.class), mock(ProviderSecretCipher.class)),
+            new ProviderCredentialResolver(LlmFixtures.mockCredentialMapper(), mock(ProviderSecretCipher.class)),
             catalog,
             new ReasoningLevels(),
             capabilityDiscovery,
@@ -100,9 +97,9 @@ class CustomModelDiscoveryTest {
         );
         String configuredUrl = "http://127.0.0.1:" + port + configuredPath;
 
-        LlmPort.DiscoveredModelsView result = service.discoverCustomModels(
+        var result = service.discoverCustomModels(
             7L,
-            new LlmPort.DiscoverModelsCommand(protocol.providerKey(), configuredUrl, "account-key")
+            LlmFixtures.discoverModelsCommand(protocol.providerKey(), configuredUrl, "account-key")
         );
 
         String expectedRoot = "http://127.0.0.1:" + port
@@ -116,7 +113,7 @@ class CustomModelDiscoveryTest {
             assertThat(model.toolCalling()).isFalse();
             assertThat(model.reasoning()).isFalse();
             assertThat(model.supportedReasoningLevels())
-                .containsExactly(ModelCapabilityResponse.ReasoningLevel.AUTO);
+                .containsExactly(LlmFixtures.reasoningAuto());
         });
         return observed.get();
     }

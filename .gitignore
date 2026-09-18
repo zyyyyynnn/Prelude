@@ -60,3 +60,4 @@ target/
 # Root-local depth-analysis tooling (sentrux counts .py sources; keep
 # these one-off scripts untracked so they stay out of quality scans).
 /scripts/
+build/

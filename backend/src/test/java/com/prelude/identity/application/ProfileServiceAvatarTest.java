@@ -1,18 +1,17 @@
 package com.prelude.identity.application;
 
-import com.prelude.BusinessException;
 import com.prelude.identity.Account;
 import com.prelude.identity.AccountMapper;
 import com.prelude.identity.api.AvatarStoragePort;
-import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.UserProfileResponse;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,7 +32,7 @@ class ProfileServiceAvatarTest {
     private final ProfileService profileService = new ProfileService(
         accountMapper,
         mock(PasswordEncoder.class),
-        currentAccount(7L),
+        AccountFixtures.current(7L),
         avatarStoragePort,
         avatarPublication
     );
@@ -52,12 +51,10 @@ class ProfileServiceAvatarTest {
 
     @Test
     void conflictRollsBackThePublicationDiscardsOnlyTheCandidateAndKeepsTheOldReference() {
-        doThrow(BusinessException.revisionConflict("资料已被其他操作更新，请刷新后重试"))
+        doThrow(ExceptionFixtures.revisionConflict("资料已被其他操作更新，请刷新后重试"))
             .when(avatarPublication).publish(eq(CANDIDATE_AVATAR), eq(7L), any(), any(), any(), any(), eq(5L));
 
-        assertThatThrownBy(() -> profileService.updateAvatar(avatarFile()))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "revision_conflict");
+        ExceptionFixtures.assertBusinessException(() -> profileService.updateAvatar(avatarFile()), "revision_conflict");
 
         verify(avatarStoragePort).discard(7L, CANDIDATE_AVATAR);
         verify(avatarStoragePort, never()).discard(7L, OLD_AVATAR);
@@ -95,12 +92,6 @@ class ProfileServiceAvatarTest {
         UserProfileResponse response = profileService.updateAvatar(avatarFile());
 
         assertThat(response.avatarUrl()).isEqualTo(CANDIDATE_AVATAR);
-    }
-
-    private CurrentAccount currentAccount(long accountId) {
-        CurrentAccount currentAccount = mock(CurrentAccount.class);
-        org.mockito.Mockito.when(currentAccount.requireId()).thenReturn(accountId);
-        return currentAccount;
     }
 
     private MockMultipartFile avatarFile() {

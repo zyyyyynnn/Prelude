@@ -1,10 +1,10 @@
 package com.prelude.artifact.application;
 
-import com.prelude.BusinessException;
 import com.prelude.artifact.api.ArtifactCommandApi;
 import com.prelude.artifact.api.ArtifactQueryApi;
 import com.prelude.artifact.api.ArtifactVersionRef;
-import com.prelude.artifact.domain.ArtifactVersion;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,6 @@ import java.sql.Statement;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Artifact publication: versioned, immutable, account-owned, asset-validated.
@@ -58,7 +57,7 @@ class ArtifactPublishServiceTest {
         assertThat(versions.get(0).versionNumber()).isEqualTo(1);
         assertThat(versions.get(0).asset().assetId()).isEqualTo(assetId);
 
-        ArtifactVersion storedFirst = artifactVersionMapper.selectById(first.versionId());
+        var storedFirst = artifactVersionMapper.selectById(first.versionId());
         assertThat(storedFirst.getVersionNumber()).isEqualTo(1);
         assertThat(storedFirst.getProvenanceJson()).isEqualTo("{\"rev\":1}");
     }
@@ -69,28 +68,15 @@ class ArtifactPublishServiceTest {
         long other = createAccount();
         long assetId = createReadyAsset(owner);
 
-        assertThatThrownBy(() -> artifactPublishService.publishVersion(
-            new ArtifactCommandApi.PublishVersionCommand(other, "interview-report", assetId, null)))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
+        ExceptionFixtures.assertBusinessException(() -> artifactPublishService.publishVersion(
+            new ArtifactCommandApi.PublishVersionCommand(other, "interview-report", assetId, null)), "not_found");
 
-        assertThatThrownBy(() -> artifactPublishService.publishVersion(
-            new ArtifactCommandApi.PublishVersionCommand(owner, "interview-report", 999_999L, null)))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
+        ExceptionFixtures.assertBusinessException(() -> artifactPublishService.publishVersion(
+            new ArtifactCommandApi.PublishVersionCommand(owner, "interview-report", 999_999L, null)), "not_found");
     }
 
     private long createAccount() {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(con -> {
-            PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO user_account (username, revision) VALUES (?, 0)",
-                Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, "artifact-" + UUID.randomUUID());
-            return ps;
-        }, keyHolder);
-        Number key = keyHolder.getKey();
-        return key == null ? 0L : key.longValue();
+        return AccountFixtures.create(jdbcTemplate, "artifact");
     }
 
     private long createReadyAsset(long accountId) {

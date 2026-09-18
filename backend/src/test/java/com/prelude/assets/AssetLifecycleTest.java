@@ -1,25 +1,17 @@
 package com.prelude.assets;
 
-import com.prelude.BusinessException;
-import com.prelude.assets.domain.AssetStatus;
 import com.prelude.assets.persistence.Asset;
 import com.prelude.assets.persistence.AssetMapper;
-import com.prelude.identity.AccountPrincipal;
-import com.prelude.identity.api.UserProfileResponse;
 import com.prelude.identity.application.ProfileService;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.AssetFixtures;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-
-import java.sql.PreparedStatement;
-import java.sql.Statement;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -96,7 +88,7 @@ class AssetLifecycleTest {
             "notes.txt", "text/plain", "attachment body".getBytes(StandardCharsets.UTF_8));
 
         Asset asset = assetMapper.selectById(snapshot.assetId());
-        assertThat(asset.getStatus()).isEqualTo(AssetStatus.READY);
+        assertThat(asset.getStatus()).isEqualTo(AssetFixtures.statusReady());
         assertThat(new String(objectStoragePort.get(asset.getObjectKey()), StandardCharsets.UTF_8))
             .isEqualTo("attachment body");
 
@@ -126,9 +118,9 @@ class AssetLifecycleTest {
         assertThat(content).isEqualTo(pngBytes);
 
         long other = createAccount("asset-image-other");
-        assertThatThrownBy(() -> attachmentService.readOwnedContent(other, bound.get(0).assetRef()))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
+        ExceptionFixtures.assertBusinessException(
+            () -> attachmentService.readOwnedContent(other, bound.get(0).assetRef()),
+            "not_found");
     }
 
     @Test
@@ -142,13 +134,13 @@ class AssetLifecycleTest {
         MockMultipartFile secondUpload =
             new MockMultipartFile("file", "me-2.png", "image/png", png);
 
-        UserProfileResponse first = profileService.updateAvatar(firstUpload);
+        var first = profileService.updateAvatar(firstUpload);
         assertThat(first.avatarUrl()).startsWith("/api/assets/");
         assertThat(first.avatarUrl()).endsWith("/content");
         long firstAssetId = assetIdFromUrl(first.avatarUrl());
         assertThat(assetMapper.selectById(firstAssetId)).isNotNull();
 
-        UserProfileResponse second = profileService.updateAvatar(secondUpload);
+        var second = profileService.updateAvatar(secondUpload);
         long secondAssetId = assetIdFromUrl(second.avatarUrl());
         assertThat(secondAssetId).isNotEqualTo(firstAssetId);
         assertThat(assetMapper.selectById(secondAssetId)).isNotNull();
@@ -168,9 +160,9 @@ class AssetLifecycleTest {
         AttachmentServiceSnapshot snapshot = uploadSnapshot(owner,
             "secret.txt", "text/plain", "private".getBytes(StandardCharsets.UTF_8));
 
-        assertThatThrownBy(() -> assetService.requireOwnedReady(other, snapshot.assetId()))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
+        ExceptionFixtures.assertBusinessException(
+            () -> assetService.requireOwnedReady(other, snapshot.assetId()),
+            "not_found");
         assertThat(assetService.requireOwnedReady(owner, snapshot.assetId())).isNotNull();
     }
 
@@ -182,7 +174,7 @@ class AssetLifecycleTest {
             "orphan.txt", "text/plain", "orphan".getBytes(StandardCharsets.UTF_8));
 
         Asset asset = assetMapper.selectById(snapshot.assetId());
-        asset.setStatus(AssetStatus.PENDING_UPLOAD);
+        asset.setStatus(AssetFixtures.statusPendingUpload());
         asset.setCreatedAt(LocalDateTime.now().minusHours(48));
         assetMapper.updateById(asset);
 
@@ -194,22 +186,11 @@ class AssetLifecycleTest {
     }
 
     private long createAccount(String prefix) {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(con -> {
-            PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO user_account (username, revision) VALUES (?, 0)",
-                Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, prefix + "-" + UUID.randomUUID());
-            return ps;
-        }, keyHolder);
-        Number key = keyHolder.getKey();
-        return key == null ? 0L : key.longValue();
+        return AccountFixtures.create(jdbcTemplate, prefix);
     }
 
     private void authenticate(long accountId) {
-        AccountPrincipal principal = new AccountPrincipal(accountId, "tester");
-        SecurityContextHolder.getContext().setAuthentication(
-            UsernamePasswordAuthenticationToken.authenticated(principal, null, List.of()));
+        AccountFixtures.authenticate(accountId);
     }
 
     private AttachmentServiceSnapshot uploadSnapshot(long accountId, String name, String mediaType, byte[] bytes) {

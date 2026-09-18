@@ -18,7 +18,7 @@ import { useAuth } from '@/features/auth'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
 import { Field, Input } from '@/shared/ui/field'
-import { IconTooltip, Modal } from '@/shared/ui/overlay'
+import { Dialog, IconTooltip } from '@/shared/ui/overlay'
 import { Select } from '@/shared/ui/select'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { formText } from '@/shared/lib/form-data'
@@ -45,6 +45,7 @@ import {
   type LlmConfigResponse,
   type ModelCapabilityResponse,
   type LlmProviderResponse,
+  type ReasoningLevel,
   type ThemePreference,
 } from './types'
 import {
@@ -237,6 +238,63 @@ function LlmSettingsForm({
   )
 }
 
+/** Providers publish their model catalog; the saved capability is the fallback for custom endpoints. */
+function providerModels(
+  providers: LlmProviderResponse[],
+  providerKey: string,
+  fallback: ModelCapabilityResponse[],
+) {
+  const provider = providers.find((item) => item.providerKey === providerKey)
+  return provider?.models.length ? provider.models : fallback
+}
+
+/** First blocking draft error, or null when the draft can be saved. */
+function llmDraftError({
+  provider,
+  model,
+  custom,
+  customEndpointUrl,
+  reasoningLevel,
+  capability,
+}: {
+  provider: string
+  model: string
+  custom: boolean
+  customEndpointUrl?: string | null
+  reasoningLevel?: ReasoningLevel | null
+  capability?: ModelCapabilityResponse
+}) {
+  if (!provider || !model.trim()) return '请选择接入方式并填写模型'
+  if (custom && !customEndpointUrl) return '请填写 Base URL'
+  const level = reasoningLevel ?? 'AUTO'
+  if (capability && !capability.supportedReasoningLevels.includes(level))
+    return '当前思考深度与所选模型不兼容，请显式选择该模型支持的思考深度'
+  if (!capability && level !== 'AUTO') return '所选模型能力尚未确认，不能沿用当前思考深度'
+  return null
+}
+
+function buildLlmPayload(draft: LlmConfigPayload, custom: boolean): LlmConfigPayload {
+  return {
+    ...draft,
+    customEndpointUrl: custom
+      ? normalizeCustomBaseUrl(draft.customEndpointUrl ?? '', draft.provider)
+      : undefined,
+    apiKey: draft.apiKey?.trim() || undefined,
+    reasoningLevel: draft.reasoningLevel,
+    fallbackModels: draft.fallbackModels ?? [],
+  }
+}
+
+function createProviderDraft(current: LlmConfigPayload, provider: string): LlmConfigPayload {
+  return {
+    ...current,
+    provider,
+    model: '',
+    customEndpointUrl: isCustomProvider(provider) ? '' : undefined,
+    apiKey: undefined,
+  }
+}
+
 function useLlmSettings(config: LlmConfigResponse, providers: LlmProviderResponse[]) {
   const feedback = useFeedback()
   const client = useQueryClient()
@@ -250,11 +308,13 @@ function useLlmSettings(config: LlmConfigResponse, providers: LlmProviderRespons
     maxOutputTokens: config.maxOutputTokens,
     fallbackModels: config.fallbackModels,
   })
-  const [models, setModels] = useState<ModelCapabilityResponse[]>(() => {
-    const provider = providers.find((item) => item.providerKey === config.provider)
-    if (provider?.models.length) return provider.models
-    return config.capability.model === config.model ? [config.capability] : []
-  })
+  const [models, setModels] = useState<ModelCapabilityResponse[]>(() =>
+    providerModels(
+      providers,
+      config.provider,
+      config.capability.model === config.model ? [config.capability] : [],
+    ),
+  )
   const [showKey, setShowKey] = useState(false)
   const [testMessage, setTestMessage] = useState('')
 
@@ -271,18 +331,7 @@ function useLlmSettings(config: LlmConfigResponse, providers: LlmProviderRespons
     setDraft((current) => ({ ...current, [key]: value }))
     setTestMessage('')
   }
-  const payload = useMemo(
-    () => ({
-      ...draft,
-      customEndpointUrl: custom
-        ? normalizeCustomBaseUrl(draft.customEndpointUrl ?? '', draft.provider)
-        : undefined,
-      apiKey: draft.apiKey?.trim() || undefined,
-      reasoningLevel: draft.reasoningLevel,
-      fallbackModels: draft.fallbackModels ?? [],
-    }),
-    [custom, draft],
-  )
+  const payload = useMemo(() => buildLlmPayload(draft, custom), [custom, draft])
 
   const save = useMutation({
     mutationFn: () => saveLlmConfig(payload),
@@ -297,11 +346,7 @@ function useLlmSettings(config: LlmConfigResponse, providers: LlmProviderRespons
         maxOutputTokens: result.maxOutputTokens,
         fallbackModels: result.fallbackModels,
       }))
-      setModels(() => {
-        const provider = providers.find((item) => item.providerKey === result.provider)
-        if (provider?.models.length) return provider.models
-        return [result.capability]
-      })
+      setModels(() => providerModels(providers, result.provider, [result.capability]))
       feedback.notify('LLM 配置已保存', 'success')
     },
     onError: (error) => feedback.notify(error.message, 'error'),
@@ -342,15 +387,9 @@ function useLlmSettings(config: LlmConfigResponse, providers: LlmProviderRespons
     onError: (error) => feedback.notify(error.message, 'error'),
   })
 
-  function selectProvider(provider: string) {
-    const next = providers.find((item) => item.providerKey === provider)
-    setDraft((current) => ({
-      ...current,
-      provider,
-      model: '',
-      customEndpointUrl: isCustomProvider(provider) ? '' : undefined,
-      apiKey: undefined,
-    }))
+  function selectProvider(providerKey: string) {
+    const next = providers.find((item) => item.providerKey === providerKey)
+    setDraft((current) => createProviderDraft(current, providerKey))
     setModels(next?.models ?? [])
     setTestMessage('')
   }
@@ -361,21 +400,16 @@ function useLlmSettings(config: LlmConfigResponse, providers: LlmProviderRespons
     }
   }
   function validate() {
-    if (!draft.provider || !draft.model.trim()) {
-      feedback.notify('请选择接入方式并填写模型', 'error')
-      return false
-    }
-    if (custom && !payload.customEndpointUrl) {
-      feedback.notify('请填写 Base URL', 'error')
-      return false
-    }
-    const level = draft.reasoningLevel ?? 'AUTO'
-    if (selectedCapability && !selectedCapability.supportedReasoningLevels.includes(level)) {
-      feedback.notify('当前思考深度与所选模型不兼容，请显式选择该模型支持的思考深度', 'error')
-      return false
-    }
-    if (!selectedCapability && level !== 'AUTO') {
-      feedback.notify('所选模型能力尚未确认，不能沿用当前思考深度', 'error')
+    const error = llmDraftError({
+      provider: draft.provider,
+      model: draft.model,
+      custom,
+      customEndpointUrl: payload.customEndpointUrl,
+      reasoningLevel: draft.reasoningLevel,
+      capability: selectedCapability,
+    })
+    if (error) {
+      feedback.notify(error, 'error')
       return false
     }
     return true
@@ -732,11 +766,11 @@ export function SettingsModal({
   const auth = useAuth()
   const navigate = useNavigate()
   return (
-    <Modal
+    <Dialog
       open={open}
       onOpenChange={onOpenChange}
       title="全局设置"
-      className="settings-dialog"
+      layout="workspace"
       showClose={false}
     >
       <div className="settings-layout">
@@ -812,7 +846,7 @@ export function SettingsModal({
           </div>
         </main>
       </div>
-    </Modal>
+    </Dialog>
   )
 }
 

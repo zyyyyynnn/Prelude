@@ -7,13 +7,15 @@ export function Button({
   variant = 'primary',
   size = 'default',
   loading = false,
+  pressed,
   children,
   disabled,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-  size?: 'compact' | 'default' | 'icon'
+  size?: 'compact' | 'default' | 'icon' | 'icon-compact' | 'action' | 'hold'
   loading?: boolean
+  pressed?: boolean
 }) {
   return (
     <ButtonPrimitive
@@ -28,9 +30,11 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       data-loading={loading || undefined}
+      data-pressed={pressed || undefined}
+      aria-pressed={pressed}
       {...props}
     >
-      {loading && <span className="button-spinner" aria-hidden="true" />}
+      {loading && <span className="prelude-button__spinner" aria-hidden="true" />}
       <span className="prelude-button__content">{children}</span>
     </ButtonPrimitive>
   )

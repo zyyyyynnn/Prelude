@@ -1,14 +1,13 @@
 package com.prelude.llm;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
+import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -24,10 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ModelProfileConcurrencyTest {
 
     @Autowired
-    private ModelProfileMapper profileMapper;
-
-    @Autowired
-    private com.prelude.identity.AccountMapper accountMapper;
+    private JdbcTemplate jdbcTemplate;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
@@ -48,21 +44,16 @@ class ModelProfileConcurrencyTest {
         );
 
         assertThat(writes.stream().map(this::get).filter(Boolean::booleanValue).count()).isEqualTo(1);
-        List<ModelProfile> stored = profileMapper.selectList(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId));
-        assertThat(stored).hasSize(1);
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM model_profile WHERE account_id = ?", Integer.class, accountId);
+        assertThat(count).isEqualTo(1);
     }
 
     private boolean insertProfile(long accountId, String provider, String model) {
-        ModelProfile profile = new ModelProfile();
-        profile.setAccountId(accountId);
-        profile.setProvider(provider);
-        profile.setModel(model);
-        profile.setReasoningLevel("AUTO");
-        profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
-        profile.setFallbackCapabilitiesJson("[]");
         try {
-            profileMapper.insert(profile);
+            jdbcTemplate.update(
+                "INSERT INTO model_profile (account_id, provider, model, reasoning_level, effective_parameters_json, fallback_capabilities_json, updated_at) VALUES (?, ?, ?, 'AUTO', '{\"maxOutputTokens\":4096}', '[]', NOW())",
+                accountId, provider, model);
             return true;
         } catch (DuplicateKeyException expectedRaceLoser) {
             return false;
@@ -85,10 +76,6 @@ class ModelProfileConcurrencyTest {
     }
 
     private long createAccount() {
-        com.prelude.identity.Account account = new com.prelude.identity.Account();
-        account.setUsername("llm-profile-race-" + System.nanoTime());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        return AccountFixtures.create(jdbcTemplate, "llm-profile-race");
     }
 }

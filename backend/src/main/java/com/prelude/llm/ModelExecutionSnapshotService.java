@@ -80,7 +80,7 @@ public class ModelExecutionSnapshotService {
         return snapshot;
     }
 
-    public FrozenModelConfiguration configurationFor(Long accountId, Long snapshotId) {
+    public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
         ModelExecutionSnapshot snapshot = require(snapshotId);
         if (!accountId.equals(snapshot.getAccountId())) {
             throw new BusinessException(

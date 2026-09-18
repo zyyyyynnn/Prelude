@@ -1,8 +1,8 @@
 package com.prelude.llm;
 
-import com.prelude.LlmServerException;
 import com.prelude.llm.api.LlmPort;
-import com.prelude.llm.api.LlmUsageRecorded;
+import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.LlmFixtures;
 import com.prelude.llm.persistence.ModelExecutionSnapshot;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -54,7 +54,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger modelCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel model = prompt -> {
             int call = modelCalls.incrementAndGet();
             if (call == 1) {
@@ -95,7 +95,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             int call = primaryCalls.incrementAndGet();
             if (call == 1) {
@@ -113,11 +113,10 @@ class SpringAiToolCallingContractTest {
             snapshot, 2, eventPublisher(usageEvent, usageEvents),
             effective -> "deepseek-v4-pro".equals(effective.getModel()) ? primary : fallback);
 
-        assertThatThrownBy(() -> service.complete(request(tool("commit_side_effect", arguments -> {
+        ExceptionFixtures.assertLlmServerException(() -> service.complete(request(tool("commit_side_effect", arguments -> {
             toolCalls.incrementAndGet();
             return "committed";
-        }))))
-            .isInstanceOf(LlmServerException.class);
+        }))));
 
         assertThat(primaryCalls).hasValue(3);
         assertThat(fallbackCalls).hasValue(0);
@@ -135,7 +134,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             primaryCalls.incrementAndGet();
             throw new TransientAiException("primary unavailable");
@@ -169,7 +168,7 @@ class SpringAiToolCallingContractTest {
         AtomicInteger fallbackCalls = new AtomicInteger();
         AtomicInteger toolCalls = new AtomicInteger();
         AtomicInteger usageEvents = new AtomicInteger();
-        AtomicReference<LlmUsageRecorded> usageEvent = new AtomicReference<>();
+        AtomicReference<LlmFixtures.UsageRecordView> usageEvent = new AtomicReference<>();
         ChatModel primary = prompt -> {
             primaryCalls.incrementAndGet();
             return toolRequest("call-1", "fail_tool", "{}", 1, 1);
@@ -181,7 +180,8 @@ class SpringAiToolCallingContractTest {
         ModelExecutionSnapshot snapshot = snapshot();
         snapshot.setFallbackCapabilitiesJson(fallbackCapabilities());
         ApplicationEventPublisher failingUsageListener = event -> {
-            if (event instanceof LlmUsageRecorded usage) {
+            LlmFixtures.UsageRecordView usage = LlmFixtures.asUsageRecord(event);
+            if (usage != null) {
                 usageEvents.incrementAndGet();
                 usageEvent.set(usage);
                 throw new IllegalStateException("telemetry unavailable");
@@ -295,11 +295,12 @@ class SpringAiToolCallingContractTest {
     }
 
     private ApplicationEventPublisher eventPublisher(
-        AtomicReference<LlmUsageRecorded> captured,
+        AtomicReference<LlmFixtures.UsageRecordView> captured,
         AtomicInteger eventCount
     ) {
         return event -> {
-            if (event instanceof LlmUsageRecorded usage) {
+            LlmFixtures.UsageRecordView usage = LlmFixtures.asUsageRecord(event);
+            if (usage != null) {
                 eventCount.incrementAndGet();
                 captured.set(usage);
             }
