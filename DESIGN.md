@@ -95,7 +95,8 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - 层叠可依赖的只有一条：未分层类 > utilities 层 > `@layer base`。同一元素上叠加「注册 utility + 核心原子」或「utility + 未分层类」时，谁生效由 Tailwind 内部排序决定、**无法从源码顺序推导**，因此视为缺陷：调用点不得用核心原子去改 utility 已声明的属性。
 - 需要覆盖时只有两种写法：为基座声明一个 `base-variant` 命名的变体 utility（唯一被允许的覆盖），或把该属性从基座拆出去交给调用点独占。冲突由 `npm run verify:cascade` 用构建产物实测，不靠约定自觉。
 - 未分层类同样会静默压掉同一元素上的核心原子：结果可预测，但调用点写下的原子是死代码（图形尺寸被页面类钉死就是这么来的）。因此未分层页面类不声明 `size`/`padding`/`margin` 这类调用点可能要覆写的几何；`verify:cascade` 的 dead-atom 检查会报出这种组合。
-- 元素级重置（`button`、`a`、标题与列表 margin）必须写在 `@layer base` 内；未分层的元素选择器会压过整个 utilities 层，使组件无法声明自己的文字颜色与间距。
+- 元素级重置（`button`、`a`、标题与列表 margin）必须写在 `@layer base` 内；未分层的元素选择器会压过整个 utilities 层，使组件无法声明自己的文字颜色与间距。`@layer base` 里的元素规则也只承担元素级基线（字体族、margin），字号与颜色一律由排版角色提供，否则每个裸元素都要靠 utility 反赢一次。
+- 界面结构只有一份 JSX：凡 `index.css` 为某种 chrome 注册了 utility，就必须有一个 `shared/ui` 组件拥有那段标记，产品界面与组件实验台都调用它。实验台不复制产品外观——手写的同名 class 会让截图先漂移到被改掉为止。
 
 ## Components
 
@@ -129,7 +130,11 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 - `layout="card"` 用于随内容增高的自足块（组件实验台的每个面板、岗位管理的两块面板）：自带边界、圆角、`--spacing-lg` 内边距与 `elevated-whisper`，标题行与内容区之间同样是 `--spacing-lg`。
 - `level` 决定标题用 `h2` 还是 `h3`，并随之选择 `type-title` 或 `type-subtitle`；`eyebrow` 是标题上方的 `type-eyebrow` 引导标签，`description` 是标题下方的 `type-meta` 说明，`actions` 是右侧操作区，`footer` 是带上下边界的底部动作条。
 
+面板内部再分层时不用空白，用一条细线加内边距：小节容器写 `grid gap-sm border-t border-line-decor pt-md`，细线上下各留 `--spacing-md` 16px，小节标题与其控件仍按 `--spacing-sm` 8px 绑定。分隔线必须是 `--color-line-decor`——`--color-border` 与 `--color-border-warm` 放在 `--color-bg` 上对比不足，线会看不见。设置弹窗的「修改密码」与「高级设置」即此形态，组件实验台的 Field 面板给出同一份样例。
+
 重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。页面区段仍用无框布局与受控内容宽度，只有需要明确边界的数据对象才升级为 `card`。
+
+侧栏拆成两层：`@utility app-sidebar` 只拥有几何（sticky、整体高度、展开与折叠宽度），`@utility sidebar-rail` 只拥有内容作用域（图标尺寸自定义属性，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。外壳结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`——brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚，产品 shell 与组件实验台渲染同一个 `SidebarFrame`。折叠状态由两处局部属性表达：外壳与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入。图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 不会与真实 shell 表现不一致。
 
 ## Accessibility
 

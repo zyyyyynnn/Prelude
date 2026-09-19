@@ -1696,29 +1696,15 @@ html[data-input-intent='keyboard']
    one. Variant utilities therefore follow the base they specialise, and a call
    site must never try to override a utility with a core atom.
    ========================================================================== */
-@utility app-sidebar {
+/* The geometry-free half of the rail contract: the icon metrics every action
+   inherits, and the collapse state its labels and brand read. The product rail
+   carries this together with `app-sidebar`; scoping to it alone lets a demo frame
+   render the rail pieces truthfully without a full-height column. */
+@utility sidebar-rail {
   --sidebar-icon-glyph-size: 20px;
   --sidebar-btn-padding-inline: calc(
     (var(--ui-height-control) - var(--sidebar-icon-glyph-size)) / 2
   );
-
-  position: sticky;
-  inset-block-start: 0;
-  z-index: var(--z-index-sidebar);
-  display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  inline-size: var(--layout-sidebar-inline-size);
-  block-size: 100vh;
-  overflow-x: hidden;
-  border-inline-end: var(--border-width-default) solid var(--color-border);
-  background-color: var(--color-surface);
-  font-family: var(--font-serif);
-  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
-
-  &.is-collapsed {
-    inline-size: var(--layout-sidebar-collapsed-inline-size);
-  }
 
   /* Text that only exists while the rail is expanded fades out as one set. */
   & [data-sidebar-label] {
@@ -1750,25 +1736,32 @@ html[data-input-intent='keyboard']
     opacity: 0;
     pointer-events: none;
   }
+}
 
-  /* The collapse chevron swaps which glyph is showing. */
-  & [data-toggle-icon='collapse'] {
-    opacity: 1;
-  }
+@utility app-sidebar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-index-sidebar);
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  inline-size: var(--layout-sidebar-inline-size);
+  block-size: 100vh;
+  overflow-x: hidden;
+  border-inline-end: var(--border-width-default) solid var(--color-border);
+  background-color: var(--color-surface);
+  font-family: var(--font-serif);
+  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
 
-  &.is-collapsed [data-toggle-icon='collapse'] {
-    opacity: 0;
-  }
-
-  &.is-collapsed [data-toggle-icon='expand'] {
-    opacity: 1;
+  &.is-collapsed {
+    inline-size: var(--layout-sidebar-collapsed-inline-size);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .app-sidebar,
-  .app-sidebar [data-sidebar-label],
-  .app-sidebar [data-sidebar-brand],
+  .sidebar-rail [data-sidebar-label],
+  .sidebar-rail [data-sidebar-brand],
   .sidebar-pane,
   .sidebar-toggle [data-toggle-icon] {
     transition: none;
@@ -1806,6 +1799,16 @@ html[data-input-intent='keyboard']
     block-size: var(--ui-glyph-md);
     opacity: 0;
     transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  }
+
+  /* The two glyphs are stacked and swapped by the button's own state, so the
+     toggle needs no ancestor to decide which one shows. */
+  &:not([data-collapsed='true']) [data-toggle-icon='collapse'] {
+    opacity: 1;
+  }
+
+  &[data-collapsed='true'] [data-toggle-icon='expand'] {
+    opacity: 1;
   }
 }
 

@@ -140,11 +140,15 @@
 
 ### 阶段六：设计系统表面归位（组件库保真）
 - [x] **根因级层叠缺陷**：`index.css` 里未分层的 `label, [data-slot='label'] { font-size: --font-size-md; color: --color-text-primary }` 压过整个 utilities 层，使 `type-label`（14px / secondary）在全仓任何 `<label>` 上都不生效——字段标签与 h3 小标题实测同为 16px/primary，"高级设置"读起来像又一个字段标签。该规则删除，字族默认移进 `@layer base`，字号/字重/颜色交还角色；实测字段标签回到 14px/500/secondary。`[data-slot='label']` 分支全仓零命中，一并删除。
-- [x] 组件库改为渲染真实组件：把 chrome 已注册在 `index.css` 的表面上提到 `shared/ui` —— `message.tsx`、`generating-card.tsx`、`prompt-bar.tsx`（`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceIndicator` + `VoiceStatus`）、`session-row.tsx`（`SessionRow`/`SessionGroup`）、`sidebar.tsx`（`SidebarAction`/`SidebarPane`/`SidebarToggle`）、`score-tile.tsx`。feature 与 `app/shell` 只保留取数与领域类型→原始 props 的映射；`useVoiceInterview` 的私有状态联合类型改为复用 `shared` 导出的 `VoiceStatus`。
+- [x] 组件库改为渲染真实组件：把 chrome 已注册在 `index.css` 的表面上提到 `shared/ui` —— `message.tsx`、`generating-card.tsx`、`prompt-bar.tsx`（`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceIndicator` + `VoiceStatus`）、`session-row.tsx`（`SessionRow`/`SessionGroup`）、`sidebar.tsx`（`SidebarFrame`/`SidebarAction`/`SidebarPane`/`SidebarToggle`）、`score-tile.tsx`。feature 与 `app/shell` 只保留取数与领域类型→原始 props 的映射；`useVoiceInterview` 的私有状态联合类型改为复用 `shared` 导出的 `VoiceStatus`。
 - [x] 组件库删除全部手写近似版：假"岗位库"卡与假"模型管理"面板、假导航项标签与 `Gauge` 图标（真实为设置五个分区 + `UserRound`/`FileText`/`BriefcaseBusiness`/`SquareTerminal`/`Palette`/`LogOut`）、用 `X`/`Plus` 冒充删除/编辑的行（真实为 `Trash2`/`Pencil`）。新增 Prompt Bar、Conversation、Session list、App rail、Report surfaces 五个面板。
 - [x] 报告轮播的两个按钮由手写 `prelude-button prelude-button--ghost prelude-button--icon ui-action` + 手写 `prelude-button__content` 改为真实 `<Button size="icon" variant="ghost">`。
 - [x] 死样式清理：`.scrollable::-webkit-scrollbar*` 空规则集、`--color-mask-overlay`（与真正被消费的 `--mask-overlay` 重复且无 utility 使用）、`.prelude-toast__action`/`__cancel`（无任何调用点产出带按钮的 toast）、echarts 的 `ui-chart-tooltip` 空钩子全部删除；图标契约补上 `.prelude-toast [data-icon] > svg`，据此移除 5 个 toast 图标与 `Printer`/`PanelLeft`/`BarChart3`/`Pin` 上被 CSS 覆盖的 `size={n}`。
 - [x] `hero-title` 并入 `type-hero`；文档去冗：handoff §5.1/§5.2 的 warning 明细与迁移点随 7 个 feature CSS 失效，压缩为一句指向阶段三与质量体系文档，其中"测试选择器只用 `data-slot`/`role`、断言对齐实际渲染值"的长期规则移入 `docs/quality/ui-quality-system.md`。
+- [x] 面板内小节分层：「修改密码」「高级设置」原来是 `mt-lg` + 普通字段混在同一个 `gap-md` 流里，读不出层级。改为 `grid gap-sm border-t border-line-decor pt-md`——细线上下各 16px、标题与控件仍 8px 绑定；先试 `border-border`(#f0eee6) 与 `border-border-warm`(#e8e6dc)，在 `--color-bg`(#f5f4ed) 上实测都不可见，取 `.login-card` 已在用的 `--color-line-decor`(#c8c6be / 暗色 #514a41)。规则与实验台 Field 面板的同一份样例写入 DESIGN.md。
+- [x] 组件库 App rail 漂移修复（根因两处）：`@utility sidebar-rail` 从 `app-sidebar` 里拆出——前者只管内容作用域（`--sidebar-icon-glyph-size`、`data-sidebar-label`/`data-sidebar-brand` 过渡），后者只管几何（sticky、高度、展开/折叠宽度），实验台因此能渲染一条没有满屏几何的真 rail；rail 结构上提成 `shared/ui/sidebar.tsx` 的 `SidebarFrame`，`AppShell` 与实验台调用同一个组件，`AppShell` 内手写的 header/primary/footer 标记删除。
+- [x] `SidebarToggle` 两枚箭头的可见性原来由 `.app-sidebar` 作用域里的后代规则决定，实验台单独渲染按钮时两支箭头都不显示；同时它和 `.sidebar-toggle [data-toggle-icon] { opacity: 0 }` 在同层内特异度打平，顺序不可依赖。状态改挂到按钮自己的 `data-collapsed`，规则写在 `@utility sidebar-toggle` 内部并提高特异度；实测展开 `collapse=1/expand=0`、折叠 `collapse=0/expand=1`。
+- [x] Report surfaces 面板去掉"卡中卡"：报告页是 `bg-bg` 上的文档表面，实验台原来把它塞进 `layout="card"` 的 `bg-surface` 里，读起来像一张卡套一张卡。改为 `w-full rounded-lg bg-bg p-lg` 直接承载 `document-sheet grid gap-lg`，与真实报告页同源。
 
 ---
 

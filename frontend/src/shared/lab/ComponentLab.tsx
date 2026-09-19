@@ -50,7 +50,7 @@ import {
 } from '@/shared/ui/prompt-bar'
 import { ScoreTile } from '@/shared/ui/score-tile'
 import { SessionGroup } from '@/shared/ui/session-row'
-import { SidebarAction, SidebarToggle } from '@/shared/ui/sidebar'
+import { SidebarAction, SidebarFrame } from '@/shared/ui/sidebar'
 import { SegmentedControl } from '@/shared/ui/segmented-control'
 import { Select } from '@/shared/ui/select'
 import { cn } from '@/shared/lib/cn'
@@ -91,7 +91,6 @@ export function ComponentLab() {
   const [themeChoice, setThemeChoice] = useState('light')
   const [answer, setAnswer] = useState('')
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>('listening')
-  const [railCollapsed, setRailCollapsed] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
 
@@ -235,6 +234,29 @@ export function ComponentLab() {
             <Field label="只读字段" htmlFor="lab-disabled">
               <Input id="lab-disabled" disabled placeholder="不可编辑" />
             </Field>
+          </div>
+          <div className="grid gap-md border-t border-line-decor pt-md">
+            <h3 className="type-subtitle">小节</h3>
+            <p className="type-meta">
+              面板内再分层时，用一条细线加 16px 内边距把小节与上方内容分开：细线上下各留 16px，
+              标题与其控件仍按 8px 绑定。设置弹窗的「修改密码」「高级设置」即此形态。
+            </p>
+            <div className="form-grid gap-md">
+              <Field label="思考深度" htmlFor="lab-reasoning">
+                <Select
+                  id="lab-reasoning"
+                  value={sort}
+                  options={[
+                    { value: 'recent', label: '自动' },
+                    { value: 'created', label: '高' },
+                  ]}
+                  onValueChange={setSort}
+                />
+              </Field>
+              <Field label="最大回复长度" htmlFor="lab-output">
+                <Input id="lab-output" defaultValue="4,096 tokens" />
+              </Field>
+            </div>
           </div>
         </Panel>
 
@@ -490,18 +512,68 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="App rail"
-          description="shared/ui/sidebar · 折叠工具、主操作与导航行；折叠态由 .app-sidebar.is-collapsed 驱动，见 04-sidebar-collapsed"
+          description="shared/ui/sidebar · SidebarFrame 的展开与折叠两态，折叠时标签与品牌淡出、箭头互换"
         >
-          <DemoGroup label="展开态">
-            <div className="grid w-(--layout-sidebar-inline-size) gap-sm">
-              <SidebarAction label="开始新面试" icon={<Plus />} tone="primary" onClick={noop} />
-              <SidebarAction label="工作区" icon={<PanelLeft />} to="/interview" />
-              <SidebarAction label="数据看板" icon={<BarChart3 />} to="/analytics" />
-              <SidebarAction label="设置" icon={<Settings />} onClick={noop} />
-              <SidebarToggle
-                collapsed={railCollapsed}
-                onToggle={() => setRailCollapsed((v) => !v)}
-              />
+          <DemoGroup label="展开">
+            <div className="flex w-(--layout-sidebar-inline-size) flex-col rounded-lg border border-border bg-surface">
+              <SidebarFrame
+                collapsed={false}
+                onToggle={noop}
+                brand={
+                  <>
+                    <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
+                    <span
+                      className="font-serif text-md font-medium text-text-primary"
+                      data-sidebar-label
+                    >
+                      Prelude
+                    </span>
+                  </>
+                }
+                primary={
+                  <SidebarAction label="开始新面试" icon={<Plus />} tone="primary" onClick={noop} />
+                }
+                footer={<SidebarAction label="设置" icon={<Settings />} onClick={noop} />}
+              >
+                <nav className="flex flex-col gap-sm pt-sm" aria-label="实验台导航">
+                  <SidebarAction label="工作区" icon={<PanelLeft />} to="/interview" />
+                  <SidebarAction label="数据看板" icon={<BarChart3 />} to="/analytics" />
+                </nav>
+              </SidebarFrame>
+            </div>
+          </DemoGroup>
+          <DemoGroup label="折叠">
+            <div className="flex w-(--layout-sidebar-collapsed-inline-size) flex-col rounded-lg border border-border bg-surface">
+              <SidebarFrame
+                collapsed
+                onToggle={noop}
+                brand={
+                  <>
+                    <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
+                    <span
+                      className="font-serif text-md font-medium text-text-primary"
+                      data-sidebar-label
+                    >
+                      Prelude
+                    </span>
+                  </>
+                }
+                primary={
+                  <SidebarAction
+                    collapsed
+                    label="开始新面试"
+                    icon={<Plus />}
+                    tone="primary"
+                    onClick={noop}
+                  />
+                }
+                footer={<SidebarAction collapsed label="设置" icon={<Settings />} onClick={noop} />}
+              >
+                <nav className="flex flex-col gap-sm pt-sm" aria-label="实验台导航">
+                  <SidebarAction collapsed label="工作区" icon={<PanelLeft />} to="/interview" />
+                  <SidebarAction collapsed label="数据看板" icon={<BarChart3 />} to="/analytics" />
+                </nav>
+              </SidebarFrame>
             </div>
           </DemoGroup>
         </Panel>
@@ -602,32 +674,34 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="Report surfaces"
-          description="shared/styles + score-tile · 报告纸面、分栏与评分块，打印时脱离应用外壳"
+          description="shared/styles + score-tile · 纸面落在页面底色上，分栏与评分块共用同一套块间距"
         >
-          <article className="document-sheet w-full">
-            <header className="report-columns items-start gap-xl">
-              <div className="grid gap-xs">
-                <p className="type-eyebrow">Interview Review</p>
-                <h3 className="type-title">求职训练报告</h3>
+          <div className="w-full rounded-lg bg-bg p-lg">
+            <article className="document-sheet grid gap-lg">
+              <header className="report-columns items-start gap-xl">
+                <div className="grid gap-xs">
+                  <p className="type-eyebrow">Interview Review</p>
+                  <h3 className="type-title">求职训练报告</h3>
+                </div>
+                <div className="flex items-baseline gap-xs">
+                  <span className="type-meta">总体</span>
+                  <strong className="type-metric">6.3</strong>
+                  <span className="type-meta">/ 10</span>
+                </div>
+              </header>
+              <div className="report-columns gap-md">
+                <ScoreTile label="技术能力" value={6.0} />
+                <ScoreTile label="表达清晰度" value={7.0} />
+                <ScoreTile label="逻辑思维" value={6.0} />
               </div>
-              <div className="flex items-baseline gap-xs">
-                <span className="type-meta">总体</span>
-                <strong className="type-metric">6.3</strong>
-                <span className="type-meta">/ 10</span>
-              </div>
-            </header>
-            <div className="report-columns gap-md">
-              <ScoreTile label="技术能力" value={6.0} />
-              <ScoreTile label="表达清晰度" value={7.0} />
-              <ScoreTile label="逻辑思维" value={6.0} />
-            </div>
-            <dl className="review-detail-grid mt-lg">
-              <dt className="font-serif text-sm text-text-secondary">行动建议</dt>
-              <dd className="m-0 font-sans text-sm leading-copy text-text-secondary">
-                可进入下一轮，并重点验证故障演练与容量分析。
-              </dd>
-            </dl>
-          </article>
+              <dl className="review-detail-grid">
+                <dt className="font-serif text-sm text-text-secondary">行动建议</dt>
+                <dd className="m-0 font-sans text-sm leading-copy text-text-secondary">
+                  可进入下一轮，并重点验证故障演练与容量分析。
+                </dd>
+              </dl>
+            </article>
+          </div>
         </Panel>
 
         <Panel

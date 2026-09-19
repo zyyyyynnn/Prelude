@@ -15,7 +15,7 @@ import { useSettings } from '@/features/settings'
 import { cn } from '@/shared/lib/cn'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { SessionGroup } from '@/shared/ui/session-row'
-import { SidebarAction, SidebarPane, SidebarToggle } from '@/shared/ui/sidebar'
+import { SidebarAction, SidebarFrame, SidebarPane } from '@/shared/ui/sidebar'
 
 export function AppShell() {
   const { openSettings } = useSettings()
@@ -114,21 +114,18 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
 
   return (
     <aside className={cn('app-sidebar', collapsed && 'is-collapsed')}>
-      <header className="flex h-(--layout-sidebar-header-block-size) items-center justify-between p-sm">
-        <div
-          className="flex items-center gap-sm overflow-hidden whitespace-nowrap"
-          data-sidebar-brand
-        >
-          <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
-          <span className="font-serif text-md font-medium text-text-primary" data-sidebar-label>
-            Prelude
-          </span>
-        </div>
-        <SidebarToggle collapsed={collapsed} onToggle={() => setCollapsed((value) => !value)} />
-      </header>
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-sm">
-        <div className="border-b border-border pb-md">
+      <SidebarFrame
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((value) => !value)}
+        brand={
+          <>
+            <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
+            <span className="font-serif text-md font-medium text-text-primary" data-sidebar-label>
+              Prelude
+            </span>
+          </>
+        }
+        primary={
           <SidebarAction
             collapsed={collapsed}
             label="开始新面试"
@@ -136,8 +133,16 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
             tone="primary"
             onClick={startNewInterview}
           />
-        </div>
-
+        }
+        footer={
+          <SidebarAction
+            collapsed={collapsed}
+            label="设置"
+            icon={<Settings />}
+            onClick={onOpenSettings}
+          />
+        }
+      >
         <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
           <SidebarPane kind="sessions" visible={!collapsed}>
             {sessions.isPending && <p className="ms-xs text-xs text-text-tertiary">正在加载会话</p>}
@@ -181,16 +186,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
             icon={<BarChart3 />}
           />
         </nav>
-      </div>
-
-      <footer className="px-sm pb-sm">
-        <SidebarAction
-          collapsed={collapsed}
-          label="设置"
-          icon={<Settings />}
-          onClick={onOpenSettings}
-        />
-      </footer>
+      </SidebarFrame>
     </aside>
   )
 }

@@ -60,7 +60,7 @@ async function settle(page: Page) {
 /* The gallery is one screen tall only if the frame is: capture it whole instead of in halves,
    then hand the shared page back at the normal viewport. */
 async function captureLab(page: Page, name: string) {
-  await page.setViewportSize({ width: DEMO_VIEWPORT.width, height: 7200 })
+  await page.setViewportSize({ width: DEMO_VIEWPORT.width, height: 7800 })
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Brand' })).toBeVisible()

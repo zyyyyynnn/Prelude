@@ -68,6 +68,7 @@ export function SidebarToggle({
         type="button"
         className="sidebar-toggle ui-action ui-action-icon"
         aria-label={label}
+        data-collapsed={collapsed ? 'true' : undefined}
         onClick={onToggle}
       >
         <span data-toggle-icon-stack aria-hidden="true">
@@ -76,6 +77,45 @@ export function SidebarToggle({
         </span>
       </button>
     </IconTooltip>
+  )
+}
+
+/** The application rail's structure: brand and collapse control, the primary action
+ *  above a divider, the scrolling middle, then the footer. `app-sidebar` supplies the
+ *  full-height geometry in the product; the frame itself stays height-neutral so a
+ *  demo can render it without a viewport-tall column. */
+export function SidebarFrame({
+  collapsed,
+  onToggle,
+  brand,
+  primary,
+  footer,
+  children,
+}: {
+  collapsed: boolean
+  onToggle: () => void
+  brand: ReactNode
+  primary: ReactNode
+  footer: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div className={cn('sidebar-rail flex min-h-0 flex-1 flex-col', collapsed && 'is-collapsed')}>
+      <header className="flex h-(--layout-sidebar-header-block-size) shrink-0 items-center justify-between p-sm">
+        <div
+          className="flex items-center gap-sm overflow-hidden whitespace-nowrap"
+          data-sidebar-brand
+        >
+          {brand}
+        </div>
+        <SidebarToggle collapsed={collapsed} onToggle={onToggle} />
+      </header>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-sm">
+        <div className="border-b border-border pb-md">{primary}</div>
+        {children}
+      </div>
+      <footer className="px-sm pb-sm">{footer}</footer>
+    </div>
   )
 }
 
