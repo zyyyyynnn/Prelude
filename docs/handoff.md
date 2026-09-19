@@ -50,8 +50,8 @@
 
 | 领域 / 概念 | 后端包 / 实体 | 数据库表名 | 前端路径 / 组件 | 诊断与改进措施 |
 | :--- | :--- | :--- | :--- | :--- |
-| **岗位域** | `com.prelude.position.domain.Position` | `position_template` | `features/position/PositionManagementPanel.tsx` | **基本闭环**。已将旧命名 `template` 统一为 `position`。需注意清理 [`docs/backend/architecture.md:16`](file:///e:/Prelude/docs/backend/architecture.md#L16) 中历史遗留的 `template.api.port` 字样。 |
-| **洞察/分析域** | `com.prelude.artifact.application.InsightQueryService` | `score_history`, `account_weakness` | `features/insight/AnalyticsPage.tsx` | **存在术语割裂**：目录名为 `features/insight`，但组件名为 `AnalyticsPage.tsx`，样式为 `analytics.css`，路由为 `/analytics`，后端接口为 `/api/analytics/*`。建议后续将目录统一重命名为 `features/analytics`。 |
+| **岗位域** | `com.prelude.position.domain.Position` | `position_template` | `features/position/PositionManagementPanel.tsx` | **基本闭环**。已将旧命名 `template` 统一为 `position`。 |
+| **洞察/分析域** | `com.prelude.artifact.application.InsightQueryService` | `score_history`, `account_weakness` | `features/insight/AnalyticsPage.tsx` | **存在术语割裂**：目录名为 `features/insight`，但组件名为 `AnalyticsPage.tsx`，路由为 `/analytics`，后端接口为 `/api/analytics/*`。建议后续将目录统一重命名为 `features/analytics`。 |
 | **成果/报告域** | `com.prelude.artifact` | `artifact`, `artifact_version` | `features/report/index.tsx` | 后端定义通用成果模型 `Artifact`，前端业务层使用求职者心智词 `Report`，语义映射成立。但在前端结构上，`features/report` 违规删除了 `index.ts` 并用 `index.tsx` 充当入口，破坏了公共导出规范，需恢复为 `ReportPanel.tsx` + `index.ts`。 |
 | **用户/认证域** | `com.prelude.identity.domain.Account` | `user_account` | `features/auth` | 符合架构文档规范：“领域主体统一为 Account，对外兼顾用户称谓保留 User”。 |
 
@@ -126,7 +126,6 @@
 - [x] 后端框架泄漏封死：`position`、`identity`、`artifact` 的 application 层不再持有 Mapper 或 `LambdaQueryWrapper`；`Position`/`Account`/`OAuthBinding` 领域模型去掉 `@TableName`，表映射移到 `*Entity`；`FrameworkLeakageTest` 对 `..domain..`、`..api..`、`..application..` 三条禁令生效，并移除了会空转的 `allowEmptyShould`。
 - [x] 客户端死代码：SSE `status`/`sync` 分支与永不可达的连接状态横幅删除（后端实测只发 `ping`/`message`/`judge`/`error`/`report_ready`；语音通道的 `status` 是另一条在用的协议，保留）。
 - [ ] 评估将 `frontend/src/features/insight` 重命名为 `features/analytics`（术语仍割裂：目录 `insight`、组件 `AnalyticsPage`、路由 `/analytics`、接口 `/api/analytics/*`）。
-- [ ] 更新 `docs/backend/architecture.md:16` 残留的 `template.api.port` 描述。
 
 ### 阶段五：界面标准二次收敛（视觉验收驱动）
 - [x] 聊天流不再逐条渲染打分与教练提示，只标说话人；评分与批注归位到面试完成后的报告。
