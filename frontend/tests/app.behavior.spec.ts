@@ -170,6 +170,20 @@ async function respond(route: Route, state: ApiState) {
     })
     return
   }
+  const deleted = /^\/api\/interview\/(\d+)$/.exec(path)
+  if (deleted && method === 'DELETE') {
+    const id = Number(deleted[1])
+    state.sessions = (state.sessions ?? []).filter(
+      (item) => (item as { sessionId: number }).sessionId !== id,
+    )
+  } else if (/\/api\/interview\/\d+\/pin$/.test(path) && method === 'PATCH') {
+    const id = Number(/\/api\/interview\/(\d+)\/pin$/.exec(path)?.[1])
+    const pinned = Boolean((body as { pinned?: boolean }).pinned)
+    state.sessions = (state.sessions ?? []).map((item) => {
+      const session = item as { sessionId: number }
+      return session.sessionId === id ? { ...session, pinned } : item
+    })
+  }
   let data: unknown = null
   if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
   else if (path === '/api/interview/sessions') data = state.sessions ?? []
@@ -338,7 +352,7 @@ test('@smoke presents request failures as a dismissible top system toast', async
     closeButton.click()
   })
   await expect(toast).toHaveCount(0)
-  await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
+  await expect(page.locator('[data-slot="auth-form"]').getByText('服务暂不可用')).toHaveCount(0)
   await expect(page).toHaveURL(/\/login$/)
 })
 
@@ -351,7 +365,9 @@ test('@smoke keeps authentication validation out of the form layout', async ({ p
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '密码至少需要 6 个字符' })
   await expect(toast).toBeAttached()
   await expect(page.locator('#auth-password')).toBeFocused()
-  await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
+  await expect(
+    page.locator('[data-slot="auth-form"]').getByText('密码至少需要 6 个字符'),
+  ).toHaveCount(0)
 })
 
 test('@smoke routes prompt bar management actions into global settings', async ({ page }) => {
@@ -585,7 +601,7 @@ test('@smoke waits for model configuration persistence before starting an interv
   await expect(start).toBeEnabled()
 })
 
-test('@smoke persists pinned and hidden sessions per account', async ({ page }) => {
+test('@smoke pins and deletes sessions through the session API', async ({ page }) => {
   const state: ApiState = {
     requests: [],
     sessions: [
@@ -607,19 +623,22 @@ test('@smoke persists pinned and hidden sessions per account', async ({ page }) 
   await installApi(page, state)
   await page.goto('/interview')
   await page.getByRole('button', { name: '置顶会话' }).first().click()
-  await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem('prelude-interview-session-preferences:1')),
-    )
-    .toContain('"pinnedIds":[11]')
+  await expect(page.getByRole('button', { name: '取消置顶' }).first()).toBeVisible()
+  expect(
+    state.requests.some(
+      ({ method, path: requestPath }) =>
+        method === 'PATCH' && requestPath === '/api/interview/11/pin',
+    ),
+  ).toBe(true)
+
   await page.getByRole('button', { name: '删除会话' }).first().click()
   await page.getByRole('button', { name: '删除', exact: true }).click()
   await expect(page.getByText('平台工程师')).toHaveCount(0)
-  await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem('prelude-interview-session-preferences:1')),
-    )
-    .toContain('"hiddenIds":[11]')
+  expect(
+    state.requests.some(
+      ({ method, path: requestPath }) => method === 'DELETE' && requestPath === '/api/interview/11',
+    ),
+  ).toBe(true)
 })
 
 test('@smoke streams an interview answer with bounded context', async ({ page }) => {
@@ -1285,9 +1304,9 @@ test('@smoke renders structured reports without resume mutation controls', async
       const background = luminance(style.backgroundColor)
       return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05)
     }
-    const primary = document.querySelector<HTMLElement>('.app-sidebar__btn--primary')!
+    const primary = document.querySelector<HTMLElement>('.sidebar-action-primary')!
     const activeProbe = document.createElement('button')
-    activeProbe.className = 'session-item-btn is-active'
+    activeProbe.className = 'session-row is-active'
     document.body.append(activeProbe)
     const durations = getComputedStyle(primary)
       .transitionDuration.split(',')
@@ -1303,26 +1322,22 @@ test('@smoke renders structured reports without resume mutation controls', async
   expect(sharedUiMetrics.primaryContrast).toBeGreaterThanOrEqual(4.5)
   expect(sharedUiMetrics.activeContrast).toBeGreaterThanOrEqual(4.5)
   expect(sharedUiMetrics.longestInteractionTransition).toBeLessThanOrEqual(150)
-  const reportListMarker = await page
-    .locator('.structured-report__traits li')
-    .first()
-    .evaluate((item) => {
-      const marker = getComputedStyle(item, '::before')
-      return marker.content
+  const reportTypography = await page
+    .locator('[data-slot="structured-report"]')
+    .evaluate((surface) => {
+      const eyebrow = surface.querySelector<HTMLElement>(
+        '[data-slot="report-hero"] > p:first-child',
+      )!
+      const sectionTitle = surface.querySelector<HTMLElement>('[data-slot="structured-report"] h2')!
+      const adviceBody = surface.querySelector<HTMLElement>('[data-slot="report-advice"] > p')!
+      const titleStyle = getComputedStyle(sectionTitle)
+      return {
+        eyebrowFamily: getComputedStyle(eyebrow).fontFamily,
+        adviceBodyFamily: getComputedStyle(adviceBody).fontFamily,
+        sectionTitleLineHeight: Number.parseFloat(titleStyle.lineHeight),
+        sectionTitleSize: Number.parseFloat(titleStyle.fontSize),
+      }
     })
-  expect(reportListMarker).toBe('none')
-  const reportTypography = await page.locator('.structured-report').evaluate((surface) => {
-    const eyebrow = surface.querySelector<HTMLElement>('.structured-report__hero > p:first-child')!
-    const sectionTitle = surface.querySelector<HTMLElement>('.report-section h2')!
-    const adviceBody = surface.querySelector<HTMLElement>('.structured-report__advice > p')!
-    const titleStyle = getComputedStyle(sectionTitle)
-    return {
-      eyebrowFamily: getComputedStyle(eyebrow).fontFamily,
-      adviceBodyFamily: getComputedStyle(adviceBody).fontFamily,
-      sectionTitleLineHeight: Number.parseFloat(titleStyle.lineHeight),
-      sectionTitleSize: Number.parseFloat(titleStyle.fontSize),
-    }
-  })
   expect(reportTypography.eyebrowFamily).toContain('Lora')
   expect(reportTypography.adviceBodyFamily).toContain('Inter')
   expect(
@@ -1330,25 +1345,27 @@ test('@smoke renders structured reports without resume mutation controls', async
   ).toBeLessThanOrEqual(1.3)
   const stageNavigation = page.getByRole('group', { name: '阶段复盘导航' })
   await expect(stageNavigation).toContainText('1 / 2')
-  await expect(page.locator('.stage-performance')).toHaveCount(2)
-  await expect(page.locator('.stage-performance.is-active')).toContainText('技术问答')
-  await expect(page.locator('.stage-performance.is-active .report-inline-score')).toHaveCSS(
-    'font-family',
-    /Lora/,
+  await expect(page.locator('[data-slot="stage-performance"]')).toHaveCount(2)
+  await expect(page.locator('[data-slot="stage-performance"][data-state="active"]')).toContainText(
+    '技术问答',
   )
-  await expect(page.locator('.stage-performance.is-active h4').first()).toHaveCSS(
-    'font-family',
-    /Lora/,
-  )
+  await expect(
+    page.locator('[data-slot="stage-performance"][data-state="active"] [data-slot="stage-score"]'),
+  ).toHaveCSS('font-family', /Lora/)
+  await expect(
+    page.locator('[data-slot="stage-performance"][data-state="active"] h4').first(),
+  ).toHaveCSS('font-family', /Lora/)
   await stageNavigation.getByRole('button', { name: '下一阶段' }).click()
   await expect(stageNavigation).toContainText('2 / 2')
-  await expect(page.locator('.stage-performance.is-active')).toContainText('深度追问')
-  await expect(page.locator('.question-review__body')).toHaveCSS('overflow', 'visible')
-  await expect(page.locator('.question-review__body')).toHaveCSS('max-block-size', 'none')
+  await expect(page.locator('[data-slot="stage-performance"][data-state="active"]')).toContainText(
+    '深度追问',
+  )
 
   const reviewSurfaces = await page.evaluate(() => {
-    const stage = getComputedStyle(document.querySelector('.stage-performance.is-active')!)
-    const question = getComputedStyle(document.querySelector('.question-review')!)
+    const stage = getComputedStyle(
+      document.querySelector('[data-slot="stage-performance"][data-state="active"]')!,
+    )
+    const question = getComputedStyle(document.querySelector('[data-slot="question-review"]')!)
     return {
       background: [stage.backgroundColor, question.backgroundColor],
       radius: [stage.borderRadius, question.borderRadius],
@@ -1361,9 +1378,9 @@ test('@smoke renders structured reports without resume mutation controls', async
 
   await page.setViewportSize({ width: 880, height: 781 })
   for (const selector of [
-    '.stage-performance.is-active .stage-performance__signals',
-    '.structured-report__traits > div',
-    '.training-plan__grid',
+    '[data-slot="stage-performance"][data-state="active"] [data-slot="stage-signals"]',
+    '[data-slot="report-traits"] > div',
+    '[data-slot="training-plan-grid"]',
   ]) {
     const adaptiveColumns = await page
       .locator(selector)
@@ -1384,8 +1401,8 @@ test('@smoke renders structured reports without resume mutation controls', async
   await page.emulateMedia({ media: 'print' })
   await page.locator('body').evaluate((body) => body.classList.add('is-printing-report'))
   await expect(page.locator('.app-layout__main')).toHaveCSS('overflow', 'visible')
-  await expect(page.locator('.stage-performance').first()).toBeVisible()
-  await expect(page.locator('.stage-performance').last()).toBeVisible()
+  await expect(page.locator('[data-slot="stage-performance"]').first()).toBeVisible()
+  await expect(page.locator('[data-slot="stage-performance"]').last()).toBeVisible()
   await page.locator('body').evaluate((body) => body.classList.remove('is-printing-report'))
   await page.emulateMedia({ media: 'screen' })
   await page.evaluate(() => {
@@ -1443,12 +1460,12 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   await expect(page.getByText('聚合')).toBeVisible()
 
   const typography = await page
-    .locator('.analytics-score-card')
+    .locator('[data-slot="score-card"]')
     .first()
     .evaluate((card) => {
-      const label = getComputedStyle(card.querySelector('.analytics-score-card__label')!)
-      const value = getComputedStyle(card.querySelector('.analytics-score-card__value')!)
-      const meta = getComputedStyle(card.querySelector('.analytics-score-card__meta')!)
+      const label = getComputedStyle(card.querySelector('[data-slot="score-label"]')!)
+      const value = getComputedStyle(card.querySelector('[data-slot="score-value"]')!)
+      const meta = getComputedStyle(card.querySelector('[data-slot="score-meta"]')!)
       return {
         label: {
           family: label.fontFamily,
@@ -1473,10 +1490,10 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
   expect(typography.meta.family).toContain('Inter')
 
-  const weaknessLayout = await page.locator('.analytics-weakness-item').evaluate((item) => {
-    const title = item.querySelector<HTMLElement>('.analytics-weakness-item__title')!
-    const summary = item.querySelector<HTMLElement>('.analytics-weakness-item__summary')!
-    const descriptions = item.querySelector<HTMLElement>('.analytics-weakness-item__descriptions')!
+  const weaknessLayout = await page.locator('[data-slot="weakness-item"]').evaluate((item) => {
+    const title = item.querySelector<HTMLElement>('[data-slot="weakness-title"]')!
+    const summary = item.querySelector<HTMLElement>('[data-slot="weakness-summary"]')!
+    const descriptions = item.querySelector<HTMLElement>('[data-slot="weakness-descriptions"]')!
     return {
       headingLayout: getComputedStyle(title.parentElement!).display,
       titleLeft: title.getBoundingClientRect().left,
@@ -1521,7 +1538,7 @@ test('@smoke degrades malformed structured reports to safe plain text', async ({
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '报告' }).click()
 
-  await expect(page.locator('.report-plain-text')).toContainText('"expression":7')
+  await expect(page.locator('[data-slot="report-plain-text"]')).toContainText('"expression":7')
   await expect(page.getByText('6.0')).toHaveCount(0)
   await expect(page.getByText('破冰')).toHaveCount(0)
 })

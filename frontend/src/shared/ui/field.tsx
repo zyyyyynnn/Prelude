@@ -32,13 +32,13 @@ export function Field({
   children: ReactNode
 }) {
   return (
-    <div className="field" data-slot="field">
-      <label className="field__label" data-slot="field-label" htmlFor={htmlFor}>
+    <div className="grid gap-sm" data-slot="field">
+      <label className="type-label" data-slot="field-label" htmlFor={htmlFor}>
         {label}
       </label>
       {children}
       {hint && (
-        <span className="field__hint" data-slot="field-description">
+        <span className="type-meta" data-slot="field-description">
           {hint}
         </span>
       )}

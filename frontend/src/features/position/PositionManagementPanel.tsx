@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Field, Input, Textarea } from '@/shared/ui/field'
+import { Panel } from '@/shared/ui/panel'
 import { useFeedback } from '@/shared/ui/feedback-context'
+import { sectionTitles } from '@/features/settings'
 import { createPosition, deletePosition, fetchPositions, updatePosition } from './index'
 import type { Position } from './types'
-import './position.css'
 
 const emptyDraft = { name: '', systemPrompt: '' }
 
@@ -62,32 +63,41 @@ export function PositionManagementPanel() {
   }
 
   return (
-    <div className="panel-content-wrapper position-settings">
-      <div className="settings-inline-actions settings-inline-actions--header">
-        {editing && (
+    <Panel
+      title={sectionTitles.positions}
+      actions={
+        <>
+          {editing && (
+            <Button
+              type="button"
+              variant="danger"
+              loading={remove.isPending}
+              disabled={save.isPending}
+              onClick={() => void removePosition(editing)}
+            >
+              <Trash2 aria-hidden="true" />
+              删除岗位
+            </Button>
+          )}
           <Button
-            type="button"
-            variant="danger"
-            loading={remove.isPending}
-            disabled={save.isPending}
-            onClick={() => void removePosition(editing)}
+            type="submit"
+            form="position-settings-form"
+            loading={save.isPending}
+            disabled={remove.isPending}
           >
-            <Trash2 aria-hidden="true" />
-            删除岗位
+            {editing ? '保存岗位' : '创建岗位'}
           </Button>
-        )}
-        <Button
-          type="submit"
-          form="position-settings-form"
-          loading={save.isPending}
-          disabled={remove.isPending}
+        </>
+      }
+    >
+      <div className="flex flex-wrap items-start gap-md" data-slot="position-workspace">
+        <Panel
+          layout="card"
+          level={3}
+          title="岗位库"
+          className="flex-1 basis-(--layout-position-catalog-min-inline-size)"
+          data-slot="position-catalog"
         >
-          {editing ? '保存岗位' : '创建岗位'}
-        </Button>
-      </div>
-      <div className="position-settings__workspace">
-        <section className="position-settings__catalog" aria-label="岗位列表">
-          <h3 className="settings-section__title">岗位库</h3>
           {positions.isPending ? (
             <div className="empty-state">正在读取岗位…</div>
           ) : positions.isError ? (
@@ -99,10 +109,12 @@ export function PositionManagementPanel() {
               </Button>
             </div>
           ) : (
-            <div className="position-settings__list">
+            <div className="position-item-grid" role="list" aria-label="岗位列表">
               {positions.data?.map((position) => (
-                <div className="position-settings__item" key={position.id}>
-                  <span className="position-settings__item-name">{position.name}</span>
+                <div className="row-label-end" key={position.id} role="listitem">
+                  <span className="truncate-title" data-slot="position-item-name">
+                    {position.name}
+                  </span>
                   {position.editable && (
                     <Button
                       type="button"
@@ -118,14 +130,16 @@ export function PositionManagementPanel() {
               ))}
             </div>
           )}
-        </section>
-        <form id="position-settings-form" className="position-settings__form" onSubmit={submit}>
-          <div className="position-settings__form-heading">
-            <h3 className="settings-section__title">{editing ? '编辑岗位' : '新建岗位'}</h3>
-            {editing && (
+        </Panel>
+        <Panel
+          layout="card"
+          level={3}
+          className="grow-2 basis-(--layout-position-form-min-inline-size)"
+          title={editing ? '编辑岗位' : '新建岗位'}
+          actions={
+            editing && (
               <Button
                 type="button"
-                size="compact"
                 variant="ghost"
                 onClick={() => {
                   setEditing(null)
@@ -135,9 +149,16 @@ export function PositionManagementPanel() {
                 <Plus aria-hidden="true" />
                 新建
               </Button>
-            )}
-          </div>
-          <div className="position-settings__fields">
+            )
+          }
+          data-slot="position-form"
+        >
+          <form
+            id="position-settings-form"
+            className="grid gap-md"
+            data-slot="position-fields"
+            onSubmit={submit}
+          >
             <Field label="岗位名称" htmlFor="position-name">
               <Input
                 id="position-name"
@@ -164,9 +185,9 @@ export function PositionManagementPanel() {
                 }
               />
             </Field>
-          </div>
-        </form>
+          </form>
+        </Panel>
       </div>
-    </div>
+    </Panel>
   )
 }

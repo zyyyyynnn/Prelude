@@ -13,7 +13,7 @@ jobs      resume    position  documents
 interview voice     activity  telemetry
 ```
 
-模块根包是默认公共接口。额外公共包使用 `@NamedInterface`，内部层级按真实类型职责建立。跨模块契约只通过 NamedInterface 暴露：`llm.api`、`identity.api`、`assets.api`、`interview.application.port` / `interview.api.port` / `interview.domain`、`resume.*.port`、`template.api.port`、`jobs.integration`、`documents.api`。HTTP 适配器一律放在各模块 `web` 包，不得出现在 `api` NamedInterface 中。
+模块根包是默认公共接口。额外公共包使用 `@NamedInterface`，内部层级按真实类型职责建立。当前八个具名接口即全部跨模块契约：`identity::api`、`llm::api`、`assets::integration`（`assets/api`）、`documents::extraction`（`documents/api`）、`jobs::integration`、`position::catalog`（`position/api/port`）、`resume::integration`（`resume/api/port` 与 `resume/application/port`）、`interview::integration`（`interview/api/port`、`interview/application/port` 与 `interview/domain`）。`activity` 与 `context` 不声明具名接口，其根包类型即契约，依赖方直接引用根包。HTTP 适配器放在各模块 `web` 包，不得出现在 `api` NamedInterface 中；根包的 `HealthController` 与 `GlobalExceptionHandler` 是全局横切组件，不属于模块 `web` 层。
 
 Port 用于外部基础设施、框架隔离或跨模块接口。普通内部类直接表达其职责。`domain` 保持框架无关，专项 ArchUnit 测试验证 Spring AI、LangGraph4j、MCP SDK 与 AWS SDK 的隔离。
 
@@ -33,11 +33,11 @@ Port 用于外部基础设施、框架隔离或跨模块接口。普通内部类
 ## Runtime
 
 - `identity` 拥有 `user_account` 与 `oauth_binding`：密码（Argon2id）与 Google/GitHub OAuth 绑定登录、Spring Session Redis 会话（rotation、logout revoke、session revoke）、profile revision/expectedRevision/operationId 并发契约，并通过 `CurrentAccount` 公开认证主体。认证 Session 无 MySQL 表。
-- `llm` 拥有 DeepSeek 与三种自定义协议、模型路由和 BYOK 配置；account id 由调用方显式传入，会话级广播关联由模块内 `LlmInvocationContext` 承载。跨模块契约（`LlmPort`、`EmbedPort`、能力/配置视图）位于 `llm.api`。
+- `llm` 拥有 DeepSeek 与三种自定义协议、模型路由和 BYOK 配置；account id 由调用方显式传入，会话级实时广播由 `activity` 的 `RealtimePort` 承载。跨模块契约（`LlmPort`、`EmbedPort`、能力/配置视图）位于 `llm.api`。
 - `assets` 拥有 `asset` 与面试附件：二进制真源是 `ObjectStoragePort`（S3 兼容，local/CI = VersityGW），`S3ObjectStorageAdapter` 是唯一实现；上传按 PENDING_UPLOAD → READY 流转，stale PENDING 由模块内 bounded reconciler 清理；下载先授权后短 TTL 预签名。`documents` 负责受支持文档的内容提取。
 - `resume` 拥有 PDF 简历导入、技能与项目解析、资源列表和面试上下文投影；当前不提供可编辑或版本化的简历工作区。
 - `position` 拥有内置岗位与用户自定义岗位。
-- `interview` 拥有会话、阶段与文字面试用例，`voice` 拥有语音通道。
+- `interview` 拥有会话、阶段、文字面试用例与会话库管理：置顶由 `interview_session.pinned_at` 承载并在查询里压过时间序，删除是永久删除——消息、阶段、评分历史与薄弱点随数据库级联移除，检索块与该会话的附件绑定因不带外键而在同一事务内显式释放。`voice` 拥有语音通道。
 - `artifact` 拥有训练报告与分析（不回写简历）、`artifact`/`artifact_version` 正式成果基础模型（版本 immutable，发布走公开 API），以及 Analytics 视图；`jobs` 拥有报告异步任务。
 - Redis 承载认证会话与实时广播，RabbitMQ 承载报告任务，MySQL 承载业务数据。
 

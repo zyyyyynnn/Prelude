@@ -30,7 +30,7 @@ export function SegmentedControl<Value extends string>({
     <div className="prelude-segmented-control" role="group" aria-label={ariaLabel} style={style}>
       {items.map((item) => (
         <button
-          className={cn('prelude-segmented-control__item', item.value === value && 'is-active')}
+          className={cn(item.value === value && 'is-active')}
           key={item.value}
           type="button"
           aria-pressed={item.value === value}

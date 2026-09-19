@@ -206,10 +206,17 @@ export default defineConfig(({ mode }) => {
                 message:
                   'SegmentedControl owns its tracks and labels. Change items via props, not className restyle.',
               },
+              {
+                pattern: '^Panel$',
+                allow: ['layout'],
+                deny: ['spacing', 'color', 'typography', 'shape', 'effects'],
+                message:
+                  'Panel owns the surface chrome and the heading row. Choose layout/level; do not restyle the card or header from the call site.',
+              },
             ],
           },
         ],
-        'shadcn/no-unknown-classes': 'warn',
+        'shadcn/no-unknown-classes': 'error',
       },
       settings: {
         shadcn: {

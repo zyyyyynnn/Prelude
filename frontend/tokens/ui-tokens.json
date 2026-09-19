@@ -29,6 +29,7 @@
         "color-text-on-accent",
         "color-coral",
         "color-error",
+        "color-error-soft",
         "color-focus-field",
         "color-focus-action",
         "color-mask-overlay"
@@ -44,19 +45,14 @@
         "spacing-lg",
         "spacing-xl",
         "spacing-2xl",
-        "spacing-1-5",
-        "spacing-2-5",
-        "spacing-3-5",
-        "spacing-4-5",
-        "spacing-5-5",
-        "spacing-0-5",
-        "spacing-neg-xs"
+        "spacing-0"
       ]
     },
     "radius": {
       "prefix": "radius",
       "description": "圆角阶梯。",
       "tokens": [
+        "radius-xs",
         "radius-sm",
         "radius-md",
         "radius-lg",
@@ -74,11 +70,6 @@
         "shadow-ring-deep",
         "shadow-whisper",
         "shadow-modal",
-        "shadow-app-header",
-        "shadow-app-menu",
-        "shadow-app-menu-active",
-        "shadow-inset",
-        "shadow-brand-logo",
         "shadow-brand-metaballs",
         "shadow-login-card",
         "shadow-login-logo",
@@ -97,23 +88,19 @@
         "motion-duration-slow",
         "motion-duration-thinking",
         "motion-ease-standard",
-        "motion-delay-min",
-        "motion-transition-color",
-        "motion-transition-surface",
-        "motion-transition-opacity",
-        "motion-transition-transform"
+        "tracking-label",
+        "motion-transition-surface"
       ]
     },
     "font": {
       "prefix": "font",
-      "description": "字体族、字号、字重与行高阶梯。",
+      "description": "字体族、字号、字重、行高与字距阶梯。",
       "tokens": [
         "font-serif",
         "font-sans",
         "font-mono",
         "font-size-xs",
         "font-size-sm",
-        "font-size-meta",
         "font-size-md",
         "font-size-lg",
         "font-size-xl",
@@ -128,7 +115,9 @@
         "line-height-compact",
         "line-height-base",
         "line-height-relaxed",
-        "line-height-copy"
+        "line-height-copy",
+        "tracking-eyebrow",
+        "tracking-caps"
       ]
     },
     "border": {
@@ -138,11 +127,16 @@
     },
     "ui-height": {
       "prefix": "ui-height",
-      "description": "控件高度。base 34 / compact 30 由 DESIGN.md 锁定。",
-      "tokens": ["ui-height-base", "ui-height-compact", "ui-height-sm", "ui-height-md"],
+      "description": "唯一的控件高度。base/compact 两档已合并为 36px 一档，密集行与滑块轨道不再自带第二档高度。",
+      "tokens": ["ui-height-control"],
       "rules": {
-        "design-locked": ["ui-height-base", "ui-height-compact"]
+        "design-locked": ["ui-height-control"]
       }
+    },
+    "ui-glyph": {
+      "prefix": "ui-glyph",
+      "description": "图标与图标按钮的盒尺寸；尺寸不从 spacing 阶梯借用。",
+      "tokens": ["ui-glyph-sm", "ui-glyph-md", "ui-glyph-lg"]
     },
     "layout": {
       "prefix": "layout",
@@ -153,18 +147,38 @@
         "layout-sidebar-brand-inline-size",
         "layout-sidebar-header-block-size",
         "layout-settings-sidebar-inline-size",
-        "layout-settings-dialog-max-inline-size",
-        "layout-settings-dialog-min-block-size",
+        "layout-dialog-workspace-min-block-size",
         "layout-workspace-content-max-inline-size",
-        "layout-dashboard-card-min-inline-size",
         "layout-form-field-min-inline-size",
         "layout-list-title-min-inline-size",
         "layout-position-catalog-min-inline-size",
         "layout-position-form-min-inline-size",
         "layout-position-item-min-inline-size",
+        "layout-chart-block-size",
+        "layout-demo-frame-block-size",
+        "layout-empty-state-min-block-size",
+        "layout-lead-max-inline-size",
+        "layout-prompt-input-min-block-size",
+        "layout-prompt-input-max-block-size",
+        "layout-prompt-truncate-max-inline-size",
+        "layout-generating-card-max-inline-size",
+        "layout-generating-rose-inline-size",
+        "layout-workspace-report-block-padding",
         "layout-report-column-min-inline-size",
         "layout-report-label-inline-size",
-        "layout-report-counter-min-inline-size"
+        "layout-report-counter-min-inline-size",
+        "layout-profile-avatar-inline-size",
+        "layout-brand-mark-inline-size",
+        "layout-viewport-min-inline-size",
+        "layout-page-center-block-offset",
+        "layout-login-card-max-inline-size",
+        "layout-login-card-min-block-size",
+        "layout-login-column-min-inline-size",
+        "layout-login-logo-max-inline-size",
+        "layout-textarea-min-block-size",
+        "layout-select-list-max-block-size",
+        "layout-dialog-max-inline-size",
+        "layout-confirm-max-inline-size"
       ]
     },
     "content": {
@@ -172,6 +186,7 @@
       "description": "消息与浮层的可读内容宽度。",
       "tokens": [
         "content-message-max-inline-size",
+        "content-message-bubble-max-inline-size",
         "content-report-reading-max-inline-size",
         "content-tooltip-max-inline-size"
       ]
@@ -182,7 +197,6 @@
       "tokens": [
         "z-index-local-raised",
         "z-index-workspace-composer",
-        "z-index-app-header",
         "z-index-sidebar",
         "z-index-dialog-backdrop",
         "z-index-dialog",
@@ -237,6 +251,7 @@
         "input",
         "ring",
         "ease-standard",
+        "tracking-label",
         "color-background",
         "color-foreground",
         "color-card",
@@ -260,13 +275,15 @@
     },
     "supporting": {
       "prefix": null,
-      "description": "登录背景、弹层遮罩、基础圆角、分段控件和登录内容层使用的辅助 token。",
+      "description": "登录背景、弹层遮罩与模糊、基础圆角、分段控件和登录内容层使用的辅助 token。",
       "tokens": [
         "radius",
         "bg-paper-filter",
         "mask-overlay",
         "ui-segmented-item-min-inline-size",
-        "login-card-content-layer"
+        "ui-control-inset",
+        "login-card-content-layer",
+        "overlay-blur-radius"
       ]
     },
     "scoped-component-private": {
@@ -282,7 +299,6 @@
     "no-shadow-raw-in-selector": "selector 中的 box-shadow 值若不是 var(--shadow-*)，则视为 raw shadow violation。"
   },
   "design_lock_values": {
-    "ui-height-base": "34px",
-    "ui-height-compact": "30px"
+    "ui-height-control": "36px"
   }
 }

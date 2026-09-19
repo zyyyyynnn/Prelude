@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
 import { Field, Input } from '@/shared/ui/field'
 import { IconTooltip } from '@/shared/ui/overlay'
+import { SegmentedControl } from '@/shared/ui/segmented-control'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { login, register } from './api'
 import { useAuth } from '@/features/auth'
@@ -84,31 +85,25 @@ export function LoginPage() {
           </aside>
 
           <div className="login-card__form-panel">
-            <header className="page__header login-card__header">
-              <h1 id="auth-title" className="page__title">
+            <header className="login-card__header">
+              <h1 id="auth-title" className="type-hero">
                 {mode === 'login' ? '进入面试工作台' : '创建工作台账号'}
               </h1>
             </header>
 
-            <div className="prelude-segmented-control" role="group" aria-label="账号操作">
-              <button
-                className={cn(mode === 'login' && 'is-active')}
-                type="button"
-                onClick={() => switchMode('login')}
-              >
-                登录
-              </button>
-              <button
-                className={cn(mode === 'register' && 'is-active')}
-                type="button"
-                onClick={() => switchMode('register')}
-              >
-                注册
-              </button>
-            </div>
+            <SegmentedControl
+              ariaLabel="账号操作"
+              items={[
+                { value: 'login', label: '登录' },
+                { value: 'register', label: '注册' },
+              ]}
+              value={mode}
+              onValueChange={switchMode}
+            />
 
             <form
-              className="form-grid auth-form"
+              data-slot="auth-form"
+              className="flex min-h-0 flex-col gap-md"
               onSubmit={(event) => void submit(event)}
               noValidate
             >
@@ -124,7 +119,7 @@ export function LoginPage() {
               </Field>
 
               <Field label="密码" htmlFor="auth-password">
-                <div className="password-field">
+                <div className="field-actions-1">
                   <Input
                     id="auth-password"
                     value={password}
@@ -134,16 +129,18 @@ export function LoginPage() {
                     placeholder="请输入密码"
                     required
                   />
-                  <IconTooltip label={showPassword ? '隐藏密码' : '显示密码'}>
-                    <button
-                      type="button"
-                      className="password-field__toggle ui-action ui-action-icon"
-                      aria-label={showPassword ? '隐藏密码' : '显示密码'}
-                      onClick={() => setShowPassword((value) => !value)}
-                    >
-                      {showPassword ? <Eye size={17} /> : <EyeOff size={17} />}
-                    </button>
-                  </IconTooltip>
+                  <div className="absolute inset-y-0 inset-e-(--ui-control-inset) flex items-center">
+                    <IconTooltip label={showPassword ? '隐藏密码' : '显示密码'}>
+                      <button
+                        type="button"
+                        className="field-action ui-action ui-action-icon"
+                        aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                        onClick={() => setShowPassword((value) => !value)}
+                      >
+                        {showPassword ? <Eye /> : <EyeOff />}
+                      </button>
+                    </IconTooltip>
+                  </div>
                 </div>
               </Field>
 

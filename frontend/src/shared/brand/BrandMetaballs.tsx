@@ -10,24 +10,35 @@ const colorNames = [
   '--brand-metaballs-5',
 ]
 
-function cssColor(name: string) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+function readPalette() {
+  const style = getComputedStyle(document.documentElement)
+  return {
+    background: style.getPropertyValue('--brand-metaballs-bg').trim(),
+    colors: colorNames.map((name) => style.getPropertyValue(name).trim()),
+  }
 }
 
 export function BrandMetaballs({ className = '' }: { className?: string }) {
-  const [revision, setRevision] = useState(0)
+  const [palette, setPalette] = useState(readPalette)
+  const [still, setStill] = useState(false)
 
   useEffect(() => {
-    const refresh = () => setRevision((value) => value + 1)
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncMotion = () => setStill(reducedMotion.matches)
+    const refresh = () => setPalette(readPalette())
+    syncMotion()
     window.addEventListener('prelude-theme-change', refresh)
-    return () => window.removeEventListener('prelude-theme-change', refresh)
+    reducedMotion.addEventListener('change', syncMotion)
+    return () => {
+      window.removeEventListener('prelude-theme-change', refresh)
+      reducedMotion.removeEventListener('change', syncMotion)
+    }
   }, [])
 
-  if (revision < 0 || typeof document === 'undefined') return null
-  const palette = {
-    background: cssColor('--brand-metaballs-bg'),
-    colors: colorNames.map(cssColor),
-  }
+  // A zero speed stops the shader loop, so reduced-motion users get a still frame
+  // instead of a surface that animates for the whole session.
+  const speed = still ? 0 : 1.7
+
   return (
     <div className={cn('brand-metaballs', className)} aria-hidden="true">
       <Metaballs
@@ -36,7 +47,7 @@ export function BrandMetaballs({ className = '' }: { className?: string }) {
         count={10}
         scale={1}
         size={1}
-        speed={1.7}
+        speed={speed}
         className="brand-metaballs__shader"
       />
     </div>

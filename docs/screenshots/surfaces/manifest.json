@@ -1,0 +1,33 @@
+{
+  "revision": "4585bfd1720478dd863c694e4cc17a3302c382d0",
+  "capturedAt": "2026-09-19T13:49:16.748Z",
+  "surfaces": [
+    "01-login-light.png",
+    "05-interview-empty.png",
+    "06-resume-picker-open.png",
+    "03-sidebar-expanded.png",
+    "08-composer-text-mode.png",
+    "04-sidebar-collapsed.png",
+    "09-composer-voice-fallback.png",
+    "07-position-picker-open.png",
+    "10-report-structured.png",
+    "11-analytics-dashboard.png",
+    "12-settings-1-profile.png",
+    "12-settings-2-resumes.png",
+    "12-settings-3-positions.png",
+    "12-settings-4-llm.png",
+    "12-settings-5-theme.png",
+    "17-components-lab-light.png",
+    "02-login-dark.png",
+    "13-interview-empty-dark.png",
+    "18-components-lab-dark.png",
+    "16-not-found-dark.png",
+    "14-login-register-light.png",
+    "15-not-found-light.png",
+    "19-menu-with-submenu.png",
+    "20-dialog-workspace.png",
+    "21-confirm-destructive.png",
+    "22-toast-warning.png",
+    "23-tooltip-icon.png"
+  ]
+}

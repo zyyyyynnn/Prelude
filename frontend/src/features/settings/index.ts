@@ -11,7 +11,7 @@ import type {
   UserProfileResponse,
 } from './types'
 
-export { useSettings } from './settings-context'
+export { sectionTitles, useSettings } from './settings-context'
 export { REASONING_LABELS } from './types'
 export type { LlmConfigPayload, LlmConfigResponse, LlmProviderResponse } from './types'
 

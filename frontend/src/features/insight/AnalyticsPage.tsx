@@ -11,9 +11,9 @@ import {
 import { CanvasRenderer } from 'echarts/renderers'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
+import { Panel } from '@/shared/ui/panel'
 import { fetchRadar, fetchTrend, fetchWeaknesses } from './api'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint } from './types'
-import './analytics.css'
 
 echarts.use([
   LineChart,
@@ -66,7 +66,7 @@ export function AnalyticsPage() {
           <div className="empty-state">
             <p>{error.message}</p>
             <Button variant="secondary" onClick={reload}>
-              <RefreshCw size={15} />
+              <RefreshCw />
               重新加载
             </Button>
           </div>
@@ -76,71 +76,84 @@ export function AnalyticsPage() {
           </div>
         ) : (
           <>
-            <div className="analytics-score-grid">
+            <div className="grid grid-cols-3 gap-md">
               {cards.map(([label, value]) => (
-                <article className="analytics-score-card" key={label}>
-                  <p className="analytics-score-card__label">{label}</p>
-                  <strong className="analytics-score-card__value">{value.toFixed(1)}</strong>
-                  <p className="analytics-score-card__meta">
+                <article
+                  className="grid gap-sm rounded-lg border border-border bg-surface p-lg elevated-whisper"
+                  key={label}
+                  data-slot="score-card"
+                >
+                  <p className="type-label" data-slot="score-label">
+                    {label}
+                  </p>
+                  <strong className="type-metric" data-slot="score-value">
+                    {value.toFixed(1)}
+                  </strong>
+                  <p className="type-meta" data-slot="score-meta">
                     最近 {radar.data.sessionCount} 场均分
                   </p>
                 </article>
               ))}
             </div>
-            <div className="analytics-dashboard-grid">
-              <section className="analytics-panel">
-                <div className="analytics-panel__head">
-                  <div>
-                    <p className="analytics-panel__eyebrow">结构</p>
-                    <h2 className="analytics-panel__title">能力雷达</h2>
-                    <p className="analytics-panel__lead">
-                      展示最近面试在三项核心维度上的平均水平。
-                    </p>
-                  </div>
-                  <span className="analytics-panel__meta">{radar.data.sessionCount} 场</span>
-                </div>
+            <div className="grid grid-cols-2 gap-lg" data-slot="chart-grid">
+              <Panel
+                layout="card"
+                eyebrow="结构"
+                title="能力雷达"
+                actions={<span className="type-meta shrink-0">{radar.data.sessionCount} 场</span>}
+              >
+                <p className="type-body max-w-(--layout-lead-max-inline-size)">
+                  展示最近面试在三项核心维度上的平均水平。
+                </p>
                 <Radar data={radar.data} />
-              </section>
-              <section className="analytics-panel">
-                <div className="analytics-panel__head">
-                  <div>
-                    <p className="analytics-panel__eyebrow">走势</p>
-                    <h2 className="analytics-panel__title">分数趋势</h2>
-                    <p className="analytics-panel__lead">按时间查看技术、表达与逻辑评分变化。</p>
-                  </div>
-                </div>
+              </Panel>
+              <Panel layout="card" eyebrow="走势" title="分数趋势">
+                <p className="type-body max-w-(--layout-lead-max-inline-size)">
+                  按时间查看技术、表达与逻辑评分变化。
+                </p>
                 <Trend data={trend.data ?? []} />
-              </section>
+              </Panel>
             </div>
-            <section className="analytics-panel">
-              <div className="analytics-panel__head">
-                <div>
-                  <p className="analytics-panel__eyebrow">聚合</p>
-                  <h2 className="analytics-panel__title">薄弱点列表</h2>
-                  <p className="analytics-panel__lead">按出现频率汇总薄弱点。</p>
-                </div>
-                <span className="analytics-panel__meta">{weaknesses.data?.length ?? 0} 类问题</span>
-              </div>
-              <div className="analytics-weakness-list">
-                {weaknesses.data?.length ? (
-                  weaknesses.data.map((item) => (
-                    <article className="analytics-weakness-item" key={item.category}>
-                      <div className="analytics-weakness-item__head">
-                        <h3 className="analytics-weakness-item__title">{item.category}</h3>
-                        <p className="analytics-weakness-item__summary">出现 {item.count} 次</p>
-                      </div>
-                      <ul className="analytics-weakness-item__descriptions">
-                        {item.descriptions.map((description) => (
-                          <li key={description}>{description}</li>
-                        ))}
-                      </ul>
-                    </article>
-                  ))
-                ) : (
-                  <div className="empty-state">暂无已归纳的薄弱点。</div>
-                )}
-              </div>
-            </section>
+            <Panel
+              layout="card"
+              eyebrow="聚合"
+              title="薄弱点列表"
+              actions={
+                <span className="type-meta shrink-0">{weaknesses.data?.length ?? 0} 类问题</span>
+              }
+            >
+              <p className="type-body max-w-(--layout-lead-max-inline-size)">
+                按出现频率汇总薄弱点。
+              </p>
+              {weaknesses.data?.length ? (
+                weaknesses.data.map((item) => (
+                  <article
+                    className="grid gap-sm rounded-lg border border-border bg-surface-muted p-md break-inside-avoid"
+                    data-slot="weakness-item"
+                    key={item.category}
+                  >
+                    <div className="label-end-grid items-baseline gap-md">
+                      <h3 className="type-subtitle" data-slot="weakness-title">
+                        {item.category}
+                      </h3>
+                      <p className="type-meta" data-slot="weakness-summary">
+                        出现 {item.count} 次
+                      </p>
+                    </div>
+                    <ul
+                      className="type-meta grid gap-xs list-plain"
+                      data-slot="weakness-descriptions"
+                    >
+                      {item.descriptions.map((description) => (
+                        <li key={description}>{description}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))
+              ) : (
+                <div className="empty-state">暂无已归纳的薄弱点。</div>
+              )}
+            </Panel>
           </>
         )}
       </div>
@@ -227,7 +240,7 @@ function Radar({ data }: { data: AnalyticsRadarResponse }) {
   }, data)
   return (
     <div
-      className="analytics-chart"
+      className="h-(--layout-chart-block-size) min-h-(--layout-chart-block-size)"
       ref={ref}
       role="img"
       aria-label={`技术能力 ${data.technical}，表达清晰度 ${data.expression}，逻辑思维 ${data.logic}`}
@@ -334,7 +347,7 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
   }, data)
   return (
     <div
-      className="analytics-chart"
+      className="h-(--layout-chart-block-size) min-h-(--layout-chart-block-size)"
       ref={ref}
       role="img"
       aria-label={`最近 ${data.length} 场面试的分数趋势`}

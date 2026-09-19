@@ -44,7 +44,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
           warning: <TriangleAlert size={16} />,
           error: <OctagonX size={16} />,
           loading: <Loader2 className="prelude-toast__loader" size={16} />,
-          close: <X size={16} />,
+          close: <X />,
         }}
         toastOptions={{
           closeButtonAriaLabel: '关闭系统提示',
@@ -66,7 +66,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         <Dialog.Portal>
           <Dialog.Backdrop className="prelude-dialog__backdrop" />
           <Dialog.Viewport className="prelude-dialog__viewport">
-            <Dialog.Popup className="confirm-dialog">
+            <Dialog.Popup className="prelude-dialog confirm-dialog">
               <Dialog.Title className="confirm-dialog__title">
                 {confirmation?.options.title ?? '确认操作'}
               </Dialog.Title>

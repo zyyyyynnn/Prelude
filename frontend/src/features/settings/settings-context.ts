@@ -3,6 +3,15 @@ import { createContext, useContext } from 'react'
 export type SettingsSection = 'profile' | 'resumes' | 'positions' | 'llm' | 'theme'
 export type SettingsIntent = 'upload-resume' | 'create-position'
 
+/** 分区标题的唯一来源：侧栏标签与各面板标题共用。 */
+export const sectionTitles: Record<SettingsSection, string> = {
+  profile: '账号资料',
+  resumes: '简历管理',
+  positions: '岗位管理',
+  llm: '模型管理',
+  theme: '主题',
+}
+
 export type SettingsOpenRequest = {
   section?: SettingsSection
   provider?: string

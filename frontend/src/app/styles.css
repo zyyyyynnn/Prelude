@@ -5,12 +5,3 @@
 @source '../features';
 
 @import '../shared/styles/index.css';
-@import './shell/sidebar.css';
-
-/* App-owned boot state shown while the session bootstrap resolves. */
-.app-boot {
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}

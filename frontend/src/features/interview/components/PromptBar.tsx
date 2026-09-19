@@ -5,14 +5,12 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react'
-import { cn } from '@/shared/lib/cn'
 
 /*
  * Adapted from Beautiful UI's Prompt Bar.
  * Copyright (c) 2026 Shane Levine. Licensed under the MIT License.
  */
 export function PromptBar({
-  placement,
   disabled,
   value,
   placeholder,
@@ -26,7 +24,6 @@ export function PromptBar({
   onInputKeyDown,
   onSubmit,
 }: {
-  placement: 'centered' | 'bottom'
   disabled?: boolean
   value?: string
   placeholder?: string
@@ -50,21 +47,32 @@ export function PromptBar({
 
   return (
     <form
-      className={cn(
-        'prompt-bar',
-        placement === 'centered' ? 'is-centered' : 'is-bottom',
-        disabled && 'is-disabled',
-      )}
+      className="mx-auto w-full max-w-(--layout-workspace-content-max-inline-size) group/prompt"
+      data-disabled={disabled ? 'true' : undefined}
       data-beautiful-ui="prompt-bar"
       onSubmit={onSubmit}
     >
-      <div className="prompt-bar__surface">
-        {attachments && <div className="prompt-bar__attachments">{attachments}</div>}
-        <div className="prompt-bar__input-area">
+      <div
+        className="prompt-bar-surface group-data-[disabled=true]/prompt:pointer-events-none group-data-[disabled=true]/prompt:opacity-65"
+        data-slot="prompt-bar-surface"
+      >
+        {attachments && (
+          <div
+            className="flex flex-wrap items-center gap-xs pt-xs px-sm"
+            data-slot="prompt-bar-attachments"
+          >
+            {attachments}
+          </div>
+        )}
+        <div
+          className="flex min-h-(--layout-prompt-input-min-block-size) items-start"
+          data-slot="prompt-bar-input-area"
+        >
           {inputContent ?? (
             <textarea
               ref={input}
-              className="prompt-bar__input"
+              className="prompt-bar-input"
+              data-slot="prompt-bar-input"
               rows={1}
               value={value}
               disabled={inputDisabled}
@@ -75,9 +83,12 @@ export function PromptBar({
             />
           )}
         </div>
-        <div className="prompt-bar__controls">
-          <div className="prompt-bar__controls-start">{leftActions}</div>
-          <div className="prompt-bar__controls-end">{rightActions}</div>
+        <div
+          className="flex min-h-(--ui-height-control) min-w-0 items-center justify-between gap-sm"
+          data-slot="prompt-bar-controls"
+        >
+          <div className="flex min-w-0 flex-1 items-center">{leftActions}</div>
+          <div className="flex items-center gap-sm">{rightActions}</div>
         </div>
       </div>
     </form>

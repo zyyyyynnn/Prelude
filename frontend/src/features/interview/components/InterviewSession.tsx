@@ -1,0 +1,136 @@
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { RefreshCw } from 'lucide-react'
+import { fetchResumes } from '@/features/resume'
+import { printInterviewReport, ReportPanel } from '@/features/report'
+import { REASONING_LABELS } from '@/features/settings'
+import { RoseThree } from '@/shared/brand/RoseThree'
+import { Button } from '@/shared/ui/button'
+import { useFeedback } from '@/shared/ui/feedback-context'
+import { InterviewAnswerComposer } from './InterviewAnswerComposer'
+import { MessageThread } from './MessageThread'
+import { useInterviewSession } from './useInterviewSession'
+import { WorkspaceHeader } from './WorkspaceHeader'
+
+function frozenModelLabel(model?: string, reasoningLevel?: string) {
+  const knownLevel =
+    reasoningLevel && reasoningLevel in REASONING_LABELS
+      ? REASONING_LABELS[reasoningLevel as keyof typeof REASONING_LABELS]
+      : reasoningLevel
+  return knownLevel ? `${model ?? '模型信息不可用'} · ${knownLevel}` : (model ?? '模型信息不可用')
+}
+
+export function InterviewSession({ sessionId }: { sessionId: number }) {
+  const feedback = useFeedback()
+  const [printing, setPrinting] = useState(false)
+  const controller = useInterviewSession(sessionId, (message) => feedback.notify(message, 'error'))
+  const resumes = useQuery({
+    queryKey: ['resumes'],
+    queryFn: ({ signal }) => fetchResumes(signal),
+  })
+  if (controller.session.isPending)
+    return (
+      <div className="flex flex-1 items-center justify-center text-text-tertiary">
+        正在加载会话…
+      </div>
+    )
+  if (controller.session.isError || !controller.current)
+    return (
+      <div className="flex flex-1 items-center justify-center text-text-tertiary">
+        <div className="empty-state">
+          <p>{controller.session.error?.message ?? '会话不存在'}</p>
+          <Button variant="secondary" onClick={() => void controller.session.refetch()}>
+            <RefreshCw />
+            重新加载
+          </Button>
+        </div>
+      </div>
+    )
+  const current = controller.current
+  const resumeName = resumes.data?.find((item) => item.id === current.resumeId)?.fileName
+  const hasReport = Boolean(current.summaryReport)
+  async function printReport() {
+    setPrinting(true)
+    try {
+      await printInterviewReport()
+      feedback.notify('已打开系统打印窗口', 'success')
+    } catch (error) {
+      feedback.notify(error instanceof Error ? error.message : '报告打印失败', 'error')
+    } finally {
+      setPrinting(false)
+    }
+  }
+  return (
+    <div className="flex min-h-0 flex-1 flex-col" data-slot="interview-workspace">
+      <div
+        className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-bg"
+        data-slot="workspace-active"
+      >
+        <WorkspaceHeader
+          title={current.targetPosition}
+          stage={current.currentStage}
+          status={current.status}
+          hasReport={hasReport}
+          showingReport={controller.showReport}
+          sending={controller.sending}
+          finishing={controller.finishing}
+          printing={printing}
+          onFinish={controller.finish}
+          onPrintReport={() => void printReport()}
+          onToggleReport={controller.setShowReport}
+        />
+        <div
+          className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+          data-slot="workspace-active-main"
+        >
+          {current.status === 'generating' && !hasReport ? (
+            <div className="flex flex-1 items-center justify-center bg-surface p-xl">
+              <div className="generating-card">
+                <RoseThree className="mb-lg size-(--layout-generating-rose-inline-size) text-brand" />
+                <h2 className="generating-title">AI 评估报告生成中…</h2>
+                <p className="mb-lg text-sm leading-relaxed text-text-secondary">
+                  正在整理答题表现并生成训练建议。
+                </p>
+                <div className="generating-progress-track">
+                  <div className="generating-progress-indicator" />
+                </div>
+              </div>
+            </div>
+          ) : controller.showReport && hasReport ? (
+            <div
+              className="scrollable gutter-stable flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-2xl py-(--layout-workspace-report-block-padding)"
+              data-slot="workspace-report"
+            >
+              <div
+                className="max-w-(--layout-workspace-content-max-inline-size) flex-1"
+                data-slot="report-content"
+              >
+                <ReportPanel source={current.summaryReport!} />
+              </div>
+            </div>
+          ) : (
+            <>
+              <MessageThread messages={controller.messages} />
+              <div className="composer-overlay" data-slot="workspace-composer">
+                <InterviewAnswerComposer
+                  sessionId={sessionId}
+                  resumeName={resumeName}
+                  positionName={current.targetPosition ?? '当前岗位'}
+                  modelName={frozenModelLabel(current.model, current.reasoningLevel)}
+                  attachments={current.attachments ?? []}
+                  jdMatched={Boolean(current.jdText?.trim())}
+                  disabled={current.status === 'finished'}
+                  sending={controller.sending}
+                  onSend={controller.send}
+                  onMessage={controller.updateMessage}
+                  onRefresh={controller.refresh}
+                  onError={(message) => feedback.notify(message, 'error')}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

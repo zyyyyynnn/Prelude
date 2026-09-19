@@ -33,25 +33,24 @@ export function Dialog({
   showClose?: boolean
   children: ReactNode
 }) {
+  const workspace = layout === 'workspace'
   return (
     <BaseDialog.Root open={open} onOpenChange={onOpenChange}>
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className="prelude-dialog__backdrop" />
         <BaseDialog.Viewport className="prelude-dialog__viewport">
           <BaseDialog.Popup
-            className={cn(
-              'prelude-dialog',
-              layout === 'workspace' && 'prelude-dialog--workspace',
-              className,
-            )}
+            className={cn('prelude-dialog', workspace && 'prelude-dialog--workspace', className)}
           >
             <BaseDialog.Title className="sr-only">{title}</BaseDialog.Title>
-            {showClose && (
+            {/* A workspace shell is full-bleed, so its own header owns the dismiss
+                affordance; a floating close button here would overlap caller content. */}
+            {showClose && !workspace && (
               <BaseDialog.Close
                 className="prelude-dialog__close ui-action ui-action-icon"
                 aria-label="关闭"
               >
-                <X size={18} />
+                <X />
               </BaseDialog.Close>
             )}
             {children}

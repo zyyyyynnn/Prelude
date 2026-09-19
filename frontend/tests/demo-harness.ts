@@ -88,12 +88,39 @@ export type DemoRequest = {
   body: unknown
 }
 
+export type DemoPositionRow = {
+  id: number
+  name: string
+  systemPrompt: string
+  editable: boolean
+}
+
+export type DemoResumeRow = {
+  id: number
+  fileName: string
+  createdAt: string
+  sessionCount: number
+  inUse: boolean
+}
+
+export type DemoProfile = {
+  accountId: number
+  username: string
+  email: string | null
+  avatarUrl: string | null
+  themePreference: string
+  revision: number
+}
+
 export type DemoState = {
   authenticated: boolean
   requests: DemoRequest[]
   sessions: InterviewSessionItem[]
   session: InterviewSessionDetailResponse
   llmConfig: LlmConfigResponse
+  positions: DemoPositionRow[]
+  resumes: DemoResumeRow[]
+  profile: DemoProfile
 }
 
 function capability(
@@ -241,6 +268,46 @@ export function createDemoState(): DemoState {
   return {
     authenticated: false,
     requests: [],
+    positions: [
+      {
+        id: 1,
+        name: 'Java 后端工程师',
+        systemPrompt: '重点考察服务端基础与可靠性取舍',
+        editable: false,
+      },
+      { id: 2, name: '平台工程师', systemPrompt: '重点考察平台化与可观测性', editable: true },
+    ],
+    resumes: [
+      {
+        id: 1,
+        fileName: 'Java 后端工程师简历.pdf',
+        createdAt: '2026-09-03T09:00:00+08:00',
+        sessionCount: 1,
+        inUse: true,
+      },
+      {
+        id: 2,
+        fileName: '前端工程师简历.pdf',
+        createdAt: '2026-09-03T09:05:00+08:00',
+        sessionCount: 1,
+        inUse: true,
+      },
+      {
+        id: 3,
+        fileName: '算法工程师简历.pdf',
+        createdAt: '2026-09-03T09:10:00+08:00',
+        sessionCount: 2,
+        inUse: true,
+      },
+    ],
+    profile: {
+      accountId: 1,
+      username: 'demo',
+      email: 'demo@prelude.local',
+      avatarUrl: null,
+      themePreference: 'system',
+      revision: 0,
+    },
     sessions: [
       {
         sessionId: 58,
@@ -468,44 +535,97 @@ async function respond(route: Route, state: DemoState) {
     return fulfillJson(route, state.sessions)
   if (/\/api\/interview\/\d+\/messages$/.test(path) && method === 'GET')
     return fulfillJson(route, state.session)
-  if (path === '/api/position/list' && method === 'GET')
-    return fulfillJson(route, [
-      { id: 1, name: 'Java 后端工程师', editable: false },
-      { id: 2, name: '平台工程师', editable: true },
-    ])
-  if (path === '/api/resume/list' && method === 'GET')
-    return fulfillJson(route, [
-      {
-        id: 1,
-        fileName: 'Java 后端工程师简历.pdf',
-        createdAt: '2026-09-03T09:00:00+08:00',
-        sessionCount: 1,
-        inUse: true,
-      },
-      {
-        id: 2,
-        fileName: '前端工程师简历.pdf',
-        createdAt: '2026-09-03T09:05:00+08:00',
-        sessionCount: 1,
-        inUse: true,
-      },
-      {
-        id: 3,
-        fileName: '算法工程师简历.pdf',
-        createdAt: '2026-09-03T09:10:00+08:00',
-        sessionCount: 2,
-        inUse: true,
-      },
-    ])
-  if (path === '/api/user/profile' && method === 'GET')
-    return fulfillJson(route, {
-      accountId: 1,
-      username: 'demo',
-      email: 'demo@prelude.local',
-      avatarUrl: null,
-      themePreference: 'system',
-      revision: 0,
-    })
+  if (path === '/api/position/list' && method === 'GET') return fulfillJson(route, state.positions)
+  if (path === '/api/position' && method === 'POST') {
+    const draft = (body ?? {}) as { name?: unknown; systemPrompt?: unknown }
+    const name = typeof draft.name === 'string' ? draft.name.trim() : ''
+    const systemPrompt = typeof draft.systemPrompt === 'string' ? draft.systemPrompt.trim() : ''
+    if (!name || !systemPrompt)
+      return fulfillProblem(route, 400, 'validation_failed', '岗位名称与面试侧重点不能为空')
+    if (state.positions.some((item) => item.name === name))
+      return fulfillProblem(route, 400, 'bad_request', '同名岗位已存在')
+    const created: DemoPositionRow = {
+      id: nextId(state.positions),
+      name,
+      systemPrompt,
+      editable: true,
+    }
+    state.positions = [...state.positions, created]
+    return fulfillJson(route, created)
+  }
+  const positionRoute = /^\/api\/position\/(\d+)$/.exec(path)
+  if (positionRoute && (method === 'PUT' || method === 'DELETE')) {
+    const id = Number(positionRoute[1])
+    const target = state.positions.find((item) => item.id === id)
+    if (!target || !target.editable)
+      return fulfillProblem(route, 400, 'bad_request', '岗位不存在或不可编辑')
+    if (method === 'DELETE') {
+      if (state.sessions.some((item) => item.targetPosition === target.name))
+        return fulfillProblem(route, 400, 'bad_request', '该岗位已被面试使用，无法删除')
+      state.positions = state.positions.filter((item) => item.id !== id)
+      return fulfillJson(route, null)
+    }
+    const draft = (body ?? {}) as { name?: unknown; systemPrompt?: unknown }
+    const name = typeof draft.name === 'string' ? draft.name.trim() : ''
+    const systemPrompt = typeof draft.systemPrompt === 'string' ? draft.systemPrompt.trim() : ''
+    if (!name || !systemPrompt)
+      return fulfillProblem(route, 400, 'validation_failed', '岗位名称与面试侧重点不能为空')
+    if (state.positions.some((item) => item.id !== id && item.name === name))
+      return fulfillProblem(route, 400, 'bad_request', '同名岗位已存在')
+    const updated: DemoPositionRow = { ...target, name, systemPrompt }
+    state.positions = state.positions.map((item) => (item.id === id ? updated : item))
+    return fulfillJson(route, updated)
+  }
+
+  if (path === '/api/resume/list' && method === 'GET') return fulfillJson(route, state.resumes)
+  if (path === '/api/resume/upload' && method === 'POST') {
+    const raw = request.postDataBuffer()?.toString('utf8') ?? ''
+    const fileName = /filename="([^"]*)"/.exec(raw)?.[1] ?? ''
+    if (!fileName.toLowerCase().endsWith('.pdf'))
+      return fulfillProblem(route, 400, 'bad_request', '仅支持 PDF 格式的简历')
+    // 文件名以 broken 开头用来驱动后端解析失败路径。
+    if (fileName.toLowerCase().startsWith('broken'))
+      return fulfillProblem(route, 400, 'bad_request', '简历解析失败，请上传可复制文本的 PDF')
+    const created: DemoResumeRow = {
+      id: nextId(state.resumes),
+      fileName,
+      createdAt: '2026-09-05T11:00:00+08:00',
+      sessionCount: 0,
+      inUse: false,
+    }
+    state.resumes = [...state.resumes, created]
+    return fulfillJson(route, { resumeId: created.id, skills: ['MySQL', 'Redis'], projects: [] })
+  }
+  const resumeRoute = /^\/api\/resume\/(\d+)$/.exec(path)
+  if (resumeRoute && method === 'DELETE') {
+    const id = Number(resumeRoute[1])
+    const target = state.resumes.find((item) => item.id === id)
+    if (!target) return fulfillProblem(route, 400, 'bad_request', '简历不存在')
+    if (target.inUse)
+      return fulfillProblem(route, 400, 'bad_request', '该简历已被面试使用，无法删除')
+    state.resumes = state.resumes.filter((item) => item.id !== id)
+    return fulfillJson(route, null)
+  }
+
+  if (path === '/api/user/profile' && method === 'GET') return fulfillJson(route, state.profile)
+  if (path === '/api/user/profile' && method === 'PUT') {
+    const draft = (body ?? {}) as {
+      username?: string
+      email?: string
+      themePreference?: string
+      expectedRevision?: number
+    }
+    if (draft.expectedRevision !== state.profile.revision)
+      return fulfillProblem(route, 409, 'revision_conflict', '资料已被其他操作更新，请重新加载')
+    state.profile = {
+      ...state.profile,
+      username: draft.username?.trim() || state.profile.username,
+      email: draft.email?.trim() ?? state.profile.email,
+      themePreference: draft.themePreference ?? state.profile.themePreference,
+      revision: state.profile.revision + 1,
+    }
+    return fulfillJson(route, state.profile)
+  }
   if (path === '/api/llm/providers' && method === 'GET') return fulfillJson(route, demoProviders)
   if (path === '/api/llm/config' && method === 'GET') return fulfillJson(route, state.llmConfig)
   if (path === '/api/llm/config' && method === 'PUT') {
@@ -568,6 +688,10 @@ function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessi
     createdAt: '2026-09-05T10:00:00+08:00',
     summaryReport: session.summaryReport,
   }
+}
+
+function nextId(rows: { id: number }[]): number {
+  return rows.reduce((max, row) => Math.max(max, row.id), 0) + 1
 }
 
 async function fulfillProblem(route: Route, status: number, code: string, detail: string) {

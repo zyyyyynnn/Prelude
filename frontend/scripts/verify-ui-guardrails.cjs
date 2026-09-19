@@ -44,6 +44,99 @@ if (!overlays.includes('Tooltip.Provider') && !overlays.includes('Tooltip.Root')
   violations.push('shared/ui/overlay.tsx: Base UI tooltip primitive is required')
 }
 
+// ---------------------------------------------------------------- CSS hygiene
+// The stylesheet is the single place Tailwind resolves class names from, so a rule
+// nobody can reach is not merely untidy — it is the shape the atomic contract forbids.
+const stylesheets = walk(sourceRoot).filter((item) => item.endsWith('.css'))
+for (const file of stylesheets) {
+  const relative = path.relative(root, file).replaceAll('\\', '/')
+  if (relative !== 'src/shared/styles/index.css' && relative !== 'src/app/styles.css') {
+    violations.push(
+      `${relative}: feature CSS file is not allowed, register an @utility in index.css`,
+    )
+    continue
+  }
+  const source = fs.readFileSync(file, 'utf8')
+  source.split('\n').forEach((line, index) => {
+    if (
+      /^import\s+['"]\.\/.+\.css['"]/.test(line) ||
+      /@import\s+['"]\.{1,2}\/.*features.*\.css/.test(line)
+    ) {
+      violations.push(`${relative}:${index + 1}: stylesheet imported from a feature owner`)
+    }
+  })
+  if (relative !== 'src/shared/styles/index.css') continue
+  // Walk top-level rules only; comments are blanked so they cannot look like a body.
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '))
+  let depth = 0
+  let line = 1
+  let header = ''
+  let body = ''
+  let ruleLine = 1
+  const flush = () => {
+    if (depth === 1 && header) {
+      const bare = header.replace(/::?[\w-]+(\([^)]*\))?/g, '').trim()
+      if (body.trim() === '') violations.push(`${relative}:${ruleLine}: empty rule ${header}`)
+      if (/^[a-z][a-z0-9]*$/i.test(bare) && !bare.includes('.')) {
+        violations.push(
+          `${relative}:${ruleLine}: unlayered element selector "${bare}" — move it into @layer base`,
+        )
+      }
+    }
+    header = ''
+    body = ''
+  }
+  for (const character of code) {
+    if (character === '\n') {
+      line += 1
+      if (depth === 0) header = ''
+      continue
+    }
+    if (character === '{') {
+      depth += 1
+      if (depth === 1) {
+        ruleLine = line
+        body = ''
+      }
+      continue
+    }
+    if (character === '}') {
+      depth -= 1
+      if (depth === 0) flush()
+      continue
+    }
+    if (depth === 0) header += character
+    else if (depth === 1) body += character
+  }
+}
+
+// A class rule with no consumer is dead weight; shared primitives are composed at
+// runtime (`prelude-button--${variant}`), so their stems count as consumers too.
+const indexCss = stylesheets
+  .filter((file) => file.endsWith(path.join('shared', 'styles', 'index.css')))
+  .map((file) => fs.readFileSync(file, 'utf8'))
+  .join('\n')
+const consumers = walk(sourceRoot)
+  .filter((item) => /\.(tsx|ts)$/.test(item))
+  .map((item) => fs.readFileSync(item, 'utf8'))
+  .join('\n')
+const registered = new Set(
+  [...indexCss.matchAll(/^@utility\s+([a-z0-9*-]+)/gm)].map((match) =>
+    match[1].replace(/-\*$/, ''),
+  ),
+)
+const declaredClasses = new Set()
+for (const match of indexCss.matchAll(/^\.([a-z][-\w]*)\s*[,{]/gm)) declaredClasses.add(match[1])
+for (const name of declaredClasses) {
+  if (registered.has(name)) continue
+  const stems = [name, ...name.split(/(?=--)|(?=__)/).filter(Boolean)]
+  const base = name.replace(/(--|__)[\s\S]*$/, '')
+  const candidates = new Set([...stems, base])
+  if ([...candidates].some((candidate) => candidate.length > 2 && consumers.includes(candidate)))
+    continue
+  violations.push(`src/shared/styles/index.css: .${name} has no consumer`)
+}
+
 if (violations.length) {
   console.error(`UI guardrails: FAIL (${violations.length})`)
   for (const violation of violations) console.error(`  ${violation}`)

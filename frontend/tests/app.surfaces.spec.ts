@@ -265,8 +265,8 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
   await expect(page.locator('.login-card__header .eyebrow')).toHaveCount(0)
   await expect(page.getByLabel('邮箱')).toBeHidden()
   const loginGeometry = await page.locator('.login-card__form-panel').evaluate((panel) => {
-    const headingElement = panel.querySelector<HTMLElement>('.page__title')!
-    const form = panel.querySelector<HTMLElement>('.auth-form')!
+    const headingElement = panel.querySelector<HTMLElement>('#auth-title')!
+    const form = panel.querySelector<HTMLElement>('[data-slot="auth-form"]')!
     const button = panel.querySelector<HTMLElement>('button[type="submit"]')!
     const password = panel.querySelector<HTMLElement>('#auth-password')!
     const emailPlaceholder = panel.querySelector<HTMLElement>('.auth-email-field')!
@@ -322,8 +322,12 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(promptBar).toBeVisible()
   const geometry = await promptBar.evaluate((element) => {
     const bar = element.getBoundingClientRect()
-    const input = element.querySelector('.prompt-bar__input-area')?.getBoundingClientRect()
-    const controls = element.querySelector('.prompt-bar__controls')?.getBoundingClientRect()
+    const input = element
+      .querySelector('[data-slot="prompt-bar-input-area"]')
+      ?.getBoundingClientRect()
+    const controls = element
+      .querySelector('[data-slot="prompt-bar-controls"]')
+      ?.getBoundingClientRect()
     return {
       width: bar.width,
       height: bar.height,
@@ -336,11 +340,13 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(promptBar).toHaveScreenshot('interview-prompt-bar.png', {
     animations: 'disabled',
   })
-  const promptBorder = await page.locator('.prompt-bar__surface').evaluate((element) => {
-    const before = getComputedStyle(element).borderColor
-    element.querySelector<HTMLElement>('.prompt-bar__input')?.focus()
-    return { before, after: getComputedStyle(element).borderColor }
-  })
+  const promptBorder = await page
+    .locator('[data-slot="prompt-bar-surface"]')
+    .evaluate((element) => {
+      const before = getComputedStyle(element).borderColor
+      element.querySelector<HTMLElement>('[data-slot="prompt-bar-input"]')?.focus()
+      return { before, after: getComputedStyle(element).borderColor }
+    })
   expect(promptBorder.after).toBe(promptBorder.before)
   await page.getByRole('button', { name: '收起侧栏' }).hover()
   const tooltip = page.locator('.prelude-tooltip')
@@ -387,10 +393,10 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   })
   const collapsedSidebar = await page.locator('.app-sidebar').evaluate((sidebar) => ({
     width: Math.round(sidebar.getBoundingClientRect().width),
-    iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.app-sidebar__btn > svg')).every(
+    iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.sidebar-action > svg')).every(
       (icon) => icon.getBoundingClientRect().width > 0 && icon.getBoundingClientRect().height > 0,
     ),
-    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('.sidebar-label')).every(
+    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('[data-sidebar-label]')).every(
       (label) => {
         const style = getComputedStyle(label)
         return style.visibility === 'hidden' && style.opacity === '0'
@@ -549,11 +555,11 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await page.getByRole('button', { name: '简历管理' }).click()
   await expect(page.getByRole('heading', { name: '已上传简历' })).toBeVisible()
   await expect(
-    page.locator('.settings-inline-actions--header').getByRole('button', { name: '上传简历' }),
+    page.locator('[data-slot="panel-actions"]').getByRole('button', { name: '上传简历' }),
   ).toBeVisible()
-  await expect(page.locator('.resume-row__main > svg')).toHaveCount(0)
+  await expect(page.locator('[data-slot="resume-row-main"] > svg')).toHaveCount(0)
   const resumePadding = await page
-    .locator('.resume-row')
+    .locator('[data-slot="resume-row"]')
     .first()
     .evaluate((row) => {
       const style = getComputedStyle(row)
@@ -562,19 +568,19 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   expect(resumePadding[0]).toBe(resumePadding[1])
   await page.getByRole('button', { name: '岗位管理' }).click()
   await expect(
-    page.locator('.settings-inline-actions--header').getByRole('button', { name: '创建岗位' }),
+    page.locator('[data-slot="panel-actions"]').getByRole('button', { name: '创建岗位' }),
   ).toBeVisible()
-  await expect(page.locator('.position-settings__item svg')).toHaveCount(0)
+  await expect(page.locator('[data-slot="position-catalog"] svg')).toHaveCount(0)
   const positionWorkspace = await page
-    .locator('.position-settings__workspace')
+    .locator('[data-slot="position-workspace"]')
     .evaluate((workspace) => {
       const [catalog, form] = Array.from(workspace.children)
       const catalogRect = catalog.getBoundingClientRect()
       const formRect = form.getBoundingClientRect()
       const catalogStyle = getComputedStyle(catalog)
       const formStyle = getComputedStyle(form)
-      const catalogTitle = catalog.querySelector<HTMLElement>('.settings-section__title')!
-      const firstItem = catalog.querySelector<HTMLElement>('.position-settings__item-name')!
+      const catalogTitle = catalog.querySelector<HTMLElement>('[data-slot="panel-heading"]')!
+      const firstItem = catalog.querySelector<HTMLElement>('[data-slot="position-item-name"]')!
       return {
         alignedTop: Math.abs(catalogRect.top - formRect.top) < 1,
         sideBySide: formRect.left > catalogRect.right,
@@ -595,17 +601,19 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
     matchingSurface: true,
     contentAligned: true,
   })
-  await expect(page.locator('.position-settings__item-name').first()).toHaveCSS(
+  await expect(page.locator('[data-slot="position-item-name"]').first()).toHaveCSS(
     'font-family',
     /Noto Serif SC/,
   )
-  const positionFields = await page.locator('.position-settings__fields').evaluate((container) => {
-    const fields = Array.from(container.children).map((field) => field.getBoundingClientRect())
-    return {
-      sameWidth: Math.abs(fields[0].width - fields[1].width) < 1,
-      stacked: fields[1].top > fields[0].bottom,
-    }
-  })
+  const positionFields = await page
+    .locator('[data-slot="position-fields"]')
+    .evaluate((container) => {
+      const fields = Array.from(container.children).map((field) => field.getBoundingClientRect())
+      return {
+        sameWidth: Math.abs(fields[0].width - fields[1].width) < 1,
+        stacked: fields[1].top > fields[0].bottom,
+      }
+    })
   expect(positionFields).toEqual({ sameWidth: true, stacked: true })
   await expect(page.getByRole('dialog', { name: '全局设置' })).toHaveScreenshot(
     'settings-position-dialog.png',
@@ -615,7 +623,7 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   const modelSelect = page.getByLabel('模型', { exact: true })
   await expect(modelSelect).toHaveAttribute('role', 'combobox')
   const modelSelectionLayout = await page
-    .locator('.llm-model-selection-grid')
+    .locator('[data-slot="model-selection"]')
     .evaluate((container) => {
       const fields = Array.from(container.children).map((field) => field.getBoundingClientRect())
       return {
@@ -636,6 +644,57 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await page.screenshot({
     path: test.info().outputPath('settings-select.png'),
     fullPage: true,
+  })
+})
+
+test('@visual keeps the light component lab pixel-stable', async ({ page }) => {
+  await gotoComponentLab(page, 'light')
+  await expect(page).toHaveScreenshot('components-lab-light.png', { animations: 'disabled' })
+})
+
+test('@visual keeps the dark component lab pixel-stable', async ({ page }) => {
+  await gotoComponentLab(page, 'dark')
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(page).toHaveScreenshot('components-lab-dark.png', { animations: 'disabled' })
+})
+
+test('@visual keeps the not-found surface on the anonymous page shell', async ({ page }) => {
+  await installApi(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/no-such-route')
+  await expect(page.getByRole('heading', { name: '页面不存在' })).toBeVisible()
+  // The brand mark is a WebGL surface, so it stays out of the pixel oracle; its geometry is
+  // gated here and the animated shader is reviewed through the surface captures instead.
+  const composition = await page.locator('[data-slot="not-found"]').evaluate((section) => {
+    const mark = section.querySelector<HTMLElement>('.brand-metaballs')
+    const back = section.querySelector<HTMLAnchorElement>('a[href="/"]')
+    const box = mark?.getBoundingClientRect()
+    const radius = mark ? Number.parseFloat(getComputedStyle(mark).borderRadius) : 0
+    return {
+      markIsCircularSquare: Boolean(
+        box &&
+        Math.round(box.width) === 72 &&
+        Math.round(box.height) === 72 &&
+        radius >= box.width / 2,
+      ),
+      markCenteredOnViewport: Boolean(
+        box && Math.abs(box.left + box.width / 2 - innerWidth / 2) < 1,
+      ),
+      backUsesButtonSkin: Boolean(
+        back &&
+        back.tagName === 'A' &&
+        back.classList.contains('prelude-button') &&
+        back.getBoundingClientRect().width > 0,
+      ),
+    }
+  })
+  expect(composition).toEqual({
+    markIsCircularSquare: true,
+    markCenteredOnViewport: true,
+    backUsesButtonSkin: true,
+  })
+  await expect(page.locator('[data-slot="not-found-body"]')).toHaveScreenshot('not-found.png', {
+    animations: 'disabled',
   })
 })
 
@@ -698,7 +757,7 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
 
   const geometry = await header.locator('.workspace-header__main').evaluate((main) => {
     const titleArea = main.querySelector<HTMLElement>('.workspace-header__title-area')!
-    const right = main.querySelector<HTMLElement>('.workspace-header__right')!
+    const right = main.querySelector<HTMLElement>('[data-slot="workspace-header-right"]')!
     const title = main.querySelector<HTMLElement>('.workspace-header__title')!
     const titleBox = title.getBoundingClientRect()
     return {
@@ -718,6 +777,17 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
   expect(geometry.truncated).toBe(true)
   expect(Math.abs(geometry.titleAreaTop - geometry.rightTop)).toBeLessThanOrEqual(3)
 })
+
+async function gotoComponentLab(page: Page, scheme: 'light' | 'dark') {
+  await installApi(page)
+  if (scheme === 'dark') {
+    await page.addInitScript(() => localStorage.setItem('prelude-theme-preference', 'dark'))
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/components-lab')
+  await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Typography' })).toBeVisible()
+}
 
 async function selectContext(page: Page, menuLabel: string, option: string) {
   await page.getByRole('button', { name: '添加面试上下文' }).click()

@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
+import { Panel } from '@/shared/ui/panel'
 import { useFeedback } from '@/shared/ui/feedback-context'
+import { sectionTitles } from '@/features/settings'
 import { deleteResume, fetchResumes, uploadResume } from './index'
-import './resume.css'
 
 export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: number }) {
   const input = useRef<HTMLInputElement>(null)
@@ -42,12 +43,14 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
   }
 
   return (
-    <div className="panel-content-wrapper resume-settings">
-      <div className="settings-inline-actions settings-inline-actions--header">
+    <Panel
+      title={sectionTitles.resumes}
+      actions={
         <Button onClick={() => input.current?.click()} loading={upload.isPending}>
           上传简历
         </Button>
-      </div>
+      }
+    >
       <label className="sr-only" htmlFor="settings-resume-upload">
         选择 PDF 简历
       </label>
@@ -62,8 +65,8 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
           event.currentTarget.value = ''
         }}
       />
-      <section className="settings-section" aria-labelledby="resume-library-title">
-        <h3 id="resume-library-title" className="settings-section__title">
+      <section className="grid gap-sm" aria-labelledby="resume-library-title">
+        <h3 id="resume-library-title" className="type-subtitle" data-slot="section-title">
           已上传简历
         </h3>
         {resumes.isPending ? (
@@ -79,13 +82,13 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
             </Button>
           </div>
         ) : resumes.data?.length ? (
-          <div className="resume-catalog">
+          <div className="flex flex-col gap-sm">
             {resumes.data.map((resume) => (
-              <article className="resume-row" key={resume.id}>
-                <div className="resume-row__main">
-                  <div className="resume-row__title-wrap">
-                    <h3 className="resume-row__title">{resume.fileName}</h3>
-                    <p className="resume-row__hint">
+              <article className="list-row" key={resume.id} data-slot="resume-row">
+                <div className="flex-1 min-w-0" data-slot="resume-row-main">
+                  <div className="flex flex-col gap-xs min-w-(--layout-list-title-min-inline-size)">
+                    <h4 className="truncate-title">{resume.fileName}</h4>
+                    <p className="type-meta">
                       {resume.createdAt
                         ? new Intl.DateTimeFormat('zh-CN', {
                             dateStyle: 'medium',
@@ -120,11 +123,11 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
             ))}
           </div>
         ) : (
-          <div className="empty-state resume-settings__empty">
+          <div className="empty-state">
             <p>暂无简历，上传 PDF 后开始训练。</p>
           </div>
         )}
       </section>
-    </div>
+    </Panel>
   )
 }

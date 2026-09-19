@@ -46,6 +46,7 @@ npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:a11y
 npm --prefix frontend run verify:visual
 npm --prefix frontend run build
+npm --prefix frontend run verify:cascade
 npm --prefix frontend run verify:production
 npm --prefix frontend run test:smoke
 npm --prefix frontend audit --omit=dev
@@ -59,6 +60,20 @@ git diff --check
 - `PRELUDE_MYSQL_SMOKE=true`：MySQL 8.4 执行当前 Flyway baseline，并验证数据库集成契约与 `demo` 验收数据的确定性重置。
 - `PRELUDE_IDENTITY_SMOKE=true`：基于真实 MySQL 与 Redis 验证注册登录、Session rotation/revoke、CSRF、Origin 与 profile revision 契约。
 - `PRELUDE_S3_SMOKE=true`：通过 Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
+
+上述开关未设置时对应测试直接跳过，`mvn clean test` 仍会成功，因此本地跑单测默认拿不到数据库、会话与对象存储这三层保障。若本机无法拉取 Testcontainers 的 `testcontainers/ryuk` 回收镜像，追加 `TESTCONTAINERS_RYUK_DISABLED=true`：本地 `versity/versitygw` 镜像已由 `docker compose` 提供，关闭回收器不影响这两组测试的判定。
+
+## 视觉基线
+
+`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。有意改变视觉时用它更新基线，不要手工改图：
+
+```powershell
+npm --prefix frontend run snapshot:update
+```
+
+`npm --prefix frontend run capture:surfaces` 生成覆盖登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入与语音回退、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入仓库唯一的界面资产目录 `docs/screenshots/surfaces/`，并在同目录的 `manifest.json` 里记录对应提交。它是随代码一起提交、供人工回归对照的界面资产，不产生断言，也不是门禁。
+
+`@demo` 链路测试的截图只作为该次运行的诊断证据，随 Playwright 报告写入 `frontend/test-results/`，不进入资产目录。
 
 所有 DDL 位于 `backend/src/main/resources/db/migration/`：`V20260830__establish_prelude_schema.sql` 建立当前 schema，`R__reference_data.sql` 以幂等方式维护 reference data。数据库仅含开发/demo 数据，schema 调整直接修改当前 baseline 后通过 `docker compose down -v` 空库重建验证。
 

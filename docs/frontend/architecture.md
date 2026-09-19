@@ -44,11 +44,11 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 `shared/ui` 中的 Button、Field 与表单控件采用 shadcn source ownership 结构，Modal、Menu 与 Tooltip 使用 Base UI。面试输入区的 Prompt Bar 采用 [Beautiful UI](https://www.beautifului.dev/) 组合模式，来源记录位于 `frontend/beautiful-ui.sources.json`。Prompt Bar 负责附件、简历、岗位、JD 与模型选择；管理动作统一进入设置弹窗。所有 UI 源码使用 Prelude token 与 `DESIGN.md` 视觉语言。
 
-样式组合由 `frontend/src/app/styles.css` 负责：它装配 Tailwind、应用扫描范围、共享样式、应用外壳样式和各 feature 样式。`shared/styles/index.css` 只拥有 token、主题、重置、全局排版、焦点状态和可复用 UI/layout primitive；业务页面的样式必须留在对应的 `features/*` 或 `app/shell` owner 中。`verify:architecture` 同时检查源码依赖和 CSS 本地 `@import`，阻止 shared 反向引入应用或 feature 样式。
+样式只有两种来源：调用点的 Tailwind 原子类，和 `shared/styles/index.css` 中具名注册的 `@utility`。`frontend/src/app/styles.css` 装配 Tailwind、应用扫描范围与共享样式；feature 目录不含 CSS 文件，`features/*` 与 `app/shell` 只使用 token 与原子类。`shared/styles/index.css` 拥有 token、主题、重置、全局排版、焦点状态、复合 utility 与文档级打印策略。`verify:architecture` 同时检查源码依赖和 CSS 本地 `@import`，阻止 shared 反向引入应用样式。视觉与层叠约定见 `DESIGN.md` 的 Style Assembly。
 
 ## 命名规约
 
-远端读取用 `fetch*`、本地存储读写用 `read*`/`write*`、纯计算派生用 `get*`；DOM/事件处理用 `handle*`，动作为裸动词；加载态按层表达（数据源 `isPending`、控件 `loading`）。组件变体以后代或同元素 BEM 选择器表达，`shared` 下新样式统一 `prelude-` 前缀。
+远端读取用 `fetch*`、本地存储读写用 `read*`/`write*`、纯计算派生用 `get*`；DOM/事件处理用 `handle*`，动作为裸动词；加载态按层表达（数据源 `isPending`、控件 `loading`）。界面不使用 BEM 选择器：布局与外观由原子类表达，无法原子化的组合注册为具名 `@utility`，跨组件状态用 `group`/`peer` 与 `data-*` 变体传播。`shared/ui` 下新 primitive 仍统一 `prelude-` 前缀；测试与打印锚点使用 `data-slot`。
 
 ## 验证
 

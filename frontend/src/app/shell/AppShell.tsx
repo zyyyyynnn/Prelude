@@ -13,15 +13,13 @@ import {
 import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import {
+  deleteSession,
   fetchSession,
   fetchSessions,
   groupSessions,
-  readSessionPreferences,
-  writeSessionPreferences,
-  type SessionPreferences,
+  setSessionPinned,
   type InterviewSessionItem,
 } from '@/features/interview'
-import { useAuth } from '@/features/auth'
 import { useSettings } from '@/features/settings'
 import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
@@ -41,7 +39,6 @@ export function AppShell() {
 
 function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [collapsed, setCollapsed] = useState(false)
-  const auth = useAuth()
   const feedback = useFeedback()
   const client = useQueryClient()
   const navigate = useNavigate()
@@ -51,32 +48,23 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [loadingSessionId, setLoadingSessionId] = useState<number | null>(null)
   const [failedSessionId, setFailedSessionId] = useState<number | null>(null)
   const activeId = Number(params.get('session')) || null
-  const accountScope = String(auth.accountId ?? '')
-  const [preferences, setPreferences] = useState<SessionPreferences>(() =>
-    readSessionPreferences(localStorage, accountScope),
-  )
   const sessions = useQuery({
     queryKey: ['interview-sessions'],
     queryFn: ({ signal }) => fetchSessions(signal),
   })
-  const grouped = groupSessions(sessions.data ?? [], preferences)
+  const grouped = groupSessions(sessions.data ?? [])
 
   useEffect(() => () => sessionRequest.current?.abort(), [])
 
-  function updatePreferences(next: SessionPreferences) {
-    setPreferences(next)
-    writeSessionPreferences(localStorage, accountScope, next)
-  }
-
-  function togglePin(sessionId: number) {
-    const pinned = preferences.pinnedIds.includes(sessionId)
-    updatePreferences({
-      ...preferences,
-      pinnedIds: pinned
-        ? preferences.pinnedIds.filter((id) => id !== sessionId)
-        : [...preferences.pinnedIds, sessionId],
-    })
-    feedback.notify(pinned ? '已取消置顶' : '会话已置顶', 'success')
+  async function togglePin(session: InterviewSessionItem) {
+    const pinned = !session.pinned
+    try {
+      await setSessionPinned(session.sessionId, pinned)
+      await client.invalidateQueries({ queryKey: ['interview-sessions'] })
+      feedback.notify(pinned ? '会话已置顶' : '已取消置顶', 'success')
+    } catch (error) {
+      feedback.notify(error instanceof Error ? error.message : '置顶状态更新失败', 'error')
+    }
   }
 
   async function openSession(session: InterviewSessionItem, controller: AbortController) {
@@ -100,19 +88,22 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   }
 
   async function removeSession(session: InterviewSessionItem) {
+    const sessionName = session.targetPosition || session.positionName || '未命名岗位'
     const accepted = await feedback.confirm({
       title: '删除会话',
-      message: `确定要从列表中删除“${session.targetPosition || session.positionName || '未命名岗位'}”吗？`,
+      message: `“${sessionName}”的问答记录、评分与报告都会被永久删除，无法恢复。`,
       confirmText: '删除',
       danger: true,
     })
     if (!accepted) return
-    updatePreferences({
-      ...preferences,
-      hiddenIds: [...new Set([...preferences.hiddenIds, session.sessionId])],
-    })
-    if (activeId === session.sessionId) void navigate('/interview')
-    feedback.notify('会话已删除', 'success')
+    try {
+      await deleteSession(session.sessionId)
+      await client.invalidateQueries({ queryKey: ['interview-sessions'] })
+      if (activeId === session.sessionId) void navigate('/interview')
+      feedback.notify('会话已删除', 'success')
+    } catch (error) {
+      feedback.notify(error instanceof Error ? error.message : '会话删除失败', 'error')
+    }
   }
 
   const startNewInterview = () => void navigate('/interview')
@@ -131,45 +122,50 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
 
   return (
     <aside className={cn('app-sidebar', collapsed && 'is-collapsed')}>
-      <header className="app-sidebar__header">
-        <div className="app-sidebar__brand">
-          <BrandMetaballs className="app-sidebar__logo" />
-          <span className="sidebar-label app-sidebar__title">Prelude</span>
+      <header className="flex h-(--layout-sidebar-header-block-size) items-center justify-between p-sm">
+        <div
+          className="flex items-center gap-sm overflow-hidden whitespace-nowrap"
+          data-sidebar-brand
+        >
+          <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
+          <span className="font-serif text-md font-medium text-text-primary" data-sidebar-label>
+            Prelude
+          </span>
         </div>
         <IconTooltip label={collapsed ? '展开侧栏' : '收起侧栏'}>
           <button
-            className="app-sidebar__toggle ui-action ui-action-icon"
+            className="sidebar-toggle ui-action ui-action-icon"
             aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
             onClick={() => setCollapsed((value) => !value)}
           >
-            <span className="app-sidebar__toggle-icons" aria-hidden="true">
-              <ChevronLeft className="app-sidebar__toggle-icon app-sidebar__toggle-icon--collapse" />
-              <ChevronRight className="app-sidebar__toggle-icon app-sidebar__toggle-icon--expand" />
+            <span data-toggle-icon-stack aria-hidden="true">
+              <ChevronLeft data-toggle-icon="collapse" />
+              <ChevronRight data-toggle-icon="expand" />
             </span>
           </button>
         </IconTooltip>
       </header>
 
-      <div className="app-sidebar__main">
-        <div className="app-sidebar__actions">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-sm">
+        <div className="border-b border-border pb-md">
           <IconTooltip label="开始新面试">
             <button
-              className="app-sidebar__btn app-sidebar__btn--primary ui-action ui-action-primary"
+              className="sidebar-action sidebar-action-primary ui-action ui-action-primary"
               aria-label="开始新面试"
               onClick={startNewInterview}
             >
-              <Plus size={20} />
-              <span className="sidebar-label">开始新面试</span>
+              <Plus />
+              <span data-sidebar-label>开始新面试</span>
             </button>
           </IconTooltip>
         </div>
 
-        <div className="app-sidebar__workspace-area">
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
           <div
-            className={cn('app-sidebar__sessions scrollable', !collapsed && 'is-visible')}
+            className={cn('sidebar-pane sidebar-sessions scrollable', !collapsed && 'is-visible')}
             aria-hidden={collapsed}
           >
-            {sessions.isPending && <p className="session-group__empty">正在加载会话</p>}
+            {sessions.isPending && <p className="ms-xs text-xs text-text-tertiary">正在加载会话</p>}
             {!sessions.isPending &&
               sessionGroups.map((group) => (
                 <SidebarSessionSection
@@ -181,23 +177,25 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
                   currentPath={location.pathname}
                   loadingSessionId={loadingSessionId}
                   failedSessionId={failedSessionId}
-                  pinnedIds={preferences.pinnedIds}
                   onOpen={handleSelectSession}
-                  onTogglePin={togglePin}
+                  onTogglePin={(session) => void togglePin(session)}
                   onRemove={(session) => void removeSession(session)}
                 />
               ))}
           </div>
 
           <div
-            className={cn('app-sidebar__collapsed-actions', collapsed && 'is-visible')}
+            className={cn(
+              'sidebar-pane flex w-full flex-col justify-end pb-sm',
+              collapsed && 'is-visible',
+            )}
             aria-hidden={!collapsed}
           >
             <SidebarLink collapsed to="/interview" label="工作区" icon={<PanelLeft size={20} />} />
           </div>
         </div>
 
-        <nav className="app-sidebar__tools" aria-label="工作区工具">
+        <nav className="flex flex-col gap-sm" aria-label="工作区工具">
           <SidebarLink
             collapsed={collapsed}
             to="/analytics"
@@ -207,15 +205,15 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
         </nav>
       </div>
 
-      <footer className="app-sidebar__footer">
+      <footer className="px-sm pb-sm">
         <IconTooltip label="设置">
           <button
-            className="app-sidebar__btn app-sidebar__btn--settings ui-action ui-action-nav"
+            className="sidebar-action ui-action ui-action-nav"
             aria-label="设置"
             onClick={onOpenSettings}
           >
-            <Settings size={20} />
-            <span className="sidebar-label">设置</span>
+            <Settings />
+            <span data-sidebar-label>设置</span>
           </button>
         </IconTooltip>
       </footer>
@@ -237,16 +235,13 @@ function SidebarLink({
   const link = (
     <NavLink
       className={({ isActive }) =>
-        cn(
-          'app-sidebar__btn app-sidebar__btn--tool ui-action ui-action-nav',
-          isActive && 'is-active',
-        )
+        cn('sidebar-action ui-action ui-action-nav', isActive && 'is-active')
       }
       to={to}
       aria-label={label}
     >
       {icon}
-      <span className="sidebar-label">{label}</span>
+      <span data-sidebar-label>{label}</span>
     </NavLink>
   )
   return collapsed ? <IconTooltip label={label}>{link}</IconTooltip> : link
@@ -270,17 +265,17 @@ function SidebarSessionItem({
   isFailed: boolean
   isPinned: boolean
   onOpen: (session: InterviewSessionItem) => void
-  onTogglePin: (sessionId: number) => void
+  onTogglePin: (session: InterviewSessionItem) => void
   onRemove: (session: InterviewSessionItem) => void
 }) {
   const sessionName = session.targetPosition || session.positionName || '未命名岗位'
   const actionPrefix = isFailed ? '重试打开会话' : isFinished ? '打开已结束会话' : '打开会话'
 
   return (
-    <li className="session-item-wrapper">
+    <li className="session-row-host group/row">
       <button
         className={cn(
-          'session-item-btn ui-action ui-action-nav',
+          'session-row ui-action ui-action-nav',
           isActive && 'is-active',
           isLoading && 'is-loading',
           isFailed && 'is-error',
@@ -289,31 +284,36 @@ function SidebarSessionItem({
         aria-busy={isLoading || undefined}
         onClick={() => onOpen(session)}
       >
-        <span className="session-item__name">{sessionName}</span>
+        <span className="min-w-0 truncate">{sessionName}</span>
         {(isLoading || isFailed) && (
-          <span className="session-item__state">{isLoading ? '加载中' : '加载失败'}</span>
+          <span className="ms-auto shrink-0 text-xs">{isLoading ? '加载中' : '加载失败'}</span>
         )}
       </button>
       {isPinned && (
-        <Pin className="pin-indicator" size={12} fill="currentColor" aria-hidden="true" />
+        <Pin
+          className="pointer-events-none absolute top-1/2 inset-e-sm flex -translate-y-1/2 items-center text-accent-text opacity-80 group-hover/row:hidden group-focus-within/row:hidden"
+          size={12}
+          fill="currentColor"
+          aria-hidden="true"
+        />
       )}
-      <div className="session-item-actions">
+      <div className="session-row-actions group-hover/row:opacity-100 group-focus-within/row:opacity-100">
         <IconTooltip label={isPinned ? '取消置顶' : '置顶会话'}>
           <button
-            className="action-btn ui-action ui-action-icon"
+            className="row-action ui-action ui-action-icon"
             aria-label={isPinned ? '取消置顶' : '置顶会话'}
-            onClick={() => onTogglePin(session.sessionId)}
+            onClick={() => onTogglePin(session)}
           >
             <Pin size={14} fill={isPinned ? 'currentColor' : 'none'} />
           </button>
         </IconTooltip>
         <IconTooltip label="删除会话">
           <button
-            className="action-btn delete-btn ui-action ui-action-danger"
+            className="row-action row-action-danger ui-action ui-action-danger"
             aria-label="删除会话"
             onClick={() => onRemove(session)}
           >
-            <Trash2 size={14} />
+            <Trash2 />
           </button>
         </IconTooltip>
       </div>
@@ -329,7 +329,6 @@ function SidebarSessionSection({
   currentPath,
   loadingSessionId,
   failedSessionId,
-  pinnedIds,
   onOpen,
   onTogglePin,
   onRemove,
@@ -341,16 +340,15 @@ function SidebarSessionSection({
   currentPath: string
   loadingSessionId: number | null
   failedSessionId: number | null
-  pinnedIds: number[]
   onOpen: (session: InterviewSessionItem) => void
-  onTogglePin: (sessionId: number) => void
+  onTogglePin: (session: InterviewSessionItem) => void
   onRemove: (session: InterviewSessionItem) => void
 }) {
   return (
     <section className="session-group" aria-label={label}>
-      <p className="session-group__label">{label}</p>
+      <p className="mx-sm mb-sm text-xs font-semibold tracking-label text-text-tertiary">{label}</p>
       {items.length ? (
-        <ul className="session-list">
+        <ul className="list-plain flex flex-col gap-sm">
           {items.map((session) => (
             <SidebarSessionItem
               key={session.sessionId}
@@ -359,7 +357,7 @@ function SidebarSessionSection({
               isActive={activeId === session.sessionId && currentPath === '/interview'}
               isLoading={loadingSessionId === session.sessionId}
               isFailed={failedSessionId === session.sessionId}
-              isPinned={pinnedIds.includes(session.sessionId)}
+              isPinned={session.pinned ?? false}
               onOpen={onOpen}
               onTogglePin={onTogglePin}
               onRemove={onRemove}
@@ -367,7 +365,7 @@ function SidebarSessionSection({
           ))}
         </ul>
       ) : (
-        <p className="session-group__empty">暂无会话</p>
+        <p className="ms-xs text-xs text-text-tertiary">暂无会话</p>
       )}
     </section>
   )

@@ -1,7 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
-import './report.css'
 import type {
   ParsedInterviewReport,
   ReportStageName,
@@ -148,10 +147,15 @@ const stageLabels = {
 export function ReportPanel({ source }: { source: string }) {
   const parsed = parseInterviewReport(source)
   return (
-    <div className="report-export-surface">
+    <div className="w-full bg-surface" data-slot="report-export">
       {parsed.kind === 'plain' ? (
-        <article className="report-plain-surface">
-          <pre className="report-plain-text">{parsed.text}</pre>
+        <article className="document-sheet">
+          <pre
+            className="m-0 break-inside-avoid font-sans text-md leading-copy wrap-anywhere whitespace-pre-wrap"
+            data-slot="report-plain-text"
+          >
+            {parsed.text}
+          </pre>
         </article>
       ) : (
         <StructuredReport report={parsed.report} />
@@ -162,39 +166,51 @@ export function ReportPanel({ source }: { source: string }) {
 
 export function StructuredReport({ report }: { report: StructuredInterviewReport }) {
   return (
-    <article className="structured-report">
-      <header className="structured-report__hero">
-        <p>Interview Review</p>
-        <h1>求职训练报告</h1>
-        <p className="structured-report__lede">{report.summary.fitAssessment}</p>
+    <article className="document-sheet w-full" data-slot="structured-report">
+      <header className="grid min-w-0 gap-xs pb-xl" data-slot="report-hero">
+        <p className="type-eyebrow">Interview Review</p>
+        <h1 className="text-balance font-serif text-xl leading-display font-semibold">
+          求职训练报告
+        </h1>
+        <p className="mt-sm max-w-(--content-report-reading-max-inline-size) text-pretty font-serif text-md leading-copy text-text-secondary">
+          {report.summary.fitAssessment}
+        </p>
       </header>
-      <div className="structured-report__summary">
-        <section>
-          <h2>行动建议</h2>
-          <p>{report.summary.actionRecommendation}</p>
+      <div className="report-columns gap-lg rounded-lg bg-surface-muted p-lg">
+        <section className="min-w-0">
+          <h2 className="type-title text-balance">行动建议</h2>
+          <p className="mt-sm font-sans text-sm leading-copy text-text-secondary">
+            {report.summary.actionRecommendation}
+          </p>
         </section>
-        <section>
-          <h2>总体风险</h2>
-          <p>{report.summary.overallRisk}</p>
+        <section className="min-w-0">
+          <h2 className="type-title text-balance">总体风险</h2>
+          <p className="mt-sm font-sans text-sm leading-copy text-text-secondary">
+            {report.summary.overallRisk}
+          </p>
         </section>
       </div>
       <ScoreCard report={report} />
       <StagePerformanceList stages={report.stagePerformances} />
       <QuestionReviewList reviews={report.questionReviews} />
-      <section className="report-section structured-report__traits">
-        <header>
-          <p>能力沉淀</p>
-          <h2>优势与短板</h2>
+      <section className="border-t border-border py-lg" data-slot="report-traits">
+        <header className="mb-lg">
+          <p className="type-eyebrow">能力沉淀</p>
+          <h2 className="type-title text-balance">优势与短板</h2>
         </header>
-        <div>
+        <div className="report-columns items-start gap-xl">
           <Trait title="核心优势" items={report.strengths} empty="暂无可归纳的优势。" />
           <Trait title="主要短板" items={report.weaknesses} empty="暂无已沉淀的薄弱点。" />
         </div>
       </section>
       <TrainingPlan plan={report.trainingPlan} />
-      <section className="report-section structured-report__advice">
-        <h2>总结建议</h2>
-        <p>{report.finalAdvice}</p>
+      <section className="border-t border-border py-lg" data-slot="report-advice">
+        <h2 className="type-title max-w-(--content-report-reading-max-inline-size) text-balance">
+          总结建议
+        </h2>
+        <p className="mt-sm max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
+          {report.finalAdvice}
+        </p>
       </section>
     </article>
   )
@@ -207,25 +223,32 @@ export function ScoreCard({ report }: { report: StructuredInterviewReport }) {
     ['逻辑思维', report.scores.logic],
   ] as const
   return (
-    <section className="report-section report-scores">
-      <header className="report-section__header">
+    <section className="border-t border-border py-lg">
+      <header className="mb-lg flex items-center justify-between gap-lg">
         <div>
-          <p>能力画像</p>
-          <h2>三维评分</h2>
+          <p className="type-eyebrow">能力画像</p>
+          <h2 className="type-title text-balance">三维评分</h2>
         </div>
-        <div className="report-scores__overall">
+        <div className="flex items-baseline gap-xs font-serif text-text-secondary">
           <span>总体</span>
-          <strong>{report.scores.overall.toFixed(1)}</strong>
+          <strong className="text-2xl font-semibold text-brand">
+            {report.scores.overall.toFixed(1)}
+          </strong>
           <small>/ 10</small>
         </div>
       </header>
-      <div className="report-scores__grid">
+      <div className="report-columns gap-md">
         {items.map(([label, value]) => (
-          <div className="report-score-item" key={label}>
-            <span>{label}</span>
-            <strong>{value.toFixed(1)}</strong>
-            <div className="report-score-item__track" aria-hidden="true">
-              <span style={{ '--report-score-fill': `${value * 10}%` } as CSSProperties} />
+          <div className="break-inside-avoid rounded-lg bg-surface-muted p-md" key={label}>
+            <span className="font-serif text-sm text-text-secondary">{label}</span>
+            <strong className="my-sm block font-serif text-xl text-text-primary">
+              {value.toFixed(1)}
+            </strong>
+            <div className="h-xs overflow-hidden rounded-full bg-border" aria-hidden="true">
+              <span
+                className="score-fill"
+                style={{ '--report-score-fill': `${value * 10}%` } as CSSProperties}
+              />
             </div>
           </div>
         ))}
@@ -238,20 +261,22 @@ export function StagePerformanceList({ stages }: { stages: StructuredStagePerfor
   const [index, setIndex] = useState(0)
   if (!stages.length)
     return (
-      <section className="report-section">
-        <header>
-          <p>阶段复盘</p>
-          <h2>分阶段表现</h2>
+      <section className="border-t border-border py-lg">
+        <header className="mb-lg">
+          <p className="type-eyebrow">阶段复盘</p>
+          <h2 className="type-title text-balance">分阶段表现</h2>
         </header>
-        <p className="report-empty-copy">当前报告没有可复盘的阶段表现。</p>
+        <p className="m-0 font-sans text-sm leading-copy text-text-secondary">
+          当前报告没有可复盘的阶段表现。
+        </p>
       </section>
     )
   return (
-    <section className="report-section stage-performance-carousel">
-      <header className="report-section__header">
+    <section className="border-t border-border py-lg">
+      <header className="mb-lg flex items-center justify-between gap-lg">
         <div>
-          <p>阶段复盘</p>
-          <h2>分阶段表现</h2>
+          <p className="type-eyebrow">阶段复盘</p>
+          <h2 className="type-title text-balance">分阶段表现</h2>
         </div>
         <ReportCarouselNavigation
           ariaLabel="阶段复盘导航"
@@ -263,26 +288,39 @@ export function StagePerformanceList({ stages }: { stages: StructuredStagePerfor
           onNext={() => setIndex((value) => value + 1)}
         />
       </header>
-      <div className="stage-performance-list">
+      <div className="min-w-0">
         {stages.map((stage, stageIndex) => (
           <article
-            className={cn('stage-performance', stageIndex === index && 'is-active')}
+            className={cn(
+              'break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg print:block',
+              stageIndex === index ? 'block' : 'hidden',
+              stageIndex > 0 && 'print:mt-md',
+            )}
             aria-hidden={stageIndex !== index}
+            data-state={stageIndex === index ? 'active' : 'inactive'}
+            data-slot="stage-performance"
             key={stage.stageName}
           >
-            <header>
+            <header className="flex items-start justify-between gap-md">
               <div>
-                <span className="stage-performance__index">
+                <span className="font-serif text-xs text-text-tertiary">
                   第 {String(stageIndex + 1).padStart(2, '0')} 阶段
                 </span>
-                <h3>{stageLabels[stage.stageName]}</h3>
+                <h3 className="mt-xs font-serif text-md leading-heading">
+                  {stageLabels[stage.stageName]}
+                </h3>
               </div>
-              <span className="report-inline-score">
+              <span
+                className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
+                data-slot="stage-score"
+              >
                 {stage.score == null ? '暂无评分' : `${stage.score.toFixed(1)} / 10`}
               </span>
             </header>
-            <p>{stage.summary}</p>
-            <div className="stage-performance__signals">
+            <p className="mt-md max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
+              {stage.summary}
+            </p>
+            <div className="report-columns mt-lg gap-lg" data-slot="stage-signals">
               <Signal title="正向信号" items={stage.positiveSignals} />
               <Signal title="风险信号" items={stage.negativeSignals} />
               <Signal title="改进建议" items={stage.improvementSuggestions} />
@@ -312,8 +350,11 @@ export function ReportCarouselNavigation({
   onNext: () => void
 }) {
   return (
-    <div className="report-carousel__nav" role="group" aria-label={ariaLabel}>
-      <span className="report-carousel__counter" aria-live="polite">
+    <div className="flex items-center gap-xs print:hidden" role="group" aria-label={ariaLabel}>
+      <span
+        className="min-w-(--layout-report-counter-min-inline-size) text-center font-sans text-sm text-text-secondary"
+        aria-live="polite"
+      >
         {index + 1} / {count}
       </span>
       <button
@@ -346,9 +387,9 @@ export function ReportCarouselNavigation({
 
 export function Signal({ title, items }: { title: string; items: string[] }) {
   return items.length ? (
-    <section className="stage-performance__signal">
-      <h4>{title}</h4>
-      <ul>
+    <section className="min-w-0">
+      <h4 className="m-0 font-serif text-sm leading-base text-text-primary">{title}</h4>
+      <ul className="list-plain mt-sm grid gap-xs font-sans text-sm leading-copy text-text-secondary">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -361,21 +402,23 @@ export function QuestionReviewList({ reviews }: { reviews: StructuredQuestionRev
   const [index, setIndex] = useState(0)
   if (!reviews.length)
     return (
-      <section className="report-section">
-        <header>
-          <p>回答证据</p>
-          <h2>逐题复盘</h2>
+      <section className="border-t border-border py-lg">
+        <header className="mb-lg">
+          <p className="type-eyebrow">回答证据</p>
+          <h2 className="type-title text-balance">逐题复盘</h2>
         </header>
-        <p>当前报告没有可复盘的有效回答。</p>
+        <p className="m-0 font-sans text-sm leading-copy text-text-secondary">
+          当前报告没有可复盘的有效回答。
+        </p>
       </section>
     )
   const active = reviews[Math.min(index, reviews.length - 1)]
   return (
-    <section className="report-section question-review-carousel">
-      <header className="report-section__header">
+    <section className="border-t border-border py-lg">
+      <header className="mb-lg flex items-center justify-between gap-lg">
         <div>
-          <p>回答证据</p>
-          <h2>逐题复盘</h2>
+          <p className="type-eyebrow">回答证据</p>
+          <h2 className="type-title text-balance">逐题复盘</h2>
         </div>
         <ReportCarouselNavigation
           ariaLabel="逐题复盘导航"
@@ -387,23 +430,27 @@ export function QuestionReviewList({ reviews }: { reviews: StructuredQuestionRev
           onNext={() => setIndex((value) => value + 1)}
         />
       </header>
-      <article className="question-review">
-        <header>
-          <span>
+      <article
+        className="break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg print:mt-md"
+        data-slot="question-review"
+      >
+        <header className="flex items-center justify-between gap-lg">
+          <span className="font-serif text-xs text-text-tertiary">
             第 {index + 1} 题 · {stageLabels[active.stageName]}
           </span>
-          <span className="report-inline-score">
+          <span
+            className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
+            data-slot="review-score"
+          >
             {active.score == null ? '暂无评分' : `${active.score.toFixed(1)} / 10`}
           </span>
         </header>
-        <div className="question-review__body">
-          <h3>{active.question}</h3>
-          <dl>
-            <ReviewDetail label="回答摘要" value={active.answerSummary} />
-            <ReviewDetail label="评分依据" value={active.scoringReason} />
-            <ReviewDetail label="改进建议" value={active.improvementSuggestion} />
-          </dl>
-        </div>
+        <h3 className="mt-md font-serif text-md leading-base">{active.question}</h3>
+        <dl className="mt-lg grid gap-md">
+          <ReviewDetail label="回答摘要" value={active.answerSummary} />
+          <ReviewDetail label="评分依据" value={active.scoringReason} />
+          <ReviewDetail label="改进建议" value={active.improvementSuggestion} />
+        </dl>
       </article>
     </section>
   )
@@ -411,9 +458,9 @@ export function QuestionReviewList({ reviews }: { reviews: StructuredQuestionRev
 
 export function ReviewDetail({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
+    <div className="review-detail-grid">
+      <dt className="font-serif text-sm text-text-secondary">{label}</dt>
+      <dd className="m-0 font-sans text-sm leading-copy text-text-secondary">{value}</dd>
     </div>
   )
 }
@@ -425,20 +472,23 @@ export function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
     ['下次模拟重点', plan.nextInterviewFocus],
   ] as const
   return (
-    <section className="report-section training-plan">
-      <header>
-        <p>下一步行动</p>
-        <h2>训练计划</h2>
+    <section className="border-t border-border py-lg">
+      <header className="mb-lg">
+        <p className="type-eyebrow">下一步行动</p>
+        <h2 className="type-title text-balance">训练计划</h2>
       </header>
-      <div className="training-plan__grid">
+      <div className="report-columns gap-xl" data-slot="training-plan-grid">
         {groups.map(([title, items], index) => (
-          <section className="training-plan__group" key={title}>
-            <span className="training-plan__step" aria-hidden="true">
+          <section className="break-inside-avoid min-w-0" key={title}>
+            <span
+              className="mb-sm block font-sans text-xs tabular-nums text-text-tertiary"
+              aria-hidden="true"
+            >
               {String(index + 1).padStart(2, '0')}
             </span>
             <div>
-              <h3>{title}</h3>
-              <ol>
+              <h3 className="m-0 font-serif text-md leading-base">{title}</h3>
+              <ol className="list-plain mt-sm grid gap-xs font-sans text-sm leading-copy text-text-secondary">
                 {(items.length ? items : ['按逐题复盘中的建议完成一次定向练习。']).map((item) => (
                   <li key={item}>{item}</li>
                 ))}
@@ -453,16 +503,16 @@ export function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
 
 export function Trait({ title, items, empty }: { title: string; items: string[]; empty: string }) {
   return (
-    <section className="structured-report__trait">
-      <h3>{title}</h3>
+    <section className="min-w-0">
+      <h3 className="m-0 font-serif text-md leading-base">{title}</h3>
       {items.length ? (
-        <ul>
+        <ul className="list-plain mt-sm grid gap-sm font-sans text-sm leading-copy text-text-secondary">
           {items.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
       ) : (
-        <p>{empty}</p>
+        <p className="mt-sm font-sans text-sm leading-copy text-text-secondary">{empty}</p>
       )}
     </section>
   )

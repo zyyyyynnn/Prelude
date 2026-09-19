@@ -20,13 +20,16 @@
   --color-ring: var(--color-ring);
   --color-ring-deep: var(--color-ring-deep);
   --color-error: var(--color-error);
+  --color-error-soft: var(--color-error-soft);
   --color-focus-field: var(--color-focus-field);
   --color-focus-action: var(--color-focus-action);
   --color-coral: var(--color-coral);
   --color-line-decor: var(--color-line-decor);
   --color-line-decor-light: var(--color-line-decor-light);
 
-  /* Spacing */
+  /* Spacing — the 4px ladder, exposed as theme keys so p-/gap-/mt- never need a
+     raw value. Icon and control boxes are sized from --ui-glyph-*, not from here. */
+  --spacing-0: var(--spacing-0);
   --spacing-xs: var(--spacing-xs);
   --spacing-sm: var(--spacing-sm);
   --spacing-md: var(--spacing-md);
@@ -40,8 +43,30 @@
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
   --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
 
-  /* Typography */
+  /* Typography — text-* and leading-* resolve to the Prelude scale, which
+     replaces Tailwind's default steps rather than sitting beside them. */
+  --text-xs: var(--font-size-xs);
+  --text-sm: var(--font-size-sm);
+  --text-md: var(--font-size-md);
+  --text-lg: var(--font-size-lg);
+  --text-xl: var(--font-size-xl);
+  --text-2xl: var(--font-size-2xl);
+
+  --leading-solid: var(--line-height-solid);
+  --leading-display: var(--line-height-display);
+  --leading-tight: var(--line-height-tight);
+  --leading-heading: var(--line-height-heading);
+  --leading-compact: var(--line-height-compact);
+  --leading-base: var(--line-height-base);
+  --leading-relaxed: var(--line-height-relaxed);
+  --leading-copy: var(--line-height-copy);
+
+  --font-weight-regular: var(--font-weight-regular);
+  --font-weight-medium: var(--font-weight-medium);
+  --font-weight-semibold: var(--font-weight-semibold);
+
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -49,9 +74,62 @@
   /* Shadow */
   --shadow-modal: var(--shadow-modal);
   --shadow-whisper: var(--shadow-whisper);
+  --shadow-ring: var(--shadow-ring);
+  --shadow-ring-deep: var(--shadow-ring-deep);
 
   /* Motion */
   --ease-standard: var(--motion-ease-standard);
+
+  --tracking-label: var(--tracking-label);
+
+  /* Animation — the four interview keyframes, exposed as animate-* atoms. */
+  --animate-status-pulse: status-pulse var(--motion-duration-slow) infinite
+    var(--motion-ease-standard);
+  --animate-voice-level: voice-level var(--motion-duration-slow) infinite alternate
+    var(--motion-ease-standard);
+  --animate-progress-sweep: progress-sweep var(--motion-duration-slow) infinite
+    var(--motion-ease-standard);
+  --animate-thinking-ellipsis: thinking-ellipsis var(--motion-duration-thinking) infinite;
+
+  @keyframes status-pulse {
+    0%,
+    100% {
+      opacity: 0.6;
+      transform: scale(0.9);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes voice-level {
+    to {
+      background: var(--color-brand);
+      transform: scaleY(4);
+    }
+  }
+
+  @keyframes progress-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(200%);
+    }
+  }
+
+  @keyframes thinking-ellipsis {
+    0% {
+      content: '.';
+    }
+    33% {
+      content: '..';
+    }
+    66% {
+      content: '...';
+    }
+  }
 
   /* Bridge product colors onto the shadcn semantic palette. */
   --color-background: var(--color-bg);
@@ -118,6 +196,7 @@
   --color-text-on-accent: var(--color-surface);
   --color-coral: #b08878;
   --color-error: #b53333;
+  --color-error-soft: color-mix(in srgb, var(--color-error) 10%, transparent);
   --color-focus-field: #7c7469;
   --color-focus-action: #9e7b6a;
 
@@ -151,6 +230,7 @@
   --input: var(--color-border-warm);
   --ring: var(--color-focus-action);
 
+  --radius-xs: 2px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -162,18 +242,7 @@
   --shadow-ring: 0 0 0 1px var(--color-ring);
   --shadow-ring-deep: 0 0 0 1px var(--color-ring-deep);
   --shadow-whisper: 0 4px 24px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
-  --shadow-inset: inset 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   --shadow-modal: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
-  --shadow-app-header:
-    0 10px 30px color-mix(in srgb, var(--color-text-primary) 3.5%, transparent),
-    0 1px 0 color-mix(in srgb, var(--color-surface) 26%, transparent) inset,
-    inset 0 -1px 0 color-mix(in srgb, var(--color-surface) 14%, transparent);
-  --shadow-app-menu:
-    0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
-  --shadow-app-menu-active:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
-  --shadow-brand-logo: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   --shadow-login-card:
     0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
@@ -184,6 +253,8 @@
   --chart-technical: var(--color-brand);
   --chart-expression: var(--color-coral);
   --chart-logic: var(--color-ring-deep);
+
+  --tracking-label: 0.03em;
 
   --brand-metaballs-1: #e9ded6;
   --brand-metaballs-2: #c6a99a;
@@ -198,22 +269,15 @@
   --motion-duration-slow: 600ms;
   --motion-duration-thinking: 1500ms;
   --motion-ease-standard: ease-in-out;
-  --motion-delay-min: 300ms;
-  --motion-transition-color: color var(--motion-duration-fast) var(--motion-ease-standard);
   --motion-transition-surface:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
     box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
     color var(--motion-duration-fast) var(--motion-ease-standard);
-  --motion-transition-opacity: opacity var(--motion-duration-fast) var(--motion-ease-standard);
-  --motion-transition-transform:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    opacity var(--motion-duration-fast) var(--motion-ease-standard);
 
   /* ── UI System Tokens ── */
   --font-size-xs: 13px;
   --font-size-sm: 14px;
-  --font-size-meta: 13.5px;
   --font-size-md: 16px;
   --font-size-lg: 24px;
   --font-size-xl: 36px;
@@ -233,58 +297,77 @@
   --line-height-copy: 1.7;
 
   --spacing-xs: 4px;
-  --spacing-0-5: 2px;
-  --spacing-1-5: 6px;
+  --spacing-0: 0px;
   --spacing-sm: 8px;
-  --spacing-2-5: 10px;
-  --spacing-3-5: 14px;
   --spacing-md: 16px;
-  --spacing-4-5: 18px;
-  --spacing-5-5: 22px;
-  --spacing-neg-xs: -4px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-2xl: 40px;
 
-  --ui-height-base: 34px;
-  --ui-height-compact: 30px;
-  --ui-height-sm: 34px;
-  --ui-height-md: 34px;
+  --ui-glyph-sm: 16px;
+  --ui-glyph-md: 20px;
+  --ui-glyph-lg: 24px;
+  --ui-height-control: 36px;
   --header-height: 72px;
   --composer-height: 260px;
   --border-width-default: 1px;
 
   /* ── Layout Semantics ── */
+  --layout-viewport-min-inline-size: 320px;
+  --layout-page-center-block-offset: 84px;
+  --layout-login-card-max-inline-size: 1180px;
+  --layout-login-card-min-block-size: 520px;
+  --layout-login-column-min-inline-size: 320px;
+  --layout-login-logo-max-inline-size: 500px;
+  --layout-textarea-min-block-size: 104px;
+  --layout-select-list-max-block-size: 360px;
+  --layout-dialog-max-inline-size: 960px;
+  --layout-confirm-max-inline-size: 420px;
+  --overlay-blur-radius: 12px;
+  --tracking-eyebrow: 0.04em;
+  --tracking-caps: 0.18em;
+
   --layout-sidebar-inline-size: 260px;
   --layout-sidebar-collapsed-inline-size: 51px;
   --layout-sidebar-brand-inline-size: 180px;
   --layout-sidebar-header-block-size: 60px;
   --layout-settings-sidebar-inline-size: 220px;
-  --layout-settings-dialog-max-inline-size: 960px;
-  --layout-settings-dialog-min-block-size: 500px;
+  --layout-dialog-workspace-min-block-size: 500px;
   --layout-workspace-content-max-inline-size: 800px;
-  --layout-dashboard-card-min-inline-size: 400px;
   --layout-form-field-min-inline-size: 260px;
   --layout-list-title-min-inline-size: 200px;
   --layout-position-catalog-min-inline-size: 176px;
   --layout-position-form-min-inline-size: 448px;
   --layout-position-item-min-inline-size: 160px;
+  --layout-empty-state-min-block-size: 120px;
+  --layout-demo-frame-block-size: 200px;
+  --layout-chart-block-size: 360px;
+  --layout-lead-max-inline-size: 58ch;
+  --layout-prompt-input-min-block-size: calc(var(--ui-height-control) + var(--spacing-lg));
+  --layout-prompt-input-max-block-size: 100px;
+  --layout-prompt-truncate-max-inline-size: calc(var(--ui-height-control) * 7);
+  --layout-generating-card-max-inline-size: 480px;
+  --layout-generating-rose-inline-size: calc(var(--ui-height-control) * 2);
+  --layout-workspace-report-block-padding: calc(var(--spacing-2xl) + var(--spacing-lg));
   --layout-report-column-min-inline-size: 200px;
   --layout-report-label-inline-size: 80px;
   --layout-report-counter-min-inline-size: 56px;
+  --layout-profile-avatar-inline-size: 82px;
+  --layout-brand-mark-inline-size: 72px;
 
   /* ── Content Semantics ── */
   --content-message-max-inline-size: 72ch;
+  --content-message-bubble-max-inline-size: min(80%, var(--content-message-max-inline-size));
   --content-report-reading-max-inline-size: 68ch;
   --content-tooltip-max-inline-size: 20rem;
 
   /* ── Component Semantics ── */
   --ui-segmented-item-min-inline-size: 80px;
+  --ui-control-inset: 2px;
 
   /* ── Layer Semantics ── */
   --z-index-local-raised: 2;
   --z-index-workspace-composer: 10;
-  --z-index-app-header: 40;
   --z-index-sidebar: 100;
   --z-index-dialog-backdrop: 190;
   --z-index-dialog: 200;
@@ -334,7 +417,7 @@ html {
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: var(--layout-viewport-min-inline-size);
   min-height: 100vh;
   background-color: var(--color-bg);
   background-image: var(--bg-paper-filter);
@@ -370,13 +453,42 @@ body {
   textarea {
     font-family: var(--font-serif);
   }
-}
 
-button,
-input,
-select,
-textarea {
-  color: var(--color-text-primary);
+  /* Base layer so a component can pick its own text colour. */
+  button,
+  input,
+  select,
+  textarea {
+    color: var(--color-text-primary);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* One reset for flow elements, so a typographic role never carries margin and a
+     layout atom (mt-*, mb-*) always wins without depending on emitted order. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  ul,
+  ol,
+  dl,
+  dd,
+  figure,
+  blockquote {
+    margin: 0;
+  }
+
+  ul,
+  ol {
+    padding: 0;
+  }
 }
 
 html.is-theme-transitioning *,
@@ -392,24 +504,18 @@ html.is-theme-transitioning *::after {
  * - pointer focus and browser chrome function keys never create a residual halo;
  * - selected/open/active remain component-owned states.
  */
-.ui-field-control,
-.ui-field-boundary {
+.ui-field-control {
   outline: none;
   transition: border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .ui-field-control:focus,
-.ui-field-control:focus-visible,
-.ui-field-boundary:focus,
-.ui-field-boundary:focus-visible,
-.ui-field-boundary:focus-within {
+.ui-field-control:focus-visible {
   outline: none;
   border-color: var(--color-focus-field);
 }
 
 .ui-action {
-  border-width: 1px;
-  border-style: solid;
   outline: none;
 }
 
@@ -417,24 +523,10 @@ html[data-input-intent='pointer'] .ui-action:focus {
   outline: none;
 }
 
-html:not([data-input-intent]) :is(.ui-action-primary, .ui-action-destructive):focus-visible,
-html[data-input-intent='keyboard'] :is(.ui-action-primary, .ui-action-destructive):focus {
+html:not([data-input-intent]) .ui-action-primary:focus-visible,
+html[data-input-intent='keyboard'] .ui-action-primary:focus {
   outline: none;
   border-color: currentColor;
-}
-
-html:not([data-input-intent]) :is(.ui-action-outline, .ui-action-secondary):focus-visible,
-html[data-input-intent='keyboard'] :is(.ui-action-outline, .ui-action-secondary):focus {
-  outline: none;
-  border-color: var(--color-focus-field);
-}
-
-html:not([data-input-intent]) .ui-action-ghost:focus-visible,
-html[data-input-intent='keyboard'] .ui-action-ghost:focus {
-  outline: none;
-  border-color: var(--color-focus-action);
-  background-color: var(--color-accent);
-  color: var(--color-accent-foreground);
 }
 
 html:not([data-input-intent]) :is(.ui-action-icon, .ui-action-nav):focus-visible,
@@ -459,25 +551,12 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   color: var(--color-error);
 }
 
-html:not([data-input-intent]) .ui-action-link:focus-visible,
-html[data-input-intent='keyboard'] .ui-action-link:focus {
-  outline: none;
-  color: var(--color-primary);
-  text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: var(--spacing-0-5);
-}
-
 @media (forced-colors: active) {
   :focus-visible {
+    /* geometry-exempt: forced-colors uses system colours and widths, not design tokens */
     outline: 2px solid CanvasText !important;
     outline-offset: 2px !important;
   }
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
 }
 
 #root {
@@ -490,104 +569,13 @@ a {
 }
 
 .page--center {
-  min-height: calc(100vh - 84px);
+  min-height: calc(100vh - var(--layout-page-center-block-offset));
   place-items: center;
 }
 
 .page--auth {
   min-height: 100vh;
   background: var(--color-bg);
-}
-
-.page__hero,
-.page__header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-4-5);
-}
-
-.page__hero-main,
-.page__header {
-  display: grid;
-  gap: var(--spacing-sm);
-}
-
-.page__hero-actions,
-.page__subnav,
-.panel__actions,
-.button-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.page__title {
-  font-size: clamp(var(--font-size-xl), 5vw, var(--font-size-2xl));
-  line-height: 1.08;
-}
-
-.page__lead {
-  max-width: 54ch;
-  font-size: var(--font-size-md);
-  line-height: 1.68;
-}
-
-.page__lead--nowrap {
-  max-width: none;
-  white-space: nowrap;
-}
-
-.detail-grid,
-.field-grid,
-.workspace-stack {
-  display: grid;
-  gap: var(--spacing-md);
-}
-.detail-card {
-  display: grid;
-  gap: var(--spacing-1-5);
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 32%, transparent), transparent),
-    var(--color-surface);
-  box-shadow: var(--shadow-whisper);
-}
-
-.detail-card__meta {
-  margin: 0;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  line-height: 1.58;
-}
-
-.lab-panel {
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-whisper);
-}
-
-.lab-panel__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) 0;
-}
-
-.lab-panel__head--compact {
-  align-items: center;
-}
-
-.lab-panel__title {
-  font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
-  line-height: 1.4;
 }
 
 /* shadcn Label / FormLabel use the brand serif face. */
@@ -599,32 +587,8 @@ label,
   color: var(--color-text-primary);
 }
 
-.field {
-  display: grid;
-  gap: var(--spacing-2-5);
-}
-
-.field__label {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-}
-
-.field__hint {
-  font-size: var(--font-size-sm);
-}
-
-.status-banner {
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
 /* ── Composer dropdown ── */
 /* ── Settings select dropdown ── */
-.ui-input,
-.ui-select,
-.ui-textarea {
-}
 
 .brand-metaballs {
   position: relative;
@@ -650,10 +614,10 @@ label,
   box-shadow: var(--shadow-brand-metaballs);
 }
 
+/* Size belongs to the call site: an unlayered width here would outrank any
+   `size-*` atom and silently pin the mark to one step. */
 .rose-three-loader {
   display: inline-block;
-  inline-size: 1em;
-  block-size: 1em;
   overflow: visible;
 }
 
@@ -661,9 +625,8 @@ label,
   display: grid;
   place-items: center;
   gap: var(--spacing-md);
-  min-height: 120px;
+  min-height: var(--layout-empty-state-min-block-size);
   padding-block: var(--spacing-lg);
-  padding-inline: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -679,7 +642,7 @@ label,
 
 .login-card {
   position: relative;
-  width: min(100%, 1180px);
+  width: min(100%, var(--layout-login-card-max-inline-size));
   border: var(--border-width-default) solid var(--color-line-decor);
   border-radius: var(--radius-xl);
   padding: var(--spacing-2xl);
@@ -699,16 +662,16 @@ label,
   position: relative;
   z-index: var(--login-card-content-layer);
   display: grid;
-  grid-template-columns: minmax(320px, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(var(--layout-login-column-min-inline-size), 3fr) minmax(0, 2fr);
   gap: var(--spacing-2xl);
   align-items: stretch;
-  min-height: 520px;
+  min-height: var(--layout-login-card-min-block-size);
 }
 
 .login-card__brand-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: var(--spacing-5-5);
+  gap: var(--spacing-lg);
   min-height: 100%;
   justify-content: center;
   justify-items: center;
@@ -717,8 +680,8 @@ label,
 }
 
 .login-card__logo {
-  width: min(100%, 500px);
-  max-width: 500px;
+  width: min(100%, var(--layout-login-logo-max-inline-size));
+  max-width: var(--layout-login-logo-max-inline-size);
   aspect-ratio: 1;
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-login-logo);
@@ -746,7 +709,7 @@ label,
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-caps);
   line-height: 1.2;
   text-align: center;
   text-transform: uppercase;
@@ -755,7 +718,7 @@ label,
 .login-card__form-panel {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: var(--spacing-5-5);
+  gap: var(--spacing-lg);
   width: 100%;
   min-height: 100%;
   justify-self: stretch;
@@ -764,15 +727,6 @@ label,
 .login-card__header {
   display: grid;
   gap: var(--spacing-sm);
-}
-.login-card__header .page__title {
-  font-family: var(--font-serif);
-}
-
-.auth-form {
-  align-content: start;
-  gap: var(--spacing-lg);
-  min-height: 0;
 }
 
 .auth-email-field {
@@ -795,7 +749,6 @@ label,
 .scrollable {
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
-  scrollbar-gutter: auto;
 }
 
 .scrollable::-webkit-scrollbar,
@@ -822,7 +775,7 @@ label,
   padding: var(--spacing-md) var(--spacing-2xl);
   border-bottom: var(--border-width-default) solid var(--color-border);
   background: color-mix(in srgb, var(--color-surface) 85%, transparent);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--overlay-blur-radius));
   position: sticky;
   top: 0;
   z-index: var(--z-index-sidebar);
@@ -865,51 +818,6 @@ label,
 }
 
 /* ── Grid & Form Elements ── */
-.page-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
-}
-.form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-.detail-card {
-  padding: var(--spacing-sm);
-  background: var(--color-surface);
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-.detail-card__title {
-  margin: var(--spacing-xs) 0;
-  font-family: var(--font-serif);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-}
-.detail-card__meta {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-.button-row {
-  display: flex;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-md);
-}
-
 /* Keep browser autofill colors aligned with the input surface. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -954,8 +862,10 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  min-height: var(--ui-height-md);
+  min-block-size: var(--ui-height-control);
   padding: 0 var(--spacing-md);
+  border-width: var(--border-width-default);
+  border-style: solid;
   border-radius: var(--radius-md);
   font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
   cursor: pointer;
@@ -967,9 +877,14 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   justify-content: center;
   gap: inherit;
 }
-.prelude-button__content > svg {
-  inline-size: var(--spacing-4-5);
-  block-size: var(--spacing-4-5);
+/* Icons inside a control are sized here, never by a per-call-site size prop. */
+.prelude-button__content > svg,
+.field-action > svg,
+.row-action > svg,
+.prelude-dialog__close > svg,
+.prelude-toast__close > svg {
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
   flex: 0 0 auto;
 }
 .prelude-button[data-loading] .prelude-button__content {
@@ -1000,8 +915,13 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 }
 .prelude-button--danger {
   color: var(--color-error);
-  background: transparent;
-  border-color: var(--color-border-warm);
+  background: var(--color-error-soft);
+  border-color: color-mix(in srgb, var(--color-error) 32%, transparent);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-error) 16%, transparent);
+    border-color: var(--color-error);
+  }
 }
 .prelude-input,
 .prelude-textarea,
@@ -1015,8 +935,13 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 }
 .prelude-input,
 .prelude-select {
-  height: var(--ui-height-md);
-  padding: 0 var(--spacing-3-5);
+  height: var(--ui-height-control);
+  padding: 0 var(--spacing-md);
+}
+/* A field that carries trailing icon actions reserves room for them through
+   --field-trailing-gutter, which the wrapping layout element declares. */
+.prelude-input {
+  padding-inline-end: calc(var(--spacing-md) + var(--field-trailing-gutter, 0px));
 }
 .prelude-select {
   display: flex;
@@ -1037,12 +962,12 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-tertiary);
 }
 .prelude-select__icon svg {
-  inline-size: var(--spacing-3-5);
-  block-size: var(--spacing-3-5);
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
 }
 .prelude-textarea {
-  min-height: 104px;
-  padding: var(--spacing-3-5);
+  min-height: var(--layout-textarea-min-block-size);
+  padding: var(--spacing-md);
   resize: vertical;
 }
 .prelude-tooltip-positioner {
@@ -1052,7 +977,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .prelude-tooltip {
   pointer-events: none;
   max-width: var(--content-tooltip-max-inline-size);
-  padding: var(--spacing-1-5) var(--spacing-2-5);
+  padding: var(--spacing-sm);
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-sm);
   background: var(--color-text-primary);
@@ -1065,9 +990,9 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   outline: none;
 }
 .prelude-menu {
-  min-inline-size: calc(var(--ui-height-compact) * 8);
+  min-inline-size: calc(var(--ui-height-control) * 8);
   max-inline-size: var(--content-tooltip-max-inline-size);
-  padding: var(--spacing-0-5);
+  padding: var(--spacing-xs);
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-md);
   outline: none;
@@ -1089,7 +1014,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  min-block-size: var(--ui-height-compact);
+  min-block-size: var(--ui-height-control);
   padding-inline: var(--spacing-sm);
   border-radius: var(--radius-md);
   outline: none;
@@ -1110,12 +1035,12 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   display: grid;
   inline-size: 100%;
   grid-template-columns:
-    var(--spacing-4-5)
+    var(--ui-glyph-md)
     minmax(0, 1fr)
-    minmax(var(--spacing-4-5), auto)
-    var(--spacing-3-5);
+    minmax(var(--ui-glyph-md), auto)
+    var(--ui-glyph-sm);
   column-gap: var(--spacing-sm);
-  min-block-size: var(--ui-height-compact);
+  min-block-size: var(--ui-height-control);
 }
 .prelude-menu--structured .prelude-menu__icon {
   grid-column: 1;
@@ -1138,7 +1063,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   margin-inline-start: 0;
 }
 .prelude-menu--structured.prelude-menu--model .prelude-menu__item {
-  grid-template-columns: minmax(0, 1fr) minmax(var(--spacing-4-5), auto) var(--spacing-3-5);
+  grid-template-columns: minmax(0, 1fr) minmax(var(--ui-glyph-md), auto) var(--ui-glyph-sm);
 }
 .prelude-menu--structured.prelude-menu--model .prelude-menu__label {
   grid-column: 1;
@@ -1150,11 +1075,11 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   grid-column: 3;
 }
 .prelude-menu--structured.prelude-menu--model .prelude-menu__item--leading-icon {
-  grid-template-columns: var(--spacing-4-5) minmax(0, 1fr);
+  grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
 }
 .prelude-menu__icon--leading {
-  inline-size: var(--spacing-3-5);
-  block-size: var(--spacing-3-5);
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
   color: var(--color-text-tertiary);
 }
 .prelude-menu__item-label {
@@ -1165,8 +1090,8 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 }
 .prelude-menu__indicator {
   display: grid;
-  inline-size: var(--spacing-4-5);
-  block-size: var(--spacing-4-5);
+  inline-size: var(--ui-glyph-md);
+  block-size: var(--ui-glyph-md);
   flex: 0 0 auto;
   place-items: center;
   color: var(--color-text-primary);
@@ -1177,24 +1102,16 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .prelude-menu__indicator svg,
 .prelude-menu__icon svg,
 .prelude-menu__chevron {
-  inline-size: var(--spacing-3-5);
-  block-size: var(--spacing-3-5);
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
 }
 .prelude-menu__icon {
   display: grid;
-  inline-size: var(--spacing-4-5);
-  block-size: var(--spacing-4-5);
+  inline-size: var(--ui-glyph-md);
+  block-size: var(--ui-glyph-md);
   flex: 0 0 auto;
   place-items: center;
   color: var(--color-text-tertiary);
-}
-.prelude-menu__copy {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: 1;
-  min-inline-size: 0;
-  gap: var(--spacing-sm);
 }
 .prelude-menu__detail {
   flex: 0 1 auto;
@@ -1209,7 +1126,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-tertiary);
 }
 .prelude-menu__separator {
-  block-size: 1px;
+  block-size: var(--border-width-default);
   margin: var(--spacing-xs);
   background: var(--color-border);
 }
@@ -1218,13 +1135,13 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   max-block-size: var(--available-height);
 }
 .prelude-select__list {
-  max-block-size: min(360px, var(--available-height));
+  max-block-size: min(var(--layout-select-list-max-block-size), var(--available-height));
   overflow-y: auto;
   outline: none;
 }
 .prelude-select__item {
   display: grid;
-  grid-template-columns: var(--spacing-4-5) minmax(0, 1fr);
+  grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
   column-gap: var(--spacing-sm);
 }
 .prelude-select__item .prelude-menu__indicator {
@@ -1250,8 +1167,9 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 }
 .prelude-dialog {
   position: relative;
-  width: min(960px, 92vw);
+  width: min(var(--layout-dialog-max-inline-size), 92vw);
   max-height: 88vh;
+  padding: var(--spacing-xl);
   overflow: hidden;
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-lg);
@@ -1264,33 +1182,19 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   inset-inline-end: var(--spacing-md);
   z-index: var(--z-index-local-raised);
   display: grid;
-  width: var(--ui-height-md);
-  height: var(--ui-height-md);
+  width: var(--ui-height-control);
+  height: var(--ui-height-control);
   place-items: center;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
   border-color: transparent;
 }
-.prelude-button--compact {
-  min-height: var(--ui-height-compact);
-  padding-inline: var(--spacing-sm);
-}
 .prelude-button--icon {
-  width: var(--ui-height-md);
+  inline-size: var(--ui-height-control);
+  block-size: var(--ui-height-control);
+  min-block-size: var(--ui-height-control);
   padding: 0;
-}
-.prelude-button--icon-compact {
-  inline-size: var(--ui-height-compact);
-  block-size: var(--ui-height-compact);
-  width: var(--ui-height-compact);
-  height: var(--ui-height-compact);
-  min-height: var(--ui-height-compact);
-  padding: 0;
-}
-.prelude-button--icon-compact:hover:not(:disabled) {
-  background: var(--color-surface-muted);
-  color: var(--color-text-primary);
 }
 .prelude-button--action {
   flex-shrink: 0;
@@ -1302,13 +1206,16 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   user-select: none;
 }
 .prelude-button--hold[data-pressed] {
-  transform: translateY(var(--spacing-0-5));
+  /* geometry-exempt: 2px press nudge, not a spacing step */
+  transform: translateY(2px);
   box-shadow: var(--shadow-ring-deep);
 }
+/* The workspace shell is full-bleed: the caller owns padding and its own regions. */
 .prelude-dialog--workspace {
-  max-inline-size: min(var(--layout-settings-dialog-max-inline-size), 90vw);
+  padding: 0;
+  max-inline-size: min(var(--layout-dialog-max-inline-size), 90vw);
   block-size: 60vh;
-  min-block-size: var(--layout-settings-dialog-min-block-size);
+  min-block-size: var(--layout-dialog-workspace-min-block-size);
   border-color: transparent;
 }
 .prelude-button__spinner {
@@ -1331,7 +1238,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   pointer-events: auto;
 }
 .prelude-toaster [data-sonner-toast].prelude-toast {
-  min-block-size: calc(var(--ui-height-md) + var(--spacing-md));
+  min-block-size: calc(var(--ui-height-control) + var(--spacing-md));
   padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) var(--spacing-md);
   border-color: transparent;
   border-radius: var(--radius-md);
@@ -1391,14 +1298,9 @@ html[data-input-intent='keyboard']
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
+/* Confirmation shares the dialog chrome; only its measure and action row differ. */
 .confirm-dialog {
-  width: calc(100vw - var(--spacing-2xl));
-  max-width: var(--content-tooltip-max-inline-size);
-  padding: var(--spacing-xl);
-  border: var(--border-width-default) solid var(--color-border-warm);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-modal);
+  width: min(var(--layout-confirm-max-inline-size), calc(100vw - var(--spacing-2xl)));
 }
 .confirm-dialog__title {
   margin: 0;
@@ -1412,11 +1314,15 @@ html[data-input-intent='keyboard']
 }
 .confirm-dialog__actions {
   display: flex;
-  justify-content: flex-end;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-xl);
+
+  & > * {
+    flex: 1;
+  }
 }
 .sr-only {
+  /* geometry-exempt: the 1px clip box is the screen-reader hiding technique itself */
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1427,36 +1333,9 @@ html[data-input-intent='keyboard']
   white-space: nowrap;
   border: 0;
 }
-.notice {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-default) solid var(--color-border-warm);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-.notice--error {
-  color: var(--color-error);
-  border-color: color-mix(in srgb, var(--color-error) 35%, var(--color-border));
-}
-.password-field {
-  position: relative;
-}
-.password-field__toggle {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-end: 0;
-  display: grid;
-  width: var(--ui-height-md);
-  place-items: center;
-  border-color: transparent;
-  background: transparent;
-  color: var(--color-text-tertiary);
-}
 .prelude-segmented-control {
   --segmented-index: 0;
   --segmented-count: 2;
-  --segmented-active-opacity: 0;
 
   position: relative;
   display: grid;
@@ -1464,34 +1343,30 @@ html[data-input-intent='keyboard']
     var(--segmented-count),
     minmax(var(--ui-segmented-item-min-inline-size), 1fr)
   );
-  padding: var(--spacing-xs);
   border-radius: var(--radius-md);
   background: var(--color-surface-muted);
 }
-.prelude-segmented-control[style] {
-  --segmented-active-opacity: 1;
-}
+/* The thumb keeps the cell width so it stays concentric with the track: inset by
+   --ui-control-inset on every side, its radius is the track radius minus that
+   inset, so the gutter reads as an even ring instead of a cropped pill. */
 .prelude-segmented-control::before {
   position: absolute;
-  inset-block: var(--spacing-xs);
-  inset-inline-start: var(--spacing-xs);
-  inline-size: calc((100% - (var(--spacing-xs) * 2)) / var(--segmented-count));
-  border-radius: var(--radius-sm);
+  inset-block: var(--ui-control-inset);
+  inset-inline-start: 0;
+  inline-size: calc(100% / var(--segmented-count));
+  border-radius: calc(var(--radius-md) - var(--ui-control-inset));
   background: var(--color-surface);
   box-shadow: var(--shadow-ring);
   content: '';
-  opacity: var(--segmented-active-opacity);
   pointer-events: none;
   transform: translateX(calc(var(--segmented-index) * 100%));
-  transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 .prelude-segmented-control button {
   position: relative;
   z-index: 1;
   min-inline-size: var(--ui-segmented-item-min-inline-size);
-  block-size: var(--ui-height-md);
+  block-size: var(--ui-height-control);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1504,13 +1379,949 @@ html[data-input-intent='keyboard']
 .prelude-segmented-control button[aria-pressed='true'] {
   color: var(--color-text-primary);
 }
-.prelude-segmented-control:not([style]) button.is-active {
-  background: var(--color-surface);
-  box-shadow: var(--shadow-ring);
-}
 @media (prefers-reduced-motion: reduce) {
   .prelude-segmented-control::before,
   .prelude-segmented-control button {
     transition: none;
   }
+}
+
+/* ==========================================================================
+   Composite utilities.
+   These patterns compose token values in ways stock utilities cannot express
+   (multi-value shorthands embedding var(), auto-fit/minmax tracks, a logical
+   border whose width comes from a token). Naming rule: a utility that only
+   composes generic tokens gets a generic name; one that bakes in a specific
+   owner's layout token carries that owner's prefix so the coupling is visible.
+   ========================================================================== */
+@utility truncate-title {
+  min-inline-size: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-compact) var(--font-serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@utility row-label-end {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-block-size: var(--ui-height-control);
+  padding-inline: 0;
+  border-block-end: var(--border-width-default) solid var(--color-border);
+  background: transparent;
+
+  &:last-child {
+    border-block-end: 0;
+  }
+
+  &:has(button):hover {
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-hover);
+  }
+}
+
+@utility position-item-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--layout-position-item-min-inline-size)), 1fr)
+  );
+}
+
+@utility list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: var(--border-width-default) solid var(--color-border);
+  background: var(--color-surface);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover {
+    border-color: var(--color-border-warm);
+    background: var(--color-surface-hover);
+  }
+}
+
+/* Type scale. Each role fixes family, weight, size, leading and colour
+   together, so a screen picks a role instead of improvising a pairing.
+   Leading is bound to size deliberately: the pre-scale code paired
+   --font-size-xs with four different line-heights. */
+@utility type-eyebrow {
+  color: var(--color-text-tertiary);
+  font: var(--font-weight-medium) var(--font-size-xs)/var(--line-height-tight) var(--font-serif);
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+@utility type-metric {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-xl)/var(--line-height-display) var(--font-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+@utility type-title {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-lg)/var(--line-height-tight) var(--font-serif);
+}
+
+/* The one title that scales with the viewport: auth and terminal pages. */
+@utility type-hero {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium)
+    clamp(var(--font-size-xl), 5vw, var(--font-size-2xl))/var(--line-height-display)
+    var(--font-serif);
+}
+
+@utility type-subtitle {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-md)/var(--line-height-compact) var(--font-serif);
+}
+
+@utility type-label {
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-compact) var(--font-serif);
+}
+
+@utility type-body {
+  color: var(--color-text-secondary);
+  font: var(--font-weight-regular) var(--font-size-sm)/var(--line-height-relaxed) var(--font-sans);
+}
+
+@utility type-meta {
+  color: var(--color-text-tertiary);
+  font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-compact) var(--font-sans);
+}
+
+/* Declares how many trailing icon actions a field reserves room for. The wrapper
+   is a grid so the control fills it exactly: as an inline block it would sit on a
+   text baseline and the box would grow taller than the control, mis-centring any
+   absolutely placed action inside it. */
+@utility field-actions-* {
+  position: relative;
+  display: grid;
+  --field-trailing-gutter: calc(
+    (var(--ui-height-control) - var(--ui-control-inset)) * --value(integer)
+  );
+}
+
+/* Elevation. Tailwind's shadow-* namespace is reserved for palette colors by
+   the UI lint, so a token shadow is reached through an elevation class. */
+@utility elevated-modal {
+  box-shadow: var(--shadow-modal);
+}
+
+@utility elevated-ring {
+  box-shadow: var(--shadow-ring);
+}
+
+/* A row whose label takes the remaining space and whose trailing content keeps
+   its own width. Baseline alignment and gap stay at the call site because both
+   vary per surface. */
+@utility label-end-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@utility list-plain {
+  padding: 0;
+  list-style: none;
+
+  & li {
+    margin: 0;
+    text-wrap: pretty;
+  }
+}
+
+/* Report column tracks: every report band flows its children into as many
+   reading columns as fit the report minimum, gaps stay per band. */
+@utility report-columns {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--layout-report-column-min-inline-size)), 1fr)
+  );
+}
+
+/* A report page: one bordered, elevated sheet the reader can print or save. */
+@utility document-sheet {
+  padding: var(--spacing-2xl);
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-whisper);
+}
+
+/* A question-review row: a fixed-minimum term beside a flowing definition. */
+@utility review-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(var(--layout-report-label-inline-size), 0.25fr) 1fr;
+  gap: var(--spacing-md);
+}
+
+/* The filled portion of a score track reads its width from --report-score-fill,
+   which the component supplies as a runtime CSS variable. */
+@utility score-fill {
+  display: block;
+  block-size: 100%;
+  inline-size: var(--report-score-fill, 0%);
+  max-inline-size: 100%;
+  border-radius: inherit;
+  background: var(--color-brand);
+}
+
+@utility nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  inline-size: 100%;
+  block-size: var(--ui-height-control);
+  padding-inline: var(--spacing-md);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+
+  & > svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+    flex: 0 0 var(--spacing-md);
+    stroke-width: 2;
+  }
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &.is-active {
+    background: var(--color-surface-muted);
+    color: var(--color-accent-text);
+    border-color: var(--color-ring);
+  }
+}
+
+@utility option-card {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover,
+  &.is-active {
+    background: var(--color-surface-hover);
+    border-color: var(--color-ring);
+  }
+}
+
+/* Fields sit side by side once there is room. Each one keeps its own height:
+   stretching them would let a taller neighbour (a textarea, a hint line) pull a
+   short field's control row open, so its trailing actions stop centring on the
+   control and the label-to-control gap grows past the bound-pair step. */
+@utility form-grid {
+  display: grid;
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(var(--layout-form-field-min-inline-size), 1fr));
+}
+
+/* Chrome for a trailing icon action inside a text field. Placement is left to
+   the call site so one, two or zero buttons all sit in the same wrapper. The
+   box is inset from the control edge so its hover fill stays concentric with
+   the field border instead of covering it. */
+@utility field-action {
+  display: grid;
+  inline-size: calc(var(--ui-height-control) - var(--ui-control-inset) * 2);
+  block-size: calc(var(--ui-height-control) - var(--ui-control-inset) * 2);
+  place-items: center;
+  border: var(--border-width-default) solid transparent;
+  border-radius: calc(var(--radius-md) - var(--ui-control-inset));
+  background: transparent;
+  color: var(--color-text-tertiary);
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+}
+
+/* ==========================================================================
+   Print policy for the interview report.
+   This is document-level behaviour, not a component style: printing has to
+   hide the whole application chrome and hand the page to a single export
+   surface, which no per-element utility can express. The report's own print
+   tweaks (hidden carousel, revealed stages, break-inside) stay at call sites.
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body.is-printing-report,
+  body.is-printing-report #root,
+  body.is-printing-report .app-layout,
+  body.is-printing-report .app-layout__main,
+  body.is-printing-report [data-slot='interview-workspace'],
+  body.is-printing-report [data-slot='workspace-active'],
+  body.is-printing-report [data-slot='workspace-active-main'],
+  body.is-printing-report [data-slot='workspace-report'],
+  body.is-printing-report [data-slot='report-content'] {
+    display: block;
+    block-size: auto;
+    min-block-size: 0;
+    overflow: visible;
+  }
+
+  body.is-printing-report * {
+    visibility: hidden;
+  }
+
+  body.is-printing-report [data-slot='report-export'],
+  body.is-printing-report [data-slot='report-export'] * {
+    visibility: visible;
+  }
+
+  body.is-printing-report [data-slot='report-export'] {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    background: var(--color-surface);
+  }
+}
+
+/* ==========================================================================
+   Application rail.
+   Ordering contract for this sheet: a custom @utility always wins over a core
+   atom for the same property, and a later @utility block wins over an earlier
+   one. Variant utilities therefore follow the base they specialise, and a call
+   site must never try to override a utility with a core atom.
+   ========================================================================== */
+@utility app-sidebar {
+  --sidebar-icon-glyph-size: 20px;
+  --sidebar-btn-padding-inline: calc(
+    (var(--ui-height-control) - var(--sidebar-icon-glyph-size)) / 2
+  );
+
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-index-sidebar);
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  inline-size: var(--layout-sidebar-inline-size);
+  block-size: 100vh;
+  overflow-x: hidden;
+  border-inline-end: var(--border-width-default) solid var(--color-border);
+  background-color: var(--color-surface);
+  font-family: var(--font-serif);
+  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
+
+  &.is-collapsed {
+    inline-size: var(--layout-sidebar-collapsed-inline-size);
+  }
+
+  /* Text that only exists while the rail is expanded fades out as one set. */
+  & [data-sidebar-label] {
+    display: inline-block;
+    flex-shrink: 0;
+    overflow: hidden;
+    opacity: 1;
+    white-space: nowrap;
+    transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  }
+
+  &.is-collapsed [data-sidebar-label] {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  & [data-sidebar-brand] {
+    inline-size: var(--layout-sidebar-brand-inline-size);
+    opacity: 1;
+    transition:
+      inline-size var(--motion-duration-base) var(--motion-ease-standard),
+      opacity var(--motion-duration-base) var(--motion-ease-standard);
+  }
+
+  &.is-collapsed [data-sidebar-brand] {
+    visibility: hidden;
+    inline-size: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* The collapse chevron swaps which glyph is showing. */
+  & [data-toggle-icon='collapse'] {
+    opacity: 1;
+  }
+
+  &.is-collapsed [data-toggle-icon='collapse'] {
+    opacity: 0;
+  }
+
+  &.is-collapsed [data-toggle-icon='expand'] {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .app-sidebar [data-sidebar-label],
+  .app-sidebar [data-sidebar-brand],
+  .sidebar-pane,
+  .sidebar-toggle [data-toggle-icon] {
+    transition: none;
+  }
+}
+
+@utility sidebar-toggle {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--ui-height-control);
+  block-size: var(--ui-height-control);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  & [data-toggle-icon-stack] {
+    position: relative;
+    inline-size: var(--ui-glyph-md);
+    block-size: var(--ui-glyph-md);
+  }
+
+  & [data-toggle-icon] {
+    position: absolute;
+    inset: 0;
+    inline-size: var(--ui-glyph-md);
+    block-size: var(--ui-glyph-md);
+    opacity: 0;
+    transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  }
+}
+
+@utility sidebar-action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  inline-size: 100%;
+  block-size: var(--ui-height-control);
+  padding-inline: var(--sidebar-btn-padding-inline);
+  overflow: hidden;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-md)/var(--line-height-solid) var(--font-serif);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  & > svg {
+    inline-size: var(--sidebar-icon-glyph-size);
+    block-size: var(--sidebar-icon-glyph-size);
+    flex: 0 0 var(--sidebar-icon-glyph-size);
+  }
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &.is-active {
+    background-color: var(--color-surface-muted);
+    color: var(--color-accent-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+@utility nav-item-danger {
+  color: var(--color-error);
+
+  &:hover {
+    background-color: var(--color-error-soft);
+    color: var(--color-error);
+  }
+}
+
+@utility sidebar-action-primary {
+  background-color: var(--color-accent-solid);
+  box-shadow: var(--shadow-ring);
+  color: var(--color-text-on-accent);
+
+  &:hover {
+    background-color: var(--color-accent-solid-hover);
+    color: var(--color-text-on-accent);
+  }
+}
+
+/* Two panes share one slot and cross-fade as the rail collapses. */
+@utility sidebar-pane {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--motion-duration-base) var(--motion-ease-standard),
+    visibility 0s linear var(--motion-duration-base);
+
+  &.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+}
+
+/* The session list pane, sized to the expanded rail minus its gutter. */
+@utility sidebar-sessions {
+  min-block-size: 0;
+  inline-size: calc(var(--layout-sidebar-inline-size) - var(--spacing-sm) * 2);
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@utility session-group {
+  margin-block-end: var(--spacing-sm);
+  white-space: nowrap;
+
+  & + & {
+    margin-block-start: var(--spacing-md);
+    padding-block-start: var(--spacing-md);
+    border-block-start: var(--border-width-default) solid var(--color-border);
+  }
+}
+
+/* The session row owns the surface its trailing actions mask against. */
+@utility session-row-host {
+  --session-row-surface: var(--color-surface);
+
+  position: relative;
+
+  &:has(.session-row.is-active) {
+    --session-row-surface: var(--color-surface-muted);
+  }
+
+  &:hover,
+  &:focus-within {
+    --session-row-surface: var(--color-surface-hover);
+  }
+}
+
+@utility session-row {
+  display: flex;
+  align-items: center;
+  inline-size: 100%;
+  block-size: var(--ui-height-control);
+  min-block-size: var(--ui-height-control);
+  max-block-size: var(--ui-height-control);
+  padding-inline: var(--spacing-sm);
+  overflow: hidden;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &.is-active {
+    background-color: var(--color-surface-muted);
+    color: var(--color-accent-text);
+    font-weight: var(--font-weight-medium);
+  }
+
+  &.is-loading {
+    cursor: progress;
+  }
+
+  &.is-error {
+    color: var(--color-error);
+  }
+}
+
+@utility session-row-actions {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding-inline-start: var(--spacing-sm);
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--session-row-surface) 25%,
+    var(--session-row-surface) 100%
+  );
+  transform: translateY(-50%);
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+@utility row-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+    color: var(--color-text-primary);
+  }
+}
+
+@utility row-action-danger {
+  &:hover {
+    background-color: var(--color-error-soft);
+    color: var(--color-error);
+  }
+}
+
+/* ==========================================================================
+   Interview surface composites.
+   The prompt bar, the report-generating card and the message thread are the
+   three places where a control's geometry is derived from another control's
+   geometry, so they stay named utilities rather than long atom strings.
+   ========================================================================== */
+@utility prompt-bar-surface {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  overflow: hidden;
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-whisper), var(--shadow-ring);
+  transition: var(--motion-transition-surface);
+}
+
+@utility prompt-bar-input {
+  inline-size: 100%;
+  min-block-size: var(--layout-prompt-input-min-block-size);
+  max-block-size: var(--layout-prompt-input-max-block-size);
+  padding: var(--spacing-sm);
+  overflow-y: auto;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: var(--font-size-md)/var(--line-height-relaxed) var(--font-serif);
+
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+}
+
+@utility prompt-bar-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  block-size: var(--ui-height-control);
+  min-inline-size: calc(var(--ui-height-control) * 3);
+  max-inline-size: calc(var(--ui-height-control) * 6);
+  padding-inline: var(--spacing-sm);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  cursor: pointer;
+  transition: var(--motion-transition-surface);
+
+  &:hover,
+  &[aria-pressed='true'] {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &:focus-visible {
+    border-color: var(--color-focus-action);
+  }
+
+  & > svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+    flex: 0 0 auto;
+  }
+}
+
+/* Width policy for the prompt-bar controls that must not take the default
+   control floor; they override prompt-bar-control as named variants. */
+@utility prompt-bar-control-jd {
+  min-inline-size: auto;
+}
+
+/* A prompt control whose content is text rather than an icon: it drops the
+   icon-button floor and takes the shared truncation measure instead. */
+@utility prompt-bar-control-text {
+  inline-size: auto;
+  min-inline-size: 0;
+  max-inline-size: var(--layout-prompt-truncate-max-inline-size);
+}
+
+@utility prompt-bar-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  max-inline-size: calc(var(--ui-height-control) * 6);
+  min-block-size: var(--ui-height-control);
+  padding-inline: var(--spacing-sm);
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  font: var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+
+  & > svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+    flex: 0 0 auto;
+  }
+}
+
+@utility prompt-bar-attachment-remove {
+  display: inline-grid;
+  flex: 0 0 auto;
+  inline-size: var(--ui-glyph-lg);
+  block-size: var(--ui-glyph-lg);
+  /* geometry-exempt: 2px optical overlap between the chip and its remove box */
+  margin-inline-end: -2px;
+  padding: 0;
+  place-items: center;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  line-height: 0;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  & svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+  }
+}
+
+@utility prompt-bar-status-dot {
+  inline-size: var(--spacing-sm);
+  block-size: var(--spacing-sm);
+  border-radius: var(--radius-full);
+  background: var(--color-ring);
+
+  &.is-listening,
+  &.is-processing {
+    background: var(--color-brand);
+    animation: var(--animate-status-pulse);
+  }
+
+  &.is-speaking {
+    background: var(--color-brand);
+    box-shadow: var(--shadow-ring-deep);
+  }
+}
+
+/* The voice meter animates every bar, offset so the row reads as a wave. */
+@utility prompt-bar-wave {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  block-size: calc(var(--ui-height-control) + var(--spacing-sm));
+  max-inline-size: calc(var(--ui-height-control) * 8);
+
+  & span {
+    inline-size: var(--spacing-xs);
+    block-size: var(--spacing-sm);
+    border-radius: var(--radius-full);
+    background: var(--color-border-warm);
+    transform-origin: center;
+  }
+
+  &.is-active span {
+    animation: var(--animate-voice-level);
+  }
+
+  &.is-active span:nth-child(3n + 2) {
+    animation-delay: calc(var(--motion-duration-base) * -1);
+  }
+
+  &.is-active span:nth-child(3n) {
+    animation-delay: calc(var(--motion-duration-base) * -0.5);
+  }
+}
+
+@utility generating-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-inline-size: var(--layout-generating-card-max-inline-size);
+  padding: var(--spacing-2xl);
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-hover);
+  box-shadow: var(--shadow-whisper);
+  text-align: center;
+}
+
+@utility generating-title {
+  margin: 0 0 var(--spacing-xs);
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium)
+    clamp(var(--font-size-md), 2vw, var(--font-size-lg))/var(--line-height-base) var(--font-serif);
+}
+
+@utility generating-progress-track {
+  position: relative;
+  inline-size: 100%;
+  block-size: var(--spacing-xs);
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+  background: var(--color-border);
+}
+
+@utility generating-progress-indicator {
+  position: absolute;
+  inset-inline-start: 0;
+  inline-size: 50%;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--color-brand);
+  transform: translateX(-100%);
+  animation: var(--animate-progress-sweep);
+}
+
+@utility message-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-inline-size: var(--content-message-bubble-max-inline-size);
+}
+
+@utility message-bubble-body {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-default) solid var(--color-border);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-sans);
+}
+
+/* An indeterminate wait is shown as a typing ellipsis, never a spinner. */
+@utility ellipsis-progress {
+  &::after {
+    content: '';
+    animation: var(--animate-thinking-ellipsis);
+  }
+}
+
+@utility elevated-whisper {
+  box-shadow: var(--shadow-whisper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-bar-status-dot.is-listening,
+  .prompt-bar-status-dot.is-processing,
+  .prompt-bar-wave.is-active span,
+  .generating-progress-indicator,
+  .ellipsis-progress::after {
+    animation: none;
+  }
+
+  .prompt-bar-wave.is-active span {
+    background: var(--color-brand);
+    transform: scaleY(2);
+  }
+
+  .generating-progress-indicator {
+    transform: translateX(50%);
+  }
+}
+
+/* The composer floats over the thread, so it is inert except for its own child. */
+@utility composer-overlay {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: var(--z-index-workspace-composer);
+  padding: var(--spacing-md) var(--spacing-2xl) var(--spacing-lg);
+  background: transparent;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
+}
+
+/* safe center keeps the first line reachable when the empty state overflows. */
+@utility workspace-empty {
+  display: flex;
+  flex: 1;
+  align-items: safe center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--spacing-2xl);
+}
+
+/* Reserve room for the scrollbar so content never shifts when it appears. */
+@utility gutter-stable {
+  scrollbar-gutter: stable;
 }

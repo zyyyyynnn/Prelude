@@ -54,6 +54,7 @@ export type InterviewSessionItem = {
   currentStage?: InterviewStageName
   createdAt?: string
   summaryReport?: string
+  pinned?: boolean
 }
 
 export type InterviewSessionDetailResponse = {
