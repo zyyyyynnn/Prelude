@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { cn } from '@/shared/lib/cn'
+import { MessageBubble } from '@/shared/ui/message'
 import type { InterviewMessageRecord } from '../types'
 
 export function MessageThread({ messages }: { messages: InterviewMessageRecord[] }) {
@@ -27,40 +27,14 @@ export function MessageThread({ messages }: { messages: InterviewMessageRecord[]
     >
       {visible.length ? (
         visible.map((message, index) => (
-          <article
-            className={cn(
-              'message-bubble',
-              message.role === 'user' ? 'items-end self-end' : 'items-start self-start',
-            )}
+          <MessageBubble
             key={`${message.id}-${message.createdAt ?? index}`}
+            side={message.role === 'assistant' ? 'assistant' : 'user'}
+            speaker={message.role === 'assistant' ? '面试官' : '我'}
+            pending={message.role === 'assistant' && !message.content}
           >
-            {/* Per-answer score and coaching belong to the finished report; the live
-                thread only says who is speaking. */}
-            <div className="flex w-full items-center gap-sm">
-              <span
-                className={cn(
-                  'font-serif text-xs text-text-tertiary',
-                  message.role === 'user' && 'ms-auto',
-                )}
-              >
-                {message.role === 'assistant' ? '面试官' : '我'}
-              </span>
-            </div>
-            <div
-              className={cn(
-                'message-bubble-body',
-                message.role === 'user'
-                  ? 'rounded-lg rounded-se-sm bg-surface-muted'
-                  : 'rounded-lg rounded-ss-sm bg-surface elevated-whisper',
-              )}
-            >
-              {message.role === 'assistant' && !message.content ? (
-                <span className="ellipsis-progress text-text-tertiary">思考中</span>
-              ) : (
-                message.content
-              )}
-            </div>
-          </article>
+            {message.content}
+          </MessageBubble>
         ))
       ) : (
         <div className="flex h-full items-center justify-center text-text-tertiary">

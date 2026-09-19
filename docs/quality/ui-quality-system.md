@@ -35,4 +35,6 @@
 
 `no-unknown-classes` 只识别 `src/shared/styles/index.css` 生成的类，因此复合样式必须注册为该文件内的 `@utility`，feature 目录不含 CSS 文件；注册命名与层叠次序约定见 `DESIGN.md` 的 Style Assembly。
 
+测试选择器只用 `data-slot`、`role` 与语义文本；需要以类名定位时，该类必须是 `index.css` 里注册的 `@utility`，否则 lint 认不出、构建也不产出。断言计算样式时对齐**实际渲染值**，转写原子类后必须重新读取确认。
+
 Tooltip 由 Base UI 提供交互行为，并使用高对比中性表面。页面和组件使用既有 Prelude token，不建立局部色板。

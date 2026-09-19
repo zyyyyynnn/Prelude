@@ -59,7 +59,7 @@ export function WorkspaceHeader({
           {hasReport && showingReport && (
             <div className="flex items-center gap-sm">
               <Button variant="secondary" loading={printing} onClick={onPrintReport}>
-                <Printer size={15} />
+                <Printer />
                 打印报告
               </Button>
             </div>

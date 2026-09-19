@@ -39,11 +39,11 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         closeButton
         className="prelude-toaster"
         icons={{
-          success: <CheckCircle2 size={16} />,
-          info: <Info size={16} />,
-          warning: <TriangleAlert size={16} />,
-          error: <OctagonX size={16} />,
-          loading: <Loader2 className="prelude-toast__loader" size={16} />,
+          success: <CheckCircle2 />,
+          info: <Info />,
+          warning: <TriangleAlert />,
+          error: <OctagonX />,
+          loading: <Loader2 className="prelude-toast__loader" />,
           close: <X />,
         }}
         toastOptions={{
@@ -51,8 +51,6 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
           classNames: {
             toast: 'prelude-toast',
             description: 'prelude-toast__description',
-            actionButton: 'prelude-toast__action',
-            cancelButton: 'prelude-toast__cancel',
             closeButton: 'prelude-toast__close ui-action ui-action-icon',
           },
         }}

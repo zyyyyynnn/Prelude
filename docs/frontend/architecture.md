@@ -44,6 +44,8 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 `shared/ui` 中的 Button、Field 与表单控件采用 shadcn source ownership 结构，Modal、Menu 与 Tooltip 使用 Base UI。面试输入区的 Prompt Bar 采用 [Beautiful UI](https://www.beautifului.dev/) 组合模式，来源记录位于 `frontend/beautiful-ui.sources.json`。Prompt Bar 负责附件、简历、岗位、JD 与模型选择；管理动作统一进入设置弹窗。所有 UI 源码使用 Prelude token 与 `DESIGN.md` 视觉语言。
 
+划分边界以样式归属为准：`shared/styles/index.css` 里注册了 chrome 的表面，其 markup 也归 `shared/ui`，feature 只负责取数与把领域类型映射成原始 props。因此 `Panel`、`SessionGroup`/`SessionRow`、`SidebarAction`/`SidebarPane`/`SidebarToggle`、`MessageBubble`、`GeneratingCard`、`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceIndicator`、`ScoreTile` 都在 `shared/ui`，`AppShell` 与面试、报告页保留查询与回调的薄封装。`shared` 不引入 `app` 或 `features`，这条由 `verify:architecture` 强制。
+
 样式只有两种来源：调用点的 Tailwind 原子类，和 `shared/styles/index.css` 中具名注册的 `@utility`。`frontend/src/app/styles.css` 装配 Tailwind、应用扫描范围与共享样式；feature 目录不含 CSS 文件，`features/*` 与 `app/shell` 只使用 token 与原子类。`shared/styles/index.css` 拥有 token、主题、重置、全局排版、焦点状态、复合 utility 与文档级打印策略。`verify:architecture` 同时检查源码依赖和 CSS 本地 `@import`，阻止 shared 反向引入应用样式。视觉与层叠约定见 `DESIGN.md` 的 Style Assembly。
 
 ## 命名规约

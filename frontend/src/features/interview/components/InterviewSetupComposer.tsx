@@ -6,8 +6,8 @@ import type { ResumeItem } from '@/features/resume'
 import { Button } from '@/shared/ui/button'
 import type { InterviewModelConfig, InterviewModelProvider, ReasoningLevel } from '../types'
 import { InterviewModelMenu } from './MenuPrimitives'
-import { PromptBar } from './PromptBar'
-import { ContextAttachment, InterviewContextMenu } from './PromptBarControls'
+import { InterviewContextMenu } from './PromptBarControls'
+import { ContextAttachment, PromptBar } from '@/shared/ui/prompt-bar'
 
 export function InterviewSetupComposer({
   resumes,

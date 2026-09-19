@@ -1,11 +1,33 @@
 import { useState } from 'react'
-import { Bell, Eye, EyeOff, Gauge, Plus, X } from 'lucide-react'
+import {
+  BarChart3,
+  Bell,
+  BriefcaseBusiness,
+  Eye,
+  EyeOff,
+  FileText,
+  Keyboard,
+  LogOut,
+  Mic,
+  Palette,
+  PanelLeft,
+  Pencil,
+  Plus,
+  ScanSearch,
+  Settings,
+  SquareTerminal,
+  Terminal,
+  Trash2,
+  Upload,
+  UserRound,
+  X,
+} from 'lucide-react'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { RoseThree } from '@/shared/brand/RoseThree'
 import { Button } from '@/shared/ui/button'
 import { Field, Input, Textarea } from '@/shared/ui/field'
 import { useFeedback } from '@/shared/ui/feedback-context'
-import { cn } from '@/shared/lib/cn'
+import { GeneratingCard } from '@/shared/ui/generating-card'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -16,16 +38,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
 } from '@/shared/ui/menu'
+import { MessageBubble } from '@/shared/ui/message'
 import { Dialog, IconTooltip } from '@/shared/ui/overlay'
 import { Panel } from '@/shared/ui/panel'
+import {
+  ContextAttachment,
+  PromptBar,
+  PromptBarFact,
+  VoiceIndicator,
+  type VoiceStatus,
+} from '@/shared/ui/prompt-bar'
+import { ScoreTile } from '@/shared/ui/score-tile'
+import { SessionGroup } from '@/shared/ui/session-row'
+import { SidebarAction, SidebarToggle } from '@/shared/ui/sidebar'
 import { SegmentedControl } from '@/shared/ui/segmented-control'
 import { Select } from '@/shared/ui/select'
+import { cn } from '@/shared/lib/cn'
 import type { ReactNode } from 'react'
 
 const themeChoices = [
   { value: 'light', label: '浅色', description: '暖色纸面' },
   { value: 'dark', label: '暗色', description: '低亮度阅读' },
   { value: 'system', label: '跟随系统', description: '自动同步' },
+]
+
+const settingsTabs = [
+  { key: 'profile', label: '账号资料', icon: <UserRound aria-hidden="true" /> },
+  { key: 'resumes', label: '简历管理', icon: <FileText aria-hidden="true" /> },
+  { key: 'positions', label: '岗位管理', icon: <BriefcaseBusiness aria-hidden="true" /> },
+  { key: 'llm', label: '模型管理', icon: <SquareTerminal aria-hidden="true" /> },
+  { key: 'theme', label: '主题', icon: <Palette aria-hidden="true" /> },
 ]
 
 function DemoGroup({ label, children }: { label: string; children: ReactNode }) {
@@ -45,10 +87,15 @@ export function ComponentLab() {
   const [jdMatch, setJdMatch] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [pressed, setPressed] = useState(false)
-  const [navActive, setNavActive] = useState('会话')
+  const [tab, setTab] = useState('账号资料')
   const [themeChoice, setThemeChoice] = useState('light')
+  const [answer, setAnswer] = useState('')
+  const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>('listening')
+  const [railCollapsed, setRailCollapsed] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
+
+  const noop = () => undefined
 
   return (
     <section className="workspace-page">
@@ -80,33 +127,29 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="Panel"
-          description="shared/ui/panel · 标题行拥有操作区；fill 自带滚动内容区，card 随内容增高"
+          description="shared/ui/panel · 标题行拥有操作区；本页每个面板都是 layout=card，fill 形态如下"
         >
-          <DemoGroup label="card">
-            <Panel
-              layout="card"
-              level={3}
-              className="w-full"
-              title="岗位库"
-              actions={
-                <Button size="icon" variant="ghost" aria-label="新建岗位">
-                  <Plus />
-                </Button>
-              }
-            >
-              <p className="type-body">三级标题读作 type-subtitle，操作区与标题同行竖直居中。</p>
+          <div className="grid h-(--layout-demo-frame-block-size) w-full overflow-hidden rounded-lg border border-border">
+            <Panel title="模型管理" actions={<Button>保存设置</Button>}>
+              <div className="form-grid gap-md">
+                <Field label="接入方式" htmlFor="lab-provider">
+                  <Select
+                    id="lab-provider"
+                    value={model}
+                    options={[
+                      { value: 'deepseek', label: 'DeepSeek' },
+                      { value: 'openai-responses', label: 'OpenAI Responses' },
+                    ]}
+                    onValueChange={setModel}
+                  />
+                </Field>
+                <Field label="模型" htmlFor="lab-model">
+                  <Input id="lab-model" defaultValue="deepseek-v4-pro" />
+                </Field>
+              </div>
+              <p className="type-body">内容超出可用高度时只有内容区滚动，标题行保持不动。</p>
             </Panel>
-          </DemoGroup>
-          <DemoGroup label="fill">
-            <div className="grid h-(--layout-demo-frame-block-size) w-full overflow-hidden rounded-lg border border-border">
-              <Panel title="模型管理" actions={<Button>保存设置</Button>}>
-                <p className="type-body">内容超出可用高度时只有内容区滚动，标题行保持不动。</p>
-                <p className="type-body">设置弹窗的五个分区都是这一形态。</p>
-                <p className="type-body">重复段落用于占满高度，验证滚动边界。</p>
-                <p className="type-body">重复段落用于占满高度，验证滚动边界。</p>
-              </Panel>
-            </div>
-          </DemoGroup>
+          </div>
         </Panel>
 
         <Panel
@@ -214,47 +257,308 @@ export function ComponentLab() {
 
         <Panel
           layout="card"
-          title="List & Navigation"
-          description="shared/styles · 导航项、列表行与选项卡共用同一档控件高度"
+          title="Prompt Bar"
+          description="shared/ui/prompt-bar · 输入面、上下文附件、事实位与语音指示"
         >
-          <DemoGroup label="导航项">
+          <DemoGroup label="准备态">
+            <div className="w-full">
+              <PromptBar
+                value={answer}
+                inputLabel="职位描述（可选）"
+                placeholder="输入或粘贴职位描述以开启 JD 匹配（可选）"
+                onValueChange={setAnswer}
+                onSubmit={(event) => event.preventDefault()}
+                attachments={
+                  <>
+                    <ContextAttachment
+                      kind="resume"
+                      label="Java 后端工程师简历.pdf"
+                      onRemove={noop}
+                    />
+                    <ContextAttachment kind="position" label="Java 后端工程师" onRemove={noop} />
+                    <ContextAttachment kind="document" label="系统设计笔记.pdf" onRemove={noop} />
+                  </>
+                }
+                leftActions={
+                  <>
+                    <IconTooltip label="添加面试上下文">
+                      <Button type="button" size="icon" variant="ghost" aria-label="添加面试上下文">
+                        <Plus />
+                      </Button>
+                    </IconTooltip>
+                    <PromptBarFact
+                      label="deepseek-v4-pro · 默认"
+                      icon={<Terminal aria-hidden="true" />}
+                    />
+                    <button
+                      type="button"
+                      className="prompt-bar-control prompt-bar-control-jd ui-action"
+                      aria-pressed="true"
+                      onClick={noop}
+                    >
+                      <ScanSearch aria-hidden="true" />
+                      <span>JD 匹配</span>
+                    </button>
+                  </>
+                }
+                rightActions={
+                  <Button type="submit" shape="action" disabled>
+                    开始面试
+                  </Button>
+                }
+              />
+            </div>
+          </DemoGroup>
+          <DemoGroup label="回答态">
+            <div className="w-full">
+              <PromptBar
+                value={answer}
+                inputLabel="面试回答"
+                placeholder="输入回答..."
+                inputDisabled={voiceStatus !== 'idle'}
+                onValueChange={setAnswer}
+                onSubmit={(event) => event.preventDefault()}
+                attachments={<ContextAttachment kind="resume" label="Java 后端工程师简历.pdf" />}
+                leftActions={
+                  <>
+                    <IconTooltip label="面试开始后上下文已锁定">
+                      <span className="inline-flex" tabIndex={0}>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          aria-label="面试上下文已锁定"
+                          disabled
+                        >
+                          <Plus aria-hidden="true" />
+                        </Button>
+                      </span>
+                    </IconTooltip>
+                    <PromptBarFact
+                      label="deepseek-v4-pro · 默认"
+                      icon={<Terminal aria-hidden="true" />}
+                    />
+                    <PromptBarFact label="JD 匹配" icon={<ScanSearch aria-hidden="true" />} />
+                  </>
+                }
+                rightActions={
+                  <>
+                    <IconTooltip label="切换到语音输入">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        aria-label="切换到语音输入"
+                        onClick={() => setVoiceStatus('listening')}
+                      >
+                        <Mic />
+                      </Button>
+                    </IconTooltip>
+                    <Button type="submit" shape="action" disabled={!answer.trim()}>
+                      发送
+                    </Button>
+                  </>
+                }
+              />
+            </div>
+          </DemoGroup>
+          <DemoGroup label="语音态">
+            <div className="w-full">
+              <PromptBar
+                inputLabel="面试回答"
+                inputContent={
+                  <VoiceIndicator
+                    status={voiceStatus}
+                    recording={voiceStatus === 'listening'}
+                    label={voiceStatus === 'listening' ? '正在聆听' : '语音模式已连接'}
+                  />
+                }
+                onSubmit={(event) => event.preventDefault()}
+                leftActions={
+                  <SegmentedControl
+                    ariaLabel="语音状态"
+                    items={[
+                      { value: 'listening', label: '聆听' },
+                      { value: 'processing', label: '处理' },
+                      { value: 'speaking', label: '播报' },
+                    ]}
+                    value={voiceStatus === 'idle' ? 'listening' : voiceStatus}
+                    onValueChange={(value) => setVoiceStatus(value)}
+                  />
+                }
+                rightActions={
+                  <>
+                    <IconTooltip label="切换到文字输入">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        aria-label="切换到文字输入"
+                      >
+                        <Keyboard />
+                      </Button>
+                    </IconTooltip>
+                    <Button type="button" shape="hold" pressed>
+                      松开发送
+                    </Button>
+                  </>
+                }
+              />
+            </div>
+          </DemoGroup>
+        </Panel>
+
+        <Panel
+          layout="card"
+          title="Conversation"
+          description="shared/ui/message + generating-card · 实时回合只标说话人，评分归报告"
+        >
+          <DemoGroup label="回合">
+            <div className="flex w-full flex-col">
+              <MessageBubble side="assistant" speaker="面试官">
+                同一个支付回调重复到达时，你如何保证订单状态只推进一次？
+              </MessageBubble>
+              <MessageBubble side="user" speaker="我">
+                我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。
+              </MessageBubble>
+              <MessageBubble side="assistant" speaker="面试官" pending />
+            </div>
+          </DemoGroup>
+          <DemoGroup label="生成态">
+            <div className="flex w-full items-center justify-center bg-surface p-xl">
+              <GeneratingCard title="AI 评估报告生成中…" hint="正在整理答题表现并生成训练建议。" />
+            </div>
+          </DemoGroup>
+        </Panel>
+
+        <Panel
+          layout="card"
+          title="Session list"
+          description="shared/ui/session-row · 会话行、悬停动作与分组，状态由 state 决定"
+        >
+          <div className="w-full max-w-(--layout-settings-sidebar-inline-size)">
+            <SessionGroup
+              label="进行中"
+              emptyLabel="暂无会话"
+              rows={[
+                {
+                  key: 'active',
+                  name: 'Java 后端工程师',
+                  state: 'active',
+                  pinned: true,
+                  onOpen: noop,
+                  onTogglePin: noop,
+                  onRemove: noop,
+                },
+                {
+                  key: 'loading',
+                  name: '分布式事务岗位',
+                  state: 'loading',
+                  onOpen: noop,
+                  onTogglePin: noop,
+                  onRemove: noop,
+                },
+              ]}
+            />
+            <SessionGroup
+              label="已完成"
+              emptyLabel="暂无会话"
+              rows={[
+                {
+                  key: 'error',
+                  name: '前端工程师',
+                  state: 'error',
+                  finished: true,
+                  onOpen: noop,
+                  onTogglePin: noop,
+                  onRemove: noop,
+                },
+                {
+                  key: 'idle',
+                  name: '算法工程师',
+                  finished: true,
+                  onOpen: noop,
+                  onTogglePin: noop,
+                  onRemove: noop,
+                },
+              ]}
+            />
+            <SessionGroup label="已归档" emptyLabel="暂无会话" rows={[]} />
+          </div>
+        </Panel>
+
+        <Panel
+          layout="card"
+          title="App rail"
+          description="shared/ui/sidebar · 折叠工具、主操作与导航行；折叠态由 .app-sidebar.is-collapsed 驱动，见 04-sidebar-collapsed"
+        >
+          <DemoGroup label="展开态">
+            <div className="grid w-(--layout-sidebar-inline-size) gap-sm">
+              <SidebarAction label="开始新面试" icon={<Plus />} tone="primary" onClick={noop} />
+              <SidebarAction label="工作区" icon={<PanelLeft />} to="/interview" />
+              <SidebarAction label="数据看板" icon={<BarChart3 />} to="/analytics" />
+              <SidebarAction label="设置" icon={<Settings />} onClick={noop} />
+              <SidebarToggle
+                collapsed={railCollapsed}
+                onToggle={() => setRailCollapsed((v) => !v)}
+              />
+            </div>
+          </DemoGroup>
+        </Panel>
+
+        <Panel
+          layout="card"
+          title="List & Navigation"
+          description="shared/styles · 设置分区导航、列表行与选项卡共用同一档控件高度"
+        >
+          <DemoGroup label="分区导航">
             <div className="grid w-(--layout-settings-sidebar-inline-size) gap-sm">
-              {['会话', '看板', '设置'].map((label) => (
+              {settingsTabs.map((item) => (
                 <button
-                  key={label}
+                  key={item.key}
                   type="button"
                   className={cn(
                     'nav-item ui-action ui-action-nav',
-                    navActive === label && 'is-active',
+                    tab === item.label && 'is-active',
                   )}
-                  aria-current={navActive === label ? 'page' : undefined}
-                  onClick={() => setNavActive(label)}
+                  aria-current={tab === item.label ? 'page' : undefined}
+                  onClick={() => setTab(item.label)}
                 >
-                  <Gauge aria-hidden="true" />
-                  {label}
+                  {item.icon}
+                  {item.label}
                 </button>
               ))}
               <button type="button" className="nav-item nav-item-danger ui-action ui-action-danger">
-                <X aria-hidden="true" />
+                <LogOut aria-hidden="true" />
                 退出登录
               </button>
             </div>
           </DemoGroup>
-          <DemoGroup label="列表行">
+          <DemoGroup label="简历行">
             <div className="list-row w-full">
-              <div className="flex min-w-0 flex-1 flex-col gap-xs">
+              <div className="flex min-w-0 flex-1 flex-col gap-xs" data-slot="resume-row-main">
                 <h4 className="truncate-title">Java 后端工程师简历.pdf</h4>
-                <p className="type-meta">2026/09/12 14:20 · 3 场面试</p>
+                <p className="type-meta">2026/09/03 09:00 · 1 场面试</p>
               </div>
               <Button size="icon" variant="ghost" aria-label="删除简历">
-                <X />
+                <Trash2 />
               </Button>
             </div>
-            <div className="row-label-end w-full">
-              <span className="truncate-title">分布式事务岗位</span>
-              <Button size="icon" variant="ghost" aria-label="编辑岗位">
-                <Plus />
-              </Button>
+          </DemoGroup>
+          <DemoGroup label="岗位行">
+            <div className="position-item-grid w-full">
+              <div className="row-label-end">
+                <span className="truncate-title">Java 后端工程师</span>
+                <Button size="icon" variant="ghost" aria-label="编辑 Java 后端工程师">
+                  <Pencil />
+                </Button>
+              </div>
+              <div className="row-label-end">
+                <span className="truncate-title">平台工程师</span>
+                <Button size="icon" variant="ghost" aria-label="编辑 平台工程师">
+                  <Pencil />
+                </Button>
+              </div>
             </div>
           </DemoGroup>
           <DemoGroup label="选项卡">
@@ -297,6 +601,37 @@ export function ComponentLab() {
 
         <Panel
           layout="card"
+          title="Report surfaces"
+          description="shared/styles + score-tile · 报告纸面、分栏与评分块，打印时脱离应用外壳"
+        >
+          <article className="document-sheet w-full">
+            <header className="report-columns items-start gap-xl">
+              <div className="grid gap-xs">
+                <p className="type-eyebrow">Interview Review</p>
+                <h3 className="type-title">求职训练报告</h3>
+              </div>
+              <div className="flex items-baseline gap-xs">
+                <span className="type-meta">总体</span>
+                <strong className="type-metric">6.3</strong>
+                <span className="type-meta">/ 10</span>
+              </div>
+            </header>
+            <div className="report-columns gap-md">
+              <ScoreTile label="技术能力" value={6.0} />
+              <ScoreTile label="表达清晰度" value={7.0} />
+              <ScoreTile label="逻辑思维" value={6.0} />
+            </div>
+            <dl className="review-detail-grid mt-lg">
+              <dt className="font-serif text-sm text-text-secondary">行动建议</dt>
+              <dd className="m-0 font-sans text-sm leading-copy text-text-secondary">
+                可进入下一轮，并重点验证故障演练与容量分析。
+              </dd>
+            </dl>
+          </article>
+        </Panel>
+
+        <Panel
+          layout="card"
           title="Empty & Error"
           description="shared/styles · empty-state 统一加载、空库与失败的落点"
         >
@@ -305,6 +640,7 @@ export function ComponentLab() {
             <div className="empty-state w-full">
               <p>简历服务暂时不可用。</p>
               <Button variant="secondary" onClick={() => feedback.notify('已重新加载', 'success')}>
+                <Upload />
                 重新加载
               </Button>
             </div>
@@ -464,19 +800,14 @@ export function ComponentLab() {
             </Button>
           }
           footer={
-            <>
-              <Button variant="secondary" onClick={() => setWorkspaceDialogOpen(false)}>
-                取消
-              </Button>
-              <Button
-                onClick={() => {
-                  setWorkspaceDialogOpen(false)
-                  feedback.notify('已更新会话', 'success')
-                }}
-              >
-                保存
-              </Button>
-            </>
+            <Button
+              onClick={() => {
+                setWorkspaceDialogOpen(false)
+                feedback.notify('已更新会话', 'success')
+              }}
+            >
+              保存
+            </Button>
           }
         >
           <p className="type-body">

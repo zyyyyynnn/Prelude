@@ -37,7 +37,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 图标与图标按钮的盒尺寸使用 `--ui-glyph-sm|md|lg`（16/20/24），不从间距阶梯借用。标准边界使用 `--border-width-default`。布局宽度、Header 高度和内容行宽使用对应 `--layout-*`、`--header-height` 与 `--content-*` token。仅两例光学偏移（按下位移、附件删除盒与 chip 的负叠）刻意留在网格外，并在规则内标 `geometry-exempt`。
 
-控件内的图标尺寸由 CSS 拥有：`.prelude-button__content`、`.field-action`、`.row-action`、`.prelude-dialog__close`、`.prelude-toast__close` 下的 `svg` 取 `--ui-glyph-sm`。调用点不写 `size={n}`——SVG 的 `width` 表现属性优先级低于 CSS，写了不会生效。
+控件内的图标尺寸由 CSS 拥有：`.prelude-button__content`、`.field-action`、`.row-action`、`.prelude-dialog__close`、`.prelude-toast__close` 与 `.prelude-toast [data-icon]` 下的 `svg` 取 `--ui-glyph-sm`。调用点不写 `size={n}`：SVG 的 `width` 表现属性优先级低于 CSS，写了不会生效。
+
+会话行的置顶角标是脱离控件的装饰图形，没有 CSS 归属，尺寸由调用点的 `size` 决定。
 
 固定格式控件通过稳定高度、宽度或 grid track 保持布局。文本在容器内自然换行或截断，并由 Tooltip 提供完整值。
 
@@ -74,7 +76,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 行高由字号决定：同一字号只对应一种行高。角色未覆盖的配对（如报告内联分数）用原子类显式组合，不新增角色。
 
-标题角色与 DOM 层级一一对应，不交叉：`h1` 用 `type-hero`（页面主标题）或 `workspace-header__title`，`h2` 用 `type-title`，`h3` 用 `type-subtitle`，字段与条目名用 `type-label`。`Panel` 按 `level` 自动选择 `h2`/`h3` 与对应角色，调用点不再手拼标题层级。
+标题角色与 DOM 层级一一对应：`h1` 用 `type-hero`（页面主标题）或 `workspace-header__title`，`h2` 用 `type-title`，`h3` 用 `type-subtitle`，字段与条目名用 `type-label`。`Panel` 按 `level` 选出 `h2`/`h3` 与对应角色，标题层级由组件决定。
 
 排版取值以**实际渲染值**为准，声明意图与被覆盖的历史写法不作为依据。
 

@@ -31,8 +31,7 @@
         "color-error",
         "color-error-soft",
         "color-focus-field",
-        "color-focus-action",
-        "color-mask-overlay"
+        "color-focus-action"
       ]
     },
     "spacing": {

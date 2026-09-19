@@ -1,6 +1,8 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
+import { Button } from '@/shared/ui/button'
+import { ScoreTile } from '@/shared/ui/score-tile'
 import type {
   ParsedInterviewReport,
   ReportStageName,
@@ -239,18 +241,7 @@ export function ScoreCard({ report }: { report: StructuredInterviewReport }) {
       </header>
       <div className="report-columns gap-md">
         {items.map(([label, value]) => (
-          <div className="break-inside-avoid rounded-lg bg-surface-muted p-md" key={label}>
-            <span className="font-serif text-sm text-text-secondary">{label}</span>
-            <strong className="my-sm block font-serif text-xl text-text-primary">
-              {value.toFixed(1)}
-            </strong>
-            <div className="h-xs overflow-hidden rounded-full bg-border" aria-hidden="true">
-              <span
-                className="score-fill"
-                style={{ '--report-score-fill': `${value * 10}%` } as CSSProperties}
-              />
-            </div>
-          </div>
+          <ScoreTile key={label} label={label} value={value} />
         ))}
       </div>
     </section>
@@ -357,30 +348,26 @@ export function ReportCarouselNavigation({
       >
         {index + 1} / {count}
       </span>
-      <button
+      <Button
         type="button"
-        data-slot="button"
-        className="prelude-button prelude-button--ghost prelude-button--icon ui-action"
+        size="icon"
+        variant="ghost"
         aria-label={previousLabel}
         disabled={index === 0}
         onClick={onPrevious}
       >
-        <span className="prelude-button__content">
-          <ChevronLeft />
-        </span>
-      </button>
-      <button
+        <ChevronLeft />
+      </Button>
+      <Button
         type="button"
-        data-slot="button"
-        className="prelude-button prelude-button--ghost prelude-button--icon ui-action"
+        size="icon"
+        variant="ghost"
         aria-label={nextLabel}
         disabled={index === count - 1}
         onClick={onNext}
       >
-        <span className="prelude-button__content">
-          <ChevronRight />
-        </span>
-      </button>
+        <ChevronRight />
+      </Button>
     </div>
   )
 }

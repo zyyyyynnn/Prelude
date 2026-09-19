@@ -98,26 +98,7 @@
 
 ## 5. 方案 A：全面收敛实施方案与防漂移策略
 
-### 5.1 263 个 `@shadcn/lint` Warning 全景明细
-当前 `npm run check` 的 263 个警告 100% 属于 `shadcn(no-unknown-classes)`，分布于 8 个原生 `.css` 文件对应的引用点：
-1. `AppShell.tsx`（`sidebar.css`）：45 个
-2. `features/report/index.tsx`（`report.css`）：44 个
-3. `InterviewPage.tsx`（`interview.css`）：43 个
-4. `SettingsModal.tsx`（`settings.css`）：42 个
-5. `AnalyticsPage.tsx`（`analytics.css`）：31 个
-6. `PositionManagementPanel.tsx`（`position.css`）：14 个
-7. `ResumeManagementPanel.tsx`（`resume.css`）：13 个
-8. `PromptBar.tsx` / `MessageThread.tsx`：21 个
-9. `ComponentLab.tsx` / `NotFoundPage.tsx` 等基础部件：9 个
-
-### 5.2 核心防破窗策略：解耦 Playwright 样式断言
-在移除原生 `.css` 时，必须特别防止以下 Playwright 断言失败：
-1. **测试定位钩子**：对于 `tests/*.spec.ts` 中直接作为定位器的类名（如 `.structured-report`, `.app-sidebar`, `.resume-row` 等），采用在 [`src/shared/styles/index.css`](file:///e:/Prelude/frontend/src/shared/styles/index.css) 中以 `@utility <name> {}` 显式声明该 utility 的方案。这样既能让 `@shadcn/lint` 识别而**不报 warning**，又无需改动 Playwright 测试选择器！
-2. **计算样式断言**：
-   - `app.behavior.spec.ts:1346` 断言 `.question-review__body` 为 `overflow: visible`；
-   - `app.behavior.spec.ts:1350` 断言 `.stage-performance.is-active` 的圆角与背景色；
-   - `app.surfaces.spec.ts:373-390` 断言 `.app-sidebar` 的过渡宽度；
-   - 转写为 Tailwind utility 时，必须精确对齐计算后的 CSS 属性值。
+实施前的 263 个 `no-unknown-classes` 警告与逐文件明细、以及当时列出的 Playwright 断言迁移点，随 7 个 feature CSS 文件一起失效；结果与现行约定记录在 §6 阶段三与 `docs/quality/ui-quality-system.md`。
 
 ---
 
@@ -156,6 +137,14 @@
 - [x] 界面资产目录收敛为唯一的 `docs/screenshots/surfaces/`；`@demo` 链路截图改为随 Playwright 报告落 `frontend/test-results/` 的诊断证据。
 - [x] `hero-title` 与 `type-hero` 合并：删除 `@utility hero-title`，面试空态页 h1 改用 `type-hero text-center`，仓库只保留一档响应式大标题。
 - [ ] **语音实时模式无视觉资产**：`capture:surfaces` 走 demo harness，harness 无语音通道，`useVoiceInterview` 的 `ws.onerror` 必然触发，因此 09 帧记录的是回退态（`09-composer-voice-fallback`）。实测真实栈也补不上这一帧：`user_account` 只有身份冒烟测试创建的 `artifact-<uuid>` 账号、reference data 不播种可登录账号；`WebSocketHandshakeInterceptor` 无已认证会话即拒绝握手；`VoiceServiceImpl` 是唯一的 `VoicePort` 实现且总是带 `OPENAI_API_KEY` 调上游实时语音，没有本地桩。要真出这一帧需要一次真实上游通话，而它无法由 `capture:surfaces`（含 CI）重生成。语音行为由 `@smoke` 的两条语音资源释放用例把关。
+
+### 阶段六：设计系统表面归位（组件库保真）
+- [x] **根因级层叠缺陷**：`index.css` 里未分层的 `label, [data-slot='label'] { font-size: --font-size-md; color: --color-text-primary }` 压过整个 utilities 层，使 `type-label`（14px / secondary）在全仓任何 `<label>` 上都不生效——字段标签与 h3 小标题实测同为 16px/primary，"高级设置"读起来像又一个字段标签。该规则删除，字族默认移进 `@layer base`，字号/字重/颜色交还角色；实测字段标签回到 14px/500/secondary。`[data-slot='label']` 分支全仓零命中，一并删除。
+- [x] 组件库改为渲染真实组件：把 chrome 已注册在 `index.css` 的表面上提到 `shared/ui` —— `message.tsx`、`generating-card.tsx`、`prompt-bar.tsx`（`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceIndicator` + `VoiceStatus`）、`session-row.tsx`（`SessionRow`/`SessionGroup`）、`sidebar.tsx`（`SidebarAction`/`SidebarPane`/`SidebarToggle`）、`score-tile.tsx`。feature 与 `app/shell` 只保留取数与领域类型→原始 props 的映射；`useVoiceInterview` 的私有状态联合类型改为复用 `shared` 导出的 `VoiceStatus`。
+- [x] 组件库删除全部手写近似版：假"岗位库"卡与假"模型管理"面板、假导航项标签与 `Gauge` 图标（真实为设置五个分区 + `UserRound`/`FileText`/`BriefcaseBusiness`/`SquareTerminal`/`Palette`/`LogOut`）、用 `X`/`Plus` 冒充删除/编辑的行（真实为 `Trash2`/`Pencil`）。新增 Prompt Bar、Conversation、Session list、App rail、Report surfaces 五个面板。
+- [x] 报告轮播的两个按钮由手写 `prelude-button prelude-button--ghost prelude-button--icon ui-action` + 手写 `prelude-button__content` 改为真实 `<Button size="icon" variant="ghost">`。
+- [x] 死样式清理：`.scrollable::-webkit-scrollbar*` 空规则集、`--color-mask-overlay`（与真正被消费的 `--mask-overlay` 重复且无 utility 使用）、`.prelude-toast__action`/`__cancel`（无任何调用点产出带按钮的 toast）、echarts 的 `ui-chart-tooltip` 空钩子全部删除；图标契约补上 `.prelude-toast [data-icon] > svg`，据此移除 5 个 toast 图标与 `Printer`/`PanelLeft`/`BarChart3`/`Pin` 上被 CSS 覆盖的 `size={n}`。
+- [x] `hero-title` 并入 `type-hero`；文档去冗：handoff §5.1/§5.2 的 warning 明细与迁移点随 7 个 feature CSS 失效，压缩为一句指向阶段三与质量体系文档，其中"测试选择器只用 `data-slot`/`role`、断言对齐实际渲染值"的长期规则移入 `docs/quality/ui-quality-system.md`。
 
 ---
 

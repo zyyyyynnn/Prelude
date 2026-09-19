@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react'
-import { Briefcase, FileText, Image, Paperclip, Plus, ScanSearch, Upload, X } from 'lucide-react'
+import { Briefcase, FileText, Paperclip, Plus, ScanSearch, Upload } from 'lucide-react'
 import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
 import { Button } from '@/shared/ui/button'
@@ -133,57 +132,5 @@ export function LockedInterviewContextButton() {
         </Button>
       </span>
     </IconTooltip>
-  )
-}
-
-export function PromptBarFact({ label, icon }: { label: string; icon: ReactNode }) {
-  return (
-    <IconTooltip label={label}>
-      <span className="prompt-bar-control prompt-bar-control-text opacity-72" tabIndex={0}>
-        {icon}
-        <span className="min-w-0 flex-1 truncate text-start">{label}</span>
-      </span>
-    </IconTooltip>
-  )
-}
-
-export function ContextAttachment({
-  label,
-  kind,
-  onRemove,
-}: {
-  label: string
-  kind: 'resume' | 'position' | 'document' | 'image'
-  onRemove?: () => void
-}) {
-  const Icon =
-    kind === 'resume'
-      ? FileText
-      : kind === 'position'
-        ? Briefcase
-        : kind === 'image'
-          ? Image
-          : Paperclip
-  const kindLabel =
-    kind === 'resume' ? '简历' : kind === 'position' ? '岗位' : kind === 'image' ? '图片' : '附件'
-  return (
-    <div className="prompt-bar-attachment">
-      <Icon aria-hidden="true" />
-      <IconTooltip label={label}>
-        <span className="min-w-0 truncate" tabIndex={0}>
-          {label}
-        </span>
-      </IconTooltip>
-      {onRemove && (
-        <button
-          type="button"
-          className="prompt-bar-attachment-remove ui-action ui-action-icon"
-          aria-label={`移除${kindLabel}：${label}`}
-          onClick={onRemove}
-        >
-          <X aria-hidden="true" />
-        </button>
-      )}
-    </div>
   )
 }

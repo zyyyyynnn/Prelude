@@ -266,7 +266,6 @@ function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
       animation: false,
       tooltip: {
         trigger: 'axis',
-        className: 'ui-chart-tooltip',
         backgroundColor: surface,
         borderColor: input,
         borderWidth: 1,

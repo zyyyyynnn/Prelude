@@ -1,15 +1,20 @@
 import { useState, type FormEvent } from 'react'
 import { Keyboard, Mic, ScanSearch, Terminal } from 'lucide-react'
 import type { AttachmentItem } from '@/features/assets'
-import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
 import { IconTooltip } from '@/shared/ui/overlay'
+import {
+  ContextAttachment,
+  PromptBar,
+  PromptBarFact,
+  VoiceIndicator,
+  type VoiceStatus,
+} from '@/shared/ui/prompt-bar'
 import type { InterviewMessageRecord } from '../types'
 import { useVoiceInterview } from '../useVoiceInterview'
-import { PromptBar } from './PromptBar'
-import { ContextAttachment, LockedInterviewContextButton, PromptBarFact } from './PromptBarControls'
+import { LockedInterviewContextButton } from './PromptBarControls'
 
-function voiceStatusLabel(status: string, recording: boolean): string {
+function voiceStatusLabel(status: VoiceStatus, recording: boolean): string {
   if (recording) return '正在聆听'
   if (status === 'processing') return '正在处理'
   if (status === 'speaking') return '面试官正在回答'
@@ -62,22 +67,11 @@ export function InterviewAnswerComposer({
   }
 
   const voiceContent = (
-    <div className="w-full">
-      <div className="flex min-h-(--layout-prompt-input-min-block-size) items-center justify-between rounded-md bg-surface-hover px-sm">
-        <div className="flex items-center gap-sm font-serif text-sm font-medium text-text-secondary">
-          <span className={cn('prompt-bar-status-dot', `is-${voiceState.status}`)} />
-          <span>{voiceStatusLabel(voiceState.status, voiceState.recording)}</span>
-        </div>
-        <div
-          className={cn('prompt-bar-wave', voiceState.recording && 'is-active')}
-          aria-hidden="true"
-        >
-          {Array.from({ length: 9 }, (_, index) => (
-            <span key={index} />
-          ))}
-        </div>
-      </div>
-    </div>
+    <VoiceIndicator
+      status={voiceState.status}
+      recording={voiceState.recording}
+      label={voiceStatusLabel(voiceState.status, voiceState.recording)}
+    />
   )
 
   const actions = voice ? (

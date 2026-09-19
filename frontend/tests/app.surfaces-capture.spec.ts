@@ -60,7 +60,7 @@ async function settle(page: Page) {
 /* The gallery is one screen tall only if the frame is: capture it whole instead of in halves,
    then hand the shared page back at the normal viewport. */
 async function captureLab(page: Page, name: string) {
-  await page.setViewportSize({ width: DEMO_VIEWPORT.width, height: 4200 })
+  await page.setViewportSize({ width: DEMO_VIEWPORT.width, height: 7200 })
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Brand' })).toBeVisible()
@@ -193,7 +193,7 @@ test.describe('@capture authenticated surface reference set', () => {
 
     await page.goto('/components-lab')
     await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
-    await page.getByRole('button', { name: '面试上下文' }).click()
+    await page.getByRole('button', { name: '面试上下文', exact: true }).click()
     await hoverContextMenuItem(page, '排序方式')
     await expect(page.getByRole('menuitemradio', { name: '最近活跃' })).toBeVisible()
     await settle(page)

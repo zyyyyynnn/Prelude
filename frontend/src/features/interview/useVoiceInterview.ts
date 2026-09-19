@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
+import type { VoiceStatus } from '@/shared/ui/prompt-bar'
 import type { InterviewMessageRecord } from './types'
-
-type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking'
 
 interface VoicePayload {
   type: string

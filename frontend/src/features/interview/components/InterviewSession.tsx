@@ -4,9 +4,9 @@ import { RefreshCw } from 'lucide-react'
 import { fetchResumes } from '@/features/resume'
 import { printInterviewReport, ReportPanel } from '@/features/report'
 import { REASONING_LABELS } from '@/features/settings'
-import { RoseThree } from '@/shared/brand/RoseThree'
 import { Button } from '@/shared/ui/button'
 import { useFeedback } from '@/shared/ui/feedback-context'
+import { GeneratingCard } from '@/shared/ui/generating-card'
 import { InterviewAnswerComposer } from './InterviewAnswerComposer'
 import { MessageThread } from './MessageThread'
 import { useInterviewSession } from './useInterviewSession'
@@ -85,16 +85,7 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
         >
           {current.status === 'generating' && !hasReport ? (
             <div className="flex flex-1 items-center justify-center bg-surface p-xl">
-              <div className="generating-card">
-                <RoseThree className="mb-lg size-(--layout-generating-rose-inline-size) text-brand" />
-                <h2 className="generating-title">AI 评估报告生成中…</h2>
-                <p className="mb-lg text-sm leading-relaxed text-text-secondary">
-                  正在整理答题表现并生成训练建议。
-                </p>
-                <div className="generating-progress-track">
-                  <div className="generating-progress-indicator" />
-                </div>
-              </div>
+              <GeneratingCard title="AI 评估报告生成中…" hint="正在整理答题表现并生成训练建议。" />
             </div>
           ) : controller.showReport && hasReport ? (
             <div

@@ -152,8 +152,6 @@
 
   /* Default component radius */
   --radius: var(--radius-md);
-
-  --color-mask-overlay: var(--mask-overlay);
 }
 
 :root {
@@ -447,6 +445,10 @@ body {
     font-weight: var(--font-weight-medium);
   }
 
+  /* Only the face belongs to the element: size, weight and colour come from a
+     typographic role, so a bare label still reads on-brand without out-voting
+     `type-*` from the utilities layer. */
+  label,
   button,
   input,
   select,
@@ -576,15 +578,6 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 .page--auth {
   min-height: 100vh;
   background: var(--color-bg);
-}
-
-/* shadcn Label / FormLabel use the brand serif face. */
-label,
-[data-slot='label'] {
-  font-family: var(--font-serif);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
 }
 
 /* ── Composer dropdown ── */
@@ -751,12 +744,6 @@ label,
   scrollbar-color: var(--color-ring) transparent;
 }
 
-.scrollable::-webkit-scrollbar,
-.scrollable::-webkit-scrollbar-track,
-.scrollable::-webkit-scrollbar-thumb,
-.scrollable::-webkit-scrollbar-thumb:hover {
-}
-
 /* ==========================================================================
    Workspace layout shell — locked application frame
    ========================================================================== */
@@ -882,7 +869,8 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .field-action > svg,
 .row-action > svg,
 .prelude-dialog__close > svg,
-.prelude-toast__close > svg {
+.prelude-toast__close > svg,
+.prelude-toast [data-icon] > svg {
   inline-size: var(--ui-glyph-sm);
   block-size: var(--ui-glyph-sm);
   flex: 0 0 auto;
@@ -1248,14 +1236,6 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   font: var(--font-size-sm)/var(--line-height-base) var(--font-serif);
 }
 .prelude-toaster [data-sonner-toast] .prelude-toast__description {
-  color: var(--color-text-secondary);
-}
-.prelude-toaster [data-sonner-toast] .prelude-toast__action {
-  background: var(--color-accent-solid);
-  color: var(--color-text-on-accent);
-}
-.prelude-toaster [data-sonner-toast] .prelude-toast__cancel {
-  background: var(--color-surface-muted);
   color: var(--color-text-secondary);
 }
 .prelude-toaster [data-sonner-toast][data-styled='true'] .prelude-toast__close {
