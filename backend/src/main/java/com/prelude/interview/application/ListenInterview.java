@@ -8,15 +8,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 @Service
 @RequiredArgsConstructor
 public class ListenInterview {
 
-    private static final long SSE_TIMEOUT_MS = 180000L;
-
     private final InterviewSessionAccess sessionAccess;
     private final RealtimePort realtimePort;
     private final SessionValidity sessionValidity;
+    private final ScheduledExecutorService sseHeartbeatExecutor;
 
     public SseEmitter execute(Long sessionId, String authSessionId) {
         long accountId = sessionAccess.currentAccountId();
@@ -25,7 +26,7 @@ public class ListenInterview {
         }
         sessionAccess.requireOwned(sessionId, accountId);
 
-        SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
+        SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, sseHeartbeatExecutor);
         try {
             stream.send("ping", "connected");
         } catch (RuntimeException exception) {

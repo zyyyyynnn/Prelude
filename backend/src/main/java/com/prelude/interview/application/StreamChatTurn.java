@@ -15,13 +15,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class StreamChatTurn {
-
-    private static final long SSE_TIMEOUT_MS = 120000L;
 
     private final InterviewSessionAccess sessionAccess;
     private final InterviewTurnPort interviewTurnPort;
@@ -29,12 +29,22 @@ public class StreamChatTurn {
     private final Executor sseTaskExecutor;
     private final RealtimePort realtimePort;
     private final com.prelude.identity.api.SessionValidity sessionValidity;
+    private final ScheduledExecutorService sseHeartbeatExecutor;
 
     public SseEmitter execute(Long sessionId, String content, boolean autoStart, String authSessionId) {
         long accountId = sessionAccess.currentAccountId();
-        SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
-        stream.emitter().onTimeout(() -> completeWithError(stream, "连接超时，请重试"));
-        stream.emitter().onError(error -> stream.complete());
+        AtomicReference<SseSessionStream> streamRef = new AtomicReference<>();
+        SseSessionStream stream = SseSessionStream.open(
+            realtimePort,
+            sessionId,
+            sseHeartbeatExecutor,
+            () -> {
+                SseSessionStream opened = streamRef.get();
+                if (opened != null) {
+                    completeWithError(opened, "连接超时，请重试");
+                }
+            });
+        streamRef.set(stream);
 
         sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, authSessionId, content, autoStart, stream));
         return stream.emitter();

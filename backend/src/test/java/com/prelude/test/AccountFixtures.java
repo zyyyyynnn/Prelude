@@ -1,7 +1,7 @@
 package com.prelude.test;
 
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
+import com.prelude.identity.domain.Account;
+import com.prelude.identity.api.port.AccountRepository;
 import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.AvatarStoragePort;
 import com.prelude.identity.api.CurrentAccount;
@@ -62,8 +62,8 @@ public final class AccountFixtures {
     }
 
     public static AuthenticationService authenticationService(
-        AccountMapper accountMapper, OAuthLoginService oauthLoginService, PasswordEncoder passwordEncoder) {
-        return new AuthenticationService(accountMapper, oauthLoginService, passwordEncoder);
+        AccountRepository accounts, OAuthLoginService oauthLoginService, PasswordEncoder passwordEncoder) {
+        return new AuthenticationService(accounts, oauthLoginService, passwordEncoder);
     }
 
     public static RegisterRequest registerRequest(String username, String password) {
@@ -117,8 +117,8 @@ public final class AccountFixtures {
         return acc;
     }
 
-    public static AccountMapper mockAccountMapper() {
-        return Mockito.mock(AccountMapper.class);
+    public static AccountRepository mockAccountRepository() {
+        return Mockito.mock(AccountRepository.class);
     }
 
     public static AvatarStoragePort mockAvatarStoragePort() {

@@ -36,8 +36,8 @@ public class VoiceInterviewTurnService {
     private final VoicePort voiceService;
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewTurnPort interviewTurnPort;
-    @Qualifier("sseTaskExecutor")
-    private final Executor sseTaskExecutor;
+    @Qualifier("voiceTurnExecutor")
+    private final SessionKeyedSerialExecutor voiceTurnExecutor;
     @Qualifier("ttsTaskExecutor")
     private final SessionKeyedSerialExecutor ttsTaskExecutor;
 
@@ -56,7 +56,7 @@ public class VoiceInterviewTurnService {
     }
 
     public void processTurn(Long accountId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
-        sseTaskExecutor.execute(() -> runTurn(accountId, sessionId, audioBytes, sink));
+        voiceTurnExecutor.executeForSession(sessionId, () -> runTurn(accountId, sessionId, audioBytes, sink));
     }
 
     private void runTurn(Long accountId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {

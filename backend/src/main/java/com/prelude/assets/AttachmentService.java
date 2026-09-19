@@ -154,6 +154,14 @@ public class AttachmentService implements AttachmentContextPort {
     }
 
     @Override
+    public void unbind(Long accountId, String scopeType, Long scopeId) {
+        attachmentMapper.delete(new LambdaQueryWrapper<StoredAttachment>()
+            .eq(StoredAttachment::getAccountId, accountId)
+            .eq(StoredAttachment::getScopeType, scopeType)
+            .eq(StoredAttachment::getScopeId, scopeId));
+    }
+
+    @Override
     public byte[] readOwnedContent(Long accountId, AssetRef assetRef) {
         Asset asset = assetService.requireOwnedReady(accountId, assetRef.id());
         if (!KIND_ATTACHMENT.equals(asset.getKind())) {

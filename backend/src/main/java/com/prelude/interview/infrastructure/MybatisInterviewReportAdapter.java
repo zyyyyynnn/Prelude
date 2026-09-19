@@ -52,10 +52,6 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
 
     @Override
     public void restoreOngoing(Long sessionId) {
-        InterviewSession session = interviewSessionMapper.selectById(sessionId);
-        if (session != null && STATUS_GENERATING.equals(session.getStatus())) {
-            session.setStatus(STATUS_ONGOING);
-            interviewSessionMapper.updateById(session);
-        }
+        interviewSessionMapper.restoreOngoingIfGenerating(sessionId);
     }
 }

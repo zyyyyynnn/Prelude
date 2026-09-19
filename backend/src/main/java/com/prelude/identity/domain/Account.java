@@ -1,16 +1,12 @@
-package com.prelude.identity;
+package com.prelude.identity.domain;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-
-import java.time.LocalDateTime;
 
 /**
  * Authenticated account. Identity owns account, security and profile data
  * only; model execution configuration belongs to the llm module.
  */
 @Data
-@TableName("user_account")
 public class Account {
 
     private Long id;
@@ -21,6 +17,4 @@ public class Account {
     private String themePreference;
     private Long revision;
     private String lastOperationId;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

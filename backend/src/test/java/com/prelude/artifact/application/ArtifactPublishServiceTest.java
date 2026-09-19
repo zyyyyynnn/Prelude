@@ -33,7 +33,7 @@ class ArtifactPublishServiceTest {
     private ArtifactQueryApi artifactQueryApi;
 
     @Autowired
-    private com.prelude.artifact.persistence.ArtifactVersionMapper artifactVersionMapper;
+    private com.prelude.artifact.infrastructure.persistence.ArtifactVersionMapper artifactVersionMapper;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

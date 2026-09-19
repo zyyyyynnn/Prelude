@@ -1,9 +1,9 @@
 package com.prelude.identity.web;
 
 import com.prelude.Result;
-import com.prelude.identity.Account;
+import com.prelude.identity.domain.Account;
 import com.prelude.identity.AccountPrincipal;
-import com.prelude.identity.AccountMapper;
+import com.prelude.identity.api.port.AccountRepository;
 import com.prelude.identity.application.AuthenticationService;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.application.PendingOAuthBinding;
@@ -41,7 +41,7 @@ public class AuthController {
 
     private final AuthenticationService authenticationService;
     private final SessionRevokeService sessionRevokeService;
-    private final AccountMapper accountMapper;
+    private final AccountRepository accounts;
     private final CurrentAccount currentAccount;
     private final SecurityContextRepository securityContextRepository;
     private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
@@ -68,7 +68,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public Result<CurrentUserResponse> me() {
-        Account account = accountMapper.selectById(currentAccount.requireId());
+        Account account = accounts.findById(currentAccount.requireId());
         if (account == null) {
             throw BusinessException.unauthorized("请先登录");
         }

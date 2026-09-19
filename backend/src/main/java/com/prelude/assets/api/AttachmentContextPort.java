@@ -11,6 +11,13 @@ public interface AttachmentContextPort {
     List<AttachmentSnapshot> list(Long accountId, String scopeType, Long scopeId);
 
     /**
+     * Drops the attachment bindings held by a scope that no longer exists.
+     * Asset binaries are not touched here: their lifecycle stays inside the
+     * owning module.
+     */
+    void unbind(Long accountId, String scopeType, Long scopeId);
+
+    /**
      * Controlled binary read for consumers that genuinely need the bytes
      * (e.g. multimodal LLM calls). Ownership is part of the contract: the
      * asset must be READY and owned by the given account. Metadata-only

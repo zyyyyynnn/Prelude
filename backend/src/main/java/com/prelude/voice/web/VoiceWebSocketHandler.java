@@ -13,9 +13,11 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,12 +34,18 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
 
+    /** Roughly ten minutes of 16 kHz/16-bit mono audio; a longer client burst is a fault, not a turn. */
+    private static final int MAX_BUFFERED_AUDIO_BYTES = 20 * 1024 * 1024;
+    private static final int SEND_TIME_LIMIT_MS = 10_000;
+    private static final int SEND_BUFFER_LIMIT_BYTES = 4 * 1024 * 1024;
+
     private final ObjectMapper objectMapper;
     private final VoiceInterviewTurnService voiceInterviewTurnService;
     private final com.prelude.identity.api.SessionValidity sessionValidity;
 
     private final Map<String, ByteArrayOutputStream> sessionBuffers = new ConcurrentHashMap<>();
     private final Map<String, Long> activeSessionIds = new ConcurrentHashMap<>();
+    private final Map<String, WebSocketSession> outbound = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -47,6 +55,10 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             session.close(CloseStatus.BAD_DATA);
             return;
         }
+        // Sink callbacks send from turn-processing threads while the container thread keeps
+        // reading, and a raw WebSocketSession is not safe to write from two threads at once.
+        outbound.put(session.getId(), new ConcurrentWebSocketSessionDecorator(
+            session, SEND_TIME_LIMIT_MS, SEND_BUFFER_LIMIT_BYTES));
         sessionBuffers.put(session.getId(), new ByteArrayOutputStream());
         log.info("WebSocket connection established for account {}, connection id: {}", accountId, session.getId());
     }
@@ -55,6 +67,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         sessionBuffers.remove(session.getId());
         activeSessionIds.remove(session.getId());
+        outbound.remove(session.getId());
         log.info("WebSocket connection closed, connection id: {}", session.getId());
     }
 
@@ -65,8 +78,22 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             return;
         }
         ByteArrayOutputStream buffer = sessionBuffers.get(session.getId());
-        if (buffer != null) {
-            byte[] bytes = message.getPayload().array();
+        if (buffer == null) {
+            return;
+        }
+        ByteBuffer payload = message.getPayload();
+        int incoming = payload.remaining();
+        byte[] bytes = new byte[incoming];
+        payload.get(bytes);
+        synchronized (buffer) {
+            if (buffer.size() + incoming > MAX_BUFFERED_AUDIO_BYTES) {
+                int discarded = buffer.size() + incoming;
+                buffer.reset();
+                log.warn("Discarding oversized audio buffer for connection {}, buffered {} bytes",
+                    session.getId(), discarded);
+                sendJson(session, Map.of("type", "error", "message", "音频长度超出限制，请重新开始本轮"));
+                return;
+            }
             buffer.write(bytes);
         }
     }
@@ -117,13 +144,18 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             }
 
             ByteArrayOutputStream buffer = sessionBuffers.get(session.getId());
-            if (buffer == null || buffer.size() == 0) {
-                sendJson(session, Map.of("type", "error", "message", "没有检测到任何音频数据"));
+            if (buffer == null) {
                 return;
             }
-
-            byte[] audioBytes = buffer.toByteArray();
-            buffer.reset();
+            byte[] audioBytes;
+            synchronized (buffer) {
+                if (buffer.size() == 0) {
+                    sendJson(session, Map.of("type", "error", "message", "没有检测到任何音频数据"));
+                    return;
+                }
+                audioBytes = buffer.toByteArray();
+                buffer.reset();
+            }
 
             voiceInterviewTurnService.processTurn(accountId, activeSessionId, audioBytes, buildSink(session));
         }
@@ -189,17 +221,19 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     private void closeRevokedSession(WebSocketSession session) throws IOException {
         sessionBuffers.remove(session.getId());
         activeSessionIds.remove(session.getId());
+        outbound.remove(session.getId());
         log.info("WebSocket closed: originating session revoked, connection id: {}", session.getId());
         session.close(CloseStatus.POLICY_VIOLATION.withReason("session revoked"));
     }
 
     private void sendJson(WebSocketSession session, Object payload) {
-        if (!session.isOpen()) {
+        WebSocketSession target = outbound.getOrDefault(session.getId(), session);
+        if (!target.isOpen()) {
             return;
         }
         try {
             String json = objectMapper.writeValueAsString(payload);
-            session.sendMessage(new TextMessage(json));
+            target.sendMessage(new TextMessage(json));
         } catch (IOException e) {
             log.warn("Failed to push websocket message: {}", e.getMessage());
         }

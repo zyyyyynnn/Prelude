@@ -45,7 +45,7 @@ public class InterviewSummaryService {
             try {
                 String newSummary = buildSummary(session, messagesToSummarize);
                 session.setSummary(newSummary);
-                interviewSessionRepository.update(session);
+                interviewSessionRepository.updateSummary(session.getId(), newSummary);
                 log.info("Successfully updated sliding window memory summary for session {}", session.getId());
             } catch (Exception exception) {
                 log.error("Failed to generate sliding window memory summary for session {}", session.getId(), exception);

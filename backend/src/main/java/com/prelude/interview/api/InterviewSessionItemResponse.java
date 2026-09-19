@@ -8,6 +8,7 @@ public record InterviewSessionItemResponse(
     String status,
     LocalDateTime createdAt,
     String currentStage,
-    String summaryReport
+    String summaryReport,
+    boolean pinned
 ) {
 }

@@ -2,11 +2,15 @@ package com.prelude.identity;
 
 import com.prelude.identity.application.AuthenticationService;
 import com.prelude.identity.application.OAuthLoginService;
+import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.domain.Account;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -19,12 +23,12 @@ import static org.mockito.Mockito.when;
 
 class AuthenticationServiceTest {
 
-    private final AccountMapper accountMapper = mock(AccountMapper.class);
+    private final AccountRepository accounts = mock(AccountRepository.class);
     private final OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
     private final PasswordEncoder passwordEncoder = new Argon2PasswordEncoder(16, 32, 1, 19456, 2);
     private final AuthenticationService authenticationService =
-        new AuthenticationService(accountMapper, oauthLoginService, passwordEncoder);
-    private final org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+        new AuthenticationService(accounts, oauthLoginService, passwordEncoder);
+    private final MockHttpSession session = new MockHttpSession();
 
     private final Account account = new Account();
 
@@ -33,29 +37,40 @@ class AuthenticationServiceTest {
         account.setId(7L);
         account.setUsername("candidate");
         account.setPasswordHash(passwordEncoder.encode("correct-horse"));
-        when(accountMapper.insert(any(Account.class))).thenAnswer(invocation -> {
+        Mockito.doAnswer(invocation -> {
             invocation.getArgument(0, Account.class).setId(7L);
-            return 1;
-        });
-        when(accountMapper.selectOne(any())).thenReturn(account);
+            return null;
+        }).when(accounts).add(any());
+        when(accounts.findByUsername("candidate")).thenReturn(account);
     }
 
     @Test
     void registrationStoresAnArgon2idPasswordHash() {
-        when(accountMapper.selectCount(any())).thenReturn(0L);
+        when(accounts.isUsernameTaken("candidate")).thenReturn(false);
 
         authenticationService.register(AccountFixtures.registerRequest("candidate", "correct-horse"));
 
         ArgumentCaptor<Account> created = ArgumentCaptor.forClass(Account.class);
-        verify(accountMapper).insert(created.capture());
+        verify(accounts).add(created.capture());
         assertThat(created.getValue().getPasswordHash()).startsWith("$argon2id$");
         assertThat(passwordEncoder.matches("correct-horse", created.getValue().getPasswordHash())).isTrue();
         assertThat(passwordEncoder.matches("wrong-password", created.getValue().getPasswordHash())).isFalse();
     }
 
     @Test
+    void registrationRejectsATakenUsernameBeforeWriting() {
+        when(accounts.isUsernameTaken("candidate")).thenReturn(true);
+
+        ExceptionFixtures.assertBusinessExceptionMessage(
+            () -> authenticationService.register(AccountFixtures.registerRequest("candidate", "correct-horse")),
+            "用户名已存在");
+        verify(accounts, never()).add(any());
+    }
+
+    @Test
     void correctPasswordAuthenticatesAndWrongPasswordIsRejected() {
-        AccountPrincipal principal = authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), null, session);
+        AccountPrincipal principal = authenticationService.login(
+            AccountFixtures.loginRequest("candidate", "correct-horse"), null, session);
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
         ExceptionFixtures.assertBusinessException(
@@ -78,7 +93,8 @@ class AuthenticationServiceTest {
 
         var pending = AccountFixtures.pendingOAuthBinding("google", "subject-1", "OWNER@example.com");
         session.setAttribute(AccountFixtures.PENDING_ATTRIBUTE, pending);
-        AccountPrincipal principal = authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
+        AccountPrincipal principal = authenticationService.login(
+            AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
         verify(oauthLoginService).createBindingExact("google", "subject-1", account.getId());

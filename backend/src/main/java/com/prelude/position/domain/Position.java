@@ -1,9 +1,7 @@
 package com.prelude.position.domain;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-@TableName("position_template")
 @Data
 public class Position {
 

@@ -1,4 +1,4 @@
 /**
- * HTTP adapters for the template module.
+ * HTTP adapters for the position module.
  */
 package com.prelude.position.web;

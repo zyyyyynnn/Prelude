@@ -85,7 +85,7 @@ class AssetStorageFailureTest {
         long accountId = createAccount("avatar-finalize-anchor");
         authenticate(accountId);
         doThrow(ExceptionFixtures.revisionConflict("资料已被其他操作更新，请刷新后重试"))
-            .when(avatarPublication).publish(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), any(), any(), any(), org.mockito.ArgumentMatchers.anyLong());
+            .when(avatarPublication).publish(anyString(), any());
         doThrow(new IllegalStateException("gateway down"))
             .when(objectStoragePort).delete(anyString());
 

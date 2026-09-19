@@ -61,7 +61,9 @@ app:
       - http://localhost:5173
       - http://127.0.0.1:5173
   crypto:
-    aes-secret: ${APP_CRYPTO_AES_SECRET:prelude-local-development-secret-change-me}
+    # Empty unless a profile or the environment supplies one: a deployment that forgot to
+    # configure it must fail at startup rather than encrypt BYOK credentials with a public key.
+    aes-secret: ${APP_CRYPTO_AES_SECRET:}
 
 prelude:
   oauth:

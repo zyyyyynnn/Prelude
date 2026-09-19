@@ -56,7 +56,8 @@ final class InterviewApiMapper {
             summary.status(),
             summary.createdAt(),
             summary.currentStage(),
-            summary.summaryReport()
+            summary.summaryReport(),
+            summary.pinned()
         );
     }
 

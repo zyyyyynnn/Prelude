@@ -23,11 +23,27 @@ import org.mockito.invocation.InvocationOnMock;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class SessionFixtures {
 
     private SessionFixtures() {
+    }
+
+    /** A scheduler whose tasks never run: enough for SseSessionStream to register a heartbeat. */
+    @SuppressWarnings("unchecked")
+    private static ScheduledExecutorService inertHeartbeatExecutor() {
+        ScheduledExecutorService executor = Mockito.mock(ScheduledExecutorService.class);
+        Mockito.when(executor.scheduleAtFixedRate(
+                Mockito.any(Runnable.class),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
+                Mockito.any(TimeUnit.class)))
+            .thenReturn(Mockito.mock(ScheduledFuture.class));
+        return executor;
     }
 
     public static InterviewSession create(long id, long accountId, String status) {
@@ -99,7 +115,9 @@ public final class SessionFixtures {
             turnPort,
             Runnable::run,
             realtimePort,
-            sessionValidity
+            sessionValidity,
+            // Turns run inline in tests, so the heartbeat has to stay inert rather than schedule.
+            inertHeartbeatExecutor()
         );
     }
 

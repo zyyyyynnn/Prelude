@@ -22,7 +22,8 @@ public class InterviewResponseAssembler {
             session.getStatus(),
             session.getCreatedAt(),
             currentStage,
-            session.getSummaryReport()
+            session.getSummaryReport(),
+            session.getPinnedAt() != null
         );
     }
 
