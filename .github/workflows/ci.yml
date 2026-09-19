@@ -118,6 +118,11 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      # Needs the built stylesheet: cascade order only exists in the emitted CSS.
+      - name: Verify cascade collisions
+        working-directory: frontend
+        run: npm run verify:cascade
+
       - name: Verify production bundle
         working-directory: frontend
         run: npm run verify:production

@@ -94,7 +94,7 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
-      APP_CRYPTO_AES_SECRET: ${APP_CRYPTO_AES_SECRET:-prelude-local-development-secret-change-me}
+      APP_CRYPTO_AES_SECRET: ${APP_CRYPTO_AES_SECRET:?}
       PRELUDE_S3_ENDPOINT: http://versitygw:7070
       PRELUDE_S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://127.0.0.1:19000}
       PRELUDE_S3_BUCKET: ${S3_BUCKET:-prelude-assets}
