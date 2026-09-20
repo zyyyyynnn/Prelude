@@ -22,7 +22,7 @@ export function MessageThread({ messages }: { messages: InterviewMessageRecord[]
   }, [messages])
   return (
     <div
-      className="scrollable gutter-stable flex min-h-0 flex-1 flex-col gap-lg overflow-y-auto px-2xl pt-lg pb-(--composer-height)"
+      className="scrollable gutter-stable flex min-h-0 flex-1 flex-col gap-lg overflow-y-auto px-2xl pt-lg pb-(--layout-composer-reserve-block-size)"
       ref={thread}
       data-slot="message-thread"
     >

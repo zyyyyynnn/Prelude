@@ -1,4 +1,5 @@
 import { Dialog as BaseDialog, Tooltip } from '@base-ui/react'
+import { OVERLAY_OFFSET } from './positioning'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
@@ -8,7 +9,10 @@ export function IconTooltip({ label, children }: { label: string; children: Reac
     <Tooltip.Root>
       <Tooltip.Trigger render={children as React.ReactElement} />
       <Tooltip.Portal>
-        <Tooltip.Positioner className="prelude-tooltip-positioner" sideOffset={8}>
+        <Tooltip.Positioner
+          className="prelude-tooltip-positioner"
+          sideOffset={OVERLAY_OFFSET.tooltip}
+        >
           <Tooltip.Popup className="prelude-tooltip">{label}</Tooltip.Popup>
         </Tooltip.Positioner>
       </Tooltip.Portal>

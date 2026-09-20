@@ -278,8 +278,13 @@
   --ui-glyph-md: 20px;
   --ui-glyph-lg: 24px;
   --ui-height-control: 36px;
-  --header-height: 72px;
-  --composer-height: 260px;
+  --layout-header-block-size: 72px;
+  /* Room the message thread keeps clear of the floating composer. This is a reserve, not
+     the composer's height: measured at 1440px the composer is 162px idle and 202px with a
+     six-line draft, and attachments can add another row. It cannot be derived from the
+     composer because that height is content-driven, so the value is a chosen ceiling and
+     is named as one. */
+  --layout-composer-reserve-block-size: 260px;
   --border-width-default: 1px;
 
   /* ── Layout Semantics ── */
@@ -343,6 +348,11 @@
   --ui-control-inset: 2px;
 
   /* ── Layer Semantics ── */
+  /* Content sitting above decoration belonging to the same box — a segmented control's
+     buttons over its sliding thumb, a card's text over its own wash. Two sites, one
+     concept, previously spelled `z-index: 1` in one place and a private custom property
+     in the other. */
+  --z-index-local-content: 1;
   --z-index-local-raised: 2;
   --z-index-workspace-composer: 10;
   --z-index-sidebar: 100;
@@ -617,9 +627,8 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 }
 
 .login-card__content {
-  --login-card-content-layer: 1;
   position: relative;
-  z-index: var(--login-card-content-layer);
+  z-index: var(--z-index-local-content);
   display: grid;
   grid-template-columns: minmax(var(--layout-login-column-min-inline-size), 3fr) minmax(0, 2fr);
   gap: var(--spacing-2xl);
@@ -669,7 +678,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   letter-spacing: var(--tracking-caps);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   text-align: center;
   text-transform: uppercase;
 }
@@ -722,7 +731,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   height: 100vh;
 }
 .workspace-header {
-  height: var(--header-height);
+  height: var(--layout-header-block-size);
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-2xl);
@@ -1337,7 +1346,7 @@ html[data-input-intent='keyboard']
 }
 .prelude-segmented-control button {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-index-local-content);
   min-inline-size: var(--ui-segmented-item-min-inline-size);
   block-size: var(--ui-height-control);
   border: 0;

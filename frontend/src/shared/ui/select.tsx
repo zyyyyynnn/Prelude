@@ -1,3 +1,4 @@
+import { OVERLAY_OFFSET } from './positioning'
 import { Select as BaseSelect } from '@base-ui/react/select'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
@@ -51,7 +52,7 @@ export function Select({
       <BaseSelect.Portal>
         <BaseSelect.Positioner
           className="prelude-menu-positioner"
-          sideOffset={4}
+          sideOffset={OVERLAY_OFFSET.select}
           alignItemWithTrigger={false}
         >
           <BaseSelect.Popup

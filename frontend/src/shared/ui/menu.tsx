@@ -1,6 +1,7 @@
 import { Menu } from '@base-ui/react/menu'
 import { Check, ChevronRight } from 'lucide-react'
 import type { ReactElement, ReactNode } from 'react'
+import { OVERLAY_OFFSET } from './positioning'
 import { cn } from '@/shared/lib/cn'
 
 export function DropdownMenu({
@@ -25,7 +26,7 @@ export function DropdownMenu({
         <Menu.Positioner
           className="prelude-menu-positioner"
           side={side}
-          sideOffset={6}
+          sideOffset={OVERLAY_OFFSET.menu}
           align={align}
         >
           <Menu.Popup
@@ -63,7 +64,11 @@ export function DropdownMenuSubmenu({
         {trigger}
       </Menu.SubmenuTrigger>
       <Menu.Portal>
-        <Menu.Positioner className="prelude-menu-positioner" sideOffset={4} align="start">
+        <Menu.Positioner
+          className="prelude-menu-positioner"
+          sideOffset={OVERLAY_OFFSET.submenu}
+          align="start"
+        >
           <Menu.Popup className="prelude-menu">{children}</Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>

@@ -203,6 +203,26 @@ for (const file of walkCss(sourceRoot)) {
   })
 }
 
+// ---------------------------------------------------------------- stacking and leading
+// A bare `z-index: 1` and a unitless `line-height: 1.2` are the same escape as a raw px:
+// a decision made once, locally, that nothing can point back to. Layers have a scale, and
+// leading has a ladder whose whole rule is that a size implies one height — a fifth value
+// for `--font-size-xs` silently breaks that. `geometry-exempt` still speaks for either.
+{
+  const bareNumber = /^[\d.]+$/
+  eachCheckedDeclaration(walkCss(sourceRoot), (relative, declaration) => {
+    if (declaration.value.startsWith('var(')) return
+    if (declaration.property === 'z-index' && bareNumber.test(declaration.value))
+      violations.push(
+        `${relative}:${declaration.line}: raw z-index ${declaration.value} — use a --z-index-* token or mark it geometry-exempt`,
+      )
+    if (declaration.property === 'line-height' && bareNumber.test(declaration.value))
+      violations.push(
+        `${relative}:${declaration.line}: raw line-height ${declaration.value} — use a --line-height-* token or mark it geometry-exempt`,
+      )
+  })
+}
+
 // ---------------------------------------------------------------- box sizes
 // `--spacing-*` is the gap ladder. A box that happens to measure a glyph tier has to
 // name the glyph token, otherwise it quietly follows the spacing ladder whenever a gap

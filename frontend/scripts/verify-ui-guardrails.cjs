@@ -79,6 +79,20 @@ for (const { owner, pattern, label } of singleOwnerRules) {
   }
 }
 
+/* A floating layer's offset from its anchor is design geometry, not a call-site preference.
+   Four positioners carried three different literals with nothing to say which difference was
+   meant; they now read from one named owner. */
+for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) {
+  const relative = path.relative(root, file).replaceAll('\\', '/')
+  if (relative === 'src/shared/ui/positioning.ts') continue
+  for (const match of fs.readFileSync(file, 'utf8').matchAll(/sideOffset=\{([^}]*)\}/g)) {
+    if (!/^OVERLAY_OFFSET\.[a-z]+$/.test(match[1].trim()))
+      violations.push(
+        `${relative}: sideOffset must read from OVERLAY_OFFSET, got "${match[1].trim()}"`,
+      )
+  }
+}
+
 /* A component's internal element classes (`prelude-menu__label`, `prelude-button__content`)
    are its own layout contract. A call site that writes one is reaching past the component's
    props into its markup, and the two then drift with nothing to notice it — which is how the

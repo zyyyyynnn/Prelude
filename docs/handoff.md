@@ -260,6 +260,15 @@
 - [x] **七条单一拥有者门禁全部红测**：手写 `className="empty-state"`、`type="file"`、小节带原子、`bg-surface-muted p-*`、分组题签原子、导语宽度、内部类名外写，逐条植入即 `FAIL`。
 - [x] **采集帧不可复现这件事被实测确认**：`19-menu-with-submenu` 与 `23-tooltip-icon` 在**同一份代码连续两次** `capture:surfaces` 下 md5 不同（浮层展开与滚动时机），所以它们只能作人工复核，不能当回归判据——与 §7.1 的既有说法一致，本轮补上了实测证据。像素判据仍是 `verify:visual` 的按面板基线。
 - [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(204)、`verify:architecture`(7 单测)、`build` + `verify:cascade`、`verify:production`、`verify:visual`（10 例，**批次 1a–1c 全程零基线重生成**，仅实验台 List & Navigation 因导航列改为真实拥有者按预期重生成并逐张复核）、`test:smoke`（40 例）、`byok`/`dark`/`a11y`、`capture:surfaces` 全通过。
+### 阶段十五：批次 1d 几何离群值与门禁射程边界
+
+- [x] **两处逃逸收口**：裸 `z-index: 1`（分段控件按钮压自己的滑块）与 `--login-card-content-layer: 1`（登录卡内容压自己的底色）是同一个概念的两套写法，合并为 `--z-index-local-content` 并入层级阶梯；`.login-card__brand-caption` 的 `line-height: 1.2` 是 `--font-size-xs` 的**第五种**行高（阶梯旁已有注释抱怨过这一点），回到 `--line-height-tight`，与同为引导标签的 `type-eyebrow` 一致。实测该题签单行不换行，所以行高差异不可见——反证那个 1.2 是无作用的漂移。
+- [x] **`--composer-height` 的名字在说谎**：实测 composer 高 162px（六行草稿 202px），而该 token 是 260px——它其实是消息流为浮动 composer 预留的**上限**，不是 composer 高度。改名 `--layout-composer-reserve-block-size` 并在 token 处写明它不可推导的理由（composer 高度由内容决定）。`--header-height` 一并并入 `--layout-*`，取消 `DESIGN.md` 原先"某处例外于命名空间"的条款。
+- [x] **浮层偏移收进一个拥有者**：`menu.tsx` 6、子菜单 4、`select.tsx` 4、tooltip 8 —— 四个位置器三种裸数字，没有任何东西说明哪种差是故意的。收进 `shared/ui/positioning.ts` 的 `OVERLAY_OFFSET` 并写明理由（tooltip 要避开光标所以比菜单飘得远）。`verify:ui` 现在要求 `sideOffset={…}` 只能取该对象的成员。
+- [x] **两条新裸值检查**：`verify:tokens` 的几何扫描此前只管 px/rem/阴影/字重/边框，`z-index` 与无单位 `line-height` 是漏网的同类逃逸。现一并拒绝，`geometry-exempt` 仍可声明例外。红测：植入 `z-index: 3` 与 `line-height: 1.2` 即 `FAIL (2)`；植入 `sideOffset={8}` 即 `FAIL (1)`。
+- [x] **明确划在体系之外并写进 `DESIGN.md`**：echarts 的 `grid` 留白（`TREND_GRID` 44/18/30/48）、`lineStyle.width`、雷达 `radius: '64%'`、`RoseThree` 的 `strokeWidth` 是**为图表内容量出来的尺寸**（要装下最宽 y 轴标签与日期标签），不是界面尺度的一档；把它们换算成 `--spacing-*` 只是给无关数字披 token 外衣。它们以具名常量留在图表模块内，字体与颜色照旧经 `cssVarNumber()` 读设计 token。`--layout-chart-block-size` 与 `--layout-select-list-max-block-size` 同为 360px 属巧合，不建立关系。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(204)、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（10 例，零基线重生成）、`test:smoke`（40 例）、`capture:surfaces` 全通过；三张登录帧因题签行高重采并逐张复核。
+
 ---
 
 ## 7. 关键风险与留存问题

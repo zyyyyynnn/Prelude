@@ -37,7 +37,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 一个容器只要它的存在是为了容纳另一处几何，它的尺寸就必须由那处几何推导，不能写成手调字面量。判据是语义而非数值：折叠侧栏的宽度等于「一枚控件 + 两侧 gutter + 自身边框」，所以它是 `calc()`；而阅读宽度、视口下限、纹理平铺这类只能靠肉眼判定的值保持字面量。登记在 `tokens/ui-tokens.json` 的 `derived_tokens` 里的 token 由 `verify:tokens` 断言仍引用其来源，退化成魔数即失败。这类值历史上漂移过多次：控件档位从 34 合并到 36 时，容器留在 51px，图标因此向右溢出 2px。
 
-图标与图标按钮的盒尺寸使用 `--ui-glyph-sm|md|lg`（16/20/24），不从间距阶梯借用：与某一档 glyph 等值的盒子必须指名该 glyph token，否则间距阶梯一动它就跟着动。标准边界使用 `--border-width-default`。布局宽度、Header 高度和内容行宽使用对应 `--layout-*`、`--header-height` 与 `--content-*` token。仅两例光学偏移（按下位移、附件删除盒与 chip 的负叠）刻意留在网格外，并在规则内标 `geometry-exempt`。
+图标与图标按钮的盒尺寸使用 `--ui-glyph-sm|md|lg`（16/20/24），不从间距阶梯借用：与某一档 glyph 等值的盒子必须指名该 glyph token，否则间距阶梯一动它就跟着动。标准边界使用 `--border-width-default`。布局宽度、区块高度与内容行宽统一使用 `--layout-*` 与 `--content-*` token，不设"某处例外"的裸名 token：`--header-height` 与 `--composer-height` 曾游离在命名空间外，且后者的名字谎报了它的含义——实测 composer 高 162px（六行草稿 202px），而该值是 260px，它其实是消息流为浮动 composer 预留的**上限**而非 composer 高度，故改名 `--layout-composer-reserve-block-size` 并在 token 处写明它不可推导的理由。层与行高同样只有阶梯：裸 `z-index: 1` 与裸 `line-height: 1.2` 是两处已收口的逃逸（前者并入 `--z-index-local-content`，后者回到 `--line-height-tight`），`verify:tokens` 现在拒绝任何不走 `--z-index-*` / `--line-height-*` 的数值。浮层与锚点的间距集中在 `shared/ui/positioning.ts` 的 `OVERLAY_OFFSET`，调用点不得写裸数字——tooltip 要避开光标所以比菜单飘得更远，这是有意的差，不是三次巧合。仅两例光学偏移（按下位移、附件删除盒与 chip 的负叠）刻意留在网格外，并在规则内标 `geometry-exempt`。
+
+图表内部几何不受本体系管辖：echarts 的 `grid` 留白、`lineStyle.width`、雷达图的 `radius: '64%'` 与 `strokeWidth` 是**为图表内容量出来的尺寸**（要装下最宽的 y 轴标签与日期标签），不是界面尺度的一档，把它们换算成 `--spacing-*` 只是给一个无关数字披上 token 的外衣。它们以具名常量留在图表模块内（`TREND_GRID`），字体与颜色则照旧经 `cssVarNumber()` 读取设计 token。
 
 控件内的图标尺寸由 CSS 拥有：`.prelude-button__content`、`.field-action`、`.row-action`、`.prelude-dialog__close`、`.prelude-toast__close` 与 `.prelude-toast [data-icon]` 下的 `svg` 取 `--ui-glyph-sm`。调用点不写 `size={n}`：SVG 的 `width` 表现属性优先级低于 CSS，写了不会生效。
 

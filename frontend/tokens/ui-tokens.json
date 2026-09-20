@@ -189,6 +189,7 @@
       "prefix": "z-index",
       "description": "层级 token。值必须唯一（layer 语义不重叠）。",
       "tokens": [
+        "z-index-local-content",
         "z-index-local-raised",
         "z-index-workspace-composer",
         "z-index-sidebar",
@@ -203,8 +204,8 @@
     },
     "header-composer": {
       "prefix": "header|composer",
-      "description": "布局相关辅助 token（顶部高度、composer 总高），非通用尺寸。",
-      "tokens": ["header-height", "composer-height"]
+      "description": "布局相关辅助 token，已并入 --layout-* 命名空间。",
+      "tokens": ["layout-header-block-size", "layout-composer-reserve-block-size"]
     },
     "chart-brand": {
       "prefix": "chart|brand|rose",
@@ -277,7 +278,6 @@
         "mask-overlay",
         "ui-segmented-item-min-inline-size",
         "ui-control-inset",
-        "login-card-content-layer",
         "overlay-blur-radius"
       ]
     },
