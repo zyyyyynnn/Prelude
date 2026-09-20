@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   type FormEventHandler,
@@ -6,7 +7,6 @@ import {
   type ReactNode,
 } from 'react'
 import { Briefcase, FileText, Image, Paperclip, ScanSearch, X } from 'lucide-react'
-import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
 
 /*
@@ -18,7 +18,6 @@ export function PromptBar({
   value,
   placeholder,
   inputDisabled,
-  inputContent,
   inputLabel,
   attachments,
   leftActions,
@@ -31,7 +30,6 @@ export function PromptBar({
   value?: string
   placeholder?: string
   inputDisabled?: boolean
-  inputContent?: ReactNode
   inputLabel: string
   attachments?: ReactNode
   leftActions: ReactNode
@@ -73,20 +71,18 @@ export function PromptBar({
           className="flex min-h-(--layout-prompt-input-min-block-size) items-start"
           data-slot="prompt-bar-input-area"
         >
-          {inputContent ?? (
-            <textarea
-              ref={input}
-              className="prompt-bar-input"
-              data-slot="prompt-bar-input"
-              rows={1}
-              value={value}
-              disabled={inputDisabled}
-              placeholder={placeholder}
-              aria-label={inputLabel}
-              onChange={(event) => onValueChange?.(event.target.value)}
-              onKeyDown={onInputKeyDown}
-            />
-          )}
+          <textarea
+            ref={input}
+            className="prompt-bar-input"
+            data-slot="prompt-bar-input"
+            rows={1}
+            value={value}
+            disabled={inputDisabled}
+            placeholder={placeholder}
+            aria-label={inputLabel}
+            onChange={(event) => onValueChange?.(event.target.value)}
+            onKeyDown={onInputKeyDown}
+          />
         </div>
         <div
           className="flex min-h-(--ui-height-control) min-w-0 items-center justify-between gap-sm"
@@ -171,33 +167,55 @@ export function ContextAttachment({
   )
 }
 
-/** The voice lane's states, mirrored by `.prompt-bar-status-dot.is-*` in the sheet. */
+/** The voice lane's states, mirrored by `.prelude-button--hold` in the sheet. */
 export type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking'
 
-/** The voice lane's in-place replacement for the text input: status dot, whatever
- *  the caller says the lane is doing, and the recording waveform. */
-export function VoiceIndicator({
-  status,
-  recording,
-  label,
-}: {
-  status: VoiceStatus
-  recording: boolean
-  label: string
-}) {
+/** The microphone's own level, drawn as bars inside the hold control. The analyser runs
+ *  its own frame loop and writes one custom property, so a live meter never costs a React
+ *  render; with no stream, or a browser that refuses the graph, the bars hold their floor
+ *  and the control still reads as recording. */
+export function VoiceLevelMeter({ stream }: { stream: MediaStream | null }) {
+  const root = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!stream) return
+    /* Reduced motion still gets a reading: the meter samples one frame and stops instead
+       of pumping, so the control shows what the microphone sounds like without animating. */
+    const continuous = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let context: AudioContext | undefined
+    let frame = 0
+    try {
+      context = new AudioContext()
+      const analyser = context.createAnalyser()
+      analyser.fftSize = 256
+      context.createMediaStreamSource(stream).connect(analyser)
+      const samples = new Uint8Array(analyser.fftSize)
+      const paint = () => {
+        analyser.getByteTimeDomainData(samples)
+        let sum = 0
+        for (const sample of samples) {
+          const deviation = (sample - 128) / 128
+          sum += deviation * deviation
+        }
+        const level = Math.min(1, Math.sqrt(sum / samples.length) * 4)
+        root.current?.style.setProperty('--voice-level', level.toFixed(3))
+        if (continuous) frame = requestAnimationFrame(paint)
+      }
+      frame = requestAnimationFrame(paint)
+    } catch {
+      return
+    }
+    return () => {
+      cancelAnimationFrame(frame)
+      void context?.close()
+    }
+  }, [stream])
+
   return (
-    <div className="w-full">
-      <div className="flex min-h-(--layout-prompt-input-min-block-size) items-center justify-between rounded-md bg-surface-hover px-sm">
-        <div className="flex items-center gap-sm font-serif text-sm font-medium text-text-secondary">
-          <span className={cn('prompt-bar-status-dot', `is-${status}`)} />
-          <span>{label}</span>
-        </div>
-        <div className={cn('prompt-bar-wave', recording && 'is-active')} aria-hidden="true">
-          {Array.from({ length: 9 }, (_, index) => (
-            <span key={index} />
-          ))}
-        </div>
-      </div>
-    </div>
+    <span ref={root} className="voice-meter" aria-hidden="true">
+      {Array.from({ length: 5 }, (_, index) => (
+        <span key={index} />
+      ))}
+    </span>
   )
 }

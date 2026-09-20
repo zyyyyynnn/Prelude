@@ -37,6 +37,9 @@ export function InterviewAnswerComposer({
     enabled: voiceOpen,
     sessionId,
     onMessage,
+    // What the microphone heard lands in the draft, never in the thread: the candidate
+    // reads it back and sends it themselves.
+    onTranscript: (text) => setAnswer((current) => (current.trim() ? `${current}\n${text}` : text)),
     onRefresh,
     onError,
     onTerminalError: () => setVoiceOpen(false),
@@ -60,7 +63,15 @@ export function InterviewAnswerComposer({
       positionName={positionName}
       resumeName={resumeName}
       sending={sending}
-      voice={voiceOpen ? { status: voiceState.status, recording: voiceState.recording } : undefined}
+      voice={
+        voiceOpen
+          ? {
+              status: voiceState.status,
+              recording: voiceState.recording,
+              media: voiceState.media,
+            }
+          : undefined
+      }
       onAnswerChange={setAnswer}
       onHoldEnd={voiceState.stopRecording}
       onHoldStart={() => void voiceState.startRecording()}

@@ -782,6 +782,66 @@ export async function installVoiceLane(page: Page) {
       CLOSED: RealSocket.CLOSED,
     })
 
+    /* The microphone and the analyser are staged too: a headless run has no input device,
+       and the recording frame needs a level to draw. The stub reports a fixed sine, so the
+       meter renders one stable waveform instead of a different one per capture. */
+    class FakeVoiceAnalyser {
+      fftSize = 256
+      frequencyBinCount = 128
+      connect() {}
+      getByteTimeDomainData(samples: Uint8Array) {
+        for (let index = 0; index < samples.length; index += 1) {
+          samples[index] = 128 + Math.round(Math.sin(index / 6) * 27)
+        }
+      }
+    }
+
+    class FakeVoiceAudioContext {
+      state = 'running'
+      createAnalyser() {
+        return new FakeVoiceAnalyser()
+      }
+      createMediaStreamSource() {
+        return { connect: () => undefined }
+      }
+      close() {
+        return Promise.resolve()
+      }
+    }
+
+    class FakeVoiceRecorder {
+      state = 'inactive'
+      ondataavailable: ((event: BlobEvent) => void) | null = null
+      onstop: (() => void) | null = null
+      constructor(readonly stream: MediaStream) {}
+      start() {
+        this.state = 'recording'
+      }
+      stop() {
+        this.state = 'inactive'
+        this.onstop?.()
+      }
+    }
+
+    const fakeMic = {
+      id: 'staged-microphone',
+      getTracks: () => [{ stop: () => undefined, kind: 'audio' }],
+    } as unknown as MediaStream
+
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      value: FakeVoiceAudioContext,
+    })
+    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: FakeVoiceRecorder })
+    Object.defineProperty(window.MediaRecorder, 'isTypeSupported', {
+      configurable: true,
+      value: () => true,
+    })
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: () => Promise.resolve(fakeMic) },
+    })
+
     window.WebSocket = VoiceSocket as unknown as typeof WebSocket
     window.Audio = VoiceAudio as unknown as typeof Audio
 

@@ -1,8 +1,8 @@
 {
-  "revision": "de4d257f1cc4e989b25a6d17ae4378ef832081ff",
-  "capturedAt": "2026-09-20T09:33:14.795Z",
+  "revision": "b12830731680b7c05024bf4f093e7229b33b4d5b",
+  "capturedAt": "2026-09-20T10:26:36.268Z",
   "inputsMatchRevision": false,
-  "dirtyInputFiles": 37,
+  "dirtyInputFiles": 14,
   "surfaces": [
     "01-login-light.png",
     "05-interview-empty.png",
@@ -12,6 +12,7 @@
     "04-sidebar-collapsed.png",
     "09-composer-voice-connected.png",
     "09-composer-voice-listening.png",
+    "09-composer-voice-transcript.png",
     "09-composer-voice-processing.png",
     "09-composer-voice-speaking.png",
     "09-composer-voice-fallback.png",

@@ -1032,7 +1032,11 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
   await page.getByRole('button', { name: '切换到语音输入' }).click()
   const talk = page.locator('.prelude-button--hold')
   await talk.dispatchEvent('pointerdown')
-  await expect(talk).toHaveText('松开发送')
+  /* Held: the meter replaces the words inside the same box, so the control keeps its
+     name and its width and only the state moves. */
+  await expect(talk).toHaveAccessibleName('松开发送')
+  await expect(talk.locator('.voice-meter')).toBeVisible()
+  await expect(talk.locator('.prelude-button__label')).toHaveCSS('opacity', '0')
   await page.evaluate(() => {
     const socket = (
       window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } }
@@ -1061,6 +1065,53 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
       ),
     )
     .toBeGreaterThan(0)
+})
+
+test('@smoke keeps a voice transcript in the composer until the candidate sends it', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'technical',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '请回答问题。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await installVoiceHarness(page)
+
+  await page.goto('/interview?session=11')
+  await page.getByRole('button', { name: '切换到语音输入' }).click()
+  await page.evaluate(() => {
+    const socket = (
+      window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } }
+    ).voiceSocket
+    socket.onmessage(
+      new MessageEvent('message', {
+        data: JSON.stringify({ type: 'user_text', text: '我会用支付单号作为幂等键。' }),
+      }),
+    )
+  })
+
+  /* What the microphone heard is a draft: it lands in the text box and stays there, so a
+     mis-transcription can be fixed before it becomes an interview answer. */
+  await expect(page.getByLabel('面试回答')).toHaveValue('我会用支付单号作为幂等键。')
+  await expect(
+    page.locator('.message-bubble-body', { hasText: '我会用支付单号作为幂等键。' }),
+  ).toHaveCount(0)
+
+  await page.getByRole('button', { name: '发送' }).click()
+  await expect(
+    page.locator('.message-bubble-body', { hasText: '我会用支付单号作为幂等键。' }),
+  ).toBeVisible()
 })
 
 test('@smoke releases media that arrives after voice mode closes', async ({ page }) => {

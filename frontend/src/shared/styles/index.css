@@ -78,33 +78,11 @@
 
   --tracking-label: var(--tracking-label);
 
-  /* Animation — the four interview keyframes, exposed as animate-* atoms. */
-  --animate-status-pulse: status-pulse var(--motion-duration-slow) infinite
-    var(--motion-ease-standard);
-  --animate-voice-level: voice-level var(--motion-duration-slow) infinite alternate
-    var(--motion-ease-standard);
+  /* Animation — the three interview keyframes, exposed as animate-* atoms. The voice
+     meter is not here: it is driven by the microphone's own level, not a loop. */
   --animate-progress-sweep: progress-sweep var(--motion-duration-slow) infinite
     var(--motion-ease-standard);
   --animate-thinking-ellipsis: thinking-ellipsis var(--motion-duration-thinking) infinite;
-
-  @keyframes status-pulse {
-    0%,
-    100% {
-      opacity: 0.6;
-      transform: scale(0.9);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.2);
-    }
-  }
-
-  @keyframes voice-level {
-    to {
-      background: var(--color-brand);
-      transform: scaleY(4);
-    }
-  }
 
   @keyframes progress-sweep {
     from {
@@ -1177,9 +1155,15 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   padding-inline: var(--spacing-lg);
 }
 .prelude-button--hold {
+  position: relative;
   padding: 0 var(--spacing-lg);
   font-family: var(--font-serif);
   user-select: none;
+}
+/* While held, the level meter takes the words' place. The label keeps its box, so the
+   control never changes width under the finger. */
+.prelude-button--hold[data-pressed] .prelude-button__label {
+  opacity: 0;
 }
 .prelude-button--hold[data-pressed] {
   /* geometry-exempt: 2px press nudge, not a spacing step */
@@ -2155,52 +2139,45 @@ html[data-input-intent='keyboard']
   }
 }
 
-@utility prompt-bar-status-dot {
-  inline-size: var(--spacing-sm);
-  block-size: var(--spacing-sm);
-  border-radius: var(--radius-full);
-  background: var(--color-ring);
-
-  &.is-listening,
-  &.is-processing {
-    background: var(--color-brand);
-    animation: var(--animate-status-pulse);
-  }
-
-  &.is-speaking {
-    background: var(--color-brand);
-    box-shadow: var(--shadow-ring-deep);
-  }
-}
-
-/* The voice meter animates every bar, offset so the row reads as a wave. */
-@utility prompt-bar-wave {
+/* The microphone's level, drawn inside the hold control. The analyser writes one custom
+   property and every bar scales by its own factor, so the row reads as a waveform instead
+   of one pumping block. The floor keeps the control legible as "recording" before any
+   audio arrives, and under reduced motion the meter stops sampling rather than animating. */
+@utility voice-meter {
+  --voice-level: 0.2;
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex: 1;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-xs);
-  block-size: calc(var(--ui-height-control) + var(--spacing-sm));
-  max-inline-size: calc(var(--ui-height-control) * 8);
+  gap: calc(var(--spacing-xs) / 2);
 
   & span {
-    inline-size: var(--spacing-xs);
-    block-size: var(--spacing-sm);
+    inline-size: calc(var(--spacing-xs) / 2);
+    block-size: var(--ui-glyph-sm);
     border-radius: var(--radius-full);
-    background: var(--color-border-warm);
+    background: currentColor;
     transform-origin: center;
   }
 
-  &.is-active span {
-    animation: var(--animate-voice-level);
+  & span:nth-child(1) {
+    transform: scaleY(calc(var(--voice-level) * 0.45));
   }
 
-  &.is-active span:nth-child(3n + 2) {
-    animation-delay: calc(var(--motion-duration-base) * -1);
+  & span:nth-child(2) {
+    transform: scaleY(calc(var(--voice-level) * 0.8));
   }
 
-  &.is-active span:nth-child(3n) {
-    animation-delay: calc(var(--motion-duration-base) * -0.5);
+  & span:nth-child(3) {
+    transform: scaleY(calc(var(--voice-level) * 1));
+  }
+
+  & span:nth-child(4) {
+    transform: scaleY(calc(var(--voice-level) * 0.7));
+  }
+
+  & span:nth-child(5) {
+    transform: scaleY(calc(var(--voice-level) * 0.4));
   }
 }
 
@@ -2273,17 +2250,9 @@ html[data-input-intent='keyboard']
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .prompt-bar-status-dot.is-listening,
-  .prompt-bar-status-dot.is-processing,
-  .prompt-bar-wave.is-active span,
   .generating-progress-indicator,
   .ellipsis-progress::after {
     animation: none;
-  }
-
-  .prompt-bar-wave.is-active span {
-    background: var(--color-brand);
-    transform: scaleY(2);
   }
 
   .generating-progress-indicator {

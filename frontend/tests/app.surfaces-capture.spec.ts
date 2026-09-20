@@ -138,31 +138,49 @@ test.describe('@capture authenticated surface reference set', () => {
     await capture(page, '04-sidebar-collapsed')
     await page.getByLabel('展开侧栏').click()
 
-    /* The voice lane is faked in-process by `installVoiceLane` — the transport and the audio
-       sink — so these frames show the real `useVoiceInterview` state machine and the
-       composer's live surfaces. They are evidence of the client, never of upstream audio. */
+    /* The voice lane is staged in-process by `installVoiceLane` — transport, audio sink,
+       microphone and analyser — so these frames show the real `useVoiceInterview` state
+       machine and the composer's live surfaces. They are evidence of the client, never of
+       upstream audio. */
+    /* Located by its class: the control's accessible name is 松开发送 while it is held. */
+    const holdToTalk = page.locator('.prelude-button--hold')
     await page.getByRole('button', { name: '切换到语音输入' }).click()
-    await expect(page.getByText('语音模式已连接')).toBeVisible()
+    await expect(holdToTalk).toBeVisible()
     await capture(page, '09-composer-voice-connected')
 
-    const holdToTalk = page.getByRole('button', { name: '按住说话' })
+    const restWidth = Math.round(
+      await holdToTalk.evaluate((el) => el.getBoundingClientRect().width),
+    )
     await holdToTalk.hover()
     await page.mouse.down()
-    await expect(page.getByText('正在聆听')).toBeVisible()
+    await expect(page.locator('.voice-meter')).toBeVisible()
+    /* The meter takes the words' place without moving the control under the finger. */
+    await expect
+      .poll(() => holdToTalk.evaluate((el) => Math.round(el.getBoundingClientRect().width)))
+      .toBe(restWidth)
     await capture(page, '09-composer-voice-listening')
     await page.mouse.up()
 
+    /* The staged session already carries a draft, so the assertion is that the transcript
+       joined it rather than the exact string. */
+    await pushVoiceFrame(page, { type: 'user_text', text: '示例转录文本，等待确认后发送。' })
+    await expect
+      .poll(() => page.getByLabel('面试回答').inputValue())
+      .toContain('示例转录文本，等待确认后发送。')
+    await capture(page, '09-composer-voice-transcript')
+
     await pushVoiceFrame(page, { type: 'status', status: 'processing' })
-    await expect(page.getByText('正在处理')).toBeVisible()
+    await expect(holdToTalk).toBeDisabled()
     await capture(page, '09-composer-voice-processing')
 
     await pushVoiceFrame(page, { type: 'audio', data: 'AAAAAAAA' })
-    await expect(page.getByText('面试官正在回答')).toBeVisible()
+    await expect(holdToTalk).toBeDisabled()
     await capture(page, '09-composer-voice-speaking')
     await releaseVoiceAudio(page)
 
     await pushVoiceFrame(page, { type: 'error', message: '语音服务异常' })
-    await expect(page.getByText('面试官正在回答')).toBeHidden()
+    await expect(page.getByRole('button', { name: '切换到语音输入' })).toBeVisible()
+    await expect(holdToTalk).toBeHidden()
     await capture(page, '09-composer-voice-fallback')
   })
 

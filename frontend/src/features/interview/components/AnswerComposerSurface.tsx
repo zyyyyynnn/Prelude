@@ -6,16 +6,15 @@ import { IconTooltip } from '@/shared/ui/overlay'
 import {
   ContextAttachment,
   PromptBar,
-  VoiceIndicator,
+  VoiceLevelMeter,
   type VoiceStatus,
 } from '@/shared/ui/prompt-bar'
-import { voiceStatusLabel } from '../voiceStatusLabel'
 import { InterviewContextFacts } from './PromptBarControls'
 
-/** The answer composer with its wiring left to the caller: which mode the microphone is
- *  in, what the draft says and when the session is finished all arrive as props. The
- *  live composer supplies them from the voice channel, the gallery supplies them frozen,
- *  so neither of them owns a second copy of this chrome. */
+/** The composer with its wiring left to the caller: what the draft says, whether the
+ *  microphone lane is open and what the level meter should read. The live composer
+ *  supplies them from the voice channel, the gallery supplies them frozen, so neither of
+ *  them owns a second copy of this chrome. */
 export function AnswerComposerSurface({
   answer,
   attachments,
@@ -40,9 +39,9 @@ export function AnswerComposerSurface({
   positionName: string
   resumeName?: string
   sending: boolean
-  /** Present while the microphone channel is open; its state drives the indicator,
-   *  the hold button and which pair of trailing controls the composer shows. */
-  voice?: { status: VoiceStatus; recording: boolean }
+  /** Present while the microphone lane is open. The text box stays live in both modes: a
+   *  transcript lands there and is only sent once the candidate sends it. */
+  voice?: { status: VoiceStatus; recording: boolean; media: MediaStream | null }
   onAnswerChange: (value: string) => void
   onHoldEnd: () => void
   onHoldStart: () => void
@@ -56,15 +55,6 @@ export function AnswerComposerSurface({
       inputLabel="面试回答"
       onValueChange={onAnswerChange}
       inputDisabled={disabled || sending}
-      inputContent={
-        voice && (
-          <VoiceIndicator
-            status={voice.status}
-            recording={voice.recording}
-            label={voiceStatusLabel(voice.status, voice.recording)}
-          />
-        )
-      }
       placeholder={disabled ? '本场面试已结束' : '输入回答…'}
       attachments={
         <>
@@ -94,11 +84,16 @@ export function AnswerComposerSurface({
                 <Keyboard aria-hidden="true" />
               </Button>
             </IconTooltip>
+            {/* The button carries the whole recording state: held, it shows the microphone's
+                level in place of its words; processing, it is the shared loading control;
+                while the interviewer's answer plays back, it cannot be pushed. */}
             <Button
               type="button"
               shape="hold"
               pressed={voice.recording}
-              disabled={disabled || sending}
+              loading={voice.status === 'processing'}
+              disabled={disabled || sending || voice.status === 'speaking'}
+              aria-label={voice.recording ? '松开发送' : '按住说话'}
               onPointerDown={onHoldStart}
               onPointerUp={onHoldEnd}
               onPointerLeave={onHoldEnd}
@@ -113,8 +108,14 @@ export function AnswerComposerSurface({
                 if (event.key === 'Enter' || event.key === ' ') onHoldEnd()
               }}
             >
-              {voice.recording ? '松开发送' : '按住说话'}
+              <span className="prelude-button__label">按住说话</span>
+              {voice.recording && <VoiceLevelMeter stream={voice.media} />}
             </Button>
+            {answer.trim() ? (
+              <Button type="submit" loading={sending} disabled={disabled} shape="action">
+                发送
+              </Button>
+            ) : null}
           </>
         ) : (
           <>

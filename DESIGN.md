@@ -143,6 +143,8 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 
 一条分割线必须两侧都有留白，且两侧由同一个容器给出：线附着在上方块时，上方由该块的 `padding` 给出、下方由容器的 `gap` 给出；附着在下方块时反之。任何一侧为 0 都是调用点把内容贴到了线上。面板内部再分层时，小节容器写 `grid gap-sm border-t border-border pt-md`，配合父容器的 `gap-md` 让细线上下各 16px，小节标题与其控件仍按 `--spacing-sm` 8px 绑定。设置弹窗的「修改密码」与「高级设置」即此形态，组件实验台的 Field 面板给出同一份样例；`npm run verify:visual` 会实测每个分割线两侧的间隙不小于 `--spacing-sm`。
 
+语音输入不占用输入区：文字框在两种模式下都常驻可编辑，识别出的转录只写进草稿、由候选人自己发送，麦克风听到的内容不会直接成为对话里的一轮。录音反馈全部收在 `按住说话` 按钮内部——按下时标签淡出、`VoiceLevelMeter` 覆盖在同一盒子里（标签继续撑宽，控件在手指下不改变尺寸），处理中复用按钮自己的 loading 态，面试官语音回放期间按钮不可按下。状态文案（旧的「语音模式已连接 / 正在处理 / 面试官正在回答」）不再存在：它们把一条输入通道说成了一块仪表。reduced-motion 下电平只采样一帧就停止，读数保留、泵动消失。
+
 重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。页面区段仍用无框布局与受控内容宽度，只有需要明确边界的数据对象才升级为 `card`。
 
 侧栏分三层：`@utility sidebar-frame` 拥有 rail 的盒子（宽度、边框、表面、折叠宽度与过渡），`@utility app-sidebar` 只加页面锚定（sticky、层级、`100vh`，并把 frame 撑满高度），`@utility sidebar-rail` 只拥有内容作用域（图标内边距的推导，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`：brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚。主操作下方那条分割线的下线由 frame 自己的 `gap-md` 给出，调用点不补 padding——实验台曾补一个 `pt-sm` 而产品没补，同一个组件因此有两种渲染。产品 shell 是 `app-sidebar > SidebarFrame`，实验台让同一个 `SidebarFrame` 直接落在 `bg-bg` 上——盒子由组件拥有，宽度就不会被检阅用的边框偷走。折叠状态由两处局部属性表达：frame 与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入；图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 与真实 shell 表现一致。

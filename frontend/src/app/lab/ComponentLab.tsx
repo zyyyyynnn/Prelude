@@ -172,10 +172,10 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
   )
 }
 
-/** One answer composer, holding its own draft and mode so the toggle works exactly the
- *  way it does in a session. `voice` freezes the lane in a state a live session only
- *  reaches while it is connected; without it the row starts in text mode and the frozen
- *  idle lane is what the microphone button switches to. */
+/** One answer composer, holding its own draft and mode so the toggle and the send button
+ *  work exactly the way they do in a session. `voice` freezes the lane in a state a live
+ *  session only reaches while it is connected; the meter reads no microphone here, so it
+ *  holds the floor height the browser shows before any audio arrives. */
 function LabAnswerRow({ voice }: { voice?: { status: VoiceStatus; recording: boolean } }) {
   const [answer, setAnswer] = useState('')
   const [voiceOpen, setVoiceOpen] = useState(Boolean(voice))
@@ -190,7 +190,9 @@ function LabAnswerRow({ voice }: { voice?: { status: VoiceStatus; recording: boo
       positionName={sampleContextNames.positionName}
       resumeName={sampleContextNames.resumeName}
       sending={false}
-      voice={voiceOpen ? (voice ?? { status: 'idle', recording: false }) : undefined}
+      voice={
+        voiceOpen ? { ...(voice ?? { status: 'idle', recording: false }), media: null } : undefined
+      }
       onAnswerChange={setAnswer}
       onHoldEnd={noop}
       onHoldStart={noop}
@@ -401,11 +403,11 @@ export function ComponentLab() {
           <DemoGroup label="回答态">
             <LabAnswerRow />
           </DemoGroup>
-          <DemoGroup label="语音态 · 聆听">
+          <DemoGroup label="语音态 · 按住">
             <LabAnswerRow voice={{ status: 'listening', recording: true }} />
           </DemoGroup>
-          <DemoGroup label="语音态 · 播报">
-            <LabAnswerRow voice={{ status: 'speaking', recording: false }} />
+          <DemoGroup label="语音态 · 处理中">
+            <LabAnswerRow voice={{ status: 'processing', recording: false }} />
           </DemoGroup>
           <DemoGroup label="上下文与事实位">
             <ContextAttachment

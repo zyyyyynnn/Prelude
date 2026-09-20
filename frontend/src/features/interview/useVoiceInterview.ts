@@ -30,6 +30,7 @@ function dispatchVoicePayload(
   ctx: {
     setStatus: (status: VoiceStatus) => void
     reportMessage: (message: InterviewMessageRecord, append?: boolean) => void
+    reportTranscript: (text: string) => void
     refreshSession: () => void
     terminalError: (message: string) => void
     assistantId: React.MutableRefObject<number | null>
@@ -38,12 +39,9 @@ function dispatchVoicePayload(
   if (payload.type === 'status') {
     ctx.setStatus(resolveVoiceStatus(payload.status))
   } else if (payload.type === 'user_text' && payload.text) {
-    ctx.reportMessage({
-      id: Date.now(),
-      role: 'user',
-      content: payload.text,
-      createdAt: new Date().toISOString(),
-    })
+    // The candidate's own words land in the composer, not the thread: what the
+    // microphone heard is a draft until they send it.
+    ctx.reportTranscript(payload.text)
   } else if (payload.type === 'text' && payload.chunk) {
     if (!ctx.assistantId.current) ctx.assistantId.current = Date.now() + 1
     ctx.reportMessage(
@@ -84,6 +82,7 @@ export function useVoiceInterview({
   enabled,
   sessionId,
   onMessage,
+  onTranscript,
   onRefresh,
   onError,
   onTerminalError,
@@ -91,12 +90,15 @@ export function useVoiceInterview({
   enabled: boolean
   sessionId: number
   onMessage: (message: InterviewMessageRecord, append?: boolean) => void
+  onTranscript: (text: string) => void
   onRefresh: () => void
   onError: (message: string) => void
   onTerminalError: () => void
 }) {
   const [status, setStatus] = useState<VoiceStatus>('idle')
   const [recording, setRecording] = useState(false)
+  // State, not a ref: the level meter renders against the live stream.
+  const [media, setMedia] = useState<MediaStream | null>(null)
   const socket = useRef<WebSocket | null>(null)
   const recorder = useRef<MediaRecorder | null>(null)
   const stream = useRef<MediaStream | null>(null)
@@ -105,6 +107,7 @@ export function useVoiceInterview({
   const closing = useRef(false)
   const terminal = useRef(false)
   const reportMessage = useEffectEvent(onMessage)
+  const reportTranscript = useEffectEvent(onTranscript)
   const refreshSession = useEffectEvent(onRefresh)
   const reportError = useEffectEvent(onError)
   const exitVoice = useEffectEvent(onTerminalError)
@@ -117,6 +120,7 @@ export function useVoiceInterview({
     recorder.current = null
     stream.current = null
     socket.current = null
+    setMedia(null)
     setRecording(false)
     setStatus('idle')
   }, [])
@@ -145,6 +149,7 @@ export function useVoiceInterview({
         dispatchVoicePayload(payload, {
           setStatus,
           reportMessage,
+          reportTranscript,
           refreshSession,
           terminalError,
           assistantId,
@@ -175,6 +180,7 @@ export function useVoiceInterview({
         media.getTracks().forEach((track) => track.stop())
         return
       }
+      setMedia(media)
       const next = createMediaRecorder(media, (buffer) => {
         if (socket.current?.readyState === WebSocket.OPEN) {
           socket.current.send(buffer)
@@ -205,6 +211,7 @@ export function useVoiceInterview({
   return {
     status,
     recording,
+    media,
     startRecording,
     stopRecording,
     toggleRecording,

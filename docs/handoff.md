@@ -191,7 +191,17 @@
 - [x] **分数与卡片间距**：`ScoreTile` 数值改用 `type-metric`（与看板同一角色）、标签改用 `type-label`，`my-sm` 由 tile 的 `gap-sm` 接管；`GeneratingCard` 两处 `mb-lg` 交给 `.generating-card` 的 `gap-lg`，标题与提示自成一档 `gap-xs`，`generating-title` 不再自带 margin；`SessionGroup` 改 `display: grid; gap: --spacing-sm`，分组标题的 `mb-sm` 删除（实测标题→列表仍 8px、行距 44px）；`Pin` 图标从 `size={12}` 回到 `--ui-glyph-sm`。
 - [x] **空态落点与细线配对**：`MessageThread` 就绪提示与 `InterviewSession` 加载态改走 `empty-state`（此前各自手写 flex 居中 + tertiary），错误态去掉多余外层 wrapper；`AnalyticsPage` 薄弱点条目去掉 `border-border`，与 `ScoreTile` 同为「无框 muted 面片」，不再在卡片里套带边框卡片。
 - [x] **token 门禁修正**：消费者计数原先把 `@theme` 的自我镜像 `--x: var(--x)` 当成引用，也完全不认 Tailwind 由命名空间生成的类名。两处同时修好后 `--color-sand`、`--color-text-button`、`--color-brand-light` 被判死并删除（209 → 206 条），而 `--spacing-0`（由 `m-0` 消费）一类活 token 不再误报。shadcn 语义桥按决策保留，在 `ui-tokens.json` 与脚本注释里写明「当前无一方消费者、作为外部组件适配层有意豁免」。另清掉 `@layer base` 里被未分层 `body { font }` 永久压过的 `body { font-family }`，以及 `prompt-bar` 在 JS 里重复的 100px 上限（`max-block-size` 已拥有它）。
-- [x] 本阶段验证：`vp check`、`verify:ui`、`verify:tokens`（206 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`/`dark`/`a11y`、`capture:surfaces` 全通过。一处 smoke 选择器随 hero 结构更新（`report-hero > p:first-child` → `report-hero p`），断言内容不变。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`（206 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`/`dark`/`a11y`、`capture:surfaces` 全通过；实验台 28 张基线重生成并复核。一处 smoke 选择器随 hero 结构更新（`report-hero > p:first-child` → `report-hero p`），断言内容不变。
+
+### 阶段十二：语音模式改为「按钮内电平 + 文字框转录」
+
+- [x] **删除输入区里的大块占位**：`VoiceIndicator`（状态点 + 文案 + 9 条 CSS 假波形整块替换输入区）连同 `voiceStatusLabel` 一起删除，`PromptBar` 的 `inputContent` 入参随唯一消费者消失，`--animate-status-pulse`/`--animate-voice-level` 两条动画 token 与 keyframes 一并清掉（206 → 205 declarations）。四条状态文案（语音模式已连接 / 正在聆听 / 正在处理 / 面试官正在回答）不再存在——它们把一条输入通道说成了一块仪表。
+- [x] **转录改为草稿**：`useVoiceInterview` 的 `user_text` 不再直接生成一轮 user 消息，改由 `onTranscript` 交给容器写入草稿（已有内容时按行追加）；文字框在两种模式下常驻可编辑。新增 `@smoke` 用例锁住这条契约：转录进 `面试回答` 输入框、气泡区不出现该文本，点「发送」后才成为一轮。
+- [x] **电平进按钮**：`VoiceLevelMeter`（`shared/ui/prompt-bar.tsx`）自建 `AudioContext` + `AnalyserNode`，rAF 里算 RMS 并只写一个 `--voice-level` 自定义属性，因此实时电平不产生 React 重渲染；5 根条各自乘系数，读作波形而不是整块起伏。按钮 `position: relative` + 标签淡出，宽度由标签继续撑住（capture 实测按下前后宽度一致，写成断言）。处理中复用 `Button` 的 loading，回放期间禁用按下。reduced-motion 下只采样一帧即停，保留读数去掉泵动——这是截图资产里能看到波形的原因，也是 `prefers-reduced-motion` 的正确读法。
+- [x] 语音链路的桩补齐：`installVoiceLane` 现在同时假 `getUserMedia`、`MediaRecorder` 与 `AudioContext`（分析器返回固定正弦，逐次采集同一波形），所以 6 张语音帧可复现；帧义改为 connected / listening / transcript / processing / speaking / fallback。这些帧只证明客户端状态与渲染，不证明上游语音质量。
+- [x] 实验台语音分组从「聆听 / 播报」改为「按住 / 处理中」——`speaking` 已无独立可视形态，画出来只会像坏掉的按钮；实验台的电平表无麦克风可读，停在地板高度。
+- [x] 一处 capture 定位踩坑记录：按住时按钮的可及名变成 `松开发送`，`getByRole('button', { name: '按住说话' })` 会失效，改按 `.prelude-button--hold` 定位。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`（205 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（36 例，含新增的转录草稿用例）、`verify:byok`/`dark`/`a11y`、`capture:surfaces`（6 张语音帧）全通过；`09-composer-voice-listening` 与实验台 Prompt Bar 基线逐张确认电平波形、按钮宽度与发送位。
 
 ### 阶段十一：实验台文案分寸与说明文字（两次纠偏后定稿）
 
