@@ -913,7 +913,7 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
 
   const geometry = await header.locator('.workspace-header__main').evaluate((main) => {
     const titleArea = main.querySelector<HTMLElement>('.workspace-header__title-area')!
-    const right = main.querySelector<HTMLElement>('[data-slot="workspace-header-right"]')!
+    const right = main.querySelector<HTMLElement>('[data-slot="page-header-actions"]')!
     const title = main.querySelector<HTMLElement>('.workspace-header__title')!
     const titleBox = title.getBoundingClientRect()
     return {

@@ -1,4 +1,5 @@
 import { Pin, Trash2 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
 
@@ -77,6 +78,13 @@ export function SessionRow({
 }
 
 /** A labelled run of session rows, or the empty note when a group has none. */
+/** The caption above a session group, and the stand-in when the group has no rows. The
+ *  loading placeholder in the shell is the same voice as an empty group, so it is the same
+ *  element rather than a second copy of the atoms. */
+export function SessionGroupLabel({ children }: { children: ReactNode }) {
+  return <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">{children}</p>
+}
+
 export function SessionGroup({
   label,
   rows,
@@ -97,7 +105,7 @@ export function SessionGroup({
 }) {
   return (
     <section className="session-group" aria-label={label}>
-      <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">{label}</p>
+      <SessionGroupLabel>{label}</SessionGroupLabel>
       {rows.length ? (
         <ul className="list-plain flex flex-col gap-sm">
           {rows.map(({ key, ...row }) => (
@@ -105,9 +113,7 @@ export function SessionGroup({
           ))}
         </ul>
       ) : (
-        <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">
-          {emptyLabel}
-        </p>
+        <SessionGroupLabel>{emptyLabel}</SessionGroupLabel>
       )}
     </section>
   )

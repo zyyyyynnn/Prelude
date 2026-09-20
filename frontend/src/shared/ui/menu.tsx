@@ -1,5 +1,5 @@
 import { Menu } from '@base-ui/react/menu'
-import { Check } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 import type { ReactElement, ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 
@@ -90,7 +90,7 @@ export function DropdownMenuRadioGroup({
 export function DropdownMenuRadioItem({ value, children }: { value: string; children: ReactNode }) {
   return (
     <Menu.RadioItem className="prelude-menu__item" value={value} closeOnClick>
-      {children}
+      <span className="prelude-menu__item-label">{children}</span>
       <Menu.RadioItemIndicator
         className="prelude-menu__indicator prelude-menu__indicator--end"
         aria-hidden="true"
@@ -130,32 +130,66 @@ export function DropdownMenuCheckboxItem({
 
 export function DropdownMenuItem({
   children,
+  icon,
   className,
-  layout,
   disabled,
   onClick,
 }: {
   children: ReactNode
+  icon?: ReactNode
   className?: string
-  layout?: 'leading-icon'
   disabled?: boolean
   onClick?: () => void
 }) {
   return (
     <Menu.Item
-      className={cn(
-        'prelude-menu__item',
-        layout === 'leading-icon' && 'prelude-menu__item--leading-icon',
-        className,
-      )}
+      className={cn('prelude-menu__item', icon && 'prelude-menu__item--leading-icon', className)}
       disabled={disabled}
       onClick={onClick}
     >
-      {children}
+      {icon ? (
+        <>
+          <span className="prelude-menu__icon--leading" aria-hidden="true">
+            {icon}
+          </span>
+          <span className="prelude-menu__item-label">{children}</span>
+        </>
+      ) : (
+        children
+      )}
     </Menu.Item>
   )
 }
 
 export function DropdownMenuSeparator() {
   return <Menu.Separator className="prelude-menu__separator" />
+}
+
+/** The content of a menu row or submenu trigger: an optional leading glyph, the label, an
+ *  optional current value beside it, and the chevron when it opens a submenu. Call sites had
+ *  been composing these four pieces from the internal class names, which is how the gallery's
+ *  menus and the product's drifted apart. */
+export function MenuLabel({
+  label,
+  icon,
+  detail,
+  submenu,
+}: {
+  label: string
+  icon?: ReactNode
+  detail?: string
+  submenu?: boolean
+}) {
+  return (
+    <>
+      {icon && (
+        <span className="prelude-menu__icon" aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      <span className="prelude-menu__label">{label}</span>
+      {detail && <span className="prelude-menu__detail">{detail}</span>}
+      {submenu && <ChevronRight className="prelude-menu__chevron" aria-hidden="true" />}
+    </>
+  )
 }

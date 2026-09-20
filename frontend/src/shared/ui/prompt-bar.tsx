@@ -97,6 +97,12 @@ export function PromptBar({
 }
 
 /** A read-only fact pinned into the prompt bar's control row, e.g. the frozen model. */
+/** The row of context controls at the head of the composer's action line. The bar already
+ *  gives them a non-shrinking lane; this owns how the controls themselves sit inside it. */
+export function PromptBarActions({ children }: { children: ReactNode }) {
+  return <div className="flex min-w-0 items-center gap-xs">{children}</div>
+}
+
 export function PromptBarFact({ label, icon }: { label: string; icon: ReactNode }) {
   return (
     <IconTooltip label={label}>

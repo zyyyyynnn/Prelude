@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react'
  *  The rail width is the one documented runtime CSS variable in the design system. */
 export function ScoreTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="grid gap-sm break-inside-avoid rounded-lg bg-surface-muted p-md">
+    <div className="grid gap-sm break-inside-avoid inset-card">
       <span className="type-label">{label}</span>
       <strong className="type-metric">{value.toFixed(1)}</strong>
       <div className="h-xs overflow-hidden rounded-full bg-border" aria-hidden="true">

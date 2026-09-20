@@ -9,9 +9,7 @@ export function NotFoundPage() {
         <BrandMetaballs className="size-(--layout-brand-mark-inline-size) rounded-full" />
         <div className="grid justify-items-center gap-sm" data-slot="not-found-body">
           <h1 className="type-hero">页面不存在</h1>
-          <p className="type-body max-w-(--layout-lead-max-inline-size)">
-            这个地址没有对应的页面，链接可能已经过期或者输入有误。
-          </p>
+          <p className="type-lead">这个地址没有对应的页面，链接可能已经过期或者输入有误。</p>
         </div>
         <Button render={<Link to="/" />}>返回工作台</Button>
       </section>

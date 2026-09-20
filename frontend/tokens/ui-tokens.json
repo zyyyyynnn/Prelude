@@ -52,7 +52,6 @@
         "radius-md",
         "radius-lg",
         "radius-xl",
-        "radius-2xl",
         "radius-3xl",
         "radius-full"
       ]
@@ -307,6 +306,7 @@
     ],
     "layout-prompt-input-min-block-size": ["ui-height-control", "spacing-lg"],
     "layout-prompt-truncate-max-inline-size": ["ui-height-control"],
+    "layout-select-list-max-block-size": ["ui-height-control"],
     "layout-generating-rose-inline-size": ["ui-height-control"],
     "layout-workspace-report-block-padding": ["spacing-2xl", "spacing-lg"]
   }

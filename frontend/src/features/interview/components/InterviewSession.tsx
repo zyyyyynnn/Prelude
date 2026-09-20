@@ -1,12 +1,11 @@
+import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { RefreshCw } from 'lucide-react'
 import { fetchResumes } from '@/features/resume'
 import { printInterviewReport, ReportPanel } from '@/features/report'
 import { REASONING_LABELS } from '@/features/settings'
-import { Button } from '@/shared/ui/button'
 import { useFeedback } from '@/shared/ui/feedback-context'
-import { GeneratingCard } from '@/shared/ui/generating-card'
+import { GeneratingSurface } from '@/shared/ui/generating-card'
 import { InterviewAnswerComposer } from './InterviewAnswerComposer'
 import { MessageThread } from './MessageThread'
 import { useInterviewSession } from './useInterviewSession'
@@ -28,16 +27,15 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
     queryKey: ['resumes'],
     queryFn: ({ signal }) => fetchResumes(signal),
   })
-  if (controller.session.isPending) return <div className="empty-state flex-1">正在加载会话…</div>
+  if (controller.session.isPending)
+    return <LoadingState message="正在加载会话…" className="flex-1" />
   if (controller.session.isError || !controller.current)
     return (
-      <div className="empty-state flex-1">
-        <p>{controller.session.error?.message ?? '会话不存在'}</p>
-        <Button variant="secondary" onClick={() => void controller.session.refetch()}>
-          <RefreshCw />
-          重新加载
-        </Button>
-      </div>
+      <ErrorState
+        message={controller.session.error?.message ?? '会话不存在'}
+        onRetry={() => void controller.session.refetch()}
+        className="flex-1"
+      />
     )
   const current = controller.current
   const resumeName = resumes.data?.find((item) => item.id === current.resumeId)?.fileName
@@ -77,9 +75,7 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
           data-slot="workspace-active-main"
         >
           {current.status === 'generating' && !hasReport ? (
-            <div className="flex flex-1 items-center justify-center bg-surface p-xl">
-              <GeneratingCard title="AI 评估报告生成中…" hint="正在整理答题表现并生成训练建议。" />
-            </div>
+            <GeneratingSurface title="AI 评估报告生成中…" hint="正在整理答题表现并生成训练建议。" />
           ) : controller.showReport && hasReport ? (
             <div
               className="scrollable gutter-stable flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-2xl py-(--layout-workspace-report-block-padding)"

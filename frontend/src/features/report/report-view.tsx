@@ -2,7 +2,9 @@ import { reportCopy } from './copy'
 import { parseInterviewReport } from './parse'
 import {
   QuestionReviewList,
+  ReportSection,
   ScoreCard,
+  SectionHeading,
   StagePerformanceList,
   Trait,
   TrainingPlan,
@@ -48,7 +50,7 @@ export function StructuredReport({
           {report.summary.fitAssessment}
         </p>
       </header>
-      <div className="report-columns gap-lg rounded-lg bg-surface-muted p-lg">
+      <div className="report-columns gap-lg inset-card-lg">
         <section className="grid min-w-0 gap-sm">
           <h2 className="type-title text-balance">{copy.actionTitle}</h2>
           <p className="font-sans text-sm leading-copy text-text-secondary">
@@ -65,11 +67,8 @@ export function StructuredReport({
       <ScoreCard report={report} copy={copy} />
       <StagePerformanceList stages={report.stagePerformances} copy={copy} />
       <QuestionReviewList reviews={report.questionReviews} copy={copy} />
-      <section className="grid gap-lg border-t border-border py-lg" data-slot="report-traits">
-        <header className="grid gap-xs">
-          <p className="type-eyebrow">{copy.traits.eyebrow}</p>
-          <h2 className="type-title text-balance">{copy.traits.title}</h2>
-        </header>
+      <ReportSection slot="report-traits">
+        <SectionHeading eyebrow={copy.traits.eyebrow} title={copy.traits.title} />
         <div className="report-columns items-start gap-xl">
           <Trait
             title={copy.traits.strengths}
@@ -82,16 +81,16 @@ export function StructuredReport({
             empty={copy.traits.weaknessesEmpty}
           />
         </div>
-      </section>
+      </ReportSection>
       <TrainingPlan plan={report.trainingPlan} copy={copy} />
-      <section className="grid gap-sm border-t border-border py-lg" data-slot="report-advice">
+      <ReportSection slot="report-advice" gap="sm">
         <h2 className="type-title max-w-(--content-report-reading-max-inline-size) text-balance">
           {copy.adviceTitle}
         </h2>
         <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
           {report.finalAdvice}
         </p>
-      </section>
+      </ReportSection>
     </article>
   )
 }

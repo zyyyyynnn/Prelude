@@ -1,3 +1,4 @@
+import { EmptyState } from '@/shared/ui/empty-state'
 import { useEffect, useRef } from 'react'
 import { MessageBubble } from '@/shared/ui/message'
 import type { InterviewMessageRecord } from '../types'
@@ -37,7 +38,7 @@ export function MessageThread({ messages }: { messages: InterviewMessageRecord[]
           </MessageBubble>
         ))
       ) : (
-        <div className="empty-state flex-1">会话已准备就绪，可以开始面试了。</div>
+        <EmptyState message="会话已准备就绪，可以开始面试了。" className="flex-1" />
       )}
     </div>
   )

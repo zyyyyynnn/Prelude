@@ -38,7 +38,6 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
-  --radius-2xl: var(--radius-2xl);
   --radius-full: var(--radius-full);
 
   /* Typography — text-* and leading-* resolve to the Prelude scale, which
@@ -207,7 +206,6 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  --radius-2xl: 24px;
   --radius-3xl: 32px;
   --radius-full: 9999px;
 
@@ -292,7 +290,9 @@
   --layout-login-column-min-inline-size: 320px;
   --layout-login-logo-max-inline-size: 500px;
   --layout-textarea-min-block-size: 104px;
-  --layout-select-list-max-block-size: 360px;
+  /* The option list is a scroll container with no padding or border of its own, and its
+     rows are one control tall, so this is exactly ten visible rows and no more. */
+  --layout-select-list-max-block-size: calc(var(--ui-height-control) * 10);
   --layout-dialog-max-inline-size: 960px;
   --layout-confirm-max-inline-size: 420px;
   --overlay-blur-radius: 12px;
@@ -1031,11 +1031,31 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .prelude-menu--structured.prelude-menu--model .prelude-menu__item--leading-icon {
   grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
 }
+/* The owner wraps the caller's glyph in a span, so this stays out of the layout and the svg
+   remains the grid item it was before — the colour still inherits, the box still sizes. */
 .prelude-menu__icon--leading {
-  inline-size: var(--ui-glyph-sm);
-  block-size: var(--ui-glyph-sm);
+  display: contents;
   color: var(--color-text-tertiary);
 }
+.prelude-menu__icon--leading svg {
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
+}
+/* A quiet card sunk into a surface: one radius, one fill, one padding. Two sizes because
+   the report blocks and the score tiles genuinely differ, but the inset itself is one
+   decision — it had been written out five times with three different atom orders. */
+@utility inset-card {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-muted);
+  padding: var(--spacing-md);
+}
+
+@utility inset-card-lg {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-muted);
+  padding: var(--spacing-lg);
+}
+
 .prelude-menu__item-label {
   min-inline-size: 0;
   overflow: hidden;
@@ -1456,6 +1476,14 @@ html[data-input-intent='keyboard']
 @utility type-meta {
   color: var(--color-text-tertiary);
   font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-compact) var(--font-sans);
+}
+
+/* Body text set to the reading measure a lead paragraph gets, so the measure is not a
+   layout decision every page re-makes. Same face as `type-body`; only the width differs. */
+@utility type-lead {
+  color: var(--color-text-secondary);
+  font: var(--font-weight-regular) var(--font-size-sm)/var(--line-height-relaxed) var(--font-sans);
+  max-inline-size: var(--layout-lead-max-inline-size);
 }
 
 /* Declares how many trailing icon actions a field reserves room for. The wrapper

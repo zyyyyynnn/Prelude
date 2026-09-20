@@ -1,3 +1,5 @@
+import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
+import { SubSection } from '@/shared/ui/panel'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, RefreshCw, Trash2 } from 'lucide-react'
@@ -12,7 +14,7 @@ import {
   fetchLlmConfig,
   fetchProviders,
   saveLlmConfig,
-} from '../index'
+} from '../api'
 import { sectionTitles } from '../settings-context'
 import {
   getCustomProviderMeta,
@@ -31,11 +33,18 @@ import {
 export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
   const config = useQuery({ queryKey: ['llm-config'], queryFn: fetchLlmConfig })
   const providers = useQuery({ queryKey: ['llm-providers'], queryFn: fetchProviders })
-  if (config.isPending || providers.isPending)
-    return <div className="empty-state">正在读取模型配置…</div>
+  if (config.isPending || providers.isPending) return <LoadingState message="正在读取模型配置…" />
   const error = config.error || providers.error
   if (error || !config.data || !providers.data)
-    return <div className="empty-state">{error?.message ?? '模型配置不可用'}</div>
+    return (
+      <ErrorState
+        message={error?.message ?? '模型配置不可用'}
+        onRetry={() => {
+          void config.refetch()
+          void providers.refetch()
+        }}
+      />
+    )
   return (
     <LlmSettingsForm
       key={`${providerKey ?? config.data.provider}:${config.data.customEndpointUrl}:${config.data.model}`}
@@ -162,8 +171,7 @@ function LlmSettingsForm({
           />
         </FieldActions>
       </Field>
-      <section className="grid gap-sm border-t border-border pt-md">
-        <h3 className="type-subtitle">高级设置</h3>
+      <SubSection title="高级设置">
         <div className="form-grid gap-md">
           {state.selectedCapability &&
           (state.custom ||
@@ -196,7 +204,7 @@ function LlmSettingsForm({
             />
           </Field>
         </div>
-      </section>
+      </SubSection>
       {state.testMessage && (
         <p className="type-meta" role="status">
           {state.testMessage}

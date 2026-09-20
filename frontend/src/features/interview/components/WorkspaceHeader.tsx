@@ -1,6 +1,6 @@
 import { Printer } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
-import { IconTooltip } from '@/shared/ui/overlay'
+import { PageHeader } from '@/shared/ui/page-header'
 import { SegmentedControl } from '@/shared/ui/segmented-control'
 import type { InterviewStageName } from '../types'
 
@@ -34,16 +34,10 @@ export function WorkspaceHeader({
   const showGenerateButton = !showingReport && !finished
   const generateDisabled = sending || stage !== 'closing'
   return (
-    <header className="workspace-header">
-      <div className="workspace-header__main">
-        <div className="workspace-header__title-area">
-          <IconTooltip label={headerTitle}>
-            <h1 className="workspace-header__title max-w-full" aria-label={headerTitle}>
-              {headerTitle}
-            </h1>
-          </IconTooltip>
-        </div>
-        <div className="flex shrink-0 items-center gap-lg" data-slot="workspace-header-right">
+    <PageHeader
+      title={headerTitle}
+      actions={
+        <>
           {showGenerateButton && (
             <div className="flex gap-sm">
               <Button
@@ -77,8 +71,8 @@ export function WorkspaceHeader({
               ariaLabel="工作区视图"
             />
           )}
-        </div>
-      </div>
-    </header>
+        </>
+      }
+    />
   )
 }

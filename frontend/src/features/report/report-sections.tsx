@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
@@ -10,6 +10,56 @@ import type {
   StructuredStagePerformance,
   StructuredTrainingPlan,
 } from './types'
+
+/** A report section: the hairline that separates it from the one above, the room that line
+ *  needs on both sides, and the gap binding its heading to its content. `gap="sm"` is the
+ *  closing advice block, which carries no heading of its own. */
+export function ReportSection({
+  children,
+  gap = 'lg',
+  slot,
+}: {
+  children: ReactNode
+  gap?: 'sm' | 'lg'
+  slot?: string
+}) {
+  return (
+    <section
+      className={cn('grid border-t border-border py-lg', gap === 'lg' ? 'gap-lg' : 'gap-sm')}
+      data-slot={slot}
+    >
+      {children}
+    </section>
+  )
+}
+
+/** A report section opens the same way: the eyebrow naming the dimension, then the title
+ *  stating it. With an action the pair sits on one line against it; without one the heading
+ *  is its own block. Written out per section, the eyebrow weight and the balancing drifted. */
+export function SectionHeading({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow: string
+  title: string
+  action?: ReactNode
+}) {
+  const heading = (
+    <>
+      <p className="type-eyebrow">{eyebrow}</p>
+      <h2 className="type-title text-balance">{title}</h2>
+    </>
+  )
+  return action ? (
+    <header className="flex items-center justify-between gap-lg">
+      <div className="grid gap-xs">{heading}</div>
+      {action}
+    </header>
+  ) : (
+    <header className="grid gap-xs">{heading}</header>
+  )
+}
 
 export function ScoreCard({
   report,
@@ -24,26 +74,26 @@ export function ScoreCard({
     [copy.scores.dimensions[2], report.scores.logic],
   ] as const
   return (
-    <section className="grid gap-lg border-t border-border py-lg">
-      <header className="flex items-center justify-between gap-lg">
-        <div className="grid gap-xs">
-          <p className="type-eyebrow">{copy.scores.eyebrow}</p>
-          <h2 className="type-title text-balance">{copy.scores.title}</h2>
-        </div>
-        <div className="flex items-baseline gap-xs font-serif text-text-secondary">
-          <span>{copy.scores.overall}</span>
-          <strong className="text-2xl font-semibold text-brand">
-            {report.scores.overall.toFixed(1)}
-          </strong>
-          <small>/ 10</small>
-        </div>
-      </header>
+    <ReportSection>
+      <SectionHeading
+        eyebrow={copy.scores.eyebrow}
+        title={copy.scores.title}
+        action={
+          <div className="flex items-baseline gap-xs font-serif text-text-secondary">
+            <span>{copy.scores.overall}</span>
+            <strong className="text-2xl font-semibold text-brand">
+              {report.scores.overall.toFixed(1)}
+            </strong>
+            <small>/ 10</small>
+          </div>
+        }
+      />
       <div className="report-columns gap-md">
         {items.map(([label, value]) => (
           <ScoreTile key={label} label={label} value={value} />
         ))}
       </div>
-    </section>
+    </ReportSection>
   )
 }
 
@@ -57,36 +107,33 @@ export function StagePerformanceList({
   const [index, setIndex] = useState(0)
   if (!stages.length)
     return (
-      <section className="grid gap-lg border-t border-border py-lg">
-        <header className="grid gap-xs">
-          <p className="type-eyebrow">{copy.stages.eyebrow}</p>
-          <h2 className="type-title text-balance">{copy.stages.title}</h2>
-        </header>
+      <ReportSection>
+        <SectionHeading eyebrow={copy.stages.eyebrow} title={copy.stages.title} />
         <p className="font-sans text-sm leading-copy text-text-secondary">{copy.stages.empty}</p>
-      </section>
+      </ReportSection>
     )
   return (
-    <section className="grid gap-lg border-t border-border py-lg">
-      <header className="flex items-center justify-between gap-lg">
-        <div className="grid gap-xs">
-          <p className="type-eyebrow">{copy.stages.eyebrow}</p>
-          <h2 className="type-title text-balance">{copy.stages.title}</h2>
-        </div>
-        <ReportCarouselNavigation
-          ariaLabel="阶段复盘导航"
-          index={index}
-          count={stages.length}
-          previousLabel="上一阶段"
-          nextLabel="下一阶段"
-          onPrevious={() => setIndex((value) => value - 1)}
-          onNext={() => setIndex((value) => value + 1)}
-        />
-      </header>
+    <ReportSection>
+      <SectionHeading
+        eyebrow={copy.stages.eyebrow}
+        title={copy.stages.title}
+        action={
+          <ReportCarouselNavigation
+            ariaLabel="阶段复盘导航"
+            index={index}
+            count={stages.length}
+            previousLabel="上一阶段"
+            nextLabel="下一阶段"
+            onPrevious={() => setIndex((value) => value - 1)}
+            onNext={() => setIndex((value) => value + 1)}
+          />
+        }
+      />
       <div className="min-w-0">
         {stages.map((stage, stageIndex) => (
           <article
             className={cn(
-              'gap-lg break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg',
+              'gap-lg break-inside-avoid min-w-0 inset-card-lg',
               stageIndex === index ? 'grid' : 'hidden',
               'print:block',
               stageIndex > 0 && 'print:mt-md',
@@ -126,7 +173,7 @@ export function StagePerformanceList({
           </article>
         ))}
       </div>
-    </section>
+    </ReportSection>
   )
 }
 
@@ -202,34 +249,31 @@ export function QuestionReviewList({
   const [index, setIndex] = useState(0)
   if (!reviews.length)
     return (
-      <section className="grid gap-lg border-t border-border py-lg">
-        <header className="grid gap-xs">
-          <p className="type-eyebrow">{copy.reviews.eyebrow}</p>
-          <h2 className="type-title text-balance">{copy.reviews.title}</h2>
-        </header>
+      <ReportSection>
+        <SectionHeading eyebrow={copy.reviews.eyebrow} title={copy.reviews.title} />
         <p className="font-sans text-sm leading-copy text-text-secondary">{copy.reviews.empty}</p>
-      </section>
+      </ReportSection>
     )
   const active = reviews[Math.min(index, reviews.length - 1)]
   return (
-    <section className="grid gap-lg border-t border-border py-lg">
-      <header className="flex items-center justify-between gap-lg">
-        <div className="grid gap-xs">
-          <p className="type-eyebrow">{copy.reviews.eyebrow}</p>
-          <h2 className="type-title text-balance">{copy.reviews.title}</h2>
-        </div>
-        <ReportCarouselNavigation
-          ariaLabel="逐题复盘导航"
-          index={index}
-          count={reviews.length}
-          previousLabel="上一题"
-          nextLabel="下一题"
-          onPrevious={() => setIndex((value) => value - 1)}
-          onNext={() => setIndex((value) => value + 1)}
-        />
-      </header>
+    <ReportSection>
+      <SectionHeading
+        eyebrow={copy.reviews.eyebrow}
+        title={copy.reviews.title}
+        action={
+          <ReportCarouselNavigation
+            ariaLabel="逐题复盘导航"
+            index={index}
+            count={reviews.length}
+            previousLabel="上一题"
+            nextLabel="下一题"
+            onPrevious={() => setIndex((value) => value - 1)}
+            onNext={() => setIndex((value) => value + 1)}
+          />
+        }
+      />
       <article
-        className="grid gap-lg break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg print:mt-md"
+        className="grid gap-lg break-inside-avoid min-w-0 inset-card-lg print:mt-md"
         data-slot="question-review"
       >
         <div className="grid gap-md">
@@ -255,7 +299,7 @@ export function QuestionReviewList({
           />
         </dl>
       </article>
-    </section>
+    </ReportSection>
   )
 }
 
@@ -275,11 +319,8 @@ export function TrainingPlan({ plan, copy }: { plan: StructuredTrainingPlan; cop
     [copy.plan.groups[2], plan.nextInterviewFocus],
   ] as const
   return (
-    <section className="grid gap-lg border-t border-border py-lg">
-      <header className="grid gap-xs">
-        <p className="type-eyebrow">{copy.plan.eyebrow}</p>
-        <h2 className="type-title text-balance">{copy.plan.title}</h2>
-      </header>
+    <ReportSection>
+      <SectionHeading eyebrow={copy.plan.eyebrow} title={copy.plan.title} />
       <div className="report-columns gap-xl" data-slot="training-plan-grid">
         {groups.map(([title, items], index) => (
           <section className="grid min-w-0 gap-sm break-inside-avoid" key={title}>
@@ -295,7 +336,7 @@ export function TrainingPlan({ plan, copy }: { plan: StructuredTrainingPlan; cop
           </section>
         ))}
       </div>
-    </section>
+    </ReportSection>
   )
 }
 

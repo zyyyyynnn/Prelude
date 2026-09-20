@@ -1,18 +1,14 @@
+import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Field, Input, Textarea } from '@/shared/ui/field'
 import { Panel } from '@/shared/ui/panel'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { sectionTitles } from '@/features/settings'
-import {
-  createPosition,
-  deletePosition,
-  fetchPositions,
-  PositionRow,
-  updatePosition,
-} from './index'
+import { createPosition, deletePosition, fetchPositions, updatePosition } from './api'
+import { PositionRow } from './PositionRow'
 import type { Position } from './types'
 
 const emptyDraft = { name: '', systemPrompt: '' }
@@ -105,15 +101,12 @@ export function PositionManagementPanel() {
           data-slot="position-catalog"
         >
           {positions.isPending ? (
-            <div className="empty-state">正在读取岗位…</div>
+            <LoadingState message="正在读取岗位…" />
           ) : positions.isError ? (
-            <div className="empty-state">
-              <p>{positions.error.message}</p>
-              <Button variant="secondary" onClick={() => void positions.refetch()}>
-                <RefreshCw aria-hidden="true" />
-                重新加载
-              </Button>
-            </div>
+            <ErrorState
+              message={positions.error.message}
+              onRetry={() => void positions.refetch()}
+            />
           ) : (
             <div className="position-item-grid" role="list" aria-label="岗位列表">
               {positions.data?.map((position) => (

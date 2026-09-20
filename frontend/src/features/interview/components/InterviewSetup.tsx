@@ -1,6 +1,6 @@
+import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
 import { useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { RefreshCw } from 'lucide-react'
 import { deleteAttachment, uploadAttachment } from '@/features/assets'
 import { fetchPositions } from '@/features/position'
 import { fetchResumes } from '@/features/resume'
@@ -12,9 +12,8 @@ import {
   type LlmConfigPayload,
   type LlmConfigResponse,
 } from '@/features/settings'
-import { Button } from '@/shared/ui/button'
 import { useFeedback } from '@/shared/ui/feedback-context'
-import { startInterview } from '../index'
+import { startInterview } from '../api'
 import { InterviewSetupComposer } from './InterviewSetupComposer'
 
 export function InterviewSetup() {
@@ -114,23 +113,17 @@ export function InterviewSetup() {
           resumes.isPending ||
           llmConfig.isPending ||
           providers.isPending ? (
-            <div className="text-text-tertiary">正在准备面试资源…</div>
+            <LoadingState message="正在准备面试资源…" />
           ) : error ? (
-            <div className="empty-state">
-              <p>{error.message}</p>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  void positions.refetch()
-                  void resumes.refetch()
-                  void llmConfig.refetch()
-                  void providers.refetch()
-                }}
-              >
-                <RefreshCw />
-                重新加载
-              </Button>
-            </div>
+            <ErrorState
+              message={error.message}
+              onRetry={() => {
+                void positions.refetch()
+                void resumes.refetch()
+                void llmConfig.refetch()
+                void providers.refetch()
+              }}
+            />
           ) : (
             <InterviewSetupComposer
               resumes={resumes.data ?? []}

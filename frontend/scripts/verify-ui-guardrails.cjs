@@ -29,6 +29,73 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
   }
 }
 
+/* Some markup has exactly one owner, and a call site that re-hand-rolls it is how the two
+   copies drift apart — the gallery and the product silently rendering "the same" component
+   differently. Each entry names the file allowed to write the shape; everyone else must go
+   through the owner. */
+const singleOwnerRules = [
+  {
+    owner: 'src/shared/ui/empty-state.tsx',
+    pattern: /className="[^"]*\bempty-state\b/,
+    label: 'the empty/loading/error state belongs to shared/ui/empty-state',
+  },
+  {
+    owner: 'src/shared/styles/index.css',
+    pattern: /max-w-\(--layout-lead-max-inline-size\)/,
+    label: 'the lead measure is the `type-lead` role, not a per-page width',
+  },
+  {
+    owner: 'src/shared/ui/file-input.tsx',
+    pattern: /type="file"/,
+    label: 'a file picker goes through shared/ui/file-input, which clears the selection',
+  },
+  {
+    owner: 'src/shared/ui/panel.tsx',
+    pattern: /border-t border-border pt-md/,
+    label: 'a panel sub-section band goes through the Panel owner SubSection',
+  },
+  {
+    owner: 'src/features/report/report-sections.tsx',
+    pattern: /border-t border-border py-lg/,
+    label: 'a report section band goes through ReportSection',
+  },
+  {
+    owner: 'src/shared/styles/index.css',
+    pattern: /bg-surface-muted p-(sm|md|lg|xl)/,
+    label: 'an inset card is the `inset-card` utility, not a fill plus a radius plus a padding',
+  },
+  {
+    owner: 'src/shared/ui/session-row.tsx',
+    pattern: /mx-sm text-xs font-semibold tracking-label/,
+    label: 'a session group caption goes through SessionGroupLabel',
+  },
+]
+for (const { owner, pattern, label } of singleOwnerRules) {
+  for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) {
+    const relative = path.relative(root, file).replaceAll('\\', '/')
+    if (relative === owner) continue
+    if (pattern.test(fs.readFileSync(file, 'utf8')))
+      violations.push(`${relative}: ${label} (${owner})`)
+  }
+}
+
+/* A component's internal element classes (`prelude-menu__label`, `prelude-button__content`)
+   are its own layout contract. A call site that writes one is reaching past the component's
+   props into its markup, and the two then drift with nothing to notice it — which is how the
+   interview menus ended up hand-composing what `shared/ui/menu` already drew. Only the
+   families a `shared/ui` component owns are in scope: `workspace-page` and `app-layout` are
+   page-level layout a route writes itself. */
+const internalClassPattern = /\b((?:prelude-[a-z-]+|workspace-header)__[a-z-]+)/g
+for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) {
+  const relative = path.relative(root, file).replaceAll('\\', '/')
+  if (relative.startsWith('src/shared/ui/') || relative.startsWith('src/shared/styles/')) continue
+  const leaked = [
+    ...new Set([...fs.readFileSync(file, 'utf8').matchAll(internalClassPattern)].map((m) => m[1])),
+  ]
+  for (const name of leaked)
+    violations.push(`${relative}: writes ${name}, a shared/ui internal class`)
+}
+
 for (const file of [
   path.join(root, 'index.html'),
   ...walk(sourceRoot).filter((item) => /\.(css|ts|tsx)$/.test(item)),

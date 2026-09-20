@@ -1410,6 +1410,16 @@ test('@smoke renders structured reports without resume mutation controls', async
     '深度追问',
   )
 
+  /* The question review is a second carousel on the same page with its own index state, so
+     the stage one passing says nothing about it. This report carries a single review, which
+     is the case that matters: both ends of the rail have to be spent at once. */
+  const reviewNavigation = page.getByRole('group', { name: '逐题复盘导航' })
+  await expect(reviewNavigation).toContainText('1 / 1')
+  await expect(page.locator('[data-slot="question-review"]')).toHaveCount(1)
+  await expect(reviewNavigation.getByRole('button', { name: '上一题' })).toBeDisabled()
+  await expect(reviewNavigation.getByRole('button', { name: '下一题' })).toBeDisabled()
+  await expect(stageNavigation).toContainText('2 / 2')
+
   const reviewSurfaces = await page.evaluate(() => {
     const stage = getComputedStyle(
       document.querySelector('[data-slot="stage-performance"][data-state="active"]')!,

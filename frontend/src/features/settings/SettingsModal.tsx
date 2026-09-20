@@ -1,8 +1,9 @@
+import { LoadingState } from '@/shared/ui/empty-state'
 import { LogOut } from 'lucide-react'
 import { Suspense, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@/features/auth'
-import { NavItem } from '@/shared/ui/navigation'
+import { SettingsNavigation } from '@/shared/ui/navigation'
 import { Dialog } from '@/shared/ui/overlay'
 import { LlmSettingsPanel } from './components/LlmSettingsPanel'
 import { ProfilePanel } from './components/ProfilePanel'
@@ -84,41 +85,25 @@ export function SettingsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="全局设置" layout="workspace">
       <div className="flex size-full min-h-0 overflow-hidden rounded-lg elevated-modal">
-        <aside
-          className="flex w-(--layout-settings-sidebar-inline-size) flex-col border-e border-e-border py-md"
-          data-slot="settings-sidebar"
-        >
-          <nav className="flex flex-1 flex-col gap-sm px-sm" aria-label="设置分类">
-            {sections.map(({ key, icon: Icon }) => (
-              <NavItem
-                key={key}
-                active={section === key}
-                icon={<Icon aria-hidden="true" />}
-                label={sectionTitles[key]}
-                onClick={() => onSectionChange(key)}
-              />
-            ))}
-          </nav>
-          <div className="mt-auto px-sm">
-            <NavItem
-              label="退出登录"
-              tone="danger"
-              icon={<LogOut aria-hidden="true" />}
-              onClick={() => {
-                onOpenChange(false)
-                void auth.signOut().then(() => navigate('/login'))
-              }}
-            />
-          </div>
-        </aside>
+        <SettingsNavigation
+          items={sections.map(({ key, icon: Icon }) => ({
+            key,
+            label: sectionTitles[key],
+            icon: <Icon aria-hidden="true" />,
+          }))}
+          active={section}
+          onSelect={onSectionChange}
+          danger={{
+            label: '退出登录',
+            icon: <LogOut aria-hidden="true" />,
+            onSelect: () => {
+              onOpenChange(false)
+              void auth.signOut().then(() => navigate('/login'))
+            },
+          }}
+        />
         <main className="flex min-w-0 flex-1 flex-col" data-slot="settings-main">
-          <Suspense
-            fallback={
-              <div className="empty-state" role="status">
-                正在加载设置…
-              </div>
-            }
-          >
+          <Suspense fallback={<LoadingState message="正在加载设置…" />}>
             {section === 'profile' && <ProfilePanel />}
             {(section === 'resumes' || section === 'positions') &&
               renderResourcePanel({ section, provider, intent, requestId })}

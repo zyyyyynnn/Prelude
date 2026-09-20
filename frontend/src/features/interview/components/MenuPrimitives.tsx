@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react'
-import { ChevronDown, ChevronRight, Settings } from 'lucide-react'
+import { ChevronDown, Settings } from 'lucide-react'
 import { REASONING_LABELS } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
 import {
@@ -10,18 +9,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
+  MenuLabel,
 } from '@/shared/ui/menu'
 import type { InterviewModelConfig, InterviewModelProvider } from '../types'
-
-function MenuRow({ label, value, submenu }: { label: string; value?: string; submenu?: boolean }) {
-  return (
-    <>
-      <span className="prelude-menu__label">{label}</span>
-      {value && <span className="prelude-menu__detail">{value}</span>}
-      {submenu && <ChevronRight className="prelude-menu__chevron" aria-hidden="true" />}
-    </>
-  )
-}
 
 export function InterviewModelMenu({
   config,
@@ -69,12 +59,12 @@ export function InterviewModelMenu({
       }
     >
       <DropdownMenuGroup>
-        <DropdownMenuSubmenu trigger={<MenuRow label="模型" value={config.model} submenu />}>
+        <DropdownMenuSubmenu trigger={<MenuLabel label="模型" detail={config.model} submenu />}>
           <DropdownMenuRadioGroup value={config.model} onValueChange={onModelChange}>
             {models.length ? (
               models.map((model) => (
                 <DropdownMenuRadioItem key={model} value={model}>
-                  <span className="prelude-menu__item-label">{model}</span>
+                  {model}
                 </DropdownMenuRadioItem>
               ))
             ) : (
@@ -84,7 +74,9 @@ export function InterviewModelMenu({
         </DropdownMenuSubmenu>
         {reasoningSupported ? (
           <DropdownMenuSubmenu
-            trigger={<MenuRow label="思考深度" value={REASONING_LABELS[thinkingValue]} submenu />}
+            trigger={
+              <MenuLabel label="思考深度" detail={REASONING_LABELS[thinkingValue]} submenu />
+            }
           >
             <DropdownMenuRadioGroup
               value={thinkingValue}
@@ -92,7 +84,7 @@ export function InterviewModelMenu({
             >
               {(capability?.supportedReasoningLevels ?? []).map((level) => (
                 <DropdownMenuRadioItem key={level} value={level}>
-                  <span className="prelude-menu__item-label">{REASONING_LABELS[level]}</span>
+                  {REASONING_LABELS[level]}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -101,40 +93,10 @@ export function InterviewModelMenu({
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem layout="leading-icon" onClick={onManage}>
-          <Settings className="prelude-menu__icon--leading" aria-hidden="true" />
-          <span className="prelude-menu__item-label">管理模型</span>
+        <DropdownMenuItem icon={<Settings />} onClick={onManage}>
+          管理模型
         </DropdownMenuItem>
       </DropdownMenuGroup>
     </DropdownMenu>
-  )
-}
-
-export function ContextMenuLabel({
-  icon,
-  label,
-  detail,
-}: {
-  icon: ReactNode
-  label: string
-  detail?: string
-}) {
-  return (
-    <>
-      <span className="prelude-menu__icon" aria-hidden="true">
-        {icon}
-      </span>
-      <span className="prelude-menu__label">{label}</span>
-      {detail && <span className="prelude-menu__detail">{detail}</span>}
-    </>
-  )
-}
-
-export function SubmenuLabel(props: Parameters<typeof ContextMenuLabel>[0]) {
-  return (
-    <>
-      <ContextMenuLabel {...props} />
-      <ChevronRight className="prelude-menu__chevron" aria-hidden="true" />
-    </>
   )
 }

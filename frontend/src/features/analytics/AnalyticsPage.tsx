@@ -1,3 +1,4 @@
+import { PageHeader } from '@/shared/ui/page-header'
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as echarts from 'echarts/core'
@@ -9,8 +10,7 @@ import {
   TooltipComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { RefreshCw } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
+import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/empty-state'
 import { Panel } from '@/shared/ui/panel'
 import { fetchRadar, fetchTrend, fetchWeaknesses } from './api'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint } from './types'
@@ -50,30 +50,14 @@ export function AnalyticsPage() {
   }
   return (
     <section className="workspace-page">
-      <header className="workspace-header">
-        <div className="workspace-header__main">
-          <div className="workspace-header__title-area">
-            <h1 className="workspace-header__title">数据看板</h1>
-          </div>
-        </div>
-      </header>
+      <PageHeader title="数据看板" />
       <div className="workspace-page__content scrollable">
         {pending ? (
-          <div className="empty-state" aria-live="polite">
-            正在整理训练数据…
-          </div>
+          <LoadingState message="正在整理训练数据…" />
         ) : error ? (
-          <div className="empty-state">
-            <p>{error.message}</p>
-            <Button variant="secondary" onClick={reload}>
-              <RefreshCw />
-              重新加载
-            </Button>
-          </div>
+          <ErrorState message={error.message} onRetry={reload} />
         ) : !radar.data?.sessionCount ? (
-          <div className="empty-state">
-            <p>完成至少一场面试后，这里会显示能力变化与训练重点。</p>
-          </div>
+          <EmptyState message="完成至少一场面试后，这里会显示能力变化与训练重点。" />
         ) : (
           <>
             <div className="grid grid-cols-3 gap-md">
@@ -102,15 +86,11 @@ export function AnalyticsPage() {
                 title="能力雷达"
                 actions={<span className="type-meta shrink-0">{radar.data.sessionCount} 场</span>}
               >
-                <p className="type-body max-w-(--layout-lead-max-inline-size)">
-                  展示最近面试在三项核心维度上的平均水平。
-                </p>
+                <p className="type-lead">展示最近面试在三项核心维度上的平均水平。</p>
                 <Radar data={radar.data} />
               </Panel>
               <Panel layout="card" eyebrow="走势" title="分数趋势">
-                <p className="type-body max-w-(--layout-lead-max-inline-size)">
-                  按时间查看技术、表达与逻辑评分变化。
-                </p>
+                <p className="type-lead">按时间查看技术、表达与逻辑评分变化。</p>
                 <Trend data={trend.data ?? []} />
               </Panel>
             </div>
@@ -122,13 +102,11 @@ export function AnalyticsPage() {
                 <span className="type-meta shrink-0">{weaknesses.data?.length ?? 0} 类问题</span>
               }
             >
-              <p className="type-body max-w-(--layout-lead-max-inline-size)">
-                按出现频率汇总薄弱点。
-              </p>
+              <p className="type-lead">按出现频率汇总薄弱点。</p>
               {weaknesses.data?.length ? (
                 weaknesses.data.map((item) => (
                   <article
-                    className="grid gap-sm rounded-lg bg-surface-muted p-md break-inside-avoid"
+                    className="grid gap-sm break-inside-avoid inset-card"
                     data-slot="weakness-item"
                     key={item.category}
                   >
@@ -151,7 +129,7 @@ export function AnalyticsPage() {
                   </article>
                 ))
               ) : (
-                <div className="empty-state">暂无已归纳的薄弱点。</div>
+                <EmptyState message="暂无已归纳的薄弱点。" />
               )}
             </Panel>
           </>

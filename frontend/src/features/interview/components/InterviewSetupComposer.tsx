@@ -1,3 +1,5 @@
+import { HiddenFileInput } from '@/shared/ui/file-input'
+import { PromptBarActions } from '@/shared/ui/prompt-bar'
 import { useRef, useState, type FormEvent } from 'react'
 import type { AttachmentItem } from '@/features/assets'
 import type { Position } from '@/features/position'
@@ -131,7 +133,7 @@ export function InterviewSetupComposer({
           ) : undefined
         }
         leftActions={
-          <div className="flex min-w-0 items-center gap-xs">
+          <PromptBarActions>
             <InterviewContextMenu
               resumes={resumes}
               positions={positions}
@@ -155,7 +157,7 @@ export function InterviewSetupComposer({
               onManage={() => onManageModel()}
             />
             {jdEnabled && <PromptBarJdToggle onDisable={() => setJdEnabled(false)} />}
-          </div>
+          </PromptBarActions>
         }
         rightActions={
           <Button type="submit" loading={creating} disabled={!canStart} shape="action">
@@ -164,20 +166,13 @@ export function InterviewSetupComposer({
         }
         onSubmit={submit}
       />
-      <label className="sr-only" htmlFor="interview-attachment-upload">
-        选择面试附件
-      </label>
-      <input
+      <HiddenFileInput
         id="interview-attachment-upload"
-        ref={attachmentInput}
-        className="sr-only"
-        type="file"
+        label="选择面试附件"
         multiple
         accept=".pdf,.docx,.txt,.md,.markdown,image/png,image/jpeg,image/webp"
-        onChange={(event) => {
-          void uploadFiles(event.target.files)
-          event.currentTarget.value = ''
-        }}
+        inputRef={attachmentInput}
+        onFiles={(files) => void uploadFiles(files)}
       />
     </>
   )

@@ -1,3 +1,6 @@
+import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
+import { HiddenFileInput } from '@/shared/ui/file-input'
+import { SubSection } from '@/shared/ui/panel'
 import { useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Upload } from 'lucide-react'
@@ -6,7 +9,7 @@ import { Button } from '@/shared/ui/button'
 import { Field, FieldAction, FieldActions, Input } from '@/shared/ui/field'
 import { Panel } from '@/shared/ui/panel'
 import { useFeedback } from '@/shared/ui/feedback-context'
-import { fetchProfile, saveProfile, uploadAvatar } from '../index'
+import { fetchProfile, saveProfile, uploadAvatar } from '../api'
 import { sectionTitles } from '../settings-context'
 
 export function ProfilePanel() {
@@ -55,8 +58,9 @@ export function ProfilePanel() {
       operationId: crypto.randomUUID(),
     })
   }
-  if (profile.isPending) return <div className="empty-state">正在读取账号资料…</div>
-  if (profile.isError) return <div className="empty-state">{profile.error.message}</div>
+  if (profile.isPending) return <LoadingState message="正在读取账号资料…" />
+  if (profile.isError)
+    return <ErrorState message={profile.error.message} onRetry={() => void profile.refetch()} />
   const initial = (profile.data?.username?.trim()[0] || 'P').toUpperCase()
   return (
     <Panel
@@ -82,20 +86,12 @@ export function ProfilePanel() {
             )}
           </div>
           <div className="grid justify-items-center gap-xs">
-            <label className="sr-only" htmlFor="avatar-upload">
-              选择头像
-            </label>
-            <input
+            <HiddenFileInput
               id="avatar-upload"
-              ref={avatarInput}
-              className="sr-only"
-              type="file"
+              label="选择头像"
               accept="image/png,image/jpeg,image/webp,image/gif"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) avatar.mutate(file)
-                event.currentTarget.value = ''
-              }}
+              inputRef={avatarInput}
+              onFiles={(files) => avatar.mutate(files[0])}
             />
             <Button
               type="button"
@@ -128,8 +124,7 @@ export function ProfilePanel() {
             />
           </Field>
         </div>
-        <section className="grid gap-sm border-t border-border pt-md">
-          <h3 className="type-subtitle">修改密码</h3>
+        <SubSection title="修改密码">
           <div className="form-grid gap-md">
             <PasswordField
               label="旧密码"
@@ -146,7 +141,7 @@ export function ProfilePanel() {
               autoComplete="new-password"
             />
           </div>
-        </section>
+        </SubSection>
       </form>
     </Panel>
   )

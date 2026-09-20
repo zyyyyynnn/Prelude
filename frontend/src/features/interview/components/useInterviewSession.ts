@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchSession, finishInterview, streamInterview } from '../index'
+import { fetchSession, finishInterview, streamInterview } from '../api'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 import {
   MAX_CONTEXT_MESSAGES,

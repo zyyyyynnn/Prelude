@@ -11,10 +11,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
+  MenuLabel,
 } from '@/shared/ui/menu'
 import { IconTooltip } from '@/shared/ui/overlay'
+import { PromptBarActions } from '@/shared/ui/prompt-bar'
 import { PromptBarFact } from '@/shared/ui/prompt-bar'
-import { ContextMenuLabel, SubmenuLabel } from './MenuPrimitives'
 
 export function InterviewContextMenu({
   resumes,
@@ -58,11 +59,16 @@ export function InterviewContextMenu({
     >
       <DropdownMenuGroup>
         <DropdownMenuItem disabled={uploading} onClick={onUpload}>
-          <ContextMenuLabel icon={<Paperclip />} label={uploading ? '正在上传…' : '上传附件'} />
+          <MenuLabel icon={<Paperclip />} label={uploading ? '正在上传…' : '上传附件'} />
         </DropdownMenuItem>
         <DropdownMenuSubmenu
           trigger={
-            <SubmenuLabel icon={<FileText />} label="选择简历" detail={resumeName ?? '未选择'} />
+            <MenuLabel
+              submenu
+              icon={<FileText />}
+              label="选择简历"
+              detail={resumeName ?? '未选择'}
+            />
           }
         >
           <DropdownMenuRadioGroup
@@ -72,7 +78,7 @@ export function InterviewContextMenu({
             {resumes.length ? (
               resumes.map((resume) => (
                 <DropdownMenuRadioItem key={resume.id} value={String(resume.id)}>
-                  <span className="prelude-menu__item-label">{resume.fileName}</span>
+                  {resume.fileName}
                 </DropdownMenuRadioItem>
               ))
             ) : (
@@ -82,13 +88,18 @@ export function InterviewContextMenu({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={onNewResume}>
-              <ContextMenuLabel icon={<Upload />} label="新建简历" />
+              <MenuLabel icon={<Upload />} label="新建简历" />
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuSubmenu>
         <DropdownMenuSubmenu
           trigger={
-            <SubmenuLabel icon={<Briefcase />} label="选择岗位" detail={positionName ?? '未选择'} />
+            <MenuLabel
+              submenu
+              icon={<Briefcase />}
+              label="选择岗位"
+              detail={positionName ?? '未选择'}
+            />
           }
         >
           <DropdownMenuRadioGroup
@@ -98,7 +109,7 @@ export function InterviewContextMenu({
             {positions.length ? (
               positions.map((position) => (
                 <DropdownMenuRadioItem key={position.id} value={String(position.id)}>
-                  <span className="prelude-menu__item-label">{position.name}</span>
+                  {position.name}
                 </DropdownMenuRadioItem>
               ))
             ) : (
@@ -108,12 +119,12 @@ export function InterviewContextMenu({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={onNewPosition}>
-              <ContextMenuLabel icon={<Plus />} label="新建岗位" />
+              <MenuLabel icon={<Plus />} label="新建岗位" />
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuSubmenu>
         <DropdownMenuCheckboxItem checked={jdEnabled} onCheckedChange={onJdEnabledChange}>
-          <ContextMenuLabel
+          <MenuLabel
             icon={<ScanSearch />}
             label="JD 匹配"
             detail={jdEnabled ? '已开启' : '未开启'}
@@ -134,11 +145,11 @@ export function InterviewContextFacts({
   jdMatched: boolean
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-xs">
+    <PromptBarActions>
       <LockedInterviewContextButton />
       <PromptBarFact label={modelName} icon={<Terminal aria-hidden="true" />} />
       {jdMatched && <PromptBarFact label="JD 匹配" icon={<ScanSearch aria-hidden="true" />} />}
-    </div>
+    </PromptBarActions>
   )
 }
 

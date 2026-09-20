@@ -1,3 +1,6 @@
+import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
+import { PageHeader } from '@/shared/ui/page-header'
+import { SubSection } from '@/shared/ui/panel'
 import { useState } from 'react'
 import {
   BarChart3,
@@ -7,14 +10,13 @@ import {
   LogOut,
   PanelLeft,
   Plus,
-  RefreshCw,
   Settings,
   Terminal,
   X,
 } from 'lucide-react'
 import { AnswerComposerSurface, InterviewSetupComposer } from '@/features/interview'
 import { PositionRow, type Position } from '@/features/position'
-import { REASONING_LABELS, sections, themeOptions } from '@/features/settings'
+import { REASONING_LABELS, sections, themeOptions, type SettingsSection } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { RoseThree } from '@/shared/brand/RoseThree'
@@ -36,7 +38,7 @@ import {
 import { Button } from '@/shared/ui/button'
 import { Field, FieldAction, FieldActions, Input, Textarea } from '@/shared/ui/field'
 import { useFeedback } from '@/shared/ui/feedback-context'
-import { GeneratingCard } from '@/shared/ui/generating-card'
+import { GeneratingSurface } from '@/shared/ui/generating-card'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -49,8 +51,8 @@ import {
 } from '@/shared/ui/menu'
 import { MessageBubble } from '@/shared/ui/message'
 import { Dialog, IconTooltip } from '@/shared/ui/overlay'
-import { NavItem } from '@/shared/ui/navigation'
-import { OptionCard, ThemePreview } from '@/shared/ui/option-card'
+import { SettingsNavigation } from '@/shared/ui/navigation'
+import { ThemeChoiceGroup, type ThemeTone } from '@/shared/ui/option-card'
 import { Panel } from '@/shared/ui/panel'
 import {
   ContextAttachment,
@@ -220,8 +222,8 @@ export function ComponentLab() {
   const [jdMatch, setJdMatch] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [pressed, setPressed] = useState(false)
-  const [tab, setTab] = useState(0)
-  const [themeChoice, setThemeChoice] = useState('light')
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>('profile')
+  const [themeChoice, setThemeChoice] = useState<ThemeTone>('light')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
 
@@ -229,13 +231,7 @@ export function ComponentLab() {
 
   return (
     <section className="workspace-page">
-      <header className="workspace-header">
-        <div className="workspace-header__main">
-          <div className="workspace-header__title-area">
-            <h1 className="workspace-header__title">Component Lab</h1>
-          </div>
-        </div>
-      </header>
+      <PageHeader title="Component Lab" />
       <div className="workspace-page__content scrollable">
         <Panel layout="card" title="Typography" description="shared/styles">
           <div className="grid gap-sm">
@@ -332,8 +328,7 @@ export function ComponentLab() {
               <Input id="lab-disabled" disabled placeholder="示例占位" />
             </Field>
           </div>
-          <div className="grid gap-sm border-t border-border pt-md">
-            <h3 className="type-subtitle">小节一</h3>
+          <SubSection title="小节一">
             <div className="form-grid gap-md">
               <Field label="字段六" htmlFor="lab-reasoning">
                 <Select
@@ -350,7 +345,7 @@ export function ComponentLab() {
                 <Input id="lab-output" defaultValue="示例值" />
               </Field>
             </div>
-          </div>
+          </SubSection>
         </Panel>
 
         <Panel layout="card" title="SegmentedControl" description="shared/ui/segmented-control">
@@ -451,12 +446,10 @@ export function ComponentLab() {
             </div>
           </DemoGroup>
           <DemoGroup label="生成态">
-            <div className="flex w-full items-center justify-center bg-surface p-xl">
-              <GeneratingCard
-                title="示例标题"
-                hint="示例文本一，长度用来检查卡片在长提示下的换行。"
-              />
-            </div>
+            <GeneratingSurface
+              title="示例标题"
+              hint="示例文本一，长度用来检查卡片在长提示下的换行。"
+            />
           </DemoGroup>
         </Panel>
 
@@ -477,25 +470,22 @@ export function ComponentLab() {
 
         <Panel layout="card" title="List & Navigation" description="shared/ui · shared/styles">
           <div className="flex w-full items-start gap-lg">
-            <div className="w-(--layout-settings-sidebar-inline-size) shrink-0">
+            <div className="shrink-0">
               <DemoGroup label="导航列">
-                <div className="grid gap-sm">
-                  {sections.map(({ key, icon: Icon }, index) => (
-                    <NavItem
-                      key={key}
-                      active={tab === index}
-                      icon={<Icon aria-hidden="true" />}
-                      label={`分区${ordinals[index]}`}
-                      onClick={() => setTab(index)}
-                    />
-                  ))}
-                  <NavItem
-                    label="危险操作"
-                    tone="danger"
-                    icon={<LogOut aria-hidden="true" />}
-                    onClick={noop}
-                  />
-                </div>
+                <SettingsNavigation
+                  items={sections.map(({ key, icon: Icon }, index) => ({
+                    key,
+                    label: `分区${ordinals[index]}`,
+                    icon: <Icon aria-hidden="true" />,
+                  }))}
+                  active={settingsSection}
+                  onSelect={setSettingsSection}
+                  danger={{
+                    label: '危险操作',
+                    icon: <LogOut aria-hidden="true" />,
+                    onSelect: noop,
+                  }}
+                />
               </DemoGroup>
             </div>
             <div className="grid min-w-0 flex-1 gap-md">
@@ -519,22 +509,16 @@ export function ComponentLab() {
                 </div>
               </DemoGroup>
               <DemoGroup label="选项卡">
-                <div
-                  className="grid w-full grid-cols-3 gap-sm"
-                  role="radiogroup"
-                  aria-label="主题偏好"
-                >
-                  {themeOptions.map((option, index) => (
-                    <OptionCard
-                      key={option.value}
-                      checked={themeChoice === option.value}
-                      label={`选项${ordinals[index]}`}
-                      description={`说明${ordinals[index]}`}
-                      onSelect={() => setThemeChoice(option.value)}
-                    >
-                      <ThemePreview tone={option.value} />
-                    </OptionCard>
-                  ))}
+                <div className="grid w-full gap-sm">
+                  <ThemeChoiceGroup
+                    value={themeChoice}
+                    options={themeOptions.map((option, index) => ({
+                      value: option.value,
+                      label: `选项${ordinals[index]}`,
+                      description: `说明${ordinals[index]}`,
+                    }))}
+                    onSelect={setThemeChoice}
+                  />
                 </div>
               </DemoGroup>
             </div>
@@ -559,14 +543,13 @@ export function ComponentLab() {
 
         <Panel layout="card" title="Empty & Error" description="shared/styles">
           <DemoGroup label="状态">
-            <div className="empty-state w-full">加载示例文本</div>
-            <div className="empty-state w-full">
-              <p>失败示例文本</p>
-              <Button variant="secondary" onClick={() => feedback.notify('示例提示', 'success')}>
-                <RefreshCw />
-                次要操作
-              </Button>
-            </div>
+            <LoadingState message="加载示例文本" className="w-full" />
+            <ErrorState
+              message="失败示例文本"
+              retryLabel="次要操作"
+              onRetry={() => feedback.notify('示例提示', 'success')}
+              className="w-full"
+            />
           </DemoGroup>
         </Panel>
 
@@ -598,7 +581,7 @@ export function ComponentLab() {
               trigger={<Button variant="secondary">结构化菜单</Button>}
             >
               <DropdownMenuGroup>
-                <DropdownMenuItem layout="leading-icon" onClick={noop}>
+                <DropdownMenuItem icon={<Plus />} onClick={noop}>
                   带图标菜单项
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

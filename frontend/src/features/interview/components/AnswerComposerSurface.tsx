@@ -107,9 +107,9 @@ export function AnswerComposerSurface({
               onKeyUp={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') onHoldEnd()
               }}
+              held={voice.recording ? <VoiceLevelMeter stream={voice.media} /> : undefined}
             >
-              <span className="prelude-button__label">按住说话</span>
-              {voice.recording && <VoiceLevelMeter stream={voice.media} />}
+              按住说话
             </Button>
           ) : null}
           <IconTooltip label="发送">

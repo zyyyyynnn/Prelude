@@ -99,6 +99,104 @@ for (const name of blockedPackages) {
   if (declared[name]) violations.push(`package.json: blocked dependency ${name}`)
 }
 
+// ---------------------------------------------------------------- feature public entry
+/* `docs/frontend/architecture.md` makes a feature's `index.ts` its public surface: a barrel
+   that re-exports chosen names and nothing else. Two failures follow from putting
+   implementation there. The barrel then exports whatever happens to be defined in the file
+   rather than what was chosen, so the public surface grows by accident. And a sibling that
+   reaches a neighbour through `../index` imports the whole feature, including itself, back
+   into the module that is part of it. */
+{
+  const tsSources = walk(sourceRoot).filter((file) => ['.ts', '.tsx'].includes(path.extname(file)))
+  const featuresRoot = path.join(sourceRoot, 'features')
+  const featureDirs = fs.existsSync(featuresRoot)
+    ? fs.readdirSync(featuresRoot, { withFileTypes: true })
+    : []
+  for (const entry of featureDirs) {
+    if (!entry.isDirectory()) continue
+    const feature = entry.name
+    /* A feature without an entry needs no rule of its own: the cross-feature check above
+       already rejects any import that cannot name `@/features/<name>`. */
+    const entryPath = path.join(featuresRoot, feature, 'index.ts')
+    if (!fs.existsSync(entryPath)) continue
+    const source = fs.readFileSync(entryPath, 'utf8')
+    const tree = ts.createSourceFile(entryPath, source, ts.ScriptTarget.Latest, true)
+    const exported = []
+    for (const statement of tree.statements) {
+      const isReexport =
+        ts.isExportDeclaration(statement) &&
+        Boolean(statement.moduleSpecifier) &&
+        Boolean(statement.exportClause) &&
+        ts.isNamedExports(statement.exportClause)
+      if (!isReexport) {
+        const line = source.slice(0, statement.getStart()).split('\n').length
+        violations.push(
+          `features/${feature}/index.ts:${line}: a public entry may only re-export named symbols from a named file`,
+        )
+        continue
+      }
+      const clause = statement.exportClause
+      if (clause) for (const element of clause.elements) exported.push(element.name.text)
+    }
+
+    /* Names the rest of the app actually pulls through the barrel. Anything else is surface
+       area nobody asked for. The router reaches pages through `await import()`, so a member
+       access on a dynamic import counts as a consumer just like a static binding does. */
+    const barrel = `@/features/${feature}`
+    const consumed = new Set()
+    for (const file of tsSources) {
+      if (path.basename(file) === 'index.ts' && path.dirname(file) === path.dirname(entryPath))
+        continue
+      const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+      if (relative.startsWith(`features/${feature}/`)) continue
+      const tree = ts.createSourceFile(
+        file,
+        fs.readFileSync(file, 'utf8'),
+        ts.ScriptTarget.Latest,
+        true,
+      )
+      const collect = (node) => {
+        if (ts.isImportDeclaration(node) && node.moduleSpecifier?.text === barrel) {
+          const bindings = node.importClause?.namedBindings
+          if (bindings && ts.isNamedImports(bindings))
+            for (const element of bindings.elements) consumed.add(element.name.text)
+          else if (bindings) consumed.add('*')
+        }
+        if (
+          ts.isCallExpression(node) &&
+          node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+          node.arguments[0] &&
+          ts.isStringLiteralLike(node.arguments[0]) &&
+          node.arguments[0].text === barrel
+        ) {
+          /* `(await import('…')).Name` puts an AwaitExpression and often a parenthesis
+             between the call and the member access. */
+          let anchor = node.parent
+          while (anchor && (ts.isAwaitExpression(anchor) || ts.isParenthesizedExpression(anchor)))
+            anchor = anchor.parent
+          if (anchor && ts.isPropertyAccessExpression(anchor)) consumed.add(anchor.name.text)
+          if (
+            anchor &&
+            ts.isBinaryExpression(anchor) &&
+            anchor.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+            ts.isObjectBindingPattern(anchor.left)
+          )
+            for (const element of anchor.left.elements)
+              consumed.add((element.propertyName ?? element.name).getText().replaceAll(/["']/g, ''))
+        }
+        ts.forEachChild(node, collect)
+      }
+      ts.forEachChild(tree, collect)
+    }
+    for (const name of exported) {
+      if (consumed.has(name)) continue
+      violations.push(
+        `features/${feature}/index.ts: ${name} is exported but nothing outside the feature imports it`,
+      )
+    }
+  }
+}
+
 if (violations.length) {
   console.error(`Architecture verification: FAIL (${violations.length})`)
   for (const violation of violations) console.error(`  ${violation}`)

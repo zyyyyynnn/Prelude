@@ -1,12 +1,13 @@
+import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/empty-state'
+import { HiddenFileInput } from '@/shared/ui/file-input'
 import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { RefreshCw } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Panel } from '@/shared/ui/panel'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { sectionTitles } from '@/features/settings'
 import { ResumeRow } from './ResumeRow'
-import { deleteResume, fetchResumes, uploadResume } from './index'
+import { deleteResume, fetchResumes, uploadResume } from './api'
 
 export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: number }) {
   const input = useRef<HTMLInputElement>(null)
@@ -52,36 +53,21 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
         </Button>
       }
     >
-      <label className="sr-only" htmlFor="settings-resume-upload">
-        选择 PDF 简历
-      </label>
-      <input
+      <HiddenFileInput
         id="settings-resume-upload"
-        ref={input}
-        className="sr-only"
-        type="file"
+        label="选择 PDF 简历"
         accept="application/pdf"
-        onChange={(event) => {
-          selectFile(event.target.files?.[0])
-          event.currentTarget.value = ''
-        }}
+        inputRef={input}
+        onFiles={(files) => selectFile(files[0])}
       />
       <section className="grid gap-sm" aria-labelledby="resume-library-title">
         <h3 id="resume-library-title" className="type-subtitle" data-slot="section-title">
           已上传简历
         </h3>
         {resumes.isPending ? (
-          <div className="empty-state" aria-live="polite">
-            正在读取简历库…
-          </div>
+          <LoadingState message="正在读取简历库…" />
         ) : resumes.isError ? (
-          <div className="empty-state">
-            <p>{resumes.error.message}</p>
-            <Button variant="secondary" onClick={() => void resumes.refetch()}>
-              <RefreshCw aria-hidden="true" />
-              重新加载
-            </Button>
-          </div>
+          <ErrorState message={resumes.error.message} onRetry={() => void resumes.refetch()} />
         ) : resumes.data?.length ? (
           <div className="flex flex-col gap-sm">
             {resumes.data.map((resume) => (
@@ -105,9 +91,7 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
             ))}
           </div>
         ) : (
-          <div className="empty-state">
-            <p>暂无简历，上传 PDF 后开始训练。</p>
-          </div>
+          <EmptyState message="暂无简历，上传 PDF 后开始训练。" />
         )}
       </section>
     </Panel>

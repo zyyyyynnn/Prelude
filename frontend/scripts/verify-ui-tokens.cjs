@@ -315,12 +315,28 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
       'container-',
       'breakpoint-',
     ]
+    /* Tailwind fans `--color-*` and `--spacing-*` out across many utility prefixes, so
+       those keys can only be matched loosely. The rest map to exactly one prefix, and a
+       loose test there reads an unrelated class: `--radius-2xl` was matched by `text-2xl`
+       and reported as consumed while nothing rounded anything with 24px. */
+    const singlePrefixUtility = {
+      'radius-': 'rounded',
+      'leading-': 'leading',
+      'shadow-': 'shadow',
+      'ease-': 'ease',
+      'blur-': 'blur',
+    }
     const namespace = namespaces.find((prefix) => key.startsWith(prefix))
     const classKey = namespace ? key.slice(namespace.length) : key
+    const escapedKey = classKey.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
+    const classPattern =
+      namespace && singlePrefixUtility[namespace]
+        ? `${singlePrefixUtility[namespace]}-${escapedKey}`
+        : `[a-z]+-${escapedKey}`
     const used =
       count(cssWithoutSelfMirrors, `var(${token})`) > 0 ||
       count(codeText, token) > 0 ||
-      new RegExp(`\\b[a-z]+-${classKey.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')}\\b`).test(codeText)
+      new RegExp(`\\b${classPattern}\\b`).test(codeText)
     if (!used)
       violations.push(`src/shared/styles/index.css: ${token} is declared but never consumed`)
   }

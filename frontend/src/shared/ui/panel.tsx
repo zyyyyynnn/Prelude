@@ -90,3 +90,15 @@ export function Panel({
     </section>
   )
 }
+
+/** A band inside a panel that is its own subject: the hairline that opens it, the room the
+ *  line needs on both sides, and the tight gap that keeps its heading with its controls.
+ *  The gallery shows the same band the two settings sections render. */
+export function SubSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="grid gap-sm border-t border-border pt-md">
+      <h3 className="type-subtitle">{title}</h3>
+      {children}
+    </section>
+  )
+}

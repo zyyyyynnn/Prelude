@@ -1,5 +1,5 @@
 import { Button as ButtonPrimitive } from '@base-ui/react/button'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 
 export function Button({
@@ -10,6 +10,7 @@ export function Button({
   loading = false,
   pressed,
   children,
+  held,
   disabled,
   ...props
 }: ComponentProps<typeof ButtonPrimitive> & {
@@ -20,6 +21,8 @@ export function Button({
   shape?: 'action' | 'hold'
   loading?: boolean
   pressed?: boolean
+  /** Press-and-hold only: what shows in place of the words while the control is held. */
+  held?: ReactNode
 }) {
   return (
     <ButtonPrimitive
@@ -40,7 +43,18 @@ export function Button({
       {...props}
     >
       {loading && <span className="prelude-button__spinner" aria-hidden="true" />}
-      <span className="prelude-button__content">{children}</span>
+      <span className="prelude-button__content">
+        {shape === 'hold' ? (
+          <>
+            {/* The words keep their box while held so the control never changes width under
+                the finger; `held` is what replaces them. */}
+            <span className="prelude-button__label">{children}</span>
+            {held}
+          </>
+        ) : (
+          children
+        )}
+      </span>
     </ButtonPrimitive>
   )
 }

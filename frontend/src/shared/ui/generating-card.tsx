@@ -17,3 +17,14 @@ export function GeneratingCard({ title, hint }: { title: ReactNode; hint: ReactN
     </div>
   )
 }
+
+/** The generating card as the product presents it: alone, centred on a plain sheet that fills
+ *  whatever region is waiting. Both axes are declared so the card centres the same way in a
+ *  flex column and in a grid cell — the two places that need it. */
+export function GeneratingSurface({ title, hint }: { title: ReactNode; hint: ReactNode }) {
+  return (
+    <div className="flex min-h-0 w-full flex-1 items-center justify-center bg-surface p-xl">
+      <GeneratingCard title={title} hint={hint} />
+    </div>
+  )
+}

@@ -299,6 +299,15 @@ export function createDemoState(): DemoState {
         sessionCount: 2,
         inUse: true,
       },
+      {
+        // Deletion is only offered for a resume no session has used, so the demo set needs
+        // one; every other row here is deliberately in use.
+        id: 4,
+        fileName: '数据工程师简历.pdf',
+        createdAt: '2026-09-03T09:15:00+08:00',
+        sessionCount: 0,
+        inUse: false,
+      },
     ],
     profile: {
       accountId: 1,
@@ -622,6 +631,14 @@ async function respond(route: Route, state: DemoState) {
       username: draft.username?.trim() || state.profile.username,
       email: draft.email?.trim() ?? state.profile.email,
       themePreference: draft.themePreference ?? state.profile.themePreference,
+      revision: state.profile.revision + 1,
+    }
+    return fulfillJson(route, state.profile)
+  }
+  if (path === '/api/user/avatar' && method === 'POST') {
+    state.profile = {
+      ...state.profile,
+      avatarUrl: '/api/assets/avatar',
       revision: state.profile.revision + 1,
     }
     return fulfillJson(route, state.profile)

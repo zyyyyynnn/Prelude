@@ -1,3 +1,4 @@
+import { SessionGroupLabel } from '@/shared/ui/session-row'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BarChart3, PanelLeft, Plus, Settings } from 'lucide-react'
@@ -136,11 +137,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
       >
         <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
           <SidebarPane kind="sessions" visible={!collapsed}>
-            {sessions.isPending && (
-              <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">
-                正在加载会话
-              </p>
-            )}
+            {sessions.isPending && <SessionGroupLabel>正在加载会话</SessionGroupLabel>}
             {!sessions.isPending &&
               sessionGroups.map((group) => (
                 <SessionGroup

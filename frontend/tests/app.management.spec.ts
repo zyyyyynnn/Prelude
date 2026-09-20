@@ -140,3 +140,62 @@ test('@smoke saves profile changes against the current revision', async ({ page 
   expect(writes[0].body).toMatchObject({ username: 'demo-renamed', expectedRevision: 0 })
   await expect.poll(() => state.profile.revision).toBe(1)
 })
+
+test('@smoke persists the theme preference and applies it before the save lands', async ({
+  page,
+}) => {
+  const dialog = await openSettings(page, '主题')
+  const dark = dialog.getByRole('radio', { name: /暗色/ })
+  await expect(dark).toHaveAttribute('aria-checked', 'false')
+
+  await dark.click()
+  await expect(dark).toHaveAttribute('aria-checked', 'true')
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+
+  await dialog.getByRole('button', { name: '保存主题' }).click()
+  const writes = requested('PUT', '/api/user/profile')
+  expect(writes).toHaveLength(1)
+  expect(writes[0].body).toMatchObject({ themePreference: 'dark' })
+  await expect(toast(page, '主题已保存')).toBeAttached()
+})
+
+test('@smoke reveals the password fields only while asked', async ({ page }) => {
+  const dialog = await openSettings(page, '账号资料')
+  const current = dialog.getByLabel('旧密码')
+  const toggle = dialog.locator('[data-slot="field-actions"]:has(#oldPassword) button')
+  await expect(current).toHaveAttribute('type', 'password')
+
+  await toggle.click()
+  await expect(current).toHaveAttribute('type', 'text')
+
+  await toggle.click()
+  await expect(current).toHaveAttribute('type', 'password')
+})
+
+test('@smoke uploads an avatar and keeps the returned profile', async ({ page }) => {
+  const dialog = await openSettings(page, '账号资料')
+  await dialog.locator('#avatar-upload').setInputFiles({
+    name: '头像.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('89504e470d0a1a0a', 'hex'),
+  })
+
+  expect(requested('POST', '/api/user/avatar')).toHaveLength(1)
+  await expect(toast(page, '头像已更新')).toBeAttached()
+})
+
+test('@smoke deletes a resume only behind the confirmation', async ({ page }) => {
+  const dialog = await openSettings(page, '简历管理')
+  const row = dialog.getByText('数据工程师简历.pdf')
+  await expect(row).toBeVisible()
+
+  await dialog.getByRole('button', { name: '删除 数据工程师简历.pdf' }).click()
+  // The confirm sheet is modal, so the row is hidden behind it rather than gone: the thing
+  // worth locking is that nothing has been deleted yet.
+  expect(requested('DELETE', /^\/api\/resume\//)).toHaveLength(0)
+
+  await page.getByRole('button', { name: '删除', exact: true }).click()
+  expect(requested('DELETE', '/api/resume/4')).toHaveLength(1)
+  await expect(toast(page, '简历已删除')).toBeAttached()
+  await expect(row).toHaveCount(0)
+})

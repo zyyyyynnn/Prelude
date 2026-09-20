@@ -4,8 +4,6 @@ import { configureApi } from '@/shared/api/client'
 import { fetchCurrentUser, logout } from './api'
 import { AuthContext, type AuthStatus } from './auth-context'
 
-export type { AuthStatus } from './auth-context'
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient()
   const [status, setStatus] = useState<AuthStatus>('checking')
