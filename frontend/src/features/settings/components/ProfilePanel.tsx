@@ -129,7 +129,7 @@ export function ProfilePanel() {
             />
           </Field>
         </div>
-        <section className="grid gap-sm border-t border-line-decor pt-md">
+        <section className="grid gap-sm border-t border-border pt-md">
           <h3 className="type-subtitle">修改密码</h3>
           <div className="form-grid gap-md">
             <PasswordField

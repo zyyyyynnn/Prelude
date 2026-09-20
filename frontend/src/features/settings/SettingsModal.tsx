@@ -99,7 +99,7 @@ export function SettingsModal({
     <Dialog open={open} onOpenChange={onOpenChange} title="全局设置" layout="workspace">
       <div className="flex size-full min-h-0 overflow-hidden rounded-lg elevated-modal">
         <aside
-          className="flex w-(--layout-settings-sidebar-inline-size) flex-col border-e border-e-border bg-surface py-md"
+          className="flex w-(--layout-settings-sidebar-inline-size) flex-col border-e border-e-border py-md"
           data-slot="settings-sidebar"
         >
           <nav className="flex flex-1 flex-col gap-sm px-sm" aria-label="设置分类">
@@ -127,7 +127,7 @@ export function SettingsModal({
             </button>
           </div>
         </aside>
-        <main className="flex min-w-0 flex-1 flex-col bg-bg" data-slot="settings-main">
+        <main className="flex min-w-0 flex-1 flex-col" data-slot="settings-main">
           <Suspense
             fallback={
               <div className="empty-state" role="status">

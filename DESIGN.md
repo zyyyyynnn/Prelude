@@ -123,7 +123,7 @@ Tooltip 反过来用文字色做底、表面色做字（`--color-text-primary` /
 
 Tooltip 内容使用 `--font-size-xs`、token padding 和 `--content-tooltip-max-inline-size`。primitive 统一 trigger 间距和 opacity 动效。截断文字的定位锚点是完整交互控件。
 
-Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overlay`，Dialog 使用 `--shadow-modal`。`.prelude-dialog` 自带 `--spacing-xl` 内边距，是可直接放内容的浮层；`--workspace` 变体是 full-bleed 壳层，内边距与分区由调用点拥有（设置面板即此形态）。Confirm 复用 `.prelude-dialog` 的 chrome，只覆写自身宽度（`--layout-confirm-max-inline-size`）与动作行——动作按钮等分铺满整行，不缩在右侧。
+Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overlay`，Dialog 使用 `--shadow-modal`。`.prelude-dialog` 自带 `--spacing-xl` 内边距，是可直接放内容的浮层；`--workspace` 变体是 full-bleed 壳层，内边距与分区由调用点拥有（设置面板即此形态）。壳层自身就是 `--color-surface`，分区不再各自铺一层底色——分割线只在 surface 上成立，铺成 `--color-bg` 会让同一条线几乎消失。Confirm 复用 `.prelude-dialog` 的 chrome，只覆写自身宽度（`--layout-confirm-max-inline-size`）与动作行——动作按钮等分铺满整行，不缩在右侧。
 
 ### Composition
 
@@ -133,11 +133,13 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 - `layout="card"` 用于随内容增高的自足块（组件实验台的每个面板、岗位管理的两块面板）：自带边界、圆角、`--spacing-lg` 内边距与 `elevated-whisper`，标题行与内容区之间同样是 `--spacing-lg`。
 - `level` 决定标题用 `h2` 还是 `h3`，并随之选择 `type-title` 或 `type-subtitle`；`eyebrow` 是标题上方的 `type-eyebrow` 引导标签，`description` 是标题下方的 `type-meta` 说明，`actions` 是右侧操作区，`footer` 是带上下边界的底部动作条。
 
-面板内部再分层时不用空白，用一条细线加内边距：小节容器写 `grid gap-sm border-t border-line-decor pt-md`，细线上下各留 `--spacing-md` 16px，小节标题与其控件仍按 `--spacing-sm` 8px 绑定。分隔线必须是 `--color-line-decor`——`--color-border` 与 `--color-border-warm` 放在 `--color-bg` 上对比不足，线会看不见。设置弹窗的「修改密码」与「高级设置」即此形态，组件实验台的 Field 面板给出同一份样例。
+全项目只有一种细分割线：`--border-width-default` 1px + `--color-border`，并且只画在 `--color-surface` 上（侧栏主操作下方那条线即基准，实测线色对表面色对比度 1.10）。`--color-border-warm` 是控件自身的边，`--color-line-decor` 只服务落在页面底色上的装饰边缘（登录卡），两者都不是分割线。需要更强的分层感时改间距与标题层级，不改线的颜色或粗细。
+
+一条分割线必须两侧都有留白，且两侧由同一个容器给出：线附着在上方块时，上方由该块的 `padding` 给出、下方由容器的 `gap` 给出；附着在下方块时反之。任何一侧为 0 都是调用点把内容贴到了线上。面板内部再分层时，小节容器写 `grid gap-sm border-t border-border pt-md`，配合父容器的 `gap-md` 让细线上下各 16px，小节标题与其控件仍按 `--spacing-sm` 8px 绑定。设置弹窗的「修改密码」与「高级设置」即此形态，组件实验台的 Field 面板给出同一份样例；`npm run verify:visual` 会实测每个分割线两侧的间隙不小于 `--spacing-sm`。
 
 重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。页面区段仍用无框布局与受控内容宽度，只有需要明确边界的数据对象才升级为 `card`。
 
-侧栏分三层：`@utility sidebar-frame` 拥有 rail 的盒子（宽度、边框、表面、折叠宽度与过渡），`@utility app-sidebar` 只加页面锚定（sticky、层级、`100vh`，并把 frame 撑满高度），`@utility sidebar-rail` 只拥有内容作用域（图标内边距的推导，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`：brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚。产品 shell 是 `app-sidebar > SidebarFrame`，实验台让同一个 `SidebarFrame` 直接落在 `bg-bg` 上——盒子由组件拥有，宽度就不会被检阅用的边框偷走。折叠状态由两处局部属性表达：frame 与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入；图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 与真实 shell 表现一致。
+侧栏分三层：`@utility sidebar-frame` 拥有 rail 的盒子（宽度、边框、表面、折叠宽度与过渡），`@utility app-sidebar` 只加页面锚定（sticky、层级、`100vh`，并把 frame 撑满高度），`@utility sidebar-rail` 只拥有内容作用域（图标内边距的推导，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`：brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚。主操作下方那条分割线的下线由 frame 自己的 `gap-md` 给出，调用点不补 padding——实验台曾补一个 `pt-sm` 而产品没补，同一个组件因此有两种渲染。产品 shell 是 `app-sidebar > SidebarFrame`，实验台让同一个 `SidebarFrame` 直接落在 `bg-bg` 上——盒子由组件拥有，宽度就不会被检阅用的边框偷走。折叠状态由两处局部属性表达：frame 与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入；图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 与真实 shell 表现一致。
 
 报告是页面表面，不是卡片：它的分栏是 `auto-fit minmax(200px, 1fr)`，三维评分要三列并排需要约 632px 的纸面内宽。检阅它时给它与产品相同的内容宽度（`--layout-workspace-content-max-inline-size`），不要塞进 `Panel layout="card"`——卡片自己的内边距会吃掉最后一列，让第三个板块换行。
 

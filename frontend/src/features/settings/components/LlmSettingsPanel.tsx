@@ -167,7 +167,7 @@ function LlmSettingsForm({
           </div>
         </div>
       </Field>
-      <section className="grid gap-sm border-t border-line-decor pt-md">
+      <section className="grid gap-sm border-t border-border pt-md">
         <h3 className="type-subtitle">高级设置</h3>
         <div className="form-grid gap-md">
           {state.selectedCapability &&

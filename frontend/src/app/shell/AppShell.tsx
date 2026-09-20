@@ -144,7 +144,11 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
       >
         <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
           <SidebarPane kind="sessions" visible={!collapsed}>
-            {sessions.isPending && <p className="ms-xs text-xs text-text-tertiary">正在加载会话</p>}
+            {sessions.isPending && (
+              <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">
+                正在加载会话
+              </p>
+            )}
             {!sessions.isPending &&
               sessionGroups.map((group) => (
                 <SessionGroup

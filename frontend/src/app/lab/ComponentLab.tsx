@@ -118,7 +118,7 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
           <SidebarAction collapsed={collapsed} label="设置" icon={<Settings />} onClick={noop} />
         }
       >
-        <nav className="flex flex-col gap-sm pt-sm" aria-label="实验台导航">
+        <nav className="flex flex-col gap-sm" aria-label="实验台导航">
           <SidebarAction
             collapsed={collapsed}
             label="工作区"
@@ -294,7 +294,7 @@ export function ComponentLab() {
               <Input id="lab-disabled" disabled placeholder="不可编辑" />
             </Field>
           </div>
-          <div className="grid gap-md border-t border-line-decor pt-md">
+          <div className="grid gap-md border-t border-border pt-md">
             <h3 className="type-subtitle">小节</h3>
             <p className="type-meta">
               面板内再分层时，用一条细线加 16px 内边距把小节与上方内容分开：细线上下各留 16px，

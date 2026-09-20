@@ -110,7 +110,10 @@ export function SidebarFrame({
         </div>
         <SidebarToggle collapsed={collapsed} onToggle={onToggle} />
       </header>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-sm">
+      {/* The frame owns the rail's vertical rhythm: the divider under the primary
+          action takes its upper gap from that block's own padding and its lower gap
+          from this container's gap, so no call site can glue content onto the line. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-md overflow-hidden p-sm">
         <div className="border-b border-border pb-md">{primary}</div>
         {children}
       </div>

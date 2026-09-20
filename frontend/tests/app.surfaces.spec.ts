@@ -681,6 +681,25 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   })
 })
 
+test('@visual keeps every hairline divider clear of the content it separates', async ({ page }) => {
+  await installApi(page)
+  await page.goto('/interview')
+  await expect(page.getByRole('button', { name: '开始新面试' })).toBeVisible()
+  await expect(dividerViolations(page)).resolves.toEqual([])
+
+  await page.getByRole('button', { name: '设置' }).click()
+  await expect(page.getByRole('heading', { name: '修改密码' })).toBeVisible()
+  await expect(dividerViolations(page)).resolves.toEqual([])
+  await page.getByRole('button', { name: '模型管理' }).click()
+  await expect(page.getByRole('heading', { name: '高级设置' })).toBeVisible()
+  await expect(dividerViolations(page)).resolves.toEqual([])
+  await page.keyboard.press('Escape')
+
+  await page.goto('/components-lab')
+  await expect(page.getByRole('heading', { name: 'App rail' })).toBeVisible()
+  await expect(dividerViolations(page)).resolves.toEqual([])
+})
+
 test('@visual keeps the light component lab pixel-stable', async ({ page }) => {
   await gotoComponentLab(page, 'light')
   await expect(page).toHaveScreenshot('components-lab-light.png', { animations: 'disabled' })
@@ -850,5 +869,77 @@ async function expectIconCentered(
 async function settleOverlay(overlay: ReturnType<Page['locator']>) {
   await overlay.evaluate(async (element) => {
     await Promise.all(element.getAnimations().map((animation) => animation.finished))
+  })
+}
+
+/* A hairline that separates two blocks has to breathe on both sides. Divider elements are
+   the ones with a single 1px edge, no radius and no fill of their own — that combination is
+   what distinguishes a rule from a card edge or a control border. The gap under a line comes
+   from its container, so a zero here means a call site glued content onto the divider. */
+async function dividerViolations(page: Page) {
+  return page.evaluate(() => {
+    const px = (value: string) => Number.parseFloat(value) || 0
+    const edges = (style: CSSStyleDeclaration) =>
+      [
+        style.borderTopWidth,
+        style.borderRightWidth,
+        style.borderBottomWidth,
+        style.borderLeftWidth,
+      ].filter((width) => px(width) >= 1)
+    const inFlow = (node: Element) => {
+      const style = getComputedStyle(node)
+      return (
+        style.position !== 'absolute' &&
+        style.position !== 'fixed' &&
+        style.display !== 'none' &&
+        style.visibility !== 'hidden'
+      )
+    }
+    const contentTop = (el: Element): number => {
+      const kids = Array.from(el.children).filter(inFlow)
+      if (!kids.length) return el.getBoundingClientRect().top + px(getComputedStyle(el).paddingTop)
+      return Math.min(...kids.map(contentTop))
+    }
+    const contentBottom = (el: Element): number => {
+      const kids = Array.from(el.children).filter(inFlow)
+      if (!kids.length)
+        return el.getBoundingClientRect().bottom - px(getComputedStyle(el).paddingBottom)
+      return Math.max(...kids.map(contentBottom))
+    }
+    const floor = px(getComputedStyle(document.documentElement).getPropertyValue('--spacing-sm'))
+    const name = (el: Element) =>
+      `${el.tagName.toLowerCase()}.${(el.getAttribute('class') ?? '').split(/\s+/).slice(0, 3).join('.')}`
+    const bad: string[] = []
+    for (const el of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
+      if (!inFlow(el) || el.closest('svg')) continue
+      const style = getComputedStyle(el)
+      if (edges(style).length !== 1 || px(style.borderRadius) > 0) continue
+      if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') continue
+      const box = el.getBoundingClientRect()
+      if (box.width < 8 || box.height < 2) continue
+      const isTop = px(style.borderTopWidth) >= 1
+      const lineY = isTop ? box.top : box.bottom
+      const overlaps = (other: Element) => {
+        const rect = other.getBoundingClientRect()
+        return rect.right > box.left + 1 && rect.left < box.right - 1
+      }
+      const siblings = el.parentElement
+        ? Array.from(el.parentElement.children).filter((s) => s !== el && inFlow(s) && overlaps(s))
+        : []
+      const next = siblings.find((s) => s.getBoundingClientRect().top >= box.top - 1)
+      const previous = [...siblings]
+        .reverse()
+        .find((s) => s.getBoundingClientRect().bottom <= box.top + 1)
+      const above = isTop
+        ? previous
+          ? lineY - contentBottom(previous)
+          : floor
+        : lineY - contentBottom(el)
+      const below = isTop ? contentTop(el) - lineY : next ? contentTop(next) - lineY : floor
+      if (above < floor - 0.6 || below < floor - 0.6) {
+        bad.push(`${name(el)} — above ${Math.round(above)}px, below ${Math.round(below)}px`)
+      }
+    }
+    return bad
   })
 }

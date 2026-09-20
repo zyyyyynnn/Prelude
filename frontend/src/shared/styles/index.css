@@ -25,7 +25,6 @@
   --color-focus-action: var(--color-focus-action);
   --color-coral: var(--color-coral);
   --color-line-decor: var(--color-line-decor);
-  --color-line-decor-light: var(--color-line-decor-light);
 
   /* Spacing — the 4px ladder, exposed as theme keys so p-/gap-/mt- never need a
      raw value. Icon and control boxes are sized from --ui-glyph-*, not from here. */
@@ -209,7 +208,6 @@
   --color-ring-deep: #c2c0b6;
 
   --color-line-decor: #c8c6be;
-  --color-line-decor-light: #dddbd3;
 
   /* ── Component semantic tokens (mapped to the warm product palette) ── */
   --background: var(--color-bg);
@@ -403,7 +401,6 @@
   --color-ring: #655c51;
   --color-ring-deep: #807568;
   --color-line-decor: #514a41;
-  --color-line-decor-light: #6a6156;
   --brand-metaballs-1: #6b5147;
   --brand-metaballs-2: #8a6a5c;
   --brand-metaballs-3: #b18a78;
@@ -585,9 +582,6 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   min-height: 100vh;
   background: var(--color-bg);
 }
-
-/* ── Composer dropdown ── */
-/* ── Settings select dropdown ── */
 
 .brand-metaballs {
   position: relative;

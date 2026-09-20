@@ -163,11 +163,21 @@
 - [ ] **实验台像素判据只覆盖首屏**：`components-lab-*-win32` 是视口截图（1440×720），本轮 rail/report/resume 的改动全在首屏以下，它一次都没有报警。把画廊改成按面板各自的 locator 基线（约 12 张）才能把这条判据铺满，代价是基线维护与字体/WebGL 抖动面。
 - [ ] **`capture:surfaces` manifest 追溯性**：`afterAll` 记 `git rev-parse HEAD`，而图在提交前生成，manifest 恒落后一个 commit（现记 `3f87ba2`，HEAD 已是本轮提交）。
 
+### 阶段七b：间距与分割线全量清点（实测驱动）
+
+- [x] 清点方法：用一次性 Playwright 探针遍历 8 个界面（登录、工作台、设置五个分区、看板、实验台）里每一条 1px 实线边，记录线色、背后表面、线上下两侧的实测间隙，共 167 条。
+- [x] **色号离群只有一处**：全应用的分割线、卡片边、面板头/尾、报告分段、列表行都用 `--color-border`；唯一例外是上一轮我为设置小节引入的 3 个 `border-line-decor` 调用点（实测线背 `--color-bg` 时 `--color-border` 对比度仅 1.03，才被迫加深）。按「以侧边栏为准」统一回 `--color-border`，同时把设置弹窗内容列从 `bg-bg` 回到 Dialog 壳层自身的 `--color-surface`——否则统一后的线在该底色上不可见。实测两处小节线的背衬与侧栏同为 `rgb(250,249,245)`，`bg-surface` 在设置侧栏上随之成为冗余声明，一并删除。
+- [x] **侧栏「进行中」贴线**：主操作下的分割线实测上 27px / 下 0px（线的下线没人给）。改为 `SidebarFrame` 中间容器 `gap-md`，实测变成 27 / 16；同时删除实验台 nav 上补偿性的 `pt-sm`——产品没有它，同一个组件因此有两种渲染，属上一轮 rail 拆分的残留。
+- [x] 加载中提示与分组标题同层级（`AppShell` 的「正在加载会话」原 `ms-xs text-xs`，与刚统一的空态写法不一致）。
+- [x] 新增 `@visual` 门禁：遍历分割线角色元素（恰好一侧 1px、无圆角、背景透明），断线两侧间隙均 ≥ `--spacing-sm`。红测：去掉 `gap-md` 后报 `div.border-b.border-border.pb-md — above 27px, below 0px`。
+- [x] 死 token 与死注释清理：`--color-line-decor-light` 全仓零消费者（`verify:tokens` 的"声明未消费"检查因 `@theme` 桥接行而漏判）；`index.css` 里两条指向已删除分区的空注释（Composer/Settings dropdown）。
+- [x] 清点中判为**非缺陷**、避免后人重复追查的项：`list-row`/`option-card` 是整圈 1px 盒边（卡片不是分割线）；`row-label-end` 在 `auto-fit` 网格里没有同列后继，探针的"下一条"会跨列误报负值；`workspace-header` 下线 49px 是页面内容自己的内边距；`.brand-metaballs` 的 1px 是 `color-mix` 装饰环；焦点态把控件边框染成 `--color-focus-*` 不是分割线。
+
 ---
 
 ## 7. 关键风险与留存问题
 
-1. **视觉像素回归**：`npm run verify:visual` 现有 8 例、6 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、组件实验台亮/暗、404 正文）。`capture:surfaces` 的 27 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
+1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、6 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、组件实验台亮/暗、404 正文），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 27 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
 3. **`..application..` 禁令的适用面**：只禁 `com.baomidou..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。
 4. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。
