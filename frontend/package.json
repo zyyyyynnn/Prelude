@@ -18,7 +18,6 @@
     "verify:a11y": "playwright test --grep @a11y",
     "verify:visual": "playwright test --grep @visual --workers=1",
     "snapshot:update": "playwright test --grep @visual --workers=1 --update-snapshots",
-    "capture:visual": "playwright test --grep @visual",
     "capture:surfaces": "playwright test tests/app.surfaces-capture.spec.ts --workers=1",
     "capture:demo": "playwright test --grep @demo --workers=1",
     "verify:cascade": "node scripts/verify-ui-cascade.cjs"

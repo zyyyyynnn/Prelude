@@ -38,12 +38,10 @@ backend/.factorypath
 backend/.project
 backend/.settings/
 
-# Workspace-local Playwright browser cache. Mirrors the
-# `PLAYWRIGHT_BROWSERS_PATH=${{ github.workspace }}/.cache/ms-playwright`
-# setting in .github/workflows/ci.yml — local devs who copy that env var
-# for parity with CI get a gitignored, ephemeral cache directory.
+# Ephemeral tool caches kept inside the workspace. CI does not use this path: it sets
+# `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` and runs the runner's own Microsoft Edge channel,
+# so only local runs leave anything here.
 .cache/
-backend/uploads/
 backend/startup*.log
 
 target/
