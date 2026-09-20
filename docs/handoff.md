@@ -6,7 +6,7 @@
 >
 > **当前状态**：本地全量检查在当前 HEAD 通过——后端 255 个 `@Test`（58 个类，其中 15 个按环境变量启用；四个依赖服务在跑时 0 跳过），前端 12 道 CI 门禁同义命令全绿，`verify:visual` 22 例 / 44 张 `*-win32.png` 基线。
 >
-> **远端落后**：`origin/arch/optimization-core-path-tests` 停在 `4585bfd`，其后 **16 个提交从未进入 GitHub Actions**。[Run 35323868049](https://github.com/zyyyyynnn/Prelude/actions/runs/35323868049) 的绿灯只覆盖到 `4585bfd` 为止的状态，不能读作"当前分支已过 CI"；推送需另行授权。
+> **远端状态**：推送前 `origin/arch/optimization-core-path-tests` 停在 `4585bfd`，其后 23 个提交从未进入 GitHub Actions。[Run 35323868049](https://github.com/zyyyyynnn/Prelude/actions/runs/35323868049) 的绿灯只覆盖到 `4585bfd` 为止的状态，不能读作"当前分支已过 CI"；本批推送后这一段区间才第一次真正跑过 CI，结论以 Actions 上对应 run 为准。
 >
 > **使用说明**：本文件为接手下一个治理会话的全景交接真相源。§1–§4 是当时的调研与诊断，其中 sentrux 分数与 PR #67 diff 两节已标为历史存档，结论以 §6 各阶段记录为准。
 
