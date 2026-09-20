@@ -65,7 +65,7 @@ git diff --check
 
 ## 视觉基线
 
-`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。组件检查面按**面板**逐张比对（亮/暗各 15 张，`component-lab-<panel>-<scheme>.png`），面板清单写在测试里，新增面板未登记会先失败在标题断言上；面板高于视口时测试会先按实测差额扩窗再取图（滚动容器不揭示的像素不会被绘制），含 WebGL 品牌球的面板把该元素 mask 掉，改用几何断言。有意改变视觉时用它更新基线，不要手工改图：
+`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。组件检查面按**面板**逐张比对（亮/暗各 14 张，`component-lab-<panel>-<scheme>.png`），面板清单写在测试里，新增面板未登记会先失败在标题断言上；面板高于视口时测试会先按实测差额扩窗再取图（滚动容器不揭示的像素不会被绘制），含 WebGL 品牌球的面板把该元素 mask 掉，改用几何断言。有意改变视觉时用它更新基线，不要手工改图：
 
 ```powershell
 npm --prefix frontend run snapshot:update

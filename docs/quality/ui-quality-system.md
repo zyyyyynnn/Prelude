@@ -13,7 +13,7 @@
 | `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
 | `npm run verify:dark` | 暗色偏好启动恢复 |
 | `npm run verify:a11y` | 真实浏览器 Axe 检查 |
-| `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度，以及 404 面的像素基线；组件检查面按面板逐张比对（亮/暗各 15 张，高于视口的面板先按实测差额扩窗再取图，WebGL 品牌球 mask 后改用几何断言）；另有两条实测断言——折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合，以及每个分割线角色元素两侧的间隙不小于 `--spacing-sm` |
+| `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度，以及 404 面的像素基线；组件检查面按面板逐张比对（亮/暗各 14 张，高于视口的面板先按实测差额扩窗再取图，WebGL 品牌球 mask 后改用几何断言）；另有两条实测断言——折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合，以及每个分割线角色元素两侧的间隙不小于 `--spacing-sm` |
 | `npm run build` | Vite+ 生产构建 |
 | `npm run test:smoke` | React 开发 StrictMode 下真实浏览器核心行为与客户端路由 |
 | `npm audit --omit=dev` | 生产依赖漏洞门禁 |

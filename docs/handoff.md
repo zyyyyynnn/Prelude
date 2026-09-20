@@ -187,12 +187,13 @@
 - [x] **重复数据**：实验台的 `themeChoices` 是 `ThemePanel` 内 `themeOptions` 的手抄副本，现由 `features/settings` 一处导出、两侧同引；`ReasoningLevel` 与 `REASONING_LABELS` 曾在 `features/interview/types.ts` 与 `features/settings/types.ts` 各定义一份（interview 的标签表实际无人消费），删去副本、interview 改从 settings 引用。
 - [x] **非样例件与假文案清理**：删除产品不存在的「通知」Bell 按钮（Button 的 Box 组与 Tooltip 组曾各摆一个同款）；DropdownMenu 面板的「新建会话/排序方式/已归档/JD 匹配」是产品没有的菜单，条目改为角色命名（菜单项、单选项一、多选项、禁用项…）；Toast/Confirm 的「已保存到工作台」「模型额度偏低」等伪业务文案改为角色命名；Field 小节的思考深度选项改用 `REASONING_LABELS`；`sort` 状态曾被 Field 小节与下拉菜单共用（改一处会移动另一处），拆为 `reasoning` 与 `sort`；Empty & Error 的重试按钮换用 `RefreshCw`。
 - [x] 验证：`vp check`、`verify:ui`、`verify:tokens`（209 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`（4）、`verify:dark`（2）、`verify:a11y`（1）全通过；实验台 30 张基线按新判据重生成并逐张复核。
+- [x] **同轮复核再清三处（用户指出）**：① Panel 面板的正文把面板 `description` 已声明的契约又说了一遍（「标题行不随滚动移动，内容区自带内边距并独立滚动」），正文改为不含信息的示例文案，契约只在描述里出现一次。② SegmentedControl 面板的「会话/报告/看板」是产品里不存在的第三套条目，改为产品那两组真实条目各一份（登录/注册、面试/报告）。③ Report blocks 整块是 Report 整页同一段的重复渲染（`ScoreCard`、轮播导航、`Trait`、`ReviewDetail` 都在整页里），删除该面板与其两张基线；`Trait` 的空态改由 `sampleReport.weaknesses: []` 在整页里呈现，覆盖不丢。`features/report/index.ts` 随之收回到确有外部消费者的符号（`ReportCarouselNavigation`/`ReviewDetail`/`ScoreCard`/`Trait` 已无外部调用点）。实验台 15 → 14 个面板、28 张基线，上述检查与 `capture:surfaces` 重跑全通过。
 
 ---
 
 ## 7. 关键风险与留存问题
 
-1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、34 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 30 张），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
+1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、32 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 28 张），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
 3. **`..application..` 禁令的适用面**：只禁 `com.baomidou..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。
 4. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。

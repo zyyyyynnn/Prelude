@@ -715,7 +715,6 @@ const labPanels = [
   'App rail',
   'List & Navigation',
   'Report',
-  'Report blocks',
   'Empty & Error',
   'DropdownMenu',
   'Overlay & Feedback',

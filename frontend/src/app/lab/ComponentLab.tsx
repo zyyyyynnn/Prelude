@@ -18,13 +18,7 @@ import { REASONING_LABELS, sections, themeOptions } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { RoseThree } from '@/shared/brand/RoseThree'
-import {
-  ReportCarouselNavigation,
-  ReviewDetail,
-  ScoreCard,
-  StructuredReport,
-  Trait,
-} from '@/features/report'
+import { StructuredReport } from '@/features/report'
 import { ResumeRow } from '@/features/resume'
 import {
   ignoreDelete,
@@ -200,7 +194,8 @@ export function ComponentLab() {
   const feedback = useFeedback()
   const [model, setModel] = useState('first')
   const [llmConfig, setLlmConfig] = useState(sampleModelConfig)
-  const [view, setView] = useState('session')
+  const [authMode, setAuthMode] = useState('login')
+  const [workspaceView, setWorkspaceView] = useState('interview')
   const [sort, setSort] = useState('recent')
   const [reasoning, setReasoning] = useState<ReasoningLevel>('AUTO')
   const [jdMatch, setJdMatch] = useState(true)
@@ -210,7 +205,6 @@ export function ComponentLab() {
   const [themeChoice, setThemeChoice] = useState('light')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
-  const [sampleIndex, setSampleIndex] = useState(0)
 
   const noop = () => undefined
 
@@ -244,13 +238,14 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="Panel"
-          description="shared/ui/panel · 标题行拥有标题、说明与右侧操作区；fill 形态撑满给定高度，内容超出时只有内容区滚动"
+          description="shared/ui/panel · 标题行拥有标题、说明与右侧操作区；fill 形态撑满给定高度，只有内容区滚动"
         >
           <div className="grid h-(--layout-demo-frame-block-size) w-full overflow-hidden rounded-lg border border-border">
             <Panel title="面板标题" actions={<Button>主要操作</Button>}>
-              <p className="type-body">标题行不随滚动移动，内容区自带内边距并独立滚动。</p>
-              <p className="type-body">正文示例，用于撑出可滚动的内容。</p>
-              <p className="type-body">正文示例，用于撑出可滚动的内容。</p>
+              <p className="type-body">示例正文一。</p>
+              <p className="type-body">示例正文二。</p>
+              <p className="type-body">示例正文三。</p>
+              <p className="type-body">示例正文四。</p>
             </Panel>
           </div>
         </Panel>
@@ -358,18 +353,30 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="SegmentedControl"
-          description="shared/ui/segmented-control · 单选分段轨道，滑块跟随当前项"
+          description="shared/ui/segmented-control · 单选分段轨道，滑块跟随当前项；两组都是产品里那个控件的真实条目"
         >
-          <SegmentedControl
-            ariaLabel="实验台视图"
-            items={[
-              { value: 'session', label: '会话' },
-              { value: 'report', label: '报告' },
-              { value: 'analytics', label: '看板' },
-            ]}
-            value={view}
-            onValueChange={setView}
-          />
+          <DemoGroup label="账号操作">
+            <SegmentedControl
+              ariaLabel="实验台账号操作"
+              items={[
+                { value: 'login', label: '登录' },
+                { value: 'register', label: '注册' },
+              ]}
+              value={authMode}
+              onValueChange={setAuthMode}
+            />
+          </DemoGroup>
+          <DemoGroup label="工作区视图">
+            <SegmentedControl
+              ariaLabel="实验台工作区视图"
+              items={[
+                { value: 'interview', label: '面试' },
+                { value: 'report', label: '报告' },
+              ]}
+              value={workspaceView}
+              onValueChange={setWorkspaceView}
+            />
+          </DemoGroup>
         </Panel>
 
         <Panel
@@ -542,50 +549,6 @@ export function ComponentLab() {
           </div>
           <div className="max-w-(--layout-workspace-content-max-inline-size)">
             <StructuredReport report={sampleReport} />
-          </div>
-        </section>
-
-        <section
-          className="grid max-w-(--layout-workspace-content-max-inline-size) gap-lg"
-          data-slot="lab-report-blocks"
-        >
-          <div className="grid gap-xs">
-            <h2 className="type-title">Report blocks</h2>
-            <p className="type-meta">
-              features/report · 轮播导航、空态分件与逐条复盘字段，都是整页里同一批组件
-            </p>
-          </div>
-          <div className="max-w-(--layout-workspace-content-max-inline-size)">
-            <div className="document-sheet w-full">
-              <ScoreCard report={sampleReport} />
-              <section className="border-t border-border py-lg">
-                <header className="mb-lg flex items-center justify-between gap-lg">
-                  <div>
-                    <p className="type-eyebrow">阶段复盘</p>
-                    <h2 className="type-title text-balance">轮播导航</h2>
-                  </div>
-                  <ReportCarouselNavigation
-                    ariaLabel="实验台轮播导航"
-                    index={sampleIndex}
-                    count={3}
-                    previousLabel="上一项"
-                    nextLabel="下一项"
-                    onPrevious={() => setSampleIndex((value) => Math.max(0, value - 1))}
-                    onNext={() => setSampleIndex((value) => Math.min(2, value + 1))}
-                  />
-                </header>
-                <div className="report-columns gap-xl">
-                  <Trait title="核心优势" items={[]} empty="暂无可归纳的优势。" />
-                  <Trait title="主要短板" items={[]} empty="暂无已沉淀的薄弱点。" />
-                </div>
-              </section>
-              <section className="border-t border-border py-lg">
-                <div className="grid gap-md">
-                  <ReviewDetail label="评分理由" value="评分理由示例文本。" />
-                  <ReviewDetail label="改进建议" value="改进建议示例文本。" />
-                </div>
-              </section>
-            </div>
           </div>
         </section>
 

@@ -134,7 +134,9 @@ export const sampleReport: StructuredInterviewReport = {
     },
   ],
   strengths: ['优势条目一', '优势条目二'],
-  weaknesses: ['短板条目一'],
+  /** Left empty on purpose: the real page then renders 主要短板's empty state, so the
+   *  gallery does not need a second panel to show the same `Trait` twice. */
+  weaknesses: [],
   trainingPlan: {
     threeDay: ['三日计划条目一', '三日计划条目二'],
     sevenDay: ['七日计划条目一'],
