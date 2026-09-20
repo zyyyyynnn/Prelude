@@ -36,6 +36,15 @@ function requested(method: string, path: string | RegExp) {
   )
 }
 
+/* `requested()` snapshots a list the page keeps appending to, so reading a positive count
+   straight after a click is a race the local machine usually wins and CI loses — the avatar
+   upload failed exactly that way. Await the count first, then read what was sent. Assertions
+   that a request was *not* made stay synchronous: polling one would make them vacuous. */
+async function sentRequests(method: string, path: string | RegExp, count: number) {
+  await expect.poll(() => requested(method, path)).toHaveLength(count)
+  return requested(method, path)
+}
+
 test('@smoke creates a custom position and lists it immediately', async ({ page }) => {
   const dialog = await openSettings(page, '岗位管理')
   await dialog.getByLabel('岗位名称').fill('可靠性工程师')
@@ -135,9 +144,8 @@ test('@smoke saves profile changes against the current revision', async ({ page 
   await dialog.getByLabel('用户名').fill('demo-renamed')
   await dialog.getByRole('button', { name: '保存设置' }).click()
 
-  const writes = requested('PUT', '/api/user/profile')
-  expect(writes).toHaveLength(1)
-  expect(writes[0].body).toMatchObject({ username: 'demo-renamed', expectedRevision: 0 })
+  const [write] = await sentRequests('PUT', '/api/user/profile', 1)
+  expect(write.body).toMatchObject({ username: 'demo-renamed', expectedRevision: 0 })
   await expect.poll(() => state.profile.revision).toBe(1)
 })
 
@@ -153,9 +161,8 @@ test('@smoke persists the theme preference and applies it before the save lands'
   await expect(page.locator('html')).toHaveClass(/\bdark\b/)
 
   await dialog.getByRole('button', { name: '保存主题' }).click()
-  const writes = requested('PUT', '/api/user/profile')
-  expect(writes).toHaveLength(1)
-  expect(writes[0].body).toMatchObject({ themePreference: 'dark' })
+  const [write] = await sentRequests('PUT', '/api/user/profile', 1)
+  expect(write.body).toMatchObject({ themePreference: 'dark' })
   await expect(toast(page, '主题已保存')).toBeAttached()
 })
 
@@ -180,7 +187,7 @@ test('@smoke uploads an avatar and keeps the returned profile', async ({ page })
     buffer: Buffer.from('89504e470d0a1a0a', 'hex'),
   })
 
-  expect(requested('POST', '/api/user/avatar')).toHaveLength(1)
+  await sentRequests('POST', '/api/user/avatar', 1)
   await expect(toast(page, '头像已更新')).toBeAttached()
 })
 
@@ -195,7 +202,7 @@ test('@smoke deletes a resume only behind the confirmation', async ({ page }) =>
   expect(requested('DELETE', /^\/api\/resume\//)).toHaveLength(0)
 
   await page.getByRole('button', { name: '删除', exact: true }).click()
-  expect(requested('DELETE', '/api/resume/4')).toHaveLength(1)
+  await sentRequests('DELETE', '/api/resume/4', 1)
   await expect(toast(page, '简历已删除')).toBeAttached()
   await expect(row).toHaveCount(0)
 })

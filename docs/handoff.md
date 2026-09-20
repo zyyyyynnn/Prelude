@@ -6,7 +6,7 @@
 >
 > **当前状态**：本地全量检查在当前 HEAD 通过——后端 255 个 `@Test`（58 个类，其中 15 个按环境变量启用；四个依赖服务在跑时 0 跳过），前端 12 道 CI 门禁同义命令全绿，`verify:visual` 22 例 / 44 张 `*-win32.png` 基线。
 >
-> **远端状态**：推送前 `origin/arch/optimization-core-path-tests` 停在 `4585bfd`，其后 23 个提交从未进入 GitHub Actions。[Run 35323868049](https://github.com/zyyyyynnn/Prelude/actions/runs/35323868049) 的绿灯只覆盖到 `4585bfd` 为止的状态，不能读作"当前分支已过 CI"；本批推送后这一段区间才第一次真正跑过 CI，结论以 Actions 上对应 run 为准。
+> **远端状态**：`origin/arch/optimization-core-path-tests` 与本地同步。`4585bfd..` 之后的一段区间在推送后才第一次进入 GitHub Actions，绿灯与否以 Actions 上对应 run 为准，不要读作"本地过了就是过了"——本轮第一次 run 就是在本机 41 例全绿的情况下红在一条竞态断言上（见阶段十六末条）。
 >
 > **使用说明**：本文件为接手下一个治理会话的全景交接真相源。§1–§4 是当时的调研与诊断，其中 sentrux 分数与 PR #67 diff 两节已标为历史存档，结论以 §6 各阶段记录为准。
 
@@ -277,6 +277,7 @@
 - [x] **产品内报告面的桩数据是个假空态**：`installApi` 只提供进行中的会话 7，因此首版基线拍到的永远是"等待报告"卡片。补 `installReportSession()`（完成态 + `summaryReport`），基线才真正拍到报告面；同时给生成中状态补了一条 `@smoke` 断言（等待卡、进度指示、且不得出现 prompt bar 与报告面），`test:smoke` 40 → **41 例**。
 - [x] **后端 255 个 `@Test` 首次在真实依赖下 0 跳过**：本地 redis / rabbitmq / mysql / versitygw 起齐后跑全量 `mvn test`，15 个按环境变量启用的条件测试全部执行，`Tests run: 255, Failures: 0, Errors: 0, Skipped: 0`。在此之前这 15 个测试从未在本机以外被验证过。
 - [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(204)、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（22 例，连跑两次全绿）、`test:smoke`(41)、`byok`(4)/`dark`(2)/`a11y`(1)、后端全量（255/0 skipped）全通过。
+- [x] **本机的全绿不是绿**：推送后第一次 Actions run 后端 2m29s 通过，前端红在 `@smoke uploads an avatar`。根因是我写的 `expect(requested('POST', …)).toHaveLength(1)` **同步**读取一个页面仍在追加的数组——`setInputFiles` 在请求真正派发前就返回，本机快所以每次都赢，CI 慢所以每次都输。同一形状另有 3 处（`保存主题`、`保存设置`、确认删除简历）同样在赌时序，一并收进 `sentRequests()`：先 `expect.poll` 等到条数，再读发出去的 body。仍保持同步的是"断言没有请求"的 3 处——poll 一条"没有"会把它变成永真。红绿都用人为延时实测过：把 harness 的 `requests.push` 推迟 400ms，旧写法立刻 `FAIL`、新写法 14 例只剩 1 例 `FAIL`，而那 1 例是延时本身造成的假象（它断言在"行已出现"之后，真实 harness 里 push 早于响应，延时把顺序反转了）。
 
 ---
 
