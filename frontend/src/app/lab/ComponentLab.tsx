@@ -174,10 +174,17 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
 
 /** One answer composer, holding its own draft and mode so the toggle and the send button
  *  work exactly the way they do in a session. `voice` freezes the lane in a state a live
- *  session only reaches while it is connected; the meter reads no microphone here, so it
- *  holds the floor height the browser shows before any audio arrives. */
-function LabAnswerRow({ voice }: { voice?: { status: VoiceStatus; recording: boolean } }) {
-  const [answer, setAnswer] = useState('')
+ *  session only reaches while it is connected, and `draft` seeds the text a transcript
+ *  would have left behind; the meter reads no microphone here, so it holds the floor
+ *  height the browser shows before any audio arrives. */
+function LabAnswerRow({
+  voice,
+  draft = '',
+}: {
+  voice?: { status: VoiceStatus; recording: boolean }
+  draft?: string
+}) {
+  const [answer, setAnswer] = useState(draft)
   const [voiceOpen, setVoiceOpen] = useState(Boolean(voice))
   const noop = () => undefined
   return (
@@ -407,7 +414,7 @@ export function ComponentLab() {
             <LabAnswerRow voice={{ status: 'listening', recording: true }} />
           </DemoGroup>
           <DemoGroup label="语音态 · 处理中">
-            <LabAnswerRow voice={{ status: 'processing', recording: false }} />
+            <LabAnswerRow voice={{ status: 'processing', recording: false }} draft="示例文本一。" />
           </DemoGroup>
           <DemoGroup label="上下文与事实位">
             <ContextAttachment

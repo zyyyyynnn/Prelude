@@ -1,5 +1,5 @@
 import { type FormEvent } from 'react'
-import { Keyboard, Mic } from 'lucide-react'
+import { ArrowUp, Keyboard, Mic } from 'lucide-react'
 import type { AttachmentItem } from '@/features/assets'
 import { Button } from '@/shared/ui/button'
 import { IconTooltip } from '@/shared/ui/overlay'
@@ -71,22 +71,22 @@ export function AnswerComposerSurface({
       }
       leftActions={<InterviewContextFacts modelName={modelName} jdMatched={jdMatched} />}
       rightActions={
-        voice ? (
-          <>
-            <IconTooltip label="切换到文字输入">
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                aria-label="切换到文字输入"
-                onClick={onToggleVoice}
-              >
-                <Keyboard aria-hidden="true" />
-              </Button>
-            </IconTooltip>
-            {/* The button carries the whole recording state: held, it shows the microphone's
-                level in place of its words; processing, it is the shared loading control;
-                while the interviewer's answer plays back, it cannot be pushed. */}
+        <>
+          <IconTooltip label={voice ? '切换到文字输入' : '切换到语音输入'}>
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              aria-label={voice ? '切换到文字输入' : '切换到语音输入'}
+              onClick={onToggleVoice}
+              disabled={disabled}
+            >
+              {voice ? <Keyboard aria-hidden="true" /> : <Mic aria-hidden="true" />}
+            </Button>
+          </IconTooltip>
+          {/* Held, the control keeps its box: the words fade and the meter takes their
+              place, so the row it sits in never moves. */}
+          {voice ? (
             <Button
               type="button"
               shape="hold"
@@ -111,36 +111,19 @@ export function AnswerComposerSurface({
               <span className="prelude-button__label">按住说话</span>
               {voice.recording && <VoiceLevelMeter stream={voice.media} />}
             </Button>
-            {answer.trim() ? (
-              <Button type="submit" loading={sending} disabled={disabled} shape="action">
-                发送
-              </Button>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <IconTooltip label="切换到语音输入">
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                aria-label="切换到语音输入"
-                onClick={onToggleVoice}
-                disabled={disabled}
-              >
-                <Mic aria-hidden="true" />
-              </Button>
-            </IconTooltip>
+          ) : null}
+          <IconTooltip label="发送">
             <Button
               type="submit"
+              size="icon"
               loading={sending}
               disabled={disabled || !answer.trim()}
-              shape="action"
+              aria-label="发送"
             >
-              发送
+              <ArrowUp aria-hidden="true" />
             </Button>
-          </>
-        )
+          </IconTooltip>
+        </>
       }
       onInputKeyDown={(event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {

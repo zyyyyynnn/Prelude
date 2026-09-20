@@ -1165,9 +1165,10 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .prelude-button--hold[data-pressed] .prelude-button__label {
   opacity: 0;
 }
+/* Held is a state that lasts seconds, not a click: a positional nudge would read as the
+   control sitting out of line with its neighbours. The deepened ring carries it instead,
+   alongside the meter that replaces the words. */
 .prelude-button--hold[data-pressed] {
-  /* geometry-exempt: 2px press nudge, not a spacing step */
-  transform: translateY(2px);
   box-shadow: var(--shadow-ring-deep);
 }
 /* The workspace shell is full-bleed: the caller owns padding and its own regions. */

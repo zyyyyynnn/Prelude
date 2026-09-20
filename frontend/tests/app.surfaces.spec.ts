@@ -720,6 +720,13 @@ test('@visual keeps every hairline divider clear of the content it separates', a
   await expect(dividerViolations(page)).resolves.toEqual([])
 })
 
+test('@visual keeps every composer control on one centre line', async ({ page }) => {
+  await installApi(page)
+  await page.goto('/components-lab')
+  await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
+  await expect(composerAlignmentViolations(page)).resolves.toEqual([])
+})
+
 /* Each gallery panel carries its own baseline. One full-page shot let a panel drift
    silently — the diff was a fraction of the frame and the first viewport only ever covered
    the top two panels. This list is the coverage contract: a panel added to the gallery
@@ -972,6 +979,31 @@ async function settleOverlay(overlay: ReturnType<Page['locator']>) {
    the ones with a single 1px edge, no radius and no fill of their own — that combination is
    what distinguishes a rule from a card edge or a control border. The gap under a line comes
    from its container, so a zero here means a call site glued content onto the divider. */
+/* A control that steps out of its row while it is held reads as broken alignment, not as
+   feedback — the hold button's 2px press nudge did exactly that beside its neighbours.
+   Every button in a composer's trailing cluster has to share one top and one bottom edge,
+   in each state the gallery freezes. */
+async function composerAlignmentViolations(page: Page) {
+  return page.locator('[data-slot="prompt-bar-controls"]').evaluateAll((rows) =>
+    rows.flatMap((row) => {
+      const cluster = row.lastElementChild as HTMLElement
+      const buttons = Array.from(cluster.querySelectorAll('button'))
+      if (buttons.length < 2) return []
+      const boxes = buttons.map((button) => button.getBoundingClientRect())
+      const tops = [...new Set(boxes.map((box) => Math.round(box.top)))]
+      const bottoms = [...new Set(boxes.map((box) => Math.round(box.bottom)))]
+      if (tops.length === 1 && bottoms.length === 1) return []
+      return [
+        {
+          buttons: buttons.map((button) => button.getAttribute('aria-label')?.trim()),
+          tops,
+          bottoms,
+        },
+      ]
+    }),
+  )
+}
+
 async function dividerViolations(page: Page) {
   return page.evaluate(() => {
     const px = (value: string) => Number.parseFloat(value) || 0

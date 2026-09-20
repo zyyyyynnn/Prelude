@@ -203,6 +203,13 @@
 - [x] 一处 capture 定位踩坑记录：按住时按钮的可及名变成 `松开发送`，`getByRole('button', { name: '按住说话' })` 会失效，改按 `.prelude-button--hold` 定位。
 - [x] 验证：`vp check`、`verify:ui`、`verify:tokens`（205 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（36 例，含新增的转录草稿用例）、`verify:byok`/`dark`/`a11y`、`capture:surfaces`（6 张语音帧）全通过；`09-composer-voice-listening` 与实验台 Prompt Bar 基线逐张确认电平波形、按钮宽度与发送位。
 
+### 阶段十二b：发送统一为图标，并修掉按住态的 2px 错位
+
+- [x] **尾部操作区两种模式同构**：`发送` 在文字模式也改成 `ArrowUp` 图标按钮（`size="icon"` + `IconTooltip` + `aria-label="发送"`），空草稿时带禁用态常驻，操作区不再因输入而重排；`rightActions` 由「语音/文字两套」合并为一套三元表达式，两种模式的控件顺序与几何完全一致。`shape="action"` 仍由 `开始面试` 使用，未变成死变体。
+- [x] **三按钮不同线的根因**：`.prelude-button--hold[data-pressed] { transform: translateY(2px) }`——为瞬间点击设计的按压下沉，用在要按住数秒的控件上就成了持续错位。实测（实验台语音态）同行按钮 top 2837.72 对 2839.72。删除该位移，反馈改由环影 `--shadow-ring-deep` + 标签淡出 + 电平覆盖承担；这条规则对一次性按钮不受影响（选择器只命中 hold 变体）。
+- [x] 新增第 10 条像素判据：`@visual keeps every composer control on one centre line` 遍历实验台每个 `[data-slot="prompt-bar-controls"]` 尾部簇，断言簇内所有按钮共享同一 top/bottom（≥2 个控件才检查），违规时回传按钮名与两侧坐标。红测：把 `translateY(2px)` 加回去即失败并打印 `tops`。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(205)、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（**10 例**）、`test:smoke`（36 例）、`byok`/`dark`/`a11y`、`capture:surfaces` 全通过；实验台 Prompt Bar 亮暗基线与 `09-composer-voice-*` 逐张复核。
+
 ### 阶段十一：实验台文案分寸与说明文字（两次纠偏后定稿）
 
 - [x] **先承认两次走偏**：上一轮我把「实验台必须渲染产品组件」推成「实验台必须显示产品文案」，并在 `DESIGN.md` 写下「控件文案保留真实产品文案」——这条是我自己的解释，不是需求。用户指出后我反向做成「一切可见文字都脱敏」，开始把 composer/菜单的固有词拆成 `copy` 入参，这又是另一个极端；该半程已回退（`composer-copy.ts` 删除、`voiceStatusLabel` 复原）。
@@ -226,7 +233,7 @@
 
 ## 7. 关键风险与留存问题
 
-1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、32 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 28 张），另含三条实测断言——折叠 rail 几何闭合、分割线两侧留白、字段尾部操作位的容器包含与留白。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
+1. **视觉像素回归**：`npm run verify:visual` 现有 10 例、32 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 28 张），另含四条实测断言——折叠 rail 几何闭合、分割线两侧留白、字段尾部操作位的容器包含与留白、composer 尾部按钮同一条上下边。`capture:surfaces` 的 32 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
 3. **`..application..` 禁令的适用面**：只禁 `com.baomidou..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。
 4. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。
