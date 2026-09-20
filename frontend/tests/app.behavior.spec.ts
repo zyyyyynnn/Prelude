@@ -1325,9 +1325,7 @@ test('@smoke renders structured reports without resume mutation controls', async
   const reportTypography = await page
     .locator('[data-slot="structured-report"]')
     .evaluate((surface) => {
-      const eyebrow = surface.querySelector<HTMLElement>(
-        '[data-slot="report-hero"] > p:first-child',
-      )!
+      const eyebrow = surface.querySelector<HTMLElement>('[data-slot="report-hero"] p')!
       const sectionTitle = surface.querySelector<HTMLElement>('[data-slot="structured-report"] h2')!
       const adviceBody = surface.querySelector<HTMLElement>('[data-slot="report-advice"] > p')!
       const titleStyle = getComputedStyle(sectionTitle)

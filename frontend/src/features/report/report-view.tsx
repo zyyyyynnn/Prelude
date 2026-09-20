@@ -31,25 +31,25 @@ export function ReportPanel({ source }: { source: string }) {
 export function StructuredReport({ report }: { report: StructuredInterviewReport }) {
   return (
     <article className="document-sheet w-full" data-slot="structured-report">
-      <header className="grid min-w-0 gap-xs pb-xl" data-slot="report-hero">
-        <p className="type-eyebrow">Interview Review</p>
-        <h1 className="text-balance font-serif text-xl leading-display font-semibold">
-          求职训练报告
-        </h1>
-        <p className="mt-sm max-w-(--content-report-reading-max-inline-size) text-pretty font-serif text-md leading-copy text-text-secondary">
+      <header className="grid min-w-0 gap-sm pb-lg" data-slot="report-hero">
+        <div className="grid gap-xs">
+          <p className="type-eyebrow">Interview Review</p>
+          <h1 className="type-document-title text-balance">求职训练报告</h1>
+        </div>
+        <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-serif text-md leading-copy text-text-secondary">
           {report.summary.fitAssessment}
         </p>
       </header>
       <div className="report-columns gap-lg rounded-lg bg-surface-muted p-lg">
-        <section className="min-w-0">
+        <section className="grid min-w-0 gap-sm">
           <h2 className="type-title text-balance">行动建议</h2>
-          <p className="mt-sm font-sans text-sm leading-copy text-text-secondary">
+          <p className="font-sans text-sm leading-copy text-text-secondary">
             {report.summary.actionRecommendation}
           </p>
         </section>
-        <section className="min-w-0">
+        <section className="grid min-w-0 gap-sm">
           <h2 className="type-title text-balance">总体风险</h2>
-          <p className="mt-sm font-sans text-sm leading-copy text-text-secondary">
+          <p className="font-sans text-sm leading-copy text-text-secondary">
             {report.summary.overallRisk}
           </p>
         </section>
@@ -57,8 +57,8 @@ export function StructuredReport({ report }: { report: StructuredInterviewReport
       <ScoreCard report={report} />
       <StagePerformanceList stages={report.stagePerformances} />
       <QuestionReviewList reviews={report.questionReviews} />
-      <section className="border-t border-border py-lg" data-slot="report-traits">
-        <header className="mb-lg">
+      <section className="grid gap-lg border-t border-border py-lg" data-slot="report-traits">
+        <header className="grid gap-xs">
           <p className="type-eyebrow">能力沉淀</p>
           <h2 className="type-title text-balance">优势与短板</h2>
         </header>
@@ -68,11 +68,11 @@ export function StructuredReport({ report }: { report: StructuredInterviewReport
         </div>
       </section>
       <TrainingPlan plan={report.trainingPlan} />
-      <section className="border-t border-border py-lg" data-slot="report-advice">
+      <section className="grid gap-sm border-t border-border py-lg" data-slot="report-advice">
         <h2 className="type-title max-w-(--content-report-reading-max-inline-size) text-balance">
           总结建议
         </h2>
-        <p className="mt-sm max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
+        <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
           {report.finalAdvice}
         </p>
       </section>

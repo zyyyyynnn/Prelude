@@ -37,9 +37,7 @@ export function MessageThread({ messages }: { messages: InterviewMessageRecord[]
           </MessageBubble>
         ))
       ) : (
-        <div className="flex h-full items-center justify-center text-text-tertiary">
-          <p>会话已准备就绪，可以开始面试了。</p>
-        </div>
+        <div className="empty-state flex-1">会话已准备就绪，可以开始面试了。</div>
       )}
     </div>
   )

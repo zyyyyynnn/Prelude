@@ -7,7 +7,7 @@
 | `npm run check` | Vite+ 统一的格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
 | `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界 |
 | `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项；样式表卫生（禁止 feature CSS 文件与 feature 样式导入、空规则、未分层元素选择器、无消费者的类规则，以及**功能 `@utility name-*` 必须有字面量调用点**——Tailwind 从源码文本读类名，运行时拼出的类名不会产出任何规则） |
-| `npm run verify:tokens` | token 登记完整性与唯一性；声明但无任何消费者的 token；被引用但从未声明的 `var(--x)` 与 `atom-(--x)`（未声明的自定义属性会让整条声明在计算值阶段静默失效）；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度 px/rem）。绝对长度按**声明**读取，因此跨行的 `calc()`、`@utility` 内的自定义属性、混用 `var()` 的值都在范围内；`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 登记的 token 必须仍是引用其来源的表达式；盒尺寸不得整值借用与某档 `--ui-glyph-*` 等值的 `--spacing-*` 步骤；读取器发现的声明数低于阈值即失败，防止解析器空转造成假绿。相对单位 `%`/`em`/`vh`/`vw` 放行，技术必需的裸值（forced-colors 描边、`sr-only` 1px 裁剪盒）须在规则内标 `geometry-exempt: <理由>` 显式豁免 |
+| `npm run verify:tokens` | token 登记完整性与唯一性；声明但无任何消费者的 token（计数前先抹掉 `@theme` 里 `--x: var(--x)` 的自我镜像，并按 Tailwind 命名空间补认类名消费者——`--spacing-0` 由 `m-0` 消费、`--radius-lg` 由 `rounded-lg` 消费，只按 token 文本计数会把活 token 判死；shadcn 语义桥在 `ui-tokens.json` 显式登记为豁免）；被引用但从未声明的 `var(--x)` 与 `atom-(--x)`（未声明的自定义属性会让整条声明在计算值阶段静默失效）；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度 px/rem）。绝对长度按**声明**读取，因此跨行的 `calc()`、`@utility` 内的自定义属性、混用 `var()` 的值都在范围内；`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 登记的 token 必须仍是引用其来源的表达式；盒尺寸不得整值借用与某档 `--ui-glyph-*` 等值的 `--spacing-*` 步骤；读取器发现的声明数低于阈值即失败，防止解析器空转造成假绿。相对单位 `%`/`em`/`vh`/`vw` 放行，技术必需的裸值（forced-colors 描边、`sr-only` 1px 裁剪盒）须在规则内标 `geometry-exempt: <理由>` 显式豁免 |
 | `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类必然压过核心原子造成的死原子；须在 `npm run build` 之后执行 |
 | `npm run verify:production` | 生产产物不包含开发态组件检查面 |
 | `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |

@@ -70,6 +70,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 | `type-eyebrow` | 标题上方的引导标签 | serif `xs` / medium / `tight` / tertiary |
 | `type-metric` | 大号数字指标 | serif `xl` / medium / `display` / primary |
 | `type-hero` | 页面级响应式大标题（认证、终态页、面试空态） | serif `clamp(xl, 5vw, 2xl)` / medium / `display` / primary |
+| `type-document-title` | 文档面主标题（报告的 `h1`） | serif `xl` / semibold / `display` / primary |
 | `type-title` | 区块主标题 | serif `lg` / medium / `tight` / primary |
 | `type-subtitle` | 次级标题 | serif `md` / medium / `compact` / primary |
 | `type-label` | 字段与条目名称 | serif `sm` / medium / `compact` / secondary |
@@ -78,7 +79,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 行高由字号决定：同一字号只对应一种行高。角色未覆盖的配对（如报告内联分数）用原子类显式组合，不新增角色。
 
-标题角色与 DOM 层级一一对应：`h1` 用 `type-hero`（页面主标题）或 `workspace-header__title`，`h2` 用 `type-title`，`h3` 用 `type-subtitle`，字段与条目名用 `type-label`。`Panel` 按 `level` 选出 `h2`/`h3` 与对应角色，标题层级由组件决定。
+标题角色与 DOM 层级一一对应：`h1` 用 `type-hero`（页面主标题）、`type-document-title`（打印文档面，不随视口放大）或 `workspace-header__title`，`h2` 用 `type-title`，`h3` 用 `type-subtitle`，字段与条目名用 `type-label`。`Panel` 按 `level` 选出 `h2`/`h3` 与对应角色，标题层级由组件决定。
 
 排版取值以**实际渲染值**为准，声明意图与被覆盖的历史写法不作为依据。
 

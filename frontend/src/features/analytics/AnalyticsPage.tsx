@@ -128,7 +128,7 @@ export function AnalyticsPage() {
               {weaknesses.data?.length ? (
                 weaknesses.data.map((item) => (
                   <article
-                    className="grid gap-sm rounded-lg border border-border bg-surface-muted p-md break-inside-avoid"
+                    className="grid gap-sm rounded-lg bg-surface-muted p-md break-inside-avoid"
                     data-slot="weakness-item"
                     key={item.category}
                   >

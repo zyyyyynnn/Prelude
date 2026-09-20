@@ -28,22 +28,15 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
     queryKey: ['resumes'],
     queryFn: ({ signal }) => fetchResumes(signal),
   })
-  if (controller.session.isPending)
-    return (
-      <div className="flex flex-1 items-center justify-center text-text-tertiary">
-        正在加载会话…
-      </div>
-    )
+  if (controller.session.isPending) return <div className="empty-state flex-1">正在加载会话…</div>
   if (controller.session.isError || !controller.current)
     return (
-      <div className="flex flex-1 items-center justify-center text-text-tertiary">
-        <div className="empty-state">
-          <p>{controller.session.error?.message ?? '会话不存在'}</p>
-          <Button variant="secondary" onClick={() => void controller.session.refetch()}>
-            <RefreshCw />
-            重新加载
-          </Button>
-        </div>
+      <div className="empty-state flex-1">
+        <p>{controller.session.error?.message ?? '会话不存在'}</p>
+        <Button variant="secondary" onClick={() => void controller.session.refetch()}>
+          <RefreshCw />
+          重新加载
+        </Button>
       </div>
     )
   const current = controller.current

@@ -1,7 +1,6 @@
 @theme {
   /* Color — re-export the existing :root tokens into Tailwind theme. */
   --color-brand: var(--color-brand);
-  --color-brand-light: var(--color-brand-light);
   --color-accent-solid: var(--color-accent-solid);
   --color-accent-solid-hover: var(--color-accent-solid-hover);
   --color-accent-text: var(--color-accent-text);
@@ -10,11 +9,9 @@
   --color-surface-hover: var(--color-surface-hover);
   --color-surface-muted: var(--color-surface-muted);
   --color-bg: var(--color-bg);
-  --color-sand: var(--color-sand);
   --color-text-primary: var(--color-text-primary);
   --color-text-secondary: var(--color-text-secondary);
   --color-text-tertiary: var(--color-text-tertiary);
-  --color-text-button: var(--color-text-button);
   --color-border: var(--color-border);
   --color-border-warm: var(--color-border-warm);
   --color-ring: var(--color-ring);
@@ -160,7 +157,6 @@
 
   --color-bg: #f5f4ed;
   --color-surface: #faf9f5;
-  --color-sand: #e8e6dc;
   --color-surface-hover: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-surface));
   --color-surface-muted: color-mix(in srgb, var(--color-text-primary) 8%, var(--color-surface));
   --bg-paper-filter:
@@ -183,10 +179,8 @@
   --color-text-primary: #141413;
   --color-text-secondary: #5e5d59;
   --color-text-tertiary: #6b6a65;
-  --color-text-button: #4d4c48;
 
   --color-brand: #9e7b6a;
-  --color-brand-light: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   --color-accent-solid: #806050;
   --color-accent-solid-hover: color-mix(
     in srgb,
@@ -384,11 +378,9 @@
 .dark {
   --color-bg: #191816;
   --color-surface: #22201d;
-  --color-sand: #34302a;
   --color-text-primary: #f1eee6;
   --color-text-secondary: #c9c2b7;
   --color-text-tertiary: #aaa296;
-  --color-text-button: #eee8dc;
   --color-brand: #c7a392;
   --color-accent-solid: var(--color-brand);
   --color-accent-text: var(--color-brand);
@@ -434,10 +426,6 @@ body {
 }
 
 @layer base {
-  body {
-    font-family: var(--font-sans);
-  }
-
   h1,
   h2,
   h3,
@@ -1458,6 +1446,13 @@ html[data-input-intent='keyboard']
     var(--font-serif);
 }
 
+/* The document counterpart of `type-hero`: a report opens on a fixed display title, not
+   one that grows with the window, because the same sheet has to hold on paper. */
+@utility type-document-title {
+  color: var(--color-text-primary);
+  font: var(--font-weight-semibold) var(--font-size-xl)/var(--line-height-display) var(--font-serif);
+}
+
 @utility type-subtitle {
   color: var(--color-text-primary);
   font: var(--font-weight-medium) var(--font-size-md)/var(--line-height-compact) var(--font-serif);
@@ -1914,6 +1909,8 @@ html[data-input-intent='keyboard']
 }
 
 @utility session-group {
+  display: grid;
+  gap: var(--spacing-sm);
   margin-block-end: var(--spacing-sm);
   white-space: nowrap;
 
@@ -2211,6 +2208,7 @@ html[data-input-intent='keyboard']
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: var(--spacing-lg);
   max-inline-size: var(--layout-generating-card-max-inline-size);
   padding: var(--spacing-2xl);
   border: var(--border-width-default) solid var(--color-border);
@@ -2221,7 +2219,6 @@ html[data-input-intent='keyboard']
 }
 
 @utility generating-title {
-  margin: 0 0 var(--spacing-xs);
   color: var(--color-text-primary);
   font: var(--font-weight-medium)
     clamp(var(--font-size-md), 2vw, var(--font-size-lg))/var(--line-height-base) var(--font-serif);

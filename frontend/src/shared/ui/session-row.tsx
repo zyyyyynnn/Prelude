@@ -47,8 +47,7 @@ export function SessionRow({
       </button>
       {pinned && (
         <Pin
-          className="pointer-events-none absolute top-1/2 inset-e-sm flex -translate-y-1/2 items-center text-accent-text opacity-80 group-hover/row:hidden group-focus-within/row:hidden"
-          size={12}
+          className="pointer-events-none absolute top-1/2 inset-e-sm flex size-(--ui-glyph-sm) -translate-y-1/2 items-center text-accent-text opacity-80 group-hover/row:hidden group-focus-within/row:hidden"
           fill="currentColor"
           aria-hidden="true"
         />
@@ -98,7 +97,7 @@ export function SessionGroup({
 }) {
   return (
     <section className="session-group" aria-label={label}>
-      <p className="mx-sm mb-sm text-xs font-semibold tracking-label text-text-tertiary">{label}</p>
+      <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">{label}</p>
       {rows.length ? (
         <ul className="list-plain flex flex-col gap-sm">
           {rows.map(({ key, ...row }) => (

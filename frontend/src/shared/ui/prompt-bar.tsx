@@ -45,7 +45,9 @@ export function PromptBar({
   useLayoutEffect(() => {
     if (!input.current) return
     input.current.style.height = '0px'
-    input.current.style.height = `${Math.min(input.current.scrollHeight, 100)}px`
+    // `prompt-bar-input` caps the grown height with `max-block-size`, so the autosize
+    // only reports the content height; the cap is not repeated here.
+    input.current.style.height = `${input.current.scrollHeight}px`
   }, [value])
 
   return (

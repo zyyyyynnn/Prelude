@@ -275,17 +275,52 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
     .map((file) => fs.readFileSync(file, 'utf8'))
     .join('\n')
   const count = (haystack, needle) => haystack.split(needle).length - 1
-  // The shadcn bridge is consumed through the component class vocabulary, not by our
-  // own rules, so those tokens are exported on purpose.
+  /* `@theme` re-declares several tokens as `--x: var(--x)` so Tailwind keeps the value in
+     sync with the hand-written block. A self-reference is not a consumer: blank those
+     lines out before counting, or every mirrored token looks used forever. */
+  const cssWithoutSelfMirrors = cssText.replace(
+    /^([ \t]*)(--[a-z0-9-]+):[ \t]*var\(\2\);[ \t]*$/gm,
+    (_line, indent) => `${indent}/* self mirror */`,
+  )
+  /* The shadcn bridge maps the product palette onto the semantic names shadcn-style
+     components expect (`bg-card`, `text-muted-foreground`, `border-input`). No first-party
+     rule or class reads them today; they stay as an adapter for components pulled in from
+     that ecosystem, so they are exempt from the consumer count by decision rather than by
+     oversight. Adding a token here is that decision, made out loud. */
   const bridge = new Set(
     (schema.categories['component-tailwind-theme']?.tokens ?? []).map((token) => `--${token}`),
   )
   for (const match of rootBlock ? rootBlock[1].matchAll(/^ {2}(--[a-z0-9-]+):/gm) : []) {
     const token = match[1]
     if (bridge.has(token)) continue
-    // The declaration itself is one CSS occurrence; anything beyond it is a reference.
+    /* A reference is `var(--token)` in CSS, the token's own name in code (the functional
+       atom form `size-(--token)`), or a utility class carrying its key — `--spacing-0`
+       backs `m-0`, `--radius-lg` backs `rounded-lg`, and neither writes the token out.
+       The class test is deliberately loose: under-reporting a dead token is acceptable,
+       deleting one that a class still reads is not. */
+    const key = token.replace(/^--/, '')
+    /* Tailwind turns `--<namespace>-<key>` into `<utility>-<key>` (`--spacing-0` → `m-0`,
+       `--radius-lg` → `rounded-lg`), so the class carries the key after the namespace,
+       not the whole token name. */
+    const namespaces = [
+      'color-',
+      'font-',
+      'radius-',
+      'spacing-',
+      'text-',
+      'leading-',
+      'shadow-',
+      'ease-',
+      'blur-',
+      'container-',
+      'breakpoint-',
+    ]
+    const namespace = namespaces.find((prefix) => key.startsWith(prefix))
+    const classKey = namespace ? key.slice(namespace.length) : key
     const used =
-      count(cssText, `var(${token})`) > 0 || count(codeText, token) > 0 || count(cssText, token) > 1
+      count(cssWithoutSelfMirrors, `var(${token})`) > 0 ||
+      count(codeText, token) > 0 ||
+      new RegExp(`\\b[a-z]+-${classKey.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')}\\b`).test(codeText)
     if (!used)
       violations.push(`src/shared/styles/index.css: ${token} is declared but never consumed`)
   }

@@ -6,9 +6,11 @@ import type { ReactNode } from 'react'
 export function GeneratingCard({ title, hint }: { title: ReactNode; hint: ReactNode }) {
   return (
     <div className="generating-card">
-      <RoseThree className="mb-lg size-(--layout-generating-rose-inline-size) text-brand" />
-      <h2 className="generating-title">{title}</h2>
-      <p className="type-body mb-lg">{hint}</p>
+      <RoseThree className="size-(--layout-generating-rose-inline-size) text-brand" />
+      <div className="grid gap-xs">
+        <h2 className="generating-title">{title}</h2>
+        <p className="type-body">{hint}</p>
+      </div>
       <div className="generating-progress-track">
         <div className="generating-progress-indicator" />
       </div>

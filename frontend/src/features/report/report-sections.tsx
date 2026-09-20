@@ -24,9 +24,9 @@ export function ScoreCard({ report }: { report: StructuredInterviewReport }) {
     ['逻辑思维', report.scores.logic],
   ] as const
   return (
-    <section className="border-t border-border py-lg">
-      <header className="mb-lg flex items-center justify-between gap-lg">
-        <div>
+    <section className="grid gap-lg border-t border-border py-lg">
+      <header className="flex items-center justify-between gap-lg">
+        <div className="grid gap-xs">
           <p className="type-eyebrow">能力画像</p>
           <h2 className="type-title text-balance">三维评分</h2>
         </div>
@@ -51,20 +51,20 @@ export function StagePerformanceList({ stages }: { stages: StructuredStagePerfor
   const [index, setIndex] = useState(0)
   if (!stages.length)
     return (
-      <section className="border-t border-border py-lg">
-        <header className="mb-lg">
+      <section className="grid gap-lg border-t border-border py-lg">
+        <header className="grid gap-xs">
           <p className="type-eyebrow">阶段复盘</p>
           <h2 className="type-title text-balance">分阶段表现</h2>
         </header>
-        <p className="m-0 font-sans text-sm leading-copy text-text-secondary">
+        <p className="font-sans text-sm leading-copy text-text-secondary">
           当前报告没有可复盘的阶段表现。
         </p>
       </section>
     )
   return (
-    <section className="border-t border-border py-lg">
-      <header className="mb-lg flex items-center justify-between gap-lg">
-        <div>
+    <section className="grid gap-lg border-t border-border py-lg">
+      <header className="flex items-center justify-between gap-lg">
+        <div className="grid gap-xs">
           <p className="type-eyebrow">阶段复盘</p>
           <h2 className="type-title text-balance">分阶段表现</h2>
         </div>
@@ -82,8 +82,9 @@ export function StagePerformanceList({ stages }: { stages: StructuredStagePerfor
         {stages.map((stage, stageIndex) => (
           <article
             className={cn(
-              'break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg print:block',
-              stageIndex === index ? 'block' : 'hidden',
+              'gap-lg break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg',
+              stageIndex === index ? 'grid' : 'hidden',
+              'print:block',
               stageIndex > 0 && 'print:mt-md',
             )}
             aria-hidden={stageIndex !== index}
@@ -91,26 +92,26 @@ export function StagePerformanceList({ stages }: { stages: StructuredStagePerfor
             data-slot="stage-performance"
             key={stage.stageName}
           >
-            <header className="flex items-start justify-between gap-md">
-              <div>
-                <span className="font-serif text-xs text-text-tertiary">
-                  第 {String(stageIndex + 1).padStart(2, '0')} 阶段
+            <div className="grid gap-md">
+              <header className="flex items-start justify-between gap-md">
+                <div className="grid gap-xs">
+                  <span className="font-serif text-xs text-text-tertiary">
+                    第 {String(stageIndex + 1).padStart(2, '0')} 阶段
+                  </span>
+                  <h3 className="type-subtitle">{stageLabels[stage.stageName]}</h3>
+                </div>
+                <span
+                  className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
+                  data-slot="stage-score"
+                >
+                  {stage.score == null ? '暂无评分' : `${stage.score.toFixed(1)} / 10`}
                 </span>
-                <h3 className="mt-xs font-serif text-md leading-heading">
-                  {stageLabels[stage.stageName]}
-                </h3>
-              </div>
-              <span
-                className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
-                data-slot="stage-score"
-              >
-                {stage.score == null ? '暂无评分' : `${stage.score.toFixed(1)} / 10`}
-              </span>
-            </header>
-            <p className="mt-md max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
-              {stage.summary}
-            </p>
-            <div className="report-columns mt-lg gap-lg" data-slot="stage-signals">
+              </header>
+              <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
+                {stage.summary}
+              </p>
+            </div>
+            <div className="report-columns gap-lg" data-slot="stage-signals">
               <Signal title="正向信号" items={stage.positiveSignals} />
               <Signal title="风险信号" items={stage.negativeSignals} />
               <Signal title="改进建议" items={stage.improvementSuggestions} />
@@ -173,9 +174,9 @@ export function ReportCarouselNavigation({
 
 export function Signal({ title, items }: { title: string; items: string[] }) {
   return items.length ? (
-    <section className="min-w-0">
-      <h4 className="m-0 font-serif text-sm leading-base text-text-primary">{title}</h4>
-      <ul className="list-plain mt-sm grid gap-xs font-sans text-sm leading-copy text-text-secondary">
+    <section className="grid min-w-0 gap-sm">
+      <h4 className="font-serif text-sm leading-base text-text-primary">{title}</h4>
+      <ul className="list-plain grid gap-xs font-sans text-sm leading-copy text-text-secondary">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -188,21 +189,21 @@ export function QuestionReviewList({ reviews }: { reviews: StructuredQuestionRev
   const [index, setIndex] = useState(0)
   if (!reviews.length)
     return (
-      <section className="border-t border-border py-lg">
-        <header className="mb-lg">
+      <section className="grid gap-lg border-t border-border py-lg">
+        <header className="grid gap-xs">
           <p className="type-eyebrow">回答证据</p>
           <h2 className="type-title text-balance">逐题复盘</h2>
         </header>
-        <p className="m-0 font-sans text-sm leading-copy text-text-secondary">
+        <p className="font-sans text-sm leading-copy text-text-secondary">
           当前报告没有可复盘的有效回答。
         </p>
       </section>
     )
   const active = reviews[Math.min(index, reviews.length - 1)]
   return (
-    <section className="border-t border-border py-lg">
-      <header className="mb-lg flex items-center justify-between gap-lg">
-        <div>
+    <section className="grid gap-lg border-t border-border py-lg">
+      <header className="flex items-center justify-between gap-lg">
+        <div className="grid gap-xs">
           <p className="type-eyebrow">回答证据</p>
           <h2 className="type-title text-balance">逐题复盘</h2>
         </div>
@@ -217,22 +218,24 @@ export function QuestionReviewList({ reviews }: { reviews: StructuredQuestionRev
         />
       </header>
       <article
-        className="break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg print:mt-md"
+        className="grid gap-lg break-inside-avoid min-w-0 rounded-lg bg-surface-muted p-lg print:mt-md"
         data-slot="question-review"
       >
-        <header className="flex items-center justify-between gap-lg">
-          <span className="font-serif text-xs text-text-tertiary">
-            第 {index + 1} 题 · {stageLabels[active.stageName]}
-          </span>
-          <span
-            className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
-            data-slot="review-score"
-          >
-            {active.score == null ? '暂无评分' : `${active.score.toFixed(1)} / 10`}
-          </span>
-        </header>
-        <h3 className="mt-md font-serif text-md leading-base">{active.question}</h3>
-        <dl className="mt-lg grid gap-md">
+        <div className="grid gap-md">
+          <header className="flex items-center justify-between gap-lg">
+            <span className="font-serif text-xs text-text-tertiary">
+              第 {index + 1} 题 · {stageLabels[active.stageName]}
+            </span>
+            <span
+              className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
+              data-slot="review-score"
+            >
+              {active.score == null ? '暂无评分' : `${active.score.toFixed(1)} / 10`}
+            </span>
+          </header>
+          <h3 className="type-subtitle">{active.question}</h3>
+        </div>
+        <dl className="grid gap-md">
           <ReviewDetail label="回答摘要" value={active.answerSummary} />
           <ReviewDetail label="评分依据" value={active.scoringReason} />
           <ReviewDetail label="改进建议" value={active.improvementSuggestion} />
@@ -258,28 +261,23 @@ export function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
     ['下次模拟重点', plan.nextInterviewFocus],
   ] as const
   return (
-    <section className="border-t border-border py-lg">
-      <header className="mb-lg">
+    <section className="grid gap-lg border-t border-border py-lg">
+      <header className="grid gap-xs">
         <p className="type-eyebrow">下一步行动</p>
         <h2 className="type-title text-balance">训练计划</h2>
       </header>
       <div className="report-columns gap-xl" data-slot="training-plan-grid">
         {groups.map(([title, items], index) => (
-          <section className="break-inside-avoid min-w-0" key={title}>
-            <span
-              className="mb-sm block font-sans text-xs tabular-nums text-text-tertiary"
-              aria-hidden="true"
-            >
+          <section className="grid min-w-0 gap-sm break-inside-avoid" key={title}>
+            <span className="font-sans text-xs tabular-nums text-text-tertiary" aria-hidden="true">
               {String(index + 1).padStart(2, '0')}
             </span>
-            <div>
-              <h3 className="m-0 font-serif text-md leading-base">{title}</h3>
-              <ol className="list-plain mt-sm grid gap-xs font-sans text-sm leading-copy text-text-secondary">
-                {(items.length ? items : ['按逐题复盘中的建议完成一次定向练习。']).map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ol>
-            </div>
+            <h3 className="type-subtitle">{title}</h3>
+            <ol className="list-plain grid gap-xs font-sans text-sm leading-copy text-text-secondary">
+              {(items.length ? items : ['按逐题复盘中的建议完成一次定向练习。']).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
           </section>
         ))}
       </div>
@@ -289,16 +287,16 @@ export function TrainingPlan({ plan }: { plan: StructuredTrainingPlan }) {
 
 export function Trait({ title, items, empty }: { title: string; items: string[]; empty: string }) {
   return (
-    <section className="min-w-0">
-      <h3 className="m-0 font-serif text-md leading-base">{title}</h3>
+    <section className="grid min-w-0 gap-sm">
+      <h3 className="type-subtitle">{title}</h3>
       {items.length ? (
-        <ul className="list-plain mt-sm grid gap-sm font-sans text-sm leading-copy text-text-secondary">
+        <ul className="list-plain grid gap-sm font-sans text-sm leading-copy text-text-secondary">
           {items.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
       ) : (
-        <p className="mt-sm font-sans text-sm leading-copy text-text-secondary">{empty}</p>
+        <p className="font-sans text-sm leading-copy text-text-secondary">{empty}</p>
       )}
     </section>
   )
