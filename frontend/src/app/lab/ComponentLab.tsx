@@ -329,7 +329,7 @@ export function ComponentLab() {
             items={[
               { value: 'session', label: '会话' },
               { value: 'report', label: '报告' },
-              { value: 'insight', label: '看板' },
+              { value: 'analytics', label: '看板' },
             ]}
             value={view}
             onValueChange={setView}

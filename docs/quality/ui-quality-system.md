@@ -13,7 +13,7 @@
 | `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
 | `npm run verify:dark` | 暗色偏好启动恢复 |
 | `npm run verify:a11y` | 真实浏览器 Axe 检查 |
-| `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度，以及组件实验台（亮/暗）与 404 面的像素基线；另有两条实测断言——折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合，以及每个分割线角色元素两侧的间隙不小于 `--spacing-sm` |
+| `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度，以及 404 面的像素基线；组件检查面按面板逐张比对（亮/暗各 16 张，WebGL 品牌球 mask 后改用几何断言）；另有两条实测断言——折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合，以及每个分割线角色元素两侧的间隙不小于 `--spacing-sm` |
 | `npm run build` | Vite+ 生产构建 |
 | `npm run test:smoke` | React 开发 StrictMode 下真实浏览器核心行为与客户端路由 |
 | `npm audit --omit=dev` | 生产依赖漏洞门禁 |
@@ -54,4 +54,6 @@ Tooltip 由 Base UI 提供交互行为，并使用高对比中性表面。页面
 3. `@visual` 的折叠 rail 断言把容器宽度、行盒、图标左右间隙逐项与 token 对齐，测试里不写任何尺寸字面量；把 token 改回 `51px` 会让该用例失败。
 4. 实验台渲染产品同一组件（见 `DESIGN.md` 的 Style Assembly），近似 markup 会在截图对比时暴露，而不是被当成实现细节留下。
 
-判定后暂不收口的项：`--layout-sidebar-header-block-size: 60px` 与 `--layout-page-center-block-offset: 84px` 是「下限」而非「等式」，推导它们会改变观感；`components-lab-*-win32` 只覆盖首屏视口，把实验台改成按面板各自的 locator 基线才能把这条判据铺满整个画廊；`capture:surfaces` 的 manifest 记录 `git rev-parse HEAD`，而图在提交前生成，revision 恒落后一个 commit。
+同批补上的两条判据盲区：组件检查面原先只有亮/暗各一张视口截图（只覆盖首屏），现按面板逐张比对，测试里的面板清单即覆盖契约，新增面板未登记会先失败在标题断言上；`capture:surfaces` 的 manifest 原先只记 `git rev-parse HEAD`，而图在提交前生成、revision 恒落后一个 commit，现额外记录工作树是否与提交一致，并在不一致时告警。
+
+判定后仍保留的字面量：`--layout-sidebar-header-block-size: 60px` 与 `--layout-page-center-block-offset: 84px` 表达的是「下限/留白」而非「等式」，推导成等值会改变观感，因此不登记进 `derived_tokens`。

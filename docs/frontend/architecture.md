@@ -7,11 +7,11 @@ Prelude 前端是由 Vite+ 统一驱动开发、检查、构建与预览的 Reac
 ```text
 frontend/src/
 ├── app/       启动、Provider 装配、路由与根布局，以及开发态组件实验台（`app/lab`）
-├── features/  auth、assets、resume、position、interview、report、insight、settings
+├── features/  auth、assets、resume、position、interview、report、analytics、settings
 ├── shared/    品牌资源、设计 token、纯工具与 Prelude-owned UI source
 ```
 
-依赖方向是 `app -> features -> shared`。当前 feature 保持扁平公共面；出现内部目录时，跨 feature 调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录。
+依赖方向是 `app -> features -> shared`。每个 feature 的入口是纯 `index.ts` barrel，只再导出确有外部消费者的符号，视图与解析各自留在具名文件里（`features/report` 即 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`）；`app` 作为组合根可以深导入 feature 文件，feature 之间的调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录。
 
 ## Feature Ownership
 
@@ -23,7 +23,7 @@ frontend/src/
 | `position` | 内置岗位读取与用户岗位管理 |
 | `interview` | 开面配置、会话、文字流、语音编排与报告入口 |
 | `report` | 报告解析、展示与 PDF 打印导出 |
-| `insight` | 面试趋势、能力分数与薄弱点 |
+| `analytics` | 面试趋势、能力分数与薄弱点；目录名与组件 `AnalyticsPage`、路由 `/analytics`、接口 `/api/analytics/*` 一致，后端的 `InsightQueryService` 是洞察域服务，不要求同名 |
 | `settings` | 用户资料、主题与面试设置的管理入口；简历数据归 `resume`、岗位数据归 `position`，`settings` 只做跨模块管理入口 |
 
 ## 状态所有权

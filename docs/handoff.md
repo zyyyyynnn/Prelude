@@ -51,7 +51,7 @@
 | 领域 / 概念 | 后端包 / 实体 | 数据库表名 | 前端路径 / 组件 | 诊断与改进措施 |
 | :--- | :--- | :--- | :--- | :--- |
 | **岗位域** | `com.prelude.position.domain.Position` | `position_template` | `features/position/PositionManagementPanel.tsx` | **基本闭环**。已将旧命名 `template` 统一为 `position`。 |
-| **洞察/分析域** | `com.prelude.artifact.application.InsightQueryService` | `score_history`, `account_weakness` | `features/insight/AnalyticsPage.tsx` | **存在术语割裂**：目录名为 `features/insight`，但组件名为 `AnalyticsPage.tsx`，路由为 `/analytics`，后端接口为 `/api/analytics/*`。建议后续将目录统一重命名为 `features/analytics`。 |
+| **洞察/分析域** | `com.prelude.artifact.application.InsightQueryService` | `score_history`, `account_weakness` | `features/analytics/AnalyticsPage.tsx` | **已闭环**：目录 `insight` 曾与组件 `AnalyticsPage`、路由 `/analytics`、接口 `/api/analytics/*` 割裂，前端目录已在阶段七b 统一为 `features/analytics` 并补 barrel。后端 `InsightQueryService` 有意保留——它是洞察域的领域服务名，与前端展示路由不必同名。 |
 | **成果/报告域** | `com.prelude.artifact` | `artifact`, `artifact_version` | `features/report/index.tsx` | 后端定义通用成果模型 `Artifact`，前端业务层使用求职者心智词 `Report`，语义映射成立。但在前端结构上，`features/report` 违规删除了 `index.ts` 并用 `index.tsx` 充当入口，破坏了公共导出规范，需恢复为 `ReportPanel.tsx` + `index.ts`。 |
 | **用户/认证域** | `com.prelude.identity.domain.Account` | `user_account` | `features/auth` | 符合架构文档规范：“领域主体统一为 Account，对外兼顾用户称谓保留 User”。 |
 
@@ -125,7 +125,6 @@
 - [x] `InterviewPage.tsx` / `SettingsModal.tsx` 内联视图已拆为 feature 私有组件。
 - [x] 后端框架泄漏封死：`position`、`identity`、`artifact` 的 application 层不再持有 Mapper 或 `LambdaQueryWrapper`；`Position`/`Account`/`OAuthBinding` 领域模型去掉 `@TableName`，表映射移到 `*Entity`；`FrameworkLeakageTest` 对 `..domain..`、`..api..`、`..application..` 三条禁令生效，并移除了会空转的 `allowEmptyShould`。
 - [x] 客户端死代码：SSE `status`/`sync` 分支与永不可达的连接状态横幅删除（后端实测只发 `ping`/`message`/`judge`/`error`/`report_ready`；语音通道的 `status` 是另一条在用的协议，保留）。
-- [ ] 评估将 `frontend/src/features/insight` 重命名为 `features/analytics`（术语仍割裂：目录 `insight`、组件 `AnalyticsPage`、路由 `/analytics`、接口 `/api/analytics/*`）。
 
 ### 阶段五：界面标准二次收敛（视觉验收驱动）
 - [x] 聊天流不再逐条渲染打分与教练提示，只标说话人；评分与批注归位到面试完成后的报告。
@@ -135,7 +134,7 @@
 - [x] 组件实验台补齐 `Panel`、导航项、列表行、选项卡、空态与错误态、`BrandMetaballs`，并改用与真实界面同一套 `Panel`/角色/原子，不再自成一体系；`capture:surfaces` 的实验台帧加"内容不得被裁切"断言。
 - [x] 界面资产目录收敛为唯一的 `docs/screenshots/surfaces/`；`@demo` 链路截图改为随 Playwright 报告落 `frontend/test-results/` 的诊断证据。
 - [x] `hero-title` 与 `type-hero` 合并：删除 `@utility hero-title`，面试空态页 h1 改用 `type-hero text-center`，仓库只保留一档响应式大标题。
-- [ ] **语音实时模式无视觉资产**：`capture:surfaces` 走 demo harness，harness 无语音通道，`useVoiceInterview` 的 `ws.onerror` 必然触发，因此 09 帧记录的是回退态（`09-composer-voice-fallback`）。实测真实栈也补不上这一帧：`user_account` 只有身份冒烟测试创建的 `artifact-<uuid>` 账号、reference data 不播种可登录账号；`WebSocketHandshakeInterceptor` 无已认证会话即拒绝握手；`VoiceServiceImpl` 是唯一的 `VoicePort` 实现且总是带 `OPENAI_API_KEY` 调上游实时语音，没有本地桩。要真出这一帧需要一次真实上游通话，而它无法由 `capture:surfaces`（含 CI）重生成。语音行为由 `@smoke` 的两条语音资源释放用例把关。
+- [ ] **语音实时模式无视觉资产**：`capture:surfaces` 走 demo harness，harness 无语音通道，`useVoiceInterview` 的 `ws.onerror` 必然触发，因此 09 帧记录的是回退态（`09-composer-voice-fallback`）。实测真实栈也补不上这一帧：`user_account` 只有身份冒烟测试创建的 `artifact-<uuid>` 账号、reference data 不播种可登录账号；`WebSocketHandshakeInterceptor` 无已认证会话即拒绝握手；`VoiceServiceImpl` 是唯一的 `VoicePort` 实现且总是带 `OPENAI_API_KEY` 调上游实时语音，没有本地桩。要真出这一帧需要一次真实上游通话，而它无法由 `capture:surfaces`（含 CI）重生成。语音行为由 `@smoke` 的两条语音资源释放用例把关。**（已解决：阶段八用 `installVoiceLane` 假掉传输与音频端，产出连接/聆听/处理/播报/回退五帧；上游音质仍无资产，也仍不可在 CI 重生成。）**
 
 ### 阶段六：设计系统表面归位（组件库保真）
 - [x] **根因级层叠缺陷**：`index.css` 里未分层的 `label, [data-slot='label'] { font-size: --font-size-md; color: --color-text-primary }` 压过整个 utilities 层，使 `type-label`（14px / secondary）在全仓任何 `<label>` 上都不生效——字段标签与 h3 小标题实测同为 16px/primary，"高级设置"读起来像又一个字段标签。该规则删除，字族默认移进 `@layer base`，字号/字重/颜色交还角色；实测字段标签回到 14px/500/secondary。`[data-slot='label']` 分支全仓零命中，一并删除。
@@ -160,8 +159,6 @@
 - [x] **`verify:tokens` 解析层重写（为什么门禁看不见 51px）**：旧扫描按行读，且 `@utility` 内的自定义属性一律放行、值里出现 `var(` 即整条放行、prettier 折行的 `calc()` 扫不到、`:root.dark,` 这类跨行选择器不被识别为 token 块。现在按声明读（跨行、含自定义属性、`var(--x, 0px)` 回退不算尺寸），并新增 `derived_tokens` 登记表（5 个容器 token 必须继续引用其来源）与「盒尺寸不得整值借用与某档 glyph 等值的 spacing 步骤」。红测验证三类植入缺陷全部被抓；读取器另有声明数下限自检，防止解析器空转造成假绿。
 - [x] 同类字面量顺手收口：`--sidebar-icon-glyph-size: 20px` 与 `--ui-glyph-md` 重复声明，删除并直接引用后者；按钮 spinner 与 toast 关闭盒的 16/24 从 `--spacing-*` 改指 `--ui-glyph-*`；纸质纹理的 `320px 320px` 收进 `--bg-paper-tile-size`；`sidebar-sessions` 手工复刻的 `calc(260 - 16)` 宽度（漏算边框、重复扣 padding，实测溢出 1px）改为 `sidebar-pane` 钉住 `inset-inline: 0` 由槽位决定。
 - [x] 会话空态与分组标题同层级：`SessionGroup` 的 `emptyLabel` 原是 `ms-xs text-xs text-text-tertiary`，读起来比"已归档"低一级；改为与分组标题同一套 `mx-sm text-xs font-semibold tracking-label text-text-tertiary`。
-- [ ] **实验台像素判据只覆盖首屏**：`components-lab-*-win32` 是视口截图（1440×720），本轮 rail/report/resume 的改动全在首屏以下，它一次都没有报警。把画廊改成按面板各自的 locator 基线（约 12 张）才能把这条判据铺满，代价是基线维护与字体/WebGL 抖动面。
-- [ ] **`capture:surfaces` manifest 追溯性**：`afterAll` 记 `git rev-parse HEAD`，而图在提交前生成，manifest 恒落后一个 commit（现记 `3f87ba2`，HEAD 已是本轮提交）。
 
 ### 阶段七b：间距与分割线全量清点（实测驱动）
 
@@ -173,11 +170,19 @@
 - [x] 死 token 与死注释清理：`--color-line-decor-light` 全仓零消费者（`verify:tokens` 的"声明未消费"检查因 `@theme` 桥接行而漏判）；`index.css` 里两条指向已删除分区的空注释（Composer/Settings dropdown）。
 - [x] 清点中判为**非缺陷**、避免后人重复追查的项：`list-row`/`option-card` 是整圈 1px 盒边（卡片不是分割线）；`row-label-end` 在 `auto-fit` 网格里没有同列后继，探针的"下一条"会跨列误报负值；`workspace-header` 下线 49px 是页面内容自己的内边距；`.brand-metaballs` 的 1px 是 `color-mix` 装饰环；焦点态把控件边框染成 `--color-focus-*` 不是分割线。
 
+### 阶段八：结构收尾与判据铺满（对齐决策后执行）
+
+- [x] **`features/report` 按职责拆分**：`index.tsx` 533 行同时是 barrel 与全部视图，是七个 feature 里唯一的异类。拆为 `parse.ts`（`parseInterviewReport` 与结构校验，133 行）、`report-view.tsx`（`ReportPanel`/`StructuredReport`，81 行）、`report-sections.tsx`（评分卡、阶段轮播、逐题复盘、训练计划、`Trait`/`Signal`/`ReviewDetail`，305 行）、`print.ts`（打印与 `is-printing-report`）、`index.ts` 纯再导出。barrel 只导出确有外部消费者的符号，`parseInterviewReport` 保持 feature 内私有（畸形报告降级由 `@smoke` 走界面验证）。
+- [x] **`features/insight` → `features/analytics`**：目录名是术语链上最后一处异类（组件 `AnalyticsPage`、类型 `Analytics*`、路由 `/analytics`、接口 `/api/analytics/*` 早已统一）。同时补 `features/analytics/index.ts`，`main.tsx` 不再深导入 `@/features/insight/AnalyticsPage`。后端 `InsightQueryService` 有意不改——它是洞察域服务名，与前端展示路由不必同名，改动会牵动论文证据链。
+- [x] **语音实时模式视觉资产**：`tests/demo-harness.ts` 新增 `installVoiceLane`，只假 `/api/ws` 传输与 `window.Audio` 播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`capture:surfaces` 的 1 张回退帧扩为 5 张：connected（`语音模式已连接`）、listening（按住说话，`正在聆听` + 波形）、processing（`正在处理`）、speaking（`面试官正在回答`）、fallback（error 帧回退到文字模式）。资产集 27 → 31 张。这些帧证明客户端状态与界面，**不**证明上游语音质量；后者仍需一次真实上游通话，无法在 CI 重生成。副作用：harness 不再产生 `/api/ws` 的 `ECONNREFUSED` 噪声。
+- [x] **实验台像素判据按面板铺满**：`components-lab-{light,dark}-win32` 两张视口截图（只覆盖首屏，前两轮 rail/report/resume 的改动全在首屏以下、一次没报）换成 16 个面板 × 亮暗 = 32 张 locator 基线。测试内维护面板清单并断言 `.workspace-page__content > section` 的首个 `h2` 序列与清单相等——新增面板未登记先失败在覆盖断言上。含 WebGL 品牌球的两个面板（App rail、Brand）mask 掉品牌球，另以"正方形 + 全圆角"几何断言把关（沿用 404 的处置）。红测：给 Session list 面板加一个 `pt-md`，只有 `component-lab-session-list-light.png` 报 diff。
+- [x] **`capture:surfaces` manifest 可追溯**：除 `revision` 外记录 `inputsMatchRevision` 与 `dirtyInputFiles`（排除截图集自身），工作树与提交不一致时 `console.warn`。实测采集时输出 `ran on a dirty tree: 16 input file(s) differ from 2170c90`。
+
 ---
 
 ## 7. 关键风险与留存问题
 
-1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、6 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、组件实验台亮/暗、404 正文），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 27 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
+1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、36 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 32 张），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
 3. **`..application..` 禁令的适用面**：只禁 `com.baomidou..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。
 4. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。

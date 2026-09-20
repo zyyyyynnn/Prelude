@@ -3,7 +3,14 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import { expect, test, type Page } from '@playwright/test'
-import { createDemoState, DEMO_VIEWPORT, installDemoHarness } from './demo-harness'
+import {
+  createDemoState,
+  DEMO_VIEWPORT,
+  installDemoHarness,
+  installVoiceLane,
+  pushVoiceFrame,
+  releaseVoiceAudio,
+} from './demo-harness'
 
 const surfaceDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -18,9 +25,10 @@ test.use({
   launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] },
 })
 
-async function start(page: Page, colorScheme: 'light' | 'dark') {
+async function start(page: Page, colorScheme: 'light' | 'dark', voiceLane = false) {
   const state = createDemoState()
   await installDemoHarness(page, state)
+  if (voiceLane) await installVoiceLane(page)
   await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
   await page.context().grantPermissions(['microphone'])
   await mkdir(surfaceDirectory, { recursive: true })
@@ -104,7 +112,7 @@ async function selectContext(page: Page, menuLabel: string, option: string) {
 
 test.describe('@capture authenticated surface reference set', () => {
   test('anonymous and workspace surfaces', async ({ page }) => {
-    await start(page, 'light')
+    await start(page, 'light', true)
     await capture(page, '01-login-light')
 
     await logIn(page)
@@ -130,9 +138,31 @@ test.describe('@capture authenticated surface reference set', () => {
     await capture(page, '04-sidebar-collapsed')
     await page.getByLabel('展开侧栏').click()
 
-    /* The demo harness has no voice lane, so the WebSocket always errors and the
-       composer reverts — this frame documents that fallback, not the live mode. */
+    /* The voice lane is faked in-process by `installVoiceLane` — the transport and the audio
+       sink — so these frames show the real `useVoiceInterview` state machine and the
+       composer's live surfaces. They are evidence of the client, never of upstream audio. */
     await page.getByRole('button', { name: '切换到语音输入' }).click()
+    await expect(page.getByText('语音模式已连接')).toBeVisible()
+    await capture(page, '09-composer-voice-connected')
+
+    const holdToTalk = page.getByRole('button', { name: '按住说话' })
+    await holdToTalk.hover()
+    await page.mouse.down()
+    await expect(page.getByText('正在聆听')).toBeVisible()
+    await capture(page, '09-composer-voice-listening')
+    await page.mouse.up()
+
+    await pushVoiceFrame(page, { type: 'status', status: 'processing' })
+    await expect(page.getByText('正在处理')).toBeVisible()
+    await capture(page, '09-composer-voice-processing')
+
+    await pushVoiceFrame(page, { type: 'audio', data: 'AAAAAAAA' })
+    await expect(page.getByText('面试官正在回答')).toBeVisible()
+    await capture(page, '09-composer-voice-speaking')
+    await releaseVoiceAudio(page)
+
+    await pushVoiceFrame(page, { type: 'error', message: '语音服务异常' })
+    await expect(page.getByText('面试官正在回答')).toBeHidden()
     await capture(page, '09-composer-voice-fallback')
   })
 
@@ -235,9 +265,30 @@ test.describe('@capture authenticated surface reference set', () => {
   test.afterAll(async () => {
     await mkdir(surfaceDirectory, { recursive: true })
     const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+    /* The frames are written before the commit that carries them, so `revision` alone never
+       identifies these pixels. Anything other than the screenshot set itself that still
+       differs from HEAD means the shots came from uncommitted code — say so out loud. */
+    const inputs = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' })
+      .split('\n')
+      .filter((line) => line.trim() && !line.includes('docs/screenshots/surfaces/'))
+    if (inputs.length) {
+      console.warn(
+        `capture:surfaces ran on a dirty tree: ${inputs.length} input file(s) differ from ${revision.slice(0, 7)}`,
+      )
+    }
     await writeFile(
       path.join(surfaceDirectory, 'manifest.json'),
-      `${JSON.stringify({ revision, capturedAt: new Date().toISOString(), surfaces: captured }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          revision,
+          capturedAt: new Date().toISOString(),
+          inputsMatchRevision: inputs.length === 0,
+          dirtyInputFiles: inputs.length,
+          surfaces: captured,
+        },
+        null,
+        2,
+      )}\n`,
       'utf8',
     )
   })

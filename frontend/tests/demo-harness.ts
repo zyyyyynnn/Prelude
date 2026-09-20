@@ -709,3 +709,116 @@ async function fulfillJson(route: Route, data: unknown) {
     body: JSON.stringify({ code: 200, message: 'ok', data }),
   })
 }
+
+/* ── Voice lane ───────────────────────────────────────────────────────────────
+   The realtime voice UI is driven by `useVoiceInterview`, which speaks `/api/ws` and
+   plays the assistant's audio. Both ends are faked here — the transport and the audio
+   sink — so the real client state machine runs frame by frame without an upstream
+   voice provider. The resulting frames are evidence of the client's states and
+   surfaces, never of upstream audio quality. Any other socket, including the dev
+   server's own, is handed straight to the real implementation. */
+export async function installVoiceLane(page: Page) {
+  await page.addInitScript(() => {
+    interface FakeSocket {
+      readyState: number
+      onopen: (() => void) | null
+      onmessage: ((event: { data: string }) => void) | null
+      onclose: (() => void) | null
+      sent: string[]
+      close(): void
+    }
+
+    const sockets: FakeSocket[] = []
+    const players: VoiceAudio[] = []
+    const RealSocket = window.WebSocket
+
+    class VoiceAudio {
+      onended: (() => void) | null = null
+      constructor(readonly src: string) {
+        players.push(this)
+      }
+      play() {
+        // Never settles: `speaking` holds until the frame is captured.
+        return new Promise<void>(() => undefined)
+      }
+      finish() {
+        this.onended?.()
+      }
+    }
+
+    class FakeVoiceSocket implements FakeSocket {
+      binaryType = 'arraybuffer'
+      readyState = 0
+      onopen: (() => void) | null = null
+      onmessage: ((event: { data: string }) => void) | null = null
+      onerror: (() => void) | null = null
+      onclose: (() => void) | null = null
+      sent: string[] = []
+      constructor(readonly url: string) {
+        sockets.push(this)
+        setTimeout(() => {
+          this.readyState = RealSocket.OPEN
+          this.onopen?.()
+        }, 0)
+      }
+      send(payload: string | ArrayBuffer) {
+        this.sent.push(typeof payload === 'string' ? payload : 'binary')
+      }
+      close() {
+        if (this.readyState === RealSocket.CLOSED) return
+        this.readyState = RealSocket.CLOSED
+        this.onclose?.()
+      }
+    }
+
+    const VoiceSocket = function (url: string | URL) {
+      const target = String(url)
+      return target.endsWith('/api/ws') ? new FakeVoiceSocket(target) : new RealSocket(target)
+    }
+    Object.assign(VoiceSocket, {
+      CONNECTING: RealSocket.CONNECTING,
+      OPEN: RealSocket.OPEN,
+      CLOSING: RealSocket.CLOSING,
+      CLOSED: RealSocket.CLOSED,
+    })
+
+    window.WebSocket = VoiceSocket as unknown as typeof WebSocket
+    window.Audio = VoiceAudio as unknown as typeof Audio
+
+    Object.defineProperty(window, '__preludeVoice', {
+      value: {
+        push(payload: unknown) {
+          const socket = sockets[sockets.length - 1]
+          if (!socket) throw new Error('the voice lane has not opened yet')
+          socket.onmessage?.({ data: JSON.stringify(payload) })
+        },
+        finishAudio() {
+          players.forEach((player) => player.finish())
+        },
+        sent() {
+          return sockets[sockets.length - 1]?.sent ?? []
+        },
+      },
+    })
+  })
+}
+
+type VoiceLane = { push(payload: unknown): void; finishAudio(): void; sent(): string[] }
+
+export async function pushVoiceFrame(page: Page, payload: Record<string, unknown>) {
+  await page.evaluate((frame) => {
+    ;(window as unknown as { __preludeVoice: VoiceLane }).__preludeVoice.push(frame)
+  }, payload)
+}
+
+export async function releaseVoiceAudio(page: Page) {
+  await page.evaluate(() => {
+    ;(window as unknown as { __preludeVoice: VoiceLane }).__preludeVoice.finishAudio()
+  })
+}
+
+export async function voiceFramesSent(page: Page) {
+  return page.evaluate(() => {
+    ;(window as unknown as { __preludeVoice: VoiceLane }).__preludeVoice.sent()
+  })
+}

@@ -65,13 +65,15 @@ git diff --check
 
 ## 视觉基线
 
-`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。有意改变视觉时用它更新基线，不要手工改图：
+`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。组件检查面按**面板**逐张比对（亮/暗各 16 张，`component-lab-<panel>-<scheme>.png`），面板清单写在测试里，新增面板未登记会先失败在标题断言上；含 WebGL 品牌球的面板把该元素 mask 掉，改用几何断言。有意改变视觉时用它更新基线，不要手工改图：
 
 ```powershell
 npm --prefix frontend run snapshot:update
 ```
 
-`npm --prefix frontend run capture:surfaces` 生成覆盖登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入与语音回退、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入仓库唯一的界面资产目录 `docs/screenshots/surfaces/`，并在同目录的 `manifest.json` 里记录对应提交。它是随代码一起提交、供人工回归对照的界面资产，不产生断言，也不是门禁。
+`npm --prefix frontend run capture:surfaces` 生成覆盖登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入、语音连接/聆听/处理/播报/回退、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入仓库唯一的界面资产目录 `docs/screenshots/surfaces/`。它是随代码一起提交、供人工回归对照的界面资产，不产生断言，也不是门禁。`manifest.json` 除提交号外还记录采集时工作树是否与提交一致——截图总在提交前生成，因此 `inputsMatchRevision: false` 意味着这批图来自未提交的代码，采集时会同步告警。
+
+语音实时链路的五帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：它只假掉 `/api/ws` 传输与音频播放端，跑的是真实 `useVoiceInterview` 状态机与真实 composer。这些帧证明客户端状态与界面，不证明上游语音质量——后者只能由一次真实上游通话验证，无法在 CI 重生成。
 
 `@demo` 链路测试的截图只作为该次运行的诊断证据，随 Playwright 报告写入 `frontend/test-results/`，不进入资产目录。
 

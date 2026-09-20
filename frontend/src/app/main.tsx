@@ -84,7 +84,7 @@ const router = createBrowserRouter([
           {
             path: 'analytics',
             lazy: async () => ({
-              Component: (await import('@/features/insight/AnalyticsPage')).AnalyticsPage,
+              Component: (await import('@/features/analytics')).AnalyticsPage,
             }),
           },
         ],

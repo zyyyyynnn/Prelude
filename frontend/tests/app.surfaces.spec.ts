@@ -700,16 +700,72 @@ test('@visual keeps every hairline divider clear of the content it separates', a
   await expect(dividerViolations(page)).resolves.toEqual([])
 })
 
-test('@visual keeps the light component lab pixel-stable', async ({ page }) => {
-  await gotoComponentLab(page, 'light')
-  await expect(page).toHaveScreenshot('components-lab-light.png', { animations: 'disabled' })
-})
+/* Each gallery panel carries its own baseline. One full-page shot let a panel drift
+   silently — the diff was a fraction of the frame and the first viewport only ever covered
+   the top two panels. This list is the coverage contract: a panel added to the gallery
+   without an entry fails the title assertion. */
+const labPanels = [
+  'Typography',
+  'Panel',
+  'Button',
+  'Field',
+  'SegmentedControl',
+  'Prompt Bar',
+  'Conversation',
+  'Session list',
+  'App rail',
+  'List & Navigation',
+  'Report',
+  'Report blocks',
+  'Empty & Error',
+  'DropdownMenu',
+  'Overlay & Feedback',
+  'Brand',
+] as const
 
-test('@visual keeps the dark component lab pixel-stable', async ({ page }) => {
-  await gotoComponentLab(page, 'dark')
-  await expect(page.locator('html')).toHaveClass(/dark/)
-  await expect(page).toHaveScreenshot('components-lab-dark.png', { animations: 'disabled' })
-})
+const panelSlug = (title: string) =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`@visual keeps every component lab panel pixel-stable in ${scheme}`, async ({ page }) => {
+    await gotoComponentLab(page, scheme)
+    const panels = page.locator('.workspace-page__content > section')
+    const titles = await panels.evaluateAll((sections) =>
+      sections.map((section) => section.querySelector('h2')?.textContent?.trim() ?? ''),
+    )
+    expect(titles).toEqual([...labPanels])
+
+    for (const [index, title] of labPanels.entries()) {
+      const panel = panels.nth(index)
+      const mark = panel.locator('.brand-metaballs')
+      const isWebgl = (await mark.count()) > 0
+      await expect(panel).toHaveScreenshot(`component-lab-${panelSlug(title)}-${scheme}.png`, {
+        animations: 'disabled',
+        ...(isWebgl ? { mask: [mark] } : {}),
+      })
+      if (isWebgl) {
+        // The shader is masked, so the mark's geometry carries the assertion instead. The
+        // rail panel holds two marks, so the check runs on the first one.
+        await expect
+          .poll(() =>
+            mark.first().evaluate((element) => {
+              const box = element.getBoundingClientRect()
+              const radius = Number.parseFloat(getComputedStyle(element).borderRadius)
+              return Math.round(box.width) > 0 &&
+                Math.round(box.width) === Math.round(box.height) &&
+                radius >= box.width / 2
+                ? 1
+                : 0
+            }),
+          )
+          .toBe(1)
+      }
+    }
+  })
+}
 
 test('@visual keeps the not-found surface on the anonymous page shell', async ({ page }) => {
   await installApi(page)
