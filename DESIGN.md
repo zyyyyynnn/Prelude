@@ -35,7 +35,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 块与块之间用容器自己的 `gap` 表达，不用 `mt-*` 给单个块补外边距——同一容器里混用两种来源，间距就会随内容增减而漂移。
 
-图标与图标按钮的盒尺寸使用 `--ui-glyph-sm|md|lg`（16/20/24），不从间距阶梯借用。标准边界使用 `--border-width-default`。布局宽度、Header 高度和内容行宽使用对应 `--layout-*`、`--header-height` 与 `--content-*` token。仅两例光学偏移（按下位移、附件删除盒与 chip 的负叠）刻意留在网格外，并在规则内标 `geometry-exempt`。
+一个容器只要它的存在是为了容纳另一处几何，它的尺寸就必须由那处几何推导，不能写成手调字面量。判据是语义而非数值：折叠侧栏的宽度等于「一枚控件 + 两侧 gutter + 自身边框」，所以它是 `calc()`；而阅读宽度、视口下限、纹理平铺这类只能靠肉眼判定的值保持字面量。登记在 `tokens/ui-tokens.json` 的 `derived_tokens` 里的 token 由 `verify:tokens` 断言仍引用其来源，退化成魔数即失败。这类值历史上漂移过多次：控件档位从 34 合并到 36 时，容器留在 51px，图标因此向右溢出 2px。
+
+图标与图标按钮的盒尺寸使用 `--ui-glyph-sm|md|lg`（16/20/24），不从间距阶梯借用：与某一档 glyph 等值的盒子必须指名该 glyph token，否则间距阶梯一动它就跟着动。标准边界使用 `--border-width-default`。布局宽度、Header 高度和内容行宽使用对应 `--layout-*`、`--header-height` 与 `--content-*` token。仅两例光学偏移（按下位移、附件删除盒与 chip 的负叠）刻意留在网格外，并在规则内标 `geometry-exempt`。
 
 控件内的图标尺寸由 CSS 拥有：`.prelude-button__content`、`.field-action`、`.row-action`、`.prelude-dialog__close`、`.prelude-toast__close` 与 `.prelude-toast [data-icon]` 下的 `svg` 取 `--ui-glyph-sm`。调用点不写 `size={n}`：SVG 的 `width` 表现属性优先级低于 CSS，写了不会生效。
 
@@ -96,7 +98,8 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - 需要覆盖时只有两种写法：为基座声明一个 `base-variant` 命名的变体 utility（唯一被允许的覆盖），或把该属性从基座拆出去交给调用点独占。冲突由 `npm run verify:cascade` 用构建产物实测，不靠约定自觉。
 - 未分层类同样会静默压掉同一元素上的核心原子：结果可预测，但调用点写下的原子是死代码（图形尺寸被页面类钉死就是这么来的）。因此未分层页面类不声明 `size`/`padding`/`margin` 这类调用点可能要覆写的几何；`verify:cascade` 的 dead-atom 检查会报出这种组合。
 - 元素级重置（`button`、`a`、标题与列表 margin）必须写在 `@layer base` 内；未分层的元素选择器会压过整个 utilities 层，使组件无法声明自己的文字颜色与间距。`@layer base` 里的元素规则也只承担元素级基线（字体族、margin），字号与颜色一律由排版角色提供，否则每个裸元素都要靠 utility 反赢一次。
-- 界面结构只有一份 JSX：凡 `index.css` 为某种 chrome 注册了 utility，就必须有一个 `shared/ui` 组件拥有那段标记，产品界面与组件实验台都调用它。实验台不复制产品外观——手写的同名 class 会让截图先漂移到被改掉为止。
+- 界面结构只有一份 JSX：凡 `index.css` 为某种 chrome 注册了 utility，就必须有一个组件拥有那段标记，产品界面与组件实验台都调用它。拥有者按职责放在 feature 或 `shared/ui`，但只允许有一处。实验台不复制产品外观——手写的同名 class 会让截图先漂移到被改掉为止。
+- 实验台的样例只脱敏**数据**：文件名、岗位名、会话名、模型名、评分理由一律写成它所扮演的角色（`示例简历.pdf`、`当前会话`、`评分理由示例文本`），与 Button 面板的「主要操作 / 次要操作」同一口径；控件文案（导航项、动作、字段标签、分区标题）本身就是被检阅的对象，保留真实产品文案。
 
 ## Components
 
@@ -134,7 +137,9 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 
 重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。页面区段仍用无框布局与受控内容宽度，只有需要明确边界的数据对象才升级为 `card`。
 
-侧栏拆成两层：`@utility app-sidebar` 只拥有几何（sticky、整体高度、展开与折叠宽度），`@utility sidebar-rail` 只拥有内容作用域（图标尺寸自定义属性，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。外壳结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`——brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚，产品 shell 与组件实验台渲染同一个 `SidebarFrame`。折叠状态由两处局部属性表达：外壳与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入。图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 不会与真实 shell 表现不一致。
+侧栏分三层：`@utility sidebar-frame` 拥有 rail 的盒子（宽度、边框、表面、折叠宽度与过渡），`@utility app-sidebar` 只加页面锚定（sticky、层级、`100vh`，并把 frame 撑满高度），`@utility sidebar-rail` 只拥有内容作用域（图标内边距的推导，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`：brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚。产品 shell 是 `app-sidebar > SidebarFrame`，实验台让同一个 `SidebarFrame` 直接落在 `bg-bg` 上——盒子由组件拥有，宽度就不会被检阅用的边框偷走。折叠状态由两处局部属性表达：frame 与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入；图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 与真实 shell 表现一致。
+
+报告是页面表面，不是卡片：它的分栏是 `auto-fit minmax(200px, 1fr)`，三维评分要三列并排需要约 632px 的纸面内宽。检阅它时给它与产品相同的内容宽度（`--layout-workspace-content-max-inline-size`），不要塞进 `Panel layout="card"`——卡片自己的内边距会吃掉最后一列，让第三个板块换行。
 
 ## Accessibility
 

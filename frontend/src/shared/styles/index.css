@@ -177,6 +177,10 @@
     ),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.12'/%3E%3Cg fill='none' stroke='%23beb7a8' stroke-opacity='0.2' stroke-width='1'%3E%3Cpath d='M18 42c24 11 51 -5 79 7 20 9 42 12 67 -1'/%3E%3Cpath d='M214 34c17 8 31 3 45 9 15 6 27 5 43 -3'/%3E%3Cpath d='M42 120c17 -7 35 6 57 0 18 -5 36 -3 51 5'/%3E%3Cpath d='M176 138c19 5 35 -7 60 -2 15 3 29 4 46 -5'/%3E%3Cpath d='M26 210c22 7 46 -8 72 4 18 8 33 11 56 1'/%3E%3Cpath d='M182 228c17 -6 36 6 60 1 16 -3 32 -1 51 7'/%3E%3Cpath d='M74 286c18 -8 38 4 57 -1 17 -5 31 -3 48 6'/%3E%3Cpath d='M208 284c13 4 29 -6 47 -2 14 3 28 2 40 -5'/%3E%3C/g%3E%3C/svg%3E");
 
+  /* The paper texture's own tile: it matches the `viewBox` of the SVG in
+     `--bg-paper-filter`, so it belongs to that asset rather than the layout scale. */
+  --bg-paper-tile-size: 320px 320px;
+
   --color-text-primary: #141413;
   --color-text-secondary: #5e5d59;
   --color-text-tertiary: #6b6a65;
@@ -326,7 +330,12 @@
   --tracking-caps: 0.18em;
 
   --layout-sidebar-inline-size: 260px;
-  --layout-sidebar-collapsed-inline-size: 51px;
+  /* The collapsed rail holds exactly one control row: the action's own 36px box
+     plus the gutter it sits in, plus the frame's single inline border. Derived so
+     the container can never drift away from the row it has to contain. */
+  --layout-sidebar-collapsed-inline-size: calc(
+    var(--ui-height-control) + var(--spacing-sm) * 2 + var(--border-width-default)
+  );
   --layout-sidebar-brand-inline-size: 180px;
   --layout-sidebar-header-block-size: 60px;
   --layout-settings-sidebar-inline-size: 220px;
@@ -421,10 +430,7 @@ body {
   background-image: var(--bg-paper-filter);
   background-attachment: fixed;
   background-repeat: no-repeat, no-repeat, repeat;
-  background-size:
-    auto,
-    auto,
-    320px 320px;
+  background-size: auto, auto, var(--bg-paper-tile-size);
   background-blend-mode: normal, normal, multiply;
   color: var(--color-text-primary);
   font: var(--font-weight-regular) var(--font-size-md)/var(--line-height-relaxed) var(--font-sans);
@@ -1209,8 +1215,8 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .prelude-button__spinner {
   position: absolute;
   inset: 0;
-  width: var(--spacing-md);
-  height: var(--spacing-md);
+  width: var(--ui-glyph-sm);
+  height: var(--ui-glyph-sm);
   margin: auto;
   border: var(--border-width-default) solid currentColor;
   border-right-color: transparent;
@@ -1243,8 +1249,8 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   inset-inline-end: var(--spacing-sm);
   bottom: auto;
   inset-inline-start: auto;
-  width: var(--spacing-lg);
-  height: var(--spacing-lg);
+  width: var(--ui-glyph-lg);
+  height: var(--ui-glyph-lg);
   transform: translateY(-50%);
   border-color: transparent;
   border-radius: var(--radius-md);
@@ -1696,14 +1702,31 @@ html[data-input-intent='keyboard']
    one. Variant utilities therefore follow the base they specialise, and a call
    site must never try to override a utility with a core atom.
    ========================================================================== */
-/* The geometry-free half of the rail contract: the icon metrics every action
-   inherits, and the collapse state its labels and brand read. The product rail
-   carries this together with `app-sidebar`; scoping to it alone lets a demo frame
-   render the rail pieces truthfully without a full-height column. */
+/* The rail's own box: width, surface and the collapse transition. `SidebarFrame`
+   renders it, so the column the product draws and the column the gallery draws are
+   the same column — same border, same width, same 36px row inside it. */
+@utility sidebar-frame {
+  display: flex;
+  flex-direction: column;
+  inline-size: var(--layout-sidebar-inline-size);
+  overflow-x: hidden;
+  border-inline-end: var(--border-width-default) solid var(--color-border);
+  background-color: var(--color-surface);
+  font-family: var(--font-serif);
+  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
+
+  &.is-collapsed {
+    inline-size: var(--layout-sidebar-collapsed-inline-size);
+  }
+}
+
+/* The rail's content scope: the icon metrics every action inherits and the
+   collapse state its labels and brand read. */
 @utility sidebar-rail {
-  --sidebar-icon-glyph-size: 20px;
+  /* The action paints its own focus ring with its border, so centring the glyph
+     has to give that border back: (control − glyph − 2 × border) / 2. */
   --sidebar-btn-padding-inline: calc(
-    (var(--ui-height-control) - var(--sidebar-icon-glyph-size)) / 2
+    (var(--ui-height-control) - var(--ui-glyph-md) - var(--border-width-default) * 2) / 2
   );
 
   /* Text that only exists while the rail is expanded fades out as one set. */
@@ -1738,6 +1761,9 @@ html[data-input-intent='keyboard']
   }
 }
 
+/* What only a full-height, page-anchored rail can declare. It exists to hold one
+   `sidebar-frame` column at viewport height, and it is the shell that stretches
+   that column — the frame stays content-sized wherever else it is rendered. */
 @utility app-sidebar {
   position: sticky;
   inset-block-start: 0;
@@ -1745,21 +1771,16 @@ html[data-input-intent='keyboard']
   display: flex;
   flex-shrink: 0;
   flex-direction: column;
-  inline-size: var(--layout-sidebar-inline-size);
   block-size: 100vh;
-  overflow-x: hidden;
-  border-inline-end: var(--border-width-default) solid var(--color-border);
-  background-color: var(--color-surface);
-  font-family: var(--font-serif);
-  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
 
-  &.is-collapsed {
-    inline-size: var(--layout-sidebar-collapsed-inline-size);
+  & > .sidebar-frame {
+    min-block-size: 0;
+    flex: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-sidebar,
+  .sidebar-frame,
   .sidebar-rail [data-sidebar-label],
   .sidebar-rail [data-sidebar-brand],
   .sidebar-pane,
@@ -1832,9 +1853,9 @@ html[data-input-intent='keyboard']
     color var(--motion-duration-fast) var(--motion-ease-standard);
 
   & > svg {
-    inline-size: var(--sidebar-icon-glyph-size);
-    block-size: var(--sidebar-icon-glyph-size);
-    flex: 0 0 var(--sidebar-icon-glyph-size);
+    inline-size: var(--ui-glyph-md);
+    block-size: var(--ui-glyph-md);
+    flex: 0 0 var(--ui-glyph-md);
   }
 
   &:hover {
@@ -1869,11 +1890,13 @@ html[data-input-intent='keyboard']
   }
 }
 
-/* Two panes share one slot and cross-fade as the rail collapses. */
+/* Two panes share one slot and cross-fade as the rail collapses. Both inline
+   edges are pinned so the slot's own box decides the width — a pane that
+   re-declared the rail width by hand drifted a border's worth behind it. */
 @utility sidebar-pane {
   position: absolute;
   inset-block: 0;
-  inset-inline-start: 0;
+  inset-inline: 0;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -1889,11 +1912,9 @@ html[data-input-intent='keyboard']
   }
 }
 
-/* The session list pane, sized to the expanded rail minus its gutter. */
+/* The session list pane scrolls inside that slot. */
 @utility sidebar-sessions {
   min-block-size: 0;
-  inline-size: calc(var(--layout-sidebar-inline-size) - var(--spacing-sm) * 2);
-  flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }

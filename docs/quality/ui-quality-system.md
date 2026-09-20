@@ -7,7 +7,7 @@
 | `npm run check` | Vite+ 统一的格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
 | `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界 |
 | `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项；样式表卫生（禁止 feature CSS 文件与 feature 样式导入、空规则、未分层元素选择器、无消费者的类规则） |
-| `npm run verify:tokens` | token 登记完整性与唯一性；声明但无任何消费者的 token；被引用但从未声明的 `var(--x)` 与 `atom-(--x)`（未声明的自定义属性会让整条声明在计算值阶段静默失效）；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度 px/rem）。相对单位 `%`/`em`/`vh`/`vw` 放行，技术必需的裸值（forced-colors 描边、`sr-only` 1px 裁剪盒）须在规则内标 `geometry-exempt: <理由>` 显式豁免 |
+| `npm run verify:tokens` | token 登记完整性与唯一性；声明但无任何消费者的 token；被引用但从未声明的 `var(--x)` 与 `atom-(--x)`（未声明的自定义属性会让整条声明在计算值阶段静默失效）；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度 px/rem）。绝对长度按**声明**读取，因此跨行的 `calc()`、`@utility` 内的自定义属性、混用 `var()` 的值都在范围内；`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 登记的 token 必须仍是引用其来源的表达式；盒尺寸不得整值借用与某档 `--ui-glyph-*` 等值的 `--spacing-*` 步骤；读取器发现的声明数低于阈值即失败，防止解析器空转造成假绿。相对单位 `%`/`em`/`vh`/`vw` 放行，技术必需的裸值（forced-colors 描边、`sr-only` 1px 裁剪盒）须在规则内标 `geometry-exempt: <理由>` 显式豁免 |
 | `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类必然压过核心原子造成的死原子；须在 `npm run build` 之后执行 |
 | `npm run verify:production` | 生产产物不包含开发态组件检查面 |
 | `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
@@ -38,3 +38,20 @@
 测试选择器只用 `data-slot`、`role` 与语义文本；需要以类名定位时，该类必须是 `index.css` 里注册的 `@utility`，否则 lint 认不出、构建也不产出。断言计算样式时对齐**实际渲染值**，转写原子类后必须重新读取确认。
 
 Tooltip 由 Base UI 提供交互行为，并使用高对比中性表面。页面和组件使用既有 Prelude token，不建立局部色板。
+
+## 几何漂移与防复发
+
+反复出现过的一类缺陷：某个尺寸写成手调字面量，而它真正服务的是「容纳或对齐另一处几何」。改一侧不会让另一侧报错，漂移只在截图里可见。git 历史里的链条：
+
+- `dac2f99` 写下推导式 `calc(控件 + gutter × 2 + 边框)`；`b114707` 做语义化 token 时把它拍平成 `51px`，同一提交里的行内 padding 却仍是推导式——容器冻结、内容继续推导。
+- `2f4c2b4` 把控件高度四档合并为 36px，折叠容器仍 51px，图标向右溢出 2px；同一提交把只服务折叠态的 7px padding 常开化为 `--sidebar-btn-padding-inline`，新公式漏掉了按钮自身用于画焦点环的 1px 边框。
+- `ff88b12` 用 `design_lock_values` 把 `51px` 锁住：锁「值不许动」不等于锁「值必须推导」，`6957e87` 的 Vue→React 迁移又把 5 条布局锁静默删掉，没有任何门禁报警。
+
+现在的四道防线：
+
+1. `verify:tokens` 按**声明**读取绝对长度（跨行值、`@utility` 内的自定义属性、混用 `var()` 的值都在范围内），并对 `tokens/ui-tokens.json` 的 `derived_tokens` 断言 token 仍是引用其来源的表达式。
+2. 盒尺寸不得整值借用与某档 `--ui-glyph-*` 等值的 `--spacing-*` 步骤，否则间距阶梯一动它就跟着动。
+3. `@visual` 的折叠 rail 断言把容器宽度、行盒、图标左右间隙逐项与 token 对齐，测试里不写任何尺寸字面量；把 token 改回 `51px` 会让该用例失败。
+4. 实验台渲染产品同一组件（见 `DESIGN.md` 的 Style Assembly），近似 markup 会在截图对比时暴露，而不是被当成实现细节留下。
+
+判定后暂不收口的项：`--layout-sidebar-header-block-size: 60px` 与 `--layout-page-center-block-offset: 84px` 是「下限」而非「等式」，推导它们会改变观感；`components-lab-*-win32` 只覆盖首屏视口，把实验台改成按面板各自的 locator 基线才能把这条判据铺满整个画廊；`capture:surfaces` 的 manifest 记录 `git rev-parse HEAD`，而图在提交前生成，revision 恒落后一个 commit。

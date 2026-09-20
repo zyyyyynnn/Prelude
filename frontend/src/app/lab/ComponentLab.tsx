@@ -17,13 +17,21 @@ import {
   Settings,
   SquareTerminal,
   Terminal,
-  Trash2,
   Upload,
   UserRound,
   X,
 } from 'lucide-react'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { RoseThree } from '@/shared/brand/RoseThree'
+import {
+  ReportCarouselNavigation,
+  ReviewDetail,
+  ScoreCard,
+  StructuredReport,
+  Trait,
+} from '@/features/report'
+import { ResumeRow } from '@/features/resume'
+import { sampleReport, sampleResumes } from './samples'
 import { Button } from '@/shared/ui/button'
 import { Field, Input, Textarea } from '@/shared/ui/field'
 import { useFeedback } from '@/shared/ui/feedback-context'
@@ -48,7 +56,6 @@ import {
   VoiceIndicator,
   type VoiceStatus,
 } from '@/shared/ui/prompt-bar'
-import { ScoreTile } from '@/shared/ui/score-tile'
 import { SessionGroup } from '@/shared/ui/session-row'
 import { SidebarAction, SidebarFrame } from '@/shared/ui/sidebar'
 import { SegmentedControl } from '@/shared/ui/segmented-control'
@@ -79,9 +86,60 @@ function DemoGroup({ label, children }: { label: string; children: ReactNode }) 
   )
 }
 
+/** One rail, rendered on the page colour exactly the way the shell renders it. */
+function LabRail({ collapsed = false }: { collapsed?: boolean }) {
+  const noop = () => undefined
+  return (
+    <div
+      className="rounded-lg bg-bg p-lg"
+      data-slot={collapsed ? 'lab-rail-collapsed' : 'lab-rail-expanded'}
+    >
+      <SidebarFrame
+        collapsed={collapsed}
+        onToggle={noop}
+        brand={
+          <>
+            <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
+            <span className="font-serif text-md font-medium text-text-primary" data-sidebar-label>
+              Prelude
+            </span>
+          </>
+        }
+        primary={
+          <SidebarAction
+            collapsed={collapsed}
+            label="开始新面试"
+            icon={<Plus />}
+            tone="primary"
+            onClick={noop}
+          />
+        }
+        footer={
+          <SidebarAction collapsed={collapsed} label="设置" icon={<Settings />} onClick={noop} />
+        }
+      >
+        <nav className="flex flex-col gap-sm pt-sm" aria-label="实验台导航">
+          <SidebarAction
+            collapsed={collapsed}
+            label="工作区"
+            icon={<PanelLeft />}
+            to="/interview"
+          />
+          <SidebarAction
+            collapsed={collapsed}
+            label="数据看板"
+            icon={<BarChart3 />}
+            to="/analytics"
+          />
+        </nav>
+      </SidebarFrame>
+    </div>
+  )
+}
+
 export function ComponentLab() {
   const feedback = useFeedback()
-  const [model, setModel] = useState('deepseek')
+  const [model, setModel] = useState('first')
   const [view, setView] = useState('session')
   const [sort, setSort] = useState('recent')
   const [jdMatch, setJdMatch] = useState(true)
@@ -93,6 +151,7 @@ export function ComponentLab() {
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>('listening')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
+  const [sampleIndex, setSampleIndex] = useState(0)
 
   const noop = () => undefined
 
@@ -136,14 +195,14 @@ export function ComponentLab() {
                     id="lab-provider"
                     value={model}
                     options={[
-                      { value: 'deepseek', label: 'DeepSeek' },
-                      { value: 'openai-responses', label: 'OpenAI Responses' },
+                      { value: 'first', label: '选项一' },
+                      { value: 'second', label: '选项二' },
                     ]}
                     onValueChange={setModel}
                   />
                 </Field>
                 <Field label="模型" htmlFor="lab-model">
-                  <Input id="lab-model" defaultValue="deepseek-v4-pro" />
+                  <Input id="lab-model" defaultValue="模型名称" />
                 </Field>
               </div>
               <p className="type-body">内容超出可用高度时只有内容区滚动，标题行保持不动。</p>
@@ -201,8 +260,8 @@ export function ComponentLab() {
                 id="lab-select"
                 value={model}
                 options={[
-                  { value: 'deepseek', label: 'DeepSeek' },
-                  { value: 'openai-responses', label: 'OpenAI Responses' },
+                  { value: 'first', label: '选项一' },
+                  { value: 'second', label: '选项二' },
                 ]}
                 onValueChange={setModel}
               />
@@ -215,7 +274,7 @@ export function ComponentLab() {
                 <Input
                   id="lab-password"
                   type={showPassword ? 'text' : 'password'}
-                  defaultValue="123456"
+                  defaultValue="示例值"
                 />
                 <div className="absolute inset-y-0 inset-e-(--ui-control-inset) flex items-center">
                   <IconTooltip label={showPassword ? '隐藏密码' : '显示密码'}>
@@ -254,7 +313,7 @@ export function ComponentLab() {
                 />
               </Field>
               <Field label="最大回复长度" htmlFor="lab-output">
-                <Input id="lab-output" defaultValue="4,096 tokens" />
+                <Input id="lab-output" defaultValue="示例值" />
               </Field>
             </div>
           </div>
@@ -292,13 +351,9 @@ export function ComponentLab() {
                 onSubmit={(event) => event.preventDefault()}
                 attachments={
                   <>
-                    <ContextAttachment
-                      kind="resume"
-                      label="Java 后端工程师简历.pdf"
-                      onRemove={noop}
-                    />
-                    <ContextAttachment kind="position" label="Java 后端工程师" onRemove={noop} />
-                    <ContextAttachment kind="document" label="系统设计笔记.pdf" onRemove={noop} />
+                    <ContextAttachment kind="resume" label="示例简历.pdf" onRemove={noop} />
+                    <ContextAttachment kind="position" label="示例岗位" onRemove={noop} />
+                    <ContextAttachment kind="document" label="示例文档.pdf" onRemove={noop} />
                   </>
                 }
                 leftActions={
@@ -308,10 +363,7 @@ export function ComponentLab() {
                         <Plus />
                       </Button>
                     </IconTooltip>
-                    <PromptBarFact
-                      label="deepseek-v4-pro · 默认"
-                      icon={<Terminal aria-hidden="true" />}
-                    />
+                    <PromptBarFact label="当前模型 · 默认" icon={<Terminal aria-hidden="true" />} />
                     <button
                       type="button"
                       className="prompt-bar-control prompt-bar-control-jd ui-action"
@@ -340,7 +392,7 @@ export function ComponentLab() {
                 inputDisabled={voiceStatus !== 'idle'}
                 onValueChange={setAnswer}
                 onSubmit={(event) => event.preventDefault()}
-                attachments={<ContextAttachment kind="resume" label="Java 后端工程师简历.pdf" />}
+                attachments={<ContextAttachment kind="resume" label="示例简历.pdf" />}
                 leftActions={
                   <>
                     <IconTooltip label="面试开始后上下文已锁定">
@@ -356,10 +408,7 @@ export function ComponentLab() {
                         </Button>
                       </span>
                     </IconTooltip>
-                    <PromptBarFact
-                      label="deepseek-v4-pro · 默认"
-                      icon={<Terminal aria-hidden="true" />}
-                    />
+                    <PromptBarFact label="当前模型 · 默认" icon={<Terminal aria-hidden="true" />} />
                     <PromptBarFact label="JD 匹配" icon={<ScanSearch aria-hidden="true" />} />
                   </>
                 }
@@ -438,10 +487,10 @@ export function ComponentLab() {
           <DemoGroup label="回合">
             <div className="flex w-full flex-col">
               <MessageBubble side="assistant" speaker="面试官">
-                同一个支付回调重复到达时，你如何保证订单状态只推进一次？
+                示例问题，用于检查气泡的最大宽度、行高与换行。
               </MessageBubble>
               <MessageBubble side="user" speaker="我">
-                我会用支付单号作为幂等键，先插入带唯一索引的处理记录，再在同一事务里按当前状态更新订单。
+                示例回答，用于检查用户侧气泡的对齐、内边距与表面色。
               </MessageBubble>
               <MessageBubble side="assistant" speaker="面试官" pending />
             </div>
@@ -465,7 +514,7 @@ export function ComponentLab() {
               rows={[
                 {
                   key: 'active',
-                  name: 'Java 后端工程师',
+                  name: '当前会话',
                   state: 'active',
                   pinned: true,
                   onOpen: noop,
@@ -474,7 +523,7 @@ export function ComponentLab() {
                 },
                 {
                   key: 'loading',
-                  name: '分布式事务岗位',
+                  name: '加载中会话',
                   state: 'loading',
                   onOpen: noop,
                   onTogglePin: noop,
@@ -488,7 +537,7 @@ export function ComponentLab() {
               rows={[
                 {
                   key: 'error',
-                  name: '前端工程师',
+                  name: '失败会话',
                   state: 'error',
                   finished: true,
                   onOpen: noop,
@@ -497,7 +546,7 @@ export function ComponentLab() {
                 },
                 {
                   key: 'idle',
-                  name: '算法工程师',
+                  name: '已结束会话',
                   finished: true,
                   onOpen: noop,
                   onTogglePin: noop,
@@ -515,66 +564,10 @@ export function ComponentLab() {
           description="shared/ui/sidebar · SidebarFrame 的展开与折叠两态，折叠时标签与品牌淡出、箭头互换"
         >
           <DemoGroup label="展开">
-            <div className="flex w-(--layout-sidebar-inline-size) flex-col rounded-lg border border-border bg-surface">
-              <SidebarFrame
-                collapsed={false}
-                onToggle={noop}
-                brand={
-                  <>
-                    <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
-                    <span
-                      className="font-serif text-md font-medium text-text-primary"
-                      data-sidebar-label
-                    >
-                      Prelude
-                    </span>
-                  </>
-                }
-                primary={
-                  <SidebarAction label="开始新面试" icon={<Plus />} tone="primary" onClick={noop} />
-                }
-                footer={<SidebarAction label="设置" icon={<Settings />} onClick={noop} />}
-              >
-                <nav className="flex flex-col gap-sm pt-sm" aria-label="实验台导航">
-                  <SidebarAction label="工作区" icon={<PanelLeft />} to="/interview" />
-                  <SidebarAction label="数据看板" icon={<BarChart3 />} to="/analytics" />
-                </nav>
-              </SidebarFrame>
-            </div>
+            <LabRail />
           </DemoGroup>
           <DemoGroup label="折叠">
-            <div className="flex w-(--layout-sidebar-collapsed-inline-size) flex-col rounded-lg border border-border bg-surface">
-              <SidebarFrame
-                collapsed
-                onToggle={noop}
-                brand={
-                  <>
-                    <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
-                    <span
-                      className="font-serif text-md font-medium text-text-primary"
-                      data-sidebar-label
-                    >
-                      Prelude
-                    </span>
-                  </>
-                }
-                primary={
-                  <SidebarAction
-                    collapsed
-                    label="开始新面试"
-                    icon={<Plus />}
-                    tone="primary"
-                    onClick={noop}
-                  />
-                }
-                footer={<SidebarAction collapsed label="设置" icon={<Settings />} onClick={noop} />}
-              >
-                <nav className="flex flex-col gap-sm pt-sm" aria-label="实验台导航">
-                  <SidebarAction collapsed label="工作区" icon={<PanelLeft />} to="/interview" />
-                  <SidebarAction collapsed label="数据看板" icon={<BarChart3 />} to="/analytics" />
-                </nav>
-              </SidebarFrame>
-            </div>
+            <LabRail collapsed />
           </DemoGroup>
         </Panel>
 
@@ -607,27 +600,23 @@ export function ComponentLab() {
             </div>
           </DemoGroup>
           <DemoGroup label="简历行">
-            <div className="list-row w-full">
-              <div className="flex min-w-0 flex-1 flex-col gap-xs" data-slot="resume-row-main">
-                <h4 className="truncate-title">Java 后端工程师简历.pdf</h4>
-                <p className="type-meta">2026/09/03 09:00 · 1 场面试</p>
-              </div>
-              <Button size="icon" variant="ghost" aria-label="删除简历">
-                <Trash2 />
-              </Button>
+            <div className="grid w-full gap-sm">
+              {sampleResumes.map((resume) => (
+                <ResumeRow key={resume.id} resume={resume} onDelete={noop} />
+              ))}
             </div>
           </DemoGroup>
           <DemoGroup label="岗位行">
             <div className="position-item-grid w-full">
               <div className="row-label-end">
-                <span className="truncate-title">Java 后端工程师</span>
-                <Button size="icon" variant="ghost" aria-label="编辑 Java 后端工程师">
+                <span className="truncate-title">岗位条目一</span>
+                <Button size="icon" variant="ghost" aria-label="编辑 岗位条目一">
                   <Pencil />
                 </Button>
               </div>
               <div className="row-label-end">
-                <span className="truncate-title">平台工程师</span>
-                <Button size="icon" variant="ghost" aria-label="编辑 平台工程师">
+                <span className="truncate-title">岗位条目二</span>
+                <Button size="icon" variant="ghost" aria-label="编辑 岗位条目二">
                   <Pencil />
                 </Button>
               </div>
@@ -671,38 +660,61 @@ export function ComponentLab() {
           </DemoGroup>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="Report surfaces"
-          description="shared/styles + score-tile · 纸面落在页面底色上，分栏与评分块共用同一套块间距"
-        >
-          <div className="w-full rounded-lg bg-bg p-lg">
-            <article className="document-sheet grid gap-lg">
-              <header className="report-columns items-start gap-xl">
-                <div className="grid gap-xs">
-                  <p className="type-eyebrow">Interview Review</p>
-                  <h3 className="type-title">求职训练报告</h3>
-                </div>
-                <div className="flex items-baseline gap-xs">
-                  <span className="type-meta">总体</span>
-                  <strong className="type-metric">6.3</strong>
-                  <span className="type-meta">/ 10</span>
-                </div>
-              </header>
-              <div className="report-columns gap-md">
-                <ScoreTile label="技术能力" value={6.0} />
-                <ScoreTile label="表达清晰度" value={7.0} />
-                <ScoreTile label="逻辑思维" value={6.0} />
-              </div>
-              <dl className="review-detail-grid">
-                <dt className="font-serif text-sm text-text-secondary">行动建议</dt>
-                <dd className="m-0 font-sans text-sm leading-copy text-text-secondary">
-                  可进入下一轮，并重点验证故障演练与容量分析。
-                </dd>
-              </dl>
-            </article>
+        {/* The report is a page surface, so it is shown at the width the product
+            gives it rather than inside a card: a `card` Panel is already capped at
+            that width, and the skin's own padding would steal the last column. */}
+        <section className="grid gap-lg" data-slot="lab-report">
+          <div className="grid gap-xs">
+            <h2 className="type-title">Report</h2>
+            <p className="type-meta">
+              features/report · StructuredReport 整页，与报告页同一内容宽度，样例文案按角色命名
+            </p>
           </div>
-        </Panel>
+          <div className="max-w-(--layout-workspace-content-max-inline-size)">
+            <StructuredReport report={sampleReport} />
+          </div>
+        </section>
+
+        <section className="grid gap-lg" data-slot="lab-report-blocks">
+          <div className="grid gap-xs">
+            <h2 className="type-title">Report blocks</h2>
+            <p className="type-meta">
+              features/report · 轮播导航、空态分件与逐条复盘字段，都是整页里同一批组件
+            </p>
+          </div>
+          <div className="max-w-(--layout-workspace-content-max-inline-size)">
+            <div className="document-sheet w-full">
+              <ScoreCard report={sampleReport} />
+              <section className="border-t border-border py-lg">
+                <header className="mb-lg flex items-center justify-between gap-lg">
+                  <div>
+                    <p className="type-eyebrow">阶段复盘</p>
+                    <h2 className="type-title text-balance">轮播导航</h2>
+                  </div>
+                  <ReportCarouselNavigation
+                    ariaLabel="实验台轮播导航"
+                    index={sampleIndex}
+                    count={3}
+                    previousLabel="上一项"
+                    nextLabel="下一项"
+                    onPrevious={() => setSampleIndex((value) => Math.max(0, value - 1))}
+                    onNext={() => setSampleIndex((value) => Math.min(2, value + 1))}
+                  />
+                </header>
+                <div className="report-columns gap-xl">
+                  <Trait title="核心优势" items={[]} empty="暂无可归纳的优势。" />
+                  <Trait title="主要短板" items={[]} empty="暂无已沉淀的薄弱点。" />
+                </div>
+              </section>
+              <section className="border-t border-border py-lg">
+                <div className="grid gap-md">
+                  <ReviewDetail label="评分理由" value="评分理由示例文本。" />
+                  <ReviewDetail label="改进建议" value="改进建议示例文本。" />
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
 
         <Panel
           layout="card"

@@ -80,10 +80,10 @@ export function SidebarToggle({
   )
 }
 
-/** The application rail's structure: brand and collapse control, the primary action
- *  above a divider, the scrolling middle, then the footer. `app-sidebar` supplies the
- *  full-height geometry in the product; the frame itself stays height-neutral so a
- *  demo can render it without a viewport-tall column. */
+/** The application rail: one `sidebar-frame` column holding the brand and the
+ *  collapse control, the primary action above a divider, the scrolling middle,
+ *  then the footer. The product wraps it in the `app-sidebar` shell to pin it to
+ *  the viewport; anywhere else it is already the whole rail. */
 export function SidebarFrame({
   collapsed,
   onToggle,
@@ -100,7 +100,7 @@ export function SidebarFrame({
   children: ReactNode
 }) {
   return (
-    <div className={cn('sidebar-rail flex min-h-0 flex-1 flex-col', collapsed && 'is-collapsed')}>
+    <div className={cn('sidebar-frame sidebar-rail', collapsed && 'is-collapsed')}>
       <header className="flex h-(--layout-sidebar-header-block-size) shrink-0 items-center justify-between p-sm">
         <div
           className="flex items-center gap-sm overflow-hidden whitespace-nowrap"
@@ -135,9 +135,7 @@ export function SidebarPane({
     <div
       className={cn(
         'sidebar-pane',
-        kind === 'sessions'
-          ? 'sidebar-sessions scrollable'
-          : 'flex w-full flex-col justify-end pb-sm',
+        kind === 'sessions' ? 'sidebar-sessions scrollable' : 'flex flex-col justify-end pb-sm',
         visible && 'is-visible',
       )}
       aria-hidden={!visible}

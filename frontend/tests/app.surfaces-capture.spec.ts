@@ -57,13 +57,21 @@ async function settle(page: Page) {
   })
 }
 
-/* The gallery is one screen tall only if the frame is: capture it whole instead of in halves,
-   then hand the shared page back at the normal viewport. */
+/* The gallery is one screen tall only if the frame is: measure its own height and grow
+   the viewport to it, so the shot is never a cropped column and the number does not have
+   to be re-tuned every time the gallery gains a panel. */
 async function captureLab(page: Page, name: string) {
-  await page.setViewportSize({ width: DEMO_VIEWPORT.width, height: 7800 })
+  await page.setViewportSize({ width: DEMO_VIEWPORT.width, height: DEMO_VIEWPORT.height })
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Brand' })).toBeVisible()
+  const fullHeight = await page.evaluate(() => {
+    const scroller = document.querySelector('.workspace-page__content')
+    const header = document.querySelector('.workspace-header')
+    if (!scroller || !header) throw new Error('Component Lab shell is missing')
+    return Math.ceil(scroller.scrollHeight + header.getBoundingClientRect().height)
+  })
+  await page.setViewportSize({ width: DEMO_VIEWPORT.width, height: fullHeight })
   await expect
     .poll(() =>
       page

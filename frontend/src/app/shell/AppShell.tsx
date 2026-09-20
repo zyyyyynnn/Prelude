@@ -12,7 +12,6 @@ import {
   type InterviewSessionItem,
 } from '@/features/interview'
 import { useSettings } from '@/features/settings'
-import { cn } from '@/shared/lib/cn'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { SessionGroup } from '@/shared/ui/session-row'
 import { SidebarAction, SidebarFrame, SidebarPane } from '@/shared/ui/sidebar'
@@ -113,7 +112,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   ]
 
   return (
-    <aside className={cn('app-sidebar', collapsed && 'is-collapsed')}>
+    <aside className="app-sidebar">
       <SidebarFrame
         collapsed={collapsed}
         onToggle={() => setCollapsed((value) => !value)}

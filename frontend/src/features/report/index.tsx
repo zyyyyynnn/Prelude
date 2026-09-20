@@ -12,6 +12,13 @@ import type {
   StructuredTrainingPlan,
 } from './types'
 
+export type {
+  StructuredInterviewReport,
+  StructuredQuestionReview,
+  StructuredStagePerformance,
+  StructuredTrainingPlan,
+} from './types'
+
 const stageNames = new Set<ReportStageName>(['warmup', 'technical', 'deep_dive', 'closing'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -6,12 +6,12 @@ Prelude 前端是由 Vite+ 统一驱动开发、检查、构建与预览的 Reac
 
 ```text
 frontend/src/
-├── app/       启动、Provider 装配、路由与根布局
+├── app/       启动、Provider 装配、路由与根布局，以及开发态组件实验台（`app/lab`）
 ├── features/  auth、assets、resume、position、interview、report、insight、settings
-├── shared/    品牌资源、设计 token、纯工具、Prelude-owned UI source 与开发态组件检查面（`shared/lab`）
+├── shared/    品牌资源、设计 token、纯工具与 Prelude-owned UI source
 ```
 
-依赖方向是 `app -> features -> shared`。当前 feature 保持扁平公共面；出现内部目录时，跨 feature 调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块，`shared/lab` 仅经 DEV 路由挂载，不进入生产路由与产物。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录。
+依赖方向是 `app -> features -> shared`。当前 feature 保持扁平公共面；出现内部目录时，跨 feature 调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录。
 
 ## Feature Ownership
 
@@ -44,7 +44,9 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 `shared/ui` 中的 Button、Field 与表单控件采用 shadcn source ownership 结构，Modal、Menu 与 Tooltip 使用 Base UI。面试输入区的 Prompt Bar 采用 [Beautiful UI](https://www.beautifului.dev/) 组合模式，来源记录位于 `frontend/beautiful-ui.sources.json`。Prompt Bar 负责附件、简历、岗位、JD 与模型选择；管理动作统一进入设置弹窗。所有 UI 源码使用 Prelude token 与 `DESIGN.md` 视觉语言。
 
-划分边界以样式归属为准：`shared/styles/index.css` 里注册了 chrome 的表面，其 markup 也归 `shared/ui`，feature 只负责取数与把领域类型映射成原始 props。因此 `Panel`、`SessionGroup`/`SessionRow`、`SidebarFrame`/`SidebarAction`/`SidebarPane`/`SidebarToggle`、`MessageBubble`、`GeneratingCard`、`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceIndicator`、`ScoreTile` 都在 `shared/ui`，`AppShell` 与面试、报告页保留查询与回调的薄封装。`shared` 不引入 `app` 或 `features`，这条由 `verify:architecture` 强制。
+划分边界以样式归属为准：`shared/styles/index.css` 里注册了 chrome 的表面，其 markup 只允许有一处拥有者，产品界面与组件实验台都调用它。被多个 feature 复用的通用表面归 `shared/ui`——`Panel`、`SessionGroup`/`SessionRow`、`SidebarFrame`/`SidebarAction`/`SidebarPane`/`SidebarToggle`、`MessageBubble`、`GeneratingCard`、`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceIndicator`、`ScoreTile`；只服务一个领域视图的件留在该 feature 并由其 barrel 导出，例如 `ResumeRow` 归 `features/resume`、`StructuredReport`/`ScoreCard`/`StagePerformanceList`/`Trait`/`TrainingPlan` 归 `features/report`。feature 仍只负责取数与把领域类型映射成原始 props，`AppShell` 与面试、报告页保留查询与回调的薄封装。`shared` 不引入 `app` 或 `features`，这条由 `verify:architecture` 强制。
+
+组件实验台是开发者界面，位于 `app/lab/ComponentLab.tsx`，由 `main.tsx` 的 DEV-only 路由挂载。它属于组合根，因此可以像页面一样组合 feature 的公开导出，渲染真实组件而不是近似版；它的样例数据在 `app/lab/samples.ts`，一律按角色命名（见 `DESIGN.md` 的脱敏口径）。`verify:production` 断言 `/components-lab` 与 `Component Lab` 不出现在构建产物里。
 
 样式只有两种来源：调用点的 Tailwind 原子类，和 `shared/styles/index.css` 中具名注册的 `@utility`。`frontend/src/app/styles.css` 装配 Tailwind、应用扫描范围与共享样式；feature 目录不含 CSS 文件，`features/*` 与 `app/shell` 只使用 token 与原子类。`shared/styles/index.css` 拥有 token、主题、重置、全局排版、焦点状态、复合 utility 与文档级打印策略。`verify:architecture` 同时检查源码依赖和 CSS 本地 `@import`，阻止 shared 反向引入应用样式。视觉与层叠约定见 `DESIGN.md` 的 Style Assembly。
 

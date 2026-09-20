@@ -278,6 +278,7 @@
       "tokens": [
         "radius",
         "bg-paper-filter",
+        "bg-paper-tile-size",
         "mask-overlay",
         "ui-segmented-item-min-inline-size",
         "ui-control-inset",
@@ -295,9 +296,22 @@
     "shadow-raw-only-in-definitions": "selector 中的 box-shadow 必须使用 var(--shadow-*)，不允许裸阴影值。",
     "z-index-values-unique": "任意 --z-index-* token 的值互不相等；如果发现重复说明层级冲突。",
     "design-locked-values": "design-locked 列表中的 token 值不得随意变更（受 DESIGN.md 约束）；脚本会断言当前值与 DESIGN.md 描述一致。",
-    "no-shadow-raw-in-selector": "selector 中的 box-shadow 值若不是 var(--shadow-*)，则视为 raw shadow violation。"
+    "no-shadow-raw-in-selector": "selector 中的 box-shadow 值若不是 var(--shadow-*)，则视为 raw shadow violation。",
+    "derived-tokens-must-reference": "登记在 derived_tokens 的 token 必须是引用其他 token 的表达式，并逐项引用列出的来源 token；它服务的是容纳/对齐语义，退化成手调魔数即视为漂移。",
+    "box-size-not-from-spacing-ladder": "盒尺寸（inline/block-size、width/height 及其 min/max 变体）不得借用与某个 --ui-glyph-* 等值的 --spacing-* 步骤；该多大小的盒子要指名 glyph token。"
   },
   "design_lock_values": {
     "ui-height-control": "36px"
+  },
+  "derived_tokens": {
+    "layout-sidebar-collapsed-inline-size": [
+      "ui-height-control",
+      "spacing-sm",
+      "border-width-default"
+    ],
+    "layout-prompt-input-min-block-size": ["ui-height-control", "spacing-lg"],
+    "layout-prompt-truncate-max-inline-size": ["ui-height-control"],
+    "layout-generating-rose-inline-size": ["ui-height-control"],
+    "layout-workspace-report-block-padding": ["spacing-2xl", "spacing-lg"]
   }
 }

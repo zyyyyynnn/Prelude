@@ -106,7 +106,9 @@ export function SessionGroup({
           ))}
         </ul>
       ) : (
-        <p className="ms-xs text-xs text-text-tertiary">{emptyLabel}</p>
+        <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">
+          {emptyLabel}
+        </p>
       )}
     </section>
   )

@@ -21,7 +21,7 @@ const router = createBrowserRouter([
         {
           path: '/components-lab',
           lazy: async () => ({
-            Component: (await import('@/shared/lab/ComponentLab')).ComponentLab,
+            Component: (await import('@/app/lab/ComponentLab')).ComponentLab,
           }),
         },
       ]

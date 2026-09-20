@@ -275,6 +275,9 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
       bodyFont: getComputedStyle(document.body).fontFamily,
       buttonWidthRatio: button.getBoundingClientRect().width / form.getBoundingClientRect().width,
       buttonHeight: button.getBoundingClientRect().height,
+      controlHeight: Number.parseFloat(
+        getComputedStyle(button).getPropertyValue('--ui-height-control'),
+      ),
       buttonTop: button.getBoundingClientRect().top,
       buttonGap: button.getBoundingClientRect().top - password.getBoundingClientRect().bottom,
       emailPlaceholderHeight: emailPlaceholder.getBoundingClientRect().height,
@@ -282,7 +285,7 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
   })
   expect(loginGeometry.headingFont).not.toBe(loginGeometry.bodyFont)
   expect(loginGeometry.buttonWidthRatio).toBeGreaterThanOrEqual(0.98)
-  expect(loginGeometry.buttonHeight).toBeGreaterThanOrEqual(34)
+  expect(loginGeometry.buttonHeight).toBeCloseTo(loginGeometry.controlHeight, 0)
   expect(loginGeometry.emailPlaceholderHeight).toBeGreaterThanOrEqual(50)
   expect(loginGeometry.buttonGap).toBeGreaterThan(loginGeometry.emailPlaceholderHeight + 32)
   await page.screenshot({ path: test.info().outputPath('login-desktop.png'), fullPage: true })
@@ -376,39 +379,70 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     .locator('.app-sidebar')
     .evaluate((sidebar) => sidebar.getBoundingClientRect().width)
   await page.getByRole('button', { name: '收起侧栏' }).click()
-  const collapsingSidebar = await page.locator('.app-sidebar').evaluate(async (sidebar) => {
+  const collapsingWidth = await page.locator('.app-sidebar').evaluate(async (sidebar) => {
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
     await new Promise((resolve) => setTimeout(resolve, 40))
-    return {
-      width: sidebar.getBoundingClientRect().width,
-      targetWidth: Number.parseFloat(
-        getComputedStyle(sidebar).getPropertyValue('--layout-sidebar-collapsed-inline-size'),
-      ),
-    }
+    return sidebar.getBoundingClientRect().width
   })
-  expect(collapsingSidebar.width).toBeLessThan(expandedSidebarWidth)
-  expect(collapsingSidebar.width).toBeGreaterThan(collapsingSidebar.targetWidth)
   await page.locator('.app-sidebar').evaluate(async (sidebar) => {
-    await Promise.all(sidebar.getAnimations().map((animation) => animation.finished))
+    await Promise.all(
+      sidebar.getAnimations({ subtree: true }).map((animation) => animation.finished),
+    )
   })
-  const collapsedSidebar = await page.locator('.app-sidebar').evaluate((sidebar) => ({
-    width: Math.round(sidebar.getBoundingClientRect().width),
-    iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.sidebar-action > svg')).every(
-      (icon) => icon.getBoundingClientRect().width > 0 && icon.getBoundingClientRect().height > 0,
-    ),
-    labelsHidden: Array.from(sidebar.querySelectorAll<HTMLElement>('[data-sidebar-label]')).every(
-      (label) => {
+  /* Geometry closure: the collapsed rail is sized *by* the row it has to contain, so
+     every number here is read from the tokens rather than written down. A container that
+     stops matching its own row geometry fails here instead of in a screenshot review. */
+  const collapsedRail = await page.locator('.app-sidebar').evaluate((sidebar) => {
+    const token = (name: string) =>
+      Number.parseFloat(getComputedStyle(sidebar).getPropertyValue(name))
+    const action = sidebar.querySelector<HTMLElement>('.sidebar-action-primary')!
+    const glyph = action.querySelector<SVGElement>('svg')!
+    const toggle = sidebar.querySelector<HTMLElement>('.sidebar-toggle')!
+    const frame = sidebar.querySelector<HTMLElement>('.sidebar-frame')!
+    const actionBox = action.getBoundingClientRect()
+    const glyphBox = glyph.getBoundingClientRect()
+    const toggleBox = toggle.getBoundingClientRect()
+    const labels = Array.from(sidebar.querySelectorAll<HTMLElement>('[data-sidebar-label]'))
+    return {
+      control: token('--ui-height-control'),
+      glyphSize: token('--ui-glyph-md'),
+      border: token('--border-width-default'),
+      gutter: token('--spacing-sm'),
+      frameWidth: frame.getBoundingClientRect().width,
+      actionWidth: actionBox.width,
+      actionHeight: actionBox.height,
+      toggleWidth: toggleBox.width,
+      toggleHeight: toggleBox.height,
+      glyphLeft: glyphBox.x - actionBox.x,
+      glyphRight: actionBox.x + actionBox.width - (glyphBox.x + glyphBox.width),
+      iconsVisible: Array.from(sidebar.querySelectorAll<SVGElement>('.sidebar-action > svg')).every(
+        (icon) => icon.getBoundingClientRect().width > 0 && icon.getBoundingClientRect().height > 0,
+      ),
+      labelsHidden: labels.every((label) => {
         const style = getComputedStyle(label)
         return style.visibility === 'hidden' && style.opacity === '0'
-      },
-    ),
-  }))
-  expect(collapsedSidebar.width).toBeLessThan(expandedSidebarWidth)
-  expect(collapsedSidebar.iconsVisible).toBe(true)
-  expect(collapsedSidebar.labelsHidden).toBe(true)
+      }),
+    }
+  })
+  expect(collapsingWidth).toBeLessThan(expandedSidebarWidth)
+  expect(collapsingWidth).toBeGreaterThan(collapsedRail.frameWidth)
+  expect(collapsedRail.frameWidth).toBeCloseTo(
+    collapsedRail.control + collapsedRail.gutter * 2 + collapsedRail.border,
+    0,
+  )
+  expect(collapsedRail.actionWidth).toBeCloseTo(collapsedRail.control, 0)
+  expect(collapsedRail.actionHeight).toBeCloseTo(collapsedRail.control, 0)
+  expect(collapsedRail.toggleWidth).toBeCloseTo(collapsedRail.control, 0)
+  expect(collapsedRail.toggleHeight).toBeCloseTo(collapsedRail.control, 0)
+  expect(collapsedRail.glyphSize).toBeGreaterThan(0)
+  expect(collapsedRail.glyphLeft).toBeCloseTo(collapsedRail.glyphRight, 0)
+  expect(collapsedRail.iconsVisible).toBe(true)
+  expect(collapsedRail.labelsHidden).toBe(true)
   await page.getByRole('button', { name: '展开侧栏' }).click()
   await page.locator('.app-sidebar').evaluate(async (sidebar) => {
-    await Promise.all(sidebar.getAnimations().map((animation) => animation.finished))
+    await Promise.all(
+      sidebar.getAnimations({ subtree: true }).map((animation) => animation.finished),
+    )
   })
   await expectIconCentered(page.getByRole('button', { name: /模型：/ }))
   await page.screenshot({

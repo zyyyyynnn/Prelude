@@ -12,4 +12,5 @@ export function uploadResume(file: File, signal?: AbortSignal) {
 
 export const deleteResume = (id: number) => apiRequest<void>(`/resume/${id}`, { method: 'DELETE' })
 
+export { ResumeRow } from './ResumeRow'
 export type { ResumeItem, ResumeUploadResponse } from './types'

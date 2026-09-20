@@ -49,6 +49,96 @@ function extractBlock(source, selector) {
   return ''
 }
 
+const lineOf = (text, index) => text.slice(0, index).split('\n').length
+
+/* Top-level blocks, because that is the unit a `geometry-exempt` marker speaks for. */
+function topLevelBlocks(text) {
+  const blocks = []
+  let cursor = 0
+  while (cursor < text.length) {
+    const open = text.indexOf('{', cursor)
+    if (open < 0) break
+    let depth = 0
+    let close = open
+    for (; close < text.length; close += 1) {
+      if (text.startsWith('/*', close)) {
+        const end = text.indexOf('*/', close + 2)
+        close = end < 0 ? text.length : end + 1
+        continue
+      }
+      if (text[close] === '{') depth += 1
+      else if (text[close] === '}' && (depth -= 1) === 0) break
+    }
+    blocks.push({
+      selector: text
+        .slice(cursor, open)
+        .replace(/\/\*[\s\S]*?\*\//g, ' ')
+        .trim(),
+      open: open + 1,
+      close,
+    })
+    cursor = close + 1
+  }
+  return blocks
+}
+
+/* Declarations with their line numbers. Scanning one line at a time silently misses any
+   value the formatter wrapped across lines, so the sheet's longest geometry values were
+   the ones nobody checked. */
+function declarationsIn(body, firstLine) {
+  const stripped = body.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '))
+  const declarations = []
+  let segment = ''
+  let line = firstLine
+  let segmentLine = firstLine
+  let begun = false
+  const commit = (terminator) => {
+    const source = segment.trim()
+    segment = ''
+    begun = false
+    if (terminator === '{' || !source) return
+    const match = source.match(/^([a-zA-Z-]+)\s*:\s*([\s\S]+)$/)
+    if (match) declarations.push({ property: match[1], value: match[2].trim(), line: segmentLine })
+  }
+  for (const character of stripped) {
+    if (character === '\n') {
+      line += 1
+      segment += ' '
+      continue
+    }
+    if (character === '{' || character === '}' || character === ';') {
+      commit(character)
+      continue
+    }
+    if (!begun && !/\s/.test(character)) {
+      begun = true
+      segmentLine = line
+    }
+    segment += character
+  }
+  commit(';')
+  return declarations
+}
+
+let scannedDeclarations = 0
+
+function eachCheckedDeclaration(files, visit) {
+  for (const file of files) {
+    const relative = path.relative(root, file).replaceAll('\\', '/')
+    const text = fs.readFileSync(file, 'utf8')
+    for (const block of topLevelBlocks(text)) {
+      // The token sheet is where raw values are *supposed* to live.
+      if (/^(?:@theme|:root)\b/.test(block.selector)) continue
+      const body = text.slice(block.open, block.close)
+      if (body.includes('geometry-exempt') || block.selector.includes('geometry-exempt')) continue
+      for (const declaration of declarationsIn(body, lineOf(text, block.open))) {
+        scannedDeclarations += 1
+        visit(relative, declaration)
+      }
+    }
+  }
+}
+
 for (const category of Object.values(schema.categories)) {
   for (const token of category.tokens) {
     if (!declared.has(`--${token}`)) violations.push(`missing declaration --${token}`)
@@ -100,39 +190,73 @@ for (const file of walkCss(sourceRoot)) {
 // escaped the token system. Relative units (%, em, vh, vw) stay legal. A rule may opt
 // out with a `geometry-exempt: <reason>` marker anywhere inside its block, which keeps
 // technique-bound values (forced-colors outlines, the sr-only 1px clip) auditable.
+// Custom properties count: a `--something: 20px` inside a component is the same escape
+// as a raw declaration, and a `var(--token, 0px)` fallback is a default, not a size.
 {
   const absoluteLength = /\d*\.?\d+(?:px|rem)\b/
-  for (const file of walkCss(sourceRoot)) {
-    const relative = path.relative(root, file).replaceAll('\\', '/')
-    const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/)
-    let inTokenBlock = false
-    let braceDepth = 0
-    let blockHasExemption = false
-    lines.forEach((line, index) => {
-      if (/^(?:@theme|:root[^{]*)\s*\{/.test(line) && braceDepth === 0) inTokenBlock = true
-      if (line.includes('geometry-exempt')) blockHasExemption = true
-      if (braceDepth === 0 && /\{/.test(line)) {
-        blockHasExemption = line.includes('geometry-exempt')
-      }
-      for (const character of line) {
-        if (character === '{') braceDepth += 1
-        else if (character === '}') {
-          braceDepth -= 1
-          if (braceDepth === 0) inTokenBlock = false
-        }
-      }
-      if (inTokenBlock || blockHasExemption) return
-      const declaration = line.match(/^\s*([a-z-]+)\s*:\s*([^;{}]+);/)
-      if (!declaration) return
-      const [, property, value] = declaration
-      if (property.startsWith('--')) return
-      if (!absoluteLength.test(value) || value.includes('var(--')) {
-        return
-      }
+  const varFallback = /var\(\s*--[\w-]+\s*,[^)]*\)/g
+  eachCheckedDeclaration(walkCss(sourceRoot), (relative, declaration) => {
+    if (!absoluteLength.test(declaration.value.replace(varFallback, 'var(--fallback)'))) return
+    violations.push(
+      `${relative}:${declaration.line}: raw ${declaration.property}: ${declaration.value} — use a token or mark the rule geometry-exempt`,
+    )
+  })
+}
+
+// ---------------------------------------------------------------- box sizes
+// `--spacing-*` is the gap ladder. A box that happens to measure a glyph tier has to
+// name the glyph token, otherwise it quietly follows the spacing ladder whenever a gap
+// step moves — which is how an icon box and its glyph stopped agreeing.
+{
+  const boxSize = /(?:inline|block)-size$|^(?:min-|max-)?(?:width|height)$/
+  const glyphByValue = new Map(
+    [...declared]
+      .filter(([name]) => name.startsWith('--ui-glyph-'))
+      .map(([name, value]) => [value.trim(), name]),
+  )
+  eachCheckedDeclaration(walkCss(sourceRoot), (relative, declaration) => {
+    if (!boxSize.test(declaration.property)) return
+    // Only a box that *is* one spacing step borrows the ladder; a spacing term inside a
+    // derived expression (`calc(control + spacing)`) is a threshold, which is what the
+    // ladder is for.
+    const match = declaration.value.match(/^var\((--spacing-[\w-]+)\)$/)
+    if (!match) return
+    const size = declared.get(match[1])?.trim()
+    const glyph = size ? glyphByValue.get(size) : undefined
+    if (glyph) {
       violations.push(
-        `${relative}:${index + 1}: raw ${property}: ${value.trim()} — use a token or mark the rule geometry-exempt`,
+        `${relative}:${declaration.line}: ${declaration.property} borrows ${match[1]} (${size}); a box that size is ${glyph}`,
       )
-    })
+    }
+  })
+}
+
+// A reader that quietly finds nothing is worse than no reader: both scans above share it,
+// so assert it actually walked the sheet.
+if (scannedDeclarations < 300) {
+  console.error(
+    `UI token verification: FAIL — the CSS reader only saw ${scannedDeclarations} declarations`,
+  )
+  process.exit(1)
+}
+
+// ---------------------------------------------------------------- derived tokens
+// A token that exists to contain or align with another measurement is not free to drift
+// away from it. Registering it here keeps the relationship in the contract instead of
+// in a comment: the value must be an expression, and it must name every source token.
+for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
+  const value = declared.get(`--${token}`)
+  if (!value) {
+    violations.push(`derived token --${token} is not declared`)
+    continue
+  }
+  if (!value.includes('var(--')) {
+    violations.push(`--${token} must stay derived from ${sources.join(', ')}, not a literal`)
+  }
+  for (const source of sources) {
+    if (!value.includes(`var(--${source})`)) {
+      violations.push(`--${token} must derive from --${source}`)
+    }
   }
 }
 
