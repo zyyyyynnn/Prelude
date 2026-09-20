@@ -61,19 +61,19 @@ git diff --check
 - `PRELUDE_IDENTITY_SMOKE=true`：基于真实 MySQL 与 Redis 验证注册登录、Session rotation/revoke、CSRF、Origin 与 profile revision 契约。
 - `PRELUDE_S3_SMOKE=true`：通过 Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
 
-上述开关未设置时对应测试直接跳过，`mvn clean test` 仍会成功，因此本地跑单测默认拿不到数据库、会话与对象存储这三层保障。若本机无法拉取 Testcontainers 的 `testcontainers/ryuk` 回收镜像，追加 `TESTCONTAINERS_RYUK_DISABLED=true`：本地 `versity/versitygw` 镜像已由 `docker compose` 提供，关闭回收器不影响这两组测试的判定。
+上述开关未设置时对应测试直接跳过，因此本地跑单测默认拿不到数据库、会话与对象存储这三层专项保障。但跳过不等于不需要服务：`PreludeApplicationTest` 无开关，会加载完整应用上下文，而 Spring Session 在装配阶段就要连 Redis，所以 `mvn clean test` 仍要求上面 `docker compose up -d` 的那组服务在跑。若本机无法拉取 Testcontainers 的 `testcontainers/ryuk` 回收镜像，追加 `TESTCONTAINERS_RYUK_DISABLED=true`：本地 `versity/versitygw` 镜像已由 `docker compose` 提供，关闭回收器不影响这两组测试的判定。
 
 ## 视觉基线
 
-`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。组件检查面按**面板**逐张比对（亮/暗各 14 张，`component-lab-<panel>-<scheme>.png`），面板清单写在测试里，新增面板未登记会先失败在标题断言上；面板高于视口时测试会先按实测差额扩窗再取图（滚动容器不揭示的像素不会被绘制），含 WebGL 品牌球的面板把该元素 mask 掉，改用几何断言。有意改变视觉时用它更新基线，不要手工改图：
+`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。组件检查面按**面板**逐张比对（亮/暗各 14 张，`component-lab-<panel>-<scheme>-win32.png`），面板清单写在测试里，新增面板未登记会先失败在标题断言上；面板高于视口时测试会先按实测差额扩窗再取图（滚动容器不揭示的像素不会被绘制），含 WebGL 品牌球的面板把该元素 mask 掉，改用几何断言。有意改变视觉时用它更新基线，不要手工改图：
 
 ```powershell
 npm --prefix frontend run snapshot:update
 ```
 
-`npm --prefix frontend run capture:surfaces` 生成覆盖登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入、语音连接/聆听/处理/播报/回退、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入仓库唯一的界面资产目录 `docs/screenshots/surfaces/`。它是随代码一起提交、供人工回归对照的界面资产，不产生断言，也不是门禁。`manifest.json` 除提交号外还记录采集时工作树是否与提交一致——截图总在提交前生成，因此 `inputsMatchRevision: false` 意味着这批图来自未提交的代码，采集时会同步告警。
+`npm --prefix frontend run capture:surfaces` 生成覆盖登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入、语音连接/聆听/转录/处理/播报/回退、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入仓库唯一的界面资产目录 `docs/screenshots/surfaces/`。它是随代码一起提交、供人工回归对照的界面资产，不产生断言，也不是门禁。`manifest.json` 除提交号外还记录采集时工作树是否与提交一致——截图总在提交前生成，因此 `inputsMatchRevision: false` 意味着这批图来自未提交的代码，采集时会同步告警。
 
-语音实时链路的五帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：它只假掉 `/api/ws` 传输与音频播放端，跑的是真实 `useVoiceInterview` 状态机与真实 composer。这些帧证明客户端状态与界面，不证明上游语音质量——后者只能由一次真实上游通话验证，无法在 CI 重生成。
+语音实时链路的六帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：它只假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑的是真实 `useVoiceInterview` 状态机与真实 composer。这些帧证明客户端状态与界面，不证明上游语音质量——后者只能由一次真实上游通话验证，无法在 CI 重生成。
 
 `@demo` 链路测试的截图只作为该次运行的诊断证据，随 Playwright 报告写入 `frontend/test-results/`，不进入资产目录。
 

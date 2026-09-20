@@ -1,9 +1,14 @@
 # 全面审计调研与治理接力 Handoff 综合报告（跨会话交付全案）
 
-> **当前分支**：`arch/optimization-core-path-tests`  
-> **关联 PR**：[#67](https://github.com/zyyyyynnn/Prelude/pull/67)（Draft）  
-> **当前状态**：本地全量检查通过，远端 GitHub Actions CI（[Run 35323868049](https://github.com/zyyyyynnn/Prelude/actions/runs/35323868049)）**100% 绿灯**（后端 191 测试 PASS，前端 12 道门禁 PASS）。  
-> **使用说明**：本文件为接手下一个治理会话的唯一全景交接真相源，整合了全仓命名审计、Sentrux 真实瓶颈与刷分纠偏、PR 全量 Diff 测试补齐盲区、以及方案 A（Tailwind v4 全原子化）分阶段落地战略。
+> **当前分支**：`arch/optimization-core-path-tests`
+>
+> **关联 PR**：[#67](https://github.com/zyyyyynnn/Prelude/pull/67)（Draft）
+>
+> **当前状态**：本地全量检查在当前 HEAD 通过——后端 219 个 `@Test`（58 个类，其中 15 个按环境变量启用），前端 12 道 CI 门禁同义命令全绿，`verify:visual` 10 例 / 32 张 `*-win32.png` 基线。
+>
+> **远端落后**：`origin/arch/optimization-core-path-tests` 停在 `4585bfd`，其后 **16 个提交从未进入 GitHub Actions**。[Run 35323868049](https://github.com/zyyyyynnn/Prelude/actions/runs/35323868049) 的绿灯只覆盖到 `4585bfd` 为止的状态，不能读作"当前分支已过 CI"；推送需另行授权。
+>
+> **使用说明**：本文件为接手下一个治理会话的全景交接真相源。§1–§4 是当时的调研与诊断，其中 sentrux 分数与 PR #67 diff 两节已标为历史存档，结论以 §6 各阶段记录为准。
 
 ---
 
@@ -29,7 +34,7 @@
   2. `.sentrux/baseline.json` 记录生成于 2026-09-18 09:13:46，此时 `god_file_count` 已是 3，并未触发报警；
   3. 导致 God File 从 3 增至 4 并在本地 `sentrux gate .` 报错的真正变更，是 2026-09-18 15:40:54 提交的 `4585bfd` 新增了 [`backend/src/test/java/com/prelude/test/SessionFixtures.java`](file:///e:/Prelude/backend/src/test/java/com/prelude/test/SessionFixtures.java)，其中聚合了 **18 条 `import com.prelude.*` 内部依赖**（Sentrux 门限为 `fan-out > 15`）；
   4. 前端 [`SettingsModal.tsx`](file:///e:/Prelude/frontend/src/features/settings/SettingsModal.tsx) 的**项目内部依赖仅有 14 条**（其余 4 条为 React / npm 外部依赖，不计入图出度）。
-- **执行指导**：恢复 `sentrux gate` 绿灯的直接动作是**拆分 `SessionFixtures.java`**，而非机械撤销前端组件结构。
+- **当时的执行指导**：恢复 `sentrux gate` 绿灯的直接动作是**拆分 `SessionFixtures.java`**，而非机械撤销前端组件结构。该门禁随后被删除（§6 阶段二），这条指导已无对象；`SessionFixtures` 现为 240 行 / 18 条内部 import，按职责拆分是可选优化，不阻塞任何检查。
 
 ### 1.2 纠偏二：CI 与本地 Visual Snapshot 环境一致性
 - **事实证据**：查阅 [`.github/workflows/ci.yml#L82`](file:///e:/Prelude/.github/workflows/ci.yml#L82)，前端 CI 明确声明为 `runs-on: windows-latest`。
@@ -52,15 +57,17 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **岗位域** | `com.prelude.position.domain.Position` | `position_template` | `features/position/PositionManagementPanel.tsx` | **基本闭环**。已将旧命名 `template` 统一为 `position`。 |
 | **洞察/分析域** | `com.prelude.artifact.application.InsightQueryService` | `score_history`, `account_weakness` | `features/analytics/AnalyticsPage.tsx` | **已闭环**：目录 `insight` 曾与组件 `AnalyticsPage`、路由 `/analytics`、接口 `/api/analytics/*` 割裂，前端目录已在阶段七b 统一为 `features/analytics` 并补 barrel。后端 `InsightQueryService` 有意保留——它是洞察域的领域服务名，与前端展示路由不必同名。 |
-| **成果/报告域** | `com.prelude.artifact` | `artifact`, `artifact_version` | `features/report/index.tsx` | 后端定义通用成果模型 `Artifact`，前端业务层使用求职者心智词 `Report`，语义映射成立。但在前端结构上，`features/report` 违规删除了 `index.ts` 并用 `index.tsx` 充当入口，破坏了公共导出规范，需恢复为 `ReportPanel.tsx` + `index.ts`。 |
+| **成果/报告域** | `com.prelude.artifact` | `artifact`, `artifact_version` | `features/report/index.ts` | 后端定义通用成果模型 `Artifact`，前端业务层使用求职者心智词 `Report`，语义映射成立。前端入口曾以 `index.tsx` 同时充当 barrel 与全部视图，现已按职责拆为 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`，`index.ts` 为纯再导出（§6 阶段八）。 |
 | **用户/认证域** | `com.prelude.identity.domain.Account` | `user_account` | `features/auth` | 符合架构文档规范：“领域主体统一为 Account，对外兼顾用户称谓保留 User”。 |
 
 ---
 
 ## 3. Sentrux 质量分瓶颈与“刷分”行为深度调研
 
+> **历史存档**：本节记录的是门禁被删除**之前**的调研。`.sentrux/` 与 `sentrux gate` 已在阶段二移除（见 §6），下列分数、文件数与依赖边数不再由任何工具产出，只作为当时的判断依据保留。现行结构约束是 `verify:architecture` 与按职责拆分，不以任何质量分为准绳。
+
 ### 3.1 评分机理与指标瓶颈
-- **当前质量分**：`7281`（基线 `7095`，6 条硬规则全部通过，556 文件，795 依赖边）。
+- **当时的质量分**：`7281`（基线 `7095`，6 条硬规则全部通过，556 文件，795 依赖边）。
 - **五维原始得分与瓶颈定位**：
   - `acyclicity`: 10000（0 环依赖，满分）
   - `redundancy`: 8871（优秀）
@@ -79,20 +86,16 @@
 
 ## 4. PR #67 全量 Diff 对比与测试覆盖盲区清单
 
-核对 `origin/main..HEAD`（239 文件变动，+9304 / -5864 行），识别出三大高危无测试覆盖的脆弱区域：
+> **历史存档 + 现行处置**：核对时 `origin/main..HEAD` 为 239 文件（+9304 / −5864）；该分支现已推进到 396 文件（+16694 / −9415）。下面列出的盲区**全部已在阶段一关闭**，保留原文是为了说明覆盖是按哪些缺口补的。
 
-### 4.1 后端控制器契约盲区（P0）
-- [`PositionController.java`](file:///e:/Prelude/backend/src/main/java/com/prelude/position/web/PositionController.java)：`/api/position/list`、`POST /api/position`、`PUT /api/position/{id}`、`DELETE /api/position/{id}` **目前为 0 接口测试**！
-- [`UserController.java`](file:///e:/Prelude/backend/src/main/java/com/prelude/identity/web/UserController.java)：修改个人资料、上传头像契约缺乏直接 Controller 单元/MockMvc 测试。
+### 4.1 后端控制器契约盲区（P0）— 已关闭
+- `PositionController` 的 list/create/update/delete 四端点：当时 0 接口测试，现由 `position/web/PositionControllerTest` 7 例覆盖（见 §6 阶段一）。
+- `UserController` 的资料修改与头像上传：当时缺直接契约测试，现由 `identity/web/UserControllerContractTest` 5 例覆盖，含校验拒绝、畸形邮箱与 revision 冲突。
+- **本轮复核新增的同类缺口**（当时未列出，因为不在 PR #67 的 diff 里）：`InterviewController` 九个端点、`ResumeController` 三个、`AnalyticsController` 三个、`AttachmentController` 两个、`JobController` 两个仍为 0 HTTP 层测试——领域与应用层有用例，HTTP 契约没有。
 
-### 4.2 前端交互与状态流转盲区（P0）
-1. **岗位管理交互（`PositionManagementPanel.tsx`）**：
-   - Playwright 仅断言了“点击能打开弹窗”；
-   - **完全缺失**：新建自建岗位保存、空输入字段校验提示、编辑已有岗位、删除自建岗位、内置岗位只读防护。
-2. **简历上传与解析交互（`ResumeManagementPanel.tsx`）**：
-   - **完全缺失**：文件选择/拖拽上传流程、上传中骨架屏与进度提示、后端解析失败的 Toast 错误展示、删除简历二次确认。
-3. **设置面板表单提交（`SettingsModal.tsx`）**：
-   - **完全缺失**：用户名修改保存、头像文件上传、密码修改的前后端校验交互。
+### 4.2 前端交互与状态流转盲区（P0）— 已关闭
+岗位管理的新建/编辑/删除与内置只读防护、简历上传与解析失败回显、设置面板的资料与密码提交，现由 `tests/app.management.spec.ts` 覆盖。
+- **本轮复核新增的同类缺口**：主题选择与保存、头像上传、密码显隐、简历删除、逐题复盘轮播、产品内生成态在 `tests/` 全文零命中。
 
 ---
 
@@ -117,7 +120,7 @@
 
 ### 阶段三：方案 A 全原子化（已完成并超出原计划）
 - [x] Phase 1–4：263 warning 全部清零；`features/*` 与 `app/shell` 的 7 个 CSS 文件删除，仓库只剩 `src/app/styles.css` 与 `src/shared/styles/index.css`。
-- [x] Phase 5：`no-unknown-classes` 已设为 `error`，`npm run check` 稳定 0 error 0 warning（78 文件）。
+- [x] Phase 5：`no-unknown-classes` 已设为 `error`，`npm run check` 稳定 0 error 0 warning（当时 78 文件，现为 96 个受检文件 / 81 个 `src` 下 ts·tsx）。
 - [x] 原计划未含的收口：`verify:cascade` 用构建产物实测层叠冲突（含穿透 `cn(base, className)` 的死原子检测）；`verify:tokens` 增加"声明未消费"与"引用未声明"双向检查；未分层页面类不再声明调用点可覆写的几何。
 - [x] Token 体系：spacing 收敛为纯 4px 具名阶梯（删除 6 个半格键），图标尺寸改用 `--ui-glyph-sm|md|lg`，`--ui-height-md` 与 `--ui-height-base` 合并为唯一一档 `--ui-height-control`，死 token `--font-size-meta`(13.5px) 删除。排版新增 `type-hero` 承接唯一需要响应式缩放的大标题，`stack-title`/`stack-meta`/`page__title`/`page__header` 作为重复定义删除。
 
@@ -174,8 +177,8 @@
 
 - [x] **`features/report` 按职责拆分**：`index.tsx` 533 行同时是 barrel 与全部视图，是七个 feature 里唯一的异类。拆为 `parse.ts`（`parseInterviewReport` 与结构校验，133 行）、`report-view.tsx`（`ReportPanel`/`StructuredReport`，81 行）、`report-sections.tsx`（评分卡、阶段轮播、逐题复盘、训练计划、`Trait`/`Signal`/`ReviewDetail`，305 行）、`print.ts`（打印与 `is-printing-report`）、`index.ts` 纯再导出。barrel 只导出确有外部消费者的符号，`parseInterviewReport` 保持 feature 内私有（畸形报告降级由 `@smoke` 走界面验证）。
 - [x] **`features/insight` → `features/analytics`**：目录名是术语链上最后一处异类（组件 `AnalyticsPage`、类型 `Analytics*`、路由 `/analytics`、接口 `/api/analytics/*` 早已统一）。同时补 `features/analytics/index.ts`，`main.tsx` 不再深导入 `@/features/insight/AnalyticsPage`。后端 `InsightQueryService` 有意不改——它是洞察域服务名，与前端展示路由不必同名，改动会牵动论文证据链。
-- [x] **语音实时模式视觉资产**：`tests/demo-harness.ts` 新增 `installVoiceLane`，只假 `/api/ws` 传输与 `window.Audio` 播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`capture:surfaces` 的 1 张回退帧扩为 5 张：connected（`语音模式已连接`）、listening（按住说话，`正在聆听` + 波形）、processing（`正在处理`）、speaking（`面试官正在回答`）、fallback（error 帧回退到文字模式）。资产集 27 → 31 张。这些帧证明客户端状态与界面，**不**证明上游语音质量；后者仍需一次真实上游通话，无法在 CI 重生成。副作用：harness 不再产生 `/api/ws` 的 `ECONNREFUSED` 噪声。
-- [x] **实验台像素判据按面板铺满**：`components-lab-{light,dark}-win32` 两张视口截图（只覆盖首屏，前两轮 rail/report/resume 的改动全在首屏以下、一次没报）换成 16 个面板 × 亮暗 = 32 张 locator 基线。测试内维护面板清单并断言 `.workspace-page__content > section` 的首个 `h2` 序列与清单相等——新增面板未登记先失败在覆盖断言上。含 WebGL 品牌球的两个面板（App rail、Brand）mask 掉品牌球，另以"正方形 + 全圆角"几何断言把关（沿用 404 的处置）。红测：给 Session list 面板加一个 `pt-md`，只有 `component-lab-session-list-light.png` 报 diff。
+- [x] **语音实时模式视觉资产**：`tests/demo-harness.ts` 新增 `installVoiceLane`，只假 `/api/ws` 传输与 `window.Audio` 播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`capture:surfaces` 的 1 张回退帧扩为 5 张：connected（`语音模式已连接`）、listening（按住说话，`正在聆听` + 波形）、processing（`正在处理`）、speaking（`面试官正在回答`）、fallback（error 帧回退到文字模式）。资产集 27 → 31 张（阶段十二把聆听帧拆成按住/转录两帧，现为 6 帧 32 张）。这些帧证明客户端状态与界面，**不**证明上游语音质量；后者仍需一次真实上游通话，无法在 CI 重生成。副作用：harness 不再产生 `/api/ws` 的 `ECONNREFUSED` 噪声。
+- [x] **实验台像素判据按面板铺满**：`components-lab-{light,dark}-win32` 两张视口截图（只覆盖首屏，前两轮 rail/report/resume 的改动全在首屏以下、一次没报）换成 16 个面板 × 亮暗 = 32 张 locator 基线（该面板数在阶段十一b 收敛为 14 个 / 28 张）。测试内维护面板清单并断言 `.workspace-page__content > section` 的首个 `h2` 序列与清单相等——新增面板未登记先失败在覆盖断言上。含 WebGL 品牌球的两个面板（App rail、Brand）mask 掉品牌球，另以"正方形 + 全圆角"几何断言把关（沿用 404 的处置）。红测：给 Session list 面板加一个 `pt-md`，只有 `component-lab-session-list-light.png` 报 diff。
 - [x] **`capture:surfaces` manifest 可追溯**：除 `revision` 外记录 `inputsMatchRevision` 与 `dirtyInputFiles`（排除截图集自身），工作树与提交不一致时 `console.warn`。实测采集时输出 `ran on a dirty tree: 16 input file(s) differ from 2170c90`。
 
 ### 阶段九：实验台二次排查（遗漏项 / 重复项 / 非样例件）
@@ -229,14 +232,43 @@
 - [x] **排查出、本轮未改的留存项**（按严重度见会话报告）：报告模块整体绕过 `type-*` 角色并让 `mt-*` 承担绑定间距；`MessageThread`/`InterviewSession` 的加载与空态没走 `empty-state`；分数数字存在三种写法；`AnalyticsPage` 用 `border-border` 配 `bg-surface-muted` 违反细线标准；4 个 token（`--color-brand-light`/`--radius-2xl`/`--spacing-0`/`--font-mono`）与桥接别名 `--ease-standard` 因 `@theme` 镜像行被门禁误判为有消费者；`session-row` 的 `size={12}` 与 `prompt-bar` JS 里的 `100` 各绕开一次 token；`@layer base` 里的 `body { font-family }` 被未分层的 `body { font }` 永久压过。
 - [x] 验证：`vp check`、`verify:ui`、`verify:tokens`、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`/`dark`/`a11y` 全通过；实验台 Field 亮暗基线与 `capture:surfaces` 重跑并复核。
 
+### 阶段十三：全仓复核与基础设施、门禁、契约补齐（逐项核对后执行）
+
+- [x] **先纠正上一轮会话自己报错的 6 条**：`elevated-*` 与 `--shadow-*` 不是双轨（`index.css:1473` 注明 Tailwind 的 `shadow-*` 命名空间被 UI lint 划给调色板，token 阴影必须经 elevation 类到达）；`PinInterviewSession` 只有一次仓储写，不需要事务；`ModelProfileService` 用 `TransactionTemplate`（`:47`）做程序式事务；`InterviewJudgeService` 的 10×500ms 是 Redis 锁获取循环而非请求重试；`StreamChatTurn:93` 的 catch 有注释且 `finally` 仍 `complete()`；`--composer-height: 260px` 实测未漂移（composer 真实高 162px、6 行草稿 202px，末条消息到 composer 顶边留 73.77 / 33.77px）——它是过度预留 58–98px 且无推导无断言，属未治理而非缺陷。
+- [x] **全新克隆的一键 Docker 启动是断的**：`docker-compose.yml:97` 要求 `APP_CRYPTO_AES_SECRET` 非空，而 `.env.example:8` 交付空值，`start-docker.bat:12` 又正是把它复制成 `.env`。实跑证实：`APP_CRYPTO_AES_SECRET= docker compose --profile app config` 退出 1。改为交付与 `application-dev.yml:11` 同一把 dev-only 密钥，compose 保留 `:?`（生产覆写缺失仍然响亮地失败），并补上 compose 会读却未登记的 `SPRING_PROFILES_ACTIVE`。
+- [x] **生产上传被 nginx 卡死**：`frontend/nginx.conf` 未设 `client_max_body_size`（默认 1MB），后端 `application.yml:16-17` 允许 10MB → >1MB 简历在唯一生产路径上 413。补 `client_max_body_size 10m`；顺带删除 `/actuator/` 反代——`start-docker.bat:6` 的探活直连 `:8080`，这段只是把 health/info/prometheus 暴露到公网 origin。
+- [x] **后端 HTTP 契约补齐 34 例**：`InterviewController`（9 端点，产品主链路，此前 `src/test` 全文零引用）、`ResumeController` 5、`AnalyticsController` 5、`AttachmentController` 4、`JobController` 3。两条契约是读代码时才发现的：`POST /chat` 的空 `content` **不能**在 DTO 上加 `@NotBlank`——autoStart 就是靠空正文开场，拒绝发生在 `RunInterviewTurn:45-50`；跨账号任务查询回 404 而非 403，避免用 jobId 探测账号存在。三条植入缺陷（authSessionId 恒 null ×2、`inUse` 恒 false）红测确认全部被抓。
+- [x] **token 普查的第二处同类漏判**：`verify-ui-tokens.cjs:323` 用 `[a-z]+-<key>` 匹配类名，`--radius-2xl` 被 `text-2xl` 命中而白拿"有消费者"——与阶段九修掉的 `--color-sand` 同一失效模式。改为单值命名空间钉住前缀（`radius-`→`rounded` 等），门禁随即只报这一条，删除该 token（205 → 204 declarations）。
+- [x] **feature 入口违反自己文档写的规则**：`architecture.md:14` 明文"每个 feature 的入口是纯 `index.ts` barrel"，实际 8 个里 5 个是 API 客户端（`settings/index.ts` 写了 `fetchLlmConfig`/`saveProfile`/`uploadAvatar` 等 8 个请求函数，`interview`/`position`/`resume`/`assets` 同类），且 `verify-architecture.cjs` 完全没有这条检查。请求函数抽到各自 `api.ts`、`groupSessions` 归 `session-groups.ts`，barrel 只留确有外部消费者的名字（`AuthStatus`、`finishInterview`、`InterviewContextFacts`、`CreatePositionPayload`、`ResumeUploadResponse` 等 12 个死导出随之删除）；同 feature 的兄弟组件改走相对路径，不再 `import '../index'` 把自己绕回来。新增两条 AST 检查（入口纯度 + 外部消费者），`await import()` 的成员访问计入消费者，4 条新单测覆盖。
+- [x] **派生 token 只登记能证明的那一个**：`--layout-select-list-max-block-size: 360px` = 10 × `--ui-height-control`（滚动容器无自身内边距与边框、行高即控件高、无 gap），改为 `calc()` 后像素零变化。其余候选经核对是**巧合等值而非包含关系**：`--layout-brand-mark-inline-size: 72` 与生成态玫瑰同值但无来源关系、`--layout-position-catalog-min-inline-size: 176` 与条目 160 差一个 `--spacing-md` 但目录内边距并非 16、`--layout-sidebar-header-block-size: 60` 是选定的带高。不为其造推导。
+- [x] **实验台回到"渲染产品真正渲染的东西"（三组）**：设置导航列此前是实验台自写近似版（`grid gap-sm` 裸列表，没有右细线、没有 `mt-auto`、没有 aside）→ 提为 `shared/ui/navigation.tsx` 的 `SettingsNavigation`，产品与实验台同一拥有者，实验台基线按新判据重生成并逐张确认；主题选项组两处各写一遍 `grid grid-cols-3 gap-sm` + `radiogroup` → 提为 `ThemeChoiceGroup`；生成态居中背景产品写 `flex-1`、实验台写 `w-full` → 提为 `GeneratingSurface`。后两组像素零变化。
+- [x] **报告小节标题回到一个拥有者**：`SectionHeading`（eyebrow + `type-title text-balance`，带操作时同行、不带时自成一格）替换 7 处手写；hero 的 `type-document-title` 是另一角色，不并入。像素零变化。
+- [x] **补 5 条零断言交互**：主题选择与 `保存主题`（含 `html.dark` 即时生效）、密码显隐（按字段定位到 `field-actions` 内的按钮，此前两个同名字段导致严格模式冲突）、头像上传、简历删除确认、逐题复盘轮播。为此给 demo harness 补 `/api/user/avatar` 路由与一条 `sessionCount: 0` 的简历——删除只对未使用简历开放，此前 fixture 里根本没有可删的行。
+- [x] **文档与代码矛盾的批量纠正**：`DESIGN.md` 删掉 CSS 里 0 命中的 `--color-brand-light` 与不产出任何规则的 `text-meta` 原子；`architecture.md` 删 `VoiceIndicator`、`@NamedInterface` 实到 9 个而文档写"八个"（漏 `identity::accounts`）；质量体系"三条实测断言"补成四条；`setup.md` 语音"五帧"改六帧并列出转录帧；`.gitignore:41-43` 注释声称 CI 设 `PLAYWRIGHT_BROWSERS_PATH`，实际只设 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`；删 `capture:visual`（脚本内容与 `verify:visual` 完全相同却叫 capture，无任何调用点）；`.gitignore` 去掉重复的 `backend/uploads/`。
+- [x] **`setup.md` 关于本地跑单测的说法是错的**：原文称开关不设"`mvn clean test` 仍会成功"，但 `PreludeApplicationTest` 无环境开关、会加载完整上下文，Spring Session 在装配阶段就要连 Redis。改为：条件类跳过，但 compose 那组服务仍必须在跑。
+- [x] **`handoff.md` 自身的过期陈述**：开头宣称"远端 CI 100% 绿灯"，实际 `origin/arch/optimization-core-path-tests` 停在 `4585bfd`，其后 **16 个提交从未进入 GitHub Actions**——那盏绿灯只覆盖到当时为止。§3/§4 改为明确的历史存档（sentrux 分数、"PositionController 0 接口测试"、239 文件的 diff 数字均已被自己的 §6 推翻），§7 论文风险表"像素基线仅 6 张"改为 32 张并写明未覆盖面。
+- [x] **本轮判定为不做/非缺陷**：`elevated-*` 分层（见上）；compose 未传 `DEEPSEEK_API_KEY` 等模型密钥——产品是 BYOK，密钥经 `设置 → 模型管理` 加密入库，服务端环境变量只是可选回退，写进 compose 反而把密钥推到容器编排层；`--radius-xs`/`--radius-3xl`/`--spacing-0` 有单点 CSS 消费者；barrel 无死导出（逐个反查过）。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(204)、`verify:architecture`（含 7 条单测）、`build` + `verify:cascade`、`verify:production`、`verify:visual`（10 例）、`test:smoke`（**40 例**）、`byok`(4)/`dark`(2)/`a11y`(1)、`capture:surfaces`（32 张）全通过；后端 `mvn test` 255 例（本机未起 Redis，`PreludeApplicationTest` 按上述原因失败，非本轮引入）。实验台 List & Navigation 亮暗基线重生成并逐张确认，`12-settings-2-resumes` 复核。
+
+### 阶段十四：批次 1a–1c 单一拥有者收口（决策后执行）
+
+- [x] **三态归一个拥有者**：22 处散点收进 `shared/ui/empty-state.tsx` 的 `LoadingState`/`EmptyState`/`ErrorState`。加载态此前 6 处三种写法（`aria-live="polite"`、`role="status"`、什么都不标），读屏下是否播报成了运气，现统一 `role="status"`。按定稿口径**失败态一律给重试**，`ProfilePanel`/`ThemePanel`/`LlmSettingsPanel` 三处原本只把错误文本干贴，现各自接回 `refetch()`。顺带修掉 `InterviewSetup` 一处不像其他处的加载态（裸 `text-text-tertiary`，不居中不可达）。
+- [x] **内部类名不得外写**：`features/interview` 曾有 14 处直接写 `prelude-menu__*`/`prelude-button__label`。`shared/ui/menu.tsx` 新增 `MenuLabel`（图标/标签/当前值/箭头四件一套），`DropdownMenuItem` 以 `icon` 入参取代 `layout="leading-icon"`，`DropdownMenuRadioItem` 自己拥有截断标签；`shared/ui/button.tsx` 的 `shape="hold"` 新增 `held` 入参。`verify:ui` 现禁止 `shared/ui/**`、`shared/styles/**` 之外出现 `prelude-*__*` 或 `workspace-header__*`。
+- [x] **我自己引入并被像素门禁抓住的回归**：把 `--leading` 类从 svg 移到包裹 span 后 svg 丢了 16px 尺寸，`interview-model-menu` 基线立刻报差。改基线是掩盖，正解是把尺寸改为 `.prelude-menu__icon--leading svg` 并让包裹层 `display: contents` 退出布局——svg 回到原来的网格项位置，基线未重生成即通过。
+- [x] **八组重复收口**：`PageHeader`（实验台与看板此前手抄 interview 头的四层嵌套并丢了标题 tooltip）、`SubSection`（设置小节带 3 处）、`ReportSection`（报告小节带 8 处，`gap="sm"` 收束建议块）、`SessionGroupLabel`（AppShell 手抄分组题签）、`PromptBarActions`、`HiddenFileInput`（三处隐藏 file input + `sr-only` label，含"选同一个文件两次不触发 change"这个必须清的 value）、`inset-card`/`inset-card-lg`（内嵌卡片此前 5 处三种原子顺序）、`type-lead`（导语宽度此前跟着正文角色手抄 4 处）。
+- [x] **一处判定为过度收口并回退**：报告内联分数（2 处、同一文件）曾被抽成 `report-score-note` utility，实测让报告面板高 3px——因为原子的 `text-xs` 自带行高而 utility 只声明了 `font-size`。这正是 `DESIGN.md` 把"报告内联分数"列为该用原子类的例子的原因，故回退。同时把该条口径改写成可判据的形式：一处出现的组合用原子，同一组合重复到第二个拥有者才升角色，并由 `verify:ui` 禁止调用点再手写其原子。
+- [x] **七条单一拥有者门禁全部红测**：手写 `className="empty-state"`、`type="file"`、小节带原子、`bg-surface-muted p-*`、分组题签原子、导语宽度、内部类名外写，逐条植入即 `FAIL`。
+- [x] **采集帧不可复现这件事被实测确认**：`19-menu-with-submenu` 与 `23-tooltip-icon` 在**同一份代码连续两次** `capture:surfaces` 下 md5 不同（浮层展开与滚动时机），所以它们只能作人工复核，不能当回归判据——与 §7.1 的既有说法一致，本轮补上了实测证据。像素判据仍是 `verify:visual` 的按面板基线。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(204)、`verify:architecture`(7 单测)、`build` + `verify:cascade`、`verify:production`、`verify:visual`（10 例，**批次 1a–1c 全程零基线重生成**，仅实验台 List & Navigation 因导航列改为真实拥有者按预期重生成并逐张复核）、`test:smoke`（40 例）、`byok`/`dark`/`a11y`、`capture:surfaces` 全通过。
 ---
 
 ## 7. 关键风险与留存问题
 
 1. **视觉像素回归**：`npm run verify:visual` 现有 10 例、32 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 28 张），另含四条实测断言——折叠 rail 几何闭合、分割线两侧留白、字段尾部操作位的容器包含与留白、composer 尾部按钮同一条上下边。`capture:surfaces` 的 32 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
-3. **`..application..` 禁令的适用面**：只禁 `com.baomidou..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。
-4. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。
+3. **持久层禁令的适用面（本轮未收口，已定方案未执行）**：`..domain..`、`..api..`、`..application..` 三条只禁 `com.baomidou.mybatisplus..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。**适用面缺口**：规则按包名命中，模块根下的用例类不在射程内。本轮按职责复核了 7 个中招的类，结论是它们**不是同一类东西**：`assets/AssetService`、`assets/AttachmentService`、`llm/ModelProfileService` 是真正的用例（策略），应经仓储端口取数；而 `jobs/BackgroundJobService`、`jobs/BackgroundJobRecoveryService` 是持久队列机制本身（12+4 处 wrapper 是租约与原子状态转移 SQL），`assets/StalePendingAssetReconciler` 与 `llm/ProfileCapabilities` 是存储侧的清扫与查询助手。给后四类强插端口只会得到与 SQL 一比一镜像的假抽象。**阻塞点**：`assets`/`llm` 的行类型（`Asset`、`StoredAttachment`、`ModelProfile`）同时被当作领域对象返回给调用方，端口签名绕不开它们——所以这三个用例的端口化必须先做 `position`/`identity`/`resume` 那套 `*Entity` 分离，是一整块工作，不能半做。同理 `artifact`/`interview` 的 7 个 `BaseMapper<领域类>` 无 `@TableName`，表名完全依赖 `application.yml:53` 的隐式驼峰转换且无测试守护。
+4. **本轮排查出、未处理的其余留存**：`elevated-*` 判定为有意分层（见阶段十三首条）；派生 token 的巧合等值（`--layout-brand-mark-inline-size` 等 4 处）；tsx 内的几何数值完全不在 `verify-ui-tokens` 射程（该脚本只遍历 `.css`），如 `menu.tsx:28` 的 `sideOffset={6}`、`AnalyticsPage.tsx:28-33` 的 44/18/30/48；小节带 `grid gap-lg border-t border-border py-lg` 7 处与隐藏 file input 3 处仍各写各的；`/login`、`/analytics`、面试准备态与产品内报告面无像素基线；`capture:surfaces` 不在 CI 跑，`manifest.json` 的 revision 落后于 HEAD 且无人比对；CI 用 `channel: 'msedge'` 且不锁版本、runner 镜像自动更新，像素门禁没有 re-baseline 通道；3 个配置键只在 `@Value` 内联默认（`prelude.voice.turn-pool-size`、`prelude.jobs.lease-duration-seconds`/`heartbeat-interval-seconds`）；线程池 5/20/100 等硬编码；`InMemoryRetrievalAdapter.indices` 与 `RealtimeConnectionRegistry.connections` 无上限无 TTL；`"report.generate"` 字面量 4 处而 `JobTypes.REPORT_GENERATE` 零引用；`LlmPurpose`、`JobStatusResponse` 零引用；`.gitattributes` 只覆盖 `frontend/**` 与 workflows，`backend/**`、`docs/**` 行尾不受约束；`backend/Dockerfile` 以 root 运行、无 HEALTHCHECK 且 CI 从不构建。
+5. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。
 
 ### 论文风险移交清单（需作者决策，不由代码会话代答）
 
@@ -245,4 +277,4 @@
 | 证据链与新事实脱节 | 阶段一至四的结论（sentrux 门禁被删除、方案 A 完成度、token 体系重构、后端分层禁令）均未回写进 `thesis-assets/chapters/*.md` | 正文唯一真相源与证据锁定顺序由论文工作流管辖，工程侧不得反向改写正文 |
 | "治理门禁提升质量"的论证前提变化 | 原论证部分依赖 sentrux 分数回落；该门禁现已删除，改为按职责拆分 + 自建实测门禁 | 需要重新选定可辩护的度量口径，不能沿用旧分数叙述 |
 | 新增自研门禁的定位 | `verify:cascade`（实测层叠顺序、穿透 `cn()` 的死原子）、`verify:tokens` 双向引用检查是本轮新增能力 | 是否作为论文贡献点陈述、以及与既有 lint 体系的边界，属学术表述决策 |
-| 视觉度量口径 | 像素基线仅 6 张且平台锁定 win32 | 论文若声称"全界面视觉回归覆盖"会与实际不符，需按真实覆盖面表述 |
+| 视觉度量口径 | 像素基线 32 张（实验台按面板亮/暗 28 张 + 4 张产品面），平台锁定 win32 | 论文若声称"全界面视觉回归覆盖"会与实际不符：`/login`、`/analytics`、面试准备态与产品内报告面均无像素基线，需按真实覆盖面表述 |

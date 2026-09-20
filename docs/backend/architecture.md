@@ -13,7 +13,7 @@ jobs      resume    position  documents
 interview voice     activity  telemetry
 ```
 
-模块根包是默认公共接口。额外公共包使用 `@NamedInterface`，内部层级按真实类型职责建立。当前八个具名接口即全部跨模块契约：`identity::api`、`llm::api`、`assets::integration`（`assets/api`）、`documents::extraction`（`documents/api`）、`jobs::integration`、`position::catalog`（`position/api/port`）、`resume::integration`（`resume/api/port` 与 `resume/application/port`）、`interview::integration`（`interview/api/port`、`interview/application/port` 与 `interview/domain`）。`activity` 与 `context` 不声明具名接口，其根包类型即契约，依赖方直接引用根包。HTTP 适配器放在各模块 `web` 包，不得出现在 `api` NamedInterface 中；根包的 `HealthController` 与 `GlobalExceptionHandler` 是全局横切组件，不属于模块 `web` 层。
+模块根包是默认公共接口。额外公共包使用 `@NamedInterface`，内部层级按真实类型职责建立。当前九个具名接口即全部跨模块契约：`identity::api`、`identity::accounts`（`identity/api/port`）、`llm::api`、`assets::integration`（`assets/api`）、`documents::extraction`（`documents/api`）、`jobs::integration`、`position::catalog`（`position/api/port`）、`resume::integration`（`resume/api/port` 与 `resume/application/port`）、`interview::integration`（`interview/api/port`、`interview/application/port` 与 `interview/domain`）。`activity` 与 `context` 不声明具名接口，其根包类型即契约，依赖方直接引用根包。HTTP 适配器放在各模块 `web` 包，不得出现在 `api` NamedInterface 中；根包的 `HealthController` 与 `GlobalExceptionHandler` 是全局横切组件，不属于模块 `web` 层。
 
 Port 用于外部基础设施、框架隔离或跨模块接口。普通内部类直接表达其职责。`domain` 保持框架无关，专项 ArchUnit 测试验证 Spring AI、LangGraph4j、MCP SDK 与 AWS SDK 的隔离。
 

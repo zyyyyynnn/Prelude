@@ -11,7 +11,7 @@ frontend/src/
 ├── shared/    品牌资源、设计 token、纯工具与 Prelude-owned UI source
 ```
 
-依赖方向是 `app -> features -> shared`。每个 feature 的入口是纯 `index.ts` barrel，只再导出确有外部消费者的符号，视图与解析各自留在具名文件里（`features/report` 即 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`）；`app` 作为组合根可以深导入 feature 文件，feature 之间的调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录。
+依赖方向是 `app -> features -> shared`。每个 feature 的入口是纯 `index.ts` barrel，只再导出确有外部消费者的符号，视图与解析各自留在具名文件里（`features/report` 即 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`）；`app` 作为组合根可以深导入 feature 文件，feature 之间的调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录，并检查这条入口契约：`features/*/index.ts` 只允许具名再导出，且每个名字都要有 feature 之外的读取方（`app` 通过 `await import()` 取用也算）。feature 内部互相取用走相对路径，不绕自己的 barrel。
 
 ## Feature Ownership
 
@@ -44,7 +44,7 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 `shared/ui` 中的 Button、Field 与表单控件采用 shadcn source ownership 结构，Modal、Menu 与 Tooltip 使用 Base UI。面试输入区的 Prompt Bar 采用 [Beautiful UI](https://www.beautifului.dev/) 组合模式，来源记录位于 `frontend/beautiful-ui.sources.json`。Prompt Bar 负责附件、简历、岗位、JD 与模型选择；管理动作统一进入设置弹窗。所有 UI 源码使用 Prelude token 与 `DESIGN.md` 视觉语言。
 
-划分边界以样式归属为准：`shared/styles/index.css` 里注册了 chrome 的表面，其 markup 只允许有一处拥有者，产品界面与组件实验台都调用它。被多个 feature 复用的通用表面归 `shared/ui`——`Panel`、`SessionGroup`/`SessionRow`、`SidebarFrame`/`SidebarBrand`/`SidebarAction`/`SidebarPane`/`SidebarToggle`、`MessageBubble`、`GeneratingCard`、`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceIndicator`、`FieldActions`/`FieldAction`、`NavItem`、`OptionCard`/`ThemePreview`、`ScoreTile`；只服务一个领域视图的件留在该 feature 并由其 barrel 导出，例如 `ResumeRow` 归 `features/resume`、`StructuredReport`/`ScoreCard`/`StagePerformanceList`/`Trait`/`TrainingPlan` 归 `features/report`、`InterviewSetupComposer`/`AnswerComposerSurface` 归 `features/interview`。组合器把状态留在内部时，实验台要冻结呈现就抽无状态呈现层（`AnswerComposerSurface` 供真状态与冻结状态两种调用），不在实验台复制标记。feature 仍只负责取数与把领域类型映射成原始 props，`AppShell` 与面试、报告页保留查询与回调的薄封装。`shared` 不引入 `app` 或 `features`，这条由 `verify:architecture` 强制。
+划分边界以样式归属为准：`shared/styles/index.css` 里注册了 chrome 的表面，其 markup 只允许有一处拥有者，产品界面与组件实验台都调用它。被多个 feature 复用的通用表面归 `shared/ui`——`Panel`/`SubSection`、`SessionGroup`/`SessionGroupLabel`/`SessionRow`、`SidebarFrame`/`SidebarBrand`/`SidebarAction`/`SidebarPane`/`SidebarToggle`、`MessageBubble`、`GeneratingCard`/`GeneratingSurface`、`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceLevelMeter`、`FieldActions`/`FieldAction`、`NavItem`/`SettingsNavigation`、`OptionCard`/`ThemePreview`/`ThemeChoiceGroup`、`ScoreTile`、`LoadingState`/`EmptyState`/`ErrorState`、`MenuLabel`/`PromptBarActions`、`PageHeader`、`HiddenFileInput`；只服务一个领域视图的件留在该 feature 并由其 barrel 导出，例如 `ResumeRow` 归 `features/resume`、`StructuredReport`/`ScoreCard`/`StagePerformanceList`/`Trait`/`TrainingPlan`/`SectionHeading`/`ReportSection` 归 `features/report`、`InterviewSetupComposer`/`AnswerComposerSurface` 归 `features/interview`。组合器把状态留在内部时，实验台要冻结呈现就抽无状态呈现层（`AnswerComposerSurface` 供真状态与冻结状态两种调用），不在实验台复制标记。feature 仍只负责取数与把领域类型映射成原始 props，`AppShell` 与面试、报告页保留查询与回调的薄封装。`shared` 不引入 `app` 或 `features`，这条由 `verify:architecture` 强制。
 
 组件实验台是开发者界面，位于 `app/lab/ComponentLab.tsx`，由 `main.tsx` 的 DEV-only 路由挂载。它属于组合根，因此可以像页面一样组合 feature 的公开导出，渲染真实组件而不是近似版；它的样例数据在 `app/lab/samples.ts`，一律按角色命名（见 `DESIGN.md` 的脱敏口径）。`verify:production` 断言 `/components-lab` 与 `Component Lab` 不出现在构建产物里。
 

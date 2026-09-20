@@ -13,7 +13,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - `--color-surface-hover`：hover 表面。
 - `--color-surface-muted`：弱强调表面。
 - `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。
-- `--color-brand`、`--color-brand-light`：品牌强调。
+- `--color-brand`：品牌强调。
 - `--color-accent-solid`、`--color-accent-solid-hover`、`--color-accent-text`、`--color-text-on-accent`：从品牌色派生的交互角色，分别用于实心动作、悬停、选中态文本与其前景；品牌本色不直接承担小号文本或实心动作的对比度职责。
 - `--color-border`、`--color-border-warm`：边界。
 - `--color-focus-field`、`--color-focus-action`：字段与动作焦点。
@@ -61,7 +61,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - 代码、日志和 token 名称使用 `--font-mono`。
 - 字号使用 `--font-size-xs` 至 `--font-size-2xl` 阶梯，字重使用 `--font-weight-*` 语义阶梯，行高使用 `--line-height-*` 语义阶梯，组件内部采用紧凑标题尺度。
 
-阶梯同时以原子类暴露：`text-xs|sm|meta|md|lg|xl|2xl`、`leading-solid|display|tight|heading|compact|base|relaxed|copy`、`font-regular|medium|semibold`，全部指向上述 token，不允许写死数值。
+阶梯同时以原子类暴露：`text-xs|sm|md|lg|xl|2xl`、`leading-solid|display|tight|heading|compact|base|relaxed|copy`、`font-regular|medium|semibold`，全部指向上述 token，不允许写死数值。
 
 标题、指标、标签等常见配对固定为七个语义角色，页面选择角色而不是临时拼字号与行高：
 
@@ -75,9 +75,10 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 | `type-subtitle` | 次级标题 | serif `md` / medium / `compact` / primary |
 | `type-label` | 字段与条目名称 | serif `sm` / medium / `compact` / secondary |
 | `type-body` | 成段正文 | sans `sm` / regular / `relaxed` / secondary |
+| `type-lead` | 页面导语（正文 + 阅读宽度） | sans `sm` / regular / `relaxed` / secondary / `--layout-lead-max-inline-size` |
 | `type-meta` | 计数、时间、辅助说明 | sans `xs` / regular / `compact` / tertiary |
 
-行高由字号决定：同一字号只对应一种行高。角色未覆盖的配对（如报告内联分数）用原子类显式组合，不新增角色。
+行高由字号决定：同一字号只对应一种行高。角色表收的是**重复配对**：一处出现的组合用原子类显式写，不新增角色；同一组合在两个及以上拥有者里重复（`type-lead` 就是导语宽度跟着正文角色走了 4 处）才升为角色，并由 `verify:ui` 禁止调用点再手写其原子。
 
 标题角色与 DOM 层级一一对应：`h1` 用 `type-hero`（页面主标题）、`type-document-title`（打印文档面，不随视口放大）或 `workspace-header__title`，`h2` 用 `type-title`，`h3` 用 `type-subtitle`，字段与条目名用 `type-label`。`Panel` 按 `level` 选出 `h2`/`h3` 与对应角色，标题层级由组件决定。
 
@@ -147,7 +148,7 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 
 按住态不得位移：`按住说话` 曾带一条 `translateY(2px)` 的按压下沉，那对瞬间点击是反馈，对一个要按住几秒的控件就是错位——实测它比同一行里的两个图标按钮低 2px。按压反馈一律用不改位置的手段表达（环影、颜色、内容替换）。`npm run verify:visual` 会实测每个 composer 尾部操作区里的按钮共享同一条上边与下边。
 
-重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。页面区段仍用无框布局与受控内容宽度，只有需要明确边界的数据对象才升级为 `card`。
+重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。三态各有拥有者（`shared/ui/empty-state.tsx` 的 `LoadingState`/`EmptyState`/`ErrorState`），调用点不再手写 `className="empty-state"`：加载态自带 `role="status"`（此前有的写 `aria-live`、有的写 `role`、有的什么都不标，读屏下是否被播报成了运气），**失败态一律给重试**——能重发的读取失败没有出口，读起来就是界面坏了而不是有消息。页面区段仍用无框布局与受控内容宽度，只有需要明确边界的数据对象才升级为 `card`。
 
 侧栏分三层：`@utility sidebar-frame` 拥有 rail 的盒子（宽度、边框、表面、折叠宽度与过渡），`@utility app-sidebar` 只加页面锚定（sticky、层级、`100vh`，并把 frame 撑满高度），`@utility sidebar-rail` 只拥有内容作用域（图标内边距的推导，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`：brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚。主操作下方那条分割线的下线由 frame 自己的 `gap-md` 给出，调用点不补 padding——实验台曾补一个 `pt-sm` 而产品没补，同一个组件因此有两种渲染。产品 shell 是 `app-sidebar > SidebarFrame`，实验台让同一个 `SidebarFrame` 直接落在 `bg-bg` 上——盒子由组件拥有，宽度就不会被检阅用的边框偷走。折叠状态由两处局部属性表达：frame 与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入；图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 与真实 shell 表现一致。
 
