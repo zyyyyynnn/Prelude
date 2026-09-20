@@ -137,6 +137,19 @@ for (const name of declaredClasses) {
   violations.push(`src/shared/styles/index.css: .${name} has no consumer`)
 }
 
+/* A functional `@utility name-*` only reaches the bundle when some source file spells a
+   concrete `name-<suffix>` out: Tailwind reads class names from text, so a name built at
+   runtime (`name-${count}`) registers nothing and the rule silently never exists. The
+   stem check above cannot see this, because the dynamic prefix does appear in source. */
+for (const match of indexCss.matchAll(/^@utility\s+([a-z][a-z0-9-]*)-\*\s*\{/gm)) {
+  const prefix = match[1]
+  if (!new RegExp(`${prefix}-(?:[a-z][a-z0-9]*|\\d+)\\b`).test(consumers)) {
+    violations.push(
+      `src/shared/styles/index.css: @utility ${prefix}-* has no literal call site — Tailwind cannot emit a class name built at runtime`,
+    )
+  }
+}
+
 if (violations.length) {
   console.error(`UI guardrails: FAIL (${violations.length})`)
   for (const violation of violations) console.error(`  ${violation}`)

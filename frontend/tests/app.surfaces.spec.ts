@@ -270,6 +270,12 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
     const button = panel.querySelector<HTMLElement>('button[type="submit"]')!
     const password = panel.querySelector<HTMLElement>('#auth-password')!
     const emailPlaceholder = panel.querySelector<HTMLElement>('.auth-email-field')!
+    /* A trailing field action has to be contained by the control it belongs to: the
+       wrapper is what gives it a box, and the control's trailing padding is what keeps
+       the text out from under it. Both vanish if the layout utility stops being emitted. */
+    const action = panel.querySelector<HTMLElement>('[data-slot="field-actions"] button')!
+    const actionBox = action.getBoundingClientRect()
+    const passwordBox = password.getBoundingClientRect()
     return {
       headingFont: getComputedStyle(headingElement).fontFamily,
       bodyFont: getComputedStyle(document.body).fontFamily,
@@ -281,6 +287,17 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
       buttonTop: button.getBoundingClientRect().top,
       buttonGap: button.getBoundingClientRect().top - password.getBoundingClientRect().bottom,
       emailPlaceholderHeight: emailPlaceholder.getBoundingClientRect().height,
+      actionInsideField:
+        actionBox.top >= passwordBox.top - 0.5 &&
+        actionBox.bottom <= passwordBox.bottom + 0.5 &&
+        actionBox.left >= passwordBox.left &&
+        actionBox.right <= passwordBox.right + 1,
+      actionCentredVertically:
+        Math.abs(
+          actionBox.top + actionBox.height / 2 - (passwordBox.top + passwordBox.height / 2),
+        ) <= 0.5,
+      textClearsAction:
+        Number.parseFloat(getComputedStyle(password).paddingInlineEnd) >= actionBox.width,
     }
   })
   expect(loginGeometry.headingFont).not.toBe(loginGeometry.bodyFont)
@@ -288,6 +305,9 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
   expect(loginGeometry.buttonHeight).toBeCloseTo(loginGeometry.controlHeight, 0)
   expect(loginGeometry.emailPlaceholderHeight).toBeGreaterThanOrEqual(50)
   expect(loginGeometry.buttonGap).toBeGreaterThan(loginGeometry.emailPlaceholderHeight + 32)
+  expect(loginGeometry.actionInsideField).toBe(true)
+  expect(loginGeometry.actionCentredVertically).toBe(true)
+  expect(loginGeometry.textClearsAction).toBe(true)
   await page.screenshot({ path: test.info().outputPath('login-desktop.png'), fullPage: true })
 
   await page.getByRole('button', { name: '注册', exact: true }).click()

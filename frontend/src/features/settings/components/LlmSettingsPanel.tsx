@@ -58,6 +58,13 @@ function LlmSettingsForm({
   const endpointHint = state.protocol
     ? `填写接口根地址，系统会请求 ${state.protocol.endpointSuffix}。`
     : '内置接入方式使用系统配置的服务地址。'
+  const revealKey = (
+    <FieldAction
+      label={state.showKey ? '隐藏 API Key' : '显示 API Key'}
+      icon={state.showKey ? <Eye /> : <EyeOff />}
+      onClick={() => state.setShowKey(!state.showKey)}
+    />
+  )
   return (
     <Panel
       title={sectionTitles.llm}
@@ -132,22 +139,18 @@ function LlmSettingsForm({
         }
       >
         <FieldActions
-          actions={[
-            ...(state.config?.hasApiKey
+          actions={
+            state.config?.hasApiKey
               ? [
                   <FieldAction
                     label="清除已保存的 API Key"
                     icon={<Trash2 />}
                     onClick={() => state.update('apiKey', '__CLEAR__')}
                   />,
+                  revealKey,
                 ]
-              : []),
-            <FieldAction
-              label={state.showKey ? '隐藏 API Key' : '显示 API Key'}
-              icon={state.showKey ? <Eye /> : <EyeOff />}
-              onClick={() => state.setShowKey(!state.showKey)}
-            />,
-          ]}
+              : [revealKey]
+          }
         >
           <Input
             id="llm-api-key"

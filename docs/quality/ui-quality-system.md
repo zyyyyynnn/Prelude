@@ -6,14 +6,14 @@
 | --- | --- |
 | `npm run check` | Vite+ 统一的格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
 | `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界 |
-| `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项；样式表卫生（禁止 feature CSS 文件与 feature 样式导入、空规则、未分层元素选择器、无消费者的类规则） |
+| `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项；样式表卫生（禁止 feature CSS 文件与 feature 样式导入、空规则、未分层元素选择器、无消费者的类规则，以及**功能 `@utility name-*` 必须有字面量调用点**——Tailwind 从源码文本读类名，运行时拼出的类名不会产出任何规则） |
 | `npm run verify:tokens` | token 登记完整性与唯一性；声明但无任何消费者的 token；被引用但从未声明的 `var(--x)` 与 `atom-(--x)`（未声明的自定义属性会让整条声明在计算值阶段静默失效）；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度 px/rem）。绝对长度按**声明**读取，因此跨行的 `calc()`、`@utility` 内的自定义属性、混用 `var()` 的值都在范围内；`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 登记的 token 必须仍是引用其来源的表达式；盒尺寸不得整值借用与某档 `--ui-glyph-*` 等值的 `--spacing-*` 步骤；读取器发现的声明数低于阈值即失败，防止解析器空转造成假绿。相对单位 `%`/`em`/`vh`/`vw` 放行，技术必需的裸值（forced-colors 描边、`sr-only` 1px 裁剪盒）须在规则内标 `geometry-exempt: <理由>` 显式豁免 |
 | `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类必然压过核心原子造成的死原子；须在 `npm run build` 之后执行 |
 | `npm run verify:production` | 生产产物不包含开发态组件检查面 |
 | `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
 | `npm run verify:dark` | 暗色偏好启动恢复 |
 | `npm run verify:a11y` | 真实浏览器 Axe 检查 |
-| `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度，以及 404 面的像素基线；组件检查面按面板逐张比对（亮/暗各 14 张，高于视口的面板先按实测差额扩窗再取图，WebGL 品牌球 mask 后改用几何断言）；另有两条实测断言——折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合，以及每个分割线角色元素两侧的间隙不小于 `--spacing-sm` |
+| `npm run verify:visual` | 代表性桌面界面、空状态、设置面、Prompt Bar 多级菜单与 Tooltip 对比度，以及 404 面的像素基线；组件检查面按面板逐张比对（亮/暗各 14 张，高于视口的面板先按实测差额扩窗再取图，WebGL 品牌球 mask 后改用几何断言）；另有三条实测断言——折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合、每个分割线角色元素两侧的间隙不小于 `--spacing-sm`，以及字段尾部操作位必须落在控件盒内、垂直居中且输入框尾部留白不小于按钮宽度（登录页密码字段即被测点） |
 | `npm run build` | Vite+ 生产构建 |
 | `npm run test:smoke` | React 开发 StrictMode 下真实浏览器核心行为与客户端路由 |
 | `npm audit --omit=dev` | 生产依赖漏洞门禁 |

@@ -52,11 +52,21 @@ export function Field({
   )
 }
 
-/** A control with trailing actions inside its own box. The gutter the control
- *  reserves is counted from the actions it is given, so the two cannot disagree. */
-export function FieldActions({ actions, children }: { actions: ReactNode[]; children: ReactNode }) {
+/** A control with one or two trailing actions inside its own box. Both class names are
+ *  written out on purpose: Tailwind reads class names from source text, so a name
+ *  assembled at runtime registers no utility and the whole rule vanishes from the bundle. */
+export function FieldActions({
+  actions,
+  children,
+}: {
+  actions: [ReactNode] | [ReactNode, ReactNode]
+  children: ReactNode
+}) {
   return (
-    <div className={`field-actions-${actions.length}`} data-slot="field-actions">
+    <div
+      className={actions.length === 1 ? 'field-actions-1' : 'field-actions-2'}
+      data-slot="field-actions"
+    >
       {children}
       <div className="absolute inset-y-0 inset-e-(--ui-control-inset) flex items-center">
         {actions.map((action, index) => (

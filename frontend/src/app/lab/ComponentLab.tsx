@@ -329,7 +329,7 @@ export function ComponentLab() {
               <Input id="lab-disabled" disabled placeholder="不可编辑" />
             </Field>
           </div>
-          <div className="grid gap-md border-t border-border pt-md">
+          <div className="grid gap-sm border-t border-border pt-md">
             <h3 className="type-subtitle">小节</h3>
             <div className="form-grid gap-md">
               <Field label="思考深度" htmlFor="lab-reasoning">

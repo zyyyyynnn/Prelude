@@ -189,11 +189,19 @@
 - [x] 验证：`vp check`、`verify:ui`、`verify:tokens`（209 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`（4）、`verify:dark`（2）、`verify:a11y`（1）全通过；实验台 30 张基线按新判据重生成并逐张复核。
 - [x] **同轮复核再清三处（用户指出）**：① Panel 面板的正文把面板 `description` 已声明的契约又说了一遍（「标题行不随滚动移动，内容区自带内边距并独立滚动」），正文改为不含信息的示例文案，契约只在描述里出现一次。② SegmentedControl 面板的「会话/报告/看板」是产品里不存在的第三套条目，改为产品那两组真实条目各一份（登录/注册、面试/报告）。③ Report blocks 整块是 Report 整页同一段的重复渲染（`ScoreCard`、轮播导航、`Trait`、`ReviewDetail` 都在整页里），删除该面板与其两张基线；`Trait` 的空态改由 `sampleReport.weaknesses: []` 在整页里呈现，覆盖不丢。`features/report/index.ts` 随之收回到确有外部消费者的符号（`ReportCarouselNavigation`/`ReviewDetail`/`ScoreCard`/`Trait` 已无外部调用点）。实验台 15 → 14 个面板、28 张基线，上述检查与 `capture:surfaces` 重跑全通过。
 
+### 阶段十：统一排查样式、排版、间距、对齐、layout 与 token 收敛
+
+- [x] **修掉本轮自己引入的回归（最高优先）**：`FieldActions` 用模板字符串拼类名 `` `field-actions-${actions.length}` ``，而 Tailwind 只从源码文本读类名——全仓唯一的功能 utility `@utility field-actions-*` 因此**一条规则都不产出**。实测后果：包裹层 `position: static`（绝对定位的操作位失去锚点）、`--field-trailing-gutter` 未定义回退 0、输入框尾部留白从 50px 退回 16px，而按钮盒是 32px——文字被压住 34px，按钮顶边比输入框高 9px。登录、设置「修改密码」、API Key、实验台四处同时中招，且 `verify:ui` 的「无消费者」检查把动态前缀当消费者放过、像素基线因字段为空而看不出来。改为字面量分支 + `[ReactNode] | [ReactNode, ReactNode]` 元组收窄数量。
+- [x] 同一失效模式的三条门禁：`verify:ui` 要求每个 `@utility name-*` 存在字面量调用点（红测：改回动态拼接即 `FAIL (1)`）；`@visual` 在登录页实测「操作位落在控件盒内 + 垂直居中 + 输入框尾部留白 ≥ 按钮宽」（红测：失败在 `actionInsideField: false`）；构建产物复核两条规则确实产出。
+- [x] 实验台 Field 的「小节」容器 `gap-md` → `gap-sm`，回到 `DESIGN.md` 与两处产品调用点同一形态——样例本身此前教的是错的写法。
+- [x] **排查出、本轮未改的留存项**（按严重度见会话报告）：报告模块整体绕过 `type-*` 角色并让 `mt-*` 承担绑定间距；`MessageThread`/`InterviewSession` 的加载与空态没走 `empty-state`；分数数字存在三种写法；`AnalyticsPage` 用 `border-border` 配 `bg-surface-muted` 违反细线标准；4 个 token（`--color-brand-light`/`--radius-2xl`/`--spacing-0`/`--font-mono`）与桥接别名 `--ease-standard` 因 `@theme` 镜像行被门禁误判为有消费者；`session-row` 的 `size={12}` 与 `prompt-bar` JS 里的 `100` 各绕开一次 token；`@layer base` 里的 `body { font-family }` 被未分层的 `body { font }` 永久压过。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`/`dark`/`a11y` 全通过；实验台 Field 亮暗基线与 `capture:surfaces` 重跑并复核。
+
 ---
 
 ## 7. 关键风险与留存问题
 
-1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、32 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 28 张），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
+1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、32 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 28 张），另含三条实测断言——折叠 rail 几何闭合、分割线两侧留白、字段尾部操作位的容器包含与留白。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
 3. **`..application..` 禁令的适用面**：只禁 `com.baomidou..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。
 4. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。
