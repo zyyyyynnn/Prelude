@@ -80,8 +80,6 @@ jobs:
 
   frontend:
     runs-on: windows-latest
-    env:
-      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
     steps:
       - uses: actions/checkout@v7.0.1
@@ -98,6 +96,12 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+
+      # The version comes from the @playwright/test pin, so the runner and a workstation
+      # rasterise the same way instead of agreeing by luck.
+      - name: Install the pinned browser
+        working-directory: frontend
+        run: npx playwright install chromium
 
       - name: Audit runtime dependencies
         working-directory: frontend
@@ -146,3 +150,18 @@ jobs:
       - name: Visual regression
         working-directory: frontend
         run: npm run verify:visual
+
+      # A pixel gate that fails without leaving the frames behind cannot be diagnosed: the
+      # only evidence is "N pixels differ", which does not say *which* N. Upload the raw
+      # actual/diff PNGs Playwright writes under test-results so a runner-vs-workstation
+      # difference can be read as an image instead of guessed at.
+      - name: Upload visual evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: visual-regression-evidence
+          path: |
+            frontend/test-results/**/*.png
+            frontend/test-results/**/*.md
+          retention-days: 7
+          if-no-files-found: ignore

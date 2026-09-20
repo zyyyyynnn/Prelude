@@ -60,4 +60,6 @@ Tooltip 由 Base UI 提供交互行为，并使用高对比中性表面。页面
 
 新增一批基线时，**先比对同一面的亮/暗两张 md5**：相同即说明暗色那帧从未真的切到暗色，基线只是亮色帧的副本，看着是判据其实什么都不判。产品面基线首版就踩了这一点——`open(page, scheme)` 的 `scheme` 只有 1/6 个实现读了它（TypeScript 允许少写参数，类型检查与全绿用例都不会异议）。修法不是给其余 5 个补 `if`，而是把 scheme 从各 `open` 收回、由循环统一应用并断言 `html` 上的 `dark` 类确实切换：参数被丢这件事从此不可表达。
 
+判据浏览器固定为 `@playwright/test` 锁定的 Chromium，不用系统 Edge：`channel: 'msedge'` 把 oracle 变成"这台机器装了什么浏览器"，第一次 CI 跑就因为 `<textarea>` 右下角那 9×9 的 Blink 自绘 resize grip 红了 20/16 像素——设计体系并不拥有那些像素。换 Playwright 版本等于换 oracle，要按一次环境变更处理并重生成基线。
+
 判定后仍保留的字面量：`--layout-sidebar-header-block-size: 60px` 与 `--layout-page-center-block-offset: 84px` 表达的是「下限/留白」而非「等式」，推导成等值会改变观感，因此不登记进 `derived_tokens`。

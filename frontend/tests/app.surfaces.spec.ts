@@ -251,21 +251,14 @@ test('@visual keeps no-data pages lightweight and typographically consistent', a
   const emptyState = page.locator('.workspace-page__content > .empty-state')
   await expect(emptyState).toBeVisible()
   await expect(emptyState.locator('svg')).toHaveCount(0)
-  const presentation = await emptyState.evaluate((element) => {
-    const style = getComputedStyle(element)
-    return {
-      usesSerif: style.fontFamily.includes('Lora'),
-      borderStyle: style.borderStyle,
-      boxShadow: style.boxShadow,
-      backgroundColor: style.backgroundColor,
-    }
-  })
-  expect(presentation).toEqual({
-    usesSerif: true,
-    borderStyle: 'none',
-    boxShadow: 'none',
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-  })
+  /* `toHaveCSS` re-resolves the locator on each retry. A one-shot `evaluate` holds a handle
+     that React detaches while the dashboard's other queries land, and a detached element
+     answers `getComputedStyle` with an empty style — which reads back as "no border, no
+     shadow, not serif" and only failed on the slower browser. */
+  await expect(emptyState).toHaveCSS('font-family', /Lora/)
+  await expect(emptyState).toHaveCSS('border-style', 'none')
+  await expect(emptyState).toHaveCSS('box-shadow', 'none')
+  await expect(emptyState).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
 })
 
 test('@a11y keeps the primary authenticated surface accessible', async ({ page }) => {
