@@ -4,7 +4,7 @@
 >
 > **关联 PR**：[#67](https://github.com/zyyyyynnn/Prelude/pull/67)（Draft）
 >
-> **当前状态**：本地全量检查在当前 HEAD 通过——后端 219 个 `@Test`（58 个类，其中 15 个按环境变量启用），前端 12 道 CI 门禁同义命令全绿，`verify:visual` 10 例 / 32 张 `*-win32.png` 基线。
+> **当前状态**：本地全量检查在当前 HEAD 通过——后端 255 个 `@Test`（58 个类，其中 15 个按环境变量启用；四个依赖服务在跑时 0 跳过），前端 12 道 CI 门禁同义命令全绿，`verify:visual` 22 例 / 44 张 `*-win32.png` 基线。
 >
 > **远端落后**：`origin/arch/optimization-core-path-tests` 停在 `4585bfd`，其后 **16 个提交从未进入 GitHub Actions**。[Run 35323868049](https://github.com/zyyyyynnn/Prelude/actions/runs/35323868049) 的绿灯只覆盖到 `4585bfd` 为止的状态，不能读作"当前分支已过 CI"；推送需另行授权。
 >
@@ -269,14 +269,23 @@
 - [x] **明确划在体系之外并写进 `DESIGN.md`**：echarts 的 `grid` 留白（`TREND_GRID` 44/18/30/48）、`lineStyle.width`、雷达 `radius: '64%'`、`RoseThree` 的 `strokeWidth` 是**为图表内容量出来的尺寸**（要装下最宽 y 轴标签与日期标签），不是界面尺度的一档；把它们换算成 `--spacing-*` 只是给无关数字披 token 外衣。它们以具名常量留在图表模块内，字体与颜色照旧经 `cssVarNumber()` 读设计 token。`--layout-chart-block-size` 与 `--layout-select-list-max-block-size` 同为 360px 属巧合，不建立关系。
 - [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(204)、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（10 例，零基线重生成）、`test:smoke`（40 例）、`capture:surfaces` 全通过；三张登录帧因题签行高重采并逐张复核。
 
+### 阶段十六：批次 1e 产品面像素门禁与后端契约在真实依赖下全跑
+
+- [x] **产品面进像素门禁**：新增 6 个产品面 × 亮/暗 = 12 张 `*-win32.png` 基线（登录、注册、面试准备态、看板、产品内报告面、设置主题面板），`verify:visual` 从 10 例 / 32 张 升到 **22 例 / 44 张**。此前产品主链路的视觉回归只由实验台承担，`/login` 与 `/analytics` 改坏了没有任何自动判据会红。
+- [x] **我自己引入、被逐字节比对抓住的假判据**：`productSurfaces` 的 `open(page, scheme)` 只有 `login` 真正读了 `scheme`，其余 5 个签名把参数丢了——TypeScript 允许少写参数，所以类型检查、`vp check` 和 22 例全绿都没有异议，而它们的"暗色基线"是亮色帧的逐字节副本，**什么都没判**。是提交前对 12 张新基线做 md5 时看到 5 对完全相同才暴露。修法不是补 5 行 `if`：把 scheme 从各 `open` 上收回来，由循环统一 `preferScheme()` 应用、`expectScheme()` 断言 `html` 上的 `dark` 类真的换了，参数被丢这件事从此不可能发生。红测：修复后先跑一次，5 例如期 `FAIL`（旧基线确实是亮的），再生成并逐张复核暗色帧。同一处 `localStorage.setItem('prelude-theme-preference', …)` 原本在文件里手抄了 3 遍，现只有 `preferScheme` 一份。
+- [x] **判据只框可复现的表面**：着色品牌球（登录/注册）与 echarts 画布（看板）在两次相同运行间不逐字节稳定，取图时 mask 掉，动效与配色仍由既有几何断言把关。这是实测结论而非推测——同一份代码连采两次 md5 不同。
+- [x] **产品内报告面的桩数据是个假空态**：`installApi` 只提供进行中的会话 7，因此首版基线拍到的永远是"等待报告"卡片。补 `installReportSession()`（完成态 + `summaryReport`），基线才真正拍到报告面；同时给生成中状态补了一条 `@smoke` 断言（等待卡、进度指示、且不得出现 prompt bar 与报告面），`test:smoke` 40 → **41 例**。
+- [x] **后端 255 个 `@Test` 首次在真实依赖下 0 跳过**：本地 redis / rabbitmq / mysql / versitygw 起齐后跑全量 `mvn test`，15 个按环境变量启用的条件测试全部执行，`Tests run: 255, Failures: 0, Errors: 0, Skipped: 0`。在此之前这 15 个测试从未在本机以外被验证过。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`(204)、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（22 例，连跑两次全绿）、`test:smoke`(41)、`byok`(4)/`dark`(2)/`a11y`(1)、后端全量（255/0 skipped）全通过。
+
 ---
 
 ## 7. 关键风险与留存问题
 
-1. **视觉像素回归**：`npm run verify:visual` 现有 10 例、32 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 28 张），另含四条实测断言——折叠 rail 几何闭合、分割线两侧留白、字段尾部操作位的容器包含与留白、composer 尾部按钮同一条上下边。`capture:surfaces` 的 32 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
+1. **视觉像素回归**：`npm run verify:visual` 现有 22 例、44 张 `*-win32.png` 基线——组件检查面按面板逐张 28 张、产品面按面逐张 12 张（登录、注册、面试准备态、看板、产品内报告面、设置主题面板）、Prompt Bar / 模型菜单 / 设置面板 / 404 正文 4 张，另含四条实测断言——折叠 rail 几何闭合、分割线两侧留白、字段尾部操作位的容器包含与留白、composer 尾部按钮同一条上下边。`capture:surfaces` 的 32 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
 3. **持久层禁令的适用面（本轮未收口，已定方案未执行）**：`..domain..`、`..api..`、`..application..` 三条只禁 `com.baomidou.mybatisplus..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。**适用面缺口**：规则按包名命中，模块根下的用例类不在射程内。本轮按职责复核了 7 个中招的类，结论是它们**不是同一类东西**：`assets/AssetService`、`assets/AttachmentService`、`llm/ModelProfileService` 是真正的用例（策略），应经仓储端口取数；而 `jobs/BackgroundJobService`、`jobs/BackgroundJobRecoveryService` 是持久队列机制本身（12+4 处 wrapper 是租约与原子状态转移 SQL），`assets/StalePendingAssetReconciler` 与 `llm/ProfileCapabilities` 是存储侧的清扫与查询助手。给后四类强插端口只会得到与 SQL 一比一镜像的假抽象。**阻塞点**：`assets`/`llm` 的行类型（`Asset`、`StoredAttachment`、`ModelProfile`）同时被当作领域对象返回给调用方，端口签名绕不开它们——所以这三个用例的端口化必须先做 `position`/`identity`/`resume` 那套 `*Entity` 分离，是一整块工作，不能半做。同理 `artifact`/`interview` 的 7 个 `BaseMapper<领域类>` 无 `@TableName`，表名完全依赖 `application.yml:53` 的隐式驼峰转换且无测试守护。
-4. **本轮排查出、未处理的其余留存**：`elevated-*` 判定为有意分层（见阶段十三首条）；派生 token 的巧合等值（`--layout-brand-mark-inline-size` 等 4 处）；tsx 内的几何数值完全不在 `verify-ui-tokens` 射程（该脚本只遍历 `.css`），如 `menu.tsx:28` 的 `sideOffset={6}`、`AnalyticsPage.tsx:28-33` 的 44/18/30/48；小节带 `grid gap-lg border-t border-border py-lg` 7 处与隐藏 file input 3 处仍各写各的；`/login`、`/analytics`、面试准备态与产品内报告面无像素基线；`capture:surfaces` 不在 CI 跑，`manifest.json` 的 revision 落后于 HEAD 且无人比对；CI 用 `channel: 'msedge'` 且不锁版本、runner 镜像自动更新，像素门禁没有 re-baseline 通道；3 个配置键只在 `@Value` 内联默认（`prelude.voice.turn-pool-size`、`prelude.jobs.lease-duration-seconds`/`heartbeat-interval-seconds`）；线程池 5/20/100 等硬编码；`InMemoryRetrievalAdapter.indices` 与 `RealtimeConnectionRegistry.connections` 无上限无 TTL；`"report.generate"` 字面量 4 处而 `JobTypes.REPORT_GENERATE` 零引用；`LlmPurpose`、`JobStatusResponse` 零引用；`.gitattributes` 只覆盖 `frontend/**` 与 workflows，`backend/**`、`docs/**` 行尾不受约束；`backend/Dockerfile` 以 root 运行、无 HEALTHCHECK 且 CI 从不构建。
+4. **本轮排查出、未处理的其余留存**：`elevated-*` 判定为有意分层（见阶段十三首条）；派生 token 的巧合等值（`--layout-brand-mark-inline-size` 等 4 处）；`.tsx` 内的几何数值仍不在 `verify-ui-tokens` 射程（该脚本只遍历 `.css`），新加的 `OVERLAY_OFFSET` 靠 `verify:ui` 的"只能取该对象成员"这条间接把关，对象本身的 4 个数字没有判据；`capture:surfaces` 不在 CI 跑，`manifest.json` 的 revision 落后于 HEAD 且无人比对；CI 用 `channel: 'msedge'` 且不锁版本、runner 镜像自动更新，像素门禁没有 re-baseline 通道；3 个配置键只在 `@Value` 内联默认（`prelude.voice.turn-pool-size`、`prelude.jobs.lease-duration-seconds`/`heartbeat-interval-seconds`）；线程池 5/20/100 等硬编码；`InMemoryRetrievalAdapter.indices` 与 `RealtimeConnectionRegistry.connections` 无上限无 TTL；`"report.generate"` 字面量 4 处而 `JobTypes.REPORT_GENERATE` 零引用；`LlmPurpose`、`JobStatusResponse` 零引用；`.gitattributes` 只覆盖 `frontend/**` 与 workflows，`backend/**`、`docs/**` 行尾不受约束；`backend/Dockerfile` 以 root 运行、无 HEALTHCHECK 且 CI 从不构建。
 5. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。
 
 ### 论文风险移交清单（需作者决策，不由代码会话代答）
@@ -286,4 +295,4 @@
 | 证据链与新事实脱节 | 阶段一至四的结论（sentrux 门禁被删除、方案 A 完成度、token 体系重构、后端分层禁令）均未回写进 `thesis-assets/chapters/*.md` | 正文唯一真相源与证据锁定顺序由论文工作流管辖，工程侧不得反向改写正文 |
 | "治理门禁提升质量"的论证前提变化 | 原论证部分依赖 sentrux 分数回落；该门禁现已删除，改为按职责拆分 + 自建实测门禁 | 需要重新选定可辩护的度量口径，不能沿用旧分数叙述 |
 | 新增自研门禁的定位 | `verify:cascade`（实测层叠顺序、穿透 `cn()` 的死原子）、`verify:tokens` 双向引用检查是本轮新增能力 | 是否作为论文贡献点陈述、以及与既有 lint 体系的边界，属学术表述决策 |
-| 视觉度量口径 | 像素基线 32 张（实验台按面板亮/暗 28 张 + 4 张产品面），平台锁定 win32 | 论文若声称"全界面视觉回归覆盖"会与实际不符：`/login`、`/analytics`、面试准备态与产品内报告面均无像素基线，需按真实覆盖面表述 |
+| 视觉度量口径 | 像素基线 44 张（实验台按面板亮/暗 28 张 + 产品面按面亮/暗 12 张 + Prompt Bar / 模型菜单 / 设置面板 / 404 正文 4 张），平台锁定 win32 | 论文若声称"全界面视觉回归覆盖"仍与实际不符：面试**对话态**（消息流与 composer 在真实会话中的组合）无产品面基线，着色品牌球与 echarts 画布被 mask 后改由几何断言把关，需按真实覆盖面表述 |

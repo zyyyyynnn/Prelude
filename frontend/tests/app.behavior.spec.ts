@@ -1607,3 +1607,40 @@ async function selectContext(page: Page, menuLabel: string, option: string) {
   await page.getByRole('menuitem', { name: new RegExp(menuLabel) }).hover()
   await page.getByRole('menuitemradio', { name: option }).click()
 }
+
+/* The generating state is what a candidate stares at after 结束面试, and until now nothing
+   in the product rendered it under test — only the gallery's frozen copy did. A session that
+   is 'generating' with no report yet is the whole difference between that surface and the
+   report, so it is worth locking on its own. */
+test('@smoke shows the generating surface while a finished session waits for its report', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    sessions: [{ sessionId: 12, targetPosition: 'Java 后端工程师', status: 'generating' }],
+    session: {
+      sessionId: 12,
+      targetPosition: 'Java 后端工程师',
+      status: 'generating',
+      currentStage: 'closing',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.goto('/interview?session=12')
+
+  const card = page.locator('.generating-card')
+  await expect(card).toBeVisible()
+  await expect(card.getByRole('heading', { name: 'AI 评估报告生成中…' })).toBeVisible()
+  await expect(card.locator('.generating-progress-indicator')).toBeVisible()
+  // The composer and the report are both absent: this surface replaces them entirely.
+  await expect(page.locator('[data-slot="prompt-bar-surface"]')).toHaveCount(0)
+  await expect(page.locator('[data-slot="workspace-report"]')).toHaveCount(0)
+  // The card is centred on a plain sheet by its owner, not by the page improvising.
+  await expect(page.locator('.generating-card')).toBeInViewport()
+})

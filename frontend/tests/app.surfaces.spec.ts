@@ -1,6 +1,10 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { installAnonymousSession } from './auth-bootstrap'
+import { sampleReport } from '../src/app/lab/samples'
+
+const schemes = ['light', 'dark'] as const
+type Scheme = (typeof schemes)[number]
 
 const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
   provider: 'deepseek',
@@ -43,6 +47,23 @@ const providers = [
     models: [],
   },
 ]
+
+/* The dark preference is written here and nowhere else. Product surfaces used to each repeat
+   this line, and five of them dropped the `scheme` parameter instead — their "dark" baselines
+   came out byte-identical to the light ones and gated nothing. */
+async function preferScheme(page: Page, scheme: Scheme) {
+  if (scheme === 'dark') {
+    await page.addInitScript(() => localStorage.setItem('prelude-theme-preference', 'dark'))
+  }
+}
+
+/* Asserts what the page rendered, not what storage holds: the theme class is applied by an
+   effect after the first paint, so a one-shot read would race it. */
+async function expectScheme(page: Page, scheme: Scheme) {
+  const root = page.locator('html')
+  if (scheme === 'dark') await expect(root).toHaveClass(/\bdark\b/)
+  else await expect(root).not.toHaveClass(/\bdark\b/)
+}
 
 async function installApi(page: Page) {
   await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
@@ -173,9 +194,9 @@ test('@byok exposes only the four governed provider protocols', async ({ page })
 
 test('@dark restores the governed dark theme before rendering', async ({ page }) => {
   await installApi(page)
-  await page.addInitScript(() => localStorage.setItem('prelude-theme-preference', 'dark'))
+  await preferScheme(page, 'dark')
   await page.goto('/interview')
-  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expectScheme(page, 'dark')
   const colors = await page.evaluate(() => {
     const style = getComputedStyle(document.documentElement)
     return [style.getPropertyValue('--color-bg'), style.getPropertyValue('--color-text-primary')]
@@ -754,7 +775,7 @@ const panelSlug = (title: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
-for (const scheme of ['light', 'dark'] as const) {
+for (const scheme of schemes) {
   test(`@visual keeps every component lab panel pixel-stable in ${scheme}`, async ({ page }) => {
     await gotoComponentLab(page, scheme)
     const panels = page.locator('.workspace-page__content > section')
@@ -814,6 +835,117 @@ for (const scheme of ['light', 'dark'] as const) {
   })
 }
 
+/* The gallery is gated panel by panel, but every product page was only ever checked by
+   geometry — numbers pulled out of the DOM and compared. That catches a container losing its
+   padding; it does not catch a shared owner rendering differently in the one place that ships
+   it, which is exactly how the login caption's off-ladder line height went unnoticed. These
+   are the surfaces that carry product content.
+
+   Element screenshots can only paint what a scroll container reveals, so anything taller than
+   the window is gated at its visible region on purpose — the full document behind it is the
+   gallery Report panel's job.
+
+   The loop below applies the scheme; `open` only navigates. Handing each surface the scheme to
+   apply itself looked symmetric but let five of six signatures drop the parameter, and their
+   dark baselines were copies of the light ones. */
+const productSurfaces: {
+  slug: string
+  open: (page: Page) => Promise<Locator>
+}[] = [
+  {
+    slug: 'login',
+    async open(page: Page) {
+      await installAnonymousSession(page)
+      await page.goto('/login')
+      await expect(page.getByRole('heading', { level: 1, name: '进入面试工作台' })).toBeVisible()
+      return page.locator('.login-card')
+    },
+  },
+  {
+    slug: 'register',
+    async open(page: Page) {
+      await installAnonymousSession(page)
+      await page.goto('/login')
+      await page.getByRole('button', { name: '注册', exact: true }).click()
+      await expect(page.getByRole('button', { name: '完成注册' })).toBeVisible()
+      return page.locator('.login-card')
+    },
+  },
+  {
+    slug: 'interview-setup',
+    async open(page: Page) {
+      await installApi(page)
+      await page.goto('/interview')
+      await expect(page.getByRole('heading', { name: '准备开始一场沉浸式模拟面试' })).toBeVisible()
+      return page.locator('[data-slot="interview-workspace"]')
+    },
+  },
+  {
+    slug: 'analytics',
+    async open(page: Page) {
+      await installApi(page)
+      await page.goto('/analytics')
+      await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
+      return page.locator('.workspace-page')
+    },
+  },
+  {
+    slug: 'report',
+    async open(page: Page) {
+      await installReportSession(page, JSON.stringify(sampleReport))
+      await page.goto('/interview?session=9')
+      const header = page.locator('.workspace-header')
+      await header.getByRole('button', { name: '报告' }).click()
+      const surface = page.locator('[data-slot="workspace-report"]')
+      /* The hero slot only exists when the structured report rendered — a malformed body
+         falls back to plain text and would silently produce a near-empty baseline. */
+      await expect(surface.locator('[data-slot="report-hero"]')).toBeVisible()
+      return surface
+    },
+  },
+  {
+    slug: 'settings-theme',
+    async open(page: Page) {
+      await installApi(page)
+      await page.goto('/interview')
+      await page.getByRole('button', { name: '设置' }).click()
+      const dialog = page.getByRole('dialog', { name: '全局设置' })
+      await dialog.getByRole('button', { name: '主题' }).click()
+      await expect(dialog.getByRole('radiogroup', { name: '主题偏好' })).toBeVisible()
+      return dialog
+    },
+  },
+]
+
+for (const scheme of schemes) {
+  for (const surface of productSurfaces) {
+    /* One test per surface, and an authenticated session stub that ships a report:
+       `installApi` only serves an ongoing session, so the report toggle never appeared. */
+    test(`@visual keeps the ${surface.slug} surface pixel-stable in ${scheme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 900 })
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await preferScheme(page, scheme)
+      const target = await surface.open(page)
+      /* Without this the pair of baselines for a surface could be the same frame under two
+         names and still both pass, which is the bug that shipped here once. */
+      await expectScheme(page, scheme)
+      /* Two of these paint through a canvas — the login card's shader orb and the dashboard's
+         echarts — and a rasterised surface is not byte-stable across runs, so it is masked and
+         the rest of the frame carries the assertion. Same treatment the gallery panels use. */
+      const maskTargets = [
+        ...(await target.locator('.brand-metaballs').all()),
+        ...(await target.locator('canvas').all()),
+      ]
+      await expect(target).toHaveScreenshot(`product-${surface.slug}-${scheme}.png`, {
+        animations: 'disabled',
+        ...(maskTargets.length ? { mask: maskTargets } : {}),
+      })
+    })
+  }
+}
+
 test('@visual keeps the not-found surface on the anonymous page shell', async ({ page }) => {
   await installApi(page)
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -858,50 +990,7 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
   page,
 }) => {
   await page.setViewportSize({ width: 1200, height: 800 })
-  await installApi(page)
-  const longTitle =
-    '资深全栈工程师（Java 后端 × React 前端 · 平台架构与高并发稳定性方向 · 负责人级）'
-  await page.route('**/api/interview/sessions', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        code: 200,
-        message: 'ok',
-        data: [
-          {
-            sessionId: 9,
-            targetPosition: longTitle,
-            status: 'finished',
-            currentStage: 'closing',
-          },
-        ],
-      }),
-    })
-  })
-  await page.route('**/api/interview/9/messages', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        code: 200,
-        message: 'ok',
-        data: {
-          sessionId: 9,
-          targetPosition: longTitle,
-          status: 'finished',
-          currentStage: 'closing',
-          summaryReport: '{"summary":{}}',
-          stages: [],
-          messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
-          resumeId: 1,
-          positionId: 1,
-          attachments: [],
-        },
-      }),
-    })
-  })
-
+  await installReportSession(page, '{"summary":{}}')
   await page.goto('/interview?session=9')
   const header = page.locator('.workspace-header')
   await expect(header).toBeVisible()
@@ -934,16 +1023,68 @@ test('@visual keeps the workspace header flex allocation safe on narrow desktops
   expect(Math.abs(geometry.titleAreaTop - geometry.rightTop)).toBeLessThanOrEqual(3)
 })
 
-async function gotoComponentLab(page: Page, scheme: 'light' | 'dark') {
+async function gotoComponentLab(page: Page, scheme: Scheme) {
   await installApi(page)
-  if (scheme === 'dark') {
-    await page.addInitScript(() => localStorage.setItem('prelude-theme-preference', 'dark'))
-  }
+  await preferScheme(page, scheme)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Typography' })).toBeVisible()
+  await expectScheme(page, scheme)
 }
+
+/** A session far enough along to change what the header offers. `status` decides which of
+   the two waiting states the page shows, and `summaryReport` decides whether there is one:
+   'generating' with no report renders the generating surface, 'finished' offers the toggle. `installApi` only serves an
+ *  ongoing session, and which report body ships decides what the surface actually renders:
+ *  `{"summary":{}}` falls back to plain text, while the gallery's structured sample renders
+ *  the real report document. */
+async function installReportSession(
+  page: Page,
+  summaryReport: string,
+  title = longSessionTitle,
+  status = 'finished',
+) {
+  await installApi(page)
+  await page.route('**/api/interview/sessions', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 200,
+        message: 'ok',
+        data: [
+          { sessionId: 9, targetPosition: title, status: 'finished', currentStage: 'closing' },
+        ],
+      }),
+    })
+  })
+  await page.route('**/api/interview/9/messages', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 200,
+        message: 'ok',
+        data: {
+          sessionId: 9,
+          targetPosition: title,
+          status,
+          currentStage: 'closing',
+          summaryReport,
+          stages: [],
+          messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
+          resumeId: 1,
+          positionId: 1,
+          attachments: [],
+        },
+      }),
+    })
+  })
+}
+
+const longSessionTitle =
+  '资深全栈工程师（Java 后端 × React 前端 · 平台架构与高并发稳定性方向 · 负责人级）'
 
 async function selectContext(page: Page, menuLabel: string, option: string) {
   await page.getByRole('button', { name: '添加面试上下文' }).click()
