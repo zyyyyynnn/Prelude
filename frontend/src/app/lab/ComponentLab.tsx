@@ -26,7 +26,9 @@ import {
   sampleAttachments,
   sampleContextNames,
   sampleModelConfig,
+  sampleModelName,
   sampleModelProviders,
+  sampleReportCopy,
   samplePositions,
   sampleReport,
   sampleResumes,
@@ -62,6 +64,9 @@ import { SegmentedControl } from '@/shared/ui/segmented-control'
 import { Select } from '@/shared/ui/select'
 import type { ReactNode } from 'react'
 
+/** Role labels for a list the gallery does not own the words of. */
+const ordinals = ['一', '二', '三', '四', '五', '六'] as const
+
 function DemoGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid gap-sm">
@@ -88,30 +93,35 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
         primary={
           <SidebarAction
             collapsed={collapsed}
-            label="开始新面试"
+            label="主要操作"
             icon={<Plus />}
             tone="primary"
             onClick={noop}
           />
         }
         footer={
-          <SidebarAction collapsed={collapsed} label="设置" icon={<Settings />} onClick={noop} />
+          <SidebarAction
+            collapsed={collapsed}
+            label="次要操作"
+            icon={<Settings />}
+            onClick={noop}
+          />
         }
       >
         {collapsed ? (
           <nav className="flex flex-col gap-sm" aria-label="实验台导航">
-            <SidebarAction collapsed label="工作区" icon={<PanelLeft />} to="/interview" />
-            <SidebarAction collapsed label="数据看板" icon={<BarChart3 />} to="/analytics" />
+            <SidebarAction collapsed label="分区一" icon={<PanelLeft />} to="/interview" />
+            <SidebarAction collapsed label="分区二" icon={<BarChart3 />} to="/analytics" />
           </nav>
         ) : (
           <>
             <SessionGroup
-              label="进行中"
-              emptyLabel="暂无会话"
+              label="分组一"
+              emptyLabel="空态文案"
               rows={[
                 {
                   key: 'active',
-                  name: '当前会话',
+                  name: '条目一',
                   state: 'active',
                   pinned: true,
                   onOpen: noop,
@@ -120,7 +130,7 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
                 },
                 {
                   key: 'loading',
-                  name: '加载中会话',
+                  name: '条目二',
                   state: 'loading',
                   onOpen: noop,
                   onTogglePin: noop,
@@ -129,12 +139,12 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
               ]}
             />
             <SessionGroup
-              label="已完成"
-              emptyLabel="暂无会话"
+              label="分组二"
+              emptyLabel="空态文案"
               rows={[
                 {
                   key: 'error',
-                  name: '失败会话',
+                  name: '条目三',
                   state: 'error',
                   finished: true,
                   onOpen: noop,
@@ -143,7 +153,7 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
                 },
                 {
                   key: 'idle',
-                  name: '已结束会话',
+                  name: '条目四',
                   finished: true,
                   onOpen: noop,
                   onTogglePin: noop,
@@ -151,9 +161,9 @@ function LabRail({ collapsed = false }: { collapsed?: boolean }) {
                 },
               ]}
             />
-            <SessionGroup label="已归档" emptyLabel="暂无会话" rows={[]} />
+            <SessionGroup label="分组三" emptyLabel="空态文案" rows={[]} />
             <nav className="flex flex-col gap-sm" aria-label="实验台导航">
-              <SidebarAction label="数据看板" icon={<BarChart3 />} to="/analytics" />
+              <SidebarAction label="分区二" icon={<BarChart3 />} to="/analytics" />
             </nav>
           </>
         )}
@@ -176,7 +186,7 @@ function LabAnswerRow({ voice }: { voice?: { status: VoiceStatus; recording: boo
       attachments={sampleAttachments}
       disabled={false}
       jdMatched
-      modelName="当前模型 · 默认"
+      modelName={sampleModelName}
       positionName={sampleContextNames.positionName}
       resumeName={sampleContextNames.resumeName}
       sending={false}
@@ -194,14 +204,14 @@ export function ComponentLab() {
   const feedback = useFeedback()
   const [model, setModel] = useState('first')
   const [llmConfig, setLlmConfig] = useState(sampleModelConfig)
-  const [authMode, setAuthMode] = useState('login')
-  const [workspaceView, setWorkspaceView] = useState('interview')
+  const [segmentTwo, setSegmentTwo] = useState('one')
+  const [segmentThree, setSegmentThree] = useState('one')
   const [sort, setSort] = useState('recent')
   const [reasoning, setReasoning] = useState<ReasoningLevel>('AUTO')
   const [jdMatch, setJdMatch] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [pressed, setPressed] = useState(false)
-  const [tab, setTab] = useState('账号资料')
+  const [tab, setTab] = useState(0)
   const [themeChoice, setThemeChoice] = useState('light')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
@@ -218,28 +228,20 @@ export function ComponentLab() {
         </div>
       </header>
       <div className="workspace-page__content scrollable">
-        <Panel
-          layout="card"
-          title="Typography"
-          description="shared/styles · type-* 角色，字号与行高成对绑定；h2 读 type-title，h3 读 type-subtitle"
-        >
+        <Panel layout="card" title="Typography" description="shared/styles">
           <div className="grid gap-sm">
-            <p className="type-eyebrow">段落引导 · type-eyebrow</p>
-            <p className="type-hero">响应式大标题 · type-hero</p>
-            <p className="type-title">区块标题 · type-title</p>
-            <p className="type-subtitle">次级标题 · type-subtitle</p>
-            <p className="type-label">字段标签 · type-label</p>
-            <p className="type-body">正文，用于成段说明与列表描述。 · type-body</p>
-            <p className="type-meta">辅助信息 · type-meta</p>
+            <p className="type-eyebrow">示例文本 · type-eyebrow</p>
+            <p className="type-hero">示例文本 · type-hero</p>
+            <p className="type-title">示例文本 · type-title</p>
+            <p className="type-subtitle">示例文本 · type-subtitle</p>
+            <p className="type-label">示例文本 · type-label</p>
+            <p className="type-body">示例文本 · type-body</p>
+            <p className="type-meta">示例文本 · type-meta</p>
             <p className="type-metric">92</p>
           </div>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="Panel"
-          description="shared/ui/panel · 标题行拥有标题、说明与右侧操作区；fill 形态撑满给定高度，只有内容区滚动"
-        >
+        <Panel layout="card" title="Panel" description="shared/ui/panel">
           <div className="grid h-(--layout-demo-frame-block-size) w-full overflow-hidden rounded-lg border border-border">
             <Panel title="面板标题" actions={<Button>主要操作</Button>}>
               <p className="type-body">示例正文一。</p>
@@ -250,11 +252,7 @@ export function ComponentLab() {
           </div>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="Button"
-          description="shared/ui/button · variant / box / shape / loading / pressed"
-        >
+        <Panel layout="card" title="Button" description="shared/ui/button">
           <DemoGroup label="Variant">
             <Button>主要操作</Button>
             <Button variant="secondary">次要操作</Button>
@@ -285,16 +283,12 @@ export function ComponentLab() {
           </DemoGroup>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="Field"
-          description="shared/ui/field · Field 组合标签、控件与说明，尾部操作位由 FieldActions 拥有"
-        >
+        <Panel layout="card" title="Field" description="shared/ui/field">
           <div className="form-grid gap-md">
-            <Field label="用户名" htmlFor="lab-input">
-              <Input id="lab-input" placeholder="请输入用户名" />
+            <Field label="字段一" htmlFor="lab-input">
+              <Input id="lab-input" placeholder="示例占位" />
             </Field>
-            <Field label="接入模型" htmlFor="lab-select" hint="切换后对新会话生效">
+            <Field label="字段二" htmlFor="lab-select" hint="说明文本">
               <Select
                 id="lab-select"
                 value={model}
@@ -305,10 +299,10 @@ export function ComponentLab() {
                 onValueChange={setModel}
               />
             </Field>
-            <Field label="岗位描述" htmlFor="lab-textarea">
-              <Textarea id="lab-textarea" placeholder="粘贴岗位描述" />
+            <Field label="字段三" htmlFor="lab-textarea">
+              <Textarea id="lab-textarea" placeholder="示例占位" />
             </Field>
-            <Field label="密码" htmlFor="lab-password" hint="尾部操作位按按钮数量留白">
+            <Field label="字段四" htmlFor="lab-password" hint="说明文本">
               <FieldActions
                 actions={[
                   <FieldAction
@@ -325,56 +319,53 @@ export function ComponentLab() {
                 />
               </FieldActions>
             </Field>
-            <Field label="只读字段" htmlFor="lab-disabled">
-              <Input id="lab-disabled" disabled placeholder="不可编辑" />
+            <Field label="字段五" htmlFor="lab-disabled">
+              <Input id="lab-disabled" disabled placeholder="示例占位" />
             </Field>
           </div>
           <div className="grid gap-sm border-t border-border pt-md">
-            <h3 className="type-subtitle">小节</h3>
+            <h3 className="type-subtitle">小节一</h3>
             <div className="form-grid gap-md">
-              <Field label="思考深度" htmlFor="lab-reasoning">
+              <Field label="字段六" htmlFor="lab-reasoning">
                 <Select
                   id="lab-reasoning"
                   value={reasoning}
-                  options={Object.entries(REASONING_LABELS).map(([value, label]) => ({
+                  options={Object.keys(REASONING_LABELS).map((value, index) => ({
                     value,
-                    label,
+                    label: `选项${ordinals[index]}`,
                   }))}
                   onValueChange={(value) => setReasoning(value as ReasoningLevel)}
                 />
               </Field>
-              <Field label="最大回复长度" htmlFor="lab-output">
+              <Field label="字段七" htmlFor="lab-output">
                 <Input id="lab-output" defaultValue="示例值" />
               </Field>
             </div>
           </div>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="SegmentedControl"
-          description="shared/ui/segmented-control · 单选分段轨道，滑块跟随当前项；两组都是产品里那个控件的真实条目"
-        >
-          <DemoGroup label="账号操作">
+        <Panel layout="card" title="SegmentedControl" description="shared/ui/segmented-control">
+          <DemoGroup label="两项">
             <SegmentedControl
-              ariaLabel="实验台账号操作"
+              ariaLabel="实验台两项分段"
               items={[
-                { value: 'login', label: '登录' },
-                { value: 'register', label: '注册' },
+                { value: 'one', label: '选项一' },
+                { value: 'two', label: '选项二' },
               ]}
-              value={authMode}
-              onValueChange={setAuthMode}
+              value={segmentTwo}
+              onValueChange={setSegmentTwo}
             />
           </DemoGroup>
-          <DemoGroup label="工作区视图">
+          <DemoGroup label="三项">
             <SegmentedControl
-              ariaLabel="实验台工作区视图"
+              ariaLabel="实验台三项分段"
               items={[
-                { value: 'interview', label: '面试' },
-                { value: 'report', label: '报告' },
+                { value: 'one', label: '选项一' },
+                { value: 'two', label: '选项二' },
+                { value: 'three', label: '选项三' },
               ]}
-              value={workspaceView}
-              onValueChange={setWorkspaceView}
+              value={segmentThree}
+              onValueChange={setSegmentThree}
             />
           </DemoGroup>
         </Panel>
@@ -382,7 +373,7 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="Prompt Bar"
-          description="features/interview + shared/ui/prompt-bar · 每一态都是面试里那个组合器本身"
+          description="features/interview · shared/ui/prompt-bar"
         >
           <DemoGroup label="准备态">
             <div className="w-full">
@@ -417,34 +408,45 @@ export function ComponentLab() {
             <LabAnswerRow voice={{ status: 'speaking', recording: false }} />
           </DemoGroup>
           <DemoGroup label="上下文与事实位">
-            <ContextAttachment kind="resume" label="示例简历.pdf" onRemove={noop} />
-            <ContextAttachment kind="position" label="示例岗位" onRemove={noop} />
-            <ContextAttachment kind="document" label="示例文档.pdf" />
-            <ContextAttachment kind="image" label="示例截图.png" />
+            <ContextAttachment
+              kind="resume"
+              label={sampleContextNames.resumeName}
+              onRemove={noop}
+            />
+            <ContextAttachment
+              kind="position"
+              label={sampleContextNames.positionName}
+              onRemove={noop}
+            />
+            <ContextAttachment kind="document" label="示例文件三.pdf" />
+            <ContextAttachment kind="image" label="示例图片一.png" />
             <PromptBarJdToggle onDisable={noop} />
-            <PromptBarFact label="当前模型 · 默认" icon={<Terminal aria-hidden="true" />} />
+            <PromptBarFact label={sampleModelName} icon={<Terminal aria-hidden="true" />} />
           </DemoGroup>
         </Panel>
 
         <Panel
           layout="card"
           title="Conversation"
-          description="shared/ui/message + generating-card · 实时回合只标说话人，评分归报告"
+          description="shared/ui/message · shared/ui/generating-card"
         >
           <DemoGroup label="回合">
             <div className="flex w-full flex-col">
-              <MessageBubble side="assistant" speaker="面试官">
-                示例问题，用于检查气泡的最大宽度、行高与换行。
+              <MessageBubble side="assistant" speaker="说话人一">
+                示例文本一，长度用来检查气泡的最大宽度与换行。示例文本二。
               </MessageBubble>
-              <MessageBubble side="user" speaker="我">
-                示例回答，用于检查用户侧气泡的对齐、内边距与表面色。
+              <MessageBubble side="user" speaker="说话人二">
+                示例文本一，长度用来检查用户侧的对齐与内边距。示例文本二。
               </MessageBubble>
-              <MessageBubble side="assistant" speaker="面试官" pending />
+              <MessageBubble side="assistant" speaker="说话人一" pending />
             </div>
           </DemoGroup>
           <DemoGroup label="生成态">
             <div className="flex w-full items-center justify-center bg-surface p-xl">
-              <GeneratingCard title="AI 评估报告生成中…" hint="正在整理答题表现并生成训练建议。" />
+              <GeneratingCard
+                title="示例标题"
+                hint="示例文本一，长度用来检查卡片在长提示下的换行。"
+              />
             </div>
           </DemoGroup>
         </Panel>
@@ -452,7 +454,7 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="App rail"
-          description="shared/ui/sidebar + session-row · 展开与折叠两态按内容高度呈现；会话分组、悬停动作与空态就在 rail 里，贴底与交叉淡入由工作区真实截图覆盖"
+          description="shared/ui/sidebar · shared/ui/session-row"
         >
           <div className="flex flex-wrap items-start gap-lg">
             <DemoGroup label="展开">
@@ -464,26 +466,22 @@ export function ComponentLab() {
           </div>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="List & Navigation"
-          description="shared/ui + shared/styles · 左列按设置弹窗的真实导航宽度，右列是行与选项卡"
-        >
+        <Panel layout="card" title="List & Navigation" description="shared/ui · shared/styles">
           <div className="flex w-full items-start gap-lg">
             <div className="w-(--layout-settings-sidebar-inline-size) shrink-0">
-              <DemoGroup label="分区导航">
+              <DemoGroup label="导航列">
                 <div className="grid gap-sm">
-                  {sections.map(({ key, title, icon: Icon }) => (
+                  {sections.map(({ key, icon: Icon }, index) => (
                     <NavItem
                       key={key}
-                      active={tab === title}
+                      active={tab === index}
                       icon={<Icon aria-hidden="true" />}
-                      label={title}
-                      onClick={() => setTab(title)}
+                      label={`分区${ordinals[index]}`}
+                      onClick={() => setTab(index)}
                     />
                   ))}
                   <NavItem
-                    label="退出登录"
+                    label="危险操作"
                     tone="danger"
                     icon={<LogOut aria-hidden="true" />}
                     onClick={noop}
@@ -492,14 +490,14 @@ export function ComponentLab() {
               </DemoGroup>
             </div>
             <div className="grid min-w-0 flex-1 gap-md">
-              <DemoGroup label="简历行">
+              <DemoGroup label="列表行">
                 <div className="grid w-full gap-sm">
                   {sampleResumes.map((resume) => (
                     <ResumeRow key={resume.id} resume={resume} onDelete={noop} />
                   ))}
                 </div>
               </DemoGroup>
-              <DemoGroup label="岗位行">
+              <DemoGroup label="只读行">
                 <div className="position-item-grid w-full" role="list" aria-label="岗位列表">
                   {samplePositions.map((position: Position) => (
                     <PositionRow
@@ -517,12 +515,12 @@ export function ComponentLab() {
                   role="radiogroup"
                   aria-label="主题偏好"
                 >
-                  {themeOptions.map((option) => (
+                  {themeOptions.map((option, index) => (
                     <OptionCard
                       key={option.value}
                       checked={themeChoice === option.value}
-                      label={option.label}
-                      description={option.description}
+                      label={`选项${ordinals[index]}`}
+                      description={`说明${ordinals[index]}`}
                       onSelect={() => setThemeChoice(option.value)}
                     >
                       <ThemePreview tone={option.value} />
@@ -543,37 +541,27 @@ export function ComponentLab() {
         >
           <div className="grid gap-xs">
             <h2 className="type-title">Report</h2>
-            <p className="type-meta">
-              features/report · StructuredReport 整页，与报告页同一内容宽度，样例文案按角色命名
-            </p>
+            <p className="type-meta">features/report</p>
           </div>
           <div className="max-w-(--layout-workspace-content-max-inline-size)">
-            <StructuredReport report={sampleReport} />
+            <StructuredReport report={sampleReport} copy={sampleReportCopy} />
           </div>
         </section>
 
-        <Panel
-          layout="card"
-          title="Empty & Error"
-          description="shared/styles · empty-state 统一加载、空库与失败的落点"
-        >
+        <Panel layout="card" title="Empty & Error" description="shared/styles">
           <DemoGroup label="状态">
-            <div className="empty-state w-full">正在读取简历库…</div>
+            <div className="empty-state w-full">加载示例文本</div>
             <div className="empty-state w-full">
-              <p>简历服务暂时不可用。</p>
-              <Button variant="secondary" onClick={() => feedback.notify('已重新加载', 'success')}>
+              <p>失败示例文本</p>
+              <Button variant="secondary" onClick={() => feedback.notify('示例提示', 'success')}>
                 <RefreshCw />
-                重新加载
+                次要操作
               </Button>
             </div>
           </DemoGroup>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="DropdownMenu"
-          description="shared/ui/menu · 分组、子菜单、单选与多选项，条目按角色命名"
-        >
+        <Panel layout="card" title="DropdownMenu" description="shared/ui/menu">
           <DemoGroup label="普通菜单">
             <DropdownMenu trigger={<Button variant="secondary">菜单触发器</Button>}>
               <DropdownMenuGroup>
@@ -614,7 +602,7 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="Overlay & Feedback"
-          description="shared/ui/overlay + feedback · 浮层与系统提示共用一套 chrome"
+          description="shared/ui/overlay · shared/ui/feedback"
         >
           <DemoGroup label="Tooltip 与 Dialog">
             <IconTooltip label="提示">
@@ -623,23 +611,23 @@ export function ComponentLab() {
               </Button>
             </IconTooltip>
             <Button variant="secondary" onClick={() => setDialogOpen(true)}>
-              打开 Dialog
+              打开浮层
             </Button>
             <Button variant="secondary" onClick={() => setWorkspaceDialogOpen(true)}>
-              打开工作台 Dialog
+              打开工作台浮层
             </Button>
           </DemoGroup>
           <DemoGroup label="Toast">
-            <Button variant="secondary" onClick={() => feedback.notify('成功提示', 'success')}>
+            <Button variant="secondary" onClick={() => feedback.notify('示例提示', 'success')}>
               成功
             </Button>
-            <Button variant="secondary" onClick={() => feedback.notify('信息提示', 'info')}>
+            <Button variant="secondary" onClick={() => feedback.notify('示例提示', 'info')}>
               信息
             </Button>
-            <Button variant="secondary" onClick={() => feedback.notify('警告提示', 'warning')}>
+            <Button variant="secondary" onClick={() => feedback.notify('示例提示', 'warning')}>
               警告
             </Button>
-            <Button variant="secondary" onClick={() => feedback.notify('错误提示', 'error')}>
+            <Button variant="secondary" onClick={() => feedback.notify('示例提示', 'error')}>
               错误
             </Button>
           </DemoGroup>
@@ -648,8 +636,8 @@ export function ComponentLab() {
               variant="secondary"
               onClick={() => {
                 void feedback
-                  .confirm({ title: '确认操作', message: '确认后将产生的影响说明。' })
-                  .then((accepted) => accepted && feedback.notify('已确认', 'success'))
+                  .confirm({ title: '确认操作', message: '示例文本一。示例文本二。' })
+                  .then((accepted) => accepted && feedback.notify('示例提示', 'success'))
               }}
             >
               普通确认
@@ -659,24 +647,20 @@ export function ComponentLab() {
               onClick={() => {
                 void feedback
                   .confirm({
-                    title: '破坏性确认',
-                    message: '此操作不可恢复的说明文本。',
-                    confirmText: '删除',
+                    title: '危险确认',
+                    message: '示例文本一，长度用来检查确认框正文的换行。示例文本二。',
+                    confirmText: '危险操作',
                     danger: true,
                   })
-                  .then((accepted) => accepted && feedback.notify('已删除', 'error'))
+                  .then((accepted) => accepted && feedback.notify('示例提示', 'error'))
               }}
             >
-              破坏性确认
+              危险确认
             </Button>
           </DemoGroup>
         </Panel>
 
-        <Panel
-          layout="card"
-          title="Brand"
-          description="shared/brand · 左为回答生成中的占位图形，右为品牌标识的流体色块；reduced-motion 下静止"
-        >
+        <Panel layout="card" title="Brand" description="shared/brand">
           <div className="flex flex-wrap items-center gap-lg">
             <RoseThree className="size-(--layout-generating-rose-inline-size) text-brand" />
             <BrandMetaballs className="size-(--layout-brand-mark-inline-size) rounded-full" />
@@ -684,12 +668,12 @@ export function ComponentLab() {
         </Panel>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen} title="Dialog">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen} title="浮层">
         <div className="grid gap-md">
-          <h2 className="type-title">标准浮层</h2>
-          <p className="type-body">遮罩、圆角与关闭按钮由浮层拥有，内容区自己拥有排布。</p>
+          <h2 className="type-title">小节一</h2>
+          <p className="type-body">示例文本一，长度用来检查浮层正文的换行。示例文本二。</p>
           <div className="flex justify-end gap-sm">
-            <Button onClick={() => setDialogOpen(false)}>知道了</Button>
+            <Button onClick={() => setDialogOpen(false)}>主要操作</Button>
           </div>
         </div>
       </Dialog>
@@ -698,12 +682,12 @@ export function ComponentLab() {
         layout="workspace"
         open={workspaceDialogOpen}
         onOpenChange={setWorkspaceDialogOpen}
-        title="工作台 Dialog"
+        title="工作台浮层"
       >
         <Panel
           className="size-full min-h-0"
-          title="工作台浮层"
-          description="full-bleed 壳层只提供遮罩、圆角与尺寸，标题行与内边距由内容自己拥有"
+          title="面板标题"
+          description="shared/ui/panel"
           actions={
             <Button
               size="icon"
@@ -718,15 +702,15 @@ export function ComponentLab() {
             <Button
               onClick={() => {
                 setWorkspaceDialogOpen(false)
-                feedback.notify('已提交', 'success')
+                feedback.notify('示例提示', 'success')
               }}
             >
-              保存
+              主要操作
             </Button>
           }
         >
           <p className="type-body">
-            标题行拥有标题、辅助说明与关闭入口，内容区自行拥有内边距与滚动，底部动作条排在内容之后。设置弹窗即此形态。
+            示例文本一，长度用来检查内容区在浮层高度下的滚动与内边距。示例文本二。示例文本三。
           </p>
         </Panel>
       </Dialog>

@@ -1,3 +1,4 @@
+import { reportCopy } from './copy'
 import { parseInterviewReport } from './parse'
 import {
   QuestionReviewList,
@@ -6,6 +7,7 @@ import {
   Trait,
   TrainingPlan,
 } from './report-sections'
+import type { ReportCopy } from './copy'
 import type { StructuredInterviewReport } from './types'
 
 export function ReportPanel({ source }: { source: string }) {
@@ -28,13 +30,19 @@ export function ReportPanel({ source }: { source: string }) {
   )
 }
 
-export function StructuredReport({ report }: { report: StructuredInterviewReport }) {
+export function StructuredReport({
+  report,
+  copy = reportCopy,
+}: {
+  report: StructuredInterviewReport
+  copy?: ReportCopy
+}) {
   return (
     <article className="document-sheet w-full" data-slot="structured-report">
       <header className="grid min-w-0 gap-sm pb-lg" data-slot="report-hero">
         <div className="grid gap-xs">
-          <p className="type-eyebrow">Interview Review</p>
-          <h1 className="type-document-title text-balance">求职训练报告</h1>
+          <p className="type-eyebrow">{copy.eyebrow}</p>
+          <h1 className="type-document-title text-balance">{copy.title}</h1>
         </div>
         <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-serif text-md leading-copy text-text-secondary">
           {report.summary.fitAssessment}
@@ -42,35 +50,43 @@ export function StructuredReport({ report }: { report: StructuredInterviewReport
       </header>
       <div className="report-columns gap-lg rounded-lg bg-surface-muted p-lg">
         <section className="grid min-w-0 gap-sm">
-          <h2 className="type-title text-balance">行动建议</h2>
+          <h2 className="type-title text-balance">{copy.actionTitle}</h2>
           <p className="font-sans text-sm leading-copy text-text-secondary">
             {report.summary.actionRecommendation}
           </p>
         </section>
         <section className="grid min-w-0 gap-sm">
-          <h2 className="type-title text-balance">总体风险</h2>
+          <h2 className="type-title text-balance">{copy.riskTitle}</h2>
           <p className="font-sans text-sm leading-copy text-text-secondary">
             {report.summary.overallRisk}
           </p>
         </section>
       </div>
-      <ScoreCard report={report} />
-      <StagePerformanceList stages={report.stagePerformances} />
-      <QuestionReviewList reviews={report.questionReviews} />
+      <ScoreCard report={report} copy={copy} />
+      <StagePerformanceList stages={report.stagePerformances} copy={copy} />
+      <QuestionReviewList reviews={report.questionReviews} copy={copy} />
       <section className="grid gap-lg border-t border-border py-lg" data-slot="report-traits">
         <header className="grid gap-xs">
-          <p className="type-eyebrow">能力沉淀</p>
-          <h2 className="type-title text-balance">优势与短板</h2>
+          <p className="type-eyebrow">{copy.traits.eyebrow}</p>
+          <h2 className="type-title text-balance">{copy.traits.title}</h2>
         </header>
         <div className="report-columns items-start gap-xl">
-          <Trait title="核心优势" items={report.strengths} empty="暂无可归纳的优势。" />
-          <Trait title="主要短板" items={report.weaknesses} empty="暂无已沉淀的薄弱点。" />
+          <Trait
+            title={copy.traits.strengths}
+            items={report.strengths}
+            empty={copy.traits.strengthsEmpty}
+          />
+          <Trait
+            title={copy.traits.weaknesses}
+            items={report.weaknesses}
+            empty={copy.traits.weaknessesEmpty}
+          />
         </div>
       </section>
-      <TrainingPlan plan={report.trainingPlan} />
+      <TrainingPlan plan={report.trainingPlan} copy={copy} />
       <section className="grid gap-sm border-t border-border py-lg" data-slot="report-advice">
         <h2 className="type-title max-w-(--content-report-reading-max-inline-size) text-balance">
-          总结建议
+          {copy.adviceTitle}
         </h2>
         <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
           {report.finalAdvice}

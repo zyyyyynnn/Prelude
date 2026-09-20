@@ -192,6 +192,16 @@
 - [x] **空态落点与细线配对**：`MessageThread` 就绪提示与 `InterviewSession` 加载态改走 `empty-state`（此前各自手写 flex 居中 + tertiary），错误态去掉多余外层 wrapper；`AnalyticsPage` 薄弱点条目去掉 `border-border`，与 `ScoreTile` 同为「无框 muted 面片」，不再在卡片里套带边框卡片。
 - [x] **token 门禁修正**：消费者计数原先把 `@theme` 的自我镜像 `--x: var(--x)` 当成引用，也完全不认 Tailwind 由命名空间生成的类名。两处同时修好后 `--color-sand`、`--color-text-button`、`--color-brand-light` 被判死并删除（209 → 206 条），而 `--spacing-0`（由 `m-0` 消费）一类活 token 不再误报。shadcn 语义桥按决策保留，在 `ui-tokens.json` 与脚本注释里写明「当前无一方消费者、作为外部组件适配层有意豁免」。另清掉 `@layer base` 里被未分层 `body { font }` 永久压过的 `body { font-family }`，以及 `prompt-bar` 在 JS 里重复的 100px 上限（`max-block-size` 已拥有它）。
 - [x] 本阶段验证：`vp check`、`verify:ui`、`verify:tokens`（206 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`/`dark`/`a11y`、`capture:surfaces` 全通过。一处 smoke 选择器随 hero 结构更新（`report-hero > p:first-child` → `report-hero p`），断言内容不变。
+
+### 阶段十一：实验台文案分寸与说明文字（两次纠偏后定稿）
+
+- [x] **先承认两次走偏**：上一轮我把「实验台必须渲染产品组件」推成「实验台必须显示产品文案」，并在 `DESIGN.md` 写下「控件文案保留真实产品文案」——这条是我自己的解释，不是需求。用户指出后我反向做成「一切可见文字都脱敏」，开始把 composer/菜单的固有词拆成 `copy` 入参，这又是另一个极端；该半程已回退（`composer-copy.ts` 删除、`voiceStatusLabel` 复原）。
+- [x] **定稿的分寸**（已写入 `DESIGN.md`）：调用方传文案的槽位一律角色化；组件焊死的词照原样显示，因为那些词就是被检阅的控件本身。报告作为文档样张走 `reportCopy`（缺省即产品词条，产品侧零改动）。
+- [x] 槽位角色化落地：rail 行与会话分组（`主要操作`/`分组一`/`条目一`/`空态文案`/`分区二`）、设置导航五段（`分区一…五`，仍复用 `sections` 的条目与图标）、主题卡（`选项N`/`说明N`，仍复用 `themeOptions` 的三项与预览）、分段控件（两项/三组真实条目改为 `选项一…三`，撤回上一轮的「真实条目」口径）、Field 七个字段与占位与说明、消息气泡说话人与正文、生成态卡片、空态与失败态、浮层与确认框全部文案、Prompt Bar 的模型事实位与附件芯片改用 fixture。
+- [x] 说明文字：14 个面板 `description` 全部缩到归属路径（`shared/ui/panel`、`features/interview · shared/ui/prompt-bar`…），报告节标题下的长句同样删除；契约只在 `DESIGN.md` 说一次。
+- [x] 样张正文：`用于检查气泡最大宽度` 一类自说明句改为 `示例文本一，长度用来检查…` 的中性写法，长短差异保留（那才是检查换行的手段）；fixture 文件名/条目名统一为 `示例文件一.pdf`/`示例条目一`，`不可用模型` 改为 `示例模型三` 并注明它表达的是 `reasoning: false`；模型名两处不一致（`当前模型 · 默认` 与 `示例模型`）收敛到 `sampleModelName` 一处。
+- [x] 报告文案入参：新增 `features/report/copy.ts`（`ReportCopy` + `reportCopy` 缺省），`StructuredReport` 接可选 `copy`，子组件读同一对象；产品调用点（`ReportPanel`）不传，像素与文案完全不变。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`（206）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`/`dark`/`a11y`、`capture:surfaces` 全通过；实验台 28 张基线重生成并复核（App rail、Report 已逐张确认）。capture 与 surfaces 的两处选择器随实验台文案更新（`打开工作台浮层`、`危险确认`），断言内容不变。
 - [x] **同轮复核再清三处（用户指出）**：① Panel 面板的正文把面板 `description` 已声明的契约又说了一遍（「标题行不随滚动移动，内容区自带内边距并独立滚动」），正文改为不含信息的示例文案，契约只在描述里出现一次。② SegmentedControl 面板的「会话/报告/看板」是产品里不存在的第三套条目，改为产品那两组真实条目各一份（登录/注册、面试/报告）。③ Report blocks 整块是 Report 整页同一段的重复渲染（`ScoreCard`、轮播导航、`Trait`、`ReviewDetail` 都在整页里），删除该面板与其两张基线；`Trait` 的空态改由 `sampleReport.weaknesses: []` 在整页里呈现，覆盖不丢。`features/report/index.ts` 随之收回到确有外部消费者的符号（`ReportCarouselNavigation`/`ReviewDetail`/`ScoreCard`/`Trait` 已无外部调用点）。实验台 15 → 14 个面板、28 张基线，上述检查与 `capture:surfaces` 重跑全通过。
 
 ### 阶段十：统一排查样式、排版、间距、对齐、layout 与 token 收敛

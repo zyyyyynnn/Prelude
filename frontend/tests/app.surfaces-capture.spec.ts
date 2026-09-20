@@ -241,13 +241,13 @@ test.describe('@capture authenticated surface reference set', () => {
     await page.keyboard.press('Escape')
     await expect(page.getByRole('menu')).toHaveCount(0)
 
-    await page.getByRole('button', { name: '打开工作台 Dialog' }).click()
-    await expect(page.getByRole('dialog', { name: '工作台 Dialog' })).toBeVisible()
+    await page.getByRole('button', { name: '打开工作台浮层' }).click()
+    await expect(page.getByRole('dialog', { name: '工作台浮层' })).toBeVisible()
     await capture(page, '20-dialog-workspace')
     await page.keyboard.press('Escape')
 
-    await page.getByRole('button', { name: '破坏性确认' }).click()
-    await expect(page.getByRole('button', { name: '删除' })).toBeVisible()
+    await page.getByRole('button', { name: '危险确认' }).click()
+    await expect(page.getByRole('button', { name: '危险操作' })).toBeVisible()
     await capture(page, '21-confirm-destructive')
     await page.getByRole('button', { name: '取消' }).click()
 
