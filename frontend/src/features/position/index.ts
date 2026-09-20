@@ -18,4 +18,5 @@ export const updatePosition = (id: number, payload: CreatePositionPayload) =>
 export const deletePosition = (id: number) =>
   apiRequest<void>(`/position/${id}`, { method: 'DELETE' })
 
+export { PositionRow } from './PositionRow'
 export type { CreatePositionPayload, Position } from './types'

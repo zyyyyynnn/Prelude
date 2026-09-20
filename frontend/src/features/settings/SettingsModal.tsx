@@ -1,20 +1,14 @@
-import {
-  BriefcaseBusiness,
-  FileText,
-  LogOut,
-  Palette,
-  SquareTerminal,
-  UserRound,
-} from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { Suspense, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@/features/auth'
-import { cn } from '@/shared/lib/cn'
+import { NavItem } from '@/shared/ui/navigation'
 import { Dialog } from '@/shared/ui/overlay'
 import { LlmSettingsPanel } from './components/LlmSettingsPanel'
 import { ProfilePanel } from './components/ProfilePanel'
 import { ThemePanel } from './components/ThemePanel'
 import {
+  sections,
   SettingsContext,
   sectionTitles,
   type SettingsIntent,
@@ -24,14 +18,6 @@ import {
 } from './settings-context'
 
 type ResourcePanelRenderer = (request: SettingsRequest) => ReactNode
-
-const sectionTabs: { key: SettingsSection; icon: ReactNode }[] = [
-  { key: 'profile', icon: <UserRound aria-hidden="true" /> },
-  { key: 'resumes', icon: <FileText aria-hidden="true" /> },
-  { key: 'positions', icon: <BriefcaseBusiness aria-hidden="true" /> },
-  { key: 'llm', icon: <SquareTerminal aria-hidden="true" /> },
-  { key: 'theme', icon: <Palette aria-hidden="true" /> },
-]
 
 export function SettingsProvider({
   children,
@@ -103,28 +89,26 @@ export function SettingsModal({
           data-slot="settings-sidebar"
         >
           <nav className="flex flex-1 flex-col gap-sm px-sm" aria-label="设置分类">
-            {sectionTabs.map(({ key, icon }) => (
-              <TabButton
+            {sections.map(({ key, icon: Icon }) => (
+              <NavItem
                 key={key}
                 active={section === key}
+                icon={<Icon aria-hidden="true" />}
+                label={sectionTitles[key]}
                 onClick={() => onSectionChange(key)}
-                icon={icon}
-              >
-                {sectionTitles[key]}
-              </TabButton>
+              />
             ))}
           </nav>
           <div className="mt-auto px-sm">
-            <button
-              className="nav-item nav-item-danger ui-action ui-action-danger"
+            <NavItem
+              label="退出登录"
+              tone="danger"
+              icon={<LogOut aria-hidden="true" />}
               onClick={() => {
                 onOpenChange(false)
                 void auth.signOut().then(() => navigate('/login'))
               }}
-            >
-              <LogOut aria-hidden="true" />
-              退出登录
-            </button>
+            />
           </div>
         </aside>
         <main className="flex min-w-0 flex-1 flex-col" data-slot="settings-main">
@@ -144,28 +128,5 @@ export function SettingsModal({
         </main>
       </div>
     </Dialog>
-  )
-}
-
-function TabButton({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  icon: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <button
-      className={cn('nav-item ui-action ui-action-nav', active && 'is-active')}
-      aria-current={active ? 'page' : undefined}
-      onClick={onClick}
-    >
-      {icon}
-      {children}
-    </button>
   )
 }

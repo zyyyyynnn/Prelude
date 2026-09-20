@@ -1,13 +1,13 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { ScanSearch } from 'lucide-react'
 import type { AttachmentItem } from '@/features/assets'
 import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
 import { Button } from '@/shared/ui/button'
-import type { InterviewModelConfig, InterviewModelProvider, ReasoningLevel } from '../types'
+import type { ReasoningLevel } from '@/features/settings'
+import type { InterviewModelConfig, InterviewModelProvider } from '../types'
 import { InterviewModelMenu } from './MenuPrimitives'
 import { InterviewContextMenu } from './PromptBarControls'
-import { ContextAttachment, PromptBar } from '@/shared/ui/prompt-bar'
+import { ContextAttachment, PromptBar, PromptBarJdToggle } from '@/shared/ui/prompt-bar'
 
 export function InterviewSetupComposer({
   resumes,
@@ -154,17 +154,7 @@ export function InterviewSetupComposer({
               onThinkingDepthChange={onThinkingDepthChange}
               onManage={() => onManageModel()}
             />
-            {jdEnabled && (
-              <button
-                type="button"
-                className="prompt-bar-control prompt-bar-control-jd ui-action"
-                aria-pressed="true"
-                onClick={() => setJdEnabled(false)}
-              >
-                <ScanSearch aria-hidden="true" />
-                <span>JD 匹配</span>
-              </button>
-            )}
+            {jdEnabled && <PromptBarJdToggle onDisable={() => setJdEnabled(false)} />}
           </div>
         }
         rightActions={

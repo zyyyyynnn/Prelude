@@ -1,4 +1,4 @@
-import { Briefcase, FileText, Paperclip, Plus, ScanSearch, Upload } from 'lucide-react'
+import { Briefcase, FileText, Paperclip, Plus, ScanSearch, Terminal, Upload } from 'lucide-react'
 import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
 import { Button } from '@/shared/ui/button'
@@ -13,6 +13,7 @@ import {
   DropdownMenuSubmenu,
 } from '@/shared/ui/menu'
 import { IconTooltip } from '@/shared/ui/overlay'
+import { PromptBarFact } from '@/shared/ui/prompt-bar'
 import { ContextMenuLabel, SubmenuLabel } from './MenuPrimitives'
 
 export function InterviewContextMenu({
@@ -120,6 +121,24 @@ export function InterviewContextMenu({
         </DropdownMenuCheckboxItem>
       </DropdownMenuGroup>
     </DropdownMenu>
+  )
+}
+
+/** The composer's context row once an interview is running: the locked context control
+ *  plus the model and JD facts frozen at the moment it started. */
+export function InterviewContextFacts({
+  modelName,
+  jdMatched,
+}: {
+  modelName: string
+  jdMatched: boolean
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-xs">
+      <LockedInterviewContextButton />
+      <PromptBarFact label={modelName} icon={<Terminal aria-hidden="true" />} />
+      {jdMatched && <PromptBarFact label="JD 匹配" icon={<ScanSearch aria-hidden="true" />} />}
+    </div>
   )
 }
 

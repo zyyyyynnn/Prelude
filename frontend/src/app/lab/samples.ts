@@ -1,17 +1,76 @@
+import type { AttachmentItem } from '@/features/assets'
+import type { InterviewModelConfig, InterviewModelProvider } from '@/features/interview'
+import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
 import type { StructuredInterviewReport } from '@/features/report'
 
 /* Gallery fixtures. Every string names the role it fills, so a screenshot shows where
    content lands without pretending to be a real candidate, a real company or a real
    interview — the same convention the Button panel uses for 主要操作 / 次要操作. */
-export const sampleResumes: ResumeItem[] = [
-  { id: 1, fileName: '示例简历.pdf', createdAt: '2026-01-01T09:00:00', sessionCount: 1 },
+const resumeSample: ResumeItem = {
+  id: 1,
+  fileName: '示例简历.pdf',
+  createdAt: '2026-01-01T09:00:00',
+  sessionCount: 1,
+}
+const resumeInUseSample: ResumeItem = {
+  id: 2,
+  fileName: '使用中简历.pdf',
+  createdAt: '2026-01-02T09:00:00',
+  sessionCount: 3,
+  inUse: true,
+}
+
+export const sampleResumes: ResumeItem[] = [resumeSample, resumeInUseSample]
+
+const positionSample: Position = { id: 1, name: '示例岗位', editable: true }
+/** Carries no `editable`, so the row shows the built-in variant with no edit action. */
+const builtinPositionSample: Position = { id: 2, name: '内置岗位' }
+
+export const samplePositions: Position[] = [positionSample, builtinPositionSample]
+
+/** The names the composer rows pin into their context chips, so a label is written once. */
+export const sampleContextNames = {
+  resumeName: resumeSample.fileName,
+  positionName: positionSample.name,
+}
+
+/* The gallery has no backend behind it. These are the only stand-ins its composers get:
+   an upload reports itself unavailable, which the setup composer already handles as a
+   failed upload, and a delete settles without touching anything. */
+export function rejectUpload(): Promise<AttachmentItem> {
+  return Promise.reject(new Error('实验台不上传文件'))
+}
+
+export function ignoreDelete(): Promise<void> {
+  return Promise.resolve()
+}
+
+export const sampleAttachments: AttachmentItem[] = [
+  { id: 11, fileName: '示例文档.pdf', mediaType: 'application/pdf', size: 24576, image: false },
+  { id: 12, fileName: '示例截图.png', mediaType: 'image/png', size: 10240, image: true },
+]
+
+export const sampleModelConfig: InterviewModelConfig = {
+  model: '示例模型',
+  provider: 'sample',
+  reasoningLevel: 'AUTO',
+  capability: {
+    model: '示例模型',
+    reasoning: true,
+    supportedReasoningLevels: ['AUTO', 'LOW', 'MEDIUM', 'HIGH'],
+  },
+}
+
+export const sampleModelProviders: InterviewModelProvider[] = [
   {
-    id: 2,
-    fileName: '使用中简历.pdf',
-    createdAt: '2026-01-02T09:00:00',
-    sessionCount: 3,
-    inUse: true,
+    providerKey: 'sample',
+    displayName: '示例服务商',
+    models: [
+      sampleModelConfig.capability,
+      { model: '备选模型' },
+      { model: '不可用模型', reasoning: false },
+    ],
   },
 ]
 

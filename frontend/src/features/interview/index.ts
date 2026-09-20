@@ -56,4 +56,9 @@ export function groupSessions<T extends SessionListItem>(sessions: T[]) {
   }
 }
 
-export type { InterviewSessionItem } from './types'
+export { AnswerComposerSurface } from './components/AnswerComposerSurface'
+export { InterviewContextFacts } from './components/PromptBarControls'
+export { InterviewSetupComposer } from './components/InterviewSetupComposer'
+export { voiceStatusLabel } from './voiceStatusLabel'
+
+export type { InterviewModelConfig, InterviewModelProvider, InterviewSessionItem } from './types'

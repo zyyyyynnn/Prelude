@@ -712,7 +712,6 @@ const labPanels = [
   'SegmentedControl',
   'Prompt Bar',
   'Conversation',
-  'Session list',
   'App rail',
   'List & Navigation',
   'Report',
@@ -740,6 +739,28 @@ for (const scheme of ['light', 'dark'] as const) {
 
     for (const [index, title] of labPanels.entries()) {
       const panel = panels.nth(index)
+      /* The panels live inside the page's own scroll container, and an element screenshot
+         can only paint the pixels that container reveals — a panel taller than the window
+         used to write a baseline whose lower half was blank. Grow the window by the
+         measured deficit first, then gate on the panel actually fitting. */
+      const geometry = await panel.evaluate((section) => ({
+        height: Math.ceil(section.getBoundingClientRect().height),
+        available: (section.parentElement as HTMLElement).clientHeight,
+        viewport: innerHeight,
+      }))
+      if (geometry.height > geometry.available) {
+        await page.setViewportSize({
+          width: 1280,
+          height: geometry.viewport + geometry.height - geometry.available,
+        })
+      }
+      expect(
+        await panel.evaluate(
+          (section) =>
+            (section.parentElement as HTMLElement).clientHeight >=
+            Math.ceil(section.getBoundingClientRect().height),
+        ),
+      ).toBe(true)
       const mark = panel.locator('.brand-metaballs')
       const isWebgl = (await mark.count()) > 0
       await expect(panel).toHaveScreenshot(`component-lab-${panelSlug(title)}-${scheme}.png`, {

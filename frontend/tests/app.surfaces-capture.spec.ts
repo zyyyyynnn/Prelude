@@ -231,9 +231,9 @@ test.describe('@capture authenticated surface reference set', () => {
 
     await page.goto('/components-lab')
     await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
-    await page.getByRole('button', { name: '面试上下文', exact: true }).click()
-    await hoverContextMenuItem(page, '排序方式')
-    await expect(page.getByRole('menuitemradio', { name: '最近活跃' })).toBeVisible()
+    await page.getByRole('button', { name: '菜单触发器', exact: true }).click()
+    await hoverContextMenuItem(page, '子菜单')
+    await expect(page.getByRole('menuitemradio', { name: '单选项一' })).toBeVisible()
     await settle(page)
     await capture(page, '19-menu-with-submenu')
     /* One Escape closes the open submenu, a second closes the root menu. */
@@ -257,7 +257,7 @@ test.describe('@capture authenticated surface reference set', () => {
     await page.locator('.prelude-toast__close').click()
     await expect(page.locator('.prelude-toast')).toHaveCount(0)
 
-    await page.getByRole('button', { name: '未读通知', exact: true }).hover()
+    await page.getByRole('button', { name: '提示', exact: true }).hover()
     await expect(page.locator('.prelude-tooltip')).toBeVisible()
     await capture(page, '23-tooltip-icon')
   })

@@ -5,7 +5,7 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react'
-import { Briefcase, FileText, Image, Paperclip, X } from 'lucide-react'
+import { Briefcase, FileText, Image, Paperclip, ScanSearch, X } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
 
@@ -107,6 +107,22 @@ export function PromptBarFact({ label, icon }: { label: string; icon: ReactNode 
         <span className="min-w-0 flex-1 truncate text-start">{label}</span>
       </span>
     </IconTooltip>
+  )
+}
+
+/** The JD-matching chip. Matching is either on or absent — there is no off state — so
+ *  the control only renders while it is on, and pressing it turns matching off. */
+export function PromptBarJdToggle({ onDisable }: { onDisable: () => void }) {
+  return (
+    <button
+      type="button"
+      className="prompt-bar-control prompt-bar-control-jd ui-action"
+      aria-pressed="true"
+      onClick={onDisable}
+    >
+      <ScanSearch aria-hidden="true" />
+      <span>JD 匹配</span>
+    </button>
   )
 }
 

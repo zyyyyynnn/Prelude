@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BarChart3, PanelLeft, Plus, Settings } from 'lucide-react'
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router'
-import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import {
   deleteSession,
   fetchSession,
@@ -14,7 +13,7 @@ import {
 import { useSettings } from '@/features/settings'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { SessionGroup } from '@/shared/ui/session-row'
-import { SidebarAction, SidebarFrame, SidebarPane } from '@/shared/ui/sidebar'
+import { SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from '@/shared/ui/sidebar'
 
 export function AppShell() {
   const { openSettings } = useSettings()
@@ -116,14 +115,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
       <SidebarFrame
         collapsed={collapsed}
         onToggle={() => setCollapsed((value) => !value)}
-        brand={
-          <>
-            <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
-            <span className="font-serif text-md font-medium text-text-primary" data-sidebar-label>
-              Prelude
-            </span>
-          </>
-        }
+        brand={<SidebarBrand />}
         primary={
           <SidebarAction
             collapsed={collapsed}

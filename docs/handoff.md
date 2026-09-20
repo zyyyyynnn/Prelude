@@ -178,11 +178,21 @@
 - [x] **实验台像素判据按面板铺满**：`components-lab-{light,dark}-win32` 两张视口截图（只覆盖首屏，前两轮 rail/report/resume 的改动全在首屏以下、一次没报）换成 16 个面板 × 亮暗 = 32 张 locator 基线。测试内维护面板清单并断言 `.workspace-page__content > section` 的首个 `h2` 序列与清单相等——新增面板未登记先失败在覆盖断言上。含 WebGL 品牌球的两个面板（App rail、Brand）mask 掉品牌球，另以"正方形 + 全圆角"几何断言把关（沿用 404 的处置）。红测：给 Session list 面板加一个 `pt-md`，只有 `component-lab-session-list-light.png` 报 diff。
 - [x] **`capture:surfaces` manifest 可追溯**：除 `revision` 外记录 `inputsMatchRevision` 与 `dirtyInputFiles`（排除截图集自身），工作树与提交不一致时 `console.warn`。实测采集时输出 `ran on a dirty tree: 16 input file(s) differ from 2170c90`。
 
+### 阶段九：实验台二次排查（遗漏项 / 重复项 / 非样例件）
+
+- [x] **判据漏洞：面板基线只绘制首屏**。元素截图只能画出滚动容器揭示的像素，实验台面板在 `.workspace-page__content.scrollable`（`clientHeight` 仅视口高）内，于是高于视口的面板写出「尺寸对、下半张空白」的基线——`component-lab-report-light` 的 1935px 里只有约 650px 有内容，整页报告从未真正进入像素判据。测试改为先量面板高度与容器可视高的差额、按差额扩窗，再断言面板完整落在容器内才取图。红测依据：修复前后 `component-lab-report-*` 与 `component-lab-prompt-bar-*` 的像素差（详见 `docs/quality/ui-quality-system.md`）。
+- [x] **字段尾部操作位收口**：登录页密码、设置「修改密码」、API Key、实验台四处各写了一份 `field-actions-*` + `absolute inset-y-0 inset-e-(--ui-control-inset)` + 裸 `button.field-action` 的标记。改为 `shared/ui/field.tsx` 的 `FieldActions`（留白按动作数量推导）与 `FieldAction`（tooltip 与 `aria-label` 同源）。顺带修掉真实缺陷：API Key 字段在 `hasApiKey` 为假时只画一个按钮，外层却写死 `field-actions-2`，多留一档留白。
+- [x] **回答组合器抽出产品拥有的呈现层** `AnswerComposerSurface`：实验台的准备态/回答态此前手抄 composer 标记并已经漂移（占位文案 `输入回答...` 对产品的 `输入回答…`、缺附件行、缺锁定态上下文、自造的模型事实位）。现在准备态渲染 `InterviewSetupComposer`、回答态与语音两态渲染该呈现层（`voice` 供冻结态、文字态可点切换），`InterviewAnswerComposer` 退为容器 + `useVoiceInterview`。产品侧像素零变化（`interview-prompt-bar`、`interview-model-menu` 基线未改动即通过）。
+- [x] **rail 品牌位与结构**：`SidebarBrand` 成为 `AppShell` 与实验台共用拥有者；实验台 rail 的会话分组从面板里的孤立 `DemoGroup` 移进 rail 内部（产品就在这里列会话），展开/折叠两态并排，面板高度 1203 → 819。两态按内容高度呈现，贴底与交叉淡入仍由工作区真实截图覆盖。
+- [x] **重复数据**：实验台的 `themeChoices` 是 `ThemePanel` 内 `themeOptions` 的手抄副本，现由 `features/settings` 一处导出、两侧同引；`ReasoningLevel` 与 `REASONING_LABELS` 曾在 `features/interview/types.ts` 与 `features/settings/types.ts` 各定义一份（interview 的标签表实际无人消费），删去副本、interview 改从 settings 引用。
+- [x] **非样例件与假文案清理**：删除产品不存在的「通知」Bell 按钮（Button 的 Box 组与 Tooltip 组曾各摆一个同款）；DropdownMenu 面板的「新建会话/排序方式/已归档/JD 匹配」是产品没有的菜单，条目改为角色命名（菜单项、单选项一、多选项、禁用项…）；Toast/Confirm 的「已保存到工作台」「模型额度偏低」等伪业务文案改为角色命名；Field 小节的思考深度选项改用 `REASONING_LABELS`；`sort` 状态曾被 Field 小节与下拉菜单共用（改一处会移动另一处），拆为 `reasoning` 与 `sort`；Empty & Error 的重试按钮换用 `RefreshCw`。
+- [x] 验证：`vp check`、`verify:ui`、`verify:tokens`（209 declarations）、`verify:architecture`、`build` + `verify:cascade`、`verify:production`、`verify:visual`（9 例）、`test:smoke`（35 例）、`verify:byok`（4）、`verify:dark`（2）、`verify:a11y`（1）全通过；实验台 30 张基线按新判据重生成并逐张复核。
+
 ---
 
 ## 7. 关键风险与留存问题
 
-1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、36 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 32 张），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
+1. **视觉像素回归**：`npm run verify:visual` 现有 9 例、34 张 `*-win32.png` 基线（Prompt Bar、模型菜单、设置面板、404 正文，加组件检查面按面板逐张的亮/暗 30 张），另含折叠 rail 几何闭合与分割线两侧留白两条实测断言。`capture:surfaces` 的 31 张图含动画表面，只作人工复核，不是自动判据。CI 前端跑在 windows-latest，基线名带 `-win32` 才能对上。
 2. **WebGL 不入像素基线**：`BrandMetaballs` 在 `prefers-reduced-motion` 下 `speed=0`（shader 会彻底停 rAF），但 GPU 与 SwiftShader 输出不保证逐像素一致，404 基线刻意只框正文块，品牌球用几何断言把关。
 3. **`..application..` 禁令的适用面**：只禁 `com.baomidou..` 与 `org.apache.ibatis..`。Lombok 与 Spring 的 `DataIntegrityViolationException`/`DuplicateKeyException` 仍在 application 使用，属有意保留：前者是编译期代码生成，后者是 Spring 的可移植异常翻译，不是 ORM 细节。
 4. **论文 Mermaid 架构图同步时机**：若正式清理 4 个空包（`agent`、`tools`、`telemetry`、`settings`），需按 `thesis-assets/meta/workflow-governance.md` 对 [`thesis-assets/evidence/diagrams/`](file:///e:/Prelude/thesis-assets/evidence/diagrams/) 做项目漂移复核。本轮未触碰 `thesis-assets/**`。

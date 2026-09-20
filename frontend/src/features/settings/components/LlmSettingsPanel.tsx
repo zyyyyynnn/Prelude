@@ -2,11 +2,10 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
-import { Field, Input } from '@/shared/ui/field'
+import { Field, FieldAction, FieldActions, Input } from '@/shared/ui/field'
 import { Panel } from '@/shared/ui/panel'
 import { Select } from '@/shared/ui/select'
 import { useFeedback } from '@/shared/ui/feedback-context'
-import { IconTooltip } from '@/shared/ui/overlay'
 import {
   discoverCapabilities,
   discoverModels,
@@ -132,7 +131,24 @@ function LlmSettingsForm({
             : undefined
         }
       >
-        <div className="field-actions-2">
+        <FieldActions
+          actions={[
+            ...(state.config?.hasApiKey
+              ? [
+                  <FieldAction
+                    label="清除已保存的 API Key"
+                    icon={<Trash2 />}
+                    onClick={() => state.update('apiKey', '__CLEAR__')}
+                  />,
+                ]
+              : []),
+            <FieldAction
+              label={state.showKey ? '隐藏 API Key' : '显示 API Key'}
+              icon={state.showKey ? <Eye /> : <EyeOff />}
+              onClick={() => state.setShowKey(!state.showKey)}
+            />,
+          ]}
+        >
           <Input
             id="llm-api-key"
             type={state.showKey ? 'text' : 'password'}
@@ -141,31 +157,7 @@ function LlmSettingsForm({
             placeholder="留空表示保留当前 Key"
             onChange={(event) => state.update('apiKey', event.target.value)}
           />
-          <div className="absolute inset-y-0 inset-e-(--ui-control-inset) flex items-center">
-            {state.config?.hasApiKey && (
-              <IconTooltip label="清除已保存的 API Key">
-                <button
-                  className="field-action ui-action ui-action-icon"
-                  type="button"
-                  aria-label="清除已保存的 API Key"
-                  onClick={() => state.update('apiKey', '__CLEAR__')}
-                >
-                  <Trash2 />
-                </button>
-              </IconTooltip>
-            )}
-            <IconTooltip label={state.showKey ? '隐藏 API Key' : '显示 API Key'}>
-              <button
-                className="field-action ui-action ui-action-icon"
-                type="button"
-                aria-label={state.showKey ? '隐藏 API Key' : '显示 API Key'}
-                onClick={() => state.setShowKey(!state.showKey)}
-              >
-                {state.showKey ? <Eye /> : <EyeOff />}
-              </button>
-            </IconTooltip>
-          </div>
-        </div>
+        </FieldActions>
       </Field>
       <section className="grid gap-sm border-t border-border pt-md">
         <h3 className="type-subtitle">高级设置</h3>

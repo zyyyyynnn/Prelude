@@ -1,8 +1,24 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { NavLink } from 'react-router'
+import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
 import type { ReactNode } from 'react'
+
+/**
+ * The rail's top row: the brand mark and the wordmark. The mark takes the same
+ * box as every other row, so the rail stays on one grid however it is collapsed.
+ */
+export function SidebarBrand() {
+  return (
+    <>
+      <BrandMetaballs className="size-(--ui-height-control) flex-shrink-0 rounded-full" />
+      <span className="font-serif text-md font-medium text-text-primary" data-sidebar-label>
+        Prelude
+      </span>
+    </>
+  )
+}
 
 /**
  * One entry of the application rail. While the rail is collapsed the label is

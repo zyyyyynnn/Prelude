@@ -3,10 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Upload } from 'lucide-react'
 import { formText } from '@/shared/lib/form-data'
 import { Button } from '@/shared/ui/button'
-import { Field, Input } from '@/shared/ui/field'
+import { Field, FieldAction, FieldActions, Input } from '@/shared/ui/field'
 import { Panel } from '@/shared/ui/panel'
 import { useFeedback } from '@/shared/ui/feedback-context'
-import { IconTooltip } from '@/shared/ui/overlay'
 import { fetchProfile, saveProfile, uploadAvatar } from '../index'
 import { sectionTitles } from '../settings-context'
 
@@ -168,7 +167,15 @@ function PasswordField({
 }) {
   return (
     <Field label={label} htmlFor={name}>
-      <div className="field-actions-1">
+      <FieldActions
+        actions={[
+          <FieldAction
+            label={visible ? '隐藏密码' : '显示密码'}
+            icon={visible ? <Eye /> : <EyeOff />}
+            onClick={onToggle}
+          />,
+        ]}
+      >
         <Input
           id={name}
           name={name}
@@ -176,19 +183,7 @@ function PasswordField({
           autoComplete={autoComplete}
           placeholder="留空表示不修改密码"
         />
-        <div className="absolute inset-y-0 inset-e-(--ui-control-inset) flex items-center">
-          <IconTooltip label={visible ? '隐藏密码' : '显示密码'}>
-            <button
-              type="button"
-              className="field-action ui-action ui-action-icon"
-              aria-label={visible ? '隐藏密码' : '显示密码'}
-              onClick={onToggle}
-            >
-              {visible ? <Eye /> : <EyeOff />}
-            </button>
-          </IconTooltip>
-        </div>
-      </div>
+      </FieldActions>
     </Field>
   )
 }

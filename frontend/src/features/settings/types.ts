@@ -91,3 +91,14 @@ export type UserProfileResponse = {
 }
 
 export type ThemePreference = 'light' | 'dark' | 'system'
+
+/** The theme choices as the settings panel and the gallery both show them. */
+export const themeOptions: Array<{
+  value: ThemePreference
+  label: string
+  description: string
+}> = [
+  { value: 'light', label: '浅色', description: '暖色纸面' },
+  { value: 'dark', label: '暗色', description: '低亮度阅读' },
+  { value: 'system', label: '跟随系统', description: '自动同步' },
+]

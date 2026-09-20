@@ -1,12 +1,18 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Field, Input, Textarea } from '@/shared/ui/field'
 import { Panel } from '@/shared/ui/panel'
 import { useFeedback } from '@/shared/ui/feedback-context'
 import { sectionTitles } from '@/features/settings'
-import { createPosition, deletePosition, fetchPositions, updatePosition } from './index'
+import {
+  createPosition,
+  deletePosition,
+  fetchPositions,
+  PositionRow,
+  updatePosition,
+} from './index'
 import type { Position } from './types'
 
 const emptyDraft = { name: '', systemPrompt: '' }
@@ -111,22 +117,12 @@ export function PositionManagementPanel() {
           ) : (
             <div className="position-item-grid" role="list" aria-label="岗位列表">
               {positions.data?.map((position) => (
-                <div className="row-label-end" key={position.id} role="listitem">
-                  <span className="truncate-title" data-slot="position-item-name">
-                    {position.name}
-                  </span>
-                  {position.editable && (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      aria-label={`编辑 ${position.name}`}
-                      onClick={() => edit(position)}
-                    >
-                      <Pencil aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
+                <PositionRow
+                  key={position.id}
+                  name={position.name}
+                  editable={position.editable}
+                  onEdit={() => edit(position)}
+                />
               ))}
             </div>
           )}

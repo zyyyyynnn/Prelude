@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ChevronDown, ChevronRight, Settings } from 'lucide-react'
 import { REASONING_LABELS } from '@/features/settings'
+import type { ReasoningLevel } from '@/features/settings'
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -10,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
 } from '@/shared/ui/menu'
-import type { InterviewModelConfig, InterviewModelProvider, ReasoningLevel } from '../types'
+import type { InterviewModelConfig, InterviewModelProvider } from '../types'
 
 function MenuRow({ label, value, submenu }: { label: string; value?: string; submenu?: boolean }) {
   return (
