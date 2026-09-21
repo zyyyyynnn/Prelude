@@ -93,13 +93,13 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
   }
 }
 
-/* A component's internal element classes (`prelude-menu__label`, `prelude-button__content`)
+/* A component's internal element classes (`ui-menu__label`, `ui-button__content`)
    are its own layout contract. A call site that writes one is reaching past the component's
    props into its markup, and the two then drift with nothing to notice it — which is how the
    interview menus ended up hand-composing what `shared/ui/menu` already drew. Only the
    families a `shared/ui` component owns are in scope: `workspace-page` and `app-layout` are
    page-level layout a route writes itself. */
-const internalClassPattern = /\b((?:prelude-[a-z-]+|workspace-header)__[a-z-]+)/g
+const internalClassPattern = /\b((?:ui-[a-z-]+|workspace-header)__[a-z-]+)/g
 
 /* The BEM shape only catches classes spelled with `__`. A `@utility` registered to carry one
    component's markup is exactly as internal and has no shape to recognise — `prompt-bar-control`
@@ -242,7 +242,7 @@ const consumers = walk(sourceRoot)
    nothing. A class now has to appear as a whole token. The one exemption is a family actually
    composed at runtime, listed below rather than inferred from its name shape. */
 const runtimeComposedFamilies = [
-  /^prelude-button--/, // `prelude-button--${variant}` in shared/ui/button.tsx
+  /^ui-button--/, // `ui-button--${variant}` in shared/ui/button.tsx
 ]
 const escapeForToken = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const usesClassToken = (name) =>

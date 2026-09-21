@@ -34,21 +34,21 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         position="top-center"
         theme="light"
         closeButton
-        className="prelude-toaster"
+        className="ui-toaster"
         icons={{
           success: <CheckCircle2 />,
           info: <Info />,
           warning: <TriangleAlert />,
           error: <OctagonX />,
-          loading: <Loader2 className="prelude-toast__loader" />,
+          loading: <Loader2 className="ui-toast__loader" />,
           close: <X />,
         }}
         toastOptions={{
           closeButtonAriaLabel: '关闭系统提示',
           classNames: {
-            toast: 'prelude-toast',
-            description: 'prelude-toast__description',
-            closeButton: 'prelude-toast__close ui-action ui-action-icon',
+            toast: 'ui-toast',
+            description: 'ui-toast__description',
+            closeButton: 'ui-toast__close ui-action ui-action-icon',
           },
         }}
       />
@@ -59,9 +59,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         }}
       >
         <Dialog.Portal>
-          <Dialog.Backdrop className="prelude-dialog__backdrop" />
-          <Dialog.Viewport className="prelude-dialog__viewport">
-            <Dialog.Popup className="prelude-dialog confirm-dialog">
+          <Dialog.Backdrop className="ui-dialog__backdrop" />
+          <Dialog.Viewport className="ui-dialog__viewport">
+            <Dialog.Popup className="ui-dialog confirm-dialog">
               <Dialog.Title className="confirm-dialog__title">
                 {confirmation?.options.title ?? '确认操作'}
               </Dialog.Title>

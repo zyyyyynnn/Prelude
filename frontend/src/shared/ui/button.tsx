@@ -28,10 +28,10 @@ export function Button({
     <ButtonPrimitive
       data-slot="button"
       className={cn(
-        'prelude-button',
-        `prelude-button--${variant}`,
-        `prelude-button--${size}`,
-        shape && `prelude-button--${shape}`,
+        'ui-button',
+        `ui-button--${variant}`,
+        `ui-button--${size}`,
+        shape && `ui-button--${shape}`,
         'ui-action',
         className,
       )}
@@ -42,13 +42,13 @@ export function Button({
       aria-pressed={pressed}
       {...props}
     >
-      {loading && <span className="prelude-button__spinner" aria-hidden="true" />}
-      <span className="prelude-button__content">
+      {loading && <span className="ui-button__spinner" aria-hidden="true" />}
+      <span className="ui-button__content">
         {shape === 'hold' ? (
           <>
             {/* The words keep their box while held so the control never changes width under
                 the finger; `held` is what replaces them. */}
-            <span className="prelude-button__label">{children}</span>
+            <span className="ui-button__label">{children}</span>
             {held}
           </>
         ) : (

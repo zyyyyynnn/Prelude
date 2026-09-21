@@ -322,6 +322,17 @@
 - [x] **产物没有因为 barrel 变差，反而更好**：JS 总量 1,247,345 → **1,238,394** 字节（−8,951），chunk 数 **32 → 18**。担心的"barrel 破坏按需分包"在这里是反方向的——共享入口让打包器复用模块而不是按路由各复制一份。
 - [x] 验证：`vp check`(107 文件)、`verify:architecture`(11 单测 + 实树 PASS)、`verify:ui`、`verify:tokens`(204)、`build` + `verify:cascade`、`verify:production`、`verify:visual`(22)、`test:smoke`(41)、`byok`(4)/`dark`(3)/`a11y`(1) 全通过。
 
+### 阶段二十一：设计系统类名去掉产品名前缀（`prelude-*` → `ui-*`）
+
+- [x] **动因**：`prelude-` 是产品名，在自家样式表里等于没说话；而且仓库**本来就已有** `ui-action`/`ui-field-control` 一套前缀，等于同一个层用了两套命名。合并到 `ui-` 一套。
+- [x] **范围**：10 个类族、46 个类名、206 处出现（`index.css` 115 + 组件/测试/脚本 91）→ `ui-button`、`ui-menu`、`ui-dialog`、`ui-input`、`ui-textarea`、`ui-select`、`ui-segmented-control`、`ui-toast`、`ui-toaster`、`ui-tooltip`。实测**零碰撞**：`@utility` 名单里没有这些名字，也没有同名的裸类声明。
+- [x] **没有一起改的 `prelude*`，因为它们不是类名**：`prelude-theme-change`（`window` 上的 CustomEvent 名）、`prelude-theme-preference`（localStorage 键——改它等于把每个用户已存的主题偏好静默清零）、`prelude-user-id`、`prelude_schema`、守卫测试里的 `prelude-architecture-` 临时目录前缀。事件名与存储键**本来就该带命名空间**，去掉前缀反而是退步。
+- [x] **我自己造的一次半应用**：第一版正则写成 `prelude-(button|…)\b`，而 `_` 是单词字符，`prelude-button__content` 里 `n` 与 `_` 之间**没有边界**——于是 `--modifier` 类全改了、`__element` 类一个没动，正好是这个仓库最忌讳的半成品状态。第二版去掉 `\b`（块名替换、后缀原样保留，`toaster` 排在 `toast` 前避免短名先吃）才补上余下 103 处。**教训：批量改标识符时 `\b` 对 BEM 的 `__` 是错的。**
+- [x] **改完立刻暴露的一条假绿灯**：`verify-ui-guardrails.cjs` 的 `internalClassPattern` 里硬编码着 `prelude-[a-z-]+__`，类名一改它就匹配不到任何东西——门禁从"能抓外写"静默变成"永远通过"。已同步为 `ui-`，并红测：在 `AnalyticsPage` 的 className 里写 `ui-menu__item` 即 `FAIL (1)`。这条是本次改动最容易漏的坑：**判据里写死的名字也是名字**。
+- [x] **像素判据作为正确性证明**：纯类名重命名不应该移动任何像素，所以验收标准是 `verify:visual` 在**零基线重生成**下通过。实测 22 例全绿、`git status` 对 44 张基线**一个字节都没改**——这才说明改名真的没碰呈现。
+- [x] **活的规范已同步**：`DESIGN.md`（图标契约段、Dialog/Toast 表面段）、`docs/frontend/architecture.md`（前缀约定改为 `ui-` 并写明合并理由）、`docs/quality/ui-quality-system.md`（`verify:ui` 描述与恒真判据段的示例类名）。**本文件里历史阶段的条目不改写**——它们记录的是当时的事实（那时类名确实叫 `prelude-button`），改写等于伪造记录；读到旧 `prelude-*` 选择器时按本节映射理解即可。
+- [x] 验证：`vp check`(107 文件)、`verify:architecture`(11 单测)、`verify:ui`、`verify:tokens`(204)、`build` + `verify:cascade`、`verify:production`、`verify:visual`(22，零基线改动)、`test:smoke`(41)、`byok`(4)/`dark`(3)/`a11y`(1) 全通过。
+
 ---
 
 ## 7. 关键风险与留存问题

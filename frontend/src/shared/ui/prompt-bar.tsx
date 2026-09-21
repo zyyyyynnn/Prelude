@@ -197,7 +197,7 @@ export function ContextAttachment({
   )
 }
 
-/** The voice lane's states, mirrored by `.prelude-button--hold` in the sheet. */
+/** The voice lane's states, mirrored by `.ui-button--hold` in the sheet. */
 export type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking'
 
 /** The microphone's own level, drawn as bars inside the hold control. The analyser runs

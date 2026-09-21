@@ -41,7 +41,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 图表内部几何不受本体系管辖：echarts 的 `grid` 留白、`lineStyle.width`、雷达图的 `radius: '64%'` 与 `strokeWidth` 是**为图表内容量出来的尺寸**（要装下最宽的 y 轴标签与日期标签），不是界面尺度的一档，把它们换算成 `--spacing-*` 只是给一个无关数字披上 token 的外衣。它们以具名常量留在图表模块内（`TREND_GRID`），字体与颜色则照旧经 `cssVarNumber()` 读取设计 token。
 
-控件内的图标尺寸由 CSS 拥有：`.prelude-button__content`、`.field-action`、`.row-action`、`.prelude-dialog__close`、`.prelude-toast__close` 与 `.prelude-toast [data-icon]` 下的 `svg` 取 `--ui-glyph-sm`。调用点不写 `size={n}`：SVG 的 `width` 表现属性优先级低于 CSS，写了不会生效。
+控件内的图标尺寸由 CSS 拥有：`.ui-button__content`、`.field-action`、`.row-action`、`.ui-dialog__close`、`.ui-toast__close` 与 `.ui-toast [data-icon]` 下的 `svg` 取 `--ui-glyph-sm`。调用点不写 `size={n}`：SVG 的 `width` 表现属性优先级低于 CSS，写了不会生效。
 
 会话行的置顶角标是脱离控件的装饰图形，没有 CSS 归属，尺寸由调用点的 `size` 决定。
 
@@ -133,7 +133,7 @@ Tooltip 反过来用文字色做底、表面色做字（`--color-text-primary` /
 
 Tooltip 内容使用 `--font-size-xs`、token padding 和 `--content-tooltip-max-inline-size`。primitive 统一 trigger 间距和 opacity 动效。截断文字的定位锚点是完整交互控件。
 
-Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overlay`，Dialog 使用 `--shadow-modal`。`.prelude-dialog` 自带 `--spacing-xl` 内边距，是可直接放内容的浮层；`--workspace` 变体是 full-bleed 壳层，内边距与分区由调用点拥有（设置面板即此形态）。壳层自身就是 `--color-surface`，分区不再各自铺一层底色——分割线只在 surface 上成立，铺成 `--color-bg` 会让同一条线几乎消失。Confirm 复用 `.prelude-dialog` 的 chrome，只覆写自身宽度（`--layout-confirm-max-inline-size`）与动作行——动作按钮等分铺满整行，不缩在右侧。
+Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overlay`，Dialog 使用 `--shadow-modal`。`.ui-dialog` 自带 `--spacing-xl` 内边距，是可直接放内容的浮层；`--workspace` 变体是 full-bleed 壳层，内边距与分区由调用点拥有（设置面板即此形态）。壳层自身就是 `--color-surface`，分区不再各自铺一层底色——分割线只在 surface 上成立，铺成 `--color-bg` 会让同一条线几乎消失。Confirm 复用 `.ui-dialog` 的 chrome，只覆写自身宽度（`--layout-confirm-max-inline-size`）与动作行——动作按钮等分铺满整行，不缩在右侧。
 
 ### Composition
 

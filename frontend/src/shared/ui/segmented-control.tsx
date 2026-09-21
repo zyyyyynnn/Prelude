@@ -27,7 +27,7 @@ export function SegmentedControl<Value extends string>({
   } as CSSProperties
 
   return (
-    <div className="prelude-segmented-control" role="group" aria-label={ariaLabel} style={style}>
+    <div className="ui-segmented-control" role="group" aria-label={ariaLabel} style={style}>
       {items.map((item) => (
         <button
           className={cn(item.value === value && 'is-active')}

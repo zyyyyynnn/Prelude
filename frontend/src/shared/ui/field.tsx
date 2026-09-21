@@ -12,7 +12,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <InputPrimitive
       data-slot="input"
-      className={cn('prelude-input', 'ui-field-control', className)}
+      className={cn('ui-input', 'ui-field-control', className)}
       {...props}
     />
   )
@@ -21,7 +21,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   return (
     <textarea
       data-slot="textarea"
-      className={cn('prelude-textarea', 'ui-field-control', className)}
+      className={cn('ui-textarea', 'ui-field-control', className)}
       {...props}
     />
   )

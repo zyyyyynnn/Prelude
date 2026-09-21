@@ -436,7 +436,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     })
   expect(promptBorder.after).toBe(promptBorder.before)
   await page.getByRole('button', { name: '收起侧栏' }).hover()
-  const tooltip = page.locator('.prelude-tooltip')
+  const tooltip = page.locator('.ui-tooltip')
   await expect(tooltip).toBeVisible()
   await expect(tooltip).toHaveText('收起侧栏')
   expect((await tooltip.boundingBox())?.width ?? 0).toBeGreaterThan(48)
@@ -541,23 +541,20 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(positionMenuItem).toBeVisible()
   await expect(jdMenuItem).toBeVisible()
   const contextMenuGeometry = await page
-    .locator('.prelude-menu')
+    .locator('.ui-menu')
     .first()
     .evaluate((menu) => {
-      const items = Array.from(menu.querySelectorAll<HTMLElement>('.prelude-menu__item'))
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('.ui-menu__item'))
       const iconLefts = items.map(
-        (item) =>
-          item.querySelector<HTMLElement>('.prelude-menu__icon')?.getBoundingClientRect().left,
+        (item) => item.querySelector<HTMLElement>('.ui-menu__icon')?.getBoundingClientRect().left,
       )
       const details = items
-        .map((item) =>
-          item.querySelector<HTMLElement>('.prelude-menu__detail')?.getBoundingClientRect(),
-        )
+        .map((item) => item.querySelector<HTMLElement>('.ui-menu__detail')?.getBoundingClientRect())
         .filter((box): box is DOMRect => Boolean(box))
       const statusesShareRow = items
         .map((item) => {
-          const label = item.querySelector<HTMLElement>('.prelude-menu__label')
-          const detail = item.querySelector<HTMLElement>('.prelude-menu__detail')
+          const label = item.querySelector<HTMLElement>('.ui-menu__label')
+          const detail = item.querySelector<HTMLElement>('.ui-menu__detail')
           if (!label || !detail) return true
           const labelBox = label.getBoundingClientRect()
           const detailBox = detail.getBoundingClientRect()
@@ -583,7 +580,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     statusColumnsAligned: true,
     statusesShareRow: true,
   })
-  await settleOverlay(page.locator('.prelude-menu').first())
+  await settleOverlay(page.locator('.ui-menu').first())
   await page.screenshot({
     path: test.info().outputPath('interview-context-menu.png'),
     fullPage: true,
@@ -591,19 +588,19 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await page.getByRole('menuitem', { name: /选择简历/ }).hover()
   const resumeOption = page.getByRole('menuitemradio', { name: '候选人简历.pdf' })
   await expect(resumeOption).toBeVisible()
-  await expect(resumeOption.locator('.prelude-menu__indicator')).toHaveCount(0)
+  await expect(resumeOption.locator('.ui-menu__indicator')).toHaveCount(0)
   const resumeOptionBox = await resumeOption.boundingBox()
   const resumeMenuItemBox = await resumeMenuItem.boundingBox()
   expect(resumeOptionBox).not.toBeNull()
   expect(resumeMenuItemBox).not.toBeNull()
   expect(Math.abs(resumeOptionBox!.height - resumeMenuItemBox!.height)).toBeLessThanOrEqual(1)
-  await settleOverlay(page.locator('.prelude-menu').last())
+  await settleOverlay(page.locator('.ui-menu').last())
   await page.screenshot({
     path: test.info().outputPath('interview-context-submenu.png'),
     fullPage: true,
   })
   await page.getByRole('menuitemradio', { name: '候选人简历.pdf' }).click()
-  await expect(page.locator('.prelude-menu')).toHaveCount(0)
+  await expect(page.locator('.ui-menu')).toHaveCount(0)
   await selectContext(page, '选择岗位', 'Java 后端工程师')
   const modelTrigger = page.getByRole('button', { name: /模型：/ })
   await expect(modelTrigger).toContainText('deepseek-v4-pro · 默认')
@@ -611,7 +608,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(modelTrigger.locator('svg')).toHaveCount(1)
   await modelTrigger.screenshot({ path: test.info().outputPath('interview-model-trigger.png') })
   await modelTrigger.click()
-  const modelMenu = page.locator('.prelude-menu--structured[data-open]')
+  const modelMenu = page.locator('.ui-menu--structured[data-open]')
   await expect(modelMenu).toBeVisible()
   await expect(page.getByRole('menuitem', { name: /接入方式/ })).toHaveCount(0)
   await expect(page.getByRole('menuitem', { name: /^模型\s/ })).toBeVisible()
@@ -619,20 +616,18 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   await expect(page.getByRole('menuitem', { name: '管理模型' })).toBeVisible()
   const modelMenuGeometry = await modelMenu.evaluate((menu) => {
     const rows = Array.from(
-      menu.querySelectorAll<HTMLElement>(':scope > [role="group"] > .prelude-menu__item'),
+      menu.querySelectorAll<HTMLElement>(':scope > [role="group"] > .ui-menu__item'),
     )
     const details = rows
-      .map((row) =>
-        row.querySelector<HTMLElement>('.prelude-menu__detail')?.getBoundingClientRect(),
-      )
+      .map((row) => row.querySelector<HTMLElement>('.ui-menu__detail')?.getBoundingClientRect())
       .filter((box): box is DOMRect => Boolean(box))
     return {
       detailColumnsAligned: details.every((box) => Math.abs(box.right - details[0].right) < 1),
       optionRowsUseThreeColumnGrid: rows
         .slice(0, 2)
         .every((row) => getComputedStyle(row).gridTemplateColumns.split(' ').length === 3),
-      decorativeIconCount: menu.querySelectorAll('.prelude-menu__icon').length,
-      manageIconCount: menu.querySelectorAll('.prelude-menu__icon--leading').length,
+      decorativeIconCount: menu.querySelectorAll('.ui-menu__icon').length,
+      manageIconCount: menu.querySelectorAll('.ui-menu__icon--leading').length,
     }
   })
   expect(modelMenuGeometry).toEqual({
@@ -758,7 +753,7 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   await providerSelect.click()
   const providerOptions = page.getByRole('option')
   await expect(providerOptions).toHaveCount(4)
-  await settleOverlay(page.locator('.prelude-select-popup[data-open]'))
+  await settleOverlay(page.locator('.ui-select-popup[data-open]'))
   await page.screenshot({
     path: test.info().outputPath('settings-select.png'),
     fullPage: true,
@@ -1014,7 +1009,7 @@ test('@visual keeps the not-found surface on the anonymous page shell', async ({
       backUsesButtonSkin: Boolean(
         back &&
         back.tagName === 'A' &&
-        back.classList.contains('prelude-button') &&
+        back.classList.contains('ui-button') &&
         back.getBoundingClientRect().width > 0,
       ),
     }

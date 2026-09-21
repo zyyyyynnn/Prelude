@@ -24,16 +24,16 @@ export function DropdownMenu({
       <Menu.Trigger render={trigger} />
       <Menu.Portal>
         <Menu.Positioner
-          className="prelude-menu-positioner"
+          className="ui-menu-positioner"
           side={side}
           sideOffset={OVERLAY_OFFSET.menu}
           align={align}
         >
           <Menu.Popup
             className={cn(
-              'prelude-menu',
-              layout && 'prelude-menu--structured',
-              layout === 'model' && 'prelude-menu--model',
+              'ui-menu',
+              layout && 'ui-menu--structured',
+              layout === 'model' && 'ui-menu--model',
               className,
             )}
           >
@@ -60,16 +60,16 @@ export function DropdownMenuSubmenu({
 }) {
   return (
     <Menu.SubmenuRoot>
-      <Menu.SubmenuTrigger className="prelude-menu__item" disabled={disabled}>
+      <Menu.SubmenuTrigger className="ui-menu__item" disabled={disabled}>
         {trigger}
       </Menu.SubmenuTrigger>
       <Menu.Portal>
         <Menu.Positioner
-          className="prelude-menu-positioner"
+          className="ui-menu-positioner"
           sideOffset={OVERLAY_OFFSET.submenu}
           align="start"
         >
-          <Menu.Popup className="prelude-menu">{children}</Menu.Popup>
+          <Menu.Popup className="ui-menu">{children}</Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.SubmenuRoot>
@@ -94,10 +94,10 @@ export function DropdownMenuRadioGroup({
 
 export function DropdownMenuRadioItem({ value, children }: { value: string; children: ReactNode }) {
   return (
-    <Menu.RadioItem className="prelude-menu__item" value={value} closeOnClick>
-      <span className="prelude-menu__item-label">{children}</span>
+    <Menu.RadioItem className="ui-menu__item" value={value} closeOnClick>
+      <span className="ui-menu__item-label">{children}</span>
       <Menu.RadioItemIndicator
-        className="prelude-menu__indicator prelude-menu__indicator--end"
+        className="ui-menu__indicator ui-menu__indicator--end"
         aria-hidden="true"
       >
         <Check />
@@ -117,14 +117,14 @@ export function DropdownMenuCheckboxItem({
 }) {
   return (
     <Menu.CheckboxItem
-      className="prelude-menu__item"
+      className="ui-menu__item"
       checked={checked}
       closeOnClick
       onCheckedChange={onCheckedChange}
     >
       {children}
       <Menu.CheckboxItemIndicator
-        className="prelude-menu__indicator prelude-menu__indicator--end"
+        className="ui-menu__indicator ui-menu__indicator--end"
         aria-hidden="true"
       >
         <Check />
@@ -148,16 +148,16 @@ export function DropdownMenuItem({
 }) {
   return (
     <Menu.Item
-      className={cn('prelude-menu__item', icon && 'prelude-menu__item--leading-icon', className)}
+      className={cn('ui-menu__item', icon && 'ui-menu__item--leading-icon', className)}
       disabled={disabled}
       onClick={onClick}
     >
       {icon ? (
         <>
-          <span className="prelude-menu__icon--leading" aria-hidden="true">
+          <span className="ui-menu__icon--leading" aria-hidden="true">
             {icon}
           </span>
-          <span className="prelude-menu__item-label">{children}</span>
+          <span className="ui-menu__item-label">{children}</span>
         </>
       ) : (
         children
@@ -167,7 +167,7 @@ export function DropdownMenuItem({
 }
 
 export function DropdownMenuSeparator() {
-  return <Menu.Separator className="prelude-menu__separator" />
+  return <Menu.Separator className="ui-menu__separator" />
 }
 
 /** The content of a menu row or submenu trigger: an optional leading glyph, the label, an
@@ -188,13 +188,13 @@ export function MenuLabel({
   return (
     <>
       {icon && (
-        <span className="prelude-menu__icon" aria-hidden="true">
+        <span className="ui-menu__icon" aria-hidden="true">
           {icon}
         </span>
       )}
-      <span className="prelude-menu__label">{label}</span>
-      {detail && <span className="prelude-menu__detail">{detail}</span>}
-      {submenu && <ChevronRight className="prelude-menu__chevron" aria-hidden="true" />}
+      <span className="ui-menu__label">{label}</span>
+      {detail && <span className="ui-menu__detail">{detail}</span>}
+      {submenu && <ChevronRight className="ui-menu__chevron" aria-hidden="true" />}
     </>
   )
 }

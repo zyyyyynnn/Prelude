@@ -818,7 +818,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   height: 100%;
   overflow: hidden;
 }
-.prelude-button {
+.ui-button {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -833,50 +833,50 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   cursor: pointer;
   transition: var(--motion-transition-surface);
 }
-.prelude-button__content {
+.ui-button__content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: inherit;
 }
 /* Icons inside a control are sized here, never by a per-call-site size prop. */
-.prelude-button__content > svg,
+.ui-button__content > svg,
 .field-action > svg,
 .row-action > svg,
-.prelude-dialog__close > svg,
-.prelude-toast__close > svg,
-.prelude-toast [data-icon] > svg {
+.ui-dialog__close > svg,
+.ui-toast__close > svg,
+.ui-toast [data-icon] > svg {
   inline-size: var(--ui-glyph-sm);
   block-size: var(--ui-glyph-sm);
   flex: 0 0 auto;
 }
-.prelude-button[data-loading] .prelude-button__content {
+.ui-button[data-loading] .ui-button__content {
   opacity: 0;
 }
-.prelude-button:disabled {
+.ui-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-.prelude-button--primary {
+.ui-button--primary {
   color: var(--color-text-on-accent);
   background: var(--color-accent-solid);
   border-color: var(--color-accent-solid);
 }
-.prelude-button--primary:hover:not(:disabled) {
+.ui-button--primary:hover:not(:disabled) {
   background: var(--color-accent-solid-hover);
   border-color: var(--color-accent-solid-hover);
 }
-.prelude-button--secondary {
+.ui-button--secondary {
   color: var(--color-text-primary);
   background: var(--color-surface-muted);
   border-color: var(--color-border-warm);
 }
-.prelude-button--ghost {
+.ui-button--ghost {
   color: var(--color-text-secondary);
   background: transparent;
   border-color: transparent;
 }
-.prelude-button--danger {
+.ui-button--danger {
   color: var(--color-error);
   background: var(--color-error-soft);
   border-color: color-mix(in srgb, var(--color-error) 32%, transparent);
@@ -886,9 +886,9 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     border-color: var(--color-error);
   }
 }
-.prelude-input,
-.prelude-textarea,
-.prelude-select {
+.ui-input,
+.ui-textarea,
+.ui-select {
   width: 100%;
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-md);
@@ -896,17 +896,17 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
 }
-.prelude-input,
-.prelude-select {
+.ui-input,
+.ui-select {
   height: var(--ui-height-control);
   padding: 0 var(--spacing-md);
 }
 /* A field that carries trailing icon actions reserves room for them through
    --field-trailing-gutter, which the wrapping layout element declares. */
-.prelude-input {
+.ui-input {
   padding-inline-end: calc(var(--spacing-md) + var(--field-trailing-gutter, 0px));
 }
-.prelude-select {
+.ui-select {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -914,30 +914,30 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   text-align: start;
   cursor: pointer;
 }
-.prelude-select:disabled {
+.ui-select:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-.prelude-select__icon {
+.ui-select__icon {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   color: var(--color-text-tertiary);
 }
-.prelude-select__icon svg {
+.ui-select__icon svg {
   inline-size: var(--ui-glyph-sm);
   block-size: var(--ui-glyph-sm);
 }
-.prelude-textarea {
+.ui-textarea {
   min-height: var(--layout-textarea-min-block-size);
   padding: var(--spacing-md);
   resize: vertical;
 }
-.prelude-tooltip-positioner {
+.ui-tooltip-positioner {
   z-index: var(--z-index-tooltip);
   pointer-events: none;
 }
-.prelude-tooltip {
+.ui-tooltip {
   pointer-events: none;
   max-width: var(--content-tooltip-max-inline-size);
   padding: var(--spacing-sm);
@@ -948,11 +948,11 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   box-shadow: var(--shadow-whisper);
   font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-heading) var(--font-sans);
 }
-.prelude-menu-positioner {
+.ui-menu-positioner {
   z-index: var(--z-index-menu);
   outline: none;
 }
-.prelude-menu {
+.ui-menu {
   min-inline-size: calc(var(--ui-height-control) * 8);
   max-inline-size: var(--content-tooltip-max-inline-size);
   padding: var(--spacing-xs);
@@ -967,12 +967,12 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     opacity var(--motion-duration-fast) var(--motion-ease-standard),
     transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.prelude-menu[data-starting-style],
-.prelude-menu[data-ending-style] {
+.ui-menu[data-starting-style],
+.ui-menu[data-ending-style] {
   opacity: 0;
   transform: translateY(var(--spacing-sm));
 }
-.prelude-menu__item {
+.ui-menu__item {
   position: relative;
   display: flex;
   align-items: center;
@@ -986,15 +986,15 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   cursor: pointer;
   user-select: none;
 }
-.prelude-menu__item[data-highlighted] {
+.ui-menu__item[data-highlighted] {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
-.prelude-menu__item[data-disabled] {
+.ui-menu__item[data-disabled] {
   cursor: not-allowed;
   opacity: 0.5;
 }
-.prelude-menu--structured .prelude-menu__item {
+.ui-menu--structured .ui-menu__item {
   display: grid;
   inline-size: 100%;
   grid-template-columns:
@@ -1005,48 +1005,48 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   column-gap: var(--spacing-sm);
   min-block-size: var(--ui-height-control);
 }
-.prelude-menu--structured .prelude-menu__icon {
+.ui-menu--structured .ui-menu__icon {
   grid-column: 1;
 }
-.prelude-menu--structured .prelude-menu__label {
+.ui-menu--structured .ui-menu__label {
   grid-column: 2;
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.prelude-menu--structured .prelude-menu__detail {
+.ui-menu--structured .ui-menu__detail {
   grid-column: 3;
   justify-self: end;
 }
-.prelude-menu--structured .prelude-menu__chevron,
-.prelude-menu--structured .prelude-menu__indicator--end {
+.ui-menu--structured .ui-menu__chevron,
+.ui-menu--structured .ui-menu__indicator--end {
   grid-column: 4;
   justify-self: center;
   margin-inline-start: 0;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__item {
+.ui-menu--structured.ui-menu--model .ui-menu__item {
   grid-template-columns: minmax(0, 1fr) minmax(var(--ui-glyph-md), auto) var(--ui-glyph-sm);
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__label {
+.ui-menu--structured.ui-menu--model .ui-menu__label {
   grid-column: 1;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__detail {
+.ui-menu--structured.ui-menu--model .ui-menu__detail {
   grid-column: 2;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__chevron {
+.ui-menu--structured.ui-menu--model .ui-menu__chevron {
   grid-column: 3;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__item--leading-icon {
+.ui-menu--structured.ui-menu--model .ui-menu__item--leading-icon {
   grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
 }
 /* The owner wraps the caller's glyph in a span, so this stays out of the layout and the svg
    remains the grid item it was before — the colour still inherits, the box still sizes. */
-.prelude-menu__icon--leading {
+.ui-menu__icon--leading {
   display: contents;
   color: var(--color-text-tertiary);
 }
-.prelude-menu__icon--leading svg {
+.ui-menu__icon--leading svg {
   inline-size: var(--ui-glyph-sm);
   block-size: var(--ui-glyph-sm);
 }
@@ -1065,13 +1065,13 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   padding: var(--spacing-lg);
 }
 
-.prelude-menu__item-label {
+.ui-menu__item-label {
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.prelude-menu__indicator {
+.ui-menu__indicator {
   display: grid;
   inline-size: var(--ui-glyph-md);
   block-size: var(--ui-glyph-md);
@@ -1079,16 +1079,16 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   place-items: center;
   color: var(--color-text-primary);
 }
-.prelude-menu__indicator--end {
+.ui-menu__indicator--end {
   margin-inline-start: auto;
 }
-.prelude-menu__indicator svg,
-.prelude-menu__icon svg,
-.prelude-menu__chevron {
+.ui-menu__indicator svg,
+.ui-menu__icon svg,
+.ui-menu__chevron {
   inline-size: var(--ui-glyph-sm);
   block-size: var(--ui-glyph-sm);
 }
-.prelude-menu__icon {
+.ui-menu__icon {
   display: grid;
   inline-size: var(--ui-glyph-md);
   block-size: var(--ui-glyph-md);
@@ -1096,7 +1096,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   place-items: center;
   color: var(--color-text-tertiary);
 }
-.prelude-menu__detail {
+.ui-menu__detail {
   flex: 0 1 auto;
   overflow: hidden;
   color: var(--color-text-tertiary);
@@ -1104,43 +1104,43 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.prelude-menu__chevron {
+.ui-menu__chevron {
   flex: 0 0 auto;
   color: var(--color-text-tertiary);
 }
-.prelude-menu__separator {
+.ui-menu__separator {
   block-size: var(--border-width-default);
   margin: var(--spacing-xs);
   background: var(--color-border);
 }
-.prelude-select-popup {
+.ui-select-popup {
   min-inline-size: var(--anchor-width);
   max-block-size: var(--available-height);
 }
-.prelude-select__list {
+.ui-select__list {
   max-block-size: min(var(--layout-select-list-max-block-size), var(--available-height));
   overflow-y: auto;
   outline: none;
 }
-.prelude-select__item {
+.ui-select__item {
   display: grid;
   grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
   column-gap: var(--spacing-sm);
 }
-.prelude-select__item .prelude-menu__indicator {
+.ui-select__item .ui-menu__indicator {
   grid-column: 1;
   margin: 0;
 }
-.prelude-select__item .prelude-menu__item-label {
+.ui-select__item .ui-menu__item-label {
   grid-column: 2;
 }
-.prelude-dialog__backdrop {
+.ui-dialog__backdrop {
   position: fixed;
   inset: 0;
   z-index: var(--z-index-dialog-backdrop);
   background: var(--mask-overlay);
 }
-.prelude-dialog__viewport {
+.ui-dialog__viewport {
   position: fixed;
   inset: 0;
   z-index: var(--z-index-dialog);
@@ -1148,7 +1148,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   place-items: center;
   padding: var(--spacing-lg);
 }
-.prelude-dialog {
+.ui-dialog {
   position: relative;
   width: min(var(--layout-dialog-max-inline-size), 92vw);
   max-height: 88vh;
@@ -1159,7 +1159,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   background: var(--color-surface);
   box-shadow: var(--shadow-modal);
 }
-.prelude-dialog__close {
+.ui-dialog__close {
   position: absolute;
   top: var(--spacing-md);
   inset-inline-end: var(--spacing-md);
@@ -1173,17 +1173,17 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-secondary);
   border-color: transparent;
 }
-.prelude-button--icon {
+.ui-button--icon {
   inline-size: var(--ui-height-control);
   block-size: var(--ui-height-control);
   min-block-size: var(--ui-height-control);
   padding: 0;
 }
-.prelude-button--action {
+.ui-button--action {
   flex-shrink: 0;
   padding-inline: var(--spacing-lg);
 }
-.prelude-button--hold {
+.ui-button--hold {
   position: relative;
   padding: 0 var(--spacing-lg);
   font-family: var(--font-serif);
@@ -1191,24 +1191,24 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 }
 /* While held, the level meter takes the words' place. The label keeps its box, so the
    control never changes width under the finger. */
-.prelude-button--hold[data-pressed] .prelude-button__label {
+.ui-button--hold[data-pressed] .ui-button__label {
   opacity: 0;
 }
 /* Held is a state that lasts seconds, not a click: a positional nudge would read as the
    control sitting out of line with its neighbours. The deepened ring carries it instead,
    alongside the meter that replaces the words. */
-.prelude-button--hold[data-pressed] {
+.ui-button--hold[data-pressed] {
   box-shadow: var(--shadow-ring-deep);
 }
 /* The workspace shell is full-bleed: the caller owns padding and its own regions. */
-.prelude-dialog--workspace {
+.ui-dialog--workspace {
   padding: 0;
   max-inline-size: min(var(--layout-dialog-max-inline-size), 90vw);
   block-size: 60vh;
   min-block-size: var(--layout-dialog-workspace-min-block-size);
   border-color: transparent;
 }
-.prelude-button__spinner {
+.ui-button__spinner {
   position: absolute;
   inset: 0;
   width: var(--ui-glyph-sm);
@@ -1224,10 +1224,10 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     transform: rotate(360deg);
   }
 }
-.prelude-toaster [data-sonner-toast] {
+.ui-toaster [data-sonner-toast] {
   pointer-events: auto;
 }
-.prelude-toaster [data-sonner-toast].prelude-toast {
+.ui-toaster [data-sonner-toast].ui-toast {
   min-block-size: calc(var(--ui-height-control) + var(--spacing-md));
   padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) var(--spacing-md);
   border-color: transparent;
@@ -1237,10 +1237,10 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   box-shadow: var(--shadow-whisper);
   font: var(--font-size-sm)/var(--line-height-base) var(--font-serif);
 }
-.prelude-toaster [data-sonner-toast] .prelude-toast__description {
+.ui-toaster [data-sonner-toast] .ui-toast__description {
   color: var(--color-text-secondary);
 }
-.prelude-toaster [data-sonner-toast][data-styled='true'] .prelude-toast__close {
+.ui-toaster [data-sonner-toast][data-styled='true'] .ui-toast__close {
   top: 50%;
   inset-inline-end: var(--spacing-sm);
   bottom: auto;
@@ -1254,28 +1254,28 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-tertiary);
   box-shadow: none;
 }
-.prelude-toaster [data-sonner-toast][data-styled='true']:hover .prelude-toast__close:hover {
+.ui-toaster [data-sonner-toast][data-styled='true']:hover .ui-toast__close:hover {
   border-color: transparent;
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
-.prelude-toast__loader {
+.ui-toast__loader {
   animation: control-spin var(--motion-duration-slow) linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .prelude-button__spinner,
-  .prelude-toast__loader {
+  .ui-button__spinner,
+  .ui-toast__loader {
     animation: none;
   }
 }
 html:not([data-input-intent])
-  .prelude-toaster
+  .ui-toaster
   [data-sonner-toast][data-styled='true']
-  .prelude-toast__close:focus-visible,
+  .ui-toast__close:focus-visible,
 html[data-input-intent='keyboard']
-  .prelude-toaster
+  .ui-toaster
   [data-sonner-toast][data-styled='true']
-  .prelude-toast__close:focus {
+  .ui-toast__close:focus {
   border-color: var(--color-focus-action);
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
@@ -1315,7 +1315,7 @@ html[data-input-intent='keyboard']
   white-space: nowrap;
   border: 0;
 }
-.prelude-segmented-control {
+.ui-segmented-control {
   --segmented-index: 0;
   --segmented-count: 2;
 
@@ -1331,7 +1331,7 @@ html[data-input-intent='keyboard']
 /* The thumb keeps the cell width so it stays concentric with the track: inset by
    --ui-control-inset on every side, its radius is the track radius minus that
    inset, so the gutter reads as an even ring instead of a cropped pill. */
-.prelude-segmented-control::before {
+.ui-segmented-control::before {
   position: absolute;
   inset-block: var(--ui-control-inset);
   inset-inline-start: 0;
@@ -1344,7 +1344,7 @@ html[data-input-intent='keyboard']
   transform: translateX(calc(var(--segmented-index) * 100%));
   transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.prelude-segmented-control button {
+.ui-segmented-control button {
   position: relative;
   z-index: var(--z-index-local-content);
   min-inline-size: var(--ui-segmented-item-min-inline-size);
@@ -1357,13 +1357,13 @@ html[data-input-intent='keyboard']
   cursor: pointer;
   transition: color var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.prelude-segmented-control button.is-active,
-.prelude-segmented-control button[aria-pressed='true'] {
+.ui-segmented-control button.is-active,
+.ui-segmented-control button[aria-pressed='true'] {
   color: var(--color-text-primary);
 }
 @media (prefers-reduced-motion: reduce) {
-  .prelude-segmented-control::before,
-  .prelude-segmented-control button {
+  .ui-segmented-control::before,
+  .ui-segmented-control button {
     transition: none;
   }
 }

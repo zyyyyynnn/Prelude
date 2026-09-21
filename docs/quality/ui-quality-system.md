@@ -6,7 +6,7 @@
 | --- | --- |
 | `npm run check` | Vite+ 统一的格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
 | `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界 |
-| `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项；样式表卫生（禁止 feature CSS 文件与 feature 样式导入、空规则、未分层元素选择器、无消费者的类规则，以及**功能 `@utility name-*` 必须有字面量调用点**——Tailwind 从源码文本读类名，运行时拼出的类名不会产出任何规则）；**单一拥有者**：一组表重复到第二个拥有者后，其原子配方只允许出现在登记文件里——`className="empty-state"`（`shared/ui/empty-state`）、`type="file"`（`shared/ui/file-input`）、`border-t border-border pt-md`（`Panel` 的 `SubSection`）、`border-t border-border py-lg`（`ReportSection`）、`bg-surface-muted p-*`（`inset-card` utility）、`mx-sm text-xs font-semibold tracking-label`（`SessionGroupLabel`）、导语宽度 `max-w-(--layout-lead-max-inline-size)`（`type-lead` role）；**内部类名不得外写**：`src/shared/ui/**` 与 `src/shared/styles/**` 之外出现任何 `prelude-*__*` 或 `workspace-header__*` 即失败——调用方越过组件的 props 直接写它的元素类名，两份拷贝之后无从发现彼此漂移 |
+| `npm run verify:ui` | 颜色旁路、原生 Tooltip/Confirm 与交互动效禁用项；样式表卫生（禁止 feature CSS 文件与 feature 样式导入、空规则、未分层元素选择器、无消费者的类规则，以及**功能 `@utility name-*` 必须有字面量调用点**——Tailwind 从源码文本读类名，运行时拼出的类名不会产出任何规则）；**单一拥有者**：一组表重复到第二个拥有者后，其原子配方只允许出现在登记文件里——`className="empty-state"`（`shared/ui/empty-state`）、`type="file"`（`shared/ui/file-input`）、`border-t border-border pt-md`（`Panel` 的 `SubSection`）、`border-t border-border py-lg`（`ReportSection`）、`bg-surface-muted p-*`（`inset-card` utility）、`mx-sm text-xs font-semibold tracking-label`（`SessionGroupLabel`）、导语宽度 `max-w-(--layout-lead-max-inline-size)`（`type-lead` role）；**内部类名不得外写**：`src/shared/ui/**` 与 `src/shared/styles/**` 之外出现任何 `ui-*__*` 或 `workspace-header__*` 即失败——调用方越过组件的 props 直接写它的元素类名，两份拷贝之后无从发现彼此漂移 |
 | `npm run verify:tokens` | token 登记完整性与唯一性；声明但无任何消费者的 token（计数前先抹掉 `@theme` 里 `--x: var(--x)` 的自我镜像，并按 Tailwind 命名空间补认类名消费者——`--spacing-0` 由 `m-0` 消费、`--radius-lg` 由 `rounded-lg` 消费，只按 token 文本计数会把活 token 判死；shadcn 语义桥在 `ui-tokens.json` 显式登记为豁免）；被引用但从未声明的 `var(--x)` 与 `atom-(--x)`（未声明的自定义属性会让整条声明在计算值阶段静默失效）；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度 px/rem）。绝对长度按**声明**读取，因此跨行的 `calc()`、`@utility` 内的自定义属性、混用 `var()` 的值都在范围内；`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 登记的 token 必须仍是引用其来源的表达式；盒尺寸不得整值借用与某档 `--ui-glyph-*` 等值的 `--spacing-*` 步骤；读取器发现的声明数低于阈值即失败，防止解析器空转造成假绿。相对单位 `%`/`em`/`vh`/`vw` 放行，技术必需的裸值（forced-colors 描边、`sr-only` 1px 裁剪盒）须在规则内标 `geometry-exempt: <理由>` 显式豁免 |
 | `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类必然压过核心原子造成的死原子；须在 `npm run build` 之后执行 |
 | `npm run verify:production` | 生产产物不包含开发态组件检查面 |
@@ -66,7 +66,7 @@ Tooltip 由 Base UI 提供交互行为，并使用高对比中性表面。页面
 
 门禁也会坏，而且坏法是静默的。三种实测到过的形态：
 
-- **恒真判据**：死类检查曾把全部源码拼成一个大字符串再 `includes(候选)`，而候选含 BEM 块名（`field__hint` → `field`），于是每个元素类永远算已消费，这条检查从未报出过任何东西。现在要求完整类名以词边界出现，豁免只给真正运行时拼接的族（全仓仅 `prelude-button--${variant}`）。
+- **恒真判据**：死类检查曾把全部源码拼成一个大字符串再 `includes(候选)`，而候选含 BEM 块名（`field__hint` → `field`），于是每个元素类永远算已消费，这条检查从未报出过任何东西。现在要求完整类名以词边界出现，豁免只给真正运行时拼接的族（全仓仅 `ui-button--${variant}`）。
 - **空判据**：`@dark` 曾只断言 `--color-bg` 解析出的字符串非空——浅色模式下同样非空，删掉整个 `.dark` 块它照绿。现在断言的是两种 scheme 的解析值**不同**，以及时序（`dark` 类先于 `#root` 出现）。
 - **看不见归属的形状匹配**：内部类泄漏检查只匹配 `*__*`，于是为一个组件注册的 `@utility`（`prompt-bar-control`）被调用点整段重写时毫无反应。归属是设计决定、无法从形状推导，现在由 `index.css` 里的 `/* @internal src/<owner>.tsx */` 声明并由 `verify:ui` 执行。
 

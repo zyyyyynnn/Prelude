@@ -443,9 +443,9 @@ test('@smoke centers the async button indicator without resizing the control', a
   const loading = await save.evaluate((button) => {
     const control = button.getBoundingClientRect()
     const spinner = button
-      .querySelector<HTMLElement>('.prelude-button__spinner')!
+      .querySelector<HTMLElement>('.ui-button__spinner')!
       .getBoundingClientRect()
-    const content = button.querySelector<HTMLElement>('.prelude-button__content')!
+    const content = button.querySelector<HTMLElement>('.ui-button__content')!
     return {
       width: control.width,
       centered:
@@ -459,7 +459,7 @@ test('@smoke centers the async button indicator without resizing the control', a
 
   await expect(page.getByText('LLM 配置已保存')).toBeVisible()
   await expect(save).not.toHaveAttribute('aria-busy')
-  await expect(save.locator('.prelude-button__content')).toHaveCSS('opacity', '1')
+  await expect(save.locator('.ui-button__content')).toHaveCSS('opacity', '1')
   expect((await save.boundingBox())!.width).toBe(idleWidth)
 })
 
@@ -1032,13 +1032,13 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
 
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '切换到语音输入' }).click()
-  const talk = page.locator('.prelude-button--hold')
+  const talk = page.locator('.ui-button--hold')
   await talk.dispatchEvent('pointerdown')
   /* Held: the meter replaces the words inside the same box, so the control keeps its
      name and its width and only the state moves. */
   await expect(talk).toHaveAccessibleName('松开发送')
   await expect(talk.locator('.voice-meter')).toBeVisible()
-  await expect(talk.locator('.prelude-button__label')).toHaveCSS('opacity', '0')
+  await expect(talk.locator('.ui-button__label')).toHaveCSS('opacity', '0')
   await page.evaluate(() => {
     const socket = (
       window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } }
@@ -1137,7 +1137,7 @@ test('@smoke releases media that arrives after voice mode closes', async ({ page
 
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '切换到语音输入' }).click()
-  const talk = page.locator('.prelude-button--hold')
+  const talk = page.locator('.ui-button--hold')
   await talk.dispatchEvent('pointerdown')
   await page.evaluate(() => {
     const socket = (

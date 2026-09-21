@@ -54,7 +54,7 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 ## 命名规约
 
-远端读取用 `fetch*`、本地存储读写用 `read*`/`write*`、纯计算派生用 `get*`；DOM/事件处理用 `handle*`，动作为裸动词；加载态按层表达（数据源 `isPending`、控件 `loading`）。界面不使用 BEM 选择器：布局与外观由原子类表达，无法原子化的组合注册为具名 `@utility`，跨组件状态用 `group`/`peer` 与 `data-*` 变体传播。`shared/ui` 下新 primitive 仍统一 `prelude-` 前缀；测试与打印锚点使用 `data-slot`。
+远端读取用 `fetch*`、本地存储读写用 `read*`/`write*`、纯计算派生用 `get*`；DOM/事件处理用 `handle*`，动作为裸动词；加载态按层表达（数据源 `isPending`、控件 `loading`）。界面不使用 BEM 选择器：布局与外观由原子类表达，无法原子化的组合注册为具名 `@utility`，跨组件状态用 `group`/`peer` 与 `data-*` 变体传播。`shared/ui` 下新 primitive 统一 `ui-` 前缀（历史上是 `prelude-`，与产品名重复且和已有的 `ui-action`/`ui-field-control` 形成两套前缀，已合并为 `ui-` 一套）；测试与打印锚点使用 `data-slot`。
 
 ## 验证
 

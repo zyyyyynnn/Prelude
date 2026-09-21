@@ -143,7 +143,7 @@ test.describe('@capture authenticated surface reference set', () => {
        machine and the composer's live surfaces. They are evidence of the client, never of
        upstream audio. */
     /* Located by its class: the control's accessible name is 松开发送 while it is held. */
-    const holdToTalk = page.locator('.prelude-button--hold')
+    const holdToTalk = page.locator('.ui-button--hold')
     await page.getByRole('button', { name: '切换到语音输入' }).click()
     await expect(holdToTalk).toBeVisible()
     await capture(page, '09-composer-voice-connected')
@@ -272,11 +272,11 @@ test.describe('@capture authenticated surface reference set', () => {
     await page.getByRole('button', { name: '警告', exact: true }).click()
     await capture(page, '22-toast-warning')
     /* Dismiss it so the tooltip frame below shows only the tooltip. */
-    await page.locator('.prelude-toast__close').click()
-    await expect(page.locator('.prelude-toast')).toHaveCount(0)
+    await page.locator('.ui-toast__close').click()
+    await expect(page.locator('.ui-toast')).toHaveCount(0)
 
     await page.getByRole('button', { name: '提示', exact: true }).hover()
-    await expect(page.locator('.prelude-tooltip')).toBeVisible()
+    await expect(page.locator('.ui-tooltip')).toBeVisible()
     await capture(page, '23-tooltip-icon')
   })
 
