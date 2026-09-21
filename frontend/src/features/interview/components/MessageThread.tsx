@@ -1,6 +1,5 @@
-import { EmptyState } from '@/shared/ui/empty-state'
+import { EmptyState, MessageBubble } from '@/shared/ui'
 import { useEffect, useRef } from 'react'
-import { MessageBubble } from '@/shared/ui/message'
 import type { InterviewMessageRecord } from '../types'
 
 export function MessageThread({ messages }: { messages: InterviewMessageRecord[] }) {

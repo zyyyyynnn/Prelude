@@ -85,8 +85,50 @@ test('rejects an entry symbol that nothing outside the feature imports', () => {
     'app/page.tsx': "import { Thing } from '@/features/report'",
   })
   assert.equal(result.status, 1)
-  assert.match(result.stderr, /unused is exported but nothing outside the feature imports it/)
+  assert.match(result.stderr, /unused is exported but nothing outside imports it/)
   assert.doesNotMatch(result.stderr, /Thing is exported/)
+})
+
+test('rejects a design-system import that names a file instead of the surface', () => {
+  const result = verify({
+    'shared/ui/index.ts': "export { Button } from './button'",
+    'shared/ui/button.tsx': 'export const Button = 1',
+    'features/report/Panel.tsx': "import { Button } from '@/shared/ui/button'",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /imports @\/shared\/ui\/button — go through @\/shared\/ui/)
+})
+
+test('accepts a design-system import taken through the surface', () => {
+  const result = verify({
+    'shared/ui/index.ts': "export { Button } from './button'",
+    'shared/ui/button.tsx': 'export const Button = 1',
+    'features/report/Panel.tsx': "import { Button } from '@/shared/ui'",
+  })
+  assert.equal(result.status, 0, result.stderr)
+})
+
+/* A design system with no entry is the whole defect this rule guards, so the absence has to
+   be a violation rather than a silent skip. */
+test('rejects a design system that has no public surface at all', () => {
+  const result = verify({
+    'shared/ui/button.tsx': 'export const Button = 1',
+    'features/report/Panel.tsx': "import { Button } from '@/shared/ui/button'",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /shared\/ui has no index.ts/)
+})
+
+/* Siblings reach each other directly; the ban is on outsiders. `Icon` stays out of the barrel
+   because only `Button` consumes it — that is the same rule the surface itself is held to. */
+test('allows a design-system file to import its own sibling', () => {
+  const result = verify({
+    'shared/ui/index.ts': "export { Button } from './button'",
+    'shared/ui/button.tsx': "import { Icon } from './icon'\nexport const Button = Icon",
+    'shared/ui/icon.tsx': 'export const Icon = 1',
+    'features/report/Panel.tsx': "import { Button } from '@/shared/ui'",
+  })
+  assert.equal(result.status, 0, result.stderr)
 })
 
 test('counts a dynamic route import as a consumer of the barrel', () => {

@@ -1,14 +1,20 @@
-import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
-import { HiddenFileInput } from '@/shared/ui/file-input'
-import { SubSection } from '@/shared/ui/panel'
+import {
+  ErrorState,
+  LoadingState,
+  HiddenFileInput,
+  SubSection,
+  Button,
+  Field,
+  FieldAction,
+  FieldActions,
+  Input,
+  Panel,
+  useFeedback,
+} from '@/shared/ui'
 import { useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Upload } from 'lucide-react'
 import { formText } from '@/shared/lib/form-data'
-import { Button } from '@/shared/ui/button'
-import { Field, FieldAction, FieldActions, Input } from '@/shared/ui/field'
-import { Panel } from '@/shared/ui/panel'
-import { useFeedback } from '@/shared/ui/feedback-context'
 import { fetchProfile, saveProfile, uploadAvatar } from '../api'
 import { sectionTitles } from '../settings-context'
 

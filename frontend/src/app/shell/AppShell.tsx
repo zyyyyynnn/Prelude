@@ -1,4 +1,12 @@
-import { SessionGroupLabel } from '@/shared/ui/session-row'
+import {
+  SessionGroupLabel,
+  useFeedback,
+  SessionGroup,
+  SidebarAction,
+  SidebarBrand,
+  SidebarFrame,
+  SidebarPane,
+} from '@/shared/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BarChart3, PanelLeft, Plus, Settings } from 'lucide-react'
@@ -12,9 +20,6 @@ import {
   type InterviewSessionItem,
 } from '@/features/interview'
 import { useSettings } from '@/features/settings'
-import { useFeedback } from '@/shared/ui/feedback-context'
-import { SessionGroup } from '@/shared/ui/session-row'
-import { SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from '@/shared/ui/sidebar'
 
 export function AppShell() {
   const { openSettings } = useSettings()

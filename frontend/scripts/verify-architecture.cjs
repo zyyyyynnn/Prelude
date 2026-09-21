@@ -100,27 +100,71 @@ for (const name of blockedPackages) {
 }
 
 // ---------------------------------------------------------------- feature public entry
-/* `docs/frontend/architecture.md` makes a feature's `index.ts` its public surface: a barrel
-   that re-exports chosen names and nothing else. Two failures follow from putting
-   implementation there. The barrel then exports whatever happens to be defined in the file
-   rather than what was chosen, so the public surface grows by accident. And a sibling that
-   reaches a neighbour through `../index` imports the whole feature, including itself, back
-   into the module that is part of it. */
+/* A public entry — a feature's `index.ts`, or the design system's — is a barrel that
+   re-exports chosen names and nothing else. Two failures follow from putting implementation
+   there: the barrel exports whatever happens to be defined in a file rather than what was
+   chosen, so the surface grows by accident; and a sibling that reaches a neighbour through
+   the barrel imports the whole surface, including itself, back into its own module.
+   `shared/ui` is in scope for the same reason as a feature, and additionally because it had
+   no entry at all: 95 call sites named a file, so renaming or merging one primitive touched
+   up to 17 unrelated places while `features/*` was being held to the opposite rule. */
 {
   const tsSources = walk(sourceRoot).filter((file) => ['.ts', '.tsx'].includes(path.extname(file)))
+  const rel = (file) => path.relative(sourceRoot, file).replaceAll('\\', '/')
   const featuresRoot = path.join(sourceRoot, 'features')
   const featureDirs = fs.existsSync(featuresRoot)
-    ? fs.readdirSync(featuresRoot, { withFileTypes: true })
+    ? fs.readdirSync(featuresRoot, { withFileTypes: true }).filter((e) => e.isDirectory())
     : []
-  for (const entry of featureDirs) {
-    if (!entry.isDirectory()) continue
-    const feature = entry.name
-    /* A feature without an entry needs no rule of its own: the cross-feature check above
-       already rejects any import that cannot name `@/features/<name>`. */
-    const entryPath = path.join(featuresRoot, feature, 'index.ts')
-    if (!fs.existsSync(entryPath)) continue
-    const source = fs.readFileSync(entryPath, 'utf8')
-    const tree = ts.createSourceFile(entryPath, source, ts.ScriptTarget.Latest, true)
+
+  const publicEntries = featureDirs
+    .map((entry) => ({
+      label: `features/${entry.name}`,
+      /* A feature without an entry needs no rule of its own: the cross-feature check above
+         already rejects any import that cannot name `@/features/<name>`. */
+      entryPath: path.join(featuresRoot, entry.name, 'index.ts'),
+      inside: (relative) => relative.startsWith(`features/${entry.name}/`),
+    }))
+    .filter((surface) => fs.existsSync(surface.entryPath))
+  const sharedUiRoot = path.join(sourceRoot, 'shared/ui')
+  const sharedUiEntry = path.join(sharedUiRoot, 'index.ts')
+  if (fs.existsSync(sharedUiRoot)) {
+    /* A design system with no entry is the defect this rule exists to catch, so say so
+       rather than skipping the surface and passing quietly. */
+    if (!fs.existsSync(sharedUiEntry)) {
+      violations.push('shared/ui has no index.ts — its primitives have no public surface')
+    } else {
+      publicEntries.push({
+        label: 'shared/ui',
+        entryPath: sharedUiEntry,
+        inside: (relative) => relative.startsWith('shared/ui/'),
+      })
+    }
+  }
+
+  /* Nothing outside the surface may name a file inside it. */
+  for (const surface of publicEntries) {
+    const prefix = `from '@/${surface.label}/`
+    for (const file of tsSources) {
+      const relative = rel(file)
+      if (surface.inside(relative)) continue
+      const lines = fs.readFileSync(file, 'utf8').split('\n')
+      lines.forEach((line, index) => {
+        const start = line.indexOf(prefix)
+        if (start === -1) return
+        const after = line.slice(start + prefix.length)
+        const end = after.indexOf("'")
+        if (end === -1) return
+        violations.push(
+          `${relative}:${index + 1}: imports @/${surface.label}/${after.slice(0, end)} — go through @/${surface.label}`,
+        )
+      })
+    }
+  }
+
+  for (const surface of publicEntries) {
+    const barrel = `@/${surface.label}`
+    const source = fs.readFileSync(surface.entryPath, 'utf8')
+    const tree = ts.createSourceFile(surface.entryPath, source, ts.ScriptTarget.Latest, true)
     const exported = []
     for (const statement of tree.statements) {
       const isReexport =
@@ -131,7 +175,7 @@ for (const name of blockedPackages) {
       if (!isReexport) {
         const line = source.slice(0, statement.getStart()).split('\n').length
         violations.push(
-          `features/${feature}/index.ts:${line}: a public entry may only re-export named symbols from a named file`,
+          `${surface.label}/index.ts:${line}: a public entry may only re-export named symbols from a named file`,
         )
         continue
       }
@@ -142,14 +186,15 @@ for (const name of blockedPackages) {
     /* Names the rest of the app actually pulls through the barrel. Anything else is surface
        area nobody asked for. The router reaches pages through `await import()`, so a member
        access on a dynamic import counts as a consumer just like a static binding does. */
-    const barrel = `@/features/${feature}`
     const consumed = new Set()
     for (const file of tsSources) {
-      if (path.basename(file) === 'index.ts' && path.dirname(file) === path.dirname(entryPath))
+      if (
+        path.basename(file) === 'index.ts' &&
+        path.dirname(file) === path.dirname(surface.entryPath)
+      )
         continue
-      const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
-      if (relative.startsWith(`features/${feature}/`)) continue
-      const tree = ts.createSourceFile(
+      if (surface.inside(rel(file))) continue
+      const fileTree = ts.createSourceFile(
         file,
         fs.readFileSync(file, 'utf8'),
         ts.ScriptTarget.Latest,
@@ -186,12 +231,12 @@ for (const name of blockedPackages) {
         }
         ts.forEachChild(node, collect)
       }
-      ts.forEachChild(tree, collect)
+      ts.forEachChild(fileTree, collect)
     }
     for (const name of exported) {
       if (consumed.has(name)) continue
       violations.push(
-        `features/${feature}/index.ts: ${name} is exported but nothing outside the feature imports it`,
+        `${surface.label}/index.ts: ${name} is exported but nothing outside imports it`,
       )
     }
   }

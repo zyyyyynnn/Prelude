@@ -1,6 +1,42 @@
-import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
-import { PageHeader } from '@/shared/ui/page-header'
-import { SubSection } from '@/shared/ui/panel'
+import {
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  SubSection,
+  Button,
+  Field,
+  FieldAction,
+  FieldActions,
+  Input,
+  Textarea,
+  useFeedback,
+  GeneratingSurface,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSubmenu,
+  MessageBubble,
+  Dialog,
+  IconTooltip,
+  SettingsNavigation,
+  ThemeChoiceGroup,
+  type ThemeTone,
+  Panel,
+  ContextAttachment,
+  PromptBarFact,
+  PromptBarJdToggle,
+  type VoiceStatus,
+  SessionGroup,
+  SidebarAction,
+  SidebarBrand,
+  SidebarFrame,
+  SegmentedControl,
+  Select,
+} from '@/shared/ui'
 import { useState } from 'react'
 import {
   BarChart3,
@@ -35,35 +71,6 @@ import {
   sampleReport,
   sampleResumes,
 } from './samples'
-import { Button } from '@/shared/ui/button'
-import { Field, FieldAction, FieldActions, Input, Textarea } from '@/shared/ui/field'
-import { useFeedback } from '@/shared/ui/feedback-context'
-import { GeneratingSurface } from '@/shared/ui/generating-card'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuSubmenu,
-} from '@/shared/ui/menu'
-import { MessageBubble } from '@/shared/ui/message'
-import { Dialog, IconTooltip } from '@/shared/ui/overlay'
-import { SettingsNavigation } from '@/shared/ui/navigation'
-import { ThemeChoiceGroup, type ThemeTone } from '@/shared/ui/option-card'
-import { Panel } from '@/shared/ui/panel'
-import {
-  ContextAttachment,
-  PromptBarFact,
-  PromptBarJdToggle,
-  type VoiceStatus,
-} from '@/shared/ui/prompt-bar'
-import { SessionGroup } from '@/shared/ui/session-row'
-import { SidebarAction, SidebarBrand, SidebarFrame } from '@/shared/ui/sidebar'
-import { SegmentedControl } from '@/shared/ui/segmented-control'
-import { Select } from '@/shared/ui/select'
 import type { ReactNode } from 'react'
 
 /** Role labels for a list the gallery does not own the words of. */

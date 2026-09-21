@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
-import type { VoiceStatus } from '@/shared/ui/prompt-bar'
+import { type VoiceStatus } from '@/shared/ui'
 import type { InterviewMessageRecord } from './types'
 
 interface VoicePayload {

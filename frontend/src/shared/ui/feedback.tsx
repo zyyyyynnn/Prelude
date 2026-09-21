@@ -5,9 +5,6 @@ import { Toaster, toast } from 'sonner'
 import { Button } from './button'
 import { FeedbackContext, type ConfirmOptions, type NoticeTone } from './feedback-context'
 
-export { useFeedback } from './feedback-context'
-export type { ConfirmOptions, FeedbackApi, NoticeTone } from './feedback-context'
-
 const NOTICE_DURATION = 2000
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {

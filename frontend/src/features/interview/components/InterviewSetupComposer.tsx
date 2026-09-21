@@ -1,15 +1,19 @@
-import { HiddenFileInput } from '@/shared/ui/file-input'
-import { PromptBarActions } from '@/shared/ui/prompt-bar'
+import {
+  HiddenFileInput,
+  PromptBarActions,
+  Button,
+  ContextAttachment,
+  PromptBar,
+  PromptBarJdToggle,
+} from '@/shared/ui'
 import { useRef, useState, type FormEvent } from 'react'
 import type { AttachmentItem } from '@/features/assets'
 import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
-import { Button } from '@/shared/ui/button'
 import type { ReasoningLevel } from '@/features/settings'
 import type { InterviewModelConfig, InterviewModelProvider } from '../types'
 import { InterviewModelMenu } from './MenuPrimitives'
 import { InterviewContextMenu } from './PromptBarControls'
-import { ContextAttachment, PromptBar, PromptBarJdToggle } from '@/shared/ui/prompt-bar'
 
 export function InterviewSetupComposer({
   resumes,

@@ -1,4 +1,4 @@
-import type { ReportCopy } from '@/features/report/copy'
+import type { ReportCopy } from '@/features/report'
 import type { AttachmentItem } from '@/features/assets'
 import type { InterviewModelConfig, InterviewModelProvider } from '@/features/interview'
 import type { Position } from '@/features/position'

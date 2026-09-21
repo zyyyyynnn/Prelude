@@ -1,14 +1,14 @@
 import { type FormEvent } from 'react'
 import { ArrowUp, Keyboard, Mic } from 'lucide-react'
 import type { AttachmentItem } from '@/features/assets'
-import { Button } from '@/shared/ui/button'
-import { IconTooltip } from '@/shared/ui/overlay'
 import {
+  Button,
+  IconTooltip,
   ContextAttachment,
   PromptBar,
   VoiceLevelMeter,
   type VoiceStatus,
-} from '@/shared/ui/prompt-bar'
+} from '@/shared/ui'
 import { InterviewContextFacts } from './PromptBarControls'
 
 /** The composer with its wiring left to the caller: what the draft says, whether the

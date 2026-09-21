@@ -1,13 +1,19 @@
-import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
-import { SubSection } from '@/shared/ui/panel'
+import {
+  ErrorState,
+  LoadingState,
+  SubSection,
+  Button,
+  Field,
+  FieldAction,
+  FieldActions,
+  Input,
+  Panel,
+  Select,
+  useFeedback,
+} from '@/shared/ui'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, RefreshCw, Trash2 } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
-import { Field, FieldAction, FieldActions, Input } from '@/shared/ui/field'
-import { Panel } from '@/shared/ui/panel'
-import { Select } from '@/shared/ui/select'
-import { useFeedback } from '@/shared/ui/feedback-context'
 import {
   discoverCapabilities,
   discoverModels,

@@ -1,5 +1,5 @@
 import { Pencil } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/shared/ui'
 
 /** One row of the position library. Built-in positions carry no edit action, so the
  *  row keeps its name column and simply renders nothing on the trailing side. */

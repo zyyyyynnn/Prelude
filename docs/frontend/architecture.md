@@ -11,7 +11,9 @@ frontend/src/
 ├── shared/    品牌资源、设计 token、纯工具与 Prelude-owned UI source
 ```
 
-依赖方向是 `app -> features -> shared`。每个 feature 的入口是纯 `index.ts` barrel，只再导出确有外部消费者的符号，视图与解析各自留在具名文件里（`features/report` 即 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`）；`app` 作为组合根可以深导入 feature 文件，feature 之间的调用只能经过明确公共模块。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录，并检查这条入口契约：`features/*/index.ts` 只允许具名再导出，且每个名字都要有 feature 之外的读取方（`app` 通过 `await import()` 取用也算）。feature 内部互相取用走相对路径，不绕自己的 barrel。
+依赖方向是 `app -> features -> shared`。公共入口有两处，规则相同：每个 feature 的 `index.ts`，以及设计系统的 `shared/ui/index.ts`。两者都只再导出**确有外部消费者**的符号，视图与解析各自留在具名文件里（`features/report` 即 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`）。入口之外**不得点名内部文件**：`app` 也不能深导入 feature 或 `shared/ui/<primitive>`，只能取 `@/features/<name>` 与 `@/shared/ui`。`shared` 不依赖 feature、路由实例或服务端状态模块。`verify:architecture` 在 CI 中阻止反向依赖和其他源码根目录，并检查这条入口契约：入口文件只允许具名再导出、每个名字都要有入口之外的读取方（`app` 通过 `await import()` 取用也算）、以及外部对内部文件的深导入；`shared/ui` 若根本没有 `index.ts` 也算违规而不是跳过。内部互相取用走相对路径，不绕自己的 barrel。
+
+设计系统曾有 barrel（`main` 上 16 处消费），在 `53db447`「flatten feature public surfaces」中被一并删掉——那是审美决定而非技术约束，代价是此后 95 处调用点各自点名文件，改一个 primitive 要动多达 17 处无关代码，而同一时期 `features/*` 正被要求走 barrel。两套方向并存本身即是缺陷，故统一到入口一侧。实测产物反而变小：JS 总量 1,247,345 → 1,238,394 字节，chunk 数 32 → 18——barrel 让打包器共享模块而不是按路由复制。
 
 ## Feature Ownership
 

@@ -1,10 +1,14 @@
-import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/empty-state'
-import { HiddenFileInput } from '@/shared/ui/file-input'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  HiddenFileInput,
+  Button,
+  Panel,
+  useFeedback,
+} from '@/shared/ui'
 import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@/shared/ui/button'
-import { Panel } from '@/shared/ui/panel'
-import { useFeedback } from '@/shared/ui/feedback-context'
 import { sectionTitles } from '@/features/settings'
 import { ResumeRow } from './ResumeRow'
 import { deleteResume, fetchResumes, uploadResume } from './api'

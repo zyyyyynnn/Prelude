@@ -1,8 +1,8 @@
 import { Settings } from 'lucide-react'
 import { REASONING_LABELS } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
-import { PromptBarModelTrigger } from '@/shared/ui/prompt-bar'
 import {
+  PromptBarModelTrigger,
   DropdownMenu,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
   MenuLabel,
-} from '@/shared/ui/menu'
+} from '@/shared/ui'
 import type { InterviewModelConfig, InterviewModelProvider } from '../types'
 
 export function InterviewModelMenu({

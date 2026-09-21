@@ -1,11 +1,16 @@
-import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
+import {
+  ErrorState,
+  LoadingState,
+  Button,
+  Field,
+  Input,
+  Textarea,
+  Panel,
+  useFeedback,
+} from '@/shared/ui'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
-import { Field, Input, Textarea } from '@/shared/ui/field'
-import { Panel } from '@/shared/ui/panel'
-import { useFeedback } from '@/shared/ui/feedback-context'
 import { sectionTitles } from '@/features/settings'
 import { createPosition, deletePosition, fetchPositions, updatePosition } from './api'
 import { PositionRow } from './PositionRow'

@@ -3,10 +3,15 @@ import { Eye, EyeOff } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { cn } from '@/shared/lib/cn'
-import { Button } from '@/shared/ui/button'
-import { Field, FieldAction, FieldActions, Input } from '@/shared/ui/field'
-import { SegmentedControl } from '@/shared/ui/segmented-control'
-import { useFeedback } from '@/shared/ui/feedback-context'
+import {
+  Button,
+  Field,
+  FieldAction,
+  FieldActions,
+  Input,
+  SegmentedControl,
+  useFeedback,
+} from '@/shared/ui'
 import { login, register } from './api'
 import { useAuth } from '@/features/auth'
 

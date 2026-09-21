@@ -311,6 +311,17 @@
 - [x] **另一条 P0 判定为不可单做**：`artifact`/`interview` 那 7 个 `BaseMapper<领域类>` 缺 `@TableName` 是真风险（`position` 改名时已崩过一次），但**不能就地补注解**——这些类住在 `*/domain/`，而 `FrameworkLeakageTest.DOMAIN_STAYS_FRAMEWORK_FREE` 明令禁止 `..domain..` 依赖 mybatis/ibatis，注释写着"携带 ORM 注解的领域模型已经不是领域模型"。用测试去 pin 表名同样不成立：要么重实现一遍 MyBatis-Plus 的驼峰推导（那是代理判据，不是 MP 的判据），要么让注解和迁移脚本互相 pin 而无人校验。所以这条**必须**并进已批准的 `*Entity` 分离批次一起做，先分离、再补注解、再加"每个 mapper 的泛型参数必须带 `@TableName`"的机检。
 - [x] 验证：后端全量 `Tests run: 256, Failures: 0, Errors: 0, Skipped: 0`（四个依赖服务在跑，0 跳过）。
 
+### 阶段二十：设计系统重新有了公共入口（自审 P0 之一，用户选定方向）
+
+- [x] **方向定调**：`shared/ui` 建 barrel、禁止深导入（与 feature 侧统一），不采用「承认按文件深导入、把 feature barrel 降级」那条。
+- [x] **一次脚本化改写 + 编译器兜底**：新增 `src/shared/ui/index.ts`（22 行、47 个符号），把 `src` 内 **81 条** `@/shared/ui/<file>` 深导入合并为 24 个文件上的 `@/shared/ui`。barrel 的内容不是猜的——它由「入口之外真正读取的符号」生成，所以任何遗漏都会立刻变成类型错误而不是悄悄漏掉。改写后 `grep "from '@/shared/ui/" src`（排除 `shared/ui` 自身）= **0**。
+- [x] **barrel 只收有外部读取方的名字**：`OptionCard`、`ThemePreview`、`NavItem`、`SessionRow`、`GeneratingCard`、`SidebarToggle`、`SegmentedControlItem`、`SelectOption`、`OVERLAY_OFFSET` 留在文件内、不进 barrel。这顺带把审计点名的「业务件放错层」变成可见事实：它们要么没有跨模块需求，要么该回到自己的 feature。
+- [x] **顺手清掉一条死公开面**：`shared/ui/feedback.tsx` 曾再导出 `useFeedback` 与三个类型，实测只有 `FeedbackProvider` 有外部消费者，另一条路径 `@/shared/ui/feedback-context` 被 10 个文件深导入——同一个 API 两条公开路径、其中一条是死的。删掉再导出，`useFeedback` 统一由 barrel 从 `feedback-context` 提供。
+- [x] **门禁从「只管 feature」提为「任何拥有对外面的源目录」**：`verify-architecture.cjs` 里原来那段按 `features/*` 遍历的检查改成统一的 `publicEntries` 列表，新增两条判据——入口之外不得点名内部文件（`app` 也不例外），以及 `shared/ui` 根本没有 `index.ts` 时算违规而不是跳过（否则规则会因为文件缺失而静默失效）。守卫自身的单测 7 → **11 条**，新增四条分别覆盖深导入、走 barrel 合法、缺 barrel 报错、兄弟文件相对导入合法。
+- [x] **`app` 的三处深导入是真的，但不是审计说的 8 处**：审计把 `await import('@/features/analytics')` 这类**已经走 barrel** 的动态路由也算成了深导入；实际违规只有 3 条（`AuthProvider`、`initializeTheme`、`ReportCopy`），补进各自 barrel 后清零。这条纠偏记下来，因为按 8 去改会去动本来正确的代码。
+- [x] **产物没有因为 barrel 变差，反而更好**：JS 总量 1,247,345 → **1,238,394** 字节（−8,951），chunk 数 **32 → 18**。担心的"barrel 破坏按需分包"在这里是反方向的——共享入口让打包器复用模块而不是按路由各复制一份。
+- [x] 验证：`vp check`(107 文件)、`verify:architecture`(11 单测 + 实树 PASS)、`verify:ui`、`verify:tokens`(204)、`build` + `verify:cascade`、`verify:production`、`verify:visual`(22)、`test:smoke`(41)、`byok`(4)/`dark`(3)/`a11y`(1) 全通过。
+
 ---
 
 ## 7. 关键风险与留存问题

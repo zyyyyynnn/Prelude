@@ -1,8 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
-import { Button } from '@/shared/ui/button'
-import { ScoreTile } from '@/shared/ui/score-tile'
+import { Button, ScoreTile } from '@/shared/ui'
 import type { ReportCopy } from './copy'
 import type {
   StructuredInterviewReport,

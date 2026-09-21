@@ -1,4 +1,4 @@
-import { ErrorState, LoadingState } from '@/shared/ui/empty-state'
+import { ErrorState, LoadingState, useFeedback } from '@/shared/ui'
 import { useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteAttachment, uploadAttachment } from '@/features/assets'
@@ -12,7 +12,6 @@ import {
   type LlmConfigPayload,
   type LlmConfigResponse,
 } from '@/features/settings'
-import { useFeedback } from '@/shared/ui/feedback-context'
 import { startInterview } from '../api'
 import { InterviewSetupComposer } from './InterviewSetupComposer'
 

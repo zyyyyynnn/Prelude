@@ -1,4 +1,4 @@
-import { PageHeader } from '@/shared/ui/page-header'
+import { PageHeader, EmptyState, ErrorState, LoadingState, Panel } from '@/shared/ui'
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as echarts from 'echarts/core'
@@ -10,8 +10,6 @@ import {
   TooltipComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/empty-state'
-import { Panel } from '@/shared/ui/panel'
 import { fetchRadar, fetchTrend, fetchWeaknesses } from './api'
 import type { AnalyticsRadarResponse, AnalyticsTrendPoint } from './types'
 

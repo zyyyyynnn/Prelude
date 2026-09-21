@@ -1,7 +1,5 @@
 import { Printer } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
-import { PageHeader } from '@/shared/ui/page-header'
-import { SegmentedControl } from '@/shared/ui/segmented-control'
+import { Button, PageHeader, SegmentedControl } from '@/shared/ui'
 import type { InterviewStageName } from '../types'
 
 export function WorkspaceHeader({

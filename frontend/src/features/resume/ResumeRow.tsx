@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/shared/ui'
 import type { ResumeItem } from './types'
 
 const timestamp = new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })

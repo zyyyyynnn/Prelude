@@ -1,8 +1,8 @@
 import { Briefcase, FileText, Paperclip, Plus, ScanSearch, Terminal, Upload } from 'lucide-react'
 import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
-import { Button } from '@/shared/ui/button'
 import {
+  Button,
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuGroup,
@@ -12,10 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
   MenuLabel,
-} from '@/shared/ui/menu'
-import { IconTooltip } from '@/shared/ui/overlay'
-import { PromptBarActions } from '@/shared/ui/prompt-bar'
-import { PromptBarFact } from '@/shared/ui/prompt-bar'
+  IconTooltip,
+  PromptBarActions,
+  PromptBarFact,
+} from '@/shared/ui'
 
 export function InterviewContextMenu({
   resumes,

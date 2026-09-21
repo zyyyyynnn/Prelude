@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/shared/ui'
 
 export function NotFoundPage() {
   return (
