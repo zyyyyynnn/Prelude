@@ -2084,6 +2084,7 @@ html[data-input-intent='keyboard']
   }
 }
 
+/* @internal src/shared/ui/prompt-bar.tsx */
 @utility prompt-bar-control {
   display: inline-flex;
   align-items: center;

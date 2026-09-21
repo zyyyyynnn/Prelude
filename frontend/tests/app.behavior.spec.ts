@@ -519,7 +519,11 @@ test('@smoke updates the prompt model depth before the save request completes', 
   await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
 
   modelTrigger = page.getByRole('button', { name: /模型：/ })
-  expect(await modelTrigger.textContent()).toContain('deepseek-v4-pro · 高')
+  /* `toHaveText` retries; a one-shot `textContent()` does not. The optimistic label is written
+     by `setQueryData` in `InterviewSetup.tsx:53`, which sits behind `await
+     client.cancelQueries(...)` at `:51` — so it resumes in a continuation after the click
+     resolves rather than during it. */
+  await expect(modelTrigger).toHaveText(/deepseek-v4-pro · 高/)
   await expect(page.getByText('模型配置已更新')).toBeVisible()
   expect(putBodies[0]).toMatchObject({
     reasoningLevel: 'HIGH',
@@ -533,9 +537,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
     (request) => request.url().endsWith('/api/llm/config') && request.method() === 'PUT',
   )
   await page.getByRole('menuitemradio', { name: '默认', exact: true }).click()
-  expect(await page.getByRole('button', { name: /模型：/ }).textContent()).toContain(
-    'deepseek-v4-pro · 默认',
-  )
+  await expect(page.getByRole('button', { name: /模型：/ })).toHaveText(/deepseek-v4-pro · 默认/)
   expect((await resetRequest).postDataJSON()).toMatchObject({
     reasoningLevel: 'AUTO',
     maxOutputTokens: 8192,

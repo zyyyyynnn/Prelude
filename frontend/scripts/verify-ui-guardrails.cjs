@@ -100,14 +100,49 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
    families a `shared/ui` component owns are in scope: `workspace-page` and `app-layout` are
    page-level layout a route writes itself. */
 const internalClassPattern = /\b((?:prelude-[a-z-]+|workspace-header)__[a-z-]+)/g
+
+/* The BEM shape only catches classes spelled with `__`. A `@utility` registered to carry one
+   component's markup is exactly as internal and has no shape to recognise — `prompt-bar-control`
+   is the case in point: a feature trigger rewrote the whole control (classes, truncating span,
+   chevron) and the shape rule could not see it. Ownership is therefore declared in the
+   stylesheet, and a declared family covers its suffixes (`prompt-bar-control` also owns
+   `prompt-bar-control-text`). */
+const declaredCss = fs.readFileSync(path.join(sourceRoot, 'shared', 'styles', 'index.css'), 'utf8')
+const ownedFamilies = [
+  ...declaredCss.matchAll(/\/\*\s*@internal\s+(\S+)\s*\*\/\s*\n@utility\s+([a-z0-9*-]+)/g),
+].map((match) => ({ owner: match[1], base: match[2].replace(/-\*$/, '') }))
+const CLASS_POSITION = /className="([^"]*)"|className=\{`([^`]*)`\}|(?:cn|clsx)\(([^)]*)\)/g
+const classTokens = (source) => {
+  const found = new Set()
+  for (const match of source.matchAll(CLASS_POSITION)) {
+    for (const chunk of [match[1], match[2], match[3]]) {
+      if (!chunk) continue
+      for (const token of chunk.split(/[\s,'"`]+/)) if (token) found.add(token)
+    }
+  }
+  return found
+}
+
 for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) {
   const relative = path.relative(root, file).replaceAll('\\', '/')
-  if (relative.startsWith('src/shared/ui/') || relative.startsWith('src/shared/styles/')) continue
-  const leaked = [
-    ...new Set([...fs.readFileSync(file, 'utf8').matchAll(internalClassPattern)].map((m) => m[1])),
-  ]
-  for (const name of leaked)
-    violations.push(`${relative}: writes ${name}, a shared/ui internal class`)
+  if (relative.startsWith('src/shared/styles/')) continue
+  const source = fs.readFileSync(file, 'utf8')
+  if (!relative.startsWith('src/shared/ui/')) {
+    const leaked = [...new Set([...source.matchAll(internalClassPattern)].map((match) => match[1]))]
+    for (const name of leaked)
+      violations.push(`${relative}: writes ${name}, a shared/ui internal class`)
+  }
+  if (relative === 'src/shared/styles/index.css') continue
+  for (const { owner, base } of ownedFamilies) {
+    if (relative === owner) continue
+    const written = [...classTokens(source)].filter(
+      (token) => token === base || token.startsWith(`${base}-`),
+    )
+    for (const name of written)
+      violations.push(
+        `${relative}: writes ${name}, declared @internal to ${owner} — go through its props instead`,
+      )
+  }
 }
 
 for (const file of [
@@ -191,8 +226,6 @@ for (const file of stylesheets) {
   }
 }
 
-// A class rule with no consumer is dead weight; shared primitives are composed at
-// runtime (`prelude-button--${variant}`), so their stems count as consumers too.
 const indexCss = stylesheets
   .filter((file) => file.endsWith(path.join('shared', 'styles', 'index.css')))
   .map((file) => fs.readFileSync(file, 'utf8'))
@@ -201,6 +234,20 @@ const consumers = walk(sourceRoot)
   .filter((item) => /\.(tsx|ts)$/.test(item))
   .map((item) => fs.readFileSync(item, 'utf8'))
   .join('\n')
+
+/* A class rule with no consumer is dead weight.
+   The previous form of this check tested `consumers.includes(stem)` over every source file
+   concatenated, and its candidates included the BEM block (`field` from `field__hint`), so it
+   was true for every element class in the sheet and reported nothing — a green that measured
+   nothing. A class now has to appear as a whole token. The one exemption is a family actually
+   composed at runtime, listed below rather than inferred from its name shape. */
+const runtimeComposedFamilies = [
+  /^prelude-button--/, // `prelude-button--${variant}` in shared/ui/button.tsx
+]
+const escapeForToken = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const usesClassToken = (name) =>
+  new RegExp(`(?:[^\\w-]|^)${escapeForToken(name)}(?:[^\\w-]|$)`).test(consumers)
+
 const registered = new Set(
   [...indexCss.matchAll(/^@utility\s+([a-z0-9*-]+)/gm)].map((match) =>
     match[1].replace(/-\*$/, ''),
@@ -210,11 +257,8 @@ const declaredClasses = new Set()
 for (const match of indexCss.matchAll(/^\.([a-z][-\w]*)\s*[,{]/gm)) declaredClasses.add(match[1])
 for (const name of declaredClasses) {
   if (registered.has(name)) continue
-  const stems = [name, ...name.split(/(?=--)|(?=__)/).filter(Boolean)]
-  const base = name.replace(/(--|__)[\s\S]*$/, '')
-  const candidates = new Set([...stems, base])
-  if ([...candidates].some((candidate) => candidate.length > 2 && consumers.includes(candidate)))
-    continue
+  if (runtimeComposedFamilies.some((pattern) => pattern.test(name))) continue
+  if (usesClassToken(name)) continue
   violations.push(`src/shared/styles/index.css: .${name} has no consumer`)
 }
 

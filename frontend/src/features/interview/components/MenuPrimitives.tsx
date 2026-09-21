@@ -1,6 +1,7 @@
-import { ChevronDown, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { REASONING_LABELS } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
+import { PromptBarModelTrigger } from '@/shared/ui/prompt-bar'
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -44,18 +45,13 @@ export function InterviewModelMenu({
       side="top"
       layout="model"
       trigger={
-        <button
-          type="button"
-          className="prompt-bar-control prompt-bar-control-text ui-action"
+        <PromptBarModelTrigger
+          text={`${config.model}${
+            reasoningSupported ? ` · ${REASONING_LABELS[thinkingValue]}` : ''
+          }`}
           aria-label={`模型：${config.model}${ariaThinking}`}
           disabled={saving}
-        >
-          <span className="min-w-0 flex-1 truncate text-start">
-            {config.model}
-            {reasoningSupported ? ` · ${REASONING_LABELS[thinkingValue]}` : ''}
-          </span>
-          <ChevronDown aria-hidden="true" />
-        </button>
+        />
       }
     >
       <DropdownMenuGroup>

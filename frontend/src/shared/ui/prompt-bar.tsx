@@ -2,11 +2,13 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  type ComponentProps,
   type FormEventHandler,
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react'
-import { Briefcase, FileText, Image, Paperclip, ScanSearch, X } from 'lucide-react'
+import { Briefcase, ChevronDown, FileText, Image, Paperclip, ScanSearch, X } from 'lucide-react'
+import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
 
 /*
@@ -111,6 +113,28 @@ export function PromptBarFact({ label, icon }: { label: string; icon: ReactNode 
         <span className="min-w-0 flex-1 truncate text-start">{label}</span>
       </span>
     </IconTooltip>
+  )
+}
+
+/** The model picker's trigger. It occupies the same control lane as the context chips, so the
+ *  row geometry belongs here rather than at whichever call site happens to open a menu on it.
+ *  Base UI's `Menu.Trigger render={…}` hands the element its own props, so this has to forward
+ *  whatever it is given onto the real button — a component that swallows them renders a button
+ *  that opens nothing. */
+export function PromptBarModelTrigger({
+  text,
+  className,
+  ...props
+}: ComponentProps<'button'> & { text: string }) {
+  return (
+    <button
+      type="button"
+      className={cn('prompt-bar-control prompt-bar-control-text ui-action', className)}
+      {...props}
+    >
+      <span className="min-w-0 flex-1 truncate text-start">{text}</span>
+      <ChevronDown aria-hidden="true" />
+    </button>
   )
 }
 

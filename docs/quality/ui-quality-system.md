@@ -62,4 +62,14 @@ Tooltip 由 Base UI 提供交互行为，并使用高对比中性表面。页面
 
 判据浏览器固定为 `@playwright/test` 锁定的 Chromium，不用系统 Edge：`channel: 'msedge'` 把 oracle 变成"这台机器装了什么浏览器"，第一次 CI 跑就因为 `<textarea>` 右下角那 9×9 的 Blink 自绘 resize grip 红了 20/16 像素——设计体系并不拥有那些像素。换 Playwright 版本等于换 oracle，要按一次环境变更处理并重生成基线。
 
+## 判据自身的失效方式
+
+门禁也会坏，而且坏法是静默的。三种实测到过的形态：
+
+- **恒真判据**：死类检查曾把全部源码拼成一个大字符串再 `includes(候选)`，而候选含 BEM 块名（`field__hint` → `field`），于是每个元素类永远算已消费，这条检查从未报出过任何东西。现在要求完整类名以词边界出现，豁免只给真正运行时拼接的族（全仓仅 `prelude-button--${variant}`）。
+- **空判据**：`@dark` 曾只断言 `--color-bg` 解析出的字符串非空——浅色模式下同样非空，删掉整个 `.dark` 块它照绿。现在断言的是两种 scheme 的解析值**不同**，以及时序（`dark` 类先于 `#root` 出现）。
+- **看不见归属的形状匹配**：内部类泄漏检查只匹配 `*__*`，于是为一个组件注册的 `@utility`（`prompt-bar-control`）被调用点整段重写时毫无反应。归属是设计决定、无法从形状推导，现在由 `index.css` 里的 `/* @internal src/<owner>.tsx */` 声明并由 `verify:ui` 执行。
+
+给判据做红测的方式：把要防的缺陷真的种进去，看它是否变红。上面三条都用人为改动验证过，其中一次探针本身是无效的——用 `setTimeout(…, 0)` 推迟主题应用并不会改变顺序，因为 React 初次挂载本来就晚于一个宏任务；换成足够长的延迟才看到预期的红。**反例不成立的实验不算验证。**
+
 判定后仍保留的字面量：`--layout-sidebar-header-block-size: 60px` 与 `--layout-page-center-block-offset: 84px` 表达的是「下限/留白」而非「等式」，推导成等值会改变观感，因此不登记进 `derived_tokens`。

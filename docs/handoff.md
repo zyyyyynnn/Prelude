@@ -290,6 +290,18 @@
 - [x] **补上失败证据通道**：`ci.yml` 增加 `upload-artifact`（`if: !cancelled()`），把 `test-results/**/*.png` 与 `error-context.md` 存 7 天。这不算 re-baseline 通道（基线仍只能在开发机重生成），但至少下一次像素失败可以**看图定位**而不是猜。
 - [x] 验证：`vp check`、`verify:architecture`、`verify:ui`、`verify:tokens`(204)、`build` + `verify:cascade`、`verify:production`、`verify:visual`（22 例，重生成后连跑两次全绿）、`test:smoke`(41)、`byok`(4)/`dark`(2)/`a11y`(1) 全通过；Chromium 与 Edge 对 42/44 张基线逐字节一致。
 
+### 阶段十八：自审后修判据成色（四条假绿灯）
+
+用户裁决「先修判据成色再谈合并」。三条我自己复核确认、一条被我此前的分析误导过，都记下来。
+
+- [x] **`@dark` 的门禁名不副实**：`expect(colors.every((v) => v.trim().length > 0)).toBe(true)` 只断言自定义属性**非空**，而 `--color-bg` 在浅色块里同样有定义——把 `.dark` 整块删掉它照样绿。改成两半：一条断言**同一页面在两种 scheme 下解析出的调色板不同**（走 `emulateMedia`，存储偏好保持 `system`，避免注册第二个 init script 与前一个打架），一条用两个 `MutationObserver` 断言**`dark` 类先于 `#root` 出现**——后者才是标题里 "before rendering" 承诺的那件事，此前无人判过。两条都做了红测：把 `index.css:365` 的 `:root.dark, .dark` 两个选择器一起改名，调色板例如期 `FAIL`（只改一个仍然绿，因为这个块是双选择器）；把 `initializeTheme()` 推迟到 `setTimeout(…, 50)` 让 React 先挂载，时序例如期 `FAIL`。**第一次探针是无效实验**：我先用 `setTimeout(…, 0)`，而 React 的初次挂载本来就晚于一个宏任务，所以顺序没变、测试照绿——不是断言失灵，是我的反例不成立。
+- [x] **`app.behavior.spec.ts` 两处一次性读**：`expect(await modelTrigger.textContent()).toContain(…)` 不重试，而被测标签写在 `InterviewSetup.tsx:53` 的 `setQueryData`，它排在 `:51` 的 `await client.cancelQueries(…)` **之后**——`onMutate` 是 async，取消查询解析后剩余体在微任务续体里跑，点击早已返回。换成 `toHaveText`。这与阶段十六 CI 抓到的那条是同一个类，只是这次由审计而非由红灯发现。
+- [x] **`verify:ui` 的死类检查恒为真**：判据是「把所有源码拼成一个大字符串，再 `includes(候选)`」，而候选里含 BEM **块名**（`field__hint` → `field`），于是每个元素类都永远算已消费，整条检查从未报过任何东西。改成要求**完整类名以词边界出现**，并把真正运行时拼接的族显式列出——实测全仓只有 `prelude-button--${variant}` 一处（`shared/ui/button.tsx:32-34`），豁免面从"所有下划线词干"缩到一条正则。红测：塞一个 `.probe-dead-widget` 即 `FAIL (1)`；当前代码库**确实没有死类**，所以这条从"永远绿且无意义"变成"绿且有意义"。
+- [x] **内部类泄漏门禁只看得见形状、看不见归属**：正则 `/\b((?:prelude-[a-z-]+|workspace-header)__[a-z-]+)/g` 只匹配带 `__` 的 BEM，而 `features/interview/components/MenuPrimitives.tsx:49` 一直在手写 `prompt-bar-control prompt-bar-control-text ui-action`——整段触发器（类名、截断 span、chevron）把 `shared/ui/prompt-bar.tsx` 已经画过的东西重画了一遍，门禁看不见。**修法不是扩正则**：为组件私有标记注册的 `@utility` 没有形状可认，归属是设计决定，只能声明。于是新增 `/* @internal src/<owner>.tsx */` 标记（`DESIGN.md:107` 那条"一个 utility 只能有一处拥有"的机器可读形式），`verify:ui` 解析标记、按 class 位置扫描、覆盖 `-` 后缀派生；同时把那段手抄触发器收进 `prompt-bar.tsx` 的 `PromptBarModelTrigger`。红测：在 `AnalyticsPage` 的 className 里加 `prompt-bar-control` 即 `FAIL (1)`。
+- [x] **这次重构自己引入又被测试抓住的缺陷**：`PromptBarModelTrigger` 最初不收 `...props`，而 Base UI 的 `Menu.Trigger render={…}` 要把 `onClick`/`aria-*` 交给触发元素——组件吞掉 props 后按钮渲染正常但**菜单永不打开**，3 条 smoke 与 1 条 visual 立刻红。改成 `ComponentProps<'button'>` + `cn` 合并 className 后 5 例全绿。教训：把 markup 上提成组件时，作为 trigger 使用的组件必须转发 props，这不是可选项。
+- [x] **审计过程中我自己先算错过一次**：第一版归属分析脚本拿整个文件源码做词匹配，于是 `import … from '@/shared/ui/session-row'` 被算成"写出了 `session-row` 这个类"，报出 13 条泄漏。改成只扫 class 位置（`className="…"` / `` className={`…`} `` / `cn(…)`）后，**真实泄漏只剩 `MenuPrimitives.tsx` 那一行**，其余全是导入路径造成的假阳性——包括 `empty-state`、`generating-card`、`option-card` 这些我差点当缺陷去"修"的名字。
+- [x] 验证：`vp check`、`verify:architecture`、`verify:ui`、`verify:tokens`(204)、`build` + `verify:cascade`、`verify:production`、`verify:visual`(22)、`test:smoke`(41)、`byok`(4)、`dark`(**3**，新增一条)、`a11y`(1) 全通过。
+
 ---
 
 ## 7. 关键风险与留存问题

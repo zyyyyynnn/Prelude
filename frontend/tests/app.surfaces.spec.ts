@@ -65,6 +65,17 @@ async function expectScheme(page: Page, scheme: Scheme) {
   else await expect(root).not.toHaveClass(/\bdark\b/)
 }
 
+/* Resolved values, not declarations: whether the dark block wins is a cascade question, and
+   that is exactly what a theme gate has to observe. */
+function readPalette(page: Page) {
+  return page.evaluate(() => {
+    const style = getComputedStyle(document.documentElement)
+    return ['--color-bg', '--color-text-primary', '--color-border'].map((name) =>
+      style.getPropertyValue(name).trim(),
+    )
+  })
+}
+
 async function installApi(page: Page) {
   await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
     const path = new URL(route.request().url()).pathname
@@ -195,13 +206,52 @@ test('@byok exposes only the four governed provider protocols', async ({ page })
 test('@dark restores the governed dark theme before rendering', async ({ page }) => {
   await installApi(page)
   await preferScheme(page, 'dark')
+  /* Records which happened first: the `dark` class landing, or React painting into #root.
+     `initializeTheme()` runs before `createRoot().render()` in `app/main.tsx`, so the theme
+     must win — that ordering is the whole reason the title says "before rendering". */
+  await page.addInitScript(() => {
+    const order: { dark: number; painted: number } = { dark: 0, painted: 0 }
+    let tick = 0
+    ;(window as unknown as Record<string, unknown>).__themeOrder = order
+    /* Observe `document`, not `document.documentElement`: an init script runs before the
+       parser has produced any element, so the root does not exist yet at this point. */
+    new MutationObserver(() => {
+      if (document.documentElement?.classList.contains('dark') && !order.dark) order.dark = ++tick
+    }).observe(document, { attributes: true, subtree: true, attributeFilter: ['class'] })
+    new MutationObserver(() => {
+      if (document.getElementById('root')?.childElementCount && !order.painted) {
+        order.painted = ++tick
+      }
+    }).observe(document, { childList: true, subtree: true })
+  })
   await page.goto('/interview')
   await expectScheme(page, 'dark')
-  const colors = await page.evaluate(() => {
-    const style = getComputedStyle(document.documentElement)
-    return [style.getPropertyValue('--color-bg'), style.getPropertyValue('--color-text-primary')]
-  })
-  expect(colors.every((value) => value.trim().length > 0)).toBe(true)
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as Record<string, { dark: number; painted: number }>).__themeOrder,
+      ),
+    )
+    .toEqual({ dark: 1, painted: 2 })
+})
+
+/* The stored preference stays at its `system` default here, so the OS media query decides the
+   scheme and one page can produce both halves of the comparison — registering a second
+   `preferScheme` would leave the first init script in place and fight it on reload. */
+test('@dark resolves a different palette than the light scheme', async ({ page }) => {
+  await installApi(page)
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto('/interview')
+  await expectScheme(page, 'light')
+  const light = await readPalette(page)
+
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.reload()
+  await expectScheme(page, 'dark')
+  /* Non-empty is not a judgement: `--color-bg` and `--color-text-primary` are defined in the
+     light scheme too, so the assertion this replaces stayed green with the dark override
+     deleted outright. */
+  expect(await readPalette(page)).not.toEqual(light)
 })
 
 test('@dark suppresses transitions while applying theme changes', async ({ page }) => {
