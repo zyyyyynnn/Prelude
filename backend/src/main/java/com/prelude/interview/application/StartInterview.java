@@ -9,7 +9,7 @@ import com.prelude.identity.api.CurrentAccount;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.context.RetrievalPort;
 import com.prelude.resume.api.port.ResumeContextPort;
 import com.prelude.resume.api.port.ResumeProjection;

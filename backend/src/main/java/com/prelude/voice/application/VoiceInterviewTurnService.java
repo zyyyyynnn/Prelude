@@ -1,7 +1,7 @@
 package com.prelude.voice.application;
 
 import com.prelude.SessionKeyedSerialExecutor;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.port.InterviewSessionGuard;
 import com.prelude.interview.application.port.InterviewTurnCommand;
 import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
@@ -31,29 +31,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class VoiceInterviewTurnService {
 
     private static final long TTS_AWAIT_SECONDS = 30L;
-    private static final String STATUS_ONGOING = "ongoing";
 
     private final VoicePort voiceService;
-    private final InterviewSessionRepository interviewSessionRepository;
+    private final InterviewSessionGuard interviewSessionGuard;
     private final InterviewTurnPort interviewTurnPort;
     @Qualifier("voiceTurnExecutor")
     private final SessionKeyedSerialExecutor voiceTurnExecutor;
     @Qualifier("ttsTaskExecutor")
     private final SessionKeyedSerialExecutor ttsTaskExecutor;
-
-    public InterviewSession validateActiveSession(Long accountId, Long sessionId) {
-        if (accountId == null || sessionId == null) {
-            return null;
-        }
-        InterviewSession interviewSession = interviewSessionRepository.selectById(sessionId);
-        if (interviewSession == null || !Objects.equals(interviewSession.getAccountId(), accountId)) {
-            return null;
-        }
-        if (!STATUS_ONGOING.equals(interviewSession.getStatus())) {
-            return null;
-        }
-        return interviewSession;
-    }
 
     public void processTurn(Long accountId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
         voiceTurnExecutor.executeForSession(sessionId, () -> runTurn(accountId, sessionId, audioBytes, sink));
@@ -65,7 +50,7 @@ public class VoiceInterviewTurnService {
                 sink.error("面试会话已切换，请重新开始语音输入");
                 return;
             }
-            if (validateActiveSession(accountId, sessionId) == null) {
+            if (!interviewSessionGuard.isOngoing(accountId, sessionId)) {
                 sink.clearActiveSession();
                 sink.error("面试会话不可用，请刷新后重试");
                 return;

@@ -3,7 +3,7 @@ package com.prelude.interview.application;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.application.port.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

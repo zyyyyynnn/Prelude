@@ -5,7 +5,7 @@ import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.port.InterviewContextPort;
-import com.prelude.interview.application.port.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.port.InterviewTurnCommand;
 import com.prelude.interview.application.port.InterviewTurnResult;
 import com.prelude.interview.application.port.InterviewTurnSink;

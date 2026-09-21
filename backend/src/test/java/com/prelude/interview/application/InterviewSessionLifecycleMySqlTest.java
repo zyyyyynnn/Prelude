@@ -3,7 +3,7 @@ package com.prelude.interview.application;
 import com.prelude.BusinessException;
 import com.prelude.context.RetrievalChunkStore;
 import com.prelude.context.RetrievalPort;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.test.AccountFixtures;
 import java.sql.PreparedStatement;

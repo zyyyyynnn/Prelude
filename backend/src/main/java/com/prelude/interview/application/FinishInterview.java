@@ -2,7 +2,7 @@ package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;

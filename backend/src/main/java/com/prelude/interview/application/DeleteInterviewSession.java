@@ -2,7 +2,7 @@ package com.prelude.interview.application;
 
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.context.RetrievalPort;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -2,8 +2,8 @@ package com.prelude.interview.application;
 
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.port.InterviewMessageRepository;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;

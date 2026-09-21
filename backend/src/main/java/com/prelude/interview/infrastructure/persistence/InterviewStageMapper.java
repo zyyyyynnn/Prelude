@@ -3,7 +3,7 @@ package com.prelude.interview.infrastructure.persistence;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.interview.domain.InterviewStage;
-import com.prelude.interview.application.port.InterviewStageRepository;
+import com.prelude.interview.application.repository.InterviewStageRepository;
 
 import java.util.List;
 

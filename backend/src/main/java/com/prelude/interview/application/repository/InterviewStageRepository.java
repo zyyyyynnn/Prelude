@@ -1,4 +1,4 @@
-package com.prelude.interview.application.port;
+package com.prelude.interview.application.repository;
 
 import com.prelude.interview.domain.InterviewStage;
 

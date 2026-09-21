@@ -3,7 +3,7 @@ package com.prelude.interview.application;
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

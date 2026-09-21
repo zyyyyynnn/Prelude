@@ -2,7 +2,7 @@ package com.prelude.voice.web;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-import com.prelude.interview.domain.InterviewSession;
+import com.prelude.interview.application.port.InterviewSessionGuard;
 import com.prelude.voice.application.VoiceInterviewTurnService;
 import com.prelude.voice.application.VoiceTurnEventSink;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +41,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
 
     private final ObjectMapper objectMapper;
     private final VoiceInterviewTurnService voiceInterviewTurnService;
+    private final InterviewSessionGuard interviewSessionGuard;
     private final com.prelude.identity.api.SessionValidity sessionValidity;
 
     private final Map<String, ByteArrayOutputStream> sessionBuffers = new ConcurrentHashMap<>();
@@ -124,8 +125,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             Number sessionIdNum = (Number) requestMap.get("sessionId");
             if (sessionIdNum != null) {
                 Long requestedSessionId = sessionIdNum.longValue();
-                InterviewSession interviewSession = voiceInterviewTurnService.validateActiveSession(accountId, requestedSessionId);
-                if (interviewSession == null) {
+                if (!interviewSessionGuard.isOngoing(accountId, requestedSessionId)) {
                     sendJson(session, Map.of("type", "error", "message", "面试会话不可用，请刷新后重试"));
                     return;
                 }

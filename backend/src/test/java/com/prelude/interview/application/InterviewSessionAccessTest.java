@@ -1,6 +1,6 @@
 package com.prelude.interview.application;
 
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
