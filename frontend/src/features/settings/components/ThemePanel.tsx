@@ -1,4 +1,5 @@
-import { ErrorState, LoadingState, Button, ThemeChoiceGroup, Panel, useFeedback } from '@/shared/ui'
+import { ErrorState, LoadingState, Button, Panel, useFeedback } from '@/shared/ui'
+import { ThemeChoiceGroup } from './theme-picker'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchProfile, saveProfile } from '../api'

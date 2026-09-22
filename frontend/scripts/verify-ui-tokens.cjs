@@ -389,6 +389,94 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
   }
 }
 
+// ---------------------------------------------------------------- markup geometry
+// The CSS reader above cannot see a size that only exists in markup. A Tailwind
+// arbitrary value (`p-[7px]`) and a unitless inline style (`style={{ height: 40 }}`,
+// which React reads as pixels) are the same escape as a raw `px` in the sheet, and
+// nothing used to look at them.
+//
+// Chart-internal geometry is exempt by decision, not by oversight. DESIGN.md records
+// that echarts measurements are sized for the chart's own content — the widest y-axis
+// label, the radar radius — and are not a step on the interface scale, so converting
+// them to `--spacing-*` would dress an unrelated number in a token's clothes. That
+// exemption used to be expressed as "the scanner cannot see it"; it is now a named
+// list, so every entry has to still exist and a new raw number anywhere else fails.
+{
+  const absolute = /\d*\.?\d+(?:px|rem)\b/
+  const arbitraryValue = /\b[a-z-]+-\[[^\]\s]*\d*\.?\d+(?:px|rem)[^\]]*\]/gi
+  const styleBlock = /style=\{\{([^}]*)\}\}/g
+
+  /* Named chart constants allowed to hold unitless numbers (echarts reads them as px).
+     Each entry must still be present: a stale entry is a leftover, not an exemption. */
+  const chartGeometryConstants = [
+    { file: 'src/features/analytics/trend-chart.tsx', name: 'TREND_GRID' },
+  ]
+  for (const { file, name } of chartGeometryConstants) {
+    const text = fs.readFileSync(path.join(root, file), 'utf8')
+    if (!new RegExp(`const ${name}\\b`).test(text))
+      violations.push(`${file}: chart geometry constant ${name} is gone — drop its allowlist entry`)
+  }
+
+  // The line ranges of the allowlisted declarations, so their numbers can be skipped.
+  const allowedRanges = new Map()
+  for (const { file, name } of chartGeometryConstants) {
+    const text = fs.readFileSync(path.join(root, file), 'utf8')
+    const start = text.search(new RegExp(`const ${name}\\s*=`))
+    if (start < 0) continue
+    const open = text.indexOf('{', start)
+    let depth = 0
+    let end = open
+    for (; end < text.length; end += 1) {
+      if (text[end] === '{') depth += 1
+      else if (text[end] === '}' && (depth -= 1) === 0) break
+    }
+    const first = lineOf(text, start)
+    const last = lineOf(text, end)
+    if (!allowedRanges.has(file)) allowedRanges.set(file, [])
+    allowedRanges.get(file).push([first, last])
+  }
+  const isAllowedLine = (relative, line) =>
+    (allowedRanges.get(relative) ?? []).some(([first, last]) => line >= first && line <= last)
+
+  let scannedMarkupFiles = 0
+  for (const file of walkFiles(sourceRoot, /\.(ts|tsx)$/)) {
+    scannedMarkupFiles += 1
+    const relative = path.relative(root, file).replaceAll('\\', '/')
+    const text = fs.readFileSync(file, 'utf8')
+
+    for (const match of text.matchAll(arbitraryValue)) {
+      const line = lineOf(text, match.index)
+      violations.push(
+        `${relative}:${line}: arbitrary value ${match[0]} carries a raw length — use a token utility`,
+      )
+    }
+
+    for (const match of text.matchAll(styleBlock)) {
+      for (const entry of match[1].split(',')) {
+        const property = entry.match(/^\s*([\w-]+)\s*:/)
+        if (!property || property[1].startsWith('--')) continue
+        const value = entry.slice(property[0].length)
+        const line = lineOf(text, match.index)
+        if (isAllowedLine(relative, line)) continue
+        if (/^\s*-?\d*\.?\d+\s*$/.test(value) || absolute.test(value)) {
+          violations.push(
+            `${relative}:${line}: inline style ${property[1]}: ${value.trim()} is a raw size — use a token`,
+          )
+        }
+      }
+    }
+  }
+  /* A reader that quietly walks nothing is worse than no reader. It is not a violation
+     count: a tree with no raw markup sizes is exactly the state this rule wants, so the
+     assertion is that the walk happened at all. */
+  if (scannedMarkupFiles < 50) {
+    console.error(
+      `UI token verification: FAIL — the markup reader only walked ${scannedMarkupFiles} files`,
+    )
+    process.exit(1)
+  }
+}
+
 if (violations.length) {
   console.error(`UI token verification: FAIL (${violations.length})`)
   for (const violation of violations) console.error(`  ${violation}`)

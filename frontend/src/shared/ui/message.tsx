@@ -23,9 +23,7 @@ export function MessageBubble({
       className={cn('message-bubble', user ? 'items-end self-end' : 'items-start self-start')}
     >
       <div className="flex w-full items-center gap-sm">
-        <span className={cn('font-serif text-xs text-text-tertiary', user && 'ms-auto')}>
-          {speaker}
-        </span>
+        <span className={cn('type-caption', user && 'ms-auto')}>{speaker}</span>
       </div>
       <div
         className={cn(

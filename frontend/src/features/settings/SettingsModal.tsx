@@ -1,4 +1,5 @@
-import { LoadingState, SettingsNavigation, Dialog } from '@/shared/ui'
+import { LoadingState, Dialog } from '@/shared/ui'
+import { SettingsNavigation } from './components/settings-navigation'
 import { LogOut } from 'lucide-react'
 import { Suspense, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'

@@ -1,7 +1,7 @@
 import { Pin, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
-import { IconTooltip } from '@/shared/ui/overlay'
+import { IconTooltip } from '@/shared/ui'
 
 export type SessionRowState = 'idle' | 'active' | 'loading' | 'error'
 

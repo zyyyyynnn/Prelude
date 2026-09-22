@@ -53,15 +53,11 @@ export function StructuredReport({
       <div className="report-columns gap-lg inset-card-lg">
         <section className="grid min-w-0 gap-sm">
           <h2 className="type-title text-balance">{copy.actionTitle}</h2>
-          <p className="font-sans text-sm leading-copy text-text-secondary">
-            {report.summary.actionRecommendation}
-          </p>
+          <p className="type-copy">{report.summary.actionRecommendation}</p>
         </section>
         <section className="grid min-w-0 gap-sm">
           <h2 className="type-title text-balance">{copy.riskTitle}</h2>
-          <p className="font-sans text-sm leading-copy text-text-secondary">
-            {report.summary.overallRisk}
-          </p>
+          <p className="type-copy">{report.summary.overallRisk}</p>
         </section>
       </div>
       <ScoreCard report={report} copy={copy} />
@@ -87,9 +83,7 @@ export function StructuredReport({
         <h2 className="type-title max-w-(--content-report-reading-max-inline-size) text-balance">
           {copy.adviceTitle}
         </h2>
-        <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
-          {report.finalAdvice}
-        </p>
+        <p className="type-reading">{report.finalAdvice}</p>
       </ReportSection>
     </article>
   )

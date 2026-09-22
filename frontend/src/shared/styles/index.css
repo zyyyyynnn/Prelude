@@ -49,6 +49,17 @@
   --text-xl: var(--font-size-xl);
   --text-2xl: var(--font-size-2xl);
 
+  /* The sizes above are bare values, so Tailwind still supplies a leading for each step
+     from its own default scale and the Prelude ladder is bypassed. Declared here so the
+     numbers are owned and auditable rather than inherited from a dependency; the values
+     are exactly what those steps resolved to before. `md` and `xl` carry none, so those
+     two steps keep inheriting. Moving any of them onto the `--line-height-*` ladder is a
+     rendering change across every screen that uses the step and is not done here. */
+  --text-xs--line-height: calc(1 / 0.75);
+  --text-sm--line-height: calc(1.25 / 0.875);
+  --text-lg--line-height: calc(1.75 / 1.125);
+  --text-2xl--line-height: calc(2 / 1.5);
+
   --leading-solid: var(--line-height-solid);
   --leading-display: var(--line-height-display);
   --leading-tight: var(--line-height-tight);
@@ -721,8 +732,12 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 
 /* ==========================================================================
    Workspace layout shell — locked application frame
+
+   The page shells are registered utilities rather than unlayered classes: an
+   unlayered class silently outranks the whole utilities layer, and DESIGN.md
+   forbids one from declaring the geometry a call site may need to override.
    ========================================================================== */
-.workspace-page {
+@utility workspace-page {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -769,7 +784,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
-.workspace-page__content {
+@utility workspace-page__content {
   flex: 1;
   padding: var(--spacing-lg) var(--spacing-2xl);
   overflow-y: auto;
@@ -804,13 +819,16 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   right: 0 !important;
 }
 
-.app-layout {
+/* The application frame is a registered utility for the same reason as the page
+   shells above: it owns the viewport height, and an unlayered class declaring it
+   would silently outrank anything a call site wrote. */
+@utility app-layout {
   display: flex;
   height: 100vh;
   overflow: hidden;
   background: var(--color-bg);
 }
-.app-layout__main {
+@utility app-layout__main {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1482,6 +1500,42 @@ html[data-input-intent='keyboard']
   font: var(--font-weight-regular) var(--font-size-sm)/var(--line-height-relaxed) var(--font-sans);
 }
 
+/* Reading copy at the copy leading rather than the relaxed one `type-body` uses. Declared
+   property-by-property rather than with the `font:` shorthand on purpose: the shorthand
+   always sets a weight and a leading, and the eleven call sites this replaces spelled the
+   role as bare utility classes that set neither, so both stay inherited exactly as before. */
+@utility type-copy {
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-copy);
+}
+
+/* A serif caption at the tertiary weight of colour: report figure captions and the
+   timestamp beside a chat bubble. The leading names Tailwind's own `--text-xs` step
+   rather than the `--line-height-*` ladder: this project maps `--text-xs` to a bare size,
+   so `text-xs` silently carries Tailwind's default 1.3333 leading, and the call sites this
+   replaces inherited exactly that. Moving the caption onto the ladder is a deliberate
+   rendering change and is not what this promotion is for. */
+@utility type-caption {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xs);
+  line-height: var(--text-xs--line-height);
+}
+
+/* Reading copy set to the report's own measure, so the width is not a layout decision
+   every report section re-makes. `type-lead` carries the lead measure; this carries the
+   report one, and it keeps the copy leading rather than the relaxed one. */
+@utility type-reading {
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-copy);
+  max-inline-size: var(--content-report-reading-max-inline-size);
+  text-wrap: pretty;
+}
+
 @utility type-meta {
   color: var(--color-text-tertiary);
   font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-compact) var(--font-sans);
@@ -1561,12 +1615,12 @@ html[data-input-intent='keyboard']
   gap: var(--spacing-md);
 }
 
-/* The filled portion of a score track reads its width from --report-score-fill,
+/* The filled portion of a score track reads its width from --score-fill,
    which the component supplies as a runtime CSS variable. */
 @utility score-fill {
   display: block;
   block-size: 100%;
-  inline-size: var(--report-score-fill, 0%);
+  inline-size: var(--score-fill, 0%);
   max-inline-size: 100%;
   border-radius: inherit;
   background: var(--color-brand);

@@ -92,7 +92,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 ### Style Assembly
 
-界面样式只有两种写法：调用点的 Tailwind 原子类，和 `frontend/src/shared/styles/index.css` 中具名注册的 `@utility`。feature 目录不含 CSS 文件，`features/*` 与 `app/shell` 只引入 token 与原子类。
+界面样式有三种写法：调用点的 Tailwind 原子类、`frontend/src/shared/styles/index.css` 中具名注册的 `@utility`，以及顶层未分层类。feature 目录不含 CSS 文件，`features/*` 与 `app/shell` 只引入 token 与原子类。
+
+- 未分层类是第三种写法而不是遗漏，但只承担一类职责：组件自己的 BEM 内部结构（`ui-menu__item`、`ui-button__content`），以及由 `@internal src/<owner>.tsx` 声明归属的整段 chrome。它们位于 utilities 层之外，因此压过 utilities 层——这正是它们能钉住组件内部结构的原因，也是它们不得声明调用点可能要覆写的几何的原因（见下条）。页面外壳不属于此类：`.workspace-page*` 与 `.app-layout*` 已注册为 `@utility`，因为页面壳要声明视口高度，而未分层类的高度调用点无法覆写。
 
 - 原子类优先。能被 `flex`、`gap-md`、`bg-surface`、`rounded-lg` 表达的，不注册新 utility。
 - 只有当组合无法用原子表达时才注册：嵌入 `var()` 的多值简写、`auto-fit`/`minmax` 轨道、来自 token 的 logical border、跨元素状态传播、`@keyframes`。
@@ -142,6 +144,7 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 - `layout="fill"` 用于铺满容器的高度型表面（设置弹窗的五个分区、工作台浮层）：标题行带下边界，内容区自带 `--spacing-lg` 内边距并独立滚动。
 - `layout="card"` 用于随内容增高的自足块（组件实验台的每个面板、岗位管理的两块面板）：自带边界、圆角、`--spacing-lg` 内边距与 `elevated-whisper`，标题行与内容区之间同样是 `--spacing-lg`。
 - `level` 决定标题用 `h2` 还是 `h3`，并随之选择 `type-title` 或 `type-subtitle`；`eyebrow` 是标题上方的 `type-eyebrow` 引导标签，`description` 是标题下方的 `type-meta` 说明，`actions` 是右侧操作区，`footer` 是带上下边界的底部动作条。
+- 高程卡片只有一个拥有者：`shared/ui/card.tsx` 的 `Card`。`Panel layout="card"` 与不带标题行的同高程块（数据看板的记分卡）都经它渲染，圆角、边界、`--spacing-lg` 内边距与 `elevated-whisper` 只此一处；卡内堆叠间距由组件的 `stack` 决定，调用点只传 layout 类。嵌在另一层表面里的内嵌卡片是另一个拥有者 `shared/ui/inset-card.tsx` 的 `InsetCard`（`ScoreTile` 与薄弱点条目共用此外壳）。
 
 全项目只有一种细分割线：`--border-width-default` 1px + `--color-border`，并且只画在 `--color-surface` 上（侧栏主操作下方那条线即基准，实测线色对表面色对比度 1.10）。`--color-border-warm` 是控件自身的边，`--color-line-decor` 只服务落在页面底色上的装饰边缘（登录卡），两者都不是分割线。需要更强的分层感时改间距与标题层级，不改线的颜色或粗细。
 

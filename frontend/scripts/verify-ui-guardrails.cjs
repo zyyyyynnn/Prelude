@@ -65,7 +65,7 @@ const singleOwnerRules = [
     label: 'an inset card is the `inset-card` utility, not a fill plus a radius plus a padding',
   },
   {
-    owner: 'src/shared/ui/session-row.tsx',
+    owner: 'src/features/interview/components/session-row.tsx',
     pattern: /mx-sm text-xs font-semibold tracking-label/,
     label: 'a session group caption goes through SessionGroupLabel',
   },
@@ -77,6 +77,117 @@ for (const { owner, pattern, label } of singleOwnerRules) {
     if (pattern.test(fs.readFileSync(file, 'utf8')))
       violations.push(`${relative}: ${label} (${owner})`)
   }
+}
+
+/* Class positions only: the full attribute value, a template literal, a braced string
+   literal, or a `cn(...)` argument list. Shared by the recipe scan and the
+   internal-class scan. The braced-string form (`className={"…"}`) is easy to overlook
+   and is exactly where a hand-rolled recipe hides. */
+const CLASS_POSITION =
+  /className="([^"]*)"|className=\{`([^`]*)`\}|className=\{"([^"]*)"\}|(?:cn|clsx)\(([^)]*)\)/g
+
+/* Discovery, not an after-the-fact registry. A duplicated *recipe* — a run of at least
+   three class tokens that names the design system — is how an owner and a call site end
+   up rendering "the same" component differently with nothing to notice it: the floating
+   card recipe lived in `shared/ui/panel` and was re-hand-rolled in `AnalyticsPage`. The
+   registry above can only name the duplications somebody already found; this finds the
+   next one and forces either a named exception or an owner to be promoted.
+
+   Scanning reads class positions only (`className="…"`, className={`…`}, `cn(…)`). A
+   whole-file scan would flag `import … from '@/shared/ui/session-row'` as having written
+   the class `session-row`, which produced thirteen false positives when it was tried.
+
+   A run counts as a recipe only when it names the design system: a bare layout combo
+   (`flex flex-col gap-sm`) is a spelling, not a component, and repeating it is not a
+   defect. Colour, radius, elevation, semantic text roles and the sheet's own registered
+   names are what make two copies of the same thing. */
+const MIN_RECIPE_RUN = 3
+const sheetForRecipes = fs.readFileSync(
+  path.join(sourceRoot, 'shared', 'styles', 'index.css'),
+  'utf8',
+)
+const designSystemNames = new Set()
+for (const match of sheetForRecipes.matchAll(/^@utility\s+([a-z0-9*-]+)/gm))
+  designSystemNames.add(match[1].replace(/-\*$/, ''))
+for (const match of sheetForRecipes.matchAll(/^\.([a-z][-\w]*)\s*[,{]/gm))
+  designSystemNames.add(match[1])
+for (const match of sheetForRecipes.matchAll(/--([a-z][a-z0-9-]*):/g))
+  designSystemNames.add(`(${match[1]})`)
+
+/* A Tailwind token, arbitrary values (which contain their own parens) and BEM
+   element/modifier underscores included so `workspace-page__content` is one token. */
+const RECIPE_TOKEN = /[a-z][a-z0-9_-]*(?:[!:/][a-z0-9_-]+)*(?:\([^)]*\))?/gi
+const namesDesignSystem = (token) =>
+  /^bg-(?!transparent)/.test(token) ||
+  /^text-text-/.test(token) ||
+  /^border-border$/.test(token) ||
+  /^(?:rounded|shadow|elevated|ring|outline)-/.test(token) ||
+  designSystemNames.has(token)
+
+/* Registered exceptions, each naming the owner the duplication must be promoted to.
+   This list is not a bypass: every entry states the concrete promotion target, and a
+   new duplication is a defect until it is either promoted or listed here with a
+   reason. */
+const duplicatedRecipeExceptions = [
+  {
+    run: 'rounded-lg border border-border',
+    reason:
+      'the component-lab preview frame is a border-only demo frame, not the elevated card, so it cannot go through Card; it needs its own owner or a narrower recipe',
+  },
+]
+
+const recipesByRun = new Map()
+for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) {
+  const relative = path.relative(root, file).replaceAll('\\', '/')
+  if (relative.startsWith('src/shared/styles/')) continue
+  const source = fs.readFileSync(file, 'utf8')
+  const runs = new Set()
+  for (const match of source.matchAll(CLASS_POSITION)) {
+    for (const chunk of [match[1], match[2], match[3], match[4]]) {
+      if (!chunk) continue
+      const tokens = chunk.match(RECIPE_TOKEN) || []
+      for (let start = 0; start + MIN_RECIPE_RUN <= tokens.length; start++) {
+        const run = tokens.slice(start, start + MIN_RECIPE_RUN)
+        if (!run.some(namesDesignSystem)) continue
+        runs.add(run.join(' '))
+      }
+    }
+  }
+  for (const run of runs) {
+    if (!recipesByRun.has(run)) recipesByRun.set(run, new Set())
+    recipesByRun.get(run).add(relative)
+  }
+}
+
+/* Overlapping runs from one pair of files (`gutter-stable flex min-h-0` and
+   `scrollable gutter-stable flex`) are one duplication, so report each pair once with
+   its longest shared run. */
+const longestRunByPair = new Map()
+for (const [run, files] of recipesByRun) {
+  if (files.size < 2) continue
+  for (const left of files) {
+    for (const right of files) {
+      if (left >= right) continue
+      const key = `${left}\u0000${right}`
+      const previous = longestRunByPair.get(key)
+      if (!previous || run.split(' ').length > previous.split(' ').length)
+        longestRunByPair.set(key, run)
+    }
+  }
+}
+let registeredExceptions = 0
+for (const [key, run] of [...longestRunByPair].sort()) {
+  const [left, right] = key.split('\u0000')
+  const exception = duplicatedRecipeExceptions.find((entry) => entry.run === run)
+  if (exception) {
+    // Registered: sanctioned, so it does not fail the gate. Counted so the pass line
+    // still shows how many are outstanding.
+    registeredExceptions += 1
+    continue
+  }
+  violations.push(
+    `${left} + ${right}: duplicated recipe "${run}" — promote it to one owner, or register it in duplicatedRecipeExceptions with a reason`,
+  )
 }
 
 /* A floating layer's offset from its anchor is design geometry, not a call-site preference.
@@ -111,11 +222,10 @@ const declaredCss = fs.readFileSync(path.join(sourceRoot, 'shared', 'styles', 'i
 const ownedFamilies = [
   ...declaredCss.matchAll(/\/\*\s*@internal\s+(\S+)\s*\*\/\s*\n@utility\s+([a-z0-9*-]+)/g),
 ].map((match) => ({ owner: match[1], base: match[2].replace(/-\*$/, '') }))
-const CLASS_POSITION = /className="([^"]*)"|className=\{`([^`]*)`\}|(?:cn|clsx)\(([^)]*)\)/g
 const classTokens = (source) => {
   const found = new Set()
   for (const match of source.matchAll(CLASS_POSITION)) {
-    for (const chunk of [match[1], match[2], match[3]]) {
+    for (const chunk of [match[1], match[2], match[3], match[4]]) {
       if (!chunk) continue
       for (const token of chunk.split(/[\s,'"`]+/)) if (token) found.add(token)
     }
@@ -280,4 +390,8 @@ if (violations.length) {
   for (const violation of violations) console.error(`  ${violation}`)
   process.exit(1)
 }
-console.log('UI guardrails: PASS')
+console.log(
+  registeredExceptions
+    ? `UI guardrails: PASS (${registeredExceptions} duplicated recipe(s) registered as exceptions, each naming its promotion target)`
+    : 'UI guardrails: PASS',
+)

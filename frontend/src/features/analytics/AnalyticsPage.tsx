@@ -1,34 +1,17 @@
-import { PageHeader, EmptyState, ErrorState, LoadingState, Panel } from '@/shared/ui'
-import { useEffect, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import * as echarts from 'echarts/core'
-import { LineChart, RadarChart } from 'echarts/charts'
 import {
-  GridComponent,
-  LegendComponent,
-  RadarComponent,
-  TooltipComponent,
-} from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
+  PageHeader,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  Panel,
+  Card,
+  InsetCard,
+} from '@/shared/ui'
+import { useQuery } from '@tanstack/react-query'
 import { fetchRadar, fetchTrend, fetchWeaknesses } from './api'
-import type { AnalyticsRadarResponse, AnalyticsTrendPoint } from './types'
-
-echarts.use([
-  LineChart,
-  RadarChart,
-  GridComponent,
-  LegendComponent,
-  RadarComponent,
-  TooltipComponent,
-  CanvasRenderer,
-])
-
-const TREND_GRID = {
-  left: 44,
-  right: 18,
-  top: 30,
-  bottom: 48,
-} as const
+import { DIMENSIONS, radarValue } from './dimensions'
+import { Radar } from './radar-chart'
+import { Trend } from './trend-chart'
 
 export function AnalyticsPage() {
   const radar = useQuery({ queryKey: ['analytics-radar'], queryFn: fetchRadar })
@@ -37,11 +20,11 @@ export function AnalyticsPage() {
   const pending = radar.isPending || trend.isPending || weaknesses.isPending
   const error = radar.error || trend.error || weaknesses.error
   const cards = radar.data
-    ? ([
-        ['技术能力', radar.data.technical],
-        ['表达清晰度', radar.data.expression],
-        ['逻辑思维', radar.data.logic],
-      ] as const)
+    ? DIMENSIONS.map((dimension) => ({
+        key: dimension.key,
+        label: dimension.label,
+        value: radarValue(radar.data, dimension.key),
+      }))
     : []
   function reload() {
     void Promise.all([radar.refetch(), trend.refetch(), weaknesses.refetch()])
@@ -59,22 +42,18 @@ export function AnalyticsPage() {
         ) : (
           <>
             <div className="grid grid-cols-3 gap-md">
-              {cards.map(([label, value]) => (
-                <article
-                  className="grid gap-sm rounded-lg border border-border bg-surface p-lg elevated-whisper"
-                  key={label}
-                  data-slot="score-card"
-                >
+              {cards.map((card) => (
+                <Card key={card.key} data-slot="score-card">
                   <p className="type-label" data-slot="score-label">
-                    {label}
+                    {card.label}
                   </p>
                   <strong className="type-metric" data-slot="score-value">
-                    {value.toFixed(1)}
+                    {card.value.toFixed(1)}
                   </strong>
                   <p className="type-meta" data-slot="score-meta">
                     最近 {radar.data.sessionCount} 场均分
                   </p>
-                </article>
+                </Card>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-lg" data-slot="chart-grid">
@@ -103,11 +82,7 @@ export function AnalyticsPage() {
               <p className="type-lead">按出现频率汇总薄弱点。</p>
               {weaknesses.data?.length ? (
                 weaknesses.data.map((item) => (
-                  <article
-                    className="grid gap-sm break-inside-avoid inset-card"
-                    data-slot="weakness-item"
-                    key={item.category}
-                  >
+                  <InsetCard data-slot="weakness-item" key={item.category}>
                     <div className="label-end-grid items-baseline gap-md">
                       <h3 className="type-subtitle" data-slot="weakness-title">
                         {item.category}
@@ -124,7 +99,7 @@ export function AnalyticsPage() {
                         <li key={description}>{description}</li>
                       ))}
                     </ul>
-                  </article>
+                  </InsetCard>
                 ))
               ) : (
                 <EmptyState message="暂无已归纳的薄弱点。" />
@@ -135,265 +110,4 @@ export function AnalyticsPage() {
       </div>
     </section>
   )
-}
-
-function useChart(createOption: () => echarts.EChartsCoreOption, dependency: unknown) {
-  const element = useRef<HTMLDivElement>(null)
-  const createOptionRef = useRef(createOption)
-  const chartRef = useRef<echarts.ECharts | null>(null)
-
-  useEffect(() => {
-    createOptionRef.current = createOption
-  }, [createOption])
-
-  useEffect(() => {
-    if (!element.current) return
-    const chart = echarts.init(element.current)
-    chartRef.current = chart
-    const render = () => {
-      chart.setOption(createOptionRef.current(), true)
-      chart.resize()
-    }
-    render()
-    const observer = new ResizeObserver(() => chart.resize())
-    observer.observe(element.current)
-    window.addEventListener('prelude-theme-change', render)
-    return () => {
-      window.removeEventListener('prelude-theme-change', render)
-      observer.disconnect()
-      chart.dispose()
-      chartRef.current = null
-    }
-  }, [])
-
-  useEffect(() => {
-    chartRef.current?.setOption(createOptionRef.current(), true)
-  }, [dependency])
-  return element
-}
-
-function Radar({ data }: { data: AnalyticsRadarResponse }) {
-  const ref = useChart(() => {
-    const brand = cssVar('--chart-technical', 'var(--color-brand)')
-    const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
-    const border = cssVar('--color-border-warm', 'var(--color-border)')
-    const ring = cssVar('--color-ring', 'var(--color-border)')
-    const serif = cssToken('--font-serif', 'serif')
-    return {
-      animation: false,
-      radar: {
-        radius: '64%',
-        splitNumber: 5,
-        indicator: [
-          { name: '技术能力', max: 10 },
-          { name: '表达清晰度', max: 10 },
-          { name: '逻辑思维', max: 10 },
-        ],
-        splitArea: { show: false },
-        axisName: {
-          color: secondary,
-          fontFamily: serif,
-          fontSize: cssVarNumber('--font-size-sm', 14),
-          fontWeight: 500,
-        },
-        splitLine: { lineStyle: { color: border } },
-        axisLine: { lineStyle: { color: ring } },
-      },
-      series: [
-        {
-          type: 'radar',
-          data: [
-            {
-              value: [data.technical, data.expression, data.logic],
-              areaStyle: { color: brand, opacity: 0.16 },
-              lineStyle: { color: brand, width: 2 },
-              itemStyle: { color: brand },
-            },
-          ],
-        },
-      ],
-    }
-  }, data)
-  return (
-    <div
-      className="h-(--layout-chart-block-size) min-h-(--layout-chart-block-size)"
-      ref={ref}
-      role="img"
-      aria-label={`技术能力 ${data.technical}，表达清晰度 ${data.expression}，逻辑思维 ${data.logic}`}
-    />
-  )
-}
-
-function Trend({ data }: { data: AnalyticsTrendPoint[] }) {
-  const ref = useChart(() => {
-    const technical = cssVar('--chart-technical', 'var(--color-brand)')
-    const expression = cssVar('--chart-expression', 'var(--color-coral)')
-    const logic = cssVar('--chart-logic', 'var(--color-ring-deep)')
-    const secondary = cssVar('--color-text-secondary', 'var(--color-text-secondary)')
-    const tertiary = cssVar('--color-text-tertiary', 'var(--color-text-tertiary)')
-    const border = cssVar('--color-border-warm', 'var(--color-border)')
-    const ring = cssVar('--color-ring', 'var(--color-border)')
-    const surface = cssVar('--color-surface', 'var(--color-bg)')
-    const input = cssVar('--color-input', 'var(--color-border)')
-    const text = cssVar('--color-text-primary', 'var(--color-text-primary)')
-    const serif = cssToken('--font-serif', 'serif')
-    const sans = cssToken('--font-sans', 'sans-serif')
-    return {
-      animation: false,
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: surface,
-        borderColor: input,
-        borderWidth: 1,
-        padding: [cssVarNumber('--spacing-xs', 4), cssVarNumber('--spacing-sm', 8)],
-        textStyle: {
-          color: text,
-          fontFamily: sans,
-          fontSize: cssVarNumber('--font-size-sm', 14),
-        },
-        extraCssText: cssDeclarations({
-          'border-radius': 'var(--radius-md)',
-          'box-shadow': 'var(--shadow-whisper)',
-        }),
-        formatter: (params: unknown) => formatTrendTooltip(params, data),
-      },
-      legend: {
-        bottom: cssVarNumber('--spacing-xs', 4),
-        textStyle: {
-          color: secondary,
-          fontFamily: serif,
-          fontSize: cssVarNumber('--font-size-xs', 13),
-          fontWeight: 500,
-        },
-      },
-      grid: {
-        ...TREND_GRID,
-      },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: data.map((item) => formatDate(item.createdAt, 'MM/DD')),
-        axisLine: { lineStyle: { color: ring } },
-        axisLabel: {
-          color: tertiary,
-          fontFamily: sans,
-          fontSize: cssVarNumber('--font-size-xs', 13),
-        },
-      },
-      yAxis: {
-        type: 'value',
-        min: 0,
-        max: 10,
-        axisLine: { lineStyle: { color: ring } },
-        axisLabel: {
-          color: tertiary,
-          fontFamily: sans,
-          fontSize: cssVarNumber('--font-size-xs', 13),
-        },
-        splitLine: { lineStyle: { color: border } },
-      },
-      series: [
-        {
-          name: '技术能力',
-          type: 'line',
-          smooth: true,
-          data: data.map((item) => item.technical),
-          lineStyle: { color: technical, width: 2 },
-          itemStyle: { color: technical },
-        },
-        {
-          name: '表达清晰度',
-          type: 'line',
-          smooth: true,
-          data: data.map((item) => item.expression),
-          lineStyle: { color: expression, width: 2 },
-          itemStyle: { color: expression },
-        },
-        {
-          name: '逻辑思维',
-          type: 'line',
-          smooth: true,
-          data: data.map((item) => item.logic),
-          lineStyle: { color: logic, width: 2 },
-          itemStyle: { color: logic },
-        },
-      ],
-    }
-  }, data)
-  return (
-    <div
-      className="h-(--layout-chart-block-size) min-h-(--layout-chart-block-size)"
-      ref={ref}
-      role="img"
-      aria-label={`最近 ${data.length} 场面试的分数趋势`}
-    />
-  )
-}
-
-function formatTrendTooltip(params: unknown, data: AnalyticsTrendPoint[]) {
-  const entries: unknown[] = Array.isArray(params) ? (params as unknown[]) : [params]
-  const first = entries[0]
-  if (!first || typeof first !== 'object' || !('dataIndex' in first)) return ''
-  const dataIndex = Number((first as { dataIndex?: unknown }).dataIndex)
-  const point = data[dataIndex]
-  if (!point) return ''
-  const lines = [`<div>${formatDate(point.createdAt, 'YYYY/MM/DD')}</div>`]
-  for (const entry of entries) {
-    if (!entry || typeof entry !== 'object') continue
-    const item = entry as { marker?: string; seriesName?: string; value?: unknown }
-    let value = ''
-    if (typeof item.value === 'string') value = item.value
-    else if (typeof item.value === 'number' || typeof item.value === 'boolean') {
-      value = item.value.toString()
-    } else if (item.value && typeof item.value === 'object') {
-      value = JSON.stringify(item.value)
-    }
-    lines.push(`<div>${item.marker ?? ''} ${item.seriesName ?? ''}: ${value}</div>`)
-  }
-  return lines.join('')
-}
-
-function formatDate(dateString: string, format: 'MM/DD' | 'YYYY/MM/DD') {
-  const date = new Date(dateString)
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  return format === 'MM/DD' ? `${mm}/${dd}` : `${yyyy}/${mm}/${dd}`
-}
-
-function normalizeChartColor(value: string) {
-  const srgbMatch = value.match(/^color\(srgb\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)/)
-  if (!srgbMatch) return value
-  const [, r, g, b] = srgbMatch
-  return `rgb${'('}${Math.round(Number(r) * 255)}, ${Math.round(Number(g) * 255)}, ${Math.round(Number(b) * 255)})`
-}
-
-function resolveChartColor(value: string) {
-  const probe = document.createElement('span')
-  probe.style.color = value
-  document.body.appendChild(probe)
-  const computed = getComputedStyle(probe).color
-  probe.remove()
-  return normalizeChartColor(computed || value)
-}
-
-function cssVar(name: string, fallback: string) {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  return resolveChartColor(value || fallback)
-}
-
-function cssToken(name: string, fallback: string) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-}
-
-function cssVarNumber(name: string, fallback: number) {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  const parsed = Number.parseFloat(value)
-  return Number.isFinite(parsed) ? parsed : fallback
-}
-
-function cssDeclarations(declarations: Record<string, string>) {
-  return Object.entries(declarations)
-    .map(([property, value]) => `${property}: ${value}`)
-    .join('; ')
 }

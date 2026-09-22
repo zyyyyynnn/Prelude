@@ -1,6 +1,7 @@
 import { EmptyState, MessageBubble } from '@/shared/ui'
 import { useEffect, useRef } from 'react'
 import type { InterviewMessageRecord } from '../types'
+import { TranscriptScroll } from './transcript-scroll'
 
 export function MessageThread({ messages }: { messages: InterviewMessageRecord[] }) {
   const thread = useRef<HTMLDivElement>(null)
@@ -20,8 +21,8 @@ export function MessageThread({ messages }: { messages: InterviewMessageRecord[]
     return () => cancelAnimationFrame(frame)
   }, [messages])
   return (
-    <div
-      className="scrollable gutter-stable flex min-h-0 flex-1 flex-col gap-lg overflow-y-auto px-2xl pt-lg pb-(--layout-composer-reserve-block-size)"
+    <TranscriptScroll
+      className="flex-col gap-lg pt-lg pb-(--layout-composer-reserve-block-size)"
       ref={thread}
       data-slot="message-thread"
     >
@@ -39,6 +40,6 @@ export function MessageThread({ messages }: { messages: InterviewMessageRecord[]
       ) : (
         <EmptyState message="会话已准备就绪，可以开始面试了。" className="flex-1" />
       )}
-    </div>
+    </TranscriptScroll>
   )
 }

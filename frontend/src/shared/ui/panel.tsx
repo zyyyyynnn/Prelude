@@ -1,12 +1,14 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { Card } from './card'
 
 /**
  * A titled surface: the heading row owns its actions, so a top-right button is
  * flex-centred against the title instead of floating over the surface.
  *
  * `fill` is a full-height surface that scrolls its own body; `card` is a
- * self-contained block that grows with its content. `level` keeps the heading
+ * self-contained block that grows with its content, rendered through `Card` so the
+ * elevated surface has one owner. `level` keeps the heading
  * outline honest, and the title role follows it: h2 reads as `type-title`,
  * h3 as `type-subtitle`.
  */
@@ -36,58 +38,68 @@ export function Panel({
 }) {
   const fill = layout === 'fill'
   const Heading = level === 3 ? 'h3' : 'h2'
-  return (
-    <section
+  /* The card layout takes its stack from Card, so it must not also declare a display. */
+  const shell = fill
+    ? cn('flex flex-col min-h-0 flex-1', className)
+    : cn('max-w-(--layout-workspace-content-max-inline-size)', className)
+  const header = (
+    <header
       className={cn(
-        'flex flex-col',
-        fill
-          ? 'min-h-0 flex-1'
-          : 'max-w-(--layout-workspace-content-max-inline-size) gap-lg rounded-lg border border-border bg-surface p-lg elevated-whisper',
-        className,
+        'flex shrink-0 items-center justify-between gap-lg',
+        fill && 'border-b border-border bg-surface px-lg py-md',
       )}
-      data-slot="panel"
-      {...rest}
+      data-slot="panel-header"
     >
-      <header
-        className={cn(
-          'flex shrink-0 items-center justify-between gap-lg',
-          fill && 'border-b border-border bg-surface px-lg py-md',
-        )}
-        data-slot="panel-header"
-      >
-        <div className="grid min-w-0 gap-xs" data-slot="panel-heading">
-          {eyebrow && <p className="type-eyebrow">{eyebrow}</p>}
-          <Heading className={level === 3 ? 'type-subtitle' : 'type-title'}>{title}</Heading>
-          {description && <p className="type-meta">{description}</p>}
-        </div>
-        {actions && (
-          <div className="flex shrink-0 items-center gap-sm" data-slot="panel-actions">
-            {actions}
-          </div>
-        )}
-      </header>
-      <div
-        className={cn(
-          'flex min-w-0 flex-col gap-md',
-          fill && 'scrollable min-h-0 flex-1 overflow-y-auto p-lg text-sm leading-base',
-          bodyClassName,
-        )}
-        data-slot="panel-body"
-      >
-        {children}
+      <div className="grid min-w-0 gap-xs" data-slot="panel-heading">
+        {eyebrow && <p className="type-eyebrow">{eyebrow}</p>}
+        <Heading className={level === 3 ? 'type-subtitle' : 'type-title'}>{title}</Heading>
+        {description && <p className="type-meta">{description}</p>}
       </div>
-      {footer && (
-        <footer
-          className={cn(
-            'flex shrink-0 items-center justify-end gap-sm border-t border-border',
-            fill && 'bg-surface px-lg py-md',
-          )}
-          data-slot="panel-footer"
-        >
-          {footer}
-        </footer>
+      {actions && (
+        <div className="flex shrink-0 items-center gap-sm" data-slot="panel-actions">
+          {actions}
+        </div>
       )}
-    </section>
+    </header>
+  )
+  const body = (
+    <div
+      className={cn(
+        'flex min-w-0 flex-col gap-md',
+        fill && 'scrollable min-h-0 flex-1 overflow-y-auto p-lg text-sm leading-base',
+        bodyClassName,
+      )}
+      data-slot="panel-body"
+    >
+      {children}
+    </div>
+  )
+  const foot = footer && (
+    <footer
+      className={cn(
+        'flex shrink-0 items-center justify-end gap-sm border-t border-border',
+        fill && 'bg-surface px-lg py-md',
+      )}
+      data-slot="panel-footer"
+    >
+      {footer}
+    </footer>
+  )
+  if (fill) {
+    return (
+      <section className={shell} data-slot="panel" {...rest}>
+        {header}
+        {body}
+        {foot}
+      </section>
+    )
+  }
+  return (
+    <Card stack="lg" className={shell} data-slot="panel" {...rest}>
+      {header}
+      {body}
+      {foot}
+    </Card>
   )
 }
 

@@ -1,10 +1,12 @@
 export { Button } from './button'
+export { Card } from './card'
 export { ErrorState, LoadingState, EmptyState } from './empty-state'
 export { FeedbackProvider } from './feedback'
 export { useFeedback } from './feedback-context'
 export { Field, FieldAction, FieldActions, Input, Textarea } from './field'
 export { HiddenFileInput } from './file-input'
 export { GeneratingSurface } from './generating-card'
+export { InsetCard } from './inset-card'
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -17,9 +19,8 @@ export {
   MenuLabel,
 } from './menu'
 export { MessageBubble } from './message'
-export { SettingsNavigation } from './navigation'
-export { ThemeChoiceGroup } from './option-card'
-export type { ThemeTone } from './option-card'
+export { NavItem } from './navigation'
+export { OptionCard } from './option-card'
 export { Dialog, IconTooltip } from './overlay'
 export { PageHeader } from './page-header'
 export { SubSection, Panel } from './panel'
@@ -36,5 +37,4 @@ export type { VoiceStatus } from './prompt-bar'
 export { ScoreTile } from './score-tile'
 export { SegmentedControl } from './segmented-control'
 export { Select } from './select'
-export { SessionGroup, SessionGroupLabel } from './session-row'
 export { SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from './sidebar'

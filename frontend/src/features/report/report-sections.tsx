@@ -108,7 +108,7 @@ export function StagePerformanceList({
     return (
       <ReportSection>
         <SectionHeading eyebrow={copy.stages.eyebrow} title={copy.stages.title} />
-        <p className="font-sans text-sm leading-copy text-text-secondary">{copy.stages.empty}</p>
+        <p className="type-copy">{copy.stages.empty}</p>
       </ReportSection>
     )
   return (
@@ -145,21 +145,19 @@ export function StagePerformanceList({
             <div className="grid gap-md">
               <header className="flex items-start justify-between gap-md">
                 <div className="grid gap-xs">
-                  <span className="font-serif text-xs text-text-tertiary">
+                  <span className="type-caption">
                     第 {String(stageIndex + 1).padStart(2, '0')} 阶段
                   </span>
                   <h3 className="type-subtitle">{copy.stages.stageLabels[stage.stageName]}</h3>
                 </div>
                 <span
-                  className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
+                  className="type-caption shrink-0 whitespace-nowrap tabular-nums"
                   data-slot="stage-score"
                 >
                   {stage.score == null ? copy.noScore : `${stage.score.toFixed(1)} / 10`}
                 </span>
               </header>
-              <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-sans text-sm leading-copy text-text-secondary">
-                {stage.summary}
-              </p>
+              <p className="type-reading">{stage.summary}</p>
             </div>
             <div className="report-columns gap-lg" data-slot="stage-signals">
               <Signal title={copy.stages.signals.positive} items={stage.positiveSignals} />
@@ -229,7 +227,7 @@ export function Signal({ title, items }: { title: string; items: string[] }) {
   return items.length ? (
     <section className="grid min-w-0 gap-sm">
       <h4 className="font-serif text-sm leading-base text-text-primary">{title}</h4>
-      <ul className="list-plain grid gap-xs font-sans text-sm leading-copy text-text-secondary">
+      <ul className="type-copy list-plain grid gap-xs">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -250,7 +248,7 @@ export function QuestionReviewList({
     return (
       <ReportSection>
         <SectionHeading eyebrow={copy.reviews.eyebrow} title={copy.reviews.title} />
-        <p className="font-sans text-sm leading-copy text-text-secondary">{copy.reviews.empty}</p>
+        <p className="type-copy">{copy.reviews.empty}</p>
       </ReportSection>
     )
   const active = reviews[Math.min(index, reviews.length - 1)]
@@ -277,11 +275,11 @@ export function QuestionReviewList({
       >
         <div className="grid gap-md">
           <header className="flex items-center justify-between gap-lg">
-            <span className="font-serif text-xs text-text-tertiary">
+            <span className="type-caption">
               第 {index + 1} 题 · {copy.stages.stageLabels[active.stageName]}
             </span>
             <span
-              className="shrink-0 whitespace-nowrap tabular-nums font-serif text-xs text-text-tertiary"
+              className="type-caption shrink-0 whitespace-nowrap tabular-nums"
               data-slot="review-score"
             >
               {active.score == null ? copy.noScore : `${active.score.toFixed(1)} / 10`}
@@ -306,7 +304,7 @@ export function ReviewDetail({ label, value }: { label: string; value: string })
   return (
     <div className="review-detail-grid">
       <dt className="font-serif text-sm text-text-secondary">{label}</dt>
-      <dd className="m-0 font-sans text-sm leading-copy text-text-secondary">{value}</dd>
+      <dd className="type-copy m-0">{value}</dd>
     </div>
   )
 }
@@ -327,7 +325,7 @@ export function TrainingPlan({ plan, copy }: { plan: StructuredTrainingPlan; cop
               {String(index + 1).padStart(2, '0')}
             </span>
             <h3 className="type-subtitle">{title}</h3>
-            <ol className="list-plain grid gap-xs font-sans text-sm leading-copy text-text-secondary">
+            <ol className="type-copy list-plain grid gap-xs">
               {(items.length ? items : [copy.plan.fallback]).map((item) => (
                 <li key={item}>{item}</li>
               ))}
@@ -344,13 +342,13 @@ export function Trait({ title, items, empty }: { title: string; items: string[];
     <section className="grid min-w-0 gap-sm">
       <h3 className="type-subtitle">{title}</h3>
       {items.length ? (
-        <ul className="list-plain grid gap-sm font-sans text-sm leading-copy text-text-secondary">
+        <ul className="type-copy list-plain grid gap-sm">
           {items.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
       ) : (
-        <p className="font-sans text-sm leading-copy text-text-secondary">{empty}</p>
+        <p className="type-copy">{empty}</p>
       )}
     </section>
   )

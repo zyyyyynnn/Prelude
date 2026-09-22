@@ -6,6 +6,7 @@ import { printInterviewReport, ReportPanel } from '@/features/report'
 import { REASONING_LABELS } from '@/features/settings'
 import { InterviewAnswerComposer } from './InterviewAnswerComposer'
 import { MessageThread } from './MessageThread'
+import { TranscriptScroll } from './transcript-scroll'
 import { useInterviewSession } from './useInterviewSession'
 import { WorkspaceHeader } from './WorkspaceHeader'
 
@@ -75,8 +76,8 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
           {current.status === 'generating' && !hasReport ? (
             <GeneratingSurface title="AI 评估报告生成中…" hint="正在整理答题表现并生成训练建议。" />
           ) : controller.showReport && hasReport ? (
-            <div
-              className="scrollable gutter-stable flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-2xl py-(--layout-workspace-report-block-padding)"
+            <TranscriptScroll
+              className="items-start justify-center py-(--layout-workspace-report-block-padding)"
               data-slot="workspace-report"
             >
               <div
@@ -85,7 +86,7 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
               >
                 <ReportPanel source={current.summaryReport!} />
               </div>
-            </div>
+            </TranscriptScroll>
           ) : (
             <>
               <MessageThread messages={controller.messages} />

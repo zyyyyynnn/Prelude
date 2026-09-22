@@ -6,6 +6,7 @@ import {
   PromptBar,
   PromptBarJdToggle,
 } from '@/shared/ui'
+import { Briefcase, FileText, Image, Paperclip } from 'lucide-react'
 import { useRef, useState, type FormEvent } from 'react'
 import type { AttachmentItem } from '@/features/assets'
 import type { Position } from '@/features/position'
@@ -113,14 +114,16 @@ export function InterviewSetupComposer({
             <>
               {selectedResume && (
                 <ContextAttachment
-                  kind="resume"
+                  icon={<FileText aria-hidden="true" />}
+                  kindLabel="简历"
                   label={selectedResume.fileName}
                   onRemove={() => setResumeId(null)}
                 />
               )}
               {selectedPosition && (
                 <ContextAttachment
-                  kind="position"
+                  icon={<Briefcase aria-hidden="true" />}
+                  kindLabel="岗位"
                   label={selectedPosition.name}
                   onRemove={() => setPositionId(null)}
                 />
@@ -128,7 +131,14 @@ export function InterviewSetupComposer({
               {attachments.map((attachment) => (
                 <ContextAttachment
                   key={attachment.id}
-                  kind={attachment.image ? 'image' : 'document'}
+                  icon={
+                    attachment.image ? (
+                      <Image aria-hidden="true" />
+                    ) : (
+                      <Paperclip aria-hidden="true" />
+                    )
+                  }
+                  kindLabel={attachment.image ? '图片' : '附件'}
                   label={attachment.fileName}
                   onRemove={() => void removeAttachment(attachment)}
                 />

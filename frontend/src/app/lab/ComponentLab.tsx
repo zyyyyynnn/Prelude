@@ -22,15 +22,11 @@ import {
   MessageBubble,
   Dialog,
   IconTooltip,
-  SettingsNavigation,
-  ThemeChoiceGroup,
-  type ThemeTone,
   Panel,
   ContextAttachment,
   PromptBarFact,
   PromptBarJdToggle,
   type VoiceStatus,
-  SessionGroup,
   SidebarAction,
   SidebarBrand,
   SidebarFrame,
@@ -40,6 +36,10 @@ import {
 import { useState } from 'react'
 import {
   BarChart3,
+  Briefcase,
+  FileText,
+  Image,
+  Paperclip,
   Eye,
   EyeOff,
   Info,
@@ -50,9 +50,17 @@ import {
   Terminal,
   X,
 } from 'lucide-react'
-import { AnswerComposerSurface, InterviewSetupComposer } from '@/features/interview'
+import { AnswerComposerSurface, InterviewSetupComposer, SessionGroup } from '@/features/interview'
 import { PositionRow, type Position } from '@/features/position'
-import { REASONING_LABELS, sections, themeOptions, type SettingsSection } from '@/features/settings'
+import {
+  REASONING_LABELS,
+  sections,
+  themeOptions,
+  SettingsNavigation,
+  ThemeChoiceGroup,
+  type SettingsSection,
+  type ThemeTone,
+} from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { RoseThree } from '@/shared/brand/RoseThree'
@@ -420,17 +428,27 @@ export function ComponentLab() {
           </DemoGroup>
           <DemoGroup label="上下文与事实位">
             <ContextAttachment
-              kind="resume"
+              icon={<FileText aria-hidden="true" />}
+              kindLabel="简历"
               label={sampleContextNames.resumeName}
               onRemove={noop}
             />
             <ContextAttachment
-              kind="position"
+              icon={<Briefcase aria-hidden="true" />}
+              kindLabel="岗位"
               label={sampleContextNames.positionName}
               onRemove={noop}
             />
-            <ContextAttachment kind="document" label="示例文件三.pdf" />
-            <ContextAttachment kind="image" label="示例图片一.png" />
+            <ContextAttachment
+              icon={<Paperclip aria-hidden="true" />}
+              kindLabel="附件"
+              label="示例文件三.pdf"
+            />
+            <ContextAttachment
+              icon={<Image aria-hidden="true" />}
+              kindLabel="图片"
+              label="示例图片一.png"
+            />
             <PromptBarJdToggle onDisable={noop} />
             <PromptBarFact label={sampleModelName} icon={<Terminal aria-hidden="true" />} />
           </DemoGroup>

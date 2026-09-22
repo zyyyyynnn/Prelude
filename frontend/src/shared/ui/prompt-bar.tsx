@@ -7,7 +7,7 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react'
-import { Briefcase, ChevronDown, FileText, Image, Paperclip, ScanSearch, X } from 'lucide-react'
+import { ChevronDown, ScanSearch, X } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
 
@@ -155,29 +155,23 @@ export function PromptBarJdToggle({ onDisable }: { onDisable: () => void }) {
 }
 
 /** A context file the interview is grounded in. The remove box only appears for
- *  editable context, so a locked turn renders the same chip without it. */
+ *  editable context, so a locked turn renders the same chip without it. Both the glyph and
+ *  the kind's word come from the caller: `shared/ui` names no business concept, so what a
+ *  resume or a position is called — and what it looks like — is the feature's to say. */
 export function ContextAttachment({
   label,
-  kind,
+  icon,
+  kindLabel,
   onRemove,
 }: {
   label: string
-  kind: 'resume' | 'position' | 'document' | 'image'
+  icon: ReactNode
+  kindLabel: string
   onRemove?: () => void
 }) {
-  const Icon =
-    kind === 'resume'
-      ? FileText
-      : kind === 'position'
-        ? Briefcase
-        : kind === 'image'
-          ? Image
-          : Paperclip
-  const kindLabel =
-    kind === 'resume' ? '简历' : kind === 'position' ? '岗位' : kind === 'image' ? '图片' : '附件'
   return (
     <div className="prompt-bar-attachment">
-      <Icon aria-hidden="true" />
+      {icon}
       <IconTooltip label={label}>
         <span className="min-w-0 truncate" tabIndex={0}>
           {label}

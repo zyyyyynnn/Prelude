@@ -1,3 +1,4 @@
+import { Briefcase, FileText, Image, Paperclip } from 'lucide-react'
 import { type FormEvent } from 'react'
 import { ArrowUp, Keyboard, Mic } from 'lucide-react'
 import type { AttachmentItem } from '@/features/assets'
@@ -58,12 +59,25 @@ export function AnswerComposerSurface({
       placeholder={disabled ? '本场面试已结束' : '输入回答…'}
       attachments={
         <>
-          {resumeName && <ContextAttachment kind="resume" label={resumeName} />}
-          <ContextAttachment kind="position" label={positionName} />
+          {resumeName && (
+            <ContextAttachment
+              icon={<FileText aria-hidden="true" />}
+              kindLabel="简历"
+              label={resumeName}
+            />
+          )}
+          <ContextAttachment
+            icon={<Briefcase aria-hidden="true" />}
+            kindLabel="岗位"
+            label={positionName}
+          />
           {attachments.map((attachment) => (
             <ContextAttachment
               key={attachment.id}
-              kind={attachment.image ? 'image' : 'document'}
+              icon={
+                attachment.image ? <Image aria-hidden="true" /> : <Paperclip aria-hidden="true" />
+              }
+              kindLabel={attachment.image ? '图片' : '附件'}
               label={attachment.fileName}
             />
           ))}

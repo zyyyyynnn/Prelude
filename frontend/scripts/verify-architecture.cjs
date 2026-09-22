@@ -242,6 +242,58 @@ for (const name of blockedPackages) {
   }
 }
 
+// ---------------------------------------------------------------- shared stays generic
+/* `shared/**` is the layer every feature builds on, so it must not name a feature. A
+   design-system component that hard-codes a business word — the prompt bar deciding a
+   resume is called 简历, a settings column owning `--layout-settings-sidebar-inline-size`,
+   a score tile declaring `--report-score-fill` — has taken a product decision into the
+   generic layer, where the next feature inherits it without being asked. The import rule
+   above only catches a *code* dependency; this catches a *vocabulary* one, which is how
+   the four leaks survived a clean dependency graph. */
+{
+  const featureNames = fs.existsSync(path.join(sourceRoot, 'features'))
+    ? fs
+        .readdirSync(path.join(sourceRoot, 'features'), { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+    : []
+  /* A feature directory whose name is also an ordinary English word would fire on prose,
+     so the test is the directory name as a path segment or a `--<name>-` token, never a
+     bare substring. */
+  const featureReference = new RegExp(
+    `(?:/|\\b)(?:${featureNames.join('|')})(?:/|\\b)|--(?:${featureNames.join('|')})-`,
+  )
+  const sharedFiles = walk(sourceRoot).filter((file) => {
+    const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+    return relative.startsWith('shared/') && ['.ts', '.tsx'].includes(path.extname(file))
+  })
+  for (const file of sharedFiles) {
+    const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+    const tree = ts.createSourceFile(
+      file,
+      fs.readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const check = (node) => {
+      /* String literals and template spans only: an identifier named `settings` is a local
+         variable, not a claim about the product. */
+      const texts = []
+      if (ts.isStringLiteralLike(node)) texts.push(node.text)
+      if (ts.isTemplateLiteralLiteralPart?.(node)) texts.push(node.text)
+      for (const text of texts) {
+        if (featureReference.test(text)) {
+          violations.push(
+            `${relative}: names the feature "${text.match(featureReference)[0]}" — a shared component must not carry a feature's vocabulary`,
+          )
+        }
+      }
+      ts.forEachChild(node, check)
+    }
+    ts.forEachChild(tree, check)
+  }
+}
+
 if (violations.length) {
   console.error(`Architecture verification: FAIL (${violations.length})`)
   for (const violation of violations) console.error(`  ${violation}`)
