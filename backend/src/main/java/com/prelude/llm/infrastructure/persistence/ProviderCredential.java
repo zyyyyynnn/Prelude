@@ -16,6 +16,4 @@ public class ProviderCredential {
     private String apiKeyEncrypted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    public static final String SYSTEM_SCOPE = "SYSTEM";
 }

@@ -16,7 +16,7 @@ final class ProfileCapabilities {
 
     static ProfileRow requireProfile(ModelProfileStore profileStore, Long accountId) {
         return profileStore.findActiveByAccount(accountId)
-            .orElseThrow(() -> BusinessException.badRequest("尚未配置模型档案"));
+            .orElseThrow(() -> BusinessException.badRequest("请先配置模型服务"));
     }
 
     static ModelCapabilityResponse capabilityForProfile(
@@ -38,6 +38,6 @@ final class ProfileCapabilities {
             .filter(capability -> profile.provider().equals(capability.provider())
                 && model.equals(capability.model()))
             .findFirst()
-            .orElseThrow(() -> BusinessException.badRequest("所选模型能力未确认，请缺少模型能力信息"));
+            .orElseThrow(() -> BusinessException.badRequest("所选模型能力尚未确认，请先保存模型配置"));
     }
 }

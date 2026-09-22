@@ -3,7 +3,6 @@ package com.prelude.identity.web;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.infrastructure.OAuthVerifiedEmailResolver;
 import com.prelude.test.AccountFixtures;
-import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;

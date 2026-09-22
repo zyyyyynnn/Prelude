@@ -11,6 +11,7 @@ import com.prelude.llm.api.SaveConfigurationCommand;
 import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
 import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshotMapper;
 import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
+import com.prelude.llm.application.port.ProviderCredentialStore;
 import com.prelude.llm.infrastructure.persistence.ModelProfile;
 import com.prelude.llm.infrastructure.persistence.ModelProfileMapper;
 import com.prelude.llm.infrastructure.persistence.ProviderCredential;
@@ -423,7 +424,7 @@ public final class LlmFixtures {
         public BigDecimal estimatedCost() { return event.estimatedCost(); }
     }
 
-    public static final String SYSTEM_SCOPE = ProviderCredential.SYSTEM_SCOPE;
+    public static final String SYSTEM_SCOPE = ProviderCredentialStore.SYSTEM_SCOPE;
     public static final String CAPABILITY_VERSION = ModelCapabilityCatalog.CAPABILITY_VERSION;
 
     public record SnapshotRow(

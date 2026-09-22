@@ -333,7 +333,7 @@ test('@visual keeps the authentication hierarchy and primary action stable', asy
     const form = panel.querySelector<HTMLElement>('[data-slot="auth-form"]')!
     const button = panel.querySelector<HTMLElement>('button[type="submit"]')!
     const password = panel.querySelector<HTMLElement>('#auth-password')!
-    const emailPlaceholder = panel.querySelector<HTMLElement>('.auth-email-field')!
+    const emailPlaceholder = panel.querySelector<HTMLElement>('.honeypot-field')!
     /* A trailing field action has to be contained by the control it belongs to: the
        wrapper is what gives it a box, and the control's trailing padding is what keeps
        the text out from under it. Both vanish if the layout utility stops being emitted. */

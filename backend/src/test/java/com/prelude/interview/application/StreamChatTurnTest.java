@@ -1,7 +1,6 @@
 package com.prelude.interview.application;
 
 import com.prelude.activity.RealtimeConnection;
-import com.prelude.activity.RealtimePort;
 import com.prelude.activity.SseSessionStream;
 import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.test.SessionFixtures;

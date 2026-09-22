@@ -65,7 +65,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 阶梯同时以原子类暴露：`text-xs|sm|md|lg|xl|2xl`、`leading-solid|display|tight|heading|compact|base|relaxed|copy`、`font-regular|medium|semibold`，全部指向上述 token，不允许写死数值。
 
-标题、指标、标签等常见配对固定为七个语义角色，页面选择角色而不是临时拼字号与行高：
+标题、指标、标签与正文的常见配对固定为十三个语义角色，页面选择角色而不是临时拼字号与行高：
 
 | 角色 | 用途 | 组合 |
 | --- | --- | --- |
@@ -77,6 +77,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 | `type-subtitle` | 次级标题 | serif `md` / medium / `compact` / primary |
 | `type-label` | 字段与条目名称 | serif `sm` / medium / `compact` / secondary |
 | `type-body` | 成段正文 | sans `sm` / regular / `relaxed` / secondary |
+| `type-copy` | 阅读正文（copy 行高，不另设字重） | sans `sm` / `copy` / secondary |
+| `type-caption` | 图注与气泡时间戳 | serif `xs` / tertiary（行高取 Tailwind `text-xs` 自带值，不占 `--line-height-*` 阶梯） |
+| `type-reading` | 报告正文（报告阅读宽度） | sans `sm` / `copy` / secondary / `--content-report-reading-max-inline-size` |
 | `type-lead` | 页面导语（正文 + 阅读宽度） | sans `sm` / regular / `relaxed` / secondary / `--layout-lead-max-inline-size` |
 | `type-meta` | 计数、时间、辅助说明 | sans `xs` / regular / `compact` / tertiary |
 
@@ -94,7 +97,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 界面样式有三种写法：调用点的 Tailwind 原子类、`frontend/src/shared/styles/index.css` 中具名注册的 `@utility`，以及顶层未分层类。feature 目录不含 CSS 文件，`features/*` 与 `app/shell` 只引入 token 与原子类。
 
-- 未分层类是第三种写法而不是遗漏，但只承担一类职责：组件自己的 BEM 内部结构（`ui-menu__item`、`ui-button__content`），以及由 `@internal src/<owner>.tsx` 声明归属的整段 chrome。它们位于 utilities 层之外，因此压过 utilities 层——这正是它们能钉住组件内部结构的原因，也是它们不得声明调用点可能要覆写的几何的原因（见下条）。页面外壳不属于此类：`.workspace-page*` 与 `.app-layout*` 已注册为 `@utility`，因为页面壳要声明视口高度，而未分层类的高度调用点无法覆写。
+- 未分层类是第三种写法而不是遗漏，但只承担一类职责：组件自己的 BEM 内部结构（`ui-menu__item`、`ui-button__content`），以及由 `@internal src/<owner>.tsx` 声明归属的整段 chrome。它们位于 utilities 层之外，因此压过 utilities 层——这正是它们能钉住组件内部结构的原因，也是它们不得声明调用点可能要覆写的几何的原因（见下条）。页面壳按同一条规则办：`.workspace-page*`、`.workspace-page__content` 与 `.app-layout*` 已注册为 `@utility`，因此能声明视口高度并保留调用点覆写的可能；而 `.page*`（`.page--center`/`.page--auth` 的 `min-height`）、`.workspace-header`（`height`/`padding`/`position`/`z-index`/`backdrop-filter`）与 `.scrollable` 仍是未分层类，其中前者正是调用点无法覆写的视口高度——它们不满足这条规则，是待收敛的历史遗留：不得再照此新增，新的页面壳与不可覆写几何一律先注册为 `@utility`。
 
 - 原子类优先。能被 `flex`、`gap-md`、`bg-surface`、`rounded-lg` 表达的，不注册新 utility。
 - 只有当组合无法用原子表达时才注册：嵌入 `var()` 的多值简写、`auto-fit`/`minmax` 轨道、来自 token 的 logical border、跨元素状态传播、`@keyframes`。

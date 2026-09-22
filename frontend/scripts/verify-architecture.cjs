@@ -246,10 +246,16 @@ for (const name of blockedPackages) {
 /* `shared/**` is the layer every feature builds on, so it must not name a feature. A
    design-system component that hard-codes a business word — the prompt bar deciding a
    resume is called 简历, a settings column owning `--layout-settings-sidebar-inline-size`,
-   a score tile declaring `--report-score-fill` — has taken a product decision into the
+   a score tile declaring `--score-fill` — has taken a product decision into the
    generic layer, where the next feature inherits it without being asked. The import rule
    above only catches a *code* dependency; this catches a *vocabulary* one, which is how
-   the four leaks survived a clean dependency graph. */
+   the four leaks survived a clean dependency graph.
+
+   That vocabulary arrives through three surfaces, so all three are read. In TS: string
+   literals, template spans, and JSX text — `<span>report</span>` is a JsxText node, not a
+   StringLiteral, so a walk that stops at literals steps straight over the very leak it
+   exists to catch. In the stylesheet: the names it declares, because a custom property
+   or an `@utility` is a name every feature reads whether it asked for it or not. */
 {
   const featureNames = fs.existsSync(path.join(sourceRoot, 'features'))
     ? fs
@@ -263,6 +269,114 @@ for (const name of blockedPackages) {
   const featureReference = new RegExp(
     `(?:/|\\b)(?:${featureNames.join('|')})(?:/|\\b)|--(?:${featureNames.join('|')})-`,
   )
+
+  /* Registered exceptions, each naming one declaration in the shared stylesheet whose
+     migration is still owed. The list is enumerable on purpose: the alternatives —
+     skipping the stylesheet, or skipping the word — retire the rule instead of the leak.
+     An entry whose declaration is gone is itself a violation, so the list cannot rot
+     into a permanent exemption. */
+  const sharedVocabularyExceptions = [
+    {
+      name: '--layout-settings-sidebar-inline-size',
+      reason:
+        "the settings sidebar is one fixed column, not a step on the layout scale; it is the settings feature's presentation contract and moves with it",
+    },
+    {
+      name: '--layout-position-catalog-min-inline-size',
+      reason:
+        "the position catalog's minimum column is the position feature's presentation contract, not a generic layout step; to move with it",
+    },
+    {
+      name: '--layout-position-form-min-inline-size',
+      reason:
+        "the position form's minimum width is the position feature's presentation contract, not a generic layout step; to move with it",
+    },
+    {
+      name: '--layout-position-item-min-inline-size',
+      reason:
+        "the position item grid's minimum column is the position feature's presentation contract, not a generic layout step; to move with it",
+    },
+    {
+      name: '--layout-workspace-report-block-padding',
+      reason:
+        "the print report band's block padding measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
+    },
+    {
+      name: '--layout-report-column-min-inline-size',
+      reason:
+        "the report's reading-column minimum measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
+    },
+    {
+      name: '--layout-report-label-inline-size',
+      reason:
+        "the report detail row's label column measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
+    },
+    {
+      name: '--layout-report-counter-min-inline-size',
+      reason:
+        "the report counter block's minimum width measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
+    },
+    {
+      name: '--content-report-reading-max-inline-size',
+      reason:
+        "the report reading column's measure sizes the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
+    },
+    {
+      name: 'position-item-grid',
+      reason:
+        "the position item grid's track recipe is the position feature's presentation contract, not a generic layout utility; to move with it",
+    },
+    {
+      name: 'report-columns',
+      reason:
+        "the report column track recipe sizes the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
+    },
+  ]
+  const exceptionByName = new Map(sharedVocabularyExceptions.map((entry) => [entry.name, entry]))
+
+  /* The names a shared stylesheet declares, each with where it is first written. A
+     declaration is a claim every feature inherits; a reference (`var(--x)`) only repeats
+     the claim its declaration already made, so names are read once. Only declared names
+     are read: comments are prose, a BEM modifier (`page--auth`) is not a custom property,
+     and a property name (`max-inline-size`) is standard CSS that cannot name a feature. */
+  const declaredNames = new Map()
+  const sharedStylesheets = walk(sourceRoot).filter((file) => {
+    const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+    return relative.startsWith('shared/') && path.extname(file) === '.css'
+  })
+  for (const file of sharedStylesheets) {
+    const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+    const sheet = fs
+      .readFileSync(file, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '))
+    const record = (name, index) => {
+      if (declaredNames.has(name)) return
+      declaredNames.set(name, { file: relative, line: sheet.slice(0, index).split('\n').length })
+    }
+    for (const match of sheet.matchAll(/(?<![-\w])--[\w-]+/g)) record(match[0], match.index)
+    for (const match of sheet.matchAll(/^@utility\s+([a-z0-9*-]+)/gm)) record(match[1], match.index)
+  }
+  for (const [name, where] of declaredNames) {
+    if (!featureReference.test(name)) continue
+    if (exceptionByName.has(name)) continue
+    violations.push(
+      `${where.file}:${where.line}: declares ${name}, which names the feature "${name.match(featureReference)[0]}" — a shared stylesheet must not carry a feature's vocabulary`,
+    )
+  }
+  /* The exception list is only honest while it still describes the sheet, so an entry
+     whose declaration is gone is a finding. A tree with no shared stylesheet has no
+     stylesheet surface at all — the unit tests below build exactly that — and calling
+     every entry stale there would be the reader finding nothing and naming it a
+     finding. */
+  if (sharedStylesheets.length) {
+    for (const { name, reason } of sharedVocabularyExceptions) {
+      if (declaredNames.has(name)) continue
+      violations.push(
+        `shared/styles: ${name} is registered as a vocabulary exception but is no longer declared — drop the entry (${reason})`,
+      )
+    }
+  }
+
   const sharedFiles = walk(sourceRoot).filter((file) => {
     const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
     return relative.startsWith('shared/') && ['.ts', '.tsx'].includes(path.extname(file))
@@ -276,11 +390,12 @@ for (const name of blockedPackages) {
       true,
     )
     const check = (node) => {
-      /* String literals and template spans only: an identifier named `settings` is a local
-         variable, not a claim about the product. */
+      /* String literals, template spans and JSX text only: an identifier named
+         `settings` is a local variable, not a claim about the product. */
       const texts = []
       if (ts.isStringLiteralLike(node)) texts.push(node.text)
       if (ts.isTemplateLiteralLiteralPart?.(node)) texts.push(node.text)
+      if (ts.isJsxText(node)) texts.push(node.text)
       for (const text of texts) {
         if (featureReference.test(text)) {
           violations.push(

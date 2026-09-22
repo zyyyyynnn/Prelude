@@ -90,7 +90,7 @@ public class AttachmentService implements AttachmentContextPort {
         long accountId = currentAccount.requireId();
         AttachmentRow stored = attachmentStorage.findUnboundOwned(accountId, attachmentId);
         if (stored == null) {
-            throw BusinessException.badRequest("附件不存在、已被使用或无权访问");
+            throw BusinessException.badRequest("附件不存在、已被使用或无权删除");
         }
         AssetRow asset = assetLookup.findById(stored.assetId());
         if (asset == null) {
@@ -107,7 +107,7 @@ public class AttachmentService implements AttachmentContextPort {
         if (ids.isEmpty()) return List.of();
         List<AttachmentRow> rows = attachmentStorage.findUnboundOwned(accountId, ids);
         if (rows.size() != ids.size()) {
-            throw BusinessException.badRequest("附件绑定失败，请重新上传");
+            throw BusinessException.badRequest("附件不存在、已使用或无权访问");
         }
         Map<Long, AttachmentRow> byId = rows.stream()
             .collect(Collectors.toMap(AttachmentRow::id, Function.identity()));
@@ -122,7 +122,7 @@ public class AttachmentService implements AttachmentContextPort {
         requireOwned(accountId, ids);
         int updated = attachmentStorage.bindToScope(accountId, ids, scopeType, scopeId);
         if (updated != ids.size()) {
-            throw BusinessException.notFound("素材不存在");
+            throw BusinessException.badRequest("附件绑定失败，请重新上传");
         }
     }
 
@@ -140,7 +140,7 @@ public class AttachmentService implements AttachmentContextPort {
     public byte[] readOwnedContent(Long accountId, AssetRef assetRef) {
         AssetRow asset = assetService.requireOwnedReady(accountId, assetRef.id());
         if (!KIND_ATTACHMENT.equals(asset.kind())) {
-            throw BusinessException.badRequest("附件列表包含重复或无效项");
+            throw BusinessException.notFound("资产不存在");
         }
         return assetService.readContent(asset);
     }
@@ -149,10 +149,10 @@ public class AttachmentService implements AttachmentContextPort {
         if (attachmentIds == null || attachmentIds.isEmpty()) return List.of();
         List<Long> ids = new LinkedHashSet<>(attachmentIds).stream().filter(java.util.Objects::nonNull).toList();
         if (ids.size() != attachmentIds.size()) {
-            throw BusinessException.badRequest("每次面试最多附加 5 个文件");
+            throw BusinessException.badRequest("附件列表包含重复或无效项");
         }
         if (ids.size() > MAX_ATTACHMENT_COUNT) {
-            throw BusinessException.badRequest("文件名无效");
+            throw BusinessException.badRequest("每场面试最多添加 5 个附件");
         }
         return ids;
     }

@@ -417,7 +417,12 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
       violations.push(`${file}: chart geometry constant ${name} is gone — drop its allowlist entry`)
   }
 
-  // The line ranges of the allowlisted declarations, so their numbers can be skipped.
+  /* The line ranges of the allowlisted declarations, so their numbers can be skipped.
+     Both readers below ask, not just the inline-style one: the range was computed for
+     every entry, but only `style={{…}}` ever consulted it, so an arbitrary value inside
+     an allowlisted block was still reported and the comment's promise was half true.
+     An echarts geometry constant is an object literal, which is precisely where a
+     Tailwind arbitrary value would live if one were ever written there. */
   const allowedRanges = new Map()
   for (const { file, name } of chartGeometryConstants) {
     const text = fs.readFileSync(path.join(root, file), 'utf8')
@@ -446,6 +451,7 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
 
     for (const match of text.matchAll(arbitraryValue)) {
       const line = lineOf(text, match.index)
+      if (isAllowedLine(relative, line)) continue
       violations.push(
         `${relative}:${line}: arbitrary value ${match[0]} carries a raw length — use a token utility`,
       )

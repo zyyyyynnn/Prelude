@@ -145,7 +145,7 @@ export function LoginPage() {
               </Field>
 
               <div
-                className={cn('auth-email-field', mode === 'register' && 'is-visible')}
+                className={cn('honeypot-field', mode === 'register' && 'is-visible')}
                 aria-hidden={mode !== 'register'}
               >
                 <Field label="邮箱" htmlFor="auth-email">

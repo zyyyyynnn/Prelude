@@ -83,8 +83,47 @@ for (const { owner, pattern, label } of singleOwnerRules) {
    literal, or a `cn(...)` argument list. Shared by the recipe scan and the
    internal-class scan. The braced-string form (`className={"…"}`) is easy to overlook
    and is exactly where a hand-rolled recipe hides. */
-const CLASS_POSITION =
-  /className="([^"]*)"|className=\{`([^`]*)`\}|className=\{"([^"]*)"\}|(?:cn|clsx)\(([^)]*)\)/g
+const CLASS_ATTRIBUTE = /className="([^"]*)"|className=\{`([^`]*)`\}|className=\{"([^"]*)"\}/g
+const MERGE_CALL = /\b(?:cn|clsx)\(/g
+
+/* A `cn(...)` argument list is read by counting parens, not by `[^)]*`. An arbitrary
+   value closes a paren of its own — `max-w-(--layout-workspace-content-max-inline-size)`
+   — so the character-class form stopped at the *value's* `)` and left the rest of the
+   call invisible to both scans below: `panel.tsx`'s
+   `cn('max-w-(--…)', className)` was cut in half, and every `-(--token)` recipe moved
+   into a `cn()` would have been scanned as a truncated fragment. Quotes are stepped
+   over so a class carrying an unbalanced paren cannot truncate the read either. */
+function readCallArguments(source, open) {
+  let depth = 0
+  let quote = null
+  for (let index = open; index < source.length; index += 1) {
+    const character = source[index]
+    if (quote) {
+      if (character === '\\') index += 1
+      else if (character === quote) quote = null
+      continue
+    }
+    if (character === "'" || character === '"' || character === '`') quote = character
+    else if (character === '(') depth += 1
+    else if (character === ')' && (depth -= 1) === 0) return source.slice(open + 1, index)
+  }
+  return null
+}
+
+/* The class-bearing chunks of one file. Only the four positions above are read, so
+   `import … from '@/shared/ui/session-row'` still cannot look like a written class —
+   that is what produced thirteen false positives when a whole-file scan was tried. */
+function classPositions(source) {
+  const chunks = []
+  for (const match of source.matchAll(CLASS_ATTRIBUTE)) {
+    for (const chunk of [match[1], match[2], match[3]]) if (chunk) chunks.push(chunk)
+  }
+  for (const match of source.matchAll(MERGE_CALL)) {
+    const args = readCallArguments(source, match.index + match[0].length - 1)
+    if (args !== null) chunks.push(args)
+  }
+  return chunks
+}
 
 /* Discovery, not an after-the-fact registry. A duplicated *recipe* — a run of at least
    three class tokens that names the design system — is how an owner and a call site end
@@ -127,10 +166,17 @@ const namesDesignSystem = (token) =>
 /* Registered exceptions, each naming the owner the duplication must be promoted to.
    This list is not a bypass: every entry states the concrete promotion target, and a
    new duplication is a defect until it is either promoted or listed here with a
-   reason. */
+   reason.
+
+   `files` names the exact pair the exception covers. Matching on the pair as well as
+   the run is what keeps an exception from shadowing a new duplication: the runs are
+   fixed three-token windows, so a longer recipe always contains the leading window of
+   a shorter one, and a run-only match would silently excuse every caller that copies
+   the whole recipe on top of it. */
 const duplicatedRecipeExceptions = [
   {
     run: 'rounded-lg border border-border',
+    files: ['src/app/lab/ComponentLab.tsx', 'src/shared/ui/card.tsx'],
     reason:
       'the component-lab preview frame is a border-only demo frame, not the elevated card, so it cannot go through Card; it needs its own owner or a narrower recipe',
   },
@@ -142,15 +188,12 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
   if (relative.startsWith('src/shared/styles/')) continue
   const source = fs.readFileSync(file, 'utf8')
   const runs = new Set()
-  for (const match of source.matchAll(CLASS_POSITION)) {
-    for (const chunk of [match[1], match[2], match[3], match[4]]) {
-      if (!chunk) continue
-      const tokens = chunk.match(RECIPE_TOKEN) || []
-      for (let start = 0; start + MIN_RECIPE_RUN <= tokens.length; start++) {
-        const run = tokens.slice(start, start + MIN_RECIPE_RUN)
-        if (!run.some(namesDesignSystem)) continue
-        runs.add(run.join(' '))
-      }
+  for (const chunk of classPositions(source)) {
+    const tokens = chunk.match(RECIPE_TOKEN) || []
+    for (let start = 0; start + MIN_RECIPE_RUN <= tokens.length; start++) {
+      const run = tokens.slice(start, start + MIN_RECIPE_RUN)
+      if (!run.some(namesDesignSystem)) continue
+      runs.add(run.join(' '))
     }
   }
   for (const run of runs) {
@@ -178,7 +221,9 @@ for (const [run, files] of recipesByRun) {
 let registeredExceptions = 0
 for (const [key, run] of [...longestRunByPair].sort()) {
   const [left, right] = key.split('\u0000')
-  const exception = duplicatedRecipeExceptions.find((entry) => entry.run === run)
+  const exception = duplicatedRecipeExceptions.find(
+    (entry) => entry.run === run && entry.files.includes(left) && entry.files.includes(right),
+  )
   if (exception) {
     // Registered: sanctioned, so it does not fail the gate. Counted so the pass line
     // still shows how many are outstanding.
@@ -187,6 +232,18 @@ for (const [key, run] of [...longestRunByPair].sort()) {
   }
   violations.push(
     `${left} + ${right}: duplicated recipe "${run}" — promote it to one owner, or register it in duplicatedRecipeExceptions with a reason`,
+  )
+}
+
+/* An exception whose named files no longer produce its run is a leftover, not an
+   exemption — the same rule the chart-geometry allowlist follows. Audited against
+   every run rather than the longest per pair, so a longer recipe sharing the window
+   cannot make a live exception look stale. */
+for (const entry of duplicatedRecipeExceptions) {
+  const files = recipesByRun.get(entry.run)
+  if (files?.has(entry.files[0]) && files?.has(entry.files[1])) continue
+  violations.push(
+    `duplicatedRecipeExceptions: "${entry.run}" between ${entry.files.join(' and ')} is gone — drop the entry`,
   )
 }
 
@@ -224,11 +281,8 @@ const ownedFamilies = [
 ].map((match) => ({ owner: match[1], base: match[2].replace(/-\*$/, '') }))
 const classTokens = (source) => {
   const found = new Set()
-  for (const match of source.matchAll(CLASS_POSITION)) {
-    for (const chunk of [match[1], match[2], match[3], match[4]]) {
-      if (!chunk) continue
-      for (const token of chunk.split(/[\s,'"`]+/)) if (token) found.add(token)
-    }
+  for (const chunk of classPositions(source)) {
+    for (const token of chunk.split(/[\s,'"`]+/)) if (token) found.add(token)
   }
   return found
 }

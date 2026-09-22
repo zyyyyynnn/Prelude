@@ -708,17 +708,6 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   gap: var(--spacing-sm);
 }
 
-.auth-email-field {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-.auth-email-field.is-visible {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-}
-
 .login-card__actions {
   display: flex;
   align-items: center;
@@ -2381,4 +2370,18 @@ html[data-input-intent='keyboard']
 /* Reserve room for the scrollbar so content never shifts when it appears. */
 @utility gutter-stable {
   scrollbar-gutter: stable;
+}
+
+/* The honeypot field a form shows only in the mode that needs it: present in the
+   layout so the form does not reflow when it appears, invisible and inert until
+   then. Named for what it does rather than for the feature that first wanted it. */
+.honeypot-field {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.honeypot-field.is-visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
