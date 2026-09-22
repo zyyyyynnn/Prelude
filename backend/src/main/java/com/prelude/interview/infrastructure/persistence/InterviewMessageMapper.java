@@ -2,47 +2,27 @@ package com.prelude.interview.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.application.repository.InterviewMessageRepository;
 
 import java.util.List;
 
-public interface InterviewMessageMapper extends BaseMapper<InterviewMessage>, InterviewMessageRepository {
+public interface InterviewMessageMapper extends BaseMapper<InterviewMessageEntity> {
 
-    @Override
-    default int add(InterviewMessage message) {
-        return insert(message);
-    }
-
-    @Override
-    default int update(InterviewMessage message) {
-        return updateById(message);
-    }
-
-    @Override
-    default int delete(java.io.Serializable messageId) {
-        return deleteById(messageId);
-    }
-
-    @Override
-    default InterviewMessage findLatest(Long sessionId) {
-        return selectOne(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId)
-            .orderByDesc(InterviewMessage::getSeqNum)
+    default InterviewMessageEntity findLatest(Long sessionId) {
+        return selectOne(new LambdaQueryWrapper<InterviewMessageEntity>()
+            .eq(InterviewMessageEntity::getSessionId, sessionId)
+            .orderByDesc(InterviewMessageEntity::getSeqNum)
             .last("LIMIT 1"));
     }
 
-    @Override
-    default List<InterviewMessage> listBySession(Long sessionId) {
-        return selectList(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId)
-            .orderByAsc(InterviewMessage::getSeqNum));
+    default List<InterviewMessageEntity> listBySession(Long sessionId) {
+        return selectList(new LambdaQueryWrapper<InterviewMessageEntity>()
+            .eq(InterviewMessageEntity::getSessionId, sessionId)
+            .orderByAsc(InterviewMessageEntity::getSeqNum));
     }
 
-    @Override
     default long countConversationMessages(Long sessionId) {
-        return selectCount(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId)
-            .in(InterviewMessage::getRole, "user", "assistant"));
+        return selectCount(new LambdaQueryWrapper<InterviewMessageEntity>()
+            .eq(InterviewMessageEntity::getSessionId, sessionId)
+            .in(InterviewMessageEntity::getRole, "user", "assistant"));
     }
 }

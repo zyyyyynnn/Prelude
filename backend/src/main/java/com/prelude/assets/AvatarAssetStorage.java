@@ -2,8 +2,8 @@ package com.prelude.assets;
 
 import com.prelude.BusinessException;
 import com.prelude.identity.api.AvatarStoragePort;
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.AssetMapper;
+import com.prelude.assets.application.port.AssetLookup;
+import com.prelude.assets.application.port.AssetLookup.AssetRow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,38 +18,38 @@ public class AvatarAssetStorage implements AvatarStoragePort {
     private static final String AVATAR_URL_SUFFIX = "/content";
 
     private final AssetService assetService;
-    private final AssetMapper assetMapper;
+    private final AssetLookup assetLookup;
     private final ObjectStoragePort objectStoragePort;
 
     @Override
     public String stage(Long accountId, String mediaType, byte[] bytes) {
-        Asset asset = assetService.createPending(accountId, KIND_AVATAR, mediaType, bytes.length);
+        AssetRow asset = assetService.createPending(accountId, KIND_AVATAR, mediaType, bytes.length);
         try {
-            objectStoragePort.put(asset.getObjectKey(), mediaType, bytes);
+            objectStoragePort.put(asset.objectKey(), mediaType, bytes);
         } catch (RuntimeException exception) {
             // The PENDING row stays as the recovery anchor for the reconciler.
             throw BusinessException.badRequest("头像上传失败");
         }
-        return AVATAR_URL_PREFIX + asset.getId() + AVATAR_URL_SUFFIX;
+        return AVATAR_URL_PREFIX + asset.id() + AVATAR_URL_SUFFIX;
     }
 
     @Override
     public void confirmReady(String avatarUrl) {
-        Asset asset = resolveOwnedAsset(null, avatarUrl);
-        if (asset == null || !assetService.markReady(asset.getId())) {
+        AssetRow asset = resolveOwnedAsset(null, avatarUrl);
+        if (asset == null || !assetService.markReady(asset.id())) {
             throw BusinessException.badRequest("头像上传失败");
         }
     }
 
     @Override
     public void discard(Long accountId, String avatarUrl) {
-        Asset asset = resolveOwnedAsset(accountId, avatarUrl);
+        AssetRow asset = resolveOwnedAsset(accountId, avatarUrl);
         if (asset != null) {
             assetService.delete(asset);
         }
     }
 
-    private Asset resolveOwnedAsset(Long accountId, String avatarUrl) {
+    private AssetRow resolveOwnedAsset(Long accountId, String avatarUrl) {
         if (avatarUrl == null || !avatarUrl.startsWith(AVATAR_URL_PREFIX) || !avatarUrl.endsWith(AVATAR_URL_SUFFIX)) {
             return null;
         }
@@ -57,10 +57,10 @@ public class AvatarAssetStorage implements AvatarStoragePort {
             AVATAR_URL_PREFIX.length(), avatarUrl.length() - AVATAR_URL_SUFFIX.length());
         try {
             Long assetId = Long.valueOf(idSegment);
-            Asset asset = assetMapper.selectById(assetId);
+            AssetRow asset = assetLookup.findById(assetId);
             return asset != null
-                && (accountId == null || accountId.equals(asset.getAccountId()))
-                && KIND_AVATAR.equals(asset.getKind())
+                && (accountId == null || accountId.equals(asset.accountId()))
+                && KIND_AVATAR.equals(asset.kind())
                 ? asset
                 : null;
         } catch (NumberFormatException exception) {

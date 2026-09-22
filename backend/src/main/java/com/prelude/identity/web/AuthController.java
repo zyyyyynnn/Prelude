@@ -16,6 +16,7 @@ import com.prelude.identity.api.LoginRequest;
 import com.prelude.identity.api.LoginResponse;
 import com.prelude.identity.api.RegisterRequest;
 import com.prelude.identity.api.SessionView;
+import com.prelude.identity.infrastructure.ServletHttpSessionAccess;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -59,7 +60,8 @@ public class AuthController {
         HttpServletResponse servletResponse
     ) {
         PendingOAuthBinding pending = extractPendingBinding(servletRequest);
-        AccountPrincipal principal = authenticationService.login(request, pending, servletRequest.getSession());
+        AccountPrincipal principal = authenticationService.login(
+            request, pending, new ServletHttpSessionAccess(servletRequest.getSession()));
         SessionAuthentication.establish(
             principal, securityContextRepository, sessionAuthenticationStrategy,
             servletRequest, servletResponse);
@@ -87,7 +89,8 @@ public class AuthController {
 
     @GetMapping("/sessions")
     public Result<List<SessionView>> sessions(HttpServletRequest request) {
-        return Result.success(sessionRevokeService.listCurrentAccountSessions(request.getSession(false)));
+        return Result.success(sessionRevokeService.listCurrentAccountSessions(
+            new ServletHttpSessionAccess(request.getSession(false))));
     }
 
     @DeleteMapping("/sessions/{sessionId}")

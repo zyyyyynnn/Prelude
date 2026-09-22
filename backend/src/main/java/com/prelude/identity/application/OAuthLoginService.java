@@ -3,10 +3,10 @@ package com.prelude.identity.application;
 import com.prelude.BusinessException;
 import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.HttpSessionAccess;
 import com.prelude.identity.api.port.OAuthBindingRepository;
 import com.prelude.identity.domain.Account;
 import com.prelude.identity.domain.OAuthBinding;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -37,7 +37,7 @@ public class OAuthLoginService {
         String provider,
         String providerSubject,
         String verifiedEmail,
-        HttpSession session
+        HttpSessionAccess session
     ) {
         Account boundAccount = findBoundAccount(provider, providerSubject);
         if (boundAccount != null) {
@@ -48,7 +48,7 @@ public class OAuthLoginService {
         if (verifiedEmail != null) {
             Account emailAccount = accounts.findByEmail(verifiedEmail);
             if (emailAccount != null) {
-                session.setAttribute(PENDING_ATTRIBUTE, new PendingOAuthBinding(provider, providerSubject, verifiedEmail));
+                session.attribute(PENDING_ATTRIBUTE, new PendingOAuthBinding(provider, providerSubject, verifiedEmail));
                 log.info("OAuth {} identity matches existing account email; password re-authentication required", provider);
                 return null;
             }
@@ -65,8 +65,8 @@ public class OAuthLoginService {
      * verified email, it completes here (e.g. an OAuth-only account without a
      * password re-authenticating through its existing provider).
      */
-    private void completePendingThroughBoundAccount(String provider, Account boundAccount, HttpSession session) {
-        if (!(session.getAttribute(PENDING_ATTRIBUTE) instanceof PendingOAuthBinding pending)
+    private void completePendingThroughBoundAccount(String provider, Account boundAccount, HttpSessionAccess session) {
+        if (!(session.attribute(PENDING_ATTRIBUTE) instanceof PendingOAuthBinding pending)
             || boundAccount.getEmail() == null
             || !pending.verifiedEmail().equalsIgnoreCase(boundAccount.getEmail())) {
             return;

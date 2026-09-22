@@ -20,7 +20,7 @@ class GenerateInterviewReportIdempotenceTest {
         var llmPort = LlmFixtures.mockPort();
         ReportParser parser = mock(ReportParser.class);
         InterviewReportAssembler assembler = mock(InterviewReportAssembler.class);
-        var session = SessionFixtures.create(42L, 7L, "finished", "{\"summary\":{}}");
+        var session = SessionFixtures.reportSession(42L, 7L, "finished", "{\"summary\":{}}");
         when(reportPort.findSession(42L)).thenReturn(session);
         GenerateInterviewReport generate = new GenerateInterviewReport(
             new ObjectMapper(), reportPort, llmPort, parser, assembler);

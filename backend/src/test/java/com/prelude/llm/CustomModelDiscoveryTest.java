@@ -82,10 +82,12 @@ class CustomModelDiscoveryTest {
         CustomModelCapabilityDiscovery capabilityDiscovery = new CustomModelCapabilityDiscovery(
             catalog, policy, httpClientFactory, objectMapper);
         ModelProfileService service = new ModelProfileService(
-            LlmFixtures.mockCredentialMapper(),
-            LlmFixtures.mockProfileMapper(),
+            LlmFixtures.credentialStoreOver(LlmFixtures.mockCredentialMapper()),
+            LlmFixtures.profileStoreOver(LlmFixtures.mockProfileMapper()),
             mock(ProviderSecretCipher.class),
-            new ProviderCredentialResolver(LlmFixtures.mockCredentialMapper(), mock(ProviderSecretCipher.class)),
+            new ProviderCredentialResolver(
+                LlmFixtures.credentialStoreOver(LlmFixtures.mockCredentialMapper()),
+                mock(ProviderSecretCipher.class)),
             catalog,
             new ReasoningLevels(),
             capabilityDiscovery,

@@ -1,22 +1,19 @@
 package com.prelude.jobs;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.prelude.BusinessException;
+import com.prelude.jobs.application.port.BackgroundJobStore;
+import com.prelude.jobs.application.port.BackgroundJobStore.JobRow;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
 import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
+import com.prelude.jobs.integration.BackgroundJobOperations.ExecutionLease;
 import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
 import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobRequested;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
-import com.prelude.jobs.persistence.BackgroundJob;
-import com.prelude.jobs.persistence.BackgroundJobMapper;
-import com.prelude.jobs.persistence.JobAttempt;
-import com.prelude.jobs.persistence.JobAttemptMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
@@ -28,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -47,22 +44,19 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class BackgroundJobService implements BackgroundJobOperations {
 
-    private final BackgroundJobMapper jobMapper;
-    private final JobAttemptMapper attemptMapper;
+    private final BackgroundJobStore jobStore;
     private final ApplicationEventPublisher eventPublisher;
     private final Duration leaseDuration;
     private final Duration heartbeatInterval;
     private final ScheduledExecutorService heartbeatExecutor;
 
     public BackgroundJobService(
-        BackgroundJobMapper jobMapper,
-        JobAttemptMapper attemptMapper,
+        BackgroundJobStore jobStore,
         ApplicationEventPublisher eventPublisher,
         @Value("${prelude.jobs.lease-duration-seconds:120}") long leaseDurationSeconds,
         @Value("${prelude.jobs.heartbeat-interval-seconds:30}") long heartbeatIntervalSeconds
     ) {
-        this.jobMapper = jobMapper;
-        this.attemptMapper = attemptMapper;
+        this.jobStore = jobStore;
         this.eventPublisher = eventPublisher;
         this.leaseDuration = Duration.ofSeconds(Math.max(30, leaseDurationSeconds));
         long heartbeatSeconds = Math.max(1, heartbeatIntervalSeconds);
@@ -85,70 +79,41 @@ public class BackgroundJobService implements BackgroundJobOperations {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BackgroundJobRef request(BackgroundJobRequest request) {
-        String operationKey = request.operationKey();
-        BackgroundJob existing = jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getOperationKey, operationKey)
-            .last("LIMIT 1"));
-        if (existing != null) {
+        Optional<JobRow> existing = jobStore.findByOperationKey(request.operationKey());
+        if (existing.isPresent()) {
             // Duplicate request: same logical job, no duplicate work.
-            return new BackgroundJobRef(existing.getJobId(), existing.getStatus());
+            return new BackgroundJobRef(existing.get().jobId(), existing.get().status());
         }
-        BackgroundJob job = new BackgroundJob();
-        job.setJobId(UUID.randomUUID().toString());
-        job.setType(request.type());
-        job.setAccountId(request.accountId());
-        job.setSubjectId(request.subjectId());
-        job.setOperationKey(operationKey);
-        job.setPayloadJson(request.payloadJson());
-        job.setStatus(BackgroundJob.PENDING);
-        job.setAttemptCount(0);
-        job.setMaxAttempts(3);
+        JobRow job;
         try {
-            jobMapper.insert(job);
+            job = jobStore.insertPending(
+                request.type(), request.accountId(), request.subjectId(),
+                request.operationKey(), request.payloadJson());
         } catch (DuplicateKeyException race) {
-            BackgroundJob winner = jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-                .eq(BackgroundJob::getOperationKey, operationKey)
-                .last("LIMIT 1"));
-            return new BackgroundJobRef(winner.getJobId(), winner.getStatus());
+            JobRow winner = jobStore.findByOperationKey(request.operationKey())
+                .orElseThrow(() -> new IllegalStateException(
+                    "operation key " + request.operationKey() + " vanished after a duplicate-key race"));
+            return new BackgroundJobRef(winner.jobId(), winner.status());
         }
-        eventPublisher.publishEvent(new BackgroundJobRequested(job.getJobId()));
-        return new BackgroundJobRef(job.getJobId(), job.getStatus());
+        eventPublisher.publishEvent(new BackgroundJobRequested(job.jobId()));
+        return new BackgroundJobRef(job.jobId(), job.status());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ClaimOutcome claim(String jobId) {
-        BackgroundJob job = requireJob(jobId);
-        int attemptNumber = job.getAttemptCount() + 1;
         LocalDateTime claimedAt = LocalDateTime.now();
-        int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-            .set(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-            .set(BackgroundJob::getAttemptCount, attemptNumber)
-            .set(BackgroundJob::getClaimedAt, claimedAt)
-            .set(BackgroundJob::getLeaseExpiresAt, claimedAt.plus(leaseDuration))
-            .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.PENDING)
-            .eq(BackgroundJob::getAttemptCount, job.getAttemptCount()));
-        if (updated != 1) {
-            return ClaimOutcome.skip(requireJob(jobId).getStatus(), "not pending");
+        Optional<BackgroundJobStore.ClaimResult> claimed =
+            jobStore.claim(jobId, claimedAt, claimedAt.plus(leaseDuration));
+        if (claimed.isEmpty()) {
+            return ClaimOutcome.skip(requireJob(jobId).status(), "not pending");
         }
-        JobAttempt attempt = new JobAttempt();
-        attempt.setJobId(jobId);
-        attempt.setAttemptNumber(attemptNumber);
-        attempt.setStatus(JobAttempt.RUNNING);
-        attempt.setStartedAt(claimedAt);
-        attemptMapper.insert(attempt);
-        return ClaimOutcome.start(attemptNumber);
+        return ClaimOutcome.start(claimed.get().attemptNumber());
     }
 
     @Override
     public boolean renewLease(String jobId, int attemptNumber) {
-        LocalDateTime now = LocalDateTime.now();
-        return jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-            .set(BackgroundJob::getLeaseExpiresAt, now.plus(leaseDuration))
-            .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-            .eq(BackgroundJob::getAttemptCount, attemptNumber)) == 1;
+        return jobStore.renewLease(jobId, attemptNumber, LocalDateTime.now().plus(leaseDuration)) == 1;
     }
 
     @Override
@@ -171,18 +136,10 @@ public class BackgroundJobService implements BackgroundJobOperations {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean complete(String jobId, int attemptNumber) {
-        BackgroundJob job = requireJob(jobId);
-        int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-            .set(BackgroundJob::getStatus, BackgroundJob.SUCCEEDED)
-            .set(BackgroundJob::getLeaseExpiresAt, null)
-            .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
-            .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-            .eq(BackgroundJob::getAttemptCount, attemptNumber));
-        if (updated == 1) {
-            closeAttempt(jobId, attemptNumber, JobAttempt.SUCCEEDED, null);
+        JobRow job = requireJob(jobId);
+        if (jobStore.complete(jobId, attemptNumber, LocalDateTime.now()) == 1) {
             eventPublisher.publishEvent(new BackgroundJobSucceeded(
-                job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId()));
+                job.jobId(), job.type(), job.accountId(), job.subjectId()));
             return true;
         }
         log.info("Ignoring stale or duplicate completion for job {} attempt {}", jobId, attemptNumber);
@@ -193,74 +150,37 @@ public class BackgroundJobService implements BackgroundJobOperations {
     @Transactional(rollbackFor = Exception.class)
     public FailureOutcome fail(String jobId, int attemptNumber, Throwable failure) {
         String sanitizedFailure = JobFailureRedaction.sanitize(failure);
-        BackgroundJob job = requireJob(jobId);
-        if (!BackgroundJob.RUNNING.equals(job.getStatus()) || job.getAttemptCount() != attemptNumber) {
+        JobRow job = requireJob(jobId);
+        if (!BackgroundJobStore.RUNNING.equals(job.status()) || job.attemptCount() != attemptNumber) {
             return FailureOutcome.NOT_RUNNING;
         }
-        if (job.getAttemptCount() < job.getMaxAttempts()) {
-            int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-                .set(BackgroundJob::getStatus, BackgroundJob.PENDING)
-                .set(BackgroundJob::getLastError, sanitizedFailure)
-                .set(BackgroundJob::getClaimedAt, null)
-                .set(BackgroundJob::getLeaseExpiresAt, null)
-                .eq(BackgroundJob::getJobId, jobId)
-                .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-                .eq(BackgroundJob::getAttemptCount, attemptNumber));
-            if (updated != 1) {
-                return FailureOutcome.NOT_RUNNING;
-            }
-            closeAttempt(jobId, attemptNumber, JobAttempt.FAILED, sanitizedFailure);
+        boolean retry = job.attemptCount() < job.maxAttempts();
+        if (jobStore.fail(jobId, attemptNumber, sanitizedFailure, LocalDateTime.now(), retry) != 1) {
+            return FailureOutcome.NOT_RUNNING;
+        }
+        if (retry) {
             eventPublisher.publishEvent(new BackgroundJobRequested(jobId));
             return FailureOutcome.RETRY_SCHEDULED;
         }
-        int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-            .set(BackgroundJob::getStatus, BackgroundJob.FAILED)
-            .set(BackgroundJob::getLastError, sanitizedFailure)
-            .set(BackgroundJob::getLeaseExpiresAt, null)
-            .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
-            .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.RUNNING)
-            .eq(BackgroundJob::getAttemptCount, attemptNumber));
-        if (updated != 1) {
-            return FailureOutcome.NOT_RUNNING;
-        }
-        closeAttempt(jobId, attemptNumber, JobAttempt.FAILED, sanitizedFailure);
         eventPublisher.publishEvent(new BackgroundJobFailed(
-            job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId(), sanitizedFailure));
+            job.jobId(), job.type(), job.accountId(), job.subjectId(), sanitizedFailure));
         return FailureOutcome.TERMINAL_FAILED;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BackgroundJobView cancel(String jobId, Long accountId) {
-        BackgroundJob job = jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getJobId, jobId)
-            .last("LIMIT 1"));
-        if (job == null || !job.getAccountId().equals(accountId)) {
-            // Cross-account cancels are not-found equivalent.
-            throw BusinessException.notFound("任务不存在");
-        }
-        int updated = jobMapper.update(null, new LambdaUpdateWrapper<BackgroundJob>()
-            .set(BackgroundJob::getStatus, BackgroundJob.CANCELLED)
-            .set(BackgroundJob::getFinishedAt, LocalDateTime.now())
-            .eq(BackgroundJob::getJobId, jobId)
-            .eq(BackgroundJob::getStatus, BackgroundJob.PENDING));
-        if (updated == 1) {
+        JobRow job = requireOwned(jobId, accountId);
+        if (jobStore.cancel(jobId, LocalDateTime.now()) == 1) {
             eventPublisher.publishEvent(new BackgroundJobCancelled(
-                job.getJobId(), job.getType(), job.getAccountId(), job.getSubjectId()));
+                job.jobId(), job.type(), job.accountId(), job.subjectId()));
         }
         return toView(requireJob(jobId));
     }
 
     @Override
     public BackgroundJobView view(String jobId, Long accountId) {
-        BackgroundJob job = jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getJobId, jobId)
-            .last("LIMIT 1"));
-        if (job == null || !job.getAccountId().equals(accountId)) {
-            throw BusinessException.notFound("任务不存在");
-        }
-        return toView(job);
+        return toView(requireOwned(jobId, accountId));
     }
 
     @Override
@@ -268,29 +188,23 @@ public class BackgroundJobService implements BackgroundJobOperations {
         return toView(requireJob(jobId));
     }
 
-    private BackgroundJobView toView(BackgroundJob job) {
+    private BackgroundJobView toView(JobRow job) {
         return new BackgroundJobView(
-            job.getJobId(), job.getType(), job.getSubjectId(), job.getAccountId(), job.getStatus(),
-            job.getAttemptCount(), job.getMaxAttempts(), job.getLastError());
+            job.jobId(), job.type(), job.subjectId(), job.accountId(), job.status(),
+            job.attemptCount(), job.maxAttempts(), job.lastError());
     }
 
-    private void closeAttempt(String jobId, int attemptNumber, String status, String failureSummary) {
-        attemptMapper.update(null, new LambdaUpdateWrapper<JobAttempt>()
-            .set(JobAttempt::getStatus, status)
-            .set(JobAttempt::getFinishedAt, LocalDateTime.now())
-            .set(JobAttempt::getFailureSummary, failureSummary)
-            .eq(JobAttempt::getJobId, jobId)
-            .eq(JobAttempt::getAttemptNumber, attemptNumber)
-            .eq(JobAttempt::getStatus, JobAttempt.RUNNING));
-    }
-
-    private BackgroundJob requireJob(String jobId) {
-        BackgroundJob job = jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getJobId, jobId)
-            .last("LIMIT 1"));
-        if (job == null) {
-            throw new BusinessException(HttpStatus.NOT_FOUND, "job_not_found", "任务不存在");
+    private JobRow requireOwned(String jobId, Long accountId) {
+        JobRow job = requireJob(jobId);
+        // Cross-account access is not-found equivalent.
+        if (job.accountId() == null || !job.accountId().equals(accountId)) {
+            throw BusinessException.notFound("任务不存在");
         }
         return job;
+    }
+
+    private JobRow requireJob(String jobId) {
+        return jobStore.findByJobId(jobId)
+            .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, "job_not_found", "任务不存在"));
     }
 }

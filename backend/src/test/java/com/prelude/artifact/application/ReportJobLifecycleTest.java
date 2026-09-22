@@ -18,10 +18,10 @@ class ReportJobLifecycleTest {
     void durableSuccessStaysSuccessfulWhenRealtimeDeliveryFails() {
         var reportPort = SessionFixtures.mockReportPort();
         var realtime = SessionFixtures.mockRealtimePort();
-        var session = SessionFixtures.create(42L, "finished", "{\"summary\":{}}");
+        var session = SessionFixtures.reportSession(42L, 7L, "finished", "{\"summary\":{}}");
         when(reportPort.findSession(42L)).thenReturn(session);
         doThrow(new RuntimeException("redis unavailable"))
-            .when(realtime).publish(42L, "report_ready", session.getSummaryReport());
+            .when(realtime).publish(42L, "report_ready", session.summaryReport());
         ReportJobLifecycle lifecycle = new ReportJobLifecycle(reportPort, realtime);
 
         assertThatCode(() -> lifecycle.onSucceeded(
@@ -29,7 +29,7 @@ class ReportJobLifecycleTest {
             .doesNotThrowAnyException();
 
         verify(reportPort, never()).restoreOngoing(42L);
-        verify(realtime).publish(42L, "report_ready", session.getSummaryReport());
+        verify(realtime).publish(42L, "report_ready", session.summaryReport());
     }
 
     @Test

@@ -1,7 +1,7 @@
 package com.prelude.jobs;
 
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.persistence.BackgroundJobMapper;
+import com.prelude.jobs.infrastructure.persistence.BackgroundJobMapper;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.JobFixtures;
 import com.prelude.test.ExceptionFixtures;
@@ -60,7 +60,7 @@ class BackgroundJobLifecycleTest {
         return requestJob(accountId, subjectId, uniqueOperationKey());
     }
 
-    private com.prelude.jobs.persistence.BackgroundJob stored(String jobId) {
+    private com.prelude.jobs.infrastructure.persistence.BackgroundJob stored(String jobId) {
         return JobFixtures.stored(jobMapper, jobId);
     }
 

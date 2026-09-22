@@ -1,6 +1,5 @@
 package com.prelude.llm;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
 import com.prelude.llm.api.LlmPort.DiscoverModelsCommand;
 import com.prelude.llm.api.LlmPort.DiscoveredModelsView;
@@ -8,19 +7,19 @@ import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ProviderDescriptorView;
 import com.prelude.llm.api.SaveConfigurationCommand;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
-import com.prelude.llm.persistence.ProviderCredential;
-import com.prelude.llm.persistence.ProviderCredentialMapper;
+import com.prelude.llm.application.port.ModelProfileStore;
+import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
+import com.prelude.llm.application.port.ProviderCredentialStore;
+import com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Account-scoped model configuration: ProviderCredential (BYOK, AES-GCM at
@@ -33,8 +32,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ModelProfileService {
 
-    private final ProviderCredentialMapper credentialMapper;
-    private final ModelProfileMapper profileMapper;
+    private final ProviderCredentialStore credentialStore;
+    private final ModelProfileStore profileStore;
     private final ProviderSecretCipher secretCipher;
     private final ProviderCredentialResolver credentialResolver;
     private final ModelCapabilityCatalog capabilityCatalog;
@@ -66,10 +65,8 @@ public class ModelProfileService {
         String model = command.model() == null ? "" : command.model().trim();
         capabilityCatalog.requireSupportedModel(provider, model);
 
-        ModelProfile existing = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
-        String credentialScope = customEndpointUrl == null ? ProviderCredential.SYSTEM_SCOPE : customEndpointUrl;
+        ProfileRow existing = profileStore.findActiveByAccount(accountId).orElse(null);
+        String credentialScope = customEndpointUrl == null ? ProviderCredentialStore.SYSTEM_SCOPE : customEndpointUrl;
         boolean clearKey = SaveConfigurationCommand.CLEAR_API_KEY.equals(command.apiKey());
         boolean newKey = command.apiKey() != null && !command.apiKey().isBlank() && !clearKey;
         Long reusableCredentialId = newKey || clearKey
@@ -79,8 +76,7 @@ public class ModelProfileService {
         if (newKey) {
             effectiveApiKey = command.apiKey();
         } else if (reusableCredentialId != null) {
-            effectiveApiKey = secretCipher.decrypt(
-                credentialMapper.selectById(reusableCredentialId).getApiKeyEncrypted());
+            effectiveApiKey = secretCipher.decrypt(encryptedKeyOf(reusableCredentialId));
         } else {
             effectiveApiKey = null;
         }
@@ -103,36 +99,35 @@ public class ModelProfileService {
         PreparedConfiguration prepared = new PreparedConfiguration(
             provider, customEndpointUrl, model, credentialScope, level, executionParameters,
             capability, fallbackCapabilities, newKey, clearKey, reusableCredentialId,
-            existing == null ? null : existing.getId());
+            existing == null ? null : existing.id());
         transactionTemplate.executeWithoutResult(status -> persistConfiguration(accountId, command, prepared));
         return currentConfiguration(accountId);
     }
 
     public ModelConfigurationView currentConfiguration(Long accountId) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
+        ProfileRow profile = profileStore.findActiveByAccount(accountId).orElse(null);
         if (profile == null) {
             return defaultConfiguration();
         }
-        boolean hasApiKey = profile.getCredentialId() != null;
+        boolean hasApiKey = profile.credentialId() != null;
         String masked = null;
         if (hasApiKey) {
-            ProviderCredential credential = credentialMapper.selectById(profile.getCredentialId());
-            masked = credential == null ? null : secretCipher.mask(credential.getApiKeyEncrypted());
+            masked = credentialStore.findById(profile.credentialId())
+                .map(credential -> secretCipher.mask(credential.apiKeyEncrypted()))
+                .orElse(null);
         }
-        ModelCapabilityResponse capability = capabilityForProfile(profile, profile.getModel());
+        ModelCapabilityResponse capability = capabilityForProfile(profile, profile.model());
         ModelExecutionParameters executionParameters = ModelExecutionParameters.fromProfileJson(
-            profile.getEffectiveParametersJson(), objectMapper);
+            profile.effectiveParametersJson(), objectMapper);
         return new ModelConfigurationView(
-            profile.getProvider(),
-            profile.getModel(),
-            profile.getCustomEndpointUrl(),
+            profile.provider(),
+            profile.model(),
+            profile.customEndpointUrl(),
             hasApiKey,
             masked,
-            profile.getReasoningLevel(),
+            profile.reasoningLevel(),
             executionParameters.maxOutputTokens(),
-            capabilityJson.readList(profile.getFallbackCapabilitiesJson()).stream()
+            capabilityJson.readList(profile.fallbackCapabilitiesJson()).stream()
                 .map(ModelCapabilityResponse::model)
                 .toList(),
             capability
@@ -190,44 +185,40 @@ public class ModelProfileService {
         return capabilityDiscovery.discover(accountId, command.provider(), baseUrl, apiKey, model);
     }
 
-    ModelCapabilityResponse capabilityForProfile(ModelProfile profile, String model) {
+    ModelCapabilityResponse capabilityForProfile(ProfileRow profile, String model) {
         return ProfileCapabilities.capabilityForProfile(profile, model, capabilityCatalog, capabilityJson);
     }
 
-    private String activeKeyForScope(Long accountId, String provider, String baseUrl) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
-        Long credentialId = reusableActiveCredentialId(
-            profile, accountId, provider, baseUrl);
-        return credentialId == null
-            ? null
-            : secretCipher.decrypt(credentialMapper.selectById(credentialId).getApiKeyEncrypted());
+    private String encryptedKeyOf(Long credentialId) {
+        return credentialStore.findById(credentialId)
+            .map(CredentialRow::apiKeyEncrypted)
+            .orElseThrow(() -> BusinessException.badRequest("模型凭证不存在或不属于当前账户"));
     }
 
-    private Long reusableActiveCredentialId(ModelProfile profile, Long accountId, String provider, String scope) {
-        if (profile == null || profile.getCredentialId() == null
-            || !provider.equals(profile.getProvider())) {
+    private String activeKeyForScope(Long accountId, String provider, String baseUrl) {
+        ProfileRow profile = profileStore.findActiveByAccount(accountId).orElse(null);
+        Long credentialId = reusableActiveCredentialId(profile, accountId, provider, baseUrl);
+        return credentialId == null ? null : secretCipher.decrypt(encryptedKeyOf(credentialId));
+    }
+
+    private Long reusableActiveCredentialId(ProfileRow profile, Long accountId, String provider, String scope) {
+        if (profile == null || profile.credentialId() == null
+            || !provider.equals(profile.provider())) {
             return null;
         }
-        ProviderCredential credential = credentialMapper.selectById(profile.getCredentialId());
+        CredentialRow credential = credentialStore.findById(profile.credentialId()).orElse(null);
         if (credential == null
-            || !accountId.equals(credential.getAccountId())
-            || !provider.equals(credential.getProvider())
-            || !scope.equals(credential.getScopeKey())) {
+            || !accountId.equals(credential.accountId())
+            || !provider.equals(credential.provider())
+            || !scope.equals(credential.scopeKey())) {
             return null;
         }
-        return credential.getId();
+        return credential.id();
     }
 
     private Long createCredential(Long accountId, String provider, String scope, String encryptedKey) {
-        ProviderCredential credential = new ProviderCredential();
-        credential.setAccountId(accountId);
-        credential.setProvider(provider);
-        credential.setScopeKey(scope);
-        credential.setApiKeyEncrypted(encryptedKey);
-        credentialMapper.insert(credential);
-        return credential.getId();
+        return credentialStore.insert(new CredentialRow(
+            null, accountId, provider, scope, encryptedKey)).id();
     }
 
     private ModelConfigurationView defaultConfiguration() {
@@ -281,13 +272,11 @@ public class ModelProfileService {
         SaveConfigurationCommand command,
         PreparedConfiguration prepared
     ) {
-        ModelProfile current = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1 FOR UPDATE"));
+        ProfileRow current = profileStore.findActiveForUpdate(accountId).orElse(null);
         if ((prepared.expectedProfileId() == null && current != null)
             || (prepared.expectedProfileId() != null
-            && (current == null || !prepared.expectedProfileId().equals(current.getId())))) {
-            throw BusinessException.revisionConflict("模型配置已被其他请求更新，请重试");
+            && (current == null || !prepared.expectedProfileId().equals(current.id())))) {
+            throw BusinessException.revisionConflict("模型配置已被他人修改，请刷新后重试");
         }
 
         Long credentialId;
@@ -300,31 +289,37 @@ public class ModelProfileService {
             Long currentCredentialId = reusableActiveCredentialId(
                 current, accountId, prepared.provider(), prepared.credentialScope());
             if (!Objects.equals(currentCredentialId, prepared.reusableCredentialId())) {
-                throw BusinessException.revisionConflict("模型凭据已被更新，请重试");
+                throw BusinessException.revisionConflict("模型凭证已变更，请刷新后重试");
             }
             credentialId = currentCredentialId;
         }
 
-        ModelProfile profile = current == null ? new ModelProfile() : current;
-        profile.setAccountId(accountId);
-        profile.setProvider(prepared.provider());
-        profile.setModel(prepared.model());
-        profile.setCredentialId(credentialId);
-        profile.setCustomEndpointUrl(prepared.customEndpointUrl());
-        profile.setReasoningLevel(prepared.reasoningLevel().name());
-        profile.setEffectiveParametersJson(prepared.executionParameters().toJson(objectMapper));
-        profile.setModelCapabilityJson(CustomLlmProtocol.isCustom(prepared.provider())
-            ? capabilityJson.write(prepared.capability())
-            : null);
-        profile.setFallbackCapabilitiesJson(capabilityJson.writeList(prepared.fallbackCapabilities()));
+        ProfileRow profile = current == null
+            ? new ProfileRow(null, accountId, prepared.provider(), prepared.model(),
+                prepared.customEndpointUrl(), prepared.reasoningLevel().name(),
+                prepared.executionParameters().toJson(objectMapper),
+                CustomLlmProtocol.isCustom(prepared.provider())
+                    ? capabilityJson.write(prepared.capability())
+                    : null,
+                capabilityJson.writeList(prepared.fallbackCapabilities()),
+                credentialId)
+            : new ProfileRow(
+                current.id(), accountId, prepared.provider(), prepared.model(),
+                prepared.customEndpointUrl(), prepared.reasoningLevel().name(),
+                prepared.executionParameters().toJson(objectMapper),
+                CustomLlmProtocol.isCustom(prepared.provider())
+                    ? capabilityJson.write(prepared.capability())
+                    : null,
+                capabilityJson.writeList(prepared.fallbackCapabilities()),
+                credentialId);
         if (current == null) {
             try {
-                profileMapper.insert(profile);
+                profileStore.insert(profile);
             } catch (org.springframework.dao.DuplicateKeyException race) {
-                throw BusinessException.revisionConflict("模型配置已被其他请求更新，请重试");
+                throw BusinessException.revisionConflict("模型配置已被他人修改，请刷新后重试");
             }
         } else {
-            profileMapper.updateById(profile);
+            profileStore.update(profile);
         }
     }
 

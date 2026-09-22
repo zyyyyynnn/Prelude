@@ -4,6 +4,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.ReportParser;
+import com.prelude.llm.api.LlmResponseText;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class InterviewReportParser implements ReportParser {
     @Override
     public InterviewReportDraft parseDraft(String content) {
         String rawContent = content == null ? "" : content.trim();
-        String jsonContent = stripJsonFence(rawContent);
+        String jsonContent = LlmResponseText.stripJsonFence(rawContent);
         if (!jsonContent.startsWith("{")) {
             throw new IllegalArgumentException("interview report must be structured JSON");
         }
@@ -40,6 +41,28 @@ public class InterviewReportParser implements ReportParser {
             return normalize(objectMapper.readValue(jsonContent, InterviewReportDraft.class));
         } catch (JacksonException exception) {
             throw new IllegalArgumentException("interview report JSON is malformed", exception);
+        }
+    }
+
+    /**
+     * A model that is told to answer with a bare array sometimes wraps it in prose first,
+     * so the bracketed span is recovered before the read.
+     */
+    @Override
+    public <T> List<T> parseItems(String content, Class<T> itemType) {
+        String json = LlmResponseText.stripJsonFence(content == null ? "" : content);
+        if (!json.startsWith("[") && !json.startsWith("{")) {
+            int start = json.indexOf('[');
+            int end = json.lastIndexOf(']');
+            if (start >= 0 && end > start) {
+                json = json.substring(start, end + 1);
+            }
+        }
+        try {
+            return objectMapper.readValue(
+                json, objectMapper.getTypeFactory().constructCollectionType(List.class, itemType));
+        } catch (JacksonException exception) {
+            throw new IllegalArgumentException("model JSON array is malformed", exception);
         }
     }
 
@@ -93,19 +116,6 @@ public class InterviewReportParser implements ReportParser {
             requiredText(report.finalAdvice(), "finalAdvice"),
             requiredText(report.reportMarkdown(), "reportMarkdown")
         );
-    }
-
-    private String stripJsonFence(String content) {
-        String trimmed = content.trim();
-        if (trimmed.startsWith("```json")) {
-            trimmed = trimmed.substring(7);
-        } else if (trimmed.startsWith("```")) {
-            trimmed = trimmed.substring(3);
-        }
-        if (trimmed.endsWith("```")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 3);
-        }
-        return trimmed.trim();
     }
 
     private int requiredScore(Integer value, String field) {

@@ -6,6 +6,7 @@ import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
+import com.prelude.jobs.integration.JobTypes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class FinishInterview {
     private static final String STATUS_FINISHED = "finished";
     private static final String STAGE_CLOSING = "closing";
 
-    private static final String JOB_TYPE_REPORT = "report.generate";
+    private static final String JOB_TYPE_REPORT = JobTypes.REPORT_GENERATE;
 
     private final InterviewSessionAccess sessionAccess;
     private final InterviewSessionRepository interviewSessionRepository;

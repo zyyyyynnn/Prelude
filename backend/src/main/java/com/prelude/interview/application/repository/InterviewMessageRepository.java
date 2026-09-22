@@ -15,6 +15,8 @@ public interface InterviewMessageRepository {
 
     InterviewMessage findLatest(Long sessionId);
 
+    InterviewMessage findById(Long messageId);
+
     List<InterviewMessage> listBySession(Long sessionId);
 
     long countConversationMessages(Long sessionId);

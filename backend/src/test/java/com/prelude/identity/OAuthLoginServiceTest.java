@@ -7,6 +7,7 @@ import com.prelude.identity.application.PendingOAuthBinding;
 import com.prelude.identity.domain.Account;
 import com.prelude.identity.domain.OAuthBinding;
 import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -44,7 +45,7 @@ class OAuthLoginServiceTest {
         when(accounts.findById(5L)).thenReturn(account(5L, "owner", null));
 
         AccountPrincipal principal =
-            oauthLoginService.resolveLogin("google", "subject-1", "owner@example.com", session);
+            oauthLoginService.resolveLogin("google", "subject-1", "owner@example.com", SessionFixtures.sessionAccess(session));
 
         assertThat(principal.accountId()).isEqualTo(5L);
         verify(accounts, never()).add(any());
@@ -57,7 +58,7 @@ class OAuthLoginServiceTest {
         when(accounts.findByEmail("owner@example.com")).thenReturn(account(5L, "owner", "owner@example.com"));
 
         AccountPrincipal principal =
-            oauthLoginService.resolveLogin("google", "subject-1", "owner@example.com", session);
+            oauthLoginService.resolveLogin("google", "subject-1", "owner@example.com", SessionFixtures.sessionAccess(session));
 
         assertThat(principal).isNull();
         verify(accounts, never()).add(any());
@@ -73,7 +74,7 @@ class OAuthLoginServiceTest {
         when(accounts.isUsernameTaken(any())).thenReturn(false);
 
         AccountPrincipal principal =
-            oauthLoginService.resolveLogin("github", "subject-2", "new@example.com", session);
+            oauthLoginService.resolveLogin("github", "subject-2", "new@example.com", SessionFixtures.sessionAccess(session));
 
         assertThat(principal.accountId()).isEqualTo(9L);
         ArgumentCaptor<Account> created = ArgumentCaptor.forClass(Account.class);
@@ -95,7 +96,7 @@ class OAuthLoginServiceTest {
         when(accounts.isUsernameTaken(any())).thenReturn(false);
 
         AccountPrincipal principal =
-            oauthLoginService.resolveLogin("google", "subject-3", null, session);
+            oauthLoginService.resolveLogin("google", "subject-3", null, SessionFixtures.sessionAccess(session));
 
         assertThat(principal.accountId()).isEqualTo(9L);
         verify(accounts, never()).findByEmail(any());
@@ -115,7 +116,7 @@ class OAuthLoginServiceTest {
         when(accounts.findById(5L)).thenReturn(account(5L, "owner", "owner@example.com"));
 
         AccountPrincipal principal =
-            oauthLoginService.resolveLogin("google", "subject-goog", null, session);
+            oauthLoginService.resolveLogin("google", "subject-goog", null, SessionFixtures.sessionAccess(session));
 
         assertThat(principal.accountId()).isEqualTo(5L);
         ArgumentCaptor<OAuthBinding> created = ArgumentCaptor.forClass(OAuthBinding.class);
@@ -138,7 +139,7 @@ class OAuthLoginServiceTest {
         stubBindingConflict();
 
         ExceptionFixtures.assertBusinessException(() ->
-            oauthLoginService.resolveLogin("google", "subject-goog", null, session),
+            oauthLoginService.resolveLogin("google", "subject-goog", null, SessionFixtures.sessionAccess(session)),
             "oauth_binding_conflict");
 
         // The dead intent is cleared, but the failed binding was never created.
@@ -156,7 +157,7 @@ class OAuthLoginServiceTest {
         stubBindingConflict();
 
         ExceptionFixtures.assertBusinessException(() ->
-            oauthLoginService.resolveLogin("github", "subject-x", null, session),
+            oauthLoginService.resolveLogin("github", "subject-x", null, SessionFixtures.sessionAccess(session)),
             "oauth_binding_conflict");
     }
 
@@ -169,7 +170,7 @@ class OAuthLoginServiceTest {
         stubBindingConflict();
 
         AccountPrincipal principal =
-            oauthLoginService.resolveLogin("github", "subject-x", null, session);
+            oauthLoginService.resolveLogin("github", "subject-x", null, SessionFixtures.sessionAccess(session));
 
         assertThat(principal.accountId()).isEqualTo(9L);
         assertThat(session.getAttribute(OAuthLoginService.PENDING_ATTRIBUTE)).isNull();

@@ -24,6 +24,12 @@ public interface InterviewSessionRepository {
 
     int updatePinnedAt(Long sessionId, Long accountId, LocalDateTime pinnedAt);
 
+    /** Fenced report commit: only a still-generating session may be finished. */
+    int completeReportIfGenerating(Long sessionId, String reportJson);
+
+    /** Fenced rollback: only a still-generating session may go back to ongoing. */
+    int restoreOngoingIfGenerating(Long sessionId);
+
     int deleteOwned(Long sessionId, Long accountId);
 
     List<InterviewSession> listByUser(Long accountId);

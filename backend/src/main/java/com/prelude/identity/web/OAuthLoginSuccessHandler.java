@@ -4,6 +4,7 @@ import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.infrastructure.OAuthVerifiedEmailResolver;
 import com.prelude.identity.infrastructure.ProviderIdentityUser;
+import com.prelude.identity.infrastructure.ServletHttpSessionAccess;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         AccountPrincipal principal = oauthLoginService.resolveLogin(
-            provider, subject, verifiedEmail, request.getSession());
+            provider, subject, verifiedEmail, new ServletHttpSessionAccess(request.getSession()));
         if (principal == null) {
             response.sendRedirect("/login?oauth=pending");
             return;

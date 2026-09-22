@@ -8,6 +8,7 @@ import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.port.JudgeResult;
 import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.LlmResponseText;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
 import lombok.RequiredArgsConstructor;
@@ -113,7 +114,10 @@ public class InterviewJudgeService {
     }
 
     private JudgeResult parseJudgeOutput(String judgeOutput) throws JacksonException {
-        String trimmed = stripJsonFence(judgeOutput);
+        if (judgeOutput == null || judgeOutput.isBlank()) {
+            throw new IllegalArgumentException("Judge output is empty");
+        }
+        String trimmed = LlmResponseText.stripJsonFence(judgeOutput);
         Map<String, Object> map = objectMapper.readValue(trimmed, new TypeReference<>() {
         });
         Object scoreValue = map.get("score");
@@ -149,21 +153,5 @@ public class InterviewJudgeService {
             }
         }
         return "";
-    }
-
-    private String stripJsonFence(String text) {
-        if (text == null) {
-            return null;
-        }
-        String trimmed = text.trim();
-        if (trimmed.startsWith("```json")) {
-            trimmed = trimmed.substring(7);
-        } else if (trimmed.startsWith("```")) {
-            trimmed = trimmed.substring(3);
-        }
-        if (trimmed.endsWith("```")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 3);
-        }
-        return trimmed.trim();
     }
 }

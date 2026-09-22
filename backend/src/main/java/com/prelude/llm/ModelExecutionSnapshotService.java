@@ -5,10 +5,12 @@ import com.prelude.llm.api.LlmPort.FreezeSnapshotCommand;
 import com.prelude.llm.api.LlmPort.FrozenModelConfiguration;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
-import com.prelude.llm.persistence.ModelExecutionSnapshotMapper;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
+import com.prelude.llm.application.port.ModelExecutionSnapshotStore;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshotMapper;
+import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
+import com.prelude.llm.application.port.ModelProfileStore;
+import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ModelExecutionSnapshotService {
 
-    private final ModelProfileMapper profileMapper;
+    private final ModelProfileStore profileStore;
+    private final ModelExecutionSnapshotStore snapshotStore;
     private final ModelExecutionSnapshotMapper snapshotMapper;
     private final ModelCapabilityCatalog capabilityCatalog;
     private final ReasoningLevels reasoningLevels;
@@ -35,42 +38,48 @@ public class ModelExecutionSnapshotService {
 
     @Transactional(rollbackFor = Exception.class)
     public ModelExecutionSnapshotRef freeze(FreezeSnapshotCommand command) {
-        ModelProfile profile = ProfileCapabilities.requireProfile(profileMapper, command.accountId());
+        ProfileRow profile = ProfileCapabilities.requireProfile(profileStore, command.accountId());
         String model = command.requestedModel() == null || command.requestedModel().isBlank()
-            ? profile.getModel()
+            ? profile.model()
             : command.requestedModel().trim();
-        String provider = profile.getProvider();
+        String provider = profile.provider();
         ModelCapabilityResponse capability = ProfileCapabilities.capabilityForProfile(
             profile, model, capabilityCatalog, capabilityJson);
 
         var level = reasoningLevels.parse(command.reasoningLevel() == null
-            ? profile.getReasoningLevel()
+            ? profile.reasoningLevel()
             : command.reasoningLevel());
         if (!capability.supportedReasoningLevels().contains(level)) {
             throw BusinessException.badRequest("所选模型不支持该思考深度");
         }
         List<ModelCapabilityResponse> fallbackCapabilities = capabilityJson.readList(
-            profile.getFallbackCapabilitiesJson());
+            profile.fallbackCapabilitiesJson());
         validateFrozenFallbacks(provider, fallbackCapabilities, level);
 
-        ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
-        snapshot.setAccountId(command.accountId());
-        snapshot.setProfileId(profile.getId());
-        snapshot.setProvider(provider);
-        snapshot.setModel(model);
-        snapshot.setReasoningLevel(level.name());
         ModelExecutionParameters executionParameters = ModelExecutionParameters.fromProfileJson(
-            profile.getEffectiveParametersJson(), objectMapper);
-        snapshot.setEffectiveParametersJson(executionParameters.toJson(objectMapper));
-        snapshot.setCapabilityVersion(ModelCapabilityCatalog.CAPABILITY_VERSION);
-        snapshot.setModelCapabilityJson(capabilityJson.write(capability));
-        snapshot.setFallbackCapabilitiesJson(capabilityJson.writeList(fallbackCapabilities));
-        snapshot.setCredentialId(profile.getCredentialId());
-        snapshot.setCustomEndpointUrl(profile.getCustomEndpointUrl());
-        snapshotMapper.insert(snapshot);
-        return new ModelExecutionSnapshotRef(snapshot.getId());
+            profile.effectiveParametersJson(), objectMapper);
+        Long snapshotId = snapshotStore.insert(new SnapshotRow(
+            null,
+            command.accountId(),
+            profile.id(),
+            provider,
+            model,
+            level.name(),
+            executionParameters.toJson(objectMapper),
+            ModelCapabilityCatalog.CAPABILITY_VERSION,
+            capabilityJson.write(capability),
+            capabilityJson.writeList(fallbackCapabilities),
+            profile.credentialId(),
+            profile.customEndpointUrl()
+        ));
+        return new ModelExecutionSnapshotRef(snapshotId);
     }
 
+    /**
+     * The frozen snapshot an execution run reads. Deliberately returns the persistence
+     * row: the execution path copies and re-models it per fallback candidate, and the
+     * model factory is built against that shape.
+     */
     public ModelExecutionSnapshot require(Long snapshotId) {
         ModelExecutionSnapshot snapshot = snapshotMapper.selectById(snapshotId);
         if (snapshot == null) {

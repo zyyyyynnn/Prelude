@@ -2,7 +2,7 @@ package com.prelude.position.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.prelude.position.api.port.PositionRepository;
+import com.prelude.position.application.port.PositionRepository;
 import com.prelude.position.domain.Position;
 import java.util.List;
 

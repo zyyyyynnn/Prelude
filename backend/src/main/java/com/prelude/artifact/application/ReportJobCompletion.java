@@ -2,7 +2,7 @@ package com.prelude.artifact.application;
 
 import com.prelude.artifact.application.GenerateInterviewReport.GenerationResult;
 import com.prelude.artifact.application.GenerateInterviewReport.Outcome;
-import com.prelude.artifact.application.port.InsightRepository;
+import com.prelude.artifact.application.port.AnalyticsRepository;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class ReportJobCompletion {
 
     private final BackgroundJobOperations backgroundJobOperations;
     private final InterviewReportPort interviewReportPort;
-    private final InsightRepository insightRepository;
+    private final AnalyticsRepository analyticsRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public boolean complete(
@@ -45,14 +45,14 @@ public class ReportJobCompletion {
             throw new IllegalStateException(
                 "Report session lost generating state before finalization: " + sessionId);
         }
-        persistInsights(sessionId, result);
+        persistAnalytics(sessionId, result);
         return true;
     }
 
-    private void persistInsights(Long sessionId, GenerationResult result) {
+    private void persistAnalytics(Long sessionId, GenerationResult result) {
         if (result.scoreHistory() != null) {
-            insightRepository.replaceScore(result.scoreHistory());
+            analyticsRepository.replaceScore(result.scoreHistory());
         }
-        insightRepository.replaceWeaknesses(sessionId, result.weaknesses());
+        analyticsRepository.replaceWeaknesses(sessionId, result.weaknesses());
     }
 }

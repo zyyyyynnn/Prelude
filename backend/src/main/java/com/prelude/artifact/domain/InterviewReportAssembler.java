@@ -2,8 +2,8 @@ package com.prelude.artifact.domain;
 
 import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.StructuredInterviewReport;
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.domain.InterviewStage;
+import com.prelude.interview.api.port.InterviewMessageSnapshot;
+import com.prelude.interview.api.port.InterviewStageSnapshot;
 import com.prelude.artifact.domain.AccountWeakness;
 
 import java.time.LocalDateTime;
@@ -22,18 +22,18 @@ public class InterviewReportAssembler {
 
     public StructuredInterviewReport assemble(
         InterviewReportDraft draft,
-        List<InterviewStage> stages,
-        List<InterviewMessage> messages,
+        List<InterviewStageSnapshot> stages,
+        List<InterviewMessageSnapshot> messages,
         List<AccountWeakness> weaknesses
     ) {
         InterviewReportDraft safeDraft = Objects.requireNonNull(draft, "report draft must not be null");
-        List<InterviewStage> orderedStages = safeList(stages).stream()
+        List<InterviewStageSnapshot> orderedStages = safeList(stages).stream()
             .filter(Objects::nonNull)
-            .sorted(Comparator.comparing(InterviewStage::getStartedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+            .sorted(Comparator.comparing(InterviewStageSnapshot::startedAt, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
-        List<InterviewMessage> orderedMessages = safeList(messages).stream()
+        List<InterviewMessageSnapshot> orderedMessages = safeList(messages).stream()
             .filter(Objects::nonNull)
-            .sorted(Comparator.comparing(InterviewMessage::getSeqNum, Comparator.nullsLast(Comparator.naturalOrder())))
+            .sorted(Comparator.comparing(InterviewMessageSnapshot::seqNum, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
         Map<String, InterviewReportDraft.StageNarrative> narratives = new LinkedHashMap<>();
@@ -47,7 +47,7 @@ public class InterviewReportAssembler {
             orderedStages, orderedMessages, narratives
         );
         List<String> persistedStageNames = orderedStages.stream()
-            .map(InterviewStage::getStageName)
+            .map(InterviewStageSnapshot::stageName)
             .filter(STAGE_ORDER::contains)
             .distinct()
             .toList();
@@ -98,28 +98,28 @@ public class InterviewReportAssembler {
     }
 
     private List<StructuredInterviewReport.QuestionReview> buildQuestionReviews(
-        List<InterviewStage> stages,
-        List<InterviewMessage> messages,
+        List<InterviewStageSnapshot> stages,
+        List<InterviewMessageSnapshot> messages,
         Map<String, InterviewReportDraft.StageNarrative> narratives
     ) {
         List<StructuredInterviewReport.QuestionReview> reviews = new ArrayList<>();
         String pendingQuestion = null;
-        for (InterviewMessage message : messages) {
-            if ("assistant".equals(message.getRole()) && !isBlank(message.getContent())) {
-                pendingQuestion = message.getContent().trim();
+        for (InterviewMessageSnapshot message : messages) {
+            if ("assistant".equals(message.role()) && !isBlank(message.content())) {
+                pendingQuestion = message.content().trim();
                 continue;
             }
-            if (!"user".equals(message.getRole()) || isBlank(message.getContent())) {
+            if (!"user".equals(message.role()) || isBlank(message.content())) {
                 continue;
             }
-            String stageName = resolveStageName(stages, message.getCreatedAt());
+            String stageName = resolveStageName(stages, message.createdAt());
             InterviewReportDraft.StageNarrative narrative = narratives.get(stageName);
             reviews.add(new StructuredInterviewReport.QuestionReview(
                 stageName,
                 pendingQuestion == null ? "语音或上下文追问" : pendingQuestion,
-                summarize(message.getContent()),
-                message.getScore(),
-                text(message.getHint(), "暂无评分依据"),
+                summarize(message.content()),
+                message.score(),
+                text(message.hint(), "暂无评分依据"),
                 improvementSuggestion(narrative)
             ));
             pendingQuestion = null;
@@ -158,18 +158,18 @@ public class InterviewReportAssembler {
         return reviews.stream().anyMatch(review -> stageName.equals(review.stageName()));
     }
 
-    private String resolveStageName(List<InterviewStage> stages, LocalDateTime createdAt) {
+    private String resolveStageName(List<InterviewStageSnapshot> stages, LocalDateTime createdAt) {
         if (createdAt != null) {
-            for (InterviewStage stage : stages) {
-                LocalDateTime start = stage.getStartedAt();
-                LocalDateTime end = stage.getEndedAt();
+            for (InterviewStageSnapshot stage : stages) {
+                LocalDateTime start = stage.startedAt();
+                LocalDateTime end = stage.endedAt();
                 if (start != null && !createdAt.isBefore(start) && (end == null || createdAt.isBefore(end))) {
-                    return normalizeStage(stage.getStageName());
+                    return normalizeStage(stage.stageName());
                 }
             }
         }
         if (!stages.isEmpty()) {
-            return normalizeStage(stages.getFirst().getStageName());
+            return normalizeStage(stages.getFirst().stageName());
         }
         return "warmup";
     }

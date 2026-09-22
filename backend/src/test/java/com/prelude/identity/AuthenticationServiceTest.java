@@ -6,6 +6,7 @@ import com.prelude.identity.api.port.AccountRepository;
 import com.prelude.identity.domain.Account;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -70,11 +71,11 @@ class AuthenticationServiceTest {
     @Test
     void correctPasswordAuthenticatesAndWrongPasswordIsRejected() {
         AccountPrincipal principal = authenticationService.login(
-            AccountFixtures.loginRequest("candidate", "correct-horse"), null, session);
+            AccountFixtures.loginRequest("candidate", "correct-horse"), null, SessionFixtures.sessionAccess(session));
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
         ExceptionFixtures.assertBusinessException(
-            () -> authenticationService.login(AccountFixtures.loginRequest("candidate", "wrong-password"), null, session),
+            () -> authenticationService.login(AccountFixtures.loginRequest("candidate", "wrong-password"), null, SessionFixtures.sessionAccess(session)),
             "invalid_credentials");
     }
 
@@ -83,7 +84,7 @@ class AuthenticationServiceTest {
         account.setPasswordHash(null);
 
         ExceptionFixtures.assertBusinessException(
-            () -> authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), null, session),
+            () -> authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), null, SessionFixtures.sessionAccess(session)),
             "invalid_credentials");
     }
 
@@ -94,7 +95,7 @@ class AuthenticationServiceTest {
         var pending = AccountFixtures.pendingOAuthBinding("google", "subject-1", "OWNER@example.com");
         session.setAttribute(AccountFixtures.PENDING_ATTRIBUTE, pending);
         AccountPrincipal principal = authenticationService.login(
-            AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
+            AccountFixtures.loginRequest("candidate", "correct-horse"), pending, SessionFixtures.sessionAccess(session));
 
         assertThat(principal.accountId()).isEqualTo(account.getId());
         verify(oauthLoginService).createBindingExact("google", "subject-1", account.getId());
@@ -108,7 +109,7 @@ class AuthenticationServiceTest {
 
         var pending = AccountFixtures.pendingOAuthBinding("google", "subject-1", "other@example.com");
         session.setAttribute(AccountFixtures.PENDING_ATTRIBUTE, pending);
-        authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
+        authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, SessionFixtures.sessionAccess(session));
 
         verify(oauthLoginService, never()).createBindingExact(any(), any(), any());
         assertThat(session.getAttribute(AccountFixtures.PENDING_ATTRIBUTE)).isEqualTo(pending);
@@ -119,7 +120,7 @@ class AuthenticationServiceTest {
         account.setEmail("owner@example.com");
 
         var pending = AccountFixtures.pendingOAuthBinding("google", "subject-1", "other@example.com");
-        authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, session);
+        authenticationService.login(AccountFixtures.loginRequest("candidate", "correct-horse"), pending, SessionFixtures.sessionAccess(session));
 
         verify(oauthLoginService, never()).createBindingExact(any(), any(), any());
     }

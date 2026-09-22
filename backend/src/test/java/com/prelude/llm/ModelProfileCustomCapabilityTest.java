@@ -1,8 +1,8 @@
 package com.prelude.llm;
 
 import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
+import com.prelude.llm.infrastructure.persistence.ModelProfile;
+import com.prelude.llm.infrastructure.persistence.ModelProfileMapper;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
 import org.junit.jupiter.api.Test;
@@ -139,11 +139,43 @@ class ModelProfileCustomCapabilityTest {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         ModelCapabilityJson capabilityJson = new ModelCapabilityJson(objectMapper);
 
+        // The profile row is stubbed, so the store must reflect writes back into that
+        // same row; otherwise a save followed by a read would see the pre-save profile.
+        com.prelude.llm.application.port.ModelProfileStore profileStore =
+            new com.prelude.llm.application.port.ModelProfileStore() {
+                @Override
+                public java.util.Optional<com.prelude.llm.application.port.ModelProfileStore.ProfileRow>
+                    findActiveByAccount(Long accountId) {
+                    ModelProfile stored = profileMapper.selectOne(org.mockito.ArgumentMatchers.any());
+                    return stored == null
+                        ? java.util.Optional.empty()
+                        : java.util.Optional.of(LlmFixtures.profileRowOf(stored));
+                }
+
+                @Override
+                public java.util.Optional<com.prelude.llm.application.port.ModelProfileStore.ProfileRow>
+                    findActiveForUpdate(Long accountId) {
+                    return findActiveByAccount(accountId);
+                }
+
+                @Override
+                public com.prelude.llm.application.port.ModelProfileStore.ProfileRow insert(
+                    com.prelude.llm.application.port.ModelProfileStore.ProfileRow row) {
+                    LlmFixtures.applyToProfile(profile, row);
+                    return LlmFixtures.profileRowOf(profile);
+                }
+
+                @Override
+                public void update(com.prelude.llm.application.port.ModelProfileStore.ProfileRow row) {
+                    LlmFixtures.applyToProfile(profile, row);
+                }
+            };
+
         ModelProfileService service = new ModelProfileService(
-            credentialMapper,
-            profileMapper,
+            LlmFixtures.credentialStoreOver(credentialMapper),
+            profileStore,
             cipher,
-            new ProviderCredentialResolver(credentialMapper, cipher),
+            new ProviderCredentialResolver(LlmFixtures.credentialStoreOver(credentialMapper), cipher),
             new ModelCapabilityCatalog(),
             new ReasoningLevels(),
             capabilityDiscovery,

@@ -1,10 +1,8 @@
 package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.domain.InterviewSession;
-import com.prelude.activity.RealtimePort;
 import com.prelude.activity.SseSessionStream;
+import com.prelude.identity.api.SessionValidity;
 import com.prelude.interview.application.port.InterviewTurnCommand;
 import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
@@ -12,11 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
@@ -25,29 +20,23 @@ public class StreamChatTurn {
 
     private final InterviewSessionAccess sessionAccess;
     private final InterviewTurnPort interviewTurnPort;
+    private final SessionValidity sessionValidity;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
-    private final RealtimePort realtimePort;
-    private final com.prelude.identity.api.SessionValidity sessionValidity;
-    private final ScheduledExecutorService sseHeartbeatExecutor;
 
-    public SseEmitter execute(Long sessionId, String content, boolean autoStart, String authSessionId) {
+    /**
+     * Streams one chat turn over a channel the caller opened. The use case authorizes the
+     * turn and drives the model call; it never constructs the transport itself.
+     */
+    public void execute(
+        Long sessionId,
+        String content,
+        boolean autoStart,
+        String authSessionId,
+        SseSessionStream stream
+    ) {
         long accountId = sessionAccess.currentAccountId();
-        AtomicReference<SseSessionStream> streamRef = new AtomicReference<>();
-        SseSessionStream stream = SseSessionStream.open(
-            realtimePort,
-            sessionId,
-            sseHeartbeatExecutor,
-            () -> {
-                SseSessionStream opened = streamRef.get();
-                if (opened != null) {
-                    completeWithError(opened, "连接超时，请重试");
-                }
-            });
-        streamRef.set(stream);
-
         sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, authSessionId, content, autoStart, stream));
-        return stream.emitter();
     }
 
     private void runTurn(
@@ -76,35 +65,22 @@ public class StreamChatTurn {
                     stream.send("message", delta);
                 }
             );
-            if (result.userMessage() == null) {
+            if (result.userTurn() == null) {
                 stream.complete();
                 return;
             }
-            triggerAsyncJudge(result.session(), result.userMessage(), stream);
-            interviewTurnPort.summarizeIfNeeded(result.session());
+            triggerAsyncJudge(result.session().sessionId(), result.userTurn().messageId(), stream);
+            interviewTurnPort.summarizeIfNeeded(result.session().sessionId());
         } catch (RuntimeException error) {
-            completeWithError(stream, error.getMessage() == null ? "连接已断开，请重试" : error.getMessage());
+            String message = error.getMessage() == null ? "连接已断开，请重试" : error.getMessage();
+            stream.completeWithError(message);
         }
     }
 
-    private void completeWithError(SseSessionStream stream, String message) {
-        try {
-            stream.send("error", message);
-        } catch (RuntimeException ignored) {
-            // Connection may already be closed.
-        } finally {
-            stream.complete();
-        }
-    }
-
-    private void triggerAsyncJudge(
-        InterviewSession session,
-        InterviewMessage userMessage,
-        SseSessionStream stream
-    ) {
+    private void triggerAsyncJudge(Long sessionId, Long messageId, SseSessionStream stream) {
         sseTaskExecutor.execute(() -> {
             try {
-                interviewTurnPort.judgeAndPersist(session, userMessage)
+                interviewTurnPort.judgeAndPersist(sessionId, messageId)
                     .ifPresent(result -> sendJudgeEvent(stream, result.json()));
                 stream.complete();
             } catch (RuntimeException error) {

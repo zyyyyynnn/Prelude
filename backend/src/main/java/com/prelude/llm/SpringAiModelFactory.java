@@ -3,7 +3,7 @@ package com.prelude.llm;
 import com.prelude.BusinessException;
 import com.prelude.llm.api.LlmPort.ResponseMode;
 import com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
 import com.anthropic.backends.AnthropicBackend;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientImpl;

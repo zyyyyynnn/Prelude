@@ -13,7 +13,7 @@ import com.prelude.llm.api.LlmPort.ToolBinding;
 import com.prelude.llm.api.LlmPort.Usage;
 import com.prelude.llm.api.LlmUsageRecorded;
 import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;

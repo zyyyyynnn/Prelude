@@ -4,7 +4,7 @@ import com.prelude.Result;
 import com.prelude.artifact.api.AnalyticsRadarResponse;
 import com.prelude.artifact.api.AnalyticsTrendItemResponse;
 import com.prelude.artifact.api.AnalyticsWeaknessItemResponse;
-import com.prelude.artifact.application.InsightQueryService;
+import com.prelude.artifact.application.AnalyticsQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,11 +17,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnalyticsController {
 
-    private final InsightQueryService insightQueryService;
+    private final AnalyticsQueryService analyticsQueryService;
 
     @GetMapping("/radar")
     public Result<AnalyticsRadarResponse> radar() {
-        var view = insightQueryService.getRadar();
+        var view = analyticsQueryService.getRadar();
         return Result.success(new AnalyticsRadarResponse(
             view.technical(), view.expression(), view.logic(), view.sessionCount()
         ));
@@ -29,7 +29,7 @@ public class AnalyticsController {
 
     @GetMapping("/trend")
     public Result<List<AnalyticsTrendItemResponse>> trend() {
-        return Result.success(insightQueryService.getTrend().stream()
+        return Result.success(analyticsQueryService.getTrend().stream()
             .map(view -> new AnalyticsTrendItemResponse(
                 view.sessionId(), view.createdAt(), view.technical(), view.expression(), view.logic()
             ))
@@ -38,7 +38,7 @@ public class AnalyticsController {
 
     @GetMapping("/weaknesses")
     public Result<List<AnalyticsWeaknessItemResponse>> weaknesses() {
-        return Result.success(insightQueryService.getWeaknesses().stream()
+        return Result.success(analyticsQueryService.getWeaknesses().stream()
             .map(view -> new AnalyticsWeaknessItemResponse(
                 view.category(), view.count(), view.descriptions()
             ))

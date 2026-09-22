@@ -1,20 +1,20 @@
 package com.prelude.interview.api.port;
 
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.domain.InterviewStage;
-
 import java.util.List;
 
+/**
+ * The interview facts the report pipeline needs. Every type in this contract is a
+ * snapshot, so a consumer never names an interview domain class or a persistence row.
+ */
 public interface InterviewReportPort {
 
-    InterviewSession findSession(Long sessionId);
+    InterviewSessionSnapshot findSession(Long sessionId);
 
-    List<InterviewMessage> listMessages(Long sessionId);
+    List<InterviewMessageSnapshot> listMessages(Long sessionId);
 
     void closeCurrentStage(Long sessionId);
 
-    List<InterviewStage> listStages(Long sessionId);
+    List<InterviewStageSnapshot> listStages(Long sessionId);
 
     boolean completeReport(Long sessionId, String reportJson);
 

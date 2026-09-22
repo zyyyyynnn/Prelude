@@ -10,6 +10,8 @@ import com.prelude.interview.application.StreamChatTurn;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewStageRepository;
 import com.prelude.interview.application.port.InterviewTurnCommand;
+import com.prelude.interview.application.port.InterviewTurnSessionSnapshot;
+import com.prelude.interview.application.port.InterviewUserTurnSnapshot;
 import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
 import com.prelude.interview.application.port.InterviewTurnSink;
@@ -77,8 +79,69 @@ public final class SessionFixtures {
         return session;
     }
 
+    /** Adapts a mock servlet session to the port the use cases depend on. */
+    public static com.prelude.identity.application.port.HttpSessionAccess sessionAccess(
+        org.springframework.mock.web.MockHttpSession session) {
+        return new com.prelude.identity.application.port.HttpSessionAccess() {
+            @Override
+            public String currentSessionId() {
+                return session == null ? null : session.getId();
+            }
+
+            @Override
+            public Object attribute(String name) {
+                return session == null ? null : session.getAttribute(name);
+            }
+
+            @Override
+            public void attribute(String name, Object value) {
+                if (session != null) {
+                    session.setAttribute(name, value);
+                }
+            }
+
+            @Override
+            public void removeAttribute(String name) {
+                if (session != null) {
+                    session.removeAttribute(name);
+                }
+            }
+        };
+    }
+
+    /** Adapts a mock multipart upload to the avatar projection. */
+    public static com.prelude.identity.application.port.AvatarUpload avatarUpload(
+        org.springframework.mock.web.MockMultipartFile file) {
+        try {
+            return new com.prelude.identity.application.port.AvatarUpload(
+                file.getOriginalFilename(), file.getContentType(), file.getBytes());
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException("mock upload should be readable", exception);
+        }
+    }
+
     public static com.prelude.interview.api.port.InterviewReportPort mockReportPort() {
         return Mockito.mock(com.prelude.interview.api.port.InterviewReportPort.class);
+    }
+
+    public static com.prelude.interview.api.port.InterviewSessionSnapshot reportSession(
+        Long sessionId, Long accountId, String status, String summaryReport) {
+        return new com.prelude.interview.api.port.InterviewSessionSnapshot(
+            sessionId, accountId, "Java 后端", 3L, status, null, summaryReport);
+    }
+
+    public static com.prelude.interview.api.port.InterviewSessionSnapshot reportSession(
+        Long sessionId, Long accountId, String status, String targetPosition, Long snapshotId) {
+        return new com.prelude.interview.api.port.InterviewSessionSnapshot(
+            sessionId, accountId, targetPosition, snapshotId, status, null, null);
+    }
+
+    public static InterviewTurnSessionSnapshot turnSession(Long sessionId) {
+        return new InterviewTurnSessionSnapshot(sessionId, 7L, "Java 后端", 3L);
+    }
+
+    public static InterviewUserTurnSnapshot userTurn(Long messageId, Long sessionId, String content) {
+        return new InterviewUserTurnSnapshot(messageId, sessionId, content, 2, java.time.LocalDateTime.now());
     }
 
     public static InterviewTurnPort mockTurnPort() {
@@ -105,20 +168,33 @@ public final class SessionFixtures {
         String authSessionId,
         long accountId
     ) {
-        RealtimePort realtimePort = mockRealtimePort();
         SessionValidity sessionValidity = mockSessionValidity();
         Mockito.when(sessionValidity.isActive(Mockito.eq(authSessionId), Mockito.eq(accountId))).thenReturn(sessionActive);
-        Mockito.when(realtimePort.register(Mockito.any(), Mockito.anyString(), Mockito.any())).thenReturn((RealtimeConnection) connection);
         Mockito.when(sessionAccess.currentAccountId()).thenReturn(accountId);
         return new StreamChatTurn(
             sessionAccess,
             turnPort,
-            Runnable::run,
-            realtimePort,
             sessionValidity,
+            Runnable::run
+        );
+    }
+
+    /**
+     * Opens a real stream over an inert heartbeat executor, so no task ever runs, and
+     * returns the connection the hub registered — the one the assertions inspect.
+     */
+    public static com.prelude.activity.RealtimeConnection openStream(
+        RealtimePort realtimePort, Long sessionId, com.prelude.activity.SseSessionStream[] opened) {
+        com.prelude.activity.RealtimeConnection connection = mockRealtimeConnection();
+        Mockito.when(realtimePort.register(Mockito.any(), Mockito.anyString(), Mockito.any()))
+            .thenReturn(connection);
+        opened[0] = com.prelude.activity.SseSessionStream.open(
+            realtimePort,
+            sessionId,
             // Turns run inline in tests, so the heartbeat has to stay inert rather than schedule.
             inertHeartbeatExecutor()
         );
+        return connection;
     }
 
     public static InterviewStageRepository mockStageRepository() {
@@ -133,8 +209,12 @@ public final class SessionFixtures {
         return delta -> {};
     }
 
-    public static InterviewTurnResult turnResult(InterviewSession session, InterviewMessage message, String delta) {
-        return new InterviewTurnResult(session, message, delta);
+    public static InterviewTurnResult turnResult(
+        InterviewTurnSessionSnapshot session,
+        InterviewUserTurnSnapshot userTurn,
+        String delta
+    ) {
+        return new InterviewTurnResult(session, userTurn, delta);
     }
 
     public static InterviewTurnCommand turnCommand(Long sessionId, Long accountId, String input, boolean stream, boolean isWarmup) {

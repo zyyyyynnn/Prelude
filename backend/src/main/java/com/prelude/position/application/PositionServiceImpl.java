@@ -2,7 +2,7 @@ package com.prelude.position.application;
 
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
-import com.prelude.position.api.port.PositionRepository;
+import com.prelude.position.application.port.PositionRepository;
 import com.prelude.position.domain.Position;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

@@ -2,10 +2,10 @@ package com.prelude.artifact.web;
 
 import com.prelude.BusinessException;
 import com.prelude.GlobalExceptionHandler;
-import com.prelude.artifact.application.InsightQueryService;
-import com.prelude.artifact.application.InsightRadarView;
-import com.prelude.artifact.application.InsightTrendView;
-import com.prelude.artifact.application.InsightWeaknessView;
+import com.prelude.artifact.application.AnalyticsQueryService;
+import com.prelude.artifact.application.AnalyticsRadarView;
+import com.prelude.artifact.application.AnalyticsTrendView;
+import com.prelude.artifact.application.AnalyticsWeaknessView;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -21,17 +21,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class AnalyticsControllerTest {
 
-    private final InsightQueryService insightQueryService = mock(InsightQueryService.class);
+    private final AnalyticsQueryService analyticsQueryService = mock(AnalyticsQueryService.class);
 
     private final MockMvc mockMvc = MockMvcBuilders
-        .standaloneSetup(new AnalyticsController(insightQueryService))
+        .standaloneSetup(new AnalyticsController(analyticsQueryService))
         .setControllerAdvice(new GlobalExceptionHandler())
         .build();
 
     @Test
     void radarExposesTheThreeAxesAndTheSampleSize() throws Exception {
-        when(insightQueryService.getRadar())
-            .thenReturn(new InsightRadarView(8.5, 7.0, 6.25, 4));
+        when(analyticsQueryService.getRadar())
+            .thenReturn(new AnalyticsRadarView(8.5, 7.0, 6.25, 4));
 
         mockMvc.perform(get("/api/analytics/radar"))
             .andExpect(status().isOk())
@@ -44,9 +44,9 @@ class AnalyticsControllerTest {
 
     @Test
     void trendMapsEverySessionPointInOrder() throws Exception {
-        when(insightQueryService.getTrend()).thenReturn(List.of(
-            new InsightTrendView(1L, LocalDateTime.parse("2026-09-01T08:00:00"), 8, 7, null),
-            new InsightTrendView(2L, LocalDateTime.parse("2026-09-02T08:00:00"), 9, 6, 7)
+        when(analyticsQueryService.getTrend()).thenReturn(List.of(
+            new AnalyticsTrendView(1L, LocalDateTime.parse("2026-09-01T08:00:00"), 8, 7, null),
+            new AnalyticsTrendView(2L, LocalDateTime.parse("2026-09-02T08:00:00"), 9, 6, 7)
         ));
 
         mockMvc.perform(get("/api/analytics/trend"))
@@ -59,8 +59,8 @@ class AnalyticsControllerTest {
 
     @Test
     void weaknessesCarriesTheGroupedDescriptions() throws Exception {
-        when(insightQueryService.getWeaknesses()).thenReturn(List.of(
-            new InsightWeaknessView("并发", 2, List.of("未说明可见性", "未说明原子性"))
+        when(analyticsQueryService.getWeaknesses()).thenReturn(List.of(
+            new AnalyticsWeaknessView("并发", 2, List.of("未说明可见性", "未说明原子性"))
         ));
 
         mockMvc.perform(get("/api/analytics/weaknesses"))
@@ -72,7 +72,7 @@ class AnalyticsControllerTest {
 
     @Test
     void anEmptyAccountStillGetsAnEmptyListRatherThanAnError() throws Exception {
-        when(insightQueryService.getWeaknesses()).thenReturn(List.of());
+        when(analyticsQueryService.getWeaknesses()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/analytics/weaknesses"))
             .andExpect(status().isOk())
@@ -82,7 +82,7 @@ class AnalyticsControllerTest {
 
     @Test
     void aQueryFailureReachesTheSharedProblemEnvelope() throws Exception {
-        when(insightQueryService.getRadar()).thenThrow(BusinessException.badRequest("暂无可统计的面试"));
+        when(analyticsQueryService.getRadar()).thenThrow(BusinessException.badRequest("暂无可统计的面试"));
 
         mockMvc.perform(get("/api/analytics/radar"))
             .andExpect(status().isBadRequest())

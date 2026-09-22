@@ -3,7 +3,7 @@ package com.prelude.llm;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import okhttp3.Dns;

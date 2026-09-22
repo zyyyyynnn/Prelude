@@ -2,7 +2,7 @@ package com.prelude.assets;
 
 import com.prelude.assets.api.AssetQueryApi;
 import com.prelude.assets.api.AssetRef;
-import com.prelude.assets.persistence.Asset;
+import com.prelude.assets.application.port.AssetLookup.AssetRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,13 +14,12 @@ public class AssetQueryFacade implements AssetQueryApi {
 
     @Override
     public AssetRef requireOwnedReadyAsset(Long accountId, Long assetId) {
-        Asset asset = assetService.requireOwnedReady(accountId, assetId);
-        return new AssetRef(asset.getId());
+        return new AssetRef(assetService.requireOwnedReady(accountId, assetId).id());
     }
 
     @Override
     public String presignedGetUrl(Long accountId, Long assetId) {
-        Asset asset = assetService.requireOwnedReady(accountId, assetId);
+        AssetRow asset = assetService.requireOwnedReady(accountId, assetId);
         return assetService.presignGet(asset);
     }
 }

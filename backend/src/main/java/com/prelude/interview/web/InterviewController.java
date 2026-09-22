@@ -1,6 +1,8 @@
 package com.prelude.interview.web;
 
 import com.prelude.Result;
+import com.prelude.activity.RealtimePort;
+import com.prelude.activity.SseSessionStream;
 import com.prelude.interview.api.InterviewChatRequest;
 import com.prelude.interview.api.InterviewFinishResponse;
 import com.prelude.interview.api.InterviewMessagesResponse;
@@ -47,6 +49,9 @@ public class InterviewController {
     private final ListenInterview listenInterview;
     private final PinInterviewSession pinInterviewSession;
     private final DeleteInterviewSession deleteInterviewSession;
+    private final RealtimePort realtimePort;
+    @org.springframework.beans.factory.annotation.Qualifier("sseHeartbeatExecutor")
+    private final java.util.concurrent.ScheduledExecutorService sseHeartbeatExecutor;
 
     @PostMapping("/start")
     public Result<InterviewStartResponse> start(@Valid @RequestBody InterviewStartRequest request) {
@@ -86,7 +91,15 @@ public class InterviewController {
         @RequestParam(defaultValue = "false") boolean autoStart,
         jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
-        return streamChatTurn.execute(sessionId, request.getContent(), autoStart, authSessionId(servletRequest));
+        SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, sseHeartbeatExecutor);
+        try {
+            streamChatTurn.execute(
+                sessionId, request.getContent(), autoStart, authSessionId(servletRequest), stream);
+        } catch (RuntimeException failure) {
+            stream.complete();
+            throw failure;
+        }
+        return stream.emitter();
     }
 
     @PostMapping("/{sessionId}/finish")
@@ -111,7 +124,14 @@ public class InterviewController {
 
     @GetMapping(value = "/{sessionId}/listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter listen(@PathVariable Long sessionId, jakarta.servlet.http.HttpServletRequest servletRequest) {
-        return listenInterview.execute(sessionId, authSessionId(servletRequest));
+        SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, sseHeartbeatExecutor);
+        try {
+            listenInterview.execute(sessionId, authSessionId(servletRequest), stream);
+        } catch (RuntimeException failure) {
+            stream.complete();
+            throw failure;
+        }
+        return stream.emitter();
     }
 
     private String authSessionId(jakarta.servlet.http.HttpServletRequest servletRequest) {

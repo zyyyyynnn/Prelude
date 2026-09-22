@@ -1,7 +1,7 @@
 package com.prelude.position.application;
 
 import com.prelude.BusinessException;
-import com.prelude.position.api.port.PositionRepository;
+import com.prelude.position.application.port.PositionRepository;
 import com.prelude.position.domain.Position;
 import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.BeforeEach;

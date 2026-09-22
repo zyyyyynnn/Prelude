@@ -1,8 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.BusinessException;
-import com.prelude.llm.persistence.ProviderCredential;
-import com.prelude.llm.persistence.ProviderCredentialMapper;
+import com.prelude.llm.application.port.ProviderCredentialStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,17 +12,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 class ProviderCredentialResolver {
 
-    private final ProviderCredentialMapper credentialMapper;
+    private final ProviderCredentialStore credentialStore;
     private final ProviderSecretCipher secretCipher;
 
     String resolve(Long accountId, Long credentialId) {
-        if (credentialId == null) {
-            return null;
-        }
-        ProviderCredential credential = credentialMapper.selectById(credentialId);
-        if (credential == null || !accountId.equals(credential.getAccountId())) {
-            throw BusinessException.badRequest("模型凭据不可用，请重新配置");
-        }
-        return secretCipher.decrypt(credential.getApiKeyEncrypted());
+        String encryptedKey = credentialStore.findOwnedEncryptedKey(accountId, credentialId);
+        return encryptedKey == null ? null : secretCipher.decrypt(encryptedKey);
     }
 }

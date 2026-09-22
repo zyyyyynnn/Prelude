@@ -81,7 +81,7 @@ class BackgroundJobAmqpContractTest {
                 GenerateInterviewReport.Outcome.GENERATED, "{}", null, List.of()));
         when(interviewReportPort.completeReport(anyLong(), anyString())).thenReturn(true);
         when(interviewReportPort.findSession(anyLong())).thenAnswer(invocation ->
-            SessionFixtures.create(invocation.getArgument(0), "finished", "{}"));
+            SessionFixtures.reportSession(invocation.getArgument(0), 7L, "finished", "{}"));
         listenerRegistry.getListenerContainers().forEach(container -> container.start());
     }
 

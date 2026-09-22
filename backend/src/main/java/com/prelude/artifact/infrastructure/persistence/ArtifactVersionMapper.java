@@ -1,11 +1,10 @@
 package com.prelude.artifact.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.prelude.artifact.domain.ArtifactVersion;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
-public interface ArtifactVersionMapper extends BaseMapper<ArtifactVersion> {
+public interface ArtifactVersionMapper extends BaseMapper<ArtifactVersionEntity> {
 
     /**
      * The number the next version should claim. Computed in the database so a publisher

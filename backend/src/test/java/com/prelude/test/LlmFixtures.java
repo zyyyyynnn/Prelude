@@ -8,12 +8,13 @@ import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.api.ProviderDescriptorView;
 import com.prelude.llm.api.SaveConfigurationCommand;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
-import com.prelude.llm.persistence.ModelExecutionSnapshotMapper;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
-import com.prelude.llm.persistence.ProviderCredential;
-import com.prelude.llm.persistence.ProviderCredentialMapper;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshotMapper;
+import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
+import com.prelude.llm.infrastructure.persistence.ModelProfile;
+import com.prelude.llm.infrastructure.persistence.ModelProfileMapper;
+import com.prelude.llm.infrastructure.persistence.ProviderCredential;
+import com.prelude.llm.infrastructure.persistence.ProviderCredentialMapper;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import tools.jackson.databind.ObjectMapper;
@@ -231,8 +232,139 @@ public final class LlmFixtures {
         return Mockito.mock(ProviderCredentialMapper.class);
     }
 
+
+    /** A profile store backed by a mock mapper, for the same reason. */
+    public static com.prelude.llm.application.port.ModelProfileStore profileStoreOver(
+        ModelProfileMapper profileMapper) {
+        return new com.prelude.llm.application.port.ModelProfileStore() {
+            @Override
+            public java.util.Optional<ProfileRow> findActiveByAccount(Long accountId) {
+                ModelProfile profile = profileMapper.selectOne(org.mockito.ArgumentMatchers.any());
+                return profile == null
+                    ? java.util.Optional.empty()
+                    : java.util.Optional.of(toRow(profile));
+            }
+
+            @Override
+            public java.util.Optional<ProfileRow> findActiveForUpdate(Long accountId) {
+                return findActiveByAccount(accountId);
+            }
+
+            @Override
+            public ProfileRow insert(ProfileRow row) {
+                ModelProfile profile = new ModelProfile();
+                apply(profile, row);
+                profileMapper.insert(profile);
+                return toRow(profile);
+            }
+
+            @Override
+            public void update(ProfileRow row) {
+                ModelProfile profile = new ModelProfile();
+                apply(profile, row);
+                profile.setId(row.id());
+                profileMapper.updateById(profile);
+            }
+
+            private void apply(ModelProfile profile, ProfileRow row) {
+                profile.setAccountId(row.accountId());
+                profile.setProvider(row.provider());
+                profile.setModel(row.model());
+                profile.setCustomEndpointUrl(row.customEndpointUrl());
+                profile.setReasoningLevel(row.reasoningLevel());
+                profile.setEffectiveParametersJson(row.effectiveParametersJson());
+                profile.setModelCapabilityJson(row.modelCapabilityJson());
+                profile.setFallbackCapabilitiesJson(row.fallbackCapabilitiesJson());
+                profile.setCredentialId(row.credentialId());
+            }
+
+            private ProfileRow toRow(ModelProfile profile) {
+                return new ProfileRow(
+                    profile.getId(), profile.getAccountId(), profile.getProvider(), profile.getModel(),
+                    profile.getCustomEndpointUrl(), profile.getReasoningLevel(),
+                    profile.getEffectiveParametersJson(), profile.getModelCapabilityJson(),
+                    profile.getFallbackCapabilitiesJson(), profile.getCredentialId());
+            }
+        };
+    }
+
+    /**
+     * A credential store backed by a mock mapper, so a test can keep stubbing
+     * {@code selectById}/{@code insert} on the mapper while the service depends on the port.
+     */
+    public static com.prelude.llm.application.port.ProviderCredentialStore credentialStoreOver(
+        ProviderCredentialMapper credentialMapper) {
+        return new com.prelude.llm.application.port.ProviderCredentialStore() {
+            @Override
+            public String findOwnedEncryptedKey(Long accountId, Long credentialId) {
+                if (credentialId == null) {
+                    return null;
+                }
+                ProviderCredential credential = credentialMapper.selectById(credentialId);
+                if (credential == null || !accountId.equals(credential.getAccountId())) {
+                    throw com.prelude.BusinessException.badRequest("模型凭证不存在或不属于当前账户");
+                }
+                return credential.getApiKeyEncrypted();
+            }
+
+            @Override
+            public java.util.Optional<com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow>
+                findById(Long credentialId) {
+                ProviderCredential credential = credentialMapper.selectById(credentialId);
+                return credential == null
+                    ? java.util.Optional.empty()
+                    : java.util.Optional.of(toRow(credential));
+            }
+
+            @Override
+            public com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow insert(
+                com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow row) {
+                ProviderCredential credential = new ProviderCredential();
+                credential.setAccountId(row.accountId());
+                credential.setProvider(row.provider());
+                credential.setScopeKey(row.scopeKey());
+                credential.setApiKeyEncrypted(row.apiKeyEncrypted());
+                credentialMapper.insert(credential);
+                return toRow(credential);
+            }
+
+            private com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow toRow(
+                ProviderCredential credential) {
+                return new com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow(
+                    credential.getId(), credential.getAccountId(), credential.getProvider(),
+                    credential.getScopeKey(), credential.getApiKeyEncrypted());
+            }
+        };
+    }
+
     public static ModelProfileMapper mockProfileMapper() {
         return Mockito.mock(ModelProfileMapper.class);
+    }
+
+    /** Reads a stubbed profile row back as the port's projection. */
+    public static com.prelude.llm.application.port.ModelProfileStore.ProfileRow profileRowOf(
+        ModelProfile profile) {
+        return new com.prelude.llm.application.port.ModelProfileStore.ProfileRow(
+            profile.getId(), profile.getAccountId(), profile.getProvider(), profile.getModel(),
+            profile.getCustomEndpointUrl(), profile.getReasoningLevel(),
+            profile.getEffectiveParametersJson(), profile.getModelCapabilityJson(),
+            profile.getFallbackCapabilitiesJson(), profile.getCredentialId());
+    }
+
+    /** Writes a projection back onto a stubbed profile row, so a later read sees it. */
+    public static void applyToProfile(
+        ModelProfile profile,
+        com.prelude.llm.application.port.ModelProfileStore.ProfileRow row) {
+        profile.setId(row.id());
+        profile.setAccountId(row.accountId());
+        profile.setProvider(row.provider());
+        profile.setModel(row.model());
+        profile.setCustomEndpointUrl(row.customEndpointUrl());
+        profile.setReasoningLevel(row.reasoningLevel());
+        profile.setEffectiveParametersJson(row.effectiveParametersJson());
+        profile.setModelCapabilityJson(row.modelCapabilityJson());
+        profile.setFallbackCapabilitiesJson(row.fallbackCapabilitiesJson());
+        profile.setCredentialId(row.credentialId());
     }
 
     public static void verifyNeverUpdated(ModelProfileMapper profileMapper) {

@@ -55,6 +55,27 @@ class InterviewControllerTest {
     private final ListenInterview listenInterview = mock(ListenInterview.class);
     private final PinInterviewSession pinInterviewSession = mock(PinInterviewSession.class);
     private final DeleteInterviewSession deleteInterviewSession = mock(DeleteInterviewSession.class);
+    private final com.prelude.activity.RealtimePort realtimePort =
+        mock(com.prelude.activity.RealtimePort.class);
+    private final com.prelude.activity.RealtimeConnection connection =
+        mock(com.prelude.activity.RealtimeConnection.class);
+    private final java.util.concurrent.ScheduledExecutorService heartbeatExecutor =
+        mock(java.util.concurrent.ScheduledExecutorService.class);
+
+    @org.junit.jupiter.api.BeforeEach
+    void stubTheStreamCollaborators() {
+        when(realtimePort.register(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any()))
+            .thenReturn(connection);
+        // The real stream schedules a heartbeat; without a future, complete() cannot cancel it.
+        when(heartbeatExecutor.scheduleAtFixedRate(
+                org.mockito.ArgumentMatchers.any(Runnable.class),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.any()))
+            .thenReturn(org.mockito.Mockito.mock(java.util.concurrent.ScheduledFuture.class));
+    }
 
     private final MockMvc mockMvc = MockMvcBuilders
         .standaloneSetup(new InterviewController(
@@ -65,7 +86,9 @@ class InterviewControllerTest {
             finishInterview,
             listenInterview,
             pinInterviewSession,
-            deleteInterviewSession
+            deleteInterviewSession,
+            realtimePort,
+            heartbeatExecutor
         ))
         .setControllerAdvice(new GlobalExceptionHandler())
         .build();
@@ -202,7 +225,7 @@ class InterviewControllerTest {
                 .content("{\"content\":\"我的回答\"}"))
             .andExpect(status().isOk());
 
-        verify(streamChatTurn).execute(41L, "我的回答", true, session.getId());
+        verify(streamChatTurn).execute(eq(41L), eq("我的回答"), eq(true), eq(session.getId()), any(com.prelude.activity.SseSessionStream.class));
     }
 
     @Test
@@ -212,7 +235,7 @@ class InterviewControllerTest {
                 .content("{\"content\":\"我的回答\"}"))
             .andExpect(status().isOk());
 
-        verify(streamChatTurn).execute(41L, "我的回答", false, null);
+        verify(streamChatTurn).execute(eq(41L), eq("我的回答"), eq(false), isNull(), any(com.prelude.activity.SseSessionStream.class));
     }
 
     /* A missing `content` is deliberately not rejected here: auto-start opens a session by
@@ -227,7 +250,7 @@ class InterviewControllerTest {
                 .content("{}"))
             .andExpect(status().isOk());
 
-        verify(streamChatTurn).execute(41L, null, true, null);
+        verify(streamChatTurn).execute(eq(41L), isNull(), eq(true), isNull(), any(com.prelude.activity.SseSessionStream.class));
     }
 
     @Test
@@ -282,13 +305,13 @@ class InterviewControllerTest {
         mockMvc.perform(get("/api/interview/41/listen").session(session))
             .andExpect(status().isOk());
 
-        verify(listenInterview).execute(eq(41L), eq(session.getId()));
+        verify(listenInterview).execute(eq(41L), eq(session.getId()), any(com.prelude.activity.SseSessionStream.class));
     }
 
     @Test
     void listenWithoutASessionStillReachesTheUseCaseSoItCanReportTheProblem() throws Exception {
         mockMvc.perform(get("/api/interview/41/listen")).andExpect(status().isOk());
 
-        verify(listenInterview).execute(eq(41L), isNull());
+        verify(listenInterview).execute(eq(41L), isNull(), any(com.prelude.activity.SseSessionStream.class));
     }
 }

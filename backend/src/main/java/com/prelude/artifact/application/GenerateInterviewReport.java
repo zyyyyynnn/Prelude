@@ -1,15 +1,14 @@
 package com.prelude.artifact.application;
 
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.StructuredInterviewReport;
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.domain.InterviewStage;
 import com.prelude.artifact.domain.ScoreHistory;
 import com.prelude.artifact.domain.AccountWeakness;
+import com.prelude.interview.api.port.InterviewMessageSnapshot;
 import com.prelude.interview.api.port.InterviewReportPort;
+import com.prelude.interview.api.port.InterviewSessionSnapshot;
+import com.prelude.interview.api.port.InterviewStageSnapshot;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
 import com.prelude.llm.api.LlmPort;
@@ -38,27 +37,27 @@ public class GenerateInterviewReport {
         try {
 
             log.info("Processing report generation for session {} and account {}", sessionId, accountId);
-            InterviewSession session = interviewReportPort.findSession(sessionId);
+            InterviewSessionSnapshot session = interviewReportPort.findSession(sessionId);
             if (session == null) {
                 throw new IllegalStateException("Interview session does not exist: " + sessionId);
             }
-            if (!STATUS_GENERATING.equals(session.getStatus())) {
-                if ("finished".equals(session.getStatus())
-                    && session.getSummaryReport() != null && !session.getSummaryReport().isBlank()) {
+            if (!"generating".equals(session.status())) {
+                if ("finished".equals(session.status())
+                    && session.summaryReport() != null && !session.summaryReport().isBlank()) {
                     log.info("Session {} already has a completed report; treating delivery as idempotent", sessionId);
                     return new GenerationResult(
-                        Outcome.SKIPPED, session.getSummaryReport(), null, List.of());
+                        Outcome.SKIPPED, session.summaryReport(), null, List.of());
                 }
                 throw new IllegalStateException(
                     "Report job requires a generating interview session; session=" + sessionId
-                        + ", status=" + session.getStatus());
+                        + ", status=" + session.status());
             }
 
-            List<InterviewMessage> messages = interviewReportPort.listMessages(sessionId);
+            List<InterviewMessageSnapshot> messages = interviewReportPort.listMessages(sessionId);
             String prompt = buildFinishPrompt(session, messages);
             LlmPort.CompletionResult reportCompletion = llmPort.complete(
                 new LlmPort.ModelExecutionRequest(
-                    session.getModelExecutionSnapshotId(),
+                    session.modelExecutionSnapshotId(),
                     "report",
                     PromptIds.REPORT,
                     LlmPort.ResponseMode.JSON_OBJECT,
@@ -104,7 +103,7 @@ public class GenerateInterviewReport {
             InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportCompletion.content());
             ScoreHistory scoreHistory = scoreHistory(session, reportDraft);
             List<AccountWeakness> weaknesses = extractWeaknessesBestEffort(session, reportDraft.reportMarkdown());
-            List<InterviewStage> stages = interviewReportPort.listStages(sessionId);
+            List<InterviewStageSnapshot> stages = interviewReportPort.listStages(sessionId);
             StructuredInterviewReport structuredReport = interviewReportAssembler.assemble(
                 reportDraft, stages, messages, weaknesses
             );
@@ -117,10 +116,10 @@ public class GenerateInterviewReport {
         }
     }
 
-    private String buildFinishPrompt(InterviewSession session, List<InterviewMessage> messages) {
+    private String buildFinishPrompt(InterviewSessionSnapshot session, List<InterviewMessageSnapshot> messages) {
         StringBuilder builder = new StringBuilder();
         builder.append("请根据以下模拟面试记录生成结构化 JSON 评估结果。目标岗位：")
-            .append(session.getTargetPosition())
+            .append(session.targetPosition())
             .append("""
 
                 reportMarkdown 字段中的 Markdown 报告必须包含以下固定字段：
@@ -136,37 +135,37 @@ public class GenerateInterviewReport {
 
                 面试记录：
                 """);
-        for (InterviewMessage message : messages) {
-            if (!"system".equals(message.getRole())) {
-                builder.append(message.getRole()).append(": ").append(message.getContent()).append("\n");
+        for (InterviewMessageSnapshot message : messages) {
+            if (!"system".equals(message.role())) {
+                builder.append(message.role()).append(": ").append(message.content()).append("\n");
             }
         }
         return builder.toString();
     }
 
-    private ScoreHistory scoreHistory(InterviewSession session, InterviewReportDraft report) {
+    private ScoreHistory scoreHistory(InterviewSessionSnapshot session, InterviewReportDraft report) {
         ScoreHistory score = new ScoreHistory();
-        score.setAccountId(session.getAccountId());
-        score.setSessionId(session.getId());
+        score.setAccountId(session.accountId());
+        score.setSessionId(session.id());
         score.setTechnicalScore(report.scores().technical());
         score.setExpressionScore(report.scores().expression());
         score.setLogicScore(report.scores().logic());
         return score;
     }
 
-    private List<AccountWeakness> extractWeaknessesBestEffort(InterviewSession session, String report) {
+    private List<AccountWeakness> extractWeaknessesBestEffort(InterviewSessionSnapshot session, String report) {
         try {
             return extractWeaknesses(session, report);
         } catch (Exception exception) {
-            log.warn("Failed to extract weaknesses for session {}", session.getId(), exception);
+            log.warn("Failed to extract weaknesses for session {}", session.id(), exception);
             return List.of();
         }
     }
 
-    private List<AccountWeakness> extractWeaknesses(InterviewSession session, String report) throws Exception {
+    private List<AccountWeakness> extractWeaknesses(InterviewSessionSnapshot session, String report) throws Exception {
         LlmPort.CompletionResult weaknessCompletion = llmPort.complete(
             new LlmPort.ModelExecutionRequest(
-                session.getModelExecutionSnapshotId(),
+                session.modelExecutionSnapshotId(),
                 "weaknesses",
                 PromptIds.REPORT,
                 LlmPort.ResponseMode.JSON_ARRAY,
@@ -181,42 +180,21 @@ public class GenerateInterviewReport {
                 List.of(),
                 List.of()
             ));
-        String json = stripJsonFence(weaknessCompletion.content());
-        List<WeaknessExtractionItem> items = objectMapper.readValue(json, new TypeReference<>() {});
+        List<WeaknessExtractionItem> items =
+            interviewReportParser.parseItems(weaknessCompletion.content(), WeaknessExtractionItem.class);
         ArrayList<AccountWeakness> weaknesses = new ArrayList<>();
         for (WeaknessExtractionItem item : items) {
             if (item.category() == null || item.category().isBlank() || item.description() == null || item.description().isBlank()) {
                 continue;
             }
             AccountWeakness weakness = new AccountWeakness();
-            weakness.setAccountId(session.getAccountId());
-            weakness.setSessionId(session.getId());
+            weakness.setAccountId(session.accountId());
+            weakness.setSessionId(session.id());
             weakness.setCategory(item.category().trim());
             weakness.setDescription(item.description().trim());
             weaknesses.add(weakness);
         }
         return weaknesses;
-    }
-
-    private String stripJsonFence(String content) {
-        String trimmed = content.trim();
-        if (trimmed.startsWith("```json")) {
-            trimmed = trimmed.substring(7);
-        } else if (trimmed.startsWith("```")) {
-            trimmed = trimmed.substring(3);
-        }
-        if (trimmed.endsWith("```")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 3);
-        }
-        trimmed = trimmed.trim();
-        if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
-            int start = trimmed.indexOf('[');
-            int end   = trimmed.lastIndexOf(']');
-            if (start >= 0 && end > start) {
-                return trimmed.substring(start, end + 1);
-            }
-        }
-        return trimmed;
     }
 
     private record WeaknessExtractionItem(String category, String description) {}

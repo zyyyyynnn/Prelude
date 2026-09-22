@@ -1,11 +1,12 @@
 package com.prelude.assets;
 
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.AssetMapper;
+import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import com.prelude.identity.application.ProfileService;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.AssetFixtures;
 import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,13 +135,13 @@ class AssetLifecycleTest {
         MockMultipartFile secondUpload =
             new MockMultipartFile("file", "me-2.png", "image/png", png);
 
-        var first = profileService.updateAvatar(firstUpload);
+        var first = profileService.updateAvatar(SessionFixtures.avatarUpload(firstUpload));
         assertThat(first.avatarUrl()).startsWith("/api/assets/");
         assertThat(first.avatarUrl()).endsWith("/content");
         long firstAssetId = assetIdFromUrl(first.avatarUrl());
         assertThat(assetMapper.selectById(firstAssetId)).isNotNull();
 
-        var second = profileService.updateAvatar(secondUpload);
+        var second = profileService.updateAvatar(SessionFixtures.avatarUpload(secondUpload));
         long secondAssetId = assetIdFromUrl(second.avatarUrl());
         assertThat(secondAssetId).isNotEqualTo(firstAssetId);
         assertThat(assetMapper.selectById(secondAssetId)).isNotNull();

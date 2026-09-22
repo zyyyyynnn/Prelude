@@ -7,8 +7,7 @@ import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
 import com.prelude.interview.application.port.InterviewTurnSink;
 import com.prelude.interview.application.port.VoicePort;
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.domain.InterviewSession;
+import com.prelude.interview.application.port.InterviewUserTurnSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -73,8 +72,8 @@ public class VoiceInterviewTurnService {
                 new InterviewTurnCommand(sessionId, accountId, transcribed, false, false),
                 new InterviewTurnSink() {
                     @Override
-                    public void userAccepted(InterviewMessage userMessage) {
-                        sink.userText(userMessage.getContent());
+                    public void userAccepted(InterviewUserTurnSnapshot userTurn) {
+                        sink.userText(userTurn.content());
                     }
 
                     @Override
@@ -102,8 +101,8 @@ public class VoiceInterviewTurnService {
             awaitTtsFutures(ttsFutures, TTS_AWAIT_SECONDS, sessionId, sink, ttsFailed, ttsTimedOut);
             sink.status("speech_end");
 
-            triggerJudge(result.session(), result.userMessage(), sink);
-            interviewTurnPort.summarizeIfNeeded(result.session());
+            triggerJudge(result.session().sessionId(), result.userTurn(), sink);
+            interviewTurnPort.summarizeIfNeeded(result.session().sessionId());
         } catch (RuntimeException error) {
             log.error("Voice turn processing chain crashed", error);
             sink.error("网络状况不佳，已为您切回文字模式");
@@ -179,12 +178,12 @@ public class VoiceInterviewTurnService {
         }
     }
 
-    private void triggerJudge(InterviewSession session, InterviewMessage userMessage, VoiceTurnEventSink sink) {
-        if (userMessage == null) {
+    private void triggerJudge(Long sessionId, InterviewUserTurnSnapshot userTurn, VoiceTurnEventSink sink) {
+        if (userTurn == null) {
             return;
         }
         try {
-            interviewTurnPort.judgeAndPersist(session, userMessage).ifPresent(result ->
+            interviewTurnPort.judgeAndPersist(sessionId, userTurn.messageId()).ifPresent(result ->
                 sink.judge(result.score(), result.hint())
             );
         } catch (RuntimeException error) {

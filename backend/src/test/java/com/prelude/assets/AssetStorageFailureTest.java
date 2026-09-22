@@ -1,12 +1,13 @@
 package com.prelude.assets;
 
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.AssetMapper;
+import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import com.prelude.test.AssetFixtures;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.identity.application.AvatarPublication;
 import com.prelude.identity.application.ProfileService;
 import com.prelude.test.AccountFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,7 +91,7 @@ class AssetStorageFailureTest {
             .when(objectStoragePort).delete(anyString());
 
         ExceptionFixtures.assertBusinessException(
-            () -> profileService.updateAvatar(avatarFile()), "revision_conflict");
+            () -> profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile())), "revision_conflict");
 
         Asset anchor = latestPendingAsset(accountId);
         assertThat(anchor).isNotNull();

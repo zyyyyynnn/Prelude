@@ -1,10 +1,9 @@
 package com.prelude.llm;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
 import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
+import com.prelude.llm.application.port.ModelProfileStore;
+import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
 
 /**
  * Shared profile loading and frozen-capability resolution. Kept free of the
@@ -15,35 +14,30 @@ final class ProfileCapabilities {
     private ProfileCapabilities() {
     }
 
-    static ModelProfile requireProfile(ModelProfileMapper profileMapper, Long accountId) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
-        if (profile == null) {
-            throw BusinessException.badRequest("请先配置模型服务");
-        }
-        return profile;
+    static ProfileRow requireProfile(ModelProfileStore profileStore, Long accountId) {
+        return profileStore.findActiveByAccount(accountId)
+            .orElseThrow(() -> BusinessException.badRequest("尚未配置模型档案"));
     }
 
     static ModelCapabilityResponse capabilityForProfile(
-        ModelProfile profile,
+        ProfileRow profile,
         String model,
         ModelCapabilityCatalog capabilityCatalog,
         ModelCapabilityJson capabilityJson
     ) {
-        if (!CustomLlmProtocol.isCustom(profile.getProvider())) {
-            return capabilityCatalog.capability(profile.getProvider(), model);
+        if (!CustomLlmProtocol.isCustom(profile.provider())) {
+            return capabilityCatalog.capability(profile.provider(), model);
         }
-        if (profile.getModel().equals(model)) {
-            ModelCapabilityResponse stored = capabilityJson.read(profile.getModelCapabilityJson());
-            if (profile.getProvider().equals(stored.provider()) && model.equals(stored.model())) {
+        if (profile.model().equals(model)) {
+            ModelCapabilityResponse stored = capabilityJson.read(profile.modelCapabilityJson());
+            if (profile.provider().equals(stored.provider()) && model.equals(stored.model())) {
                 return stored;
             }
         }
-        return capabilityJson.readList(profile.getFallbackCapabilitiesJson()).stream()
-            .filter(capability -> profile.getProvider().equals(capability.provider())
+        return capabilityJson.readList(profile.fallbackCapabilitiesJson()).stream()
+            .filter(capability -> profile.provider().equals(capability.provider())
                 && model.equals(capability.model()))
             .findFirst()
-            .orElseThrow(() -> BusinessException.badRequest("所选模型能力尚未确认，请先保存模型配置"));
+            .orElseThrow(() -> BusinessException.badRequest("所选模型能力未确认，请缺少模型能力信息"));
     }
 }

@@ -15,7 +15,7 @@ class ModelExecutionSnapshotServiceTest {
         var snapshot = LlmFixtures.snapshotWithDefaults(42L, 7L, 1L, "deepseek", "deepseek-v4-flash", "HIGH", 4096);
         when(mapper.selectById(42L)).thenReturn(snapshot);
         ModelExecutionSnapshotService service = new ModelExecutionSnapshotService(
-            null, mapper, null, null, null, null);
+            null, null, mapper, null, null, null, null);
 
         assertThat(service.frozenConfiguration(7L, 42L))
             .extracting("model", "reasoningLevel")

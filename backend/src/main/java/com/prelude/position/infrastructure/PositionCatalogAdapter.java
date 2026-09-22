@@ -1,7 +1,7 @@
 package com.prelude.position.infrastructure;
 
 import com.prelude.position.api.port.PositionCatalogPort;
-import com.prelude.position.api.port.PositionRepository;
+import com.prelude.position.application.port.PositionRepository;
 import com.prelude.position.domain.Position;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

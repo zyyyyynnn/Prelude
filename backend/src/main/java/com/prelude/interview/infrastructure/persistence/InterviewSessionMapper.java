@@ -2,8 +2,7 @@ package com.prelude.interview.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.infrastructure.persistence.InterviewSessionEntity;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
@@ -11,19 +10,8 @@ import org.apache.ibatis.annotations.Update;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface InterviewSessionMapper extends BaseMapper<InterviewSession>, InterviewSessionRepository {
+public interface InterviewSessionMapper extends BaseMapper<InterviewSessionEntity> {
 
-    @Override
-    default int add(InterviewSession session) {
-        return insert(session);
-    }
-
-    @Override
-    default int update(InterviewSession session) {
-        return updateById(session);
-    }
-
-    @Override
     @Update("""
         UPDATE interview_session
         SET status = 'generating'
@@ -33,7 +21,6 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSession>, In
         """)
     int markGeneratingIfOngoing(@Param("sessionId") Long sessionId, @Param("accountId") Long accountId);
 
-    @Override
     @Update("""
         UPDATE interview_session
         SET summary = #{summary}
@@ -61,7 +48,6 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSession>, In
         """)
     int restoreOngoingIfGenerating(@Param("sessionId") Long sessionId);
 
-    @Override
     @Update("""
         UPDATE interview_session
         SET pinned_at = #{pinnedAt,jdbcType=TIMESTAMP}
@@ -74,14 +60,12 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSession>, In
         @Param("pinnedAt") LocalDateTime pinnedAt
     );
 
-    @Override
     @Delete("DELETE FROM interview_session WHERE id = #{sessionId} AND account_id = #{accountId}")
     int deleteOwned(@Param("sessionId") Long sessionId, @Param("accountId") Long accountId);
 
-    @Override
-    default List<InterviewSession> listByUser(Long accountId) {
-        return selectList(new LambdaQueryWrapper<InterviewSession>()
-            .eq(InterviewSession::getAccountId, accountId)
+    default List<InterviewSessionEntity> listByUser(Long accountId) {
+        return selectList(new LambdaQueryWrapper<InterviewSessionEntity>()
+            .eq(InterviewSessionEntity::getAccountId, accountId)
             .last("ORDER BY pinned_at IS NULL, pinned_at DESC, created_at DESC"));
     }
 }

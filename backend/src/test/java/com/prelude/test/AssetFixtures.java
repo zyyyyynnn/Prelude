@@ -1,8 +1,8 @@
 package com.prelude.test;
 
 import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.StoredAttachment;
+import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.StoredAttachment;
 
 public final class AssetFixtures {
 
@@ -42,5 +42,17 @@ public final class AssetFixtures {
 
     public static boolean isPendingUpload(Object status) {
         return AssetStatus.PENDING_UPLOAD.equals(status);
+    }
+
+    public static com.prelude.assets.application.port.AttachmentStorage.AttachmentRow attachmentRow(
+        Long id, Long assetId, String fileName) {
+        return new com.prelude.assets.application.port.AttachmentStorage.AttachmentRow(
+            id, 7L, assetId, fileName, "text", null, null);
+    }
+
+    public static com.prelude.assets.application.port.AssetLookup.AssetRow assetRow(
+        Long id, String mediaType, Long byteSize) {
+        return new com.prelude.assets.application.port.AssetLookup.AssetRow(
+            id, 7L, "attachment", "key-" + id, mediaType, byteSize, "READY");
     }
 }

@@ -2,9 +2,9 @@ package com.prelude.jobs;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.persistence.BackgroundJob;
-import com.prelude.jobs.persistence.BackgroundJobMapper;
-import com.prelude.jobs.persistence.JobAttemptMapper;
+import com.prelude.jobs.infrastructure.persistence.BackgroundJob;
+import com.prelude.jobs.infrastructure.persistence.BackgroundJobMapper;
+import com.prelude.jobs.infrastructure.persistence.JobAttemptMapper;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.JobFixtures;
 import org.junit.jupiter.api.AfterEach;

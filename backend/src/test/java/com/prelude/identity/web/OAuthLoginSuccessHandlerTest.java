@@ -3,6 +3,7 @@ package com.prelude.identity.web;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.infrastructure.OAuthVerifiedEmailResolver;
 import com.prelude.test.AccountFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -63,7 +64,8 @@ class OAuthLoginSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(oauthLoginService).resolveLogin("google", "google-sub-1", "owner@example.com", session);
+        verify(oauthLoginService).resolveLogin(eq("google"), eq("google-sub-1"), eq("owner@example.com"),
+            sessionAccessFor(session));
         assertThat(response.getRedirectedUrl()).isEqualTo("/interview");
     }
 
@@ -77,7 +79,7 @@ class OAuthLoginSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(oauthLoginService).resolveLogin(eq("google"), eq("google-sub-2"), isNull(), eq(session));
+        verify(oauthLoginService).resolveLogin(eq("google"), eq("google-sub-2"), isNull(), sessionAccessFor(session));
     }
 
     @Test
@@ -92,7 +94,8 @@ class OAuthLoginSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(oauthLoginService).resolveLogin("github", "42", "owner@example.com", session);
+        verify(oauthLoginService).resolveLogin(eq("github"), eq("42"), eq("owner@example.com"),
+            sessionAccessFor(session));
     }
 
     @Test
@@ -120,5 +123,13 @@ class OAuthLoginSuccessHandlerTest {
     private OAuth2AuthenticationToken token(String registrationId, OAuth2User principal) {
         return new OAuth2AuthenticationToken(
             principal, principal.getAuthorities(), registrationId);
+    }
+
+    /** Matches the adapted session by the id it exposes, so the adapter type stays free to change. */
+    private static com.prelude.identity.application.port.HttpSessionAccess sessionAccessFor(
+        org.springframework.mock.web.MockHttpSession expected) {
+        org.mockito.ArgumentMatcher<com.prelude.identity.application.port.HttpSessionAccess> matcher =
+            actual -> actual != null && expected.getId().equals(actual.currentSessionId());
+        return org.mockito.ArgumentMatchers.argThat(matcher);
     }
 }

@@ -6,14 +6,13 @@ import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.UserProfileRequest;
 import com.prelude.identity.api.UserProfileResponse;
 import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AvatarUpload;
 import com.prelude.identity.domain.Account;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
 
@@ -86,25 +85,20 @@ public class ProfileService {
         return toResponse(accounts.findById(accountId));
     }
 
-    public UserProfileResponse updateAvatar(MultipartFile file) {
+    public UserProfileResponse updateAvatar(AvatarUpload upload) {
         long accountId = currentAccount.requireId();
         Account account = requireAccount(accountId);
-        if (file == null || file.isEmpty()) {
+        if (upload == null || upload.isEmpty()) {
             throw BusinessException.badRequest("请选择头像文件");
         }
-        String extension = extensionOf(file.getOriginalFilename());
+        String extension = extensionOf(upload.fileName());
         if (!AVATAR_EXTENSIONS.contains(extension)) {
             throw BusinessException.badRequest("头像仅支持 JPG、PNG、WebP 或 GIF");
         }
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException exception) {
-            throw BusinessException.badRequest("头像上传失败");
-        }
-        String mediaType = file.getContentType() == null || file.getContentType().isBlank()
+        byte[] bytes = upload.content();
+        String mediaType = upload.mediaType() == null || upload.mediaType().isBlank()
             ? "application/octet-stream"
-            : file.getContentType();
+            : upload.mediaType();
 
         String previousAvatarUrl = account.getAvatarUrl();
         String candidateUrl = avatarStoragePort.stage(accountId, mediaType, bytes);

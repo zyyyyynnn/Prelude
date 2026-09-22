@@ -6,6 +6,7 @@ import com.prelude.identity.api.UserProfileResponse;
 import com.prelude.identity.domain.Account;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -51,7 +52,7 @@ class ProfileServiceAvatarTest {
         doThrow(ExceptionFixtures.revisionConflict("资料已被其他操作更新，请刷新后重试"))
             .when(avatarPublication).publish(CANDIDATE_AVATAR, account);
 
-        ExceptionFixtures.assertBusinessException(() -> profileService.updateAvatar(avatarFile()), "revision_conflict");
+        ExceptionFixtures.assertBusinessException(() -> profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile())), "revision_conflict");
 
         verify(avatarStoragePort).discard(7L, CANDIDATE_AVATAR);
         verify(avatarStoragePort, never()).discard(7L, OLD_AVATAR);
@@ -62,7 +63,7 @@ class ProfileServiceAvatarTest {
     void successCommitsTheReferenceThenCleansUpTheObsoleteAvatar() {
         when(accounts.findById(7L)).thenReturn(account, reloaded());
 
-        UserProfileResponse response = profileService.updateAvatar(avatarFile());
+        UserProfileResponse response = profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile()));
 
         assertThat(response.avatarUrl()).isEqualTo(CANDIDATE_AVATAR);
         verify(avatarPublication).publish(CANDIDATE_AVATAR, account);
@@ -76,7 +77,7 @@ class ProfileServiceAvatarTest {
         doThrow(new IllegalStateException("storage down"))
             .when(avatarStoragePort).discard(7L, OLD_AVATAR);
 
-        UserProfileResponse response = profileService.updateAvatar(avatarFile());
+        UserProfileResponse response = profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile()));
 
         assertThat(response.avatarUrl()).isEqualTo(CANDIDATE_AVATAR);
     }

@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
-import com.prelude.jobs.persistence.BackgroundJob;
-import com.prelude.jobs.persistence.BackgroundJobMapper;
-import com.prelude.jobs.persistence.JobAttempt;
-import com.prelude.jobs.persistence.JobAttemptMapper;
+import com.prelude.jobs.infrastructure.persistence.BackgroundJob;
+import com.prelude.jobs.infrastructure.persistence.BackgroundJobMapper;
+import com.prelude.jobs.infrastructure.persistence.JobAttempt;
+import com.prelude.jobs.infrastructure.persistence.JobAttemptMapper;
 
 import java.util.List;
 

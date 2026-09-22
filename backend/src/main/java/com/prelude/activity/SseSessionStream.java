@@ -26,6 +26,9 @@ public final class SseSessionStream {
     private static final long TIMEOUT_MS = 300_000L;
     private static final long HEARTBEAT_INTERVAL_MS = 30_000L;
 
+    /** What the client is told when the ceiling above expires. */
+    private static final String TIMEOUT_MESSAGE = "连接超时，请重试";
+
     private final SseEmitter emitter;
     private final RealtimeConnection connection;
     private final ScheduledFuture<?> heartbeat;
@@ -44,16 +47,6 @@ public final class SseSessionStream {
         RealtimePort realtimePort,
         Long sessionId,
         ScheduledExecutorService heartbeatExecutor
-    ) {
-        return open(realtimePort, sessionId, heartbeatExecutor, () -> {
-        });
-    }
-
-    public static SseSessionStream open(
-        RealtimePort realtimePort,
-        Long sessionId,
-        ScheduledExecutorService heartbeatExecutor,
-        Runnable onTimeout
     ) {
         SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
         String connectionId = UUID.randomUUID().toString();
@@ -88,13 +81,14 @@ public final class SseSessionStream {
             heartbeat.cancel(false);
             realtimePort.unregister(sessionId, connectionId);
         };
+        SseSessionStream stream = new SseSessionStream(emitter, connection, heartbeat);
         emitter.onCompletion(shutdown);
         emitter.onTimeout(() -> {
             shutdown.run();
-            onTimeout.run();
+            stream.completeWithError(TIMEOUT_MESSAGE);
         });
         emitter.onError(error -> shutdown.run());
-        return new SseSessionStream(emitter, connection, heartbeat);
+        return stream;
     }
 
     public SseEmitter emitter() {
@@ -108,6 +102,17 @@ public final class SseSessionStream {
     public void complete() {
         heartbeat.cancel(false);
         connection.complete();
+    }
+
+    /** Tells the client why the stream ended, then closes it. */
+    public void completeWithError(String message) {
+        try {
+            connection.send("error", message);
+        } catch (RuntimeException ignored) {
+            // Connection may already be closed.
+        } finally {
+            complete();
+        }
     }
 
     private static final class RealtimeDeliveryException extends RuntimeException {

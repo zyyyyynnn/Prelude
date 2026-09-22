@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.artifact.application.port.ArtifactRepository;
 import com.prelude.artifact.domain.Artifact;
 import com.prelude.artifact.domain.ArtifactVersion;
+import com.prelude.artifact.infrastructure.persistence.ArtifactEntity;
 import com.prelude.artifact.infrastructure.persistence.ArtifactMapper;
+import com.prelude.artifact.infrastructure.persistence.ArtifactVersionEntity;
 import com.prelude.artifact.infrastructure.persistence.ArtifactVersionMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,25 +21,31 @@ public class MybatisArtifactRepository implements ArtifactRepository {
 
     @Override
     public Artifact find(Long accountId, String kind) {
-        return artifactMapper.selectOne(new LambdaQueryWrapper<Artifact>()
-            .eq(Artifact::getAccountId, accountId)
-            .eq(Artifact::getKind, kind)
+        ArtifactEntity entity = artifactMapper.selectOne(new LambdaQueryWrapper<ArtifactEntity>()
+            .eq(ArtifactEntity::getAccountId, accountId)
+            .eq(ArtifactEntity::getKind, kind)
             .last("LIMIT 1"));
+        return entity == null ? null : entity.toDomain();
     }
 
     @Override
     public Artifact findById(Long artifactId) {
-        return artifactMapper.selectById(artifactId);
+        ArtifactEntity entity = artifactMapper.selectById(artifactId);
+        return entity == null ? null : entity.toDomain();
     }
 
     @Override
     public void add(Artifact artifact) {
-        artifactMapper.insert(artifact);
+        ArtifactEntity entity = ArtifactEntity.of(artifact);
+        artifactMapper.insert(entity);
+        artifact.setId(entity.getId());
     }
 
     @Override
     public void addVersion(ArtifactVersion version) {
-        artifactVersionMapper.insert(version);
+        ArtifactVersionEntity entity = ArtifactVersionEntity.of(version);
+        artifactVersionMapper.insert(entity);
+        version.setId(entity.getId());
     }
 
     @Override
@@ -47,8 +55,11 @@ public class MybatisArtifactRepository implements ArtifactRepository {
 
     @Override
     public List<ArtifactVersion> listVersions(Long artifactId) {
-        return artifactVersionMapper.selectList(new LambdaQueryWrapper<ArtifactVersion>()
-            .eq(ArtifactVersion::getArtifactId, artifactId)
-            .orderByAsc(ArtifactVersion::getVersionNumber));
+        return artifactVersionMapper.selectList(new LambdaQueryWrapper<ArtifactVersionEntity>()
+            .eq(ArtifactVersionEntity::getArtifactId, artifactId)
+            .orderByAsc(ArtifactVersionEntity::getVersionNumber))
+            .stream()
+            .map(ArtifactVersionEntity::toDomain)
+            .toList();
     }
 }
