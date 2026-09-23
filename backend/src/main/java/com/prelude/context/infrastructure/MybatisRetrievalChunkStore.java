@@ -21,8 +21,8 @@ public class MybatisRetrievalChunkStore implements RetrievalChunkStore {
 
     @Override
     public List<StoredChunk> load(String scopeType, Long scopeId) {
-        List<RetrievalChunk> rows = mapper.selectList(scopeQuery(scopeType, scopeId)
-            .orderByAsc(RetrievalChunk::getOrdinal));
+        List<RetrievalChunkEntity> rows = mapper.selectList(scopeQuery(scopeType, scopeId)
+            .orderByAsc(RetrievalChunkEntity::getOrdinal));
         if (rows == null) {
             return List.of();
         }
@@ -42,7 +42,7 @@ public class MybatisRetrievalChunkStore implements RetrievalChunkStore {
     public void replace(String scopeType, Long scopeId, List<StoredChunk> chunks) {
         mapper.delete(scopeQuery(scopeType, scopeId));
         for (StoredChunk stored : chunks) {
-            RetrievalChunk row = new RetrievalChunk();
+            RetrievalChunkEntity row = new RetrievalChunkEntity();
             row.setScopeType(scopeType);
             row.setScopeId(scopeId);
             row.setOrdinal(stored.ordinal());
@@ -61,10 +61,10 @@ public class MybatisRetrievalChunkStore implements RetrievalChunkStore {
         mapper.delete(scopeQuery(scopeType, scopeId));
     }
 
-    private LambdaQueryWrapper<RetrievalChunk> scopeQuery(String scopeType, Long scopeId) {
-        return new LambdaQueryWrapper<RetrievalChunk>()
-            .eq(RetrievalChunk::getScopeType, scopeType)
-            .eq(RetrievalChunk::getScopeId, scopeId);
+    private LambdaQueryWrapper<RetrievalChunkEntity> scopeQuery(String scopeType, Long scopeId) {
+        return new LambdaQueryWrapper<RetrievalChunkEntity>()
+            .eq(RetrievalChunkEntity::getScopeType, scopeType)
+            .eq(RetrievalChunkEntity::getScopeId, scopeId);
     }
 
     private String serializeEmbedding(float[] embedding) {
@@ -78,7 +78,7 @@ public class MybatisRetrievalChunkStore implements RetrievalChunkStore {
         }
     }
 
-    private float[] parseEmbedding(RetrievalChunk row) {
+    private float[] parseEmbedding(RetrievalChunkEntity row) {
         if (row.getEmbeddingJson() == null || row.getEmbeddingJson().isBlank()) {
             return null;
         }

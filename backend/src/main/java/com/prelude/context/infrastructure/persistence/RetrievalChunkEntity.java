@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @TableName("retrieval_chunk")
-public class RetrievalChunk {
+public class RetrievalChunkEntity {
 
     private Long id;
     private String scopeType;
