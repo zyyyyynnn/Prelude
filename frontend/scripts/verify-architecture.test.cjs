@@ -38,7 +38,17 @@ test('rejects static, dynamic and re-export cross-feature internals', () => {
 
 test('allows application composition, public feature imports and internal imports', () => {
   const result = verify({
-    'app/shell.ts': "const panel = import('@/features/resume/ResumeManagementPanel')",
+    'app/shell.ts':
+      "import { ResumeManagementPanel, ResumeRow, fetchResumes } from '@/features/resume'\nconst panel = import('@/features/resume/ResumeManagementPanel')\nexport const useShellResumes = () => fetchResumes()\nexport const ShellRow = () => ResumeRow",
+    'features/resume/index.ts':
+      "export { fetchResumes } from './api'\nexport { ResumeManagementPanel } from './ResumeManagementPanel'\nexport { ResumeRow } from './ResumeRow'",
+    'features/resume/api.ts': 'export const fetchResumes = () => []',
+    'features/resume/ResumeManagementPanel.ts': 'export const ResumeManagementPanel = () => null',
+    'features/resume/ResumeRow.ts': 'export const ResumeRow = () => null',
+    'features/resume/list.ts':
+      "import { ResumeRow } from './ResumeRow'\nimport { fetchResumes } from './api'\nexport const useResumes = () => fetchResumes()",
+    'features/resume/page.ts':
+      "import { ResumeManagementPanel } from '@/features/resume'\nexport const ResumePage = () => ResumeManagementPanel",
     'features/settings/example.ts':
       "import { value } from '@/features/resume'; import './internal'",
     'features/settings/internal.ts':
@@ -46,6 +56,27 @@ test('allows application composition, public feature imports and internal import
     'shared/lib/cn.ts': "export { cn } from 'cn'",
   })
   assert.equal(result.status, 0, result.stderr)
+})
+
+/* The exemption above is granted by the entry's registration, so it has to be the
+   registration that decides. Same tree, one file the entry does not name: the deep
+   import must now be refused. Without this pair the test above would pass just as
+   well with the rule deleted, because a surface that exports nothing cannot be
+   violated. */
+test('refuses a composition-root deep import when the entry does not register it', () => {
+  const result = verify({
+    'app/shell.ts': "const panel = import('@/features/resume/ResumeRow')",
+    'features/resume/index.ts':
+      "export { fetchResumes } from './api'\nexport { ResumeManagementPanel } from './ResumeManagementPanel'",
+    'features/resume/api.ts': 'export const fetchResumes = () => []',
+    'features/resume/ResumeManagementPanel.ts': 'export const ResumeManagementPanel = () => null',
+    'features/resume/ResumeRow.ts': 'export const ResumeRow = () => null',
+    'features/resume/list.ts': "import { ResumeRow } from './ResumeRow'",
+    'shared/lib/cn.ts': "export { cn } from 'cn'",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /imports @\/features\/resume\/ResumeRow/)
+  assert.match(result.stderr, /register ResumeRow in features\/resume\/index\.ts/)
 })
 
 test('rejects reverse dynamic dependencies and direct cn imports', () => {
