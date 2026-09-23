@@ -2,6 +2,7 @@ package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +11,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class InterviewSessionAccess {
-
-    private static final String STATUS_ONGOING = "ongoing";
 
     private final InterviewSessionRepository interviewSessionRepository;
     private final CurrentAccount currentAccount;
@@ -30,7 +29,7 @@ public class InterviewSessionAccess {
 
     public InterviewSession requireOngoing(Long sessionId, long accountId) {
         InterviewSession session = requireOwned(sessionId, accountId);
-        if (!STATUS_ONGOING.equals(session.getStatus())) {
+        if (!InterviewSessionStatus.ONGOING.matches(session.getStatus())) {
             throw BusinessException.badRequest("面试会话已结束");
         }
         return session;

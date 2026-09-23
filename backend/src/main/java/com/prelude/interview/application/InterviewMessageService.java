@@ -1,6 +1,7 @@
 package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewMessage;
@@ -12,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class InterviewMessageService {
-
-    private static final String STATUS_ONGOING = "ongoing";
 
     private final InterviewMessageRepository interviewMessageRepository;
     private final InterviewSessionRepository interviewSessionRepository;
@@ -31,7 +30,7 @@ public class InterviewMessageService {
         if (status == null) {
             throw BusinessException.badRequest("面试会话不存在");
         }
-        if (!STATUS_ONGOING.equals(status)) {
+        if (!InterviewSessionStatus.ONGOING.matches(status)) {
             throw BusinessException.badRequest("面试会话已结束或正在生成报告");
         }
 

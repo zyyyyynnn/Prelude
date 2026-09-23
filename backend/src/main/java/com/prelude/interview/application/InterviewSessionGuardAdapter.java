@@ -1,5 +1,6 @@
 package com.prelude.interview.application;
 
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.port.InterviewSessionGuard;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
@@ -12,8 +13,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class InterviewSessionGuardAdapter implements InterviewSessionGuard {
 
-    private static final String STATUS_ONGOING = "ongoing";
-
     private final InterviewSessionRepository interviewSessionRepository;
 
     @Override
@@ -24,6 +23,6 @@ public class InterviewSessionGuardAdapter implements InterviewSessionGuard {
         InterviewSession session = interviewSessionRepository.selectById(sessionId);
         return session != null
             && Objects.equals(session.getAccountId(), accountId)
-            && STATUS_ONGOING.equals(session.getStatus());
+            && InterviewSessionStatus.ONGOING.matches(session.getStatus());
     }
 }

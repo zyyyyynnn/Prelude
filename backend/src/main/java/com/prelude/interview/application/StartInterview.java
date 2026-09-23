@@ -6,6 +6,7 @@ import com.prelude.position.api.port.PositionCatalogPort;
 import com.prelude.position.api.port.PositionCatalogPort.PositionSnapshot;
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
@@ -26,7 +27,6 @@ import java.util.concurrent.Executor;
 @RequiredArgsConstructor
 public class StartInterview {
 
-    private static final String STATUS_ONGOING = "ongoing";
     private static final String ROLE_SYSTEM = "system";
 
     private final ResumeContextPort resumeContextPort;
@@ -61,7 +61,7 @@ public class StartInterview {
         ModelExecutionSnapshotRef snapshotRef = llmPort.freezeSnapshot(
             new LlmPort.FreezeSnapshotCommand(accountId, null, command.requestedModel()));
         session.setModelExecutionSnapshotId(snapshotRef.snapshotId());
-        session.setStatus(STATUS_ONGOING);
+        session.setStatus(InterviewSessionStatus.ONGOING.wire());
         session.setJdText(command.jdText());
         interviewSessionRepository.add(session);
         attachmentContextPort.bind(accountId, command.attachmentIds(), "interview", session.getId());

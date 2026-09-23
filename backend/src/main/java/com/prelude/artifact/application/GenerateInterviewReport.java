@@ -8,6 +8,7 @@ import com.prelude.artifact.domain.AccountWeakness;
 import com.prelude.interview.api.port.InterviewMessageSnapshot;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.interview.api.port.InterviewSessionSnapshot;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.api.port.InterviewStageSnapshot;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
@@ -25,8 +26,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GenerateInterviewReport {
 
-    private static final String STATUS_GENERATING = "generating";
-
     private final ObjectMapper objectMapper;
     private final InterviewReportPort interviewReportPort;
     private final LlmPort llmPort;
@@ -41,8 +40,8 @@ public class GenerateInterviewReport {
             if (session == null) {
                 throw new IllegalStateException("Interview session does not exist: " + sessionId);
             }
-            if (!"generating".equals(session.status())) {
-                if ("finished".equals(session.status())
+            if (!InterviewSessionStatus.GENERATING.matches(session.status())) {
+                if (InterviewSessionStatus.FINISHED.matches(session.status())
                     && session.summaryReport() != null && !session.summaryReport().isBlank()) {
                     log.info("Session {} already has a completed report; treating delivery as idempotent", sessionId);
                     return new GenerationResult(

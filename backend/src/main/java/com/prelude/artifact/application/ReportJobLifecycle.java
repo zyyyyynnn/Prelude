@@ -3,6 +3,7 @@ package com.prelude.artifact.application;
 import com.prelude.activity.RealtimePort;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.interview.api.port.InterviewSessionSnapshot;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
@@ -34,7 +35,7 @@ public class ReportJobLifecycle {
             return;
         }
         InterviewSessionSnapshot session = interviewReportPort.findSession(event.subjectId());
-        if (session == null || !"finished".equals(session.status())
+        if (session == null || !InterviewSessionStatus.FINISHED.matches(session.status())
             || session.summaryReport() == null || session.summaryReport().isBlank()) {
             log.error("Report job {} succeeded without a durable finished report for session {}",
                 event.jobId(), event.subjectId());
