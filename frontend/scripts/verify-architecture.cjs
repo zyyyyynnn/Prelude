@@ -456,7 +456,8 @@ for (const name of blockedPackages) {
          `settings` is a local variable, not a claim about the product. */
       const texts = []
       if (ts.isStringLiteralLike(node)) texts.push(node.text)
-      if (ts.isTemplateLiteralLiteralPart?.(node)) texts.push(node.text)
+      if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node))
+        texts.push(node.text)
       if (ts.isJsxText(node)) texts.push(node.text)
       for (const text of texts) {
         if (featureReference.test(text)) {

@@ -204,3 +204,19 @@ test('accepts an entry that only re-exports names the app reads', () => {
   })
   assert.equal(result.status, 0, result.stderr)
 })
+
+/* A template span's literal part is as much a claim about the product as a string literal.
+   This source used to be read through `ts.isTemplateLiteralLiteralPart`, which is not a
+   function in the TypeScript API — the optional call made the third claimed source silently
+   absent rather than failing. */
+test('rejects shared vocabulary carried by a substituted template literal', () => {
+  const result = verify({
+    'features/report/Thing.ts': 'export const Thing = 1',
+    'shared/ui/index.ts': "export { label } from './label'",
+    'shared/ui/label.tsx': 'export const label = (id) => `report/${id}`',
+    'app/page.tsx': "import { label } from '@/shared/ui'",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /FAIL \(1\)/)
+  assert.match(result.stderr, /shared\/ui\/label\.tsx: names the feature "report\/"/)
+})

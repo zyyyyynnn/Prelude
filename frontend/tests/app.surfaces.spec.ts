@@ -785,26 +785,26 @@ test('@visual keeps every hairline divider clear of the content it separates', a
   await installApi(page)
   await page.goto('/interview')
   await expect(page.getByRole('button', { name: '开始新面试' })).toBeVisible()
-  await expect(dividerViolations(page)).resolves.toEqual([])
+  await expectClean(hairlineDividerScan(page), 'hairline dividers')
 
   await page.getByRole('button', { name: '设置' }).click()
   await expect(page.getByRole('heading', { name: '修改密码' })).toBeVisible()
-  await expect(dividerViolations(page)).resolves.toEqual([])
+  await expectClean(hairlineDividerScan(page), 'hairline dividers')
   await page.getByRole('button', { name: '模型管理' }).click()
   await expect(page.getByRole('heading', { name: '高级设置' })).toBeVisible()
-  await expect(dividerViolations(page)).resolves.toEqual([])
+  await expectClean(hairlineDividerScan(page), 'hairline dividers')
   await page.keyboard.press('Escape')
 
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'App rail' })).toBeVisible()
-  await expect(dividerViolations(page)).resolves.toEqual([])
+  await expectClean(hairlineDividerScan(page), 'hairline dividers')
 })
 
 test('@visual keeps every composer control on one centre line', async ({ page }) => {
   await installApi(page)
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
-  await expect(composerAlignmentViolations(page)).resolves.toEqual([])
+  await expectClean(composerAlignmentScan(page), 'composer control clusters')
 })
 
 /* Each gallery panel carries its own baseline. One full-page shot let a panel drift
@@ -1183,28 +1183,43 @@ async function settleOverlay(overlay: ReturnType<Page['locator']>) {
    feedback — the hold button's 2px press nudge did exactly that beside its neighbours.
    Every button in a composer's trailing cluster has to share one top and one bottom edge,
    in each state the gallery freezes. */
-async function composerAlignmentViolations(page: Page) {
-  return page.locator('[data-slot="prompt-bar-controls"]').evaluateAll((rows) =>
-    rows.flatMap((row) => {
-      const cluster = row.lastElementChild as HTMLElement
-      const buttons = Array.from(cluster.querySelectorAll('button'))
-      if (buttons.length < 2) return []
-      const boxes = buttons.map((button) => button.getBoundingClientRect())
-      const tops = [...new Set(boxes.map((box) => Math.round(box.top)))]
-      const bottoms = [...new Set(boxes.map((box) => Math.round(box.bottom)))]
-      if (tops.length === 1 && bottoms.length === 1) return []
-      return [
-        {
-          buttons: buttons.map((button) => button.getAttribute('aria-label')?.trim()),
-          tops,
-          bottoms,
-        },
-      ]
-    }),
+/* Both of these read a page and report what broke. A page that stops matching the selector they
+   look for makes the scan walk nothing, and "zero violations" out of an empty scan is the same
+   green as a clean render — so each scan reports how much it measured, and the assertion below
+   requires that to be more than zero. */
+type Measured = { measured: number; violations: unknown[] }
+
+async function expectClean(scan: Promise<Measured>, what: string) {
+  const { measured, violations } = await scan
+  expect(measured, `${what}: the scan measured nothing, so it had no way to fail`).toBeGreaterThan(
+    0,
   )
+  expect(violations).toEqual([])
 }
 
-async function dividerViolations(page: Page) {
+async function composerAlignmentScan(page: Page): Promise<Measured> {
+  const clusters = await page.locator('[data-slot="prompt-bar-controls"]').evaluateAll((rows) =>
+    rows
+      .map((row) => {
+        const cluster = row.lastElementChild as HTMLElement
+        const buttons = Array.from(cluster.querySelectorAll('button'))
+        if (buttons.length < 2) return null
+        const boxes = buttons.map((button) => button.getBoundingClientRect())
+        return {
+          buttons: buttons.map((button) => button.getAttribute('aria-label')?.trim()),
+          tops: [...new Set(boxes.map((box) => Math.round(box.top)))],
+          bottoms: [...new Set(boxes.map((box) => Math.round(box.bottom)))],
+        }
+      })
+      .filter((cluster) => cluster !== null),
+  )
+  return {
+    measured: clusters.length,
+    violations: clusters.filter((cluster) => cluster.tops.length > 1 || cluster.bottoms.length > 1),
+  }
+}
+
+async function hairlineDividerScan(page: Page): Promise<Measured> {
   return page.evaluate(() => {
     const px = (value: string) => Number.parseFloat(value) || 0
     const edges = (style: CSSStyleDeclaration) =>
@@ -1238,6 +1253,7 @@ async function dividerViolations(page: Page) {
     const name = (el: Element) =>
       `${el.tagName.toLowerCase()}.${(el.getAttribute('class') ?? '').split(/\s+/).slice(0, 3).join('.')}`
     const bad: string[] = []
+    let dividers = 0
     for (const el of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
       if (!inFlow(el) || el.closest('svg')) continue
       const style = getComputedStyle(el)
@@ -1245,6 +1261,7 @@ async function dividerViolations(page: Page) {
       if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') continue
       const box = el.getBoundingClientRect()
       if (box.width < 8 || box.height < 2) continue
+      dividers += 1
       const isTop = px(style.borderTopWidth) >= 1
       const lineY = isTop ? box.top : box.bottom
       const overlaps = (other: Element) => {
@@ -1268,6 +1285,6 @@ async function dividerViolations(page: Page) {
         bad.push(`${name(el)} — above ${Math.round(above)}px, below ${Math.round(below)}px`)
       }
     }
-    return bad
+    return { measured: dividers, violations: bad }
   })
 }
