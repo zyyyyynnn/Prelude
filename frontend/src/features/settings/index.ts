@@ -1,4 +1,5 @@
 export { fetchLlmConfig, fetchProviders, saveLlmConfig } from './api'
+export { SettingsProvider } from './SettingsModal'
 export { SettingsNavigation } from './components/settings-navigation'
 export { ThemeChoiceGroup } from './components/theme-picker'
 export type { ThemeTone } from './components/theme-picker'

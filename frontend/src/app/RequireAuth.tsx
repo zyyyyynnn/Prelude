@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { useAuth } from '@/features/auth'
+import { useAuth } from '@/features/auth/auth-context'
 
 export function RequireAuth() {
   const { status, expired } = useAuth()

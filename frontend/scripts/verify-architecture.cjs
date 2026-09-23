@@ -3,6 +3,7 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { utilityPositions } = require('./utility-names.cjs')
 
 const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..')
 const sourceRoot = path.join(root, 'src')
@@ -141,31 +142,42 @@ for (const name of blockedPackages) {
     }
   }
 
-  /* Nothing outside the surface may name a file inside it. */
-  for (const surface of publicEntries) {
-    const prefix = `from '@/${surface.label}/`
-    for (const file of tsSources) {
-      const relative = rel(file)
-      if (surface.inside(relative)) continue
-      const lines = fs.readFileSync(file, 'utf8').split('\n')
-      lines.forEach((line, index) => {
-        const start = line.indexOf(prefix)
-        if (start === -1) return
-        const after = line.slice(start + prefix.length)
-        const end = after.indexOf("'")
-        if (end === -1) return
-        violations.push(
-          `${relative}:${index + 1}: imports @/${surface.label}/${after.slice(0, end)} — go through @/${surface.label}`,
-        )
-      })
+  /* Every way a module can name another module. A plain text scan for `from '@/…'` was the
+     first version of this rule and it read as green while the router loaded five of its six
+     pages through `await import('@/features/x/Page')` — a lazy route is exactly how a surface
+     gets bypassed without anyone typing `from`. */
+  const moduleSpecifiers = (tree) => {
+    const found = []
+    const visit = (node) => {
+      let specifier
+      if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+        specifier = node.moduleSpecifier
+      } else if (
+        ts.isCallExpression(node) &&
+        node.arguments[0] &&
+        ts.isStringLiteralLike(node.arguments[0]) &&
+        (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+          (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
+      ) {
+        specifier = node.arguments[0]
+      }
+      if (specifier) {
+        const { line } = ts.getLineAndCharacterOfPosition(tree, node.getStart(tree))
+        found.push({ specifier: specifier.getText(tree).slice(1, -1), line: line + 1 })
+      }
+      ts.forEachChild(node, visit)
     }
+    visit(tree)
+    return found
   }
 
-  for (const surface of publicEntries) {
-    const barrel = `@/${surface.label}`
+  /* What an entry declares, read once: the deep-import rule below needs to know whether a file
+     is registered there, and the consumer rule needs the export list. */
+  const readEntry = (surface) => {
     const source = fs.readFileSync(surface.entryPath, 'utf8')
     const tree = ts.createSourceFile(surface.entryPath, source, ts.ScriptTarget.Latest, true)
     const exported = []
+    const byFile = new Map()
     for (const statement of tree.statements) {
       const isReexport =
         ts.isExportDeclaration(statement) &&
@@ -173,15 +185,64 @@ for (const name of blockedPackages) {
         Boolean(statement.exportClause) &&
         ts.isNamedExports(statement.exportClause)
       if (!isReexport) {
-        const line = source.slice(0, statement.getStart()).split('\n').length
+        const line = source.slice(0, statement.getStart(tree)).split('\n').length
         violations.push(
           `${surface.label}/index.ts:${line}: a public entry may only re-export named symbols from a named file`,
         )
         continue
       }
-      const clause = statement.exportClause
-      if (clause) for (const element of clause.elements) exported.push(element.name.text)
+      const specifier = statement.moduleSpecifier.getText(tree).slice(1, -1)
+      if (!byFile.has(specifier)) byFile.set(specifier, [])
+      for (const element of statement.exportClause.elements) {
+        exported.push(element.name.text)
+        byFile.get(specifier).push(element.name.text)
+      }
     }
+    return { exported, byFile, deepConsumed: new Set() }
+  }
+  for (const surface of publicEntries) surface.info = readEntry(surface)
+
+  /* Nothing outside the surface may name a file inside it — with one boundary drawn on purpose.
+     `app/` is the composition root and the only place that decides how a route is loaded, so it
+     may name a route module directly, but only one the entry registers: the surface still owns
+     what is public, and an unregistered file fails. Routing every page through `index.ts` instead
+     was measured, not assumed — it folded login, settings, resume and position into the entry
+     chunk (+8.5 kB gzipped on every first paint, unauthenticated visitors included), because a
+     static barrel import of the same module drags the whole surface into the entry graph. */
+  for (const surface of publicEntries) {
+    const prefix = `@/${surface.label}/`
+    for (const file of tsSources) {
+      const relative = rel(file)
+      if (surface.inside(relative)) continue
+      const registers = relative.startsWith('app/')
+      const tree = ts.createSourceFile(
+        file,
+        fs.readFileSync(file, 'utf8'),
+        ts.ScriptTarget.Latest,
+        true,
+      )
+      for (const { specifier, line } of moduleSpecifiers(tree)) {
+        if (!specifier.startsWith(prefix)) continue
+        const target = specifier.slice(prefix.length)
+        const registered = target.includes('/') ? undefined : surface.info.byFile.get(`./${target}`)
+        if (registered && registers) {
+          for (const name of registered) surface.info.deepConsumed.add(name)
+          continue
+        }
+        violations.push(
+          `${relative}:${line}: imports @/${surface.label}/${target} — go through @/${surface.label}${
+            registers && !registered
+              ? `, or register ${target} in ${surface.label}/index.ts if the router must load it`
+              : ''
+          }`,
+        )
+      }
+    }
+  }
+
+  for (const surface of publicEntries) {
+    const barrel = `@/${surface.label}`
+    const { exported, deepConsumed } = surface.info
 
     /* Names the rest of the app actually pulls through the barrel. Anything else is surface
        area nobody asked for. The router reaches pages through `await import()`, so a member
@@ -233,6 +294,7 @@ for (const name of blockedPackages) {
       }
       ts.forEachChild(fileTree, collect)
     }
+    for (const name of deepConsumed) consumed.add(name)
     for (const name of exported) {
       if (consumed.has(name)) continue
       violations.push(
@@ -354,7 +416,7 @@ for (const name of blockedPackages) {
       declaredNames.set(name, { file: relative, line: sheet.slice(0, index).split('\n').length })
     }
     for (const match of sheet.matchAll(/(?<![-\w])--[\w-]+/g)) record(match[0], match.index)
-    for (const match of sheet.matchAll(/^@utility\s+([a-z0-9*-]+)/gm)) record(match[1], match.index)
+    for (const match of utilityPositions(sheet)) record(match[1], match.index)
   }
   for (const [name, where] of declaredNames) {
     if (!featureReference.test(name)) continue

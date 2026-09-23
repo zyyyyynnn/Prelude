@@ -141,6 +141,60 @@ test('counts a dynamic route import as a consumer of the barrel', () => {
   assert.equal(result.status, 0, result.stderr)
 })
 
+/* The composition root may name a route module directly — that is what keeps a route out of
+   the entry chunk — but only one the surface's own entry registers. */
+test('allows the composition root to load a route module the entry registers', () => {
+  const result = verify({
+    'features/settings/index.ts': "export { SettingsProvider } from './SettingsModal'",
+    'features/settings/SettingsModal.tsx': 'export const SettingsProvider = 1',
+    'app/main.tsx':
+      "const [{ SettingsProvider }] = await Promise.all([import('@/features/settings/SettingsModal')])",
+  })
+  assert.equal(result.status, 0, result.stderr)
+})
+
+test('rejects a composition-root import of a file the entry does not register', () => {
+  const result = verify({
+    'features/settings/index.ts': "export { useSettings } from './settings-context'",
+    'features/settings/settings-context.tsx': 'export const useSettings = 1',
+    'features/settings/SecretPanel.tsx': 'export const SecretPanel = 1',
+    'app/main.tsx': "const load = () => import('@/features/settings/SecretPanel')",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /or register SecretPanel in features\/settings\/index\.ts/)
+})
+
+/* A feature reading a neighbour's file is the coupling the entry exists to prevent, registered
+   in the entry or not: the exemption is about how a route loads, not about who may couple. */
+test('rejects a feature import of a neighbour file even when registered', () => {
+  const result = verify({
+    'features/settings/index.ts': "export { SettingsProvider } from './SettingsModal'",
+    'features/settings/SettingsModal.tsx': 'export const SettingsProvider = 1',
+    'features/interview/Page.tsx': "import { x } from '@/features/settings/SettingsModal'",
+  })
+  assert.equal(result.status, 1)
+  assert.match(
+    result.stderr,
+    /imports @\/features\/settings\/SettingsModal — go through @\/features\/settings/,
+  )
+})
+
+/* The rule is about the surface, not the keyword: naming a file through `import()` bypasses the
+   entry exactly as `from` does. The first version of this scan matched the literal text
+   `from '@/…'` and therefore read the router's lazy pages as clean. */
+test('rejects a dynamic import that names a file inside a surface', () => {
+  const result = verify({
+    'features/settings/index.ts': "export { SettingsProvider } from './SettingsModal'",
+    'features/settings/SettingsModal.tsx': 'export const SettingsProvider = 1',
+    'features/report/Panel.tsx': "const load = () => import('@/features/settings/SettingsModal')",
+  })
+  assert.equal(result.status, 1)
+  assert.match(
+    result.stderr,
+    /imports @\/features\/settings\/SettingsModal — go through @\/features\/settings/,
+  )
+})
+
 test('accepts an entry that only re-exports names the app reads', () => {
   const result = verify({
     'features/report/index.ts': "export { Thing } from './Thing'",

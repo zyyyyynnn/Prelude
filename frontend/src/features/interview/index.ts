@@ -1,5 +1,6 @@
 export { AnswerComposerSurface } from './components/AnswerComposerSurface'
 export { InterviewSetupComposer } from './components/InterviewSetupComposer'
+export { InterviewPage } from './InterviewPage'
 export { SessionGroup, SessionGroupLabel } from './components/session-row'
 export type { InterviewModelConfig, InterviewModelProvider } from './types'
 export { useSessionList } from './use-session-list'

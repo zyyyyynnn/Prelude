@@ -13,7 +13,7 @@ import {
   useFeedback,
 } from '@/shared/ui'
 import { login, register } from './api'
-import { useAuth } from '@/features/auth'
+import { useAuth } from './auth-context'
 
 type AuthMode = 'login' | 'register'
 
