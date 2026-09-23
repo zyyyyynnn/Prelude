@@ -26,7 +26,7 @@ export type InterviewStartResponse = {
 export type InterviewFinishResponse = {
   sessionId?: number
   summaryReport: string
-  status?: string
+  status?: InterviewSessionStatus
   jobId?: string
 }
 
@@ -48,11 +48,13 @@ export type InterviewMessageRecord = {
   hint?: string
 }
 
+export type InterviewSessionStatus = 'ongoing' | 'generating' | 'finished'
+
 export type InterviewSessionItem = {
   sessionId: number
   targetPosition?: string
   positionName?: string
-  status?: string
+  status?: InterviewSessionStatus
   currentStage?: InterviewStageName
   createdAt?: string
   summaryReport?: string
@@ -62,7 +64,7 @@ export type InterviewSessionItem = {
 export type InterviewSessionDetailResponse = {
   sessionId: number
   targetPosition?: string
-  status?: string
+  status?: InterviewSessionStatus
   currentStage?: InterviewStageName
   model?: string
   reasoningLevel?: string
