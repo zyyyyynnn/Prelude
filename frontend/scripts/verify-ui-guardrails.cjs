@@ -264,9 +264,11 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
 /* A component's internal element classes (`ui-menu__label`, `ui-button__content`)
    are its own layout contract. A call site that writes one is reaching past the component's
    props into its markup, and the two then drift with nothing to notice it — which is how the
-   interview menus ended up hand-composing what `shared/ui/menu` already drew. Only the
-   families a `shared/ui` component owns are in scope: `workspace-page` and `app-layout` are
-   page-level layout a route writes itself. */
+   interview menus ended up hand-composing what `shared/ui/menu` already drew. Scope is not
+   the directory a class lives in but whether one component owns its markup, so a page shell a
+   route writes itself (`workspace-page`, `app-layout`) and a typographic or elevation role any
+   call site may take are outside the rule, and the rule cannot tell them apart on shape alone —
+   hence the declaration below. */
 const internalClassPattern = /\b((?:ui-[a-z-]+|workspace-header)__[a-z-]+)/g
 
 /* The BEM shape only catches classes spelled with `__`. A `@utility` registered to carry one

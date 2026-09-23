@@ -1394,6 +1394,7 @@ html[data-input-intent='keyboard']
   white-space: nowrap;
 }
 
+/* @internal src/features/position/PositionRow.tsx */
 @utility row-label-end {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1422,6 +1423,7 @@ html[data-input-intent='keyboard']
   );
 }
 
+/* @internal src/features/resume/ResumeRow.tsx */
 @utility list-row {
   display: flex;
   align-items: center;
@@ -1544,6 +1546,7 @@ html[data-input-intent='keyboard']
    is a grid so the control fills it exactly: as an inline block it would sit on a
    text baseline and the box would grow taller than the control, mis-centring any
    absolutely placed action inside it. */
+/* @internal src/shared/ui/field.tsx */
 @utility field-actions-* {
   position: relative;
   display: grid;
@@ -1591,6 +1594,7 @@ html[data-input-intent='keyboard']
 }
 
 /* A report page: one bordered, elevated sheet the reader can print or save. */
+/* @internal src/features/report/report-view.tsx */
 @utility document-sheet {
   padding: var(--spacing-2xl);
   border: var(--border-width-default) solid var(--color-border);
@@ -1600,6 +1604,7 @@ html[data-input-intent='keyboard']
 }
 
 /* A question-review row: a fixed-minimum term beside a flowing definition. */
+/* @internal src/features/report/report-sections.tsx */
 @utility review-detail-grid {
   display: grid;
   grid-template-columns: minmax(var(--layout-report-label-inline-size), 0.25fr) 1fr;
@@ -1608,6 +1613,7 @@ html[data-input-intent='keyboard']
 
 /* The filled portion of a score track reads its width from --score-fill,
    which the component supplies as a runtime CSS variable. */
+/* @internal src/shared/ui/score-tile.tsx */
 @utility score-fill {
   display: block;
   block-size: 100%;
@@ -1617,6 +1623,7 @@ html[data-input-intent='keyboard']
   background: var(--color-brand);
 }
 
+/* @internal src/shared/ui/navigation.tsx */
 @utility nav-item {
   display: flex;
   align-items: center;
@@ -1655,6 +1662,7 @@ html[data-input-intent='keyboard']
   }
 }
 
+/* @internal src/shared/ui/option-card.tsx */
 @utility option-card {
   display: grid;
   gap: var(--spacing-sm);
@@ -1690,6 +1698,7 @@ html[data-input-intent='keyboard']
    the call site so one, two or zero buttons all sit in the same wrapper. The
    box is inset from the control edge so its hover fill stays concentric with
    the field border instead of covering it. */
+/* @internal src/shared/ui/field.tsx */
 @utility field-action {
   display: grid;
   inline-size: calc(var(--ui-height-control) - var(--ui-control-inset) * 2);
@@ -1761,6 +1770,7 @@ html[data-input-intent='keyboard']
 /* The rail's own box: width, surface and the collapse transition. `SidebarFrame`
    renders it, so the column the product draws and the column the gallery draws are
    the same column — same border, same width, same 36px row inside it. */
+/* @internal src/shared/ui/sidebar.tsx */
 @utility sidebar-frame {
   display: flex;
   flex-direction: column;
@@ -1778,6 +1788,7 @@ html[data-input-intent='keyboard']
 
 /* The rail's content scope: the icon metrics every action inherits and the
    collapse state its labels and brand read. */
+/* @internal src/shared/ui/sidebar.tsx */
 @utility sidebar-rail {
   /* The action paints its own focus ring with its border, so centring the glyph
      has to give that border back: (control − glyph − 2 × border) / 2. */
@@ -1845,6 +1856,7 @@ html[data-input-intent='keyboard']
   }
 }
 
+/* @internal src/shared/ui/sidebar.tsx */
 @utility sidebar-toggle {
   position: relative;
   display: flex;
@@ -1889,6 +1901,7 @@ html[data-input-intent='keyboard']
   }
 }
 
+/* @internal src/shared/ui/sidebar.tsx */
 @utility sidebar-action {
   display: flex;
   align-items: center;
@@ -1949,6 +1962,7 @@ html[data-input-intent='keyboard']
 /* Two panes share one slot and cross-fade as the rail collapses. Both inline
    edges are pinned so the slot's own box decides the width — a pane that
    re-declared the rail width by hand drifted a border's worth behind it. */
+/* @internal src/shared/ui/sidebar.tsx */
 @utility sidebar-pane {
   position: absolute;
   inset-block: 0;
@@ -1969,12 +1983,14 @@ html[data-input-intent='keyboard']
 }
 
 /* The session list pane scrolls inside that slot. */
+/* @internal src/shared/ui/sidebar.tsx */
 @utility sidebar-sessions {
   min-block-size: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
+/* @internal src/features/interview/components/session-row.tsx */
 @utility session-group {
   display: grid;
   gap: var(--spacing-sm);
@@ -2004,6 +2020,7 @@ html[data-input-intent='keyboard']
   }
 }
 
+/* @internal src/features/interview/components/session-row.tsx */
 @utility session-row {
   display: flex;
   align-items: center;
@@ -2065,6 +2082,7 @@ html[data-input-intent='keyboard']
   transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
+/* @internal src/features/interview/components/session-row.tsx */
 @utility row-action {
   display: flex;
   align-items: center;
@@ -2098,6 +2116,7 @@ html[data-input-intent='keyboard']
    three places where a control's geometry is derived from another control's
    geometry, so they stay named utilities rather than long atom strings.
    ========================================================================== */
+/* @internal src/shared/ui/prompt-bar.tsx */
 @utility prompt-bar-surface {
   display: flex;
   flex-direction: column;
@@ -2111,6 +2130,7 @@ html[data-input-intent='keyboard']
   transition: var(--motion-transition-surface);
 }
 
+/* @internal src/shared/ui/prompt-bar.tsx */
 @utility prompt-bar-input {
   inline-size: 100%;
   min-block-size: var(--layout-prompt-input-min-block-size);
@@ -2177,6 +2197,7 @@ html[data-input-intent='keyboard']
   max-inline-size: var(--layout-prompt-truncate-max-inline-size);
 }
 
+/* @internal src/shared/ui/prompt-bar.tsx */
 @utility prompt-bar-attachment {
   display: inline-flex;
   align-items: center;
@@ -2227,6 +2248,7 @@ html[data-input-intent='keyboard']
    property and every bar scales by its own factor, so the row reads as a waveform instead
    of one pumping block. The floor keeps the control legible as "recording" before any
    audio arrives, and under reduced motion the meter stops sampling rather than animating. */
+/* @internal src/shared/ui/prompt-bar.tsx */
 @utility voice-meter {
   --voice-level: 0.2;
   position: absolute;
@@ -2265,6 +2287,7 @@ html[data-input-intent='keyboard']
   }
 }
 
+/* @internal src/shared/ui/generating-card.tsx */
 @utility generating-card {
   display: flex;
   flex-direction: column;
@@ -2279,12 +2302,14 @@ html[data-input-intent='keyboard']
   text-align: center;
 }
 
+/* @internal src/shared/ui/generating-card.tsx */
 @utility generating-title {
   color: var(--color-text-primary);
   font: var(--font-weight-medium)
     clamp(var(--font-size-md), 2vw, var(--font-size-lg))/var(--line-height-base) var(--font-serif);
 }
 
+/* @internal src/shared/ui/generating-card.tsx */
 @utility generating-progress-track {
   position: relative;
   inline-size: 100%;
@@ -2294,6 +2319,7 @@ html[data-input-intent='keyboard']
   background: var(--color-border);
 }
 
+/* @internal src/shared/ui/generating-card.tsx */
 @utility generating-progress-indicator {
   position: absolute;
   inset-inline-start: 0;
@@ -2305,6 +2331,7 @@ html[data-input-intent='keyboard']
   animation: var(--animate-progress-sweep);
 }
 
+/* @internal src/shared/ui/message.tsx */
 @utility message-bubble {
   display: flex;
   flex-direction: column;
@@ -2322,6 +2349,7 @@ html[data-input-intent='keyboard']
 }
 
 /* An indeterminate wait is shown as a typing ellipsis, never a spinner. */
+/* @internal src/shared/ui/message.tsx */
 @utility ellipsis-progress {
   &::after {
     content: '';
@@ -2345,6 +2373,7 @@ html[data-input-intent='keyboard']
 }
 
 /* The composer floats over the thread, so it is inert except for its own child. */
+/* @internal src/features/interview/components/InterviewSession.tsx */
 @utility composer-overlay {
   position: absolute;
   inset-inline: 0;
@@ -2360,6 +2389,7 @@ html[data-input-intent='keyboard']
 }
 
 /* safe center keeps the first line reachable when the empty state overflows. */
+/* @internal src/features/interview/components/InterviewSetup.tsx */
 @utility workspace-empty {
   display: flex;
   flex: 1;

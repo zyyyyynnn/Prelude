@@ -83,6 +83,8 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     },
   })
 
+  const { mutate: appendTurn } = send
+
   useEffect(() => {
     if (
       !current ||
@@ -94,10 +96,13 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     const timer = window.setTimeout(() => {
       if (autoStartedSessionId.current === sessionId) return
       autoStartedSessionId.current = sessionId
-      send.mutate({ content: '', autoStart: true })
+      appendTurn({ content: '', autoStart: true })
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [current, send, sessionId])
+    /* `mutate` keeps its identity across renders while the mutation result object does not, so
+       depending on `send` would tear this timer down and re-arm it on every render — including
+       the renders the auto-start itself causes. */
+  }, [current, appendTurn, sessionId])
 
   const finish = useMutation({
     mutationFn: () => finishInterview(sessionId),
