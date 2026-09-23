@@ -784,35 +784,35 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 }
 
 /* ── Grid & Form Elements ── */
-/* Keep browser autofill colors aligned with the input surface. */
-@layer base {
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus,
-  textarea:-webkit-autofill,
-  textarea:-webkit-autofill:hover,
-  textarea:-webkit-autofill:focus {
-    -webkit-box-shadow: var(--shadow-autofill-surface) !important;
-    -webkit-text-fill-color: var(--color-text-primary) !important;
-    /* Important like its siblings: inside @layer base a plain declaration loses to the
-       unlayered `.ui-field-control` transition it exists to suppress. */
-    transition: none !important;
-  }
+/* Three rules that override what the browser paints on its own. They stay outside
+   `@layer base` on purpose: the field focus contract below is an unlayered class rule, and a
+   layered declaration could never outrank it — which is the whole point of suppressing the
+   browser's own autofill paint and reveal controls. `verify:ui` accepts them by name. */
+/* browser-chrome: the autofill paint must beat the unlayered field transition it cancels */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: var(--shadow-autofill-surface) !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  transition: none;
 }
 
 /* Hide native password controls where the product provides its own control. */
-@layer base {
-  input[type='password']::-ms-reveal,
-  input[type='password']::-ms-clear {
-    display: none !important;
-  }
+/* browser-chrome: Blink/Edge draw these controls inside the control box */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none !important;
+}
 
-  input[type='password']::-webkit-credentials-auto-fill-button {
-    visibility: hidden !important;
-    pointer-events: none !important;
-    position: absolute !important;
-    right: 0 !important;
-  }
+/* browser-chrome: Chrome draws the credentials button over the trailing action slot */
+input[type='password']::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
 }
 
 /* The application frame is a registered utility for the same reason as the page

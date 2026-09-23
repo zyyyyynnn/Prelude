@@ -363,6 +363,20 @@ for (const file of stylesheets) {
      selector group is judged part by part: `input, textarea { … }` is two element rules sharing
      one body. */
   const code = source.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '))
+  /* Rules that override what the browser paints inside its own control are exempt from the
+     "move it into @layer base" rule, because the field focus contract further down is an
+     unlayered class rule and a layered declaration can never outrank it. The exemption is
+     declared by naming the selector it covers, and it is audited: a marker whose selector no
+     longer needs it is itself a violation, the way every other register in this file is. */
+  const browserChrome = new Map()
+  for (const match of source.matchAll(/\/\*\s*browser-chrome:\s*([^]*?)\*\/\s*([^{}]+)\{/g)) {
+    const selector = match[2].replace(/\s+/g, ' ').trim()
+    browserChrome.set(selector, {
+      line: source.slice(0, match.index).split('\n').length,
+      reason: match[1].trim(),
+      used: false,
+    })
+  }
   const elementName = (part) => {
     const bare = part
       .replace(/\[[^\]]*\]/g, '')
@@ -407,8 +421,11 @@ for (const file of stylesheets) {
       /* An at-rule header is not a selector, and a rule already inside `@layer` or `@keyframes`
          is either layered or is a keyframe step. */
       if (!block.selector.startsWith('@') && !enclosed) {
-        const elements = [...new Set(block.selector.split(',').map(elementName).filter(Boolean))]
-        for (const element of elements) {
+        const selector = block.selector.replace(/\s+/g, ' ').trim()
+        const exempt = browserChrome.get(selector)
+        const elements = [...new Set(selector.split(',').map(elementName).filter(Boolean))]
+        if (exempt && elements.length) exempt.used = true
+        for (const element of exempt ? [] : elements) {
           violations.push(
             `${relative}:${block.line}: unlayered element selector "${element}" — move it into @layer base`,
           )
@@ -418,6 +435,12 @@ for (const file of stylesheets) {
       continue
     }
     pending += character
+  }
+  for (const [selector, entry] of browserChrome) {
+    if (entry.used) continue
+    violations.push(
+      `${relative}:${entry.line}: browser-chrome exemption on "${selector}" no longer covers an unlayered element selector — drop the marker (${entry.reason})`,
+    )
   }
 }
 
