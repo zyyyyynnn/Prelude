@@ -36,7 +36,6 @@ public class FinishInterview {
     private final InterviewSessionAccess sessionAccess;
     private final InterviewSessionRepository interviewSessionRepository;
     private final BackgroundJobOperations backgroundJobOperations;
-    private final InterviewMessageService interviewMessageService;
     private final InterviewStageManager interviewStageManager;
 
     @Transactional(rollbackFor = Exception.class)
@@ -73,7 +72,6 @@ public class FinishInterview {
         ));
         log.info("Requested report generation job {} for session {}", job.jobId(), sessionId);
 
-        interviewMessageService.invalidateSessionLock(sessionId);
         return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, job.jobId());
     }
 }

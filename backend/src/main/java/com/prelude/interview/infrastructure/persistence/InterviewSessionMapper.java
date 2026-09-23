@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.interview.infrastructure.persistence.InterviewSessionEntity;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,13 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSessionEntit
           AND status = 'ongoing'
         """)
     int markGeneratingIfOngoing(@Param("sessionId") Long sessionId, @Param("accountId") Long accountId);
+
+    /**
+     * Takes the session row's write lock, which is what serialises message appends for one
+     * session across every process. Returns the id it locked, or null when there is no session.
+     */
+    @Select("SELECT id FROM interview_session WHERE id = #{sessionId} FOR UPDATE")
+    Long lockAppendOrder(@Param("sessionId") Long sessionId);
 
     @Update("""
         UPDATE interview_session

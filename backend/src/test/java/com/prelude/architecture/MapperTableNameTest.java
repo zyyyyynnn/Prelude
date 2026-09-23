@@ -41,12 +41,12 @@ class MapperTableNameTest {
         Pattern.compile("CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?[`\\[]?([A-Za-z0-9_]+)[`\\]]?", Pattern.CASE_INSENSITIVE);
 
     private static Set<String> createdTables;
-    private static List<String> unverifiedRows;
+    private static List<String> unresolvedMappers;
 
     @BeforeAll
     static void readTheSchema() throws Exception {
         createdTables = tablesCreatedByMigrations();
-        unverifiedRows = new ArrayList<>();
+        unresolvedMappers = new ArrayList<>();
     }
 
     @Test
@@ -77,6 +77,8 @@ class MapperTableNameTest {
 
         // Guards against the mapper discovery itself silently finding nothing.
         assertThat(rowTypes).hasSizeGreaterThanOrEqualTo(19);
+        // Every mapper has to be readable, or its row type goes unexamined above.
+        assertThat(unresolvedMappers).isEmpty();
     }
 
     /**
@@ -110,7 +112,7 @@ class MapperTableNameTest {
         try {
             resolved = Class.forName(mapper.getName());
         } catch (ClassNotFoundException failure) {
-            unverifiedRows.add(mapper.getName());
+            unresolvedMappers.add(mapper.getName() + " (class not found)");
             return null;
         }
         for (Class<?> current = resolved; current != null; current = current.getSuperclass()) {
@@ -121,6 +123,7 @@ class MapperTableNameTest {
                 }
             }
         }
+        unresolvedMappers.add(resolved.getName() + " (no BaseMapper row type reachable)");
         return null;
     }
 

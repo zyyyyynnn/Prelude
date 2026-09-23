@@ -8,6 +8,7 @@ import com.prelude.identity.application.AvatarPublication;
 import com.prelude.identity.application.ProfileService;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.SessionFixtures;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,6 +115,11 @@ class AssetStorageFailureTest {
 
     private long createAccount(String prefix) {
         return AccountFixtures.create(jdbcTemplate, prefix);
+    }
+
+    @AfterEach
+    void forgetTheAuthenticatedAccount() {
+        AccountFixtures.clearAuthentication();
     }
 
     private void authenticate(long accountId) {

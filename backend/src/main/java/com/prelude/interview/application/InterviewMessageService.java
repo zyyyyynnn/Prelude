@@ -1,42 +1,38 @@
 package com.prelude.interview.application;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.domain.InterviewMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-
+/** Appends messages to a session, numbering them from 0 within that session. */
 @Service
 @RequiredArgsConstructor
 public class InterviewMessageService {
 
-    private static final Cache<String, Object> SESSION_LOCKS = Caffeine.newBuilder()
-        .expireAfterAccess(Duration.ofMinutes(30))
-        .maximumSize(10_000)
-        .build();
-
     private final InterviewMessageRepository interviewMessageRepository;
+    private final InterviewSessionRepository interviewSessionRepository;
 
+    /**
+     * The number is allocated under the session row's write lock, so whoever appends next reads
+     * what the previous append committed rather than racing it, and the unique key on
+     * {@code (session_id, seq_num)} refuses the alternative outloud. A monitor held in one JVM
+     * could promise neither: another process walks past it, and a bounded in-memory cache of
+     * monitors can hand two writers different objects for the same session key.
+     */
+    @Transactional(rollbackFor = Exception.class)
     public InterviewMessage insertMessage(Long sessionId, String role, String content) {
-        Object lock = SESSION_LOCKS.get(sessionId.toString(), ignored -> new Object());
-        synchronized (lock) {
-            InterviewMessage message = new InterviewMessage();
-            message.setSessionId(sessionId);
-            message.setRole(role);
-            message.setContent(content);
-            message.setSeqNum(nextSeqNum(sessionId));
-            interviewMessageRepository.add(message);
-            return message;
-        }
-    }
+        interviewSessionRepository.lockAppendOrder(sessionId);
 
-    public void invalidateSessionLock(Long sessionId) {
-        if (sessionId != null) {
-            SESSION_LOCKS.invalidate(sessionId.toString());
-        }
+        InterviewMessage message = new InterviewMessage();
+        message.setSessionId(sessionId);
+        message.setRole(role);
+        message.setContent(content);
+        message.setSeqNum(nextSeqNum(sessionId));
+        interviewMessageRepository.add(message);
+        return message;
     }
 
     private int nextSeqNum(Long sessionId) {

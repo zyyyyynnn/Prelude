@@ -37,14 +37,14 @@ Port 用于外部基础设施、框架隔离或跨模块接口。普通内部类
 - `assets` 拥有 `asset` 与面试附件：二进制真源是 `ObjectStoragePort`（S3 兼容，local/CI = VersityGW），`S3ObjectStorageAdapter` 是唯一实现；上传按 PENDING_UPLOAD → READY 流转，stale PENDING 由模块内 bounded reconciler 清理；下载先授权后短 TTL 预签名。`documents` 负责受支持文档的内容提取。
 - `resume` 拥有 PDF 简历导入、技能与项目解析、资源列表和面试上下文投影；当前不提供可编辑或版本化的简历工作区。
 - `position` 拥有内置岗位与用户自定义岗位。
-- `interview` 拥有会话、阶段、文字面试用例与会话库管理：置顶由 `interview_session.pinned_at` 承载并在查询里压过时间序，删除是永久删除——消息、阶段、评分历史与薄弱点随数据库级联移除，检索块与该会话的附件绑定因不带外键而在同一事务内显式释放。`voice` 拥有语音通道。
+- `interview` 拥有会话、阶段、文字面试用例与会话库管理：置顶由 `interview_session.pinned_at` 承载并在查询里压过时间序，删除是永久删除——消息、阶段、评分历史与薄弱点随数据库级联移除，检索块与该会话的附件绑定因不带外键而在同一事务内显式释放。消息的会话内序号 `seq_num` 由 `interview_message.uk_message_session_seq` 唯一键与 `interview_session` 行锁共同保证：`InterviewMessageService.insertMessage` 先 `SELECT … FOR UPDATE` 锁住会话行再读取最大值，因此串行点是数据库而不是进程——一把 JVM 内的监视器锁既拦不住另一个实例，也不能保证同一个会话拿到同一个监视器（有界缓存会逐出它），而序号一旦重复，"下一条是which"就没有唯一答案。`voice` 拥有语音通道。
 - `artifact` 拥有训练报告与分析（不回写简历）、`artifact`/`artifact_version` 正式成果基础模型（版本 immutable，发布走公开 API），以及 Analytics 视图；`jobs` 拥有报告异步任务。
 - Redis 承载认证会话与实时广播，RabbitMQ 承载报告任务，MySQL 承载业务数据。
 
 ## Persistence
 
 - MySQL 是唯一关系数据库；所有资源所有权统一为 `account_id`。
-- Flyway 是唯一 DDL owner，所有 migration 位于 `backend/src/main/resources/db/migration/`，使用单一全局版本序列（当前 baseline：`V20260830__establish_prelude_schema.sql`），reference data 由幂等的 `R__reference_data.sql` 维护。
+- Flyway 是唯一 DDL owner，所有 migration 位于 `backend/src/main/resources/db/migration/`，使用单一全局版本序列（baseline `V20260830__establish_prelude_schema.sql`，其后 `V20260923__make_message_order_authoritative.sql` 给 `interview_message` 换成唯一键并删掉被它最左前缀覆盖的冗余索引），reference data 由幂等的 `R__reference_data.sql` 维护。baseline 已在开发库与 CI 应用过，改它本身会撞 Flyway checksum，因此索引与约束的变更一律走新增版本文件。
 - `attachment` 只保存业务元数据并以 `asset_id` 引用二进制；认证 Session、二进制内容均不在 MySQL。Spring Modulith 事件发布表 `EVENT_PUBLICATION` 由同一 baseline 建立，自动建表保持关闭。
 
 ## 命名规约

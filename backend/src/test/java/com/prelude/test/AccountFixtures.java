@@ -55,6 +55,13 @@ public final class AccountFixtures {
                 principal, null, List.of()));
     }
 
+    /* Spring Security's own test listener is not on this classpath, so nothing clears the
+       thread-local context the way a real request does. Without this the account a test
+       authenticated stays "logged in" for whatever method the same thread runs next. */
+    public static void clearAuthentication() {
+        SecurityContextHolder.clearContext();
+    }
+
     public static CurrentAccount current(long accountId) {
         CurrentAccount currentAccount = Mockito.mock(CurrentAccount.class);
         Mockito.when(currentAccount.requireId()).thenReturn(accountId);

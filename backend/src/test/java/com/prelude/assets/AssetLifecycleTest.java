@@ -7,6 +7,7 @@ import com.prelude.test.AccountFixtures;
 import com.prelude.test.AssetFixtures;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.SessionFixtures;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -211,6 +212,11 @@ class AssetLifecycleTest {
 
     private long createAccount(String prefix) {
         return AccountFixtures.create(jdbcTemplate, prefix);
+    }
+
+    @AfterEach
+    void forgetTheAuthenticatedAccount() {
+        AccountFixtures.clearAuthentication();
     }
 
     private void authenticate(long accountId) {

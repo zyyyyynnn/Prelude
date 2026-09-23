@@ -17,6 +17,12 @@ public interface InterviewSessionRepository {
     int markGeneratingIfOngoing(Long sessionId, Long accountId);
 
     /**
+     * Serialises whoever is about to append to this session. Callers hold it for the rest of
+     * their transaction, so two appends cannot read the same "last message" and number alike.
+     */
+    void lockAppendOrder(Long sessionId);
+
+    /**
      * Persists only the sliding-window summary, so an async writer cannot roll back columns
      * that changed while the model call was in flight.
      */

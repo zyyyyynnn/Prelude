@@ -6,8 +6,7 @@ import com.prelude.context.RetrievalPort;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.test.AccountFixtures;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import com.prelude.test.InterviewDataFixtures;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -15,8 +14,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -132,55 +129,14 @@ class InterviewSessionLifecycleMySqlTest {
     }
 
     private long createSession(long accountId) {
-        return createSession(accountId, LocalDateTime.now());
+        return InterviewDataFixtures.sessionInProgress(jdbcTemplate, accountId, LocalDateTime.now());
     }
 
     private long createSession(long accountId, LocalDateTime createdAt) {
-        long nano = System.nanoTime();
-        long resumeId = insert(
-            "INSERT INTO resume (account_id, file_name, raw_text, parsed_skills, parsed_projects) VALUES (?, ?, ?, ?, ?)",
-            accountId, "resume-" + nano + ".pdf", "resume", "[]", "[]");
-        long positionId = insert(
-            "INSERT INTO position_template (account_id, name, system_prompt) VALUES (?, ?, ?)",
-            accountId, "position-" + nano, "system");
-        List<Long> storedSnapshots = jdbcTemplate.queryForList(
-            "SELECT id FROM model_execution_snapshot WHERE account_id = ? ORDER BY id LIMIT 1",
-            Long.class, accountId);
-        long snapshotId = storedSnapshots.isEmpty() ? createSnapshot(accountId) : storedSnapshots.getFirst();
-        return insert(
-            "INSERT INTO interview_session (account_id, resume_id, position_id, target_position, model_execution_snapshot_id, status, created_at)"
-                + " VALUES (?, ?, ?, ?, ?, 'ongoing', ?)",
-            accountId, resumeId, positionId, "position-" + nano, snapshotId, createdAt);
-    }
-
-    private long createSnapshot(long accountId) {
-        long profileId = insert(
-            "INSERT INTO model_profile (account_id, provider, model, reasoning_level, effective_parameters_json, fallback_capabilities_json)"
-                + " VALUES (?, ?, ?, ?, ?, ?)",
-            accountId, "deepseek", "deepseek-v4-pro", "AUTO", "{\"maxOutputTokens\":4096}", "[]");
-        return insert(
-            "INSERT INTO model_execution_snapshot (account_id, profile_id, provider, model, reasoning_level,"
-                + " effective_parameters_json, capability_version, model_capability_json, fallback_capabilities_json)"
-                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            accountId, profileId, "deepseek", "deepseek-v4-pro", "AUTO", "{\"maxOutputTokens\":4096}",
-            "2026-08-30",
-            "{\"provider\":\"deepseek\",\"model\":\"deepseek-v4-pro\",\"reasoning\":true,"
-                + "\"structuredOutput\":true,\"toolCalling\":true,\"streaming\":true,\"vision\":false,"
-                + "\"multilingual\":true,\"longContext\":true,\"embedding\":false,\"nativeRealtimeVoice\":false,"
-                + "\"supportedReasoningLevels\":[\"AUTO\",\"LOW\",\"HIGH\",\"MAX\"]}",
-            "[]");
+        return InterviewDataFixtures.sessionInProgress(jdbcTemplate, accountId, createdAt);
     }
 
     private long insert(String sql, Object... params) {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(con -> {
-            PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            for (int i = 0; i < params.length; i++) {
-                ps.setObject(i + 1, params[i]);
-            }
-            return ps;
-        }, keyHolder);
-        Number key = keyHolder.getKey();
-        return key == null ? 0L : key.longValue();
+        return InterviewDataFixtures.insert(jdbcTemplate, sql, params);
     }
 }

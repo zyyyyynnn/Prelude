@@ -14,6 +14,8 @@ Copy-Item .env.example .env
 docker compose up -d mysql redis rabbitmq versitygw
 ```
 
+四个基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）连同 app 配置里的 8080/5173 都只发布到 `127.0.0.1`：这套栈的凭据是仓库里公开的默认值（root/`root_password`、无密码 Redis、`guest`/`guest`——RabbitMQ 4.1 镜像的 `loopback_users` 为空，`guest` 本身不限来源主机），绑到所有网卡等于把它们交给局域网。确实需要别的设备访问时，改 `docker-compose.yml` 里对应那条映射，不要改默认值。
+
 后端：
 
 ```powershell

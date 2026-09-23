@@ -36,6 +36,11 @@ public class MybatisInterviewSessionRepository implements InterviewSessionReposi
     }
 
     @Override
+    public void lockAppendOrder(Long sessionId) {
+        sessionMapper.lockAppendOrder(sessionId);
+    }
+
+    @Override
     public int markGeneratingIfOngoing(Long sessionId, Long accountId) {
         return sessionMapper.markGeneratingIfOngoing(sessionId, accountId);
     }
