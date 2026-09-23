@@ -69,6 +69,10 @@ export function Panel({
         fill && 'scrollable min-h-0 flex-1 overflow-y-auto p-lg text-sm leading-base',
         bodyClassName,
       )}
+      /* A filled panel's body is the scroll container, and a body of prose can hold nothing
+         focusable — without a tab stop a keyboard user cannot reach the part below the fold.
+         Only `fill` scrolls, so only `fill` gets the stop. */
+      tabIndex={fill ? 0 : undefined}
       data-slot="panel-body"
     >
       {children}

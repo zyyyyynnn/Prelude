@@ -311,14 +311,35 @@ test('@visual keeps no-data pages lightweight and typographically consistent', a
   await expect(emptyState).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
 })
 
-test('@a11y keeps the primary authenticated surface accessible', async ({ page }) => {
-  await installApi(page)
-  await page.goto('/interview')
+/* Two things had to be true for this to judge anything. The scan has to run against the rendered
+   surface: `goto()` resolves on `load`, and measuring the gallery both ways showed 19 DOM nodes
+   scanned immediately against 1235 once the route's queries land. And the result has to keep the
+   whole severity range the tags ask for — `wcag2a/aa/21a/21aa` report mostly `serious`, so
+   filtering to `critical` discarded precisely what the rule set finds. */
+const accessibilityViolations = async (page: Page) => {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
-  expect(critical).toEqual([])
+  return results.violations.map((violation) => ({
+    impact: violation.impact,
+    id: violation.id,
+    nodes: violation.nodes.map((node) => node.target.join(' ')),
+  }))
+}
+
+test('@a11y keeps the primary authenticated surface accessible', async ({ page }) => {
+  await installApi(page)
+  await page.goto('/interview')
+  await expect(page.getByRole('button', { name: '开始新面试' })).toBeVisible()
+  await expect(accessibilityViolations(page)).resolves.toEqual([])
+})
+
+/* The gallery mounts every design-system surface in one document, so a shared component's own
+   defect shows up here before any feature reproduces it. */
+test('@a11y keeps every design-system surface in the gallery accessible', async ({ page }) => {
+  await page.goto('/components-lab')
+  await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
+  await expect(accessibilityViolations(page)).resolves.toEqual([])
 })
 
 test('@visual keeps the authentication hierarchy and primary action stable', async ({ page }) => {
