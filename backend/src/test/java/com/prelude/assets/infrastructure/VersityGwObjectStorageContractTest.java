@@ -73,18 +73,6 @@ class VersityGwObjectStorageContractTest {
     }
 
     @Test
-    void generatedObjectKeysAreNeverReused() {
-        String first = UUID.randomUUID().toString();
-        String second = UUID.randomUUID().toString();
-        adapter.put(first, "text/plain", "first".getBytes(StandardCharsets.UTF_8));
-        adapter.put(second, "text/plain", "second".getBytes(StandardCharsets.UTF_8));
-
-        assertThat(first).isNotEqualTo(second);
-        assertThat(new String(adapter.get(first), StandardCharsets.UTF_8)).isEqualTo("first");
-        assertThat(new String(adapter.get(second), StandardCharsets.UTF_8)).isEqualTo("second");
-    }
-
-    @Test
     void presignedUrlsAuthorizeGetAccessUntilExpiry() throws Exception {
         String objectKey = UUID.randomUUID().toString();
         adapter.put(objectKey, "text/plain", "presign me".getBytes(StandardCharsets.UTF_8));

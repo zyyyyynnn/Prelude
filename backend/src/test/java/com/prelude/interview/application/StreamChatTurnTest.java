@@ -45,6 +45,7 @@ class StreamChatTurnTest {
 
         streamChatTurn.execute(51L, "回答", false, "auth-session-1", opened[0]);
 
+        SessionFixtures.verifyConnectionNeverSends(connection, "message");
         SessionFixtures.verifyConnectionSend(connection, "error", "登录已失效，请重新登录");
         SessionFixtures.verifyConnectionComplete(connection);
     }

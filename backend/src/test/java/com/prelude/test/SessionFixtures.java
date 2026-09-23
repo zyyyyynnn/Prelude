@@ -249,6 +249,14 @@ public final class SessionFixtures {
         Mockito.verify((RealtimeConnection) connection).send(event, data);
     }
 
+    /* A revoked session has to stop emitting, and "stopped" is only proved by what did not go
+       out. Asserting the error frame alone stays green when the implementation sends the
+       authenticated business delta first and the rejection after. */
+    public static void verifyConnectionNeverSends(Object connection, String event) {
+        Mockito.verify((RealtimeConnection) connection, Mockito.never())
+            .send(Mockito.eq(event), Mockito.any());
+    }
+
     public static void verifyConnectionComplete(Object connection) {
         Mockito.verify((RealtimeConnection) connection).complete();
     }
