@@ -405,26 +405,26 @@
   box-sizing: border-box;
 }
 
-html {
-  background: var(--color-bg);
-  scrollbar-gutter: auto;
-}
-
-body {
-  margin: 0;
-  min-width: var(--layout-viewport-min-inline-size);
-  min-height: 100vh;
-  background-color: var(--color-bg);
-  background-image: var(--bg-paper-filter);
-  background-attachment: fixed;
-  background-repeat: no-repeat, no-repeat, repeat;
-  background-size: auto, auto, var(--bg-paper-tile-size);
-  background-blend-mode: normal, normal, multiply;
-  color: var(--color-text-primary);
-  font: var(--font-weight-regular) var(--font-size-md)/var(--line-height-relaxed) var(--font-sans);
-}
-
 @layer base {
+  html {
+    background: var(--color-bg);
+    scrollbar-gutter: auto;
+  }
+
+  body {
+    margin: 0;
+    min-width: var(--layout-viewport-min-inline-size);
+    min-height: 100vh;
+    background-color: var(--color-bg);
+    background-image: var(--bg-paper-filter);
+    background-attachment: fixed;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: auto, auto, var(--bg-paper-tile-size);
+    background-blend-mode: normal, normal, multiply;
+    color: var(--color-text-primary);
+    font: var(--font-weight-regular) var(--font-size-md)/var(--line-height-relaxed) var(--font-sans);
+  }
+
   h1,
   h2,
   h3,
@@ -785,15 +785,17 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 
 /* ── Grid & Form Elements ── */
 /* Keep browser autofill colors aligned with the input surface. */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: var(--shadow-autofill-surface) !important;
-  -webkit-text-fill-color: var(--color-text-primary) !important;
-  transition: none;
+@layer base {
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: var(--shadow-autofill-surface) !important;
+    -webkit-text-fill-color: var(--color-text-primary) !important;
+    transition: none;
+  }
 }
 
 /* Hide native password controls where the product provides its own control. */

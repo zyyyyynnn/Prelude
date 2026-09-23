@@ -3,6 +3,7 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { UTILITY_NAME, declaredUtilities, utilityFamily } = require('./utility-names.cjs')
 
 const root = path.resolve(__dirname, '..')
 const sourceRoot = path.join(root, 'src')
@@ -146,8 +147,7 @@ const sheetForRecipes = fs.readFileSync(
   'utf8',
 )
 const designSystemNames = new Set()
-for (const match of sheetForRecipes.matchAll(/^@utility\s+([a-z0-9*-]+)/gm))
-  designSystemNames.add(match[1].replace(/-\*$/, ''))
+for (const name of declaredUtilities(sheetForRecipes)) designSystemNames.add(utilityFamily(name))
 for (const match of sheetForRecipes.matchAll(/^\.([a-z][-\w]*)\s*[,{]/gm))
   designSystemNames.add(match[1])
 for (const match of sheetForRecipes.matchAll(/--([a-z][a-z0-9-]*):/g))
@@ -277,8 +277,10 @@ const internalClassPattern = /\b((?:ui-[a-z-]+|workspace-header)__[a-z-]+)/g
    `prompt-bar-control-text`). */
 const declaredCss = fs.readFileSync(path.join(sourceRoot, 'shared', 'styles', 'index.css'), 'utf8')
 const ownedFamilies = [
-  ...declaredCss.matchAll(/\/\*\s*@internal\s+(\S+)\s*\*\/\s*\n@utility\s+([a-z0-9*-]+)/g),
-].map((match) => ({ owner: match[1], base: match[2].replace(/-\*$/, '') }))
+  ...declaredCss.matchAll(
+    new RegExp(`\\/\\*\\s*@internal\\s+(\\S+)\\s*\\*\\/\\s*\\n@utility\\s+(${UTILITY_NAME})`, 'g'),
+  ),
+].map((match) => ({ owner: match[1], base: utilityFamily(match[2]) }))
 const classTokens = (source) => {
   const found = new Set()
   for (const chunk of classPositions(source)) {
@@ -353,8 +355,8 @@ for (const file of stylesheets) {
   let header = ''
   let body = ''
   let ruleLine = 1
-  const flush = () => {
-    if (depth === 1 && header) {
+  const flush = (closingAt) => {
+    if (closingAt === 1 && header) {
       const bare = header.replace(/::?[\w-]+(\([^)]*\))?/g, '').trim()
       if (body.trim() === '') violations.push(`${relative}:${ruleLine}: empty rule ${header}`)
       if (/^[a-z][a-z0-9]*$/i.test(bare) && !bare.includes('.')) {
@@ -381,8 +383,9 @@ for (const file of stylesheets) {
       continue
     }
     if (character === '}') {
+      const closingAt = depth
       depth -= 1
-      if (depth === 0) flush()
+      if (closingAt === 1) flush(closingAt)
       continue
     }
     if (depth === 0) header += character
@@ -412,11 +415,7 @@ const escapeForToken = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const usesClassToken = (name) =>
   new RegExp(`(?:[^\\w-]|^)${escapeForToken(name)}(?:[^\\w-]|$)`).test(consumers)
 
-const registered = new Set(
-  [...indexCss.matchAll(/^@utility\s+([a-z0-9*-]+)/gm)].map((match) =>
-    match[1].replace(/-\*$/, ''),
-  ),
-)
+const registered = new Set(declaredUtilities(indexCss).map(utilityFamily))
 const declaredClasses = new Set()
 for (const match of indexCss.matchAll(/^\.([a-z][-\w]*)\s*[,{]/gm)) declaredClasses.add(match[1])
 for (const name of declaredClasses) {

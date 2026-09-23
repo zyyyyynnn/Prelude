@@ -21,6 +21,7 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { declaredUtilities, utilityFamily } = require('./utility-names.cjs')
 
 const root = path.resolve(__dirname, '..')
 const distDir = path.join(root, 'dist', 'assets')
@@ -31,11 +32,7 @@ if (!fs.existsSync(distDir)) {
   process.exit(1)
 }
 
-const registeredUtilities = new Set(
-  [...indexCss.matchAll(/^@utility\s+([a-z0-9*-]+)/gm)].map((match) =>
-    match[1].replace(/-\*$/, ''),
-  ),
-)
+const registeredUtilities = new Set(declaredUtilities(indexCss).map(utilityFamily))
 // An unlayered class outranks every utility, so it counts as an override too.
 const unlayeredStart = indexCss.indexOf('\n* {')
 const unlayeredClasses = new Set(
