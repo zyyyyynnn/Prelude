@@ -38,5 +38,26 @@ public interface ModelExecutionSnapshotStore {
                 effectiveParametersJson, capabilityVersion, modelCapabilityJson,
                 fallbackCapabilitiesJson, credentialId, customEndpointUrl);
         }
+
+        public SnapshotRow withModelCapabilityJson(String modelCapabilityJson) {
+            return new SnapshotRow(
+                id, accountId, profileId, provider, model, reasoningLevel,
+                effectiveParametersJson, capabilityVersion, modelCapabilityJson,
+                fallbackCapabilitiesJson, credentialId, customEndpointUrl);
+        }
+
+        public SnapshotRow withFallbackCapabilitiesJson(String fallbackCapabilitiesJson) {
+            return new SnapshotRow(
+                id, accountId, profileId, provider, model, reasoningLevel,
+                effectiveParametersJson, capabilityVersion, modelCapabilityJson,
+                fallbackCapabilitiesJson, credentialId, customEndpointUrl);
+        }
+
+        public SnapshotRow withEffectiveParametersJson(String effectiveParametersJson) {
+            return new SnapshotRow(
+                id, accountId, profileId, provider, model, reasoningLevel,
+                effectiveParametersJson, capabilityVersion, modelCapabilityJson,
+                fallbackCapabilitiesJson, credentialId, customEndpointUrl);
+        }
     }
 }

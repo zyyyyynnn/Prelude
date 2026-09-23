@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 @TableName("asset")
-public class Asset {
+public class AssetEntity {
 
     private Long id;
     private Long accountId;

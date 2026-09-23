@@ -1,6 +1,6 @@
 package com.prelude.assets;
 
-import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.AssetEntity;
 import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import com.prelude.identity.application.ProfileService;
 import com.prelude.test.AccountFixtures;
@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Asset lifecycle against real MySQL and the S3-compatible endpoint:
+ * AssetEntity lifecycle against real MySQL and the S3-compatible endpoint:
  * PENDING_UPLOAD to READY, controlled reads, ownership checks and reconciler cleanup.
  * The VersityGW lifecycle is owned by this test via Testcontainers.
  */
@@ -89,7 +89,7 @@ class AssetLifecycleTest {
         AttachmentServiceSnapshot snapshot = uploadSnapshot(accountId,
             "notes.txt", "text/plain", "attachment body".getBytes(StandardCharsets.UTF_8));
 
-        Asset asset = assetMapper.selectById(snapshot.assetId());
+        AssetEntity asset = assetMapper.selectById(snapshot.assetId());
         assertThat(asset.getStatus()).isEqualTo(AssetFixtures.statusReady());
         assertThat(new String(objectStoragePort.get(asset.getObjectKey()), StandardCharsets.UTF_8))
             .isEqualTo("attachment body");
@@ -175,7 +175,7 @@ class AssetLifecycleTest {
         AttachmentServiceSnapshot snapshot = uploadSnapshot(accountId,
             "orphan.txt", "text/plain", "orphan".getBytes(StandardCharsets.UTF_8));
 
-        Asset asset = assetMapper.selectById(snapshot.assetId());
+        AssetEntity asset = assetMapper.selectById(snapshot.assetId());
         asset.setStatus(AssetFixtures.statusPendingUpload());
         asset.setCreatedAt(LocalDateTime.now().minusHours(48));
         assetMapper.updateById(asset);

@@ -36,8 +36,8 @@ public class MybatisInterviewSessionRepository implements InterviewSessionReposi
     }
 
     @Override
-    public void lockAppendOrder(Long sessionId) {
-        sessionMapper.lockAppendOrder(sessionId);
+    public String lockAppendOrder(Long sessionId) {
+        return sessionMapper.lockAppendOrder(sessionId);
     }
 
     @Override

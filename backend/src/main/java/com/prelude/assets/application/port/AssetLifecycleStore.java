@@ -3,7 +3,7 @@ package com.prelude.assets.application.port;
 import com.prelude.assets.application.port.AssetLookup.AssetRow;
 
 /**
- * Asset row writes. Reads go through {@link AssetLookup}; this port owns the
+ * AssetEntity row writes. Reads go through {@link AssetLookup}; this port owns the
  * lifecycle transitions, so no use case names the asset mapper or builds a wrapper.
  */
 public interface AssetLifecycleStore {

@@ -8,13 +8,13 @@ import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.api.ProviderDescriptorView;
 import com.prelude.llm.api.SaveConfigurationCommand;
-import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.application.port.ModelExecutionSnapshotStore;
 import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshotMapper;
 import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
 import com.prelude.llm.application.port.ProviderCredentialStore;
-import com.prelude.llm.infrastructure.persistence.ModelProfile;
+import com.prelude.llm.infrastructure.persistence.ModelProfileEntity;
 import com.prelude.llm.infrastructure.persistence.ModelProfileMapper;
-import com.prelude.llm.infrastructure.persistence.ProviderCredential;
+import com.prelude.llm.infrastructure.persistence.ProviderCredentialEntity;
 import com.prelude.llm.infrastructure.persistence.ProviderCredentialMapper;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -69,32 +69,28 @@ public final class LlmFixtures {
         return LlmPort.ResponseMode.JSON_ARRAY;
     }
 
-    public static ModelExecutionSnapshot snapshot(String provider, String model, String reasoningLevel, String customEndpointUrl) {
-        ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
-        snapshot.setProvider(provider);
-        snapshot.setModel(model);
-        snapshot.setReasoningLevel(reasoningLevel);
-        snapshot.setCustomEndpointUrl(customEndpointUrl);
-        return snapshot;
+    public static ModelExecutionSnapshotStore.SnapshotRow snapshot(String provider, String model, String reasoningLevel, String customEndpointUrl) {
+        return new ModelExecutionSnapshotStore.SnapshotRow(
+            null, null, null, provider, model, reasoningLevel,
+            null, null, null, null, null, customEndpointUrl);
     }
 
-    public static ModelExecutionSnapshot snapshotWithDefaults(
+    public static ModelExecutionSnapshotStore.SnapshotRow snapshotWithDefaults(
         Long id, Long accountId, Long profileId, String provider, String model, String reasoningLevel, int maxTokens) {
-        ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
-        snapshot.setId(id);
-        snapshot.setAccountId(accountId);
-        snapshot.setProfileId(profileId);
-        snapshot.setProvider(provider);
-        snapshot.setModel(model);
-        snapshot.setReasoningLevel(reasoningLevel);
-        snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":" + maxTokens + "}");
+        String capabilityJson;
         try {
-            snapshot.setModelCapabilityJson(OBJECT_MAPPER.writeValueAsString(CATALOG.capability(provider, model)));
+            capabilityJson = OBJECT_MAPPER.writeValueAsString(CATALOG.capability(provider, model));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        snapshot.setFallbackCapabilitiesJson("[]");
-        return snapshot;
+        return new ModelExecutionSnapshotStore.SnapshotRow(
+            id, accountId, profileId, provider, model, reasoningLevel,
+            "{\"maxOutputTokens\":" + maxTokens + "}",
+            ModelCapabilityCatalog.CAPABILITY_VERSION,
+            capabilityJson,
+            "[]",
+            null,
+            null);
     }
 
     public static SaveConfigurationCommand saveConfigurationCommand(
@@ -198,8 +194,8 @@ public final class LlmFixtures {
         return ModelCapabilityResponse.class;
     }
 
-    public static ModelProfile profile(Long id, Long accountId, String provider, String model, Long credentialId, String customEndpointUrl, String reasoningLevel) {
-        ModelProfile profile = new ModelProfile();
+    public static ModelProfileEntity profile(Long id, Long accountId, String provider, String model, Long credentialId, String customEndpointUrl, String reasoningLevel) {
+        ModelProfileEntity profile = new ModelProfileEntity();
         profile.setId(id);
         profile.setAccountId(accountId);
         profile.setProvider(provider);
@@ -211,16 +207,16 @@ public final class LlmFixtures {
         return profile;
     }
 
-    public static String getModelCapabilityJson(ModelProfile profile) {
+    public static String getModelCapabilityJson(ModelProfileEntity profile) {
         return profile.getModelCapabilityJson();
     }
 
-    public static String getFallbackCapabilitiesJson(ModelProfile profile) {
+    public static String getFallbackCapabilitiesJson(ModelProfileEntity profile) {
         return profile.getFallbackCapabilitiesJson();
     }
 
-    public static ProviderCredential credential(Long id, Long accountId, String provider, String scopeKey, String encryptedKey) {
-        ProviderCredential cred = new ProviderCredential();
+    public static ProviderCredentialEntity credential(Long id, Long accountId, String provider, String scopeKey, String encryptedKey) {
+        ProviderCredentialEntity cred = new ProviderCredentialEntity();
         cred.setId(id);
         cred.setAccountId(accountId);
         cred.setProvider(provider);
@@ -240,7 +236,7 @@ public final class LlmFixtures {
         return new com.prelude.llm.application.port.ModelProfileStore() {
             @Override
             public java.util.Optional<ProfileRow> findActiveByAccount(Long accountId) {
-                ModelProfile profile = profileMapper.selectOne(org.mockito.ArgumentMatchers.any());
+                ModelProfileEntity profile = profileMapper.selectOne(org.mockito.ArgumentMatchers.any());
                 return profile == null
                     ? java.util.Optional.empty()
                     : java.util.Optional.of(toRow(profile));
@@ -253,7 +249,7 @@ public final class LlmFixtures {
 
             @Override
             public ProfileRow insert(ProfileRow row) {
-                ModelProfile profile = new ModelProfile();
+                ModelProfileEntity profile = new ModelProfileEntity();
                 apply(profile, row);
                 profileMapper.insert(profile);
                 return toRow(profile);
@@ -261,13 +257,13 @@ public final class LlmFixtures {
 
             @Override
             public void update(ProfileRow row) {
-                ModelProfile profile = new ModelProfile();
+                ModelProfileEntity profile = new ModelProfileEntity();
                 apply(profile, row);
                 profile.setId(row.id());
                 profileMapper.updateById(profile);
             }
 
-            private void apply(ModelProfile profile, ProfileRow row) {
+            private void apply(ModelProfileEntity profile, ProfileRow row) {
                 profile.setAccountId(row.accountId());
                 profile.setProvider(row.provider());
                 profile.setModel(row.model());
@@ -279,7 +275,7 @@ public final class LlmFixtures {
                 profile.setCredentialId(row.credentialId());
             }
 
-            private ProfileRow toRow(ModelProfile profile) {
+            private ProfileRow toRow(ModelProfileEntity profile) {
                 return new ProfileRow(
                     profile.getId(), profile.getAccountId(), profile.getProvider(), profile.getModel(),
                     profile.getCustomEndpointUrl(), profile.getReasoningLevel(),
@@ -301,7 +297,7 @@ public final class LlmFixtures {
                 if (credentialId == null) {
                     return null;
                 }
-                ProviderCredential credential = credentialMapper.selectById(credentialId);
+                ProviderCredentialEntity credential = credentialMapper.selectById(credentialId);
                 if (credential == null || !accountId.equals(credential.getAccountId())) {
                     throw com.prelude.BusinessException.badRequest("模型凭证不存在或不属于当前账户");
                 }
@@ -311,7 +307,7 @@ public final class LlmFixtures {
             @Override
             public java.util.Optional<com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow>
                 findById(Long credentialId) {
-                ProviderCredential credential = credentialMapper.selectById(credentialId);
+                ProviderCredentialEntity credential = credentialMapper.selectById(credentialId);
                 return credential == null
                     ? java.util.Optional.empty()
                     : java.util.Optional.of(toRow(credential));
@@ -320,7 +316,7 @@ public final class LlmFixtures {
             @Override
             public com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow insert(
                 com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow row) {
-                ProviderCredential credential = new ProviderCredential();
+                ProviderCredentialEntity credential = new ProviderCredentialEntity();
                 credential.setAccountId(row.accountId());
                 credential.setProvider(row.provider());
                 credential.setScopeKey(row.scopeKey());
@@ -330,7 +326,7 @@ public final class LlmFixtures {
             }
 
             private com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow toRow(
-                ProviderCredential credential) {
+                ProviderCredentialEntity credential) {
                 return new com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow(
                     credential.getId(), credential.getAccountId(), credential.getProvider(),
                     credential.getScopeKey(), credential.getApiKeyEncrypted());
@@ -344,7 +340,7 @@ public final class LlmFixtures {
 
     /** Reads a stubbed profile row back as the port's projection. */
     public static com.prelude.llm.application.port.ModelProfileStore.ProfileRow profileRowOf(
-        ModelProfile profile) {
+        ModelProfileEntity profile) {
         return new com.prelude.llm.application.port.ModelProfileStore.ProfileRow(
             profile.getId(), profile.getAccountId(), profile.getProvider(), profile.getModel(),
             profile.getCustomEndpointUrl(), profile.getReasoningLevel(),
@@ -354,7 +350,7 @@ public final class LlmFixtures {
 
     /** Writes a projection back onto a stubbed profile row, so a later read sees it. */
     public static void applyToProfile(
-        ModelProfile profile,
+        ModelProfileEntity profile,
         com.prelude.llm.application.port.ModelProfileStore.ProfileRow row) {
         profile.setId(row.id());
         profile.setAccountId(row.accountId());
@@ -369,7 +365,7 @@ public final class LlmFixtures {
     }
 
     public static void verifyNeverUpdated(ModelProfileMapper profileMapper) {
-        Mockito.verify(profileMapper, Mockito.never()).updateById(Mockito.any(ModelProfile.class));
+        Mockito.verify(profileMapper, Mockito.never()).updateById(Mockito.any(ModelProfileEntity.class));
     }
 
     public static ModelExecutionSnapshotMapper mockSnapshotMapper() {

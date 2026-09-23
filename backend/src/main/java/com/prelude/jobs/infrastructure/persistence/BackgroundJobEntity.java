@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 @TableName("background_job")
-public class BackgroundJob {
+public class BackgroundJobEntity {
 
     private Long id;
     private String jobId;

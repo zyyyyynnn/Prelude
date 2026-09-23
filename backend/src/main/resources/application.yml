@@ -103,9 +103,16 @@ prelude:
     mode: ${PRELUDE_REALTIME_MODE:local}
   voice:
     tts-pool-size: 4
+    turn-pool-size: ${PRELUDE_VOICE_TURN_POOL_SIZE:4}
   jobs:
     stale-recovery-delay-ms: ${PRELUDE_JOBS_STALE_RECOVERY_DELAY_MS:60000}
     publication-resubmission-delay-ms: ${PRELUDE_JOBS_PUBLICATION_RESUBMISSION_DELAY_MS:120000}
+    lease-duration-seconds: ${PRELUDE_JOBS_LEASE_DURATION_SECONDS:120}
+    heartbeat-interval-seconds: ${PRELUDE_JOBS_HEARTBEAT_INTERVAL_SECONDS:30}
+  sse:
+    core-pool-size: ${PRELUDE_SSE_CORE_POOL_SIZE:5}
+    max-pool-size: ${PRELUDE_SSE_MAX_POOL_SIZE:20}
+    queue-capacity: ${PRELUDE_SSE_QUEUE_CAPACITY:100}
   retrieval:
     hybrid:
       vector-weight: 0.7

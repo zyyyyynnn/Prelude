@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("attachment")
-public class StoredAttachment {
+public class StoredAttachmentEntity {
 
     private Long id;
     private Long accountId;

@@ -3,7 +3,7 @@ package com.prelude.assets.application.port;
 import java.util.List;
 
 /**
- * Asset row access. The asset row still doubles as the domain object in this module,
+ * AssetEntity row access. The asset row still doubles as the domain object in this module,
  * so the port speaks in {@link AssetRow} rather than naming the persistence package.
  */
 public interface AssetLookup {

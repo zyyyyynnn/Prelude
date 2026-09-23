@@ -116,7 +116,8 @@ services:
     restart: unless-stopped
     profiles: [app]
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "127.0.0.1:5173:80"
 

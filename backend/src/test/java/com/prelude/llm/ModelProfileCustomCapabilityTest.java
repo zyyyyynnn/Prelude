@@ -1,7 +1,7 @@
 package com.prelude.llm;
 
 import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.infrastructure.persistence.ModelProfile;
+import com.prelude.llm.infrastructure.persistence.ModelProfileEntity;
 import com.prelude.llm.infrastructure.persistence.ModelProfileMapper;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
@@ -146,7 +146,7 @@ class ModelProfileCustomCapabilityTest {
                 @Override
                 public java.util.Optional<com.prelude.llm.application.port.ModelProfileStore.ProfileRow>
                     findActiveByAccount(Long accountId) {
-                    ModelProfile stored = profileMapper.selectOne(org.mockito.ArgumentMatchers.any());
+                    ModelProfileEntity stored = profileMapper.selectOne(org.mockito.ArgumentMatchers.any());
                     return stored == null
                         ? java.util.Optional.empty()
                         : java.util.Optional.of(LlmFixtures.profileRowOf(stored));
@@ -190,7 +190,7 @@ class ModelProfileCustomCapabilityTest {
 
     private record Fixture(
         ModelProfileService service,
-        ModelProfile profile,
+        ModelProfileEntity profile,
         ModelProfileMapper profileMapper,
         CustomModelCapabilityDiscovery capabilityDiscovery,
         PlatformTransactionManager transactionManager

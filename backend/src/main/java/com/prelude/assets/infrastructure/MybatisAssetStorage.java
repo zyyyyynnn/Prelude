@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.assets.application.port.AssetStorage;
 import com.prelude.assets.application.port.StaleAssetRef;
 import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.AssetEntity;
 import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,9 +20,9 @@ public class MybatisAssetStorage implements AssetStorage {
 
     @Override
     public List<StaleAssetRef> findStaleByStatus(AssetStatus status, LocalDateTime cutoff, int limit) {
-        return assetMapper.selectList(new LambdaQueryWrapper<Asset>()
-                .eq(Asset::getStatus, status)
-                .lt(Asset::getCreatedAt, cutoff)
+        return assetMapper.selectList(new LambdaQueryWrapper<AssetEntity>()
+                .eq(AssetEntity::getStatus, status)
+                .lt(AssetEntity::getCreatedAt, cutoff)
                 .last("LIMIT " + limit))
             .stream()
             .map(asset -> new StaleAssetRef(asset.getId(), asset.getObjectKey()))

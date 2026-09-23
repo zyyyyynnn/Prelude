@@ -6,8 +6,6 @@ import com.prelude.llm.api.LlmPort.FrozenModelConfiguration;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore;
-import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
-import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshotMapper;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
 import com.prelude.llm.application.port.ModelProfileStore;
 import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
@@ -30,7 +28,6 @@ public class ModelExecutionSnapshotService {
 
     private final ModelProfileStore profileStore;
     private final ModelExecutionSnapshotStore snapshotStore;
-    private final ModelExecutionSnapshotMapper snapshotMapper;
     private final ModelCapabilityCatalog capabilityCatalog;
     private final ReasoningLevels reasoningLevels;
     private final ModelCapabilityJson capabilityJson;
@@ -76,12 +73,12 @@ public class ModelExecutionSnapshotService {
     }
 
     /**
-     * The frozen snapshot an execution run reads. Deliberately returns the persistence
-     * row: the execution path copies and re-models it per fallback candidate, and the
-     * model factory is built against that shape.
+     * The frozen snapshot an execution run reads. Deliberately returns the store row: the
+     * execution path copies and re-models it per fallback candidate, and the model factory is
+     * built against that shape.
      */
-    public ModelExecutionSnapshot require(Long snapshotId) {
-        ModelExecutionSnapshot snapshot = snapshotMapper.selectById(snapshotId);
+    public SnapshotRow require(Long snapshotId) {
+        SnapshotRow snapshot = snapshotStore.findById(snapshotId);
         if (snapshot == null) {
             throw new BusinessException(
                 HttpStatus.NOT_FOUND, "model_snapshot_not_found", "模型执行快照不存在");
@@ -90,12 +87,12 @@ public class ModelExecutionSnapshotService {
     }
 
     public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
-        ModelExecutionSnapshot snapshot = require(snapshotId);
-        if (!accountId.equals(snapshot.getAccountId())) {
+        SnapshotRow snapshot = require(snapshotId);
+        if (!accountId.equals(snapshot.accountId())) {
             throw new BusinessException(
                 HttpStatus.NOT_FOUND, "model_snapshot_not_found", "模型执行快照不存在");
         }
-        return new FrozenModelConfiguration(snapshot.getModel(), snapshot.getReasoningLevel());
+        return new FrozenModelConfiguration(snapshot.model(), snapshot.reasoningLevel());
     }
 
     private void validateFrozenFallbacks(

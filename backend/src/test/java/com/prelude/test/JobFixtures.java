@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
-import com.prelude.jobs.infrastructure.persistence.BackgroundJob;
+import com.prelude.jobs.infrastructure.persistence.BackgroundJobEntity;
 import com.prelude.jobs.infrastructure.persistence.BackgroundJobMapper;
-import com.prelude.jobs.infrastructure.persistence.JobAttempt;
+import com.prelude.jobs.infrastructure.persistence.JobAttemptEntity;
 import com.prelude.jobs.infrastructure.persistence.JobAttemptMapper;
 
 import java.util.List;
@@ -41,51 +41,51 @@ public final class JobFixtures {
     }
 
     public static String statusSucceeded() {
-        return BackgroundJob.SUCCEEDED;
+        return BackgroundJobEntity.SUCCEEDED;
     }
 
     public static String statusFailed() {
-        return BackgroundJob.FAILED;
+        return BackgroundJobEntity.FAILED;
     }
 
     public static String statusCancelled() {
-        return BackgroundJob.CANCELLED;
+        return BackgroundJobEntity.CANCELLED;
     }
 
     public static String statusRunning() {
-        return BackgroundJob.RUNNING;
+        return BackgroundJobEntity.RUNNING;
     }
 
     public static String statusPending() {
-        return BackgroundJob.PENDING;
+        return BackgroundJobEntity.PENDING;
     }
 
     public static String statusInterrupted() {
-        return JobAttempt.INTERRUPTED;
+        return JobAttemptEntity.INTERRUPTED;
     }
 
     public static String attemptStatus(Object attempt) {
-        return ((JobAttempt) attempt).getStatus();
+        return ((JobAttemptEntity) attempt).getStatus();
     }
 
     public static List<String> attemptStatuses(JobAttemptMapper mapper, String jobId) {
-        return attempts(mapper, jobId).stream().map(JobAttempt::getStatus).toList();
+        return attempts(mapper, jobId).stream().map(JobAttemptEntity::getStatus).toList();
     }
 
-    public static BackgroundJob stored(BackgroundJobMapper mapper, String jobId) {
-        return mapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getJobId, jobId)
+    public static BackgroundJobEntity stored(BackgroundJobMapper mapper, String jobId) {
+        return mapper.selectOne(new LambdaQueryWrapper<BackgroundJobEntity>()
+            .eq(BackgroundJobEntity::getJobId, jobId)
             .last("LIMIT 1"));
     }
 
-    public static List<JobAttempt> attempts(JobAttemptMapper mapper, String jobId) {
-        return mapper.selectList(new LambdaQueryWrapper<JobAttempt>()
-            .eq(JobAttempt::getJobId, jobId)
-            .orderByAsc(JobAttempt::getAttemptNumber));
+    public static List<JobAttemptEntity> attempts(JobAttemptMapper mapper, String jobId) {
+        return mapper.selectList(new LambdaQueryWrapper<JobAttemptEntity>()
+            .eq(JobAttemptEntity::getJobId, jobId)
+            .orderByAsc(JobAttemptEntity::getAttemptNumber));
     }
 
     public static long countByOperationKey(BackgroundJobMapper mapper, String operationKey) {
-        return mapper.selectCount(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getOperationKey, operationKey));
+        return mapper.selectCount(new LambdaQueryWrapper<BackgroundJobEntity>()
+            .eq(BackgroundJobEntity::getOperationKey, operationKey));
     }
 }

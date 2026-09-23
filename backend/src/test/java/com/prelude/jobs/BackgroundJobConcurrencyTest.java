@@ -2,7 +2,7 @@ package com.prelude.jobs;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.infrastructure.persistence.BackgroundJob;
+import com.prelude.jobs.infrastructure.persistence.BackgroundJobEntity;
 import com.prelude.jobs.infrastructure.persistence.BackgroundJobMapper;
 import com.prelude.jobs.infrastructure.persistence.JobAttemptMapper;
 import com.prelude.test.AccountFixtures;
@@ -122,7 +122,7 @@ class BackgroundJobConcurrencyTest {
         var first = jobs.claim(ref.jobId());
         assertThat(first.claimed()).isTrue();
 
-        BackgroundJob running = stored(ref.jobId());
+        BackgroundJobEntity running = stored(ref.jobId());
         running.setLeaseExpiresAt(LocalDateTime.now().minusMinutes(1));
         jobMapper.updateById(running);
         assertThat(recoveryService.recover(ref.jobId(), LocalDateTime.now()))
@@ -137,13 +137,13 @@ class BackgroundJobConcurrencyTest {
             .isEqualTo(BackgroundJobOperations.FailureOutcome.NOT_RUNNING);
         assertThat(jobs.renewLease(ref.jobId(), first.attemptNumber())).isFalse();
 
-        BackgroundJob stillSecondAttempt = stored(ref.jobId());
+        BackgroundJobEntity stillSecondAttempt = stored(ref.jobId());
         assertThat(stillSecondAttempt.getStatus()).isEqualTo(JobFixtures.statusRunning());
         assertThat(stillSecondAttempt.getAttemptCount()).isEqualTo(second.attemptNumber());
         assertThat(jobs.renewLease(ref.jobId(), second.attemptNumber())).isTrue();
 
         jobs.complete(ref.jobId(), second.attemptNumber());
-        BackgroundJob completed = stored(ref.jobId());
+        BackgroundJobEntity completed = stored(ref.jobId());
         assertThat(completed.getStatus()).isEqualTo(JobFixtures.statusSucceeded());
         assertThat(JobFixtures.attemptStatuses(attemptMapper, ref.jobId()))
             .containsExactly(JobFixtures.statusInterrupted(), JobFixtures.statusSucceeded());
@@ -161,7 +161,7 @@ class BackgroundJobConcurrencyTest {
 
         var expiredRef = request(accountId, 206L);
         var expired = jobs.claim(expiredRef.jobId());
-        BackgroundJob expiredJob = stored(expiredRef.jobId());
+        BackgroundJobEntity expiredJob = stored(expiredRef.jobId());
         expiredJob.setLeaseExpiresAt(LocalDateTime.now().minusSeconds(1));
         jobMapper.updateById(expiredJob);
 
@@ -193,9 +193,9 @@ class BackgroundJobConcurrencyTest {
             "test.concurrent:operation:" + System.nanoTime(), "{}"));
     }
 
-    private BackgroundJob stored(String jobId) {
-        return jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJob>()
-            .eq(BackgroundJob::getJobId, jobId)
+    private BackgroundJobEntity stored(String jobId) {
+        return jobMapper.selectOne(new LambdaQueryWrapper<BackgroundJobEntity>()
+            .eq(BackgroundJobEntity::getJobId, jobId)
             .last("LIMIT 1"));
     }
 

@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 @TableName("resume")
-public class Resume {
+public class ResumeEntity {
 
     private Long id;
     private Long accountId;

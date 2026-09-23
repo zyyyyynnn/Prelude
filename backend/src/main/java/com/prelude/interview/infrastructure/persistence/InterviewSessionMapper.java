@@ -24,10 +24,10 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSessionEntit
 
     /**
      * Takes the session row's write lock, which is what serialises message appends for one
-     * session across every process. Returns the id it locked, or null when there is no session.
+     * session across every process. Returns the status it locked, or null when there is no session.
      */
-    @Select("SELECT id FROM interview_session WHERE id = #{sessionId} FOR UPDATE")
-    Long lockAppendOrder(@Param("sessionId") Long sessionId);
+    @Select("SELECT status FROM interview_session WHERE id = #{sessionId} FOR UPDATE")
+    String lockAppendOrder(@Param("sessionId") Long sessionId);
 
     @Update("""
         UPDATE interview_session

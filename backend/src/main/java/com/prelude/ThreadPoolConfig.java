@@ -13,11 +13,15 @@ import java.util.concurrent.ScheduledExecutorService;
 public class ThreadPoolConfig {
 
     @Bean("sseTaskExecutor")
-    public Executor sseTaskExecutor() {
+    public Executor sseTaskExecutor(
+        @Value("${prelude.sse.core-pool-size:5}") int corePoolSize,
+        @Value("${prelude.sse.max-pool-size:20}") int maxPoolSize,
+        @Value("${prelude.sse.queue-capacity:100}") int queueCapacity
+    ) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(100);
+        executor.setCorePoolSize(Math.max(1, corePoolSize));
+        executor.setMaxPoolSize(Math.max(executor.getCorePoolSize(), maxPoolSize));
+        executor.setQueueCapacity(Math.max(1, queueCapacity));
         executor.setThreadNamePrefix("sse-pool-");
         executor.initialize();
         return executor;

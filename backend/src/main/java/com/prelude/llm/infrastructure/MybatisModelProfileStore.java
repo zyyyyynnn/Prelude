@@ -3,7 +3,7 @@ package com.prelude.llm.infrastructure;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.llm.application.port.ModelProfileStore;
 import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
-import com.prelude.llm.infrastructure.persistence.ModelProfile;
+import com.prelude.llm.infrastructure.persistence.ModelProfileEntity;
 import com.prelude.llm.infrastructure.persistence.ModelProfileMapper;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -18,23 +18,23 @@ public class MybatisModelProfileStore implements ModelProfileStore {
 
     @Override
     public Optional<ProfileRow> findActiveByAccount(Long accountId) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
+        ModelProfileEntity profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfileEntity>()
+            .eq(ModelProfileEntity::getAccountId, accountId)
             .last("LIMIT 1"));
         return profile == null ? Optional.empty() : Optional.of(toRow(profile));
     }
 
     @Override
     public Optional<ProfileRow> findActiveForUpdate(Long accountId) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
+        ModelProfileEntity profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfileEntity>()
+            .eq(ModelProfileEntity::getAccountId, accountId)
             .last("LIMIT 1 FOR UPDATE"));
         return profile == null ? Optional.empty() : Optional.of(toRow(profile));
     }
 
     @Override
     public ProfileRow insert(ProfileRow row) {
-        ModelProfile profile = new ModelProfile();
+        ModelProfileEntity profile = new ModelProfileEntity();
         apply(profile, row);
         profileMapper.insert(profile);
         return toRow(profile);
@@ -42,13 +42,13 @@ public class MybatisModelProfileStore implements ModelProfileStore {
 
     @Override
     public void update(ProfileRow row) {
-        ModelProfile profile = new ModelProfile();
+        ModelProfileEntity profile = new ModelProfileEntity();
         apply(profile, row);
         profile.setId(row.id());
         profileMapper.updateById(profile);
     }
 
-    private void apply(ModelProfile profile, ProfileRow row) {
+    private void apply(ModelProfileEntity profile, ProfileRow row) {
         profile.setAccountId(row.accountId());
         profile.setProvider(row.provider());
         profile.setModel(row.model());
@@ -60,7 +60,7 @@ public class MybatisModelProfileStore implements ModelProfileStore {
         profile.setCredentialId(row.credentialId());
     }
 
-    private ProfileRow toRow(ModelProfile profile) {
+    private ProfileRow toRow(ModelProfileEntity profile) {
         return new ProfileRow(
             profile.getId(),
             profile.getAccountId(),

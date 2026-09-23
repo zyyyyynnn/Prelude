@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.prelude.assets.application.port.AssetLifecycleStore;
 import com.prelude.assets.application.port.AssetLookup.AssetRow;
 import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.AssetEntity;
 import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class MybatisAssetLifecycleStore implements AssetLifecycleStore {
 
     @Override
     public AssetRow createPending(Long accountId, String kind, String mediaType, long byteSize) {
-        Asset asset = new Asset();
+        AssetEntity asset = new AssetEntity();
         asset.setAccountId(accountId);
         asset.setKind(kind);
         asset.setObjectKey(UUID.randomUUID().toString());
@@ -40,9 +40,9 @@ public class MybatisAssetLifecycleStore implements AssetLifecycleStore {
 
     @Override
     public int markReady(Long assetId) {
-        return assetMapper.update(null, new LambdaUpdateWrapper<Asset>()
-            .set(Asset::getStatus, AssetStatus.READY)
-            .eq(Asset::getId, assetId)
-            .eq(Asset::getStatus, AssetStatus.PENDING_UPLOAD));
+        return assetMapper.update(null, new LambdaUpdateWrapper<AssetEntity>()
+            .set(AssetEntity::getStatus, AssetStatus.READY)
+            .eq(AssetEntity::getId, assetId)
+            .eq(AssetEntity::getStatus, AssetStatus.PENDING_UPLOAD));
     }
 }

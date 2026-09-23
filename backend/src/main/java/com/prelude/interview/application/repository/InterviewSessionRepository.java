@@ -17,10 +17,11 @@ public interface InterviewSessionRepository {
     int markGeneratingIfOngoing(Long sessionId, Long accountId);
 
     /**
-     * Serialises whoever is about to append to this session. Callers hold it for the rest of
-     * their transaction, so two appends cannot read the same "last message" and number alike.
+     * Serialises whoever is about to append to this session and reports the status under that
+     * lock, or null when the session is missing. Callers hold it for the rest of their
+     * transaction, so two appends cannot read the same "last message" and number alike.
      */
-    void lockAppendOrder(Long sessionId);
+    String lockAppendOrder(Long sessionId);
 
     /**
      * Persists only the sliding-window summary, so an async writer cannot roll back columns

@@ -2,7 +2,7 @@ package com.prelude.llm.infrastructure;
 
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
-import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshotEntity;
 import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshotMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -16,7 +16,7 @@ public class MybatisModelExecutionSnapshotStore implements ModelExecutionSnapsho
 
     @Override
     public Long insert(SnapshotRow row) {
-        ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
+        ModelExecutionSnapshotEntity snapshot = new ModelExecutionSnapshotEntity();
         snapshot.setAccountId(row.accountId());
         snapshot.setProfileId(row.profileId());
         snapshot.setProvider(row.provider());
@@ -34,11 +34,11 @@ public class MybatisModelExecutionSnapshotStore implements ModelExecutionSnapsho
 
     @Override
     public SnapshotRow findById(Long snapshotId) {
-        ModelExecutionSnapshot snapshot = snapshotMapper.selectById(snapshotId);
+        ModelExecutionSnapshotEntity snapshot = snapshotMapper.selectById(snapshotId);
         return snapshot == null ? null : toRow(snapshot);
     }
 
-    private SnapshotRow toRow(ModelExecutionSnapshot snapshot) {
+    private SnapshotRow toRow(ModelExecutionSnapshotEntity snapshot) {
         return new SnapshotRow(
             snapshot.getId(),
             snapshot.getAccountId(),

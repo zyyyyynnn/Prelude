@@ -114,11 +114,11 @@ class InMemoryRetrievalAdapterTest {
     @Test
     void searchRebuildsFromSourcePortWhenNothingIsPersisted() {
         when(sourcePort.loadDocuments(eq(SCOPE_TYPE), eq(SCOPE_ID)))
-            .thenReturn(List.of("Resume mentions Spring Boot interviews"));
+            .thenReturn(List.of("ResumeEntity mentions Spring Boot interviews"));
 
         List<String> hits = adapter.search(SCOPE_TYPE, SCOPE_ID, "Spring Boot", 3);
 
-        assertThat(hits).containsExactly("Resume mentions Spring Boot interviews");
+        assertThat(hits).containsExactly("ResumeEntity mentions Spring Boot interviews");
         assertThat(stored).hasSize(1);
         verify(sourcePort).loadDocuments(SCOPE_TYPE, SCOPE_ID);
     }

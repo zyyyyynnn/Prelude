@@ -1,21 +1,23 @@
 package com.prelude.llm;
 
+import com.prelude.llm.application.port.ModelExecutionSnapshotStore;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ModelExecutionSnapshotServiceTest {
 
     @Test
     void returnsTheFrozenModelOnlyInsideTheOwningAccount() {
-        var mapper = LlmFixtures.mockSnapshotMapper();
+        var store = mock(ModelExecutionSnapshotStore.class);
         var snapshot = LlmFixtures.snapshotWithDefaults(42L, 7L, 1L, "deepseek", "deepseek-v4-flash", "HIGH", 4096);
-        when(mapper.selectById(42L)).thenReturn(snapshot);
+        when(store.findById(42L)).thenReturn(snapshot);
         ModelExecutionSnapshotService service = new ModelExecutionSnapshotService(
-            null, null, mapper, null, null, null, null);
+            null, store, null, null, null, null);
 
         assertThat(service.frozenConfiguration(7L, 42L))
             .extracting("model", "reasoningLevel")

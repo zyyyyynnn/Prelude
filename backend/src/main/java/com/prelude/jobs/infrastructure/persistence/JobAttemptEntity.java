@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 @TableName("job_attempt")
-public class JobAttempt {
+public class JobAttemptEntity {
 
     private Long id;
     private String jobId;

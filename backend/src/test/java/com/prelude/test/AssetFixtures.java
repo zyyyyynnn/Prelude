@@ -1,16 +1,16 @@
 package com.prelude.test;
 
 import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.infrastructure.persistence.Asset;
-import com.prelude.assets.infrastructure.persistence.StoredAttachment;
+import com.prelude.assets.infrastructure.persistence.AssetEntity;
+import com.prelude.assets.infrastructure.persistence.StoredAttachmentEntity;
 
 public final class AssetFixtures {
 
     private AssetFixtures() {
     }
 
-    public static StoredAttachment stored(Long id, Long accountId, Long assetId, String fileName, String scopeType, Long scopeId) {
-        StoredAttachment stored = new StoredAttachment();
+    public static StoredAttachmentEntity stored(Long id, Long accountId, Long assetId, String fileName, String scopeType, Long scopeId) {
+        StoredAttachmentEntity stored = new StoredAttachmentEntity();
         stored.setId(id);
         stored.setAccountId(accountId);
         stored.setAssetId(assetId);
@@ -20,12 +20,12 @@ public final class AssetFixtures {
         return stored;
     }
 
-    public static StoredAttachment stored(Long id, Long assetId, String fileName) {
+    public static StoredAttachmentEntity stored(Long id, Long assetId, String fileName) {
         return stored(id, 7L, assetId, fileName, "session", 9L);
     }
 
-    public static Asset asset(Long id, String mediaType, long byteSize) {
-        Asset asset = new Asset();
+    public static AssetEntity asset(Long id, String mediaType, long byteSize) {
+        AssetEntity asset = new AssetEntity();
         asset.setId(id);
         asset.setMediaType(mediaType);
         asset.setByteSize(byteSize);

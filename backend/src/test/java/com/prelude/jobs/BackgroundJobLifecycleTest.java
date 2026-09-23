@@ -60,7 +60,7 @@ class BackgroundJobLifecycleTest {
         return requestJob(accountId, subjectId, uniqueOperationKey());
     }
 
-    private com.prelude.jobs.infrastructure.persistence.BackgroundJob stored(String jobId) {
+    private com.prelude.jobs.infrastructure.persistence.BackgroundJobEntity stored(String jobId) {
         return JobFixtures.stored(jobMapper, jobId);
     }
 

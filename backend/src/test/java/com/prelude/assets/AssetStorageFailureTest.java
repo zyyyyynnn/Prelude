@@ -1,6 +1,6 @@
 package com.prelude.assets;
 
-import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.AssetEntity;
 import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import com.prelude.test.AssetFixtures;
 import com.prelude.test.ExceptionFixtures;
@@ -71,7 +71,7 @@ class AssetStorageFailureTest {
         ExceptionFixtures.assertBusinessExceptionMessage(() -> attachmentService.upload(
             "notes.txt", "text/plain", "body".getBytes(StandardCharsets.UTF_8)), "附件上传失败");
 
-        Asset anchor = latestPendingAsset(accountId);
+        AssetEntity anchor = latestPendingAsset(accountId);
         assertThat(anchor).isNotNull();
         assertThat(anchor.getStatus()).isEqualTo(AssetFixtures.statusPendingUpload());
 
@@ -94,7 +94,7 @@ class AssetStorageFailureTest {
         ExceptionFixtures.assertBusinessException(
             () -> profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile())), "revision_conflict");
 
-        Asset anchor = latestPendingAsset(accountId);
+        AssetEntity anchor = latestPendingAsset(accountId);
         assertThat(anchor).isNotNull();
         assertThat(anchor.getStatus()).isEqualTo(AssetFixtures.statusPendingUpload());
 
@@ -126,11 +126,11 @@ class AssetStorageFailureTest {
         AccountFixtures.authenticate(accountId);
     }
 
-    private Asset latestPendingAsset(long accountId) {
-        return assetMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Asset>()
-                .eq(Asset::getAccountId, accountId)
-                .eq(Asset::getStatus, AssetFixtures.statusPendingUpload())
-                .orderByDesc(Asset::getId)
+    private AssetEntity latestPendingAsset(long accountId) {
+        return assetMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AssetEntity>()
+                .eq(AssetEntity::getAccountId, accountId)
+                .eq(AssetEntity::getStatus, AssetFixtures.statusPendingUpload())
+                .orderByDesc(AssetEntity::getId)
                 .last("LIMIT 1"))
             .stream()
             .findFirst()

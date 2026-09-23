@@ -2,7 +2,7 @@ package com.prelude.assets.infrastructure;
 
 import com.prelude.assets.application.port.AssetLookup;
 import com.prelude.assets.application.port.AssetLookup.AssetRow;
-import com.prelude.assets.infrastructure.persistence.Asset;
+import com.prelude.assets.infrastructure.persistence.AssetEntity;
 import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class MybatisAssetLookup implements AssetLookup {
 
     @Override
     public AssetRow findById(Long assetId) {
-        Asset asset = assetMapper.selectById(assetId);
+        AssetEntity asset = assetMapper.selectById(assetId);
         return asset == null ? null : toRow(asset);
     }
 
@@ -33,7 +33,7 @@ public class MybatisAssetLookup implements AssetLookup {
         assetMapper.deleteById(assetId);
     }
 
-    private AssetRow toRow(Asset asset) {
+    private AssetRow toRow(AssetEntity asset) {
         return new AssetRow(
             asset.getId(),
             asset.getAccountId(),

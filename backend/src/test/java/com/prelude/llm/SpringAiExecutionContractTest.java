@@ -3,7 +3,7 @@ package com.prelude.llm;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
-import com.prelude.llm.infrastructure.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import okhttp3.Dns;
@@ -54,7 +54,7 @@ class SpringAiExecutionContractTest {
         SpringAiModelFactory factory = factoryFor(new CustomLlmEgressPolicy(
             false, false, Set.of(443), Dns.SYSTEM));
 
-        ModelExecutionSnapshot deepseek = snapshot("deepseek", "deepseek-v4-pro", "HIGH", null);
+        SnapshotRow deepseek = snapshot("deepseek", "deepseek-v4-pro", "HIGH", null);
         OpenAiChatOptions deepseekPlain = (OpenAiChatOptions) factory.requestOptions(
             deepseek, LlmPort.ResponseMode.PLAIN_TEXT);
         OpenAiChatOptions deepseekObject = (OpenAiChatOptions) factory.requestOptions(
@@ -72,7 +72,7 @@ class SpringAiExecutionContractTest {
         assertThat(factory.chatModel(deepseek, "sk-test"))
             .isInstanceOf(OpenAiChatModel.class);
 
-        ModelExecutionSnapshot chatCompletions = snapshot(
+        SnapshotRow chatCompletions = snapshot(
             "openai-chat-completions", "account-model", "AUTO", "https://example.com/v1");
         OpenAiChatOptions customPlain = (OpenAiChatOptions) factory.requestOptions(
             chatCompletions, LlmPort.ResponseMode.PLAIN_TEXT);
@@ -123,7 +123,7 @@ class SpringAiExecutionContractTest {
     void unknownDeepSeekModelIsNeverSubstitutedWithAnotherWireModel() {
         SpringAiModelFactory factory = factoryFor(new CustomLlmEgressPolicy(
             false, false, Set.of(443), Dns.SYSTEM));
-        ModelExecutionSnapshot unknown = snapshot("deepseek", "deepseek-not-real", "AUTO", null);
+        SnapshotRow unknown = snapshot("deepseek", "deepseek-not-real", "AUTO", null);
 
         ExceptionFixtures.assertBusinessExceptionMessage(
             () -> factory.chatModel(unknown, "sk-test"),
@@ -159,7 +159,7 @@ class SpringAiExecutionContractTest {
             new tools.jackson.databind.ObjectMapper()
         );
         for (String level : List.of("AUTO", "LOW", "HIGH", "MAX")) {
-            ModelExecutionSnapshot snapshot = snapshot("deepseek", "deepseek-v4-pro", level, null);
+            SnapshotRow snapshot = snapshot("deepseek", "deepseek-v4-pro", level, null);
             ChatModel model = factory.chatModel(snapshot, "sk-account");
             model.call(new Prompt(
                 List.of(new org.springframework.ai.chat.messages.UserMessage("hello")),
@@ -235,9 +235,9 @@ class SpringAiExecutionContractTest {
 
     @Test
     void frozenCustomVisionCapabilityDrivesRuntimeValidationInsteadOfTheGenericCatalog() {
-        ModelExecutionSnapshot snapshot = snapshot(
+        SnapshotRow snapshot = snapshot(
             "anthropic-messages", "account-model", "AUTO", "https://example.com");
-        snapshot.setModelCapabilityJson(LlmFixtures.customCapabilityJson(
+        snapshot = snapshot.withModelCapabilityJson(LlmFixtures.customCapabilityJson(
             "anthropic-messages",
             "account-model",
             List.of(LlmFixtures.reasoningAuto()),
@@ -510,8 +510,8 @@ class SpringAiExecutionContractTest {
                 });
             }
         };
-        ModelExecutionSnapshot snapshot = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
-        snapshot.setFallbackCapabilitiesJson("[]");
+        SnapshotRow snapshot = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
+        snapshot = snapshot.withFallbackCapabilitiesJson("[]");
         ModelExecutionService service = fakeService(model, snapshot, 3);
         List<String> deltas = new ArrayList<>();
 
@@ -529,23 +529,23 @@ class SpringAiExecutionContractTest {
         ProviderCredentialResolver credentialResolver = mock(ProviderCredentialResolver.class);
         ModelCapabilityCatalog catalog = new ModelCapabilityCatalog();
         ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
-        ModelExecutionSnapshot frozen = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
-        frozen.setEffectiveParametersJson("{\"maxOutputTokens\":8192}");
-        frozen.setFallbackCapabilitiesJson(capabilityJson.writeList(List.of(
+        SnapshotRow frozen = snapshot("deepseek", "deepseek-v4-pro", "AUTO", null);
+        frozen = frozen.withEffectiveParametersJson("{\"maxOutputTokens\":8192}");
+        frozen = frozen.withFallbackCapabilitiesJson(capabilityJson.writeList(List.of(
             catalog.capability("deepseek", "deepseek-v4-flash"))));
         when(snapshotService.require(1L)).thenReturn(frozen);
         when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         List<String> executionParameters = new ArrayList<>();
         when(factory.requestOptions(any(), any())).thenAnswer(invocation -> {
-            ModelExecutionSnapshot effective = invocation.getArgument(0);
-            executionParameters.add(effective.getEffectiveParametersJson());
-            return OpenAiChatOptions.builder().model(effective.getModel()).maxTokens(8192).build();
+            SnapshotRow effective = invocation.getArgument(0);
+            executionParameters.add(effective.effectiveParametersJson());
+            return OpenAiChatOptions.builder().model(effective.model()).maxTokens(8192).build();
         });
         List<String> executedModels = new ArrayList<>();
         when(factory.chatModel(any(), nullable(String.class))).thenAnswer(invocation -> {
-            ModelExecutionSnapshot effective = invocation.getArgument(0);
-            executedModels.add(effective.getModel());
-            if ("deepseek-v4-pro".equals(effective.getModel())) {
+            SnapshotRow effective = invocation.getArgument(0);
+            executedModels.add(effective.model());
+            if ("deepseek-v4-pro".equals(effective.model())) {
                 return failingCallModel();
             }
             return successfulCallModel("fallback-ok");
@@ -583,7 +583,7 @@ class SpringAiExecutionContractTest {
     ) {
         String endpointRoot = "http://127.0.0.1:" + port
             + ("anthropic-messages".equals(provider) ? "" : "/v1");
-        ModelExecutionSnapshot snapshot = snapshot(
+        SnapshotRow snapshot = snapshot(
             provider, model, reasoning, endpointRoot);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
@@ -598,7 +598,7 @@ class SpringAiExecutionContractTest {
             mock(ApplicationEventPublisher.class));
     }
 
-    private ModelExecutionService fakeService(ChatModel model, ModelExecutionSnapshot snapshot, int attempts) {
+    private ModelExecutionService fakeService(ChatModel model, SnapshotRow snapshot, int attempts) {
         SpringAiModelFactory factory = mock(SpringAiModelFactory.class);
         ModelExecutionSnapshotService snapshotService = mock(ModelExecutionSnapshotService.class);
         ModelProfileService profileService = mock(ModelProfileService.class);
@@ -607,7 +607,7 @@ class SpringAiExecutionContractTest {
         when(credentialResolver.resolve(anyLong(), nullable(Long.class))).thenReturn(null);
         when(factory.chatModel(any(), nullable(String.class))).thenReturn(model);
         when(factory.requestOptions(any(), any())).thenReturn(
-            OpenAiChatOptions.builder().model(snapshot.getModel()).build());
+            OpenAiChatOptions.builder().model(snapshot.model()).build());
         ModelCapabilityJson capabilityJson = new ModelCapabilityJson(new tools.jackson.databind.ObjectMapper());
         return new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson, new LlmTransportRetry(attempts),
             mock(ApplicationEventPublisher.class));
@@ -653,28 +653,21 @@ class SpringAiExecutionContractTest {
         }
     }
 
-    private ModelExecutionSnapshot snapshot(String provider, String model, String reasoning, String endpoint) {
-        ModelExecutionSnapshot snapshot = new ModelExecutionSnapshot();
-        snapshot.setId(1L);
-        snapshot.setAccountId(7L);
-        snapshot.setProfileId(9L);
-        snapshot.setProvider(provider);
-        snapshot.setModel(model);
-        snapshot.setReasoningLevel(reasoning);
-        snapshot.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
-        snapshot.setCapabilityVersion(LlmFixtures.CAPABILITY_VERSION);
+    private SnapshotRow snapshot(String provider, String model, String reasoning, String endpoint) {
+        String capabilityJson;
         if (CustomLlmProtocol.isCustom(provider)) {
-            snapshot.setModelCapabilityJson(LlmFixtures.customCapabilityJson(
-                provider, model, LlmFixtures.allReasoningLevels(), false, false));
+            capabilityJson = LlmFixtures.customCapabilityJson(
+                provider, model, LlmFixtures.allReasoningLevels(), false, false);
         } else if ("deepseek-v4-pro".equals(model) || "deepseek-v4-flash".equals(model)) {
-            snapshot.setModelCapabilityJson(LlmFixtures.capabilityJson(provider, model));
+            capabilityJson = LlmFixtures.capabilityJson(provider, model);
         } else {
-            snapshot.setModelCapabilityJson(LlmFixtures.customCapabilityJson(
-                provider, model, List.of(LlmFixtures.reasoningAuto()), false, false));
+            capabilityJson = LlmFixtures.customCapabilityJson(
+                provider, model, List.of(LlmFixtures.reasoningAuto()), false, false);
         }
-        snapshot.setFallbackCapabilitiesJson("[]");
-        snapshot.setCustomEndpointUrl(endpoint);
-        return snapshot;
+        return new SnapshotRow(
+            1L, 7L, 9L, provider, model, reasoning,
+            "{\"maxOutputTokens\":4096}", LlmFixtures.CAPABILITY_VERSION,
+            capabilityJson, "[]", null, endpoint);
     }
 
     private LlmPort.ModelExecutionRequest request(long snapshotId, LlmPort.ResponseMode mode) {

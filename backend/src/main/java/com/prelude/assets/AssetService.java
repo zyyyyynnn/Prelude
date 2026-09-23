@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 
 /**
- * Asset lifecycle: create PENDING_UPLOAD, upload the binary, mark READY.
+ * AssetEntity lifecycle: create PENDING_UPLOAD, upload the binary, mark READY.
  * Every asset owns a fresh, unpredictable object key; existing objects are
  * never overwritten.
  */

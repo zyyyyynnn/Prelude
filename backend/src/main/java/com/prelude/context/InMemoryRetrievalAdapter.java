@@ -23,6 +23,7 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
     private static final int CHUNK_SIZE = 512;
     private static final int CHUNK_OVERLAP = 50;
     private static final int LOCK_STRIPES = 64;
+    private static final int MAX_CACHED_SCOPES = 256;
 
     private final EmbedPort embedPort;
     private final RetrievalChunkStore chunkStore;
@@ -57,11 +58,25 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
             List<RetrievalChunkStore.StoredChunk> snapshot = buildSnapshot(key, splitDocuments(documents));
             persistSnapshot(key, snapshot);
             indices.put(key, toIndex(snapshot));
+            evictOverflowScopes(key);
             log.info(
                 "retrieval_indexed scopeType={} scopeId={} chunks={} embedded={}",
                 scopeType, scopeId, snapshot.size(), embeddedCount(snapshot)
             );
         });
+    }
+
+    private void evictOverflowScopes(ScopeKey keep) {
+        while (indices.size() > MAX_CACHED_SCOPES) {
+            ScopeKey victim = indices.keySet().stream()
+                .filter(candidate -> !candidate.equals(keep))
+                .findFirst()
+                .orElse(null);
+            if (victim == null) {
+                return;
+            }
+            indices.remove(victim);
+        }
     }
 
     @Override

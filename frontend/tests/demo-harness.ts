@@ -550,7 +550,12 @@ async function respond(route: Route, state: DemoState) {
     const name = typeof draft.name === 'string' ? draft.name.trim() : ''
     const systemPrompt = typeof draft.systemPrompt === 'string' ? draft.systemPrompt.trim() : ''
     if (!name || !systemPrompt)
-      return fulfillProblem(route, 400, 'validation_failed', '岗位名称与面试侧重点不能为空')
+      return fulfillProblem(
+        route,
+        400,
+        'validation_failed',
+        !name ? '岗位名称不能为空' : '面试侧重点不能为空',
+      )
     if (state.positions.some((item) => item.name === name))
       return fulfillProblem(route, 400, 'bad_request', '同名岗位已存在')
     const created: DemoPositionRow = {
@@ -578,7 +583,12 @@ async function respond(route: Route, state: DemoState) {
     const name = typeof draft.name === 'string' ? draft.name.trim() : ''
     const systemPrompt = typeof draft.systemPrompt === 'string' ? draft.systemPrompt.trim() : ''
     if (!name || !systemPrompt)
-      return fulfillProblem(route, 400, 'validation_failed', '岗位名称与面试侧重点不能为空')
+      return fulfillProblem(
+        route,
+        400,
+        'validation_failed',
+        !name ? '岗位名称不能为空' : '面试侧重点不能为空',
+      )
     if (state.positions.some((item) => item.id !== id && item.name === name))
       return fulfillProblem(route, 400, 'bad_request', '同名岗位已存在')
     const updated: DemoPositionRow = { ...target, name, systemPrompt }
@@ -591,10 +601,10 @@ async function respond(route: Route, state: DemoState) {
     const raw = request.postDataBuffer()?.toString('utf8') ?? ''
     const fileName = /filename="([^"]*)"/.exec(raw)?.[1] ?? ''
     if (!fileName.toLowerCase().endsWith('.pdf'))
-      return fulfillProblem(route, 400, 'bad_request', '仅支持 PDF 格式的简历')
+      return fulfillProblem(route, 400, 'bad_request', '仅支持 PDF 文件')
     // 文件名以 broken 开头用来驱动后端解析失败路径。
     if (fileName.toLowerCase().startsWith('broken'))
-      return fulfillProblem(route, 400, 'bad_request', '简历解析失败，请上传可复制文本的 PDF')
+      return fulfillProblem(route, 400, 'bad_request', 'PDF 文本提取失败，请检查文件格式')
     const created: DemoResumeRow = {
       id: nextId(state.resumes),
       fileName,
@@ -609,7 +619,7 @@ async function respond(route: Route, state: DemoState) {
   if (resumeRoute && method === 'DELETE') {
     const id = Number(resumeRoute[1])
     const target = state.resumes.find((item) => item.id === id)
-    if (!target) return fulfillProblem(route, 400, 'bad_request', '简历不存在')
+    if (!target) return fulfillProblem(route, 400, 'bad_request', '简历不存在或无权访问')
     if (target.inUse)
       return fulfillProblem(route, 400, 'bad_request', '该简历已被面试使用，无法删除')
     state.resumes = state.resumes.filter((item) => item.id !== id)
@@ -625,7 +635,7 @@ async function respond(route: Route, state: DemoState) {
       expectedRevision?: number
     }
     if (draft.expectedRevision !== state.profile.revision)
-      return fulfillProblem(route, 409, 'revision_conflict', '资料已被其他操作更新，请重新加载')
+      return fulfillProblem(route, 409, 'revision_conflict', '资料已被其他操作更新，请刷新后重试')
     state.profile = {
       ...state.profile,
       username: draft.username?.trim() || state.profile.username,

@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Account-scoped model configuration: ProviderCredential (BYOK, AES-GCM at
- * rest) + ModelProfile. Built-in providers may use the deployment system
+ * Account-scoped model configuration: ProviderCredentialEntity (BYOK, AES-GCM at
+ * rest) + ModelProfileEntity. Built-in providers may use the deployment system
  * credential; custom endpoints always require an account credential in the
  * same scope. A scope change clears an incompatible saved key instead of
  * silently reusing it across boundaries.

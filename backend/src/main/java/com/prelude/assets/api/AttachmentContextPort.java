@@ -12,7 +12,7 @@ public interface AttachmentContextPort {
 
     /**
      * Drops the attachment bindings held by a scope that no longer exists.
-     * Asset binaries are not touched here: their lifecycle stays inside the
+     * AssetEntity binaries are not touched here: their lifecycle stays inside the
      * owning module.
      */
     void unbind(Long accountId, String scopeType, Long scopeId);

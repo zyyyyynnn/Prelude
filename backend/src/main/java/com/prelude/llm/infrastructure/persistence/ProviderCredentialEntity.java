@@ -6,19 +6,14 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("model_profile")
-public class ModelProfile {
+@TableName("provider_credential")
+public class ProviderCredentialEntity {
 
     private Long id;
     private Long accountId;
     private String provider;
-    private String model;
-    private Long credentialId;
-    private String customEndpointUrl;
-    private String reasoningLevel;
-    private String effectiveParametersJson;
-    private String modelCapabilityJson;
-    private String fallbackCapabilitiesJson;
+    private String scopeKey;
+    private String apiKeyEncrypted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
