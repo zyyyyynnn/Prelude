@@ -80,7 +80,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="page page--center page--auth">
+    <main className="page page--center page--viewport">
       <section className="login-card" aria-labelledby="auth-title">
         <div className="login-card__content">
           <aside className="login-card__brand-panel">

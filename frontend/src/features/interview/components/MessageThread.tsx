@@ -21,11 +21,7 @@ export function MessageThread({ messages }: { messages: InterviewMessageRecord[]
     return () => cancelAnimationFrame(frame)
   }, [messages])
   return (
-    <TranscriptScroll
-      className="flex-col gap-lg pt-lg pb-(--layout-composer-reserve-block-size)"
-      ref={thread}
-      data-slot="message-thread"
-    >
+    <TranscriptScroll ref={thread} data-slot="message-thread">
       {visible.length ? (
         visible.map((message, index) => (
           <MessageBubble

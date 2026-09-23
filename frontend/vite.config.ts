@@ -213,6 +213,13 @@ export default defineConfig(({ mode }) => {
                 message:
                   'Panel owns the surface chrome and the heading row. Choose layout/level; do not restyle the card or header from the call site.',
               },
+              {
+                pattern: '^ScrollRegion$',
+                allow: ['layout', 'spacing'],
+                deny: ['color', 'typography', 'shape', 'effects'],
+                message:
+                  'ScrollRegion owns the scroll chrome and the tab stop. The call site owns the box, its inset, and its stack gap.',
+              },
             ],
           },
         ],

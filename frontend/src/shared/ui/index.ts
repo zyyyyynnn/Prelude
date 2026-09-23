@@ -35,6 +35,7 @@ export {
 } from './prompt-bar'
 export type { VoiceStatus } from './prompt-bar'
 export { ScoreTile } from './score-tile'
+export { ScrollRegion } from './scroll-region'
 export { SegmentedControl } from './segmented-control'
 export { Select } from './select'
 export { SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from './sidebar'

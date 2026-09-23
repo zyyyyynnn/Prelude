@@ -23,6 +23,7 @@ import {
   Panel,
   PromptBarFact,
   PromptBarJdToggle,
+  ScrollRegion,
   SegmentedControl,
   Select,
   SidebarAction,
@@ -247,7 +248,7 @@ export function ComponentLab() {
   return (
     <section className="workspace-page">
       <PageHeader title="Component Lab" />
-      <div className="workspace-page__content scrollable">
+      <ScrollRegion shell="workspace-page__content">
         <Panel layout="card" title="Typography" description="shared/styles">
           <div className="grid gap-sm">
             <p className="type-eyebrow">示例文本 · type-eyebrow</p>
@@ -683,7 +684,7 @@ export function ComponentLab() {
             <BrandMetaballs className="size-(--layout-brand-mark-inline-size) rounded-full" />
           </div>
         </Panel>
-      </div>
+      </ScrollRegion>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen} title="浮层">
         <div className="grid gap-md">

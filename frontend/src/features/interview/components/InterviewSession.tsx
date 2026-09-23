@@ -76,10 +76,7 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
           {current.status === 'generating' && !hasReport ? (
             <GeneratingSurface title="AI 评估报告生成中…" hint="正在整理答题表现并生成训练建议。" />
           ) : controller.showReport && hasReport ? (
-            <TranscriptScroll
-              className="items-start justify-center py-(--layout-workspace-report-block-padding)"
-              data-slot="workspace-report"
-            >
+            <TranscriptScroll view="report" data-slot="workspace-report">
               <div
                 className="max-w-(--layout-workspace-content-max-inline-size) flex-1"
                 data-slot="report-content"

@@ -555,17 +555,17 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   min-height: 100vh;
 }
 
-.page {
+@utility page {
   display: grid;
   gap: var(--spacing-xl);
 }
 
-.page--center {
+@utility page--center {
   min-height: calc(100vh - var(--layout-page-center-block-offset));
   place-items: center;
 }
 
-.page--auth {
+@utility page--viewport {
   min-height: 100vh;
   background: var(--color-bg);
 }
@@ -714,18 +714,12 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   margin-top: var(--spacing-lg);
 }
 /* Custom scrollbar for scrollable areas */
-.scrollable {
+@utility scrollable {
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
 }
 
-/* ==========================================================================
-   Workspace layout shell — locked application frame
-
-   The page shells are registered utilities rather than unlayered classes: an
-   unlayered class silently outranks the whole utilities layer, and DESIGN.md
-   forbids one from declaring the geometry a call site may need to override.
-   ========================================================================== */
+/* Workspace layout shell: named page chrome lives in the utility registry so call sites may override geometry. */
 @utility workspace-page {
   flex: 1;
   display: flex;
