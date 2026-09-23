@@ -1,7 +1,7 @@
 package com.prelude.test;
 
 import com.prelude.BusinessException;
-import com.prelude.LlmServerException;
+import com.prelude.llm.LlmServerException;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.api.ThrowableAssert;
 

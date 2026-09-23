@@ -134,7 +134,7 @@ test('@smoke surfaces a backend parse failure on an uploaded resume', async ({ p
     buffer: Buffer.from('%PDF-1.4\n% scanned image without text layer\n'),
   })
 
-  await expect(toast(page, '简历解析失败，请上传可复制文本的 PDF')).toBeAttached()
+  await expect(toast(page, 'PDF 文本提取失败，请检查文件格式')).toBeAttached()
   expect(requested('POST', '/api/resume/upload')).toHaveLength(1)
   await expect(dialog.getByText('broken-scan.pdf')).toHaveCount(0)
 })

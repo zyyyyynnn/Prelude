@@ -1,8 +1,6 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.LlmServerException;
-import com.prelude.LlmTimeoutException;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.LlmPort.Attachment;
 import com.prelude.llm.api.LlmPort.CompletionResult;

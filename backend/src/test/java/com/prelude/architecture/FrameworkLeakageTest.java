@@ -2,11 +2,15 @@ package com.prelude.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
-@AnalyzeClasses(packages = "com.prelude")
+/**
+ * Production architecture only: test doubles may name any type they need to drive a seam.
+ */
+@AnalyzeClasses(packages = "com.prelude", importOptions = ImportOption.DoNotIncludeTests.class)
 class FrameworkLeakageTest {
 
     private static final String[] EXTERNAL_FRAMEWORKS = {
@@ -88,6 +92,28 @@ class FrameworkLeakageTest {
             "jakarta.servlet.http..",
             "javax.servlet.http..",
             "org.springframework.web.servlet.mvc.method.annotation.SseEmitter"
+        );
+
+    /**
+     * The root package is cross-cutting glue (composition root, envelope, exception, security
+     * wiring). Naming a module type from here would make the glue a second business layer.
+     */
+    @ArchTest
+    static final ArchRule ROOT_STAYS_MODULE_FREE = noClasses()
+        .that().resideInAPackage("com.prelude")
+        .should().dependOnClassesThat().resideInAnyPackage(
+            "com.prelude.identity..",
+            "com.prelude.llm..",
+            "com.prelude.assets..",
+            "com.prelude.documents..",
+            "com.prelude.jobs..",
+            "com.prelude.resume..",
+            "com.prelude.position..",
+            "com.prelude.interview..",
+            "com.prelude.voice..",
+            "com.prelude.artifact..",
+            "com.prelude.activity..",
+            "com.prelude.context.."
         );
 
     private static String[] concat(String[] first, String[] second) {

@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchSession, finishInterview, streamInterview } from '../api'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
+import { applyMessageUpdate } from './message-updates'
 import {
   MAX_CONTEXT_MESSAGES,
-  applyMessageUpdate,
   handleInterviewStreamEvent,
+  type SessionReportCache,
 } from './interview-turn-stream'
 
 export function useInterviewSession(sessionId: number, onError: (message: string) => void) {
@@ -31,6 +32,12 @@ export function useInterviewSession(sessionId: number, onError: (message: string
 
   function updateMessage(message: InterviewMessageRecord, append = false) {
     setMessages((existing) => applyMessageUpdate(existing, current?.messages, message, append))
+  }
+
+  const sessionCache: SessionReportCache = {
+    setQueryData: (key, updater) => {
+      client.setQueryData<InterviewSessionDetailResponse>(key, updater)
+    },
   }
 
   const send = useMutation({
@@ -60,7 +67,7 @@ export function useInterviewSession(sessionId: number, onError: (message: string
         sessionId,
         { content, messages: context },
         (event) =>
-          handleInterviewStreamEvent(event, assistantId, sessionId, client, {
+          handleInterviewStreamEvent(event, assistantId, sessionId, sessionCache, {
             updateMessage,
             setMessages,
             setShowReport,

@@ -1,4 +1,6 @@
-package com.prelude;
+package com.prelude.llm;
+
+import com.prelude.BusinessException;
 
 public class LlmTimeoutException extends BusinessException {
 

@@ -1,15 +1,22 @@
-import { useQueryClient } from '@tanstack/react-query'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
-import { applyMessageUpdate } from './message-updates'
 
-export { applyMessageUpdate }
 export const MAX_CONTEXT_MESSAGES = 20
+
+/** The one cache write the stream needs; React Query satisfies it at the call site. */
+export type SessionReportCache = {
+  setQueryData(
+    key: ['interview-session', number],
+    updater: (
+      old: InterviewSessionDetailResponse | undefined,
+    ) => InterviewSessionDetailResponse | undefined,
+  ): void
+}
 
 export function handleInterviewStreamEvent(
   event: { name: string; data: string },
   assistantId: number,
   sessionId: number,
-  client: ReturnType<typeof useQueryClient>,
+  cache: SessionReportCache,
   callbacks: {
     updateMessage: (msg: InterviewMessageRecord, append?: boolean) => void
     setMessages: (
@@ -25,7 +32,7 @@ export function handleInterviewStreamEvent(
     return
   }
   if (name === 'report_ready') {
-    client.setQueryData<InterviewSessionDetailResponse>(['interview-session', sessionId], (old) =>
+    cache.setQueryData(['interview-session', sessionId], (old) =>
       old ? { ...old, summaryReport: data, status: 'finished' } : old,
     )
     callbacks.setShowReport(true)
@@ -45,5 +52,8 @@ export function handleInterviewStreamEvent(
     }
     return
   }
-  if (name === 'error') throw new Error(data)
+  if (name === 'error') {
+    // Fail the stream promise so the mutation's error path discards the optimistic turn.
+    throw new Error(data)
+  }
 }
