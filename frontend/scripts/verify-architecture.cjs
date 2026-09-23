@@ -142,16 +142,86 @@ for (const name of blockedPackages) {
     }
   }
 
-  /* Every way a module can name another module. A plain text scan for `from '@/…'` was the
-     first version of this rule and it read as green while the router loaded five of its six
-     pages through `await import('@/features/x/Page')` — a lazy route is exactly how a surface
-     gets bypassed without anyone typing `from`. */
-  const moduleSpecifiers = (tree) => {
-    const found = []
+  /* Every way one module can name another, and what it takes from the module it names.
+
+     A plain text scan for `from '@/…'` was the first version of this rule; it read as green
+     while the router loaded five of its six pages through `await import('@/features/x/Page')`,
+     because a lazy route bypasses an entry without anyone typing `from`. A relative specifier
+     names the same file through another syntax, so it resolves and is judged the same way. */
+  const patternNames = (pattern) => {
+    if (!ts.isObjectBindingPattern(pattern) && !ts.isArrayBindingPattern(pattern)) return []
+    return pattern.elements.flatMap((element) => {
+      if (!ts.isBindingElement(element)) return []
+      if (ts.isObjectBindingPattern(element.name) || ts.isArrayBindingPattern(element.name))
+        return patternNames(element.name)
+      if (element.propertyName && ts.isIdentifier(element.propertyName))
+        return [element.propertyName.text]
+      return ts.isIdentifier(element.name) ? [element.name.text] : []
+    })
+  }
+
+  const dynamicNames = (call) => {
+    let node = call
+    let anchor = node.parent
+    while (anchor) {
+      if (ts.isAwaitExpression(anchor) || ts.isParenthesizedExpression(anchor)) {
+        node = anchor
+        anchor = anchor.parent
+        continue
+      }
+      /* Inside an array literal the call is one of `Promise.all`'s tasks, so the name it
+         contributes is whatever binds the matching position of the pattern it is assigned to. */
+      if (anchor.elements && ts.isArrayLiteralExpression(anchor)) {
+        const position = anchor.elements.findIndex((element) => element === node)
+        let bound = anchor.parent
+        while (bound && ts.isAwaitExpression(bound)) bound = bound.parent
+        const pattern =
+          bound && ts.isCallExpression(bound)
+            ? (() => {
+                let declaration = bound.parent
+                while (declaration && ts.isAwaitExpression(declaration))
+                  declaration = declaration.parent
+                if (declaration && ts.isVariableDeclaration(declaration)) return declaration.name
+                if (
+                  declaration &&
+                  ts.isBinaryExpression(declaration) &&
+                  ts.isArrayBindingPattern(declaration.left)
+                )
+                  return declaration.left
+                return undefined
+              })()
+            : undefined
+        const element =
+          pattern && ts.isArrayBindingPattern(pattern) ? pattern.elements[position] : undefined
+        return element && ts.isBindingElement(element) ? patternNames(element.name) : []
+      }
+      if (ts.isPropertyAccessExpression(anchor)) return [anchor.name.text]
+      if (ts.isVariableDeclaration(anchor)) return patternNames(anchor.name)
+      if (ts.isBinaryExpression(anchor) && anchor.operatorToken.kind === ts.SyntaxKind.EqualsToken)
+        return patternNames(anchor.left)
+      return []
+    }
+    return []
+  }
+
+  const moduleReads = (file) => {
+    const source = fs.readFileSync(file, 'utf8')
+    const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
+    const reads = []
     const visit = (node) => {
       let specifier
-      if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      let names = []
+      if (ts.isImportDeclaration(node)) {
         specifier = node.moduleSpecifier
+        const bindings = node.importClause?.namedBindings
+        if (bindings && ts.isNamedImports(bindings))
+          names = bindings.elements.map((element) => element.name.text)
+        else if (bindings) names = ['*']
+      } else if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
+        specifier = node.moduleSpecifier
+        const clause = node.exportClause
+        if (clause && ts.isNamedExports(clause))
+          names = clause.elements.map((element) => element.name.text)
       } else if (
         ts.isCallExpression(node) &&
         node.arguments[0] &&
@@ -160,15 +230,25 @@ for (const name of blockedPackages) {
           (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
       ) {
         specifier = node.arguments[0]
+        names = dynamicNames(node)
       }
       if (specifier) {
         const { line } = ts.getLineAndCharacterOfPosition(tree, node.getStart(tree))
-        found.push({ specifier: specifier.getText(tree).slice(1, -1), line: line + 1 })
+        reads.push({ specifier: specifier.getText(tree).slice(1, -1), line: line + 1, names })
       }
       ts.forEachChild(node, visit)
     }
     visit(tree)
-    return found
+    return reads
+  }
+
+  /* Which module a specifier names, relative to `src`; null for a bare package. */
+  const resolvesTo = (fromFile, specifier) => {
+    if (specifier.startsWith('@/')) return specifier.slice(2)
+    if (!specifier.startsWith('.')) return null
+    return path.posix.normalize(
+      path.posix.join(path.posix.dirname(fromFile).replaceAll('\\', '/'), specifier),
+    )
   }
 
   /* What an entry declares, read once: the deep-import rule below needs to know whether a file
@@ -203,96 +283,53 @@ for (const name of blockedPackages) {
   for (const surface of publicEntries) surface.info = readEntry(surface)
 
   /* Nothing outside the surface may name a file inside it — with one boundary drawn on purpose.
-     `app/` is the composition root and the only place that decides how a route is loaded, so it
-     may name a route module directly, but only one the entry registers: the surface still owns
-     what is public, and an unregistered file fails. Routing every page through `index.ts` instead
-     was measured, not assumed — it folded login, settings, resume and position into the entry
-     chunk (+8.5 kB gzipped on every first paint, unauthenticated visitors included), because a
-     static barrel import of the same module drags the whole surface into the entry graph. */
-  for (const surface of publicEntries) {
-    const prefix = `@/${surface.label}/`
-    for (const file of tsSources) {
-      const relative = rel(file)
-      if (surface.inside(relative)) continue
-      const registers = relative.startsWith('app/')
-      const tree = ts.createSourceFile(
-        file,
-        fs.readFileSync(file, 'utf8'),
-        ts.ScriptTarget.Latest,
-        true,
-      )
-      for (const { specifier, line } of moduleSpecifiers(tree)) {
-        if (!specifier.startsWith(prefix)) continue
-        const target = specifier.slice(prefix.length)
-        const registered = target.includes('/') ? undefined : surface.info.byFile.get(`./${target}`)
-        if (registered && registers) {
-          for (const name of registered) surface.info.deepConsumed.add(name)
-          continue
-        }
-        violations.push(
-          `${relative}:${line}: imports @/${surface.label}/${target} — go through @/${surface.label}${
-            registers && !registered
-              ? `, or register ${target} in ${surface.label}/index.ts if the router must load it`
-              : ''
-          }`,
-        )
+     `app/` (but not `app/lab`, a gallery that decides nothing about loading) is the composition
+     root, so it may name a route module directly, but only one the entry registers, and only the
+     names that registration exports. Routing every page through `index.ts` instead was measured,
+     not assumed — it folded login, settings, resume and position into the entry chunk
+     (+8.5 kB gzipped on every first paint, unauthenticated visitors included), because a static
+     barrel import drags the whole surface into the entry graph. */
+  const readsByFile = new Map(tsSources.map((file) => [file, moduleReads(file)]))
+  for (const file of tsSources) {
+    const relative = rel(file)
+    for (const read of readsByFile.get(file)) {
+      const target = resolvesTo(relative, read.specifier)
+      if (!target) continue
+      const surface = publicEntries.find((entry) => target.startsWith(`${entry.label}/`))
+      if (!surface || surface.inside(relative)) continue
+      const inner = target.slice(surface.label.length + 1)
+      const registered = surface.info.byFile.get(`./${inner}`)
+      if (registered && relative.startsWith('app/') && !relative.startsWith('app/lab/')) {
+        for (const name of read.names)
+          if (registered.includes(name)) surface.info.deepConsumed.add(name)
+        continue
       }
+      violations.push(
+        `${relative}:${read.line}: imports ${read.specifier} — go through @/${surface.label}${
+          registered
+            ? ''
+            : `, or register ${inner} in ${surface.label}/index.ts if the router must load it`
+        }`,
+      )
     }
   }
 
   for (const surface of publicEntries) {
-    const barrel = `@/${surface.label}`
+    const barrel = surface.label
     const { exported, deepConsumed } = surface.info
 
-    /* Names the rest of the app actually pulls through the barrel. Anything else is surface
-       area nobody asked for. The router reaches pages through `await import()`, so a member
-       access on a dynamic import counts as a consumer just like a static binding does. */
+    /* Names the rest of the app actually pulls through the entry. Anything else is surface area
+       nobody asked for — and a composition-root route read only counts for the name it really
+       binds, so an entry cannot buy silence for an unused export by having the router name its
+       file. */
     const consumed = new Set()
     for (const file of tsSources) {
-      if (
-        path.basename(file) === 'index.ts' &&
-        path.dirname(file) === path.dirname(surface.entryPath)
-      )
-        continue
-      if (surface.inside(rel(file))) continue
-      const fileTree = ts.createSourceFile(
-        file,
-        fs.readFileSync(file, 'utf8'),
-        ts.ScriptTarget.Latest,
-        true,
-      )
-      const collect = (node) => {
-        if (ts.isImportDeclaration(node) && node.moduleSpecifier?.text === barrel) {
-          const bindings = node.importClause?.namedBindings
-          if (bindings && ts.isNamedImports(bindings))
-            for (const element of bindings.elements) consumed.add(element.name.text)
-          else if (bindings) consumed.add('*')
-        }
-        if (
-          ts.isCallExpression(node) &&
-          node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-          node.arguments[0] &&
-          ts.isStringLiteralLike(node.arguments[0]) &&
-          node.arguments[0].text === barrel
-        ) {
-          /* `(await import('…')).Name` puts an AwaitExpression and often a parenthesis
-             between the call and the member access. */
-          let anchor = node.parent
-          while (anchor && (ts.isAwaitExpression(anchor) || ts.isParenthesizedExpression(anchor)))
-            anchor = anchor.parent
-          if (anchor && ts.isPropertyAccessExpression(anchor)) consumed.add(anchor.name.text)
-          if (
-            anchor &&
-            ts.isBinaryExpression(anchor) &&
-            anchor.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-            ts.isObjectBindingPattern(anchor.left)
-          )
-            for (const element of anchor.left.elements)
-              consumed.add((element.propertyName ?? element.name).getText().replaceAll(/["']/g, ''))
-        }
-        ts.forEachChild(node, collect)
+      const relative = rel(file)
+      if (surface.inside(relative)) continue
+      for (const read of readsByFile.get(file)) {
+        if (resolvesTo(relative, read.specifier) !== barrel) continue
+        for (const name of read.names) consumed.add(name)
       }
-      ts.forEachChild(fileTree, collect)
     }
     for (const name of deepConsumed) consumed.add(name)
     for (const name of exported) {

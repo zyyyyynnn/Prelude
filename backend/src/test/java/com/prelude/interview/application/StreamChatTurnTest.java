@@ -45,7 +45,10 @@ class StreamChatTurnTest {
 
         streamChatTurn.execute(51L, "回答", false, "auth-session-1", opened[0]);
 
+        /* Neither business frame may leave: the turn's text and the judge result are both
+           authenticated content, and the revocation check sits on the send boundary for both. */
         SessionFixtures.verifyConnectionNeverSends(connection, "message");
+        SessionFixtures.verifyConnectionNeverSends(connection, "judge");
         SessionFixtures.verifyConnectionSend(connection, "error", "登录已失效，请重新登录");
         SessionFixtures.verifyConnectionComplete(connection);
     }

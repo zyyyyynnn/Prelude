@@ -9,6 +9,7 @@ import com.prelude.test.AccountFixtures;
 import com.prelude.test.InterviewDataFixtures;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,6 +127,11 @@ class InterviewSessionLifecycleMySqlTest {
     private long count(String sql, long param) {
         Long value = jdbcTemplate.queryForObject(sql, Long.class, param);
         return value == null ? 0L : value;
+    }
+
+    @AfterEach
+    void forgetTheAuthenticatedAccount() {
+        AccountFixtures.clearAuthentication();
     }
 
     private long createSession(long accountId) {

@@ -1,6 +1,6 @@
 package com.prelude.interview.application;
 
-import com.prelude.interview.domain.InterviewMessage;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.test.InterviewDataFixtures;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,6 +36,12 @@ class InterviewMessageOrderMySqlTest {
 
     @Autowired
     private InterviewMessageService messages;
+
+    @Autowired
+    private InterviewMessageRepository messageRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -73,10 +82,33 @@ class InterviewMessageOrderMySqlTest {
         }
 
         assertThat(allocated).containsExactlyInAnyOrder(0, 1, 2, 3, 4, 5);
-        assertThat(jdbcTemplate.queryForList(
+        assertThat(seqNums(sessionId)).containsExactly(0, 1, 2, 3, 4, 5);
+    }
+
+    /* The shape a real turn has: a transaction that looked at the session before it appended,
+       with another writer committing in between. MySQL's default isolation freezes such a
+       transaction's plain reads at that first one, so numbering from a plain read would allocate
+       a number already taken; the locking read behind `insertMessage` is what stops it. */
+    @Test
+    void anAppendInsideAnOpenTransactionNumbersPastWhatAnotherTransactionCommitted() {
+        long sessionId = InterviewDataFixtures.sessionInProgress(jdbcTemplate, "message-order-snapshot");
+        TransactionTemplate opened = new TransactionTemplate(transactionManager);
+        TransactionTemplate elsewhere = new TransactionTemplate(transactionManager);
+        elsewhere.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        opened.executeWithoutResult(status -> {
+            assertThat(messageRepository.findLatest(sessionId)).isNull();
+            elsewhere.execute(withoutResult -> messages.insertMessage(sessionId, "user", "committed elsewhere"));
+            messages.insertMessage(sessionId, "user", "appended after it");
+        });
+
+        assertThat(seqNums(sessionId)).containsExactly(0, 1);
+    }
+
+    private List<Integer> seqNums(long sessionId) {
+        return jdbcTemplate.queryForList(
             "SELECT seq_num FROM interview_message WHERE session_id = ? ORDER BY seq_num",
-            Integer.class, sessionId))
-            .containsExactly(0, 1, 2, 3, 4, 5);
+            Integer.class, sessionId);
     }
 
     private void append(long sessionId, int seqNum, String content) {

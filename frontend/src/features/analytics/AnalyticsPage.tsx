@@ -1,11 +1,11 @@
 import {
-  PageHeader,
+  Card,
   EmptyState,
   ErrorState,
-  LoadingState,
-  Panel,
-  Card,
   InsetCard,
+  LoadingState,
+  PageHeader,
+  Panel,
 } from '@/shared/ui'
 import { useQuery } from '@tanstack/react-query'
 import { fetchRadar, fetchTrend, fetchWeaknesses } from './api'
@@ -32,7 +32,7 @@ export function AnalyticsPage() {
   return (
     <section className="workspace-page">
       <PageHeader title="数据看板" />
-      <div className="workspace-page__content scrollable">
+      <div className="workspace-page__content scrollable" tabIndex={0}>
         {pending ? (
           <LoadingState message="正在整理训练数据…" />
         ) : error ? (

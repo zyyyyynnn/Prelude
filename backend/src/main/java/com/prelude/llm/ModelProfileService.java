@@ -13,7 +13,7 @@ import com.prelude.llm.application.port.ProviderCredentialStore;
 import com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
@@ -316,13 +316,14 @@ public class ModelProfileService {
         if (current == null) {
             try {
                 profileStore.insert(profile);
-            } catch (DuplicateKeyException | PessimisticLockingFailureException race) {
-                /* Losing the race for the account's one profile row arrives as either a
-                   duplicate key or a deadlock — MySQL takes a shared lock on the parent
-                   `user_account` row for the foreign key and then an exclusive insert on
-                   `uk_model_profile_account`, which is a deadlock shape rather than a
-                   duplicate-key one. Both mean the same thing to the caller: someone saved
-                   at the same time, so refresh and retry. */
+            } catch (DuplicateKeyException | DeadlockLoserDataAccessException race) {
+                /* Two ways to lose the race for the account's one profile row. The second is not
+                   the foreign key: `findActiveForUpdate` asks for a row that does not exist yet,
+                   so each writer takes a gap lock, and both then want an insert-intention lock in
+                   the same gap — InnoDB breaks that with a deadlock rather than a duplicate key.
+                   A lock-wait timeout is deliberately not folded in here: that is some other
+                   transaction holding the row, and reporting it as "someone saved" would send the
+                   user to refresh a conflict that never happened. */
                 throw BusinessException.revisionConflict("模型配置已被他人修改，请刷新后重试");
             }
         } else {

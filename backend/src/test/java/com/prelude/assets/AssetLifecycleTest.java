@@ -191,23 +191,30 @@ class AssetLifecycleTest {
        property of the lifecycle, not of the S3 adapter that merely receives a key. Asserting it
        here is what keeps it a real claim: two uploads have to land on two addresses, each
        reading back its own bytes. */
+    /* Byte-identical uploads are the case that matters: a key derived from the content would
+       pass a differing-content test and still leave one delete orphaning the other asset. */
     @Test
-    void successiveUploadsGetTheirOwnObjectKeyAndNeverShareBytes() {
+    void successiveUploadsGetTheirOwnObjectKeyEvenWhenTheBytesAreIdentical() {
         long accountId = createAccount("asset-key-owner");
         authenticate(accountId);
+        byte[] sameBytes = "the same content".getBytes(StandardCharsets.UTF_8);
         AttachmentServiceSnapshot first = uploadSnapshot(accountId,
-            "first.txt", "text/plain", "first object".getBytes(StandardCharsets.UTF_8));
+            "first.txt", "text/plain", sameBytes);
         AttachmentServiceSnapshot second = uploadSnapshot(accountId,
-            "second.txt", "text/plain", "second object".getBytes(StandardCharsets.UTF_8));
+            "second.txt", "text/plain", sameBytes);
 
         String firstKey = assetMapper.selectById(first.assetId()).getObjectKey();
         String secondKey = assetMapper.selectById(second.assetId()).getObjectKey();
 
         assertThat(firstKey).isNotEqualTo(secondKey);
         assertThat(new String(objectStoragePort.get(firstKey), StandardCharsets.UTF_8))
-            .isEqualTo("first object");
+            .isEqualTo("the same content");
         assertThat(new String(objectStoragePort.get(secondKey), StandardCharsets.UTF_8))
-            .isEqualTo("second object");
+            .isEqualTo("the same content");
+
+        attachmentService.deleteUnbound(first.attachmentId());
+        assertThat(new String(objectStoragePort.get(secondKey), StandardCharsets.UTF_8))
+            .isEqualTo("the same content");
     }
 
     private long createAccount(String prefix) {

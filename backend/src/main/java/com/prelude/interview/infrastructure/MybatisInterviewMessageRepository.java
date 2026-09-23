@@ -40,6 +40,12 @@ public class MybatisInterviewMessageRepository implements InterviewMessageReposi
     }
 
     @Override
+    public InterviewMessage findLatestForAppend(Long sessionId) {
+        InterviewMessageEntity entity = messageMapper.findLatestForAppend(sessionId);
+        return entity == null ? null : entity.toDomain();
+    }
+
+    @Override
     public InterviewMessage findById(Long messageId) {
         InterviewMessageEntity entity = messageMapper.selectById(messageId);
         return entity == null ? null : entity.toDomain();

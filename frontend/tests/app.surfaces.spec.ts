@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright'
+import { expectAccessible } from './a11y'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { installAnonymousSession } from './auth-bootstrap'
 import { sampleReport } from '../src/app/lab/samples'
@@ -311,36 +311,34 @@ test('@visual keeps no-data pages lightweight and typographically consistent', a
   await expect(emptyState).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
 })
 
-/* Two things had to be true for this to judge anything. The scan has to run against the rendered
-   surface: `goto()` resolves on `load`, and measuring the gallery both ways showed 19 DOM nodes
-   scanned immediately against 1235 once the route's queries land. And the result has to keep the
-   whole severity range the tags ask for — `wcag2a/aa/21a/21aa` report mostly `serious`, so
-   filtering to `critical` discarded precisely what the rule set finds. */
-const accessibilityViolations = async (page: Page) => {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
-  return results.violations.map((violation) => ({
-    impact: violation.impact,
-    id: violation.id,
-    nodes: violation.nodes.map((node) => node.target.join(' ')),
-  }))
+/* Both scans run in each scheme: the palette is chosen per scheme, so a contrast pass in light
+   says nothing about dark. The barrier has to be something only the surface under test draws —
+   `开始新面试` is the shell's own button, so waiting on it would still let axe read a mounted
+   frame around an unmounted page; `interview-workspace` is the root the setup and session views
+   render. The gallery mounts every design-system surface in one document, which is where a shared
+   component's defect shows up before any feature reproduces it. */
+for (const scheme of schemes) {
+  test(`@a11y keeps the primary authenticated surface accessible in ${scheme}`, async ({
+    page,
+  }) => {
+    await preferScheme(page, scheme)
+    await installApi(page)
+    await page.goto('/interview')
+    await expect(page.locator('[data-slot="interview-workspace"]')).toBeVisible()
+    await expectScheme(page, scheme)
+    await expectAccessible(page, `interview workspace (${scheme})`)
+  })
+
+  test(`@a11y keeps every design-system surface in the gallery accessible in ${scheme}`, async ({
+    page,
+  }) => {
+    await preferScheme(page, scheme)
+    await page.goto('/components-lab')
+    await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
+    await expectScheme(page, scheme)
+    await expectAccessible(page, `component gallery (${scheme})`)
+  })
 }
-
-test('@a11y keeps the primary authenticated surface accessible', async ({ page }) => {
-  await installApi(page)
-  await page.goto('/interview')
-  await expect(page.getByRole('button', { name: '开始新面试' })).toBeVisible()
-  await expect(accessibilityViolations(page)).resolves.toEqual([])
-})
-
-/* The gallery mounts every design-system surface in one document, so a shared component's own
-   defect shows up here before any feature reproduces it. */
-test('@a11y keeps every design-system surface in the gallery accessible', async ({ page }) => {
-  await page.goto('/components-lab')
-  await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
-  await expect(accessibilityViolations(page)).resolves.toEqual([])
-})
 
 test('@visual keeps the authentication hierarchy and primary action stable', async ({ page }) => {
   await installAnonymousSession(page)
@@ -785,19 +783,25 @@ test('@visual keeps every hairline divider clear of the content it separates', a
   await installApi(page)
   await page.goto('/interview')
   await expect(page.getByRole('button', { name: '开始新面试' })).toBeVisible()
-  await expectClean(hairlineDividerScan(page), 'hairline dividers')
+  await expectClean(hairlineDividerScan(page, 'body'), 'interview hairline dividers')
 
   await page.getByRole('button', { name: '设置' }).click()
   await expect(page.getByRole('heading', { name: '修改密码' })).toBeVisible()
-  await expectClean(hairlineDividerScan(page), 'hairline dividers')
+  await expectClean(
+    hairlineDividerScan(page, '[role="presentation"]'),
+    'settings dialog hairline dividers',
+  )
   await page.getByRole('button', { name: '模型管理' }).click()
   await expect(page.getByRole('heading', { name: '高级设置' })).toBeVisible()
-  await expectClean(hairlineDividerScan(page), 'hairline dividers')
+  await expectClean(
+    hairlineDividerScan(page, '[role="dialog"]'),
+    'model management hairline dividers',
+  )
   await page.keyboard.press('Escape')
 
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'App rail' })).toBeVisible()
-  await expectClean(hairlineDividerScan(page), 'hairline dividers')
+  await expectClean(hairlineDividerScan(page, 'body'), 'gallery hairline dividers')
 })
 
 test('@visual keeps every composer control on one centre line', async ({ page }) => {
@@ -1183,44 +1187,53 @@ async function settleOverlay(overlay: ReturnType<Page['locator']>) {
    feedback — the hold button's 2px press nudge did exactly that beside its neighbours.
    Every button in a composer's trailing cluster has to share one top and one bottom edge,
    in each state the gallery freezes. */
-/* Both of these read a page and report what broke. A page that stops matching the selector they
+/* Both of these read a page and report what broke. A page that stops matching the selectors they
    look for makes the scan walk nothing, and "zero violations" out of an empty scan is the same
-   green as a clean render — so each scan reports how much it measured, and the assertion below
-   requires that to be more than zero. */
-type Measured = { measured: number; violations: unknown[] }
+   green as a clean render — so each scan reports how much it measured overall and inside the
+   region under test, and both have to be more than zero. Without the scoped count a dialog that
+   lost every divider would still be carried by the sidebar's hairlines. */
+type Measured = { measured: number; inScope: number; violations: unknown[] }
 
 async function expectClean(scan: Promise<Measured>, what: string) {
-  const { measured, violations } = await scan
+  const { measured, inScope, violations } = await scan
   expect(measured, `${what}: the scan measured nothing, so it had no way to fail`).toBeGreaterThan(
     0,
   )
+  expect(
+    inScope,
+    `${what}: nothing inside the region under test was measured, so the rest of the page carried the scan`,
+  ).toBeGreaterThan(0)
   expect(violations).toEqual([])
 }
 
 async function composerAlignmentScan(page: Page): Promise<Measured> {
   const clusters = await page.locator('[data-slot="prompt-bar-controls"]').evaluateAll((rows) =>
-    rows
-      .map((row) => {
-        const cluster = row.lastElementChild as HTMLElement
-        const buttons = Array.from(cluster.querySelectorAll('button'))
-        if (buttons.length < 2) return null
-        const boxes = buttons.map((button) => button.getBoundingClientRect())
-        return {
-          buttons: buttons.map((button) => button.getAttribute('aria-label')?.trim()),
-          tops: [...new Set(boxes.map((box) => Math.round(box.top)))],
-          bottoms: [...new Set(boxes.map((box) => Math.round(box.bottom)))],
-        }
-      })
-      .filter((cluster) => cluster !== null),
+    rows.map((row) => {
+      const cluster = row.firstElementChild as HTMLElement | null
+      const buttons = Array.from(cluster?.querySelectorAll('button') ?? [])
+      const boxes = buttons.map((button) => button.getBoundingClientRect())
+      return {
+        /* A row that lost its action cluster is the drift, and skipping it would shrink the
+           measured count instead of failing. One button is a legitimate variant: there is simply
+           nothing to align beside it. */
+        missing: !cluster || buttons.length === 0,
+        buttons: buttons.map((button) => button.getAttribute('aria-label')?.trim()),
+        tops: [...new Set(boxes.map((box) => Math.round(box.top)))],
+        bottoms: [...new Set(boxes.map((box) => Math.round(box.bottom)))],
+      }
+    }),
   )
   return {
     measured: clusters.length,
-    violations: clusters.filter((cluster) => cluster.tops.length > 1 || cluster.bottoms.length > 1),
+    inScope: clusters.length,
+    violations: clusters.filter(
+      (cluster) => cluster.missing || cluster.tops.length > 1 || cluster.bottoms.length > 1,
+    ),
   }
 }
 
-async function hairlineDividerScan(page: Page): Promise<Measured> {
-  return page.evaluate(() => {
+async function hairlineDividerScan(page: Page, scope: string): Promise<Measured> {
+  return page.evaluate((scopeSelector) => {
     const px = (value: string) => Number.parseFloat(value) || 0
     const edges = (style: CSSStyleDeclaration) =>
       [
@@ -1254,6 +1267,7 @@ async function hairlineDividerScan(page: Page): Promise<Measured> {
       `${el.tagName.toLowerCase()}.${(el.getAttribute('class') ?? '').split(/\s+/).slice(0, 3).join('.')}`
     const bad: string[] = []
     let dividers = 0
+    let inScope = 0
     for (const el of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
       if (!inFlow(el) || el.closest('svg')) continue
       const style = getComputedStyle(el)
@@ -1262,6 +1276,7 @@ async function hairlineDividerScan(page: Page): Promise<Measured> {
       const box = el.getBoundingClientRect()
       if (box.width < 8 || box.height < 2) continue
       dividers += 1
+      if (el.closest(scopeSelector)) inScope += 1
       const isTop = px(style.borderTopWidth) >= 1
       const lineY = isTop ? box.top : box.bottom
       const overlaps = (other: Element) => {
@@ -1285,6 +1300,6 @@ async function hairlineDividerScan(page: Page): Promise<Measured> {
         bad.push(`${name(el)} — above ${Math.round(above)}px, below ${Math.round(below)}px`)
       }
     }
-    return { measured: dividers, violations: bad }
-  })
+    return { measured: dividers, inScope, violations: bad }
+  }, scope)
 }

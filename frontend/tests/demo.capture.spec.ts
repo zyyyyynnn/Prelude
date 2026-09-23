@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright'
+import { expectAccessible } from './a11y'
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test'
 import { createDemoState, DEMO_VIEWPORT, installDemoHarness } from './demo-harness'
 
@@ -32,14 +32,14 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
   await expect(page.locator('.status-badge')).toHaveCount(0)
   await expect(page.getByText('本场面试已结束，可以生成报告。')).toBeVisible()
   await expectActiveInterviewGeometry(page)
-  await expectNoCriticalAccessibilityViolations(page)
+  await expectAccessible(page, 'demo capture')
   await capture(page, testInfo, 'active-interview.png')
 
   await page.getByRole('button', { name: '生成报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await expect(page.getByText('6.3')).toBeVisible()
   await expectStructuredReportGeometry(page)
-  await expectNoCriticalAccessibilityViolations(page)
+  await expectAccessible(page, 'demo capture')
   await capture(page, testInfo, 'structured-report.png')
 
   await page.getByRole('link', { name: '数据看板' }).click()
@@ -47,7 +47,7 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
   await expect(page.getByRole('heading', { name: '分数趋势' })).toBeVisible()
   await expect(page.getByText('故障恢复量化')).toBeVisible()
   await expectAnalyticsGeometry(page)
-  await expectNoCriticalAccessibilityViolations(page)
+  await expectAccessible(page, 'demo capture')
   await capture(page, testInfo, 'populated-analytics.png')
 
   await page.getByRole('button', { name: '设置' }).click()
@@ -55,7 +55,7 @@ test('@smoke @demo captures the deterministic React demo chain', async ({ page }
   await expect(page.getByLabel('用户名')).toHaveValue('demo')
   await expect(page.getByLabel('邮箱')).toHaveValue('demo@prelude.local')
   await expectSettingsGeometry(page)
-  await expectNoCriticalAccessibilityViolations(page)
+  await expectAccessible(page, 'demo capture')
   await capture(page, testInfo, 'global-settings.png')
 
   const requestedPaths = new Set(state.requests.map((request) => request.path))
@@ -160,11 +160,4 @@ async function visibleBox(locator: Locator) {
     width: box!.width,
     height: box!.height,
   }
-}
-
-async function expectNoCriticalAccessibilityViolations(page: Page) {
-  const result = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
-  expect(result.violations.filter((violation) => violation.impact === 'critical')).toEqual([])
 }

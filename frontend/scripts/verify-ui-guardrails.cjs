@@ -3,7 +3,12 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
-const { UTILITY_NAME, declaredUtilities, utilityFamily } = require('./utility-names.cjs')
+const {
+  UTILITY_NAME,
+  declaredUtilities,
+  utilityFamily,
+  functionalUtilityFamilies,
+} = require('./utility-names.cjs')
 
 const root = path.resolve(__dirname, '..')
 const sourceRoot = path.join(root, 'src')
@@ -350,48 +355,69 @@ for (const file of stylesheets) {
     }
   })
   if (relative !== 'src/shared/styles/index.css') continue
-  // Walk top-level rules only; comments are blanked so they cannot look like a body.
+  /* Comments are blanked so they cannot look like a body. Every open block keeps its own text and
+     remembers that it contains a nested block, because both claims need that: "empty rule" must
+     not fire on `@layer base`, whose own body is entirely other rules, and "unlayered element
+     selector" must compare a rule against the at-rules enclosing it — `@layer base` is where an
+     element rule belongs, and a `@keyframes` body of `from`/`to` is not a selector at all. A
+     selector group is judged part by part: `input, textarea { … }` is two element rules sharing
+     one body. */
   const code = source.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '))
-  let depth = 0
+  const elementName = (part) => {
+    const bare = part
+      .replace(/\[[^\]]*\]/g, '')
+      .replace(/::?[a-z-]+(\([^)]*\))?/gi, '')
+      .trim()
+    return /^[a-z][a-z0-9]*$/i.test(bare) ? bare : null
+  }
+  const stylesheet = { selector: '', declared: false, nested: false }
+  const stack = [stylesheet]
   let line = 1
-  let header = ''
-  let body = ''
+  let pending = ''
   let ruleLine = 1
-  const flush = (closingAt) => {
-    if (closingAt === 1 && header) {
-      const bare = header.replace(/::?[\w-]+(\([^)]*\))?/g, '').trim()
-      if (body.trim() === '') violations.push(`${relative}:${ruleLine}: empty rule ${header}`)
-      if (/^[a-z][a-z0-9]*$/i.test(bare) && !bare.includes('.')) {
-        violations.push(
-          `${relative}:${ruleLine}: unlayered element selector "${bare}" — move it into @layer base`,
-        )
-      }
-    }
-    header = ''
-    body = ''
+  const flushPending = () => {
+    pending = ''
+    ruleLine = line
   }
   for (const character of code) {
     if (character === '\n') {
       line += 1
-      if (depth === 0) header = ''
+      pending += ' '
+      continue
+    }
+    if (character === ';') {
+      stack[stack.length - 1].declared = true
+      flushPending()
       continue
     }
     if (character === '{') {
-      depth += 1
-      if (depth === 1) {
-        ruleLine = line
-        body = ''
-      }
+      stack.push({ selector: pending.trim(), line: ruleLine, declared: false, nested: false })
+      flushPending()
       continue
     }
     if (character === '}') {
-      const closingAt = depth
-      depth -= 1
-      if (closingAt === 1) flush(closingAt)
+      const block = stack.pop()
+      stack[stack.length - 1].nested = true
+      const enclosed = stack.some(
+        (frame) => frame.selector.startsWith('@layer') || frame.selector.startsWith('@keyframes'),
+      )
+      if (block.selector && !block.declared && !block.nested) {
+        violations.push(`${relative}:${block.line}: empty rule ${block.selector}`)
+      }
+      /* An at-rule header is not a selector, and a rule already inside `@layer` or `@keyframes`
+         is either layered or is a keyframe step. */
+      if (!block.selector.startsWith('@') && !enclosed) {
+        const elements = [...new Set(block.selector.split(',').map(elementName).filter(Boolean))]
+        for (const element of elements) {
+          violations.push(
+            `${relative}:${block.line}: unlayered element selector "${element}" — move it into @layer base`,
+          )
+        }
+      }
+      flushPending()
       continue
     }
-    if (depth === 0) header += character
-    else if (depth === 1) body += character
+    pending += character
   }
 }
 
@@ -431,8 +457,7 @@ for (const name of declaredClasses) {
    concrete `name-<suffix>` out: Tailwind reads class names from text, so a name built at
    runtime (`name-${count}`) registers nothing and the rule silently never exists. The
    stem check above cannot see this, because the dynamic prefix does appear in source. */
-for (const match of indexCss.matchAll(/^@utility\s+([a-z][a-z0-9-]*)-\*\s*\{/gm)) {
-  const prefix = match[1]
+for (const prefix of functionalUtilityFamilies(indexCss)) {
   if (!new RegExp(`${prefix}-(?:[a-z][a-z0-9]*|\\d+)\\b`).test(consumers)) {
     violations.push(
       `src/shared/styles/index.css: @utility ${prefix}-* has no literal call site — Tailwind cannot emit a class name built at runtime`,

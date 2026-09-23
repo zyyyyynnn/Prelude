@@ -18,4 +18,18 @@ const declaredUtilities = (css) => utilityPositions(css).map((match) => match[1]
    so the family is the declared name without its wildcard. */
 const utilityFamily = (utilityName) => utilityName.replace(/-\*$/, '')
 
-module.exports = { UTILITY_NAME, utilityPositions, declaredUtilities, utilityFamily }
+/* A functional utility is declared as `@utility name-* {`, and only reaches the bundle when a
+   source file spells a concrete `name-<suffix>`. Read here so the caller does not rebuild the
+   name grammar around a string-escaped regular expression. */
+const functionalUtilityFamilies = (css) =>
+  declaredUtilities(css)
+    .filter((name) => name.endsWith('-*'))
+    .map((name) => name.slice(0, -2))
+
+module.exports = {
+  UTILITY_NAME,
+  utilityPositions,
+  declaredUtilities,
+  utilityFamily,
+  functionalUtilityFamilies,
+}

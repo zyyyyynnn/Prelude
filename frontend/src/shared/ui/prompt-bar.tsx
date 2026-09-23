@@ -106,9 +106,12 @@ export function PromptBarActions({ children }: { children: ReactNode }) {
 }
 
 export function PromptBarFact({ label, icon }: { label: string; icon: ReactNode }) {
+  /* The fact already reads as context through `prompt-bar-control-text`'s tertiary colour; the
+     extra 28% dim pushed that text to 3.32:1 against the surface, under the 4.5:1 the WCAG AA tag
+     set this repo scans for. */
   return (
     <IconTooltip label={label}>
-      <span className="prompt-bar-control prompt-bar-control-text opacity-72" tabIndex={0}>
+      <span className="prompt-bar-control prompt-bar-control-text" tabIndex={0}>
         {icon}
         <span className="min-w-0 flex-1 truncate text-start">{label}</span>
       </span>

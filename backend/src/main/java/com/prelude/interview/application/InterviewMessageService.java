@@ -36,7 +36,7 @@ public class InterviewMessageService {
     }
 
     private int nextSeqNum(Long sessionId) {
-        InterviewMessage latest = interviewMessageRepository.findLatest(sessionId);
+        InterviewMessage latest = interviewMessageRepository.findLatestForAppend(sessionId);
         Integer seqNum = latest == null ? null : latest.getSeqNum();
         return seqNum == null ? 0 : seqNum + 1;
     }

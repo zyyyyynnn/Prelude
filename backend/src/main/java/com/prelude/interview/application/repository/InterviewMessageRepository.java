@@ -15,6 +15,9 @@ public interface InterviewMessageRepository {
 
     InterviewMessage findLatest(Long sessionId);
 
+    /** The highest number in the session, read as of now — see the mapper's note on snapshots. */
+    InterviewMessage findLatestForAppend(Long sessionId);
+
     InterviewMessage findById(Long messageId);
 
     List<InterviewMessage> listBySession(Long sessionId);

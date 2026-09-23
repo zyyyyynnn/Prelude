@@ -21,6 +21,10 @@ export function TranscriptScroll({
         'scrollable gutter-stable flex min-h-0 flex-1 overflow-y-auto px-2xl',
         className,
       )}
+      /* A transcript of plain messages holds nothing focusable, so without this stop the part
+         below the fold is unreachable by keyboard — the rule `ScrollRegion` exists for, applied
+         here because each view adds its own padding to the same column. */
+      tabIndex={0}
       {...rest}
     >
       {children}

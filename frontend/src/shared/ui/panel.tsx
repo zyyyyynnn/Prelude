@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { ScrollRegion } from './scroll-region'
 import { Card } from './card'
 
 /**
@@ -62,19 +63,18 @@ export function Panel({
       )}
     </header>
   )
-  const body = (
-    <div
-      className={cn(
-        'flex min-w-0 flex-col gap-md',
-        fill && 'scrollable min-h-0 flex-1 overflow-y-auto p-lg text-sm leading-base',
-        bodyClassName,
-      )}
-      /* A filled panel's body is the scroll container, and a body of prose can hold nothing
-         focusable — without a tab stop a keyboard user cannot reach the part below the fold.
-         Only `fill` scrolls, so only `fill` gets the stop. */
-      tabIndex={fill ? 0 : undefined}
+  /* A filled panel's body is the scroll container, and a body of prose can hold nothing
+     focusable, so the scrolling belongs to `ScrollRegion` rather than to a class list and a
+     `tabIndex` this component would have to remember. */
+  const body = fill ? (
+    <ScrollRegion
+      className={cn('flex min-w-0 flex-1 flex-col gap-md p-lg text-sm leading-base', bodyClassName)}
       data-slot="panel-body"
     >
+      {children}
+    </ScrollRegion>
+  ) : (
+    <div className={cn('flex min-w-0 flex-col gap-md', bodyClassName)} data-slot="panel-body">
       {children}
     </div>
   )

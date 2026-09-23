@@ -14,7 +14,9 @@ Copy-Item .env.example .env
 docker compose up -d mysql redis rabbitmq versitygw
 ```
 
-四个基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）连同 app 配置里的 8080/5173 都只发布到 `127.0.0.1`：这套栈的凭据是仓库里公开的默认值（root/`root_password`、无密码 Redis、`guest`/`guest`——RabbitMQ 4.1 镜像的 `loopback_users` 为空，`guest` 本身不限来源主机），绑到所有网卡等于把它们交给局域网。确实需要别的设备访问时，改 `docker-compose.yml` 里对应那条映射，不要改默认值。
+四个基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）连同 app 配置里的 8080/5173 都只发布到 `127.0.0.1`：这套栈的凭据是仓库里公开的默认值（root/`root_password`、无密码 Redis、`guest`/`guest`——RabbitMQ 4.1 镜像的 `loopback_users` 为空，`guest` 本身不限来源主机），绑到所有网卡等于把它们交给局域网。
+
+- 确实需要别的设备访问时，改 `docker-compose.yml` 里对应那条映射，不要改默认值；并且同时改 `S3_PUBLIC_ENDPOINT`（预签名地址会写进响应体）与 `application.yml` 的 `app.cors.allowed-origins`（默认只放行 localhost/127.0.0.1:5173），否则页面能打开但资源下载与跨域请求会失败。
 
 后端：
 
@@ -79,6 +81,6 @@ npm --prefix frontend run snapshot:update
 
 `@demo` 链路测试的截图只作为该次运行的诊断证据，随 Playwright 报告写入 `frontend/test-results/`，不进入资产目录。
 
-所有 DDL 位于 `backend/src/main/resources/db/migration/`：`V20260830__establish_prelude_schema.sql` 建立当前 schema，`R__reference_data.sql` 以幂等方式维护 reference data。数据库仅含开发/demo 数据，schema 调整直接修改当前 baseline 后通过 `docker compose down -v` 空库重建验证。
+所有 DDL 位于 `backend/src/main/resources/db/migration/`：`V20260830__establish_prelude_schema.sql` 建立当前 schema，其后的 `V<日期>__<语义>.sql` 依次增量修改，`R__reference_data.sql` 以幂等方式维护 reference data。**baseline 与任何已应用过的版本文件都不再编辑**：Flyway 按 checksum 校验已应用的 migration，改它会让你和 CI 的开发库直接拒绝启动；索引、约束与列的变更一律新增一个版本文件（需要时先在其中把既有数据规范化，再加强约束）。只有要彻底重来时才 `docker compose down -v` 空库重建。
 
 OAuth（Google/GitHub）为可选能力：在 `.env` 中配置 `OAUTH_GOOGLE_CLIENT_ID`/`OAUTH_GOOGLE_CLIENT_SECRET` 与 `OAUTH_GITHUB_CLIENT_ID`/`OAUTH_GITHUB_CLIENT_SECRET` 后启用；未配置时密码登录正常启动，不要求任何 OAuth 凭据。

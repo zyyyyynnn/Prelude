@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { cn } from '@/shared/lib/cn'
+import { ScrollRegion } from './scroll-region'
 import { IconTooltip } from '@/shared/ui/overlay'
 import type { ReactNode } from 'react'
 
@@ -151,15 +152,17 @@ export function SidebarPane({
   children: ReactNode
 }) {
   return (
-    <div
+    <ScrollRegion
       className={cn(
         'sidebar-pane',
-        kind === 'sessions' ? 'sidebar-sessions scrollable' : 'flex flex-col justify-end pb-sm',
+        kind === 'sessions' ? 'sidebar-sessions' : 'flex flex-col justify-end pb-sm',
         visible && 'is-visible',
       )}
+      /* A pane hidden from assistive tech must not be a tab stop either. */
+      focusable={kind === 'sessions' && visible}
       aria-hidden={!visible}
     >
       {children}
-    </div>
+    </ScrollRegion>
   )
 }

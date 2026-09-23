@@ -166,7 +166,7 @@
 
   --color-text-primary: #141413;
   --color-text-secondary: #5e5d59;
-  --color-text-tertiary: #6b6a65;
+  --color-text-tertiary: #666561;
 
   --color-brand: #9e7b6a;
   --color-accent-solid: #806050;
@@ -794,20 +794,25 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   textarea:-webkit-autofill:focus {
     -webkit-box-shadow: var(--shadow-autofill-surface) !important;
     -webkit-text-fill-color: var(--color-text-primary) !important;
-    transition: none;
+    /* Important like its siblings: inside @layer base a plain declaration loses to the
+       unlayered `.ui-field-control` transition it exists to suppress. */
+    transition: none !important;
   }
 }
 
 /* Hide native password controls where the product provides its own control. */
-input[type='password']::-ms-reveal,
-input[type='password']::-ms-clear {
-  display: none !important;
-}
-input[type='password']::-webkit-credentials-auto-fill-button {
-  visibility: hidden !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  right: 0 !important;
+@layer base {
+  input[type='password']::-ms-reveal,
+  input[type='password']::-ms-clear {
+    display: none !important;
+  }
+
+  input[type='password']::-webkit-credentials-auto-fill-button {
+    visibility: hidden !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    right: 0 !important;
+  }
 }
 
 /* The application frame is a registered utility for the same reason as the page
@@ -2389,7 +2394,6 @@ html[data-input-intent='keyboard']
 }
 
 /* safe center keeps the first line reachable when the empty state overflows. */
-/* @internal src/features/interview/components/InterviewSetup.tsx */
 @utility workspace-empty {
   display: flex;
   flex: 1;
