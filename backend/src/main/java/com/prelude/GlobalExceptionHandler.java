@@ -46,8 +46,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ProblemDetail> handleBusinessException(BusinessException exception) {
-        return ResponseEntity.status(exception.getStatus())
-            .body(problemDetail(exception.getStatus(), exception.getCode(), exception.getMessage()));
+        HttpStatus status = HttpStatus.valueOf(exception.getStatus());
+        return ResponseEntity.status(status)
+            .body(problemDetail(status, exception.getCode(), exception.getMessage()));
     }
 
     @Override

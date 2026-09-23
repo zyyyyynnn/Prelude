@@ -1,27 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
+import { applyMessageUpdate } from './message-updates'
 
+export { applyMessageUpdate }
 export const MAX_CONTEXT_MESSAGES = 20
-
-export function applyMessageUpdate(
-  existing: InterviewMessageRecord[] | null,
-  fallback: InterviewMessageRecord[] | undefined,
-  message: InterviewMessageRecord,
-  append: boolean,
-): InterviewMessageRecord[] {
-  const list = [...(existing ?? fallback ?? [])]
-  const index = list.findIndex((item) => item.id === message.id)
-  if (index < 0) {
-    list.push(message)
-  } else {
-    list[index] = {
-      ...list[index],
-      ...message,
-      content: append ? list[index].content + message.content : message.content,
-    }
-  }
-  return list
-}
 
 export function handleInterviewStreamEvent(
   event: { name: string; data: string },

@@ -45,8 +45,7 @@ public class UserController {
         try {
             return new AvatarUpload(file.getOriginalFilename(), file.getContentType(), file.getBytes());
         } catch (IOException exception) {
-            throw new com.prelude.BusinessException(
-                org.springframework.http.HttpStatus.BAD_REQUEST, "avatar_unreadable", "头像读取失败");
+            throw com.prelude.BusinessException.of(400, "avatar_unreadable", "头像读取失败");
         }
     }
 }

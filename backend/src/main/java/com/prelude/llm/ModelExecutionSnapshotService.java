@@ -10,7 +10,6 @@ import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
 import com.prelude.llm.application.port.ModelProfileStore;
 import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -80,8 +79,7 @@ public class ModelExecutionSnapshotService {
     public SnapshotRow require(Long snapshotId) {
         SnapshotRow snapshot = snapshotStore.findById(snapshotId);
         if (snapshot == null) {
-            throw new BusinessException(
-                HttpStatus.NOT_FOUND, "model_snapshot_not_found", "模型执行快照不存在");
+            throw BusinessException.of(404, "model_snapshot_not_found", "模型执行快照不存在");
         }
         return snapshot;
     }
@@ -89,8 +87,7 @@ public class ModelExecutionSnapshotService {
     public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
         SnapshotRow snapshot = require(snapshotId);
         if (!accountId.equals(snapshot.accountId())) {
-            throw new BusinessException(
-                HttpStatus.NOT_FOUND, "model_snapshot_not_found", "模型执行快照不存在");
+            throw BusinessException.of(404, "model_snapshot_not_found", "模型执行快照不存在");
         }
         return new FrozenModelConfiguration(snapshot.model(), snapshot.reasoningLevel());
     }

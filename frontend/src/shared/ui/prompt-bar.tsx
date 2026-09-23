@@ -142,8 +142,9 @@ export function PromptBarModelTrigger({
 }
 
 /** The JD-matching chip. Matching is either on or absent — there is no off state — so
- *  the control only renders while it is on, and pressing it turns matching off. */
-export function PromptBarJdToggle({ onDisable }: { onDisable: () => void }) {
+ *  the control only renders while it is on, and pressing it turns matching off. The
+ *  wording comes from the caller: `shared/ui` names no business concept. */
+export function PromptBarJdToggle({ label, onDisable }: { label: string; onDisable: () => void }) {
   return (
     <button
       type="button"
@@ -152,7 +153,7 @@ export function PromptBarJdToggle({ onDisable }: { onDisable: () => void }) {
       onClick={onDisable}
     >
       <ScanSearch aria-hidden="true" />
-      <span>JD 匹配</span>
+      <span>{label}</span>
     </button>
   )
 }

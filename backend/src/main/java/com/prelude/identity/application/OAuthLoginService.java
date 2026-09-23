@@ -115,8 +115,7 @@ public class OAuthLoginService {
             bindings.add(binding);
         } catch (DuplicateKeyException duplicate) {
             if (!isExactExistingBinding(provider, providerSubject, accountId)) {
-                throw new BusinessException(
-                    HttpStatus.CONFLICT, "oauth_binding_conflict", "该外部账号已绑定其他账户");
+                throw BusinessException.of(409, "oauth_binding_conflict", "该外部账号已绑定其他账户");
             }
         }
     }

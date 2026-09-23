@@ -77,7 +77,7 @@ public class RedisRealtimeHub implements RealtimePort, MessageListener, Initiali
         RealtimeEventMessage event;
         try {
             event = objectMapper.readValue(body, RealtimeEventMessage.class);
-        } catch (JacksonException error) {
+        } catch (RuntimeException error) {
             log.warn("Ignored malformed realtime pub/sub payload", error);
             return;
         }
@@ -114,7 +114,7 @@ public class RedisRealtimeHub implements RealtimePort, MessageListener, Initiali
         }
         try {
             return objectMapper.writeValueAsString(payload);
-        } catch (JacksonException error) {
+        } catch (RuntimeException error) {
             throw new IllegalArgumentException("Realtime payload must be serializable", error);
         }
     }

@@ -170,7 +170,9 @@ export function InterviewSetupComposer({
               onThinkingDepthChange={onThinkingDepthChange}
               onManage={() => onManageModel()}
             />
-            {jdEnabled && <PromptBarJdToggle onDisable={() => setJdEnabled(false)} />}
+            {jdEnabled && (
+              <PromptBarJdToggle label="JD 匹配" onDisable={() => setJdEnabled(false)} />
+            )}
           </PromptBarActions>
         }
         rightActions={

@@ -75,9 +75,7 @@ public class LlmRateLimitInterceptor implements HandlerInterceptor {
 
         if (result != null && result == 0) {
             log.warn("Account {} exceeded rate limit for LLM calls", accountId);
-            throw new BusinessException(
-                HttpStatus.TOO_MANY_REQUESTS, "rate_limited",
-                "请求过于频繁，大模型接口限额 10 次/分钟，请稍后再试");
+            throw BusinessException.rateLimited("请求过于频繁，大模型接口限额 10 次/分钟，请稍后再试");
         }
 
         return true;

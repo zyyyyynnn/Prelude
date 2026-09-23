@@ -450,7 +450,7 @@ export function ComponentLab() {
               kindLabel="图片"
               label="示例图片一.png"
             />
-            <PromptBarJdToggle onDisable={noop} />
+            <PromptBarJdToggle label="JD 匹配" onDisable={noop} />
             <PromptBarFact label={sampleModelName} icon={<Terminal aria-hidden="true" />} />
           </DemoGroup>
         </Panel>
