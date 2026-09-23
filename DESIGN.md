@@ -12,9 +12,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - `--color-surface`：组件与浮层表面。
 - `--color-surface-hover`：hover 表面。
 - `--color-surface-muted`：弱强调表面。
-- `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。三级文本是"上下文"而不是"装饰"，因此它必须在自己实际落到的每一个表面上过 WCAG AA（4.5:1）——它会出现在 `--color-surface` 与 `--color-surface-muted` 两种底色上（弱强调表面里的 `type-caption`、激活消息气泡里的分数标注都是它），浅色下 `#6b6a65` 在 `--color-surface-muted` 上只有 4.37:1，故取 `#666561`（muted 4.73:1 / surface 5.43:1）。不要用再叠一层 `opacity` 的方式让它"看起来更轻"：那会把同一份文本压到 3.3:1，且压的是可读性而不是层级。
+- `--color-text-primary`、`--color-text-secondary`、`--color-text-tertiary`：三级文本。三级文本是上下文层级，在其实际落到的每个表面（`--color-surface`、`--color-surface-muted`）上都满足 WCAG AA（4.5:1）；浅色取值 `#666561`（muted 4.73:1 / surface 5.43:1）。轻量化只用色值表达。
 - `--color-brand`：品牌强调。
-- `--color-accent-solid`、`--color-accent-solid-hover`、`--color-accent-text`、`--color-text-on-accent`：从品牌色派生的交互角色，分别用于实心动作、悬停、选中态文本与其前景；品牌本色不直接承担小号文本或实心动作的对比度职责。
+- `--color-accent-solid`、`--color-accent-solid-hover`、`--color-accent-text`、`--color-text-on-accent`：从品牌色派生的交互角色，分别用于实心动作、悬停、选中态文本与其前景；小号文本与实心动作的对比度职责归 accent 角色。
 - `--color-border`、`--color-border-warm`：边界。
 - `--color-focus-field`、`--color-focus-action`：字段与动作焦点。
 - `--color-error`：错误与破坏性动作。
@@ -23,9 +23,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 ### Spacing And Size
 
-控件高度全项目只有一档：`--ui-height-control` 36px，落在 4px 网格上，由 DESIGN.md 与 `tokens/ui-tokens.json` 的 `design_lock_values` 共同锁定。按钮、输入框、选择器、菜单行、字段尾部图标动作、导航项、分段控件轨道与 prompt bar 控件全部使用这一档。需要更轻的视觉重量时调整内边距与颜色，高度保持不变。
+控件高度全项目一档：`--ui-height-control` 36px，落在 4px 网格上，由 `tokens/ui-tokens.json` 的 `design_lock_values` 锁定。按钮、输入框、选择器、菜单行、字段尾部图标动作、导航项、分段控件轨道与 prompt bar 控件全部使用这一档。需要更轻的视觉重量时调整内边距与颜色，高度保持不变。
 
-浮在控件内部的元素用 `--ui-control-inset` 2px 与宿主留出光学间隙，并按同心规则取圆角：`宿主圆角 - --ui-control-inset`。SegmentedControl 的滑块保持整格宽度、上下各缩 2px，圆角取 `--radius-md - 2px`，因此四周间隙均匀；字段尾部图标动作同理，盒尺寸为 `--ui-height-control - 2 × --ui-control-inset`。控件的命中区域始终等于整档高度。
+浮在控件内部的元素用 `--ui-control-inset` 2px 与宿主留出光学间隙，并按同心规则取圆角：`宿主圆角 - --ui-control-inset`。SegmentedControl 的滑块保持整格宽度、上下各缩 2px，圆角取 `--radius-md - 2px`，四周间隙均匀；字段尾部图标动作同理，盒尺寸为 `--ui-height-control - 2 × --ui-control-inset`。控件的命中区域始终等于整档高度。
 
 间距分三档，一个数值只服务一种关系：
 
@@ -33,17 +33,15 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - `--spacing-md` 16px 是同一区域内的并列块：字段与字段、按钮行与按钮行、卡片与卡片、面板小节与小节。
 - `--spacing-lg` 24px 是区块边界：表面的内边距、面板标题行与其内容区、页面内面板与面板。
 
-块与块之间用容器自己的 `gap` 表达，不用 `mt-*` 给单个块补外边距——同一容器里混用两种来源，间距就会随内容增减而漂移。
+块与块的间距只由容器 `gap` 给出。
 
-一个容器只要它的存在是为了容纳另一处几何，它的尺寸就必须由那处几何推导，不能写成手调字面量。判据是语义而非数值：折叠侧栏的宽度等于「一枚控件 + 两侧 gutter + 自身边框」，所以它是 `calc()`；而阅读宽度、视口下限、纹理平铺这类只能靠肉眼判定的值保持字面量。登记在 `tokens/ui-tokens.json` 的 `derived_tokens` 里的 token 由 `verify:tokens` 断言仍引用其来源，退化成魔数即失败。
+容器若为容纳另一处几何而存在，尺寸由那处几何推导（折叠侧栏宽度 = 一枚控件 + 两侧 gutter + 自身边框，写作 `calc()`）；阅读宽度、视口下限、纹理平铺等只能靠肉眼判定的值保持字面量。登记在 `tokens/ui-tokens.json` 的 `derived_tokens` 里的 token 仍引用其来源表达式。
 
-图标与图标按钮的盒尺寸使用 `--ui-glyph-sm|md|lg`（16/20/24），不从间距阶梯借用：与某一档 glyph 等值的盒子必须指名该 glyph token，否则间距阶梯一动它就跟着动。标准边界使用 `--border-width-default`。布局宽度、区块高度与内容行宽统一使用 `--layout-*` 与 `--content-*` token，不设"某处例外"的裸名 token：`--layout-composer-reserve-block-size` 是消息流为浮动 composer 预留的**上限**而非 composer 高度，命名即写明这一点，该值不可推导。层与行高同样只有阶梯：`--z-index-local-content` 与 `--line-height-*` 之外不接受裸数值，`verify:tokens` 拒绝任何不走这两个命名空间的 `z-index` 与 `line-height`。浮层与锚点的间距集中在 `shared/ui/positioning.ts` 的 `OVERLAY_OFFSET`，调用点不得写裸数字——tooltip 要避开光标所以比菜单飘得更远，这是有意的差，不是巧合。仅两例光学偏移（按下位移、附件删除盒与 chip 的负叠）刻意留在网格外，并在规则内标 `geometry-exempt`。
+图标与图标按钮的盒尺寸使用 `--ui-glyph-sm|md|lg`（16/20/24）；与某一档 glyph 等值的盒子指名该 glyph token。标准边界使用 `--border-width-default`。布局宽度、区块高度与内容行宽使用 `--layout-*` 与 `--content-*`。`--layout-composer-reserve-block-size` 是消息流为浮动 composer 预留的上限，值不可推导。层与行高只走 `--z-index-*` 与 `--line-height-*` 命名空间。浮层与锚点的间距集中在 `shared/ui/positioning.ts` 的 `OVERLAY_OFFSET`（tooltip 比菜单飘得更远）。仅两例光学偏移（按下位移、附件删除盒与 chip 的负叠）在规则内标 `geometry-exempt`。
 
-图表内部几何不受本体系管辖：echarts 的 `grid` 留白、`lineStyle.width`、雷达图的 `radius: '64%'` 与 `strokeWidth` 是**为图表内容量出来的尺寸**（要装下最宽的 y 轴标签与日期标签），不是界面尺度的一档，把它们换算成 `--spacing-*` 只是给一个无关数字披上 token 的外衣。它们以具名常量留在图表模块内（`TREND_GRID`），字体与颜色则照旧经 `cssVarNumber()` 读取设计 token。
+图表内部几何以具名常量留在图表模块内（`TREND_GRID` 的 `grid` 留白、`lineStyle.width`、雷达 `radius`/`strokeWidth` 是为图表内容量出的尺寸），字体与颜色经 `cssVarNumber()` 读取设计 token。
 
-控件内的图标尺寸由 CSS 拥有：`.ui-button__content`、`.field-action`、`.row-action`、`.ui-dialog__close`、`.ui-toast__close` 与 `.ui-toast [data-icon]` 下的 `svg` 取 `--ui-glyph-sm`。调用点不写 `size={n}`：SVG 的 `width` 表现属性优先级低于 CSS，写了不会生效。
-
-会话行的置顶角标是脱离控件的装饰图形，没有 CSS 归属，尺寸由调用点的 `size` 决定。
+控件内的图标尺寸由 CSS 拥有：`.ui-button__content`、`.field-action`、`.row-action`、`.ui-dialog__close`、`.ui-toast__close` 与 `.ui-toast [data-icon]` 下的 `svg` 取 `--ui-glyph-sm`；SVG 的 `width` 表现属性优先级低于 CSS。会话行置顶角标是脱离控件的装饰图形，尺寸由调用点的 `size` 决定。
 
 固定格式控件通过稳定高度、宽度或 grid track 保持布局。文本在容器内自然换行或截断，并由 Tooltip 提供完整值。
 
@@ -63,9 +61,9 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 - 代码、日志和 token 名称使用 `--font-mono`。
 - 字号使用 `--font-size-xs` 至 `--font-size-2xl` 阶梯，字重使用 `--font-weight-*` 语义阶梯，行高使用 `--line-height-*` 语义阶梯，组件内部采用紧凑标题尺度。
 
-阶梯同时以原子类暴露：`text-xs|sm|md|lg|xl|2xl`、`leading-solid|display|tight|heading|compact|base|relaxed|copy`、`font-regular|medium|semibold`，全部指向上述 token，不允许写死数值。
+阶梯同时以原子类暴露：`text-xs|sm|md|lg|xl|2xl`、`leading-solid|display|tight|heading|compact|base|relaxed|copy`、`font-regular|medium|semibold`，全部指向上述 token。
 
-标题、指标、标签与正文的常见配对固定为十三个语义角色，页面选择角色而不是临时拼字号与行高：
+标题、指标、标签与正文的常见配对固定为十三个语义角色，页面选择角色：
 
 | 角色 | 用途 | 组合 |
 | --- | --- | --- |
@@ -77,43 +75,42 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 | `type-subtitle` | 次级标题 | serif `md` / medium / `compact` / primary |
 | `type-label` | 字段与条目名称 | serif `sm` / medium / `compact` / secondary |
 | `type-body` | 成段正文 | sans `sm` / regular / `relaxed` / secondary |
-| `type-copy` | 阅读正文（copy 行高，不另设字重） | sans `sm` / `copy` / secondary |
-| `type-caption` | 图注与气泡时间戳 | serif `xs` / tertiary（行高取 Tailwind `text-xs` 自带值，不占 `--line-height-*` 阶梯） |
+| `type-copy` | 阅读正文（copy 行高） | sans `sm` / `copy` / secondary |
+| `type-caption` | 图注与气泡时间戳 | serif `xs` / tertiary（行高取 Tailwind `text-xs` 自带值） |
 | `type-reading` | 报告正文（报告阅读宽度） | sans `sm` / `copy` / secondary / `--content-report-reading-max-inline-size` |
 | `type-lead` | 页面导语（正文 + 阅读宽度） | sans `sm` / regular / `relaxed` / secondary / `--layout-lead-max-inline-size` |
 | `type-meta` | 计数、时间、辅助说明 | sans `xs` / regular / `compact` / tertiary |
 
-行高由字号决定：同一字号只对应一种行高。角色表收的是**重复配对**：一处出现的组合用原子类显式写，不新增角色；同一组合在两个及以上拥有者里重复（`type-lead` 就是导语宽度跟着正文角色走了 4 处）才升为角色，并由 `verify:ui` 禁止调用点再手写其原子。
+行高由字号决定：同一字号只对应一种行高。角色表收的是重复配对；一处出现的组合用原子类显式写，同一组合在两个及以上拥有者里重复才升为角色；调用点使用角色名。
 
-标题角色与 DOM 层级一一对应：`h1` 用 `type-hero`（页面主标题）、`type-document-title`（打印文档面，不随视口放大）或 `workspace-header__title`，`h2` 用 `type-title`，`h3` 用 `type-subtitle`，字段与条目名用 `type-label`。`Panel` 按 `level` 选出 `h2`/`h3` 与对应角色，标题层级由组件决定。
+标题角色与 DOM 层级一一对应：`h1` 用 `type-hero`（页面主标题）、`type-document-title`（打印文档面，不随视口放大）或 `workspace-header__title`，`h2` 用 `type-title`，`h3` 用 `type-subtitle`，字段与条目名用 `type-label`。`Panel` 按 `level` 选出 `h2`/`h3` 与对应角色。
 
-排版取值以**实际渲染值**为准。声明意图、以及任何已被覆盖的写法，都不作为取值依据。
+排版取值以实际渲染值为准。
+
 ### Motion
 
 动效使用 `--motion-duration-*` 与 `--motion-ease-standard`。颜色与表面变化使用 token transition；进入和退出优先 opacity 与 transform。几何动画采用 `transform`，加载态保持控件尺寸稳定，并支持 `prefers-reduced-motion`。
 
 ### Style Assembly
 
-界面样式有三种写法：调用点的 Tailwind 原子类、`frontend/src/shared/styles/index.css` 中具名注册的 `@utility`，以及顶层未分层类。feature 目录不含 CSS 文件，`features/*` 与 `app/shell` 只引入 token 与原子类。
+界面样式只有三种写法，自上而下层叠：未分层类 > utilities 层 > `@layer base`。
 
-- 未分层类是第三种写法而不是遗漏，只承担两类职责：组件自己的 BEM 内部结构（`ui-menu__item`、`ui-button__content`）与由 `@internal src/<owner>.tsx` 声明归属的整段 chrome，以及**浏览器外观覆写**——为了压住浏览器自绘而必须留在未分层的元素规则（autofill 底色与文字色、Blink/Edge 的 `::-ms-reveal`/`::-ms-clear`、Chrome 的 credentials 按钮）。它们位于 utilities 层之外，因此压过 utilities 层——这正是它们能钉住组件内部结构、也正是压过浏览器自绘的原因，同时也是它们不得声明调用点可能要覆写的几何的原因（见下条）。浏览器外观覆写另有一条硬规则：**不得用 `!important` 去解决层叠冲突**，盖住的是一条划错的边界；正确形态是把规则留在未分层并按 `/* browser-chrome: <理由> */` 登记，由 `verify:ui` 按名豁免并审计三个方向（标记被删、规则被搬层、外来无标记规则即红）；规则的选择器被改写而标记仍在，这一方向目前没有判据。页面壳按同一条规则办：`.workspace-page*`、`.workspace-page__content` 与 `.app-layout*` 已注册为 `@utility`，因此能声明视口高度并保留调用点覆写的可能；而 `.page*`（`.page--center`/`.page--auth` 的 `min-height`）、`.workspace-header`（`height`/`padding`/`position`/`z-index`/`backdrop-filter`）与 `.scrollable` 仍是未分层类，其中前者正是调用点无法覆写的视口高度——它们不满足这条规则，是待收敛的历史遗留：不得再照此新增，新的页面壳与不可覆写几何一律先注册为 `@utility`。
+1. **调用点 Tailwind 原子类**。`flex`、`gap-md`、`bg-surface`、`rounded-lg` 能表达的，就用原子。
+2. **`frontend/src/shared/styles/index.css` 中具名注册的 `@utility`**。承载嵌入 `var()` 的多值简写、`auto-fit`/`minmax` 轨道、来自 token 的 logical border、跨元素状态传播、`@keyframes`，以及页面壳与命名 chrome。只组合通用 token 的 utility 取通用名（`nav-item`、`list-row`、`elevated-modal`）；写死某个 owner 布局 token 的带该 owner 前缀（`sidebar-pane`、`prompt-bar-input`、`report-columns`）。
+3. **顶层未分层类**。只承担两类职责：组件自己的 BEM 内部结构（`ui-menu__item`、`ui-button__content`、`workspace-header__*`）与由 `/* @internal src/<owner>.tsx */` 声明归属的整段 chrome；以及浏览器外观覆写（autofill 底色与文字色、Blink/Edge 的 `::-ms-reveal`/`::-ms-clear`、Chrome 的 credentials 按钮），各带 `/* browser-chrome: <理由> */`，按完整选择器文本登记豁免。调用点可覆写的几何由原子与 utilities 承担。
 
-- 原子类优先。能被 `flex`、`gap-md`、`bg-surface`、`rounded-lg` 表达的，不注册新 utility。
-- 只有当组合无法用原子表达时才注册：嵌入 `var()` 的多值简写、`auto-fit`/`minmax` 轨道、来自 token 的 logical border、跨元素状态传播、`@keyframes`。
-- 只组合通用 token 的 utility 取通用名（`nav-item`、`list-row`、`elevated-modal`）；写死某个 owner 布局 token 的必须带该 owner 前缀（`sidebar-pane`、`prompt-bar-input`、`report-columns`），让耦合可见。
-- 跨组件状态用 Tailwind `group/*`、`peer/*` 与 `data-*` 变体表达，不用后代 BEM 选择器；文档级行为（报告打印）留在 `index.css` 的 `@media print`，以 `data-slot` 为锚点。
-- 层叠可依赖的只有一条：未分层类 > utilities 层 > `@layer base`。同一元素上叠加「注册 utility + 核心原子」或「utility + 未分层类」时，谁生效由 Tailwind 内部排序决定、**无法从源码顺序推导**，因此视为缺陷：调用点不得用核心原子去改 utility 已声明的属性。
-- 需要覆盖时只有两种写法：为基座声明一个 `base-variant` 命名的变体 utility（唯一被允许的覆盖），或把该属性从基座拆出去交给调用点独占。冲突由 `npm run verify:cascade` 用构建产物实测，不靠约定自觉。
-- 未分层类同样会静默压掉同一元素上的核心原子：结果可预测，但调用点写下的原子是死代码（图形尺寸被页面类钉死就是这么来的）。因此未分层页面类不声明 `size`/`padding`/`margin` 这类调用点可能要覆写的几何；`verify:cascade` 的 dead-atom 检查会报出这种组合。
-- 元素级重置（`button`、`a`、标题与列表 margin）必须写在 `@layer base` 内；未分层的元素选择器会压过整个 utilities 层，使组件无法声明自己的文字颜色与间距。`@layer base` 里的元素规则也只承担元素级基线（字体族、margin），字号与颜色一律由排版角色提供，否则每个裸元素都要靠 utility 反赢一次。
-- 功能 utility（`@utility name-*`）的类名必须在源码里**字面出现**：Tailwind 从源码文本读类名，运行时拼出的 `name-${count}` 一条规则都不会产出——包裹层退回 `static`、自定义属性回退到兜底值，而样式表里那段定义看着完全正常。调用点数用字面量分支表达并由类型收窄，`verify:ui` 按「是否存在字面量调用点」把关。
-- 界面结构只有一份 JSX：凡 `index.css` 为某种 chrome 注册了 utility，就必须有一个组件拥有那段标记，产品界面与组件实验台都调用它。拥有者按职责放在 feature 或 `shared/ui`，但只允许有一处。实验台不复制产品外观——手写的同名 class 会让截图先漂移到被改掉为止。
-- 状态藏在组件内部时，实验台仍然不复制标记：把呈现层抽成产品拥有的无状态组件（回答组合器的 `AnswerComposerSurface` 即如此），产品容器供真状态、实验台供冻结状态。产品里不存在的控件与状态（自造的语音滑块、「通知」按钮）不是样例，是第二个真相源。
-- 上一条的拥有关系要能被机器读到，就不能靠类名形状猜。带 `__` 的 BEM 元素类天然表明内部结构，而为一个组件的标记注册的 `@utility`（`prompt-bar-control` 即如此）没有任何形状可认。因此这类 utility 在 `index.css` 里用 `/* @internal src/<owner>.tsx */` 声明归属，`verify:ui` 只允许该文件在 class 位置写出这个名字（含 `-` 后缀派生），其余调用点一律改走组件 props。归属看的是"这段类的正确性由哪个组件的标记决定"，不是文件目录：`shared/ui` 的 prompt bar、message、sidebar、field、generating、option card、score tile、scroll region，以及 feature 自己的 session row、list row、document sheet 等 chrome 家族都已登记（30 个）；**没有标记的 utility 属于公共词汇**，调用点可以写——排版与高程角色（`type-*`、`elevated-*`）、通用布局件（`gutter-stable`、`scrollable`、`inset-card`）和路由自己书写、天生可覆写的页面壳（`workspace-page*`、`app-layout*`、`app-sidebar`）都不登记，把它们标成内部只会逼人绕开角色体系去手写标记。
-- 字段尾部操作位归 `shared/ui/field.tsx` 的 `FieldActions` 与 `FieldAction`：外层留白由按钮数量推导，tooltip 与无障碍名共用同一个字符串——写死 `field-actions-2` 而只画一个按钮，正是这条规则要防的漂移。rail 的品牌位归 `SidebarBrand`。
-- 实验台不重复整页已经给出的东西：整页样例里含有的分件不再单独立一块面板；面板的 `description` 只写归属路径（`shared/ui/panel`），设计契约一律只在本文说一次——实验台复述契约就会与文档各自漂移，评审时也只该看像素不看段落。
-- **脱敏的分寸：凡是调用方本来就传文案的槽位，一律写成角色**（`分区一`、`字段一`、`选项二`、`小节三`、`示例文本一`、`主要操作`）；**凡是被产品组件焊死的词，实验台照原样显示**（组合器的 `发送`/`开始面试`、上下文与模型菜单的条目、`JD 匹配`、`加载中`/`加载失败`、品牌名 `Prelude`），因为那些词本身就是被检阅的控件——为了脱敏把它们拆成入参，等于为实验台给产品加 API。报告是例外：它是文档样张，标题走 `reportCopy` 入参、缺省即产品词条，实验台传入 `小节一…小节八`，产品侧零改动。共享的永远是「有哪些条目」（`sections`、`themeOptions`、报告结构），不是条目上的字。
-- 样张正文用纯占位（`示例文本一`），长短差异就是用来检查换行与行宽的；不写「用于检查气泡最大宽度」这类评审意图——意图属于文档，不属于像素。排版面每行尾随的角色名（`· type-body`）与品牌名同属身份标识，保留。
+页面壳（`workspace-page*`、`app-layout*`、`app-sidebar`、`page*`）与滚动槽（`scrollable`、`gutter-stable`）一律是 `@utility`。`feature` 目录不含 CSS 文件；`features/*` 与 `app/shell` 只使用 token 与原子类。`frontend/src/app/styles.css` 装配 Tailwind、扫描范围与共享样式；`shared/styles/index.css` 拥有 token、主题、重置、全局排版、焦点状态、复合 utility 与文档级打印策略。
+
+- 跨组件状态用 Tailwind `group/*`、`peer/*` 与 `data-*` 变体；文档级行为（报告打印）留在 `index.css` 的 `@media print`，以 `data-slot` 为锚点。
+- 同一元素上叠加「注册 utility × 核心原子」或「utility × 未分层类」时，谁生效由 Tailwind 内部排序决定，视为缺陷。需要覆盖时只有两种写法：为基座声明 `base-variant` 命名的变体 utility，或把该属性从基座拆出交给调用点独占。
+- 元素级重置（`button`、`a`、标题与列表 margin）写在 `@layer base`，只承担字体族与 margin；字号与颜色由排版角色提供。
+- 功能 utility（`@utility name-*`）的类名以源码字面量出现，调用点数用字面量分支表达并由类型收窄；拼接出的名字没有对应规则。
+- 界面结构只有一份 JSX：`index.css` 为某种 chrome 注册了 utility，就有一个组件拥有那段标记，产品界面与组件实验台都调用它。拥有者按职责放在 feature 或 `shared/ui`。状态藏在组件内部时抽无状态呈现层（`AnswerComposerSurface`），产品容器供真状态、实验台供冻结状态。
+- 带 `__` 的 BEM 元素类表明内部结构；为组件标记注册的 `@utility`（如 `prompt-bar-control`）用 `/* @internal src/<owner>.tsx */` 声明归属，只有该文件在 class 位置写出这个名字。公共词汇不带 `@internal`：排版与高程角色（`type-*`、`elevated-*`）、通用布局件（`gutter-stable`、`scrollable`、`inset-card`）、路由书写的页面壳（`workspace-page*`、`app-layout*`、`app-sidebar`、`page*`）。
+- 字段尾部操作位归 `shared/ui/field.tsx` 的 `FieldActions` 与 `FieldAction`：外层留白由按钮数量推导，tooltip 与无障碍名共用同一个字符串。rail 的品牌位归 `SidebarBrand`。
+- 实验台面板的 `description` 只写归属路径（`shared/ui/panel`）；设计契约只在本文出现。
+- **脱敏的分寸**：调用方本来就传文案的槽位写成角色（`分区一`、`字段一`、`选项二`、`小节三`、`示例文本一`、`主要操作`）；产品组件焊死的词照原样显示（`发送`/`开始面试`、上下文与模型菜单条目、`JD 匹配`、`加载中`/`加载失败`、品牌名 `Prelude`）。报告标题走 `reportCopy` 入参、缺省即产品词条，实验台传 `小节一…小节八`。共享的是「有哪些条目」（`sections`、`themeOptions`、报告结构），不是条目上的字。
+- 样张正文用纯占位（`示例文本一`），长短差异用来检查换行与行宽。排版面每行尾随的角色名（`· type-body`）与品牌名同属身份标识，保留。
 
 ## Components
 
@@ -133,40 +130,44 @@ Input、Textarea、Select 与 Combobox 使用 `--color-surface` 表面、`--colo
 
 Dropdown、Select 与 Combobox 使用 `--color-surface`、`--color-text-primary`、`--color-border-warm`、`--radius-md` 和 `--shadow-whisper`。这一中性高对比表面保持文字清晰，也与品牌强调色分离。
 
-Tooltip 反过来用文字色做底、表面色做字（`--color-text-primary` / `--color-surface`），配 `--radius-sm` 与 `--shadow-whisper`：它是贴在控件旁的一行短说明，反色让它不与它所注解的表面混淆。
+Tooltip 反过来用文字色做底、表面色做字（`--color-text-primary` / `--color-surface`），配 `--radius-sm` 与 `--shadow-whisper`：贴在控件旁的一行短说明，反色让它不与所注解的表面混淆。
 
 Tooltip 内容使用 `--font-size-xs`、token padding 和 `--content-tooltip-max-inline-size`。primitive 统一 trigger 间距和 opacity 动效。截断文字的定位锚点是完整交互控件。
 
-Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overlay`，Dialog 使用 `--shadow-modal`。`.ui-dialog` 自带 `--spacing-xl` 内边距，是可直接放内容的浮层；`--workspace` 变体是 full-bleed 壳层，内边距与分区由调用点拥有（设置面板即此形态）。壳层自身就是 `--color-surface`，分区不再各自铺一层底色——分割线只在 surface 上成立，铺成 `--color-bg` 会让同一条线几乎消失。Confirm 复用 `.ui-dialog` 的 chrome，只覆写自身宽度（`--layout-confirm-max-inline-size`）与动作行——动作按钮等分铺满整行，不缩在右侧。
+Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overlay`，Dialog 使用 `--shadow-modal`。`.ui-dialog` 自带 `--spacing-xl` 内边距，是可直接放内容的浮层；`--workspace` 变体是 full-bleed 壳层，内边距与分区由调用点拥有（设置面板即此形态）。壳层自身就是 `--color-surface`，分区共享这一底色——分割线只在 surface 上成立。Confirm 复用 `.ui-dialog` 的 chrome，覆写自身宽度（`--layout-confirm-max-inline-size`）与动作行：动作按钮等分铺满整行。
 
 ### Composition
 
-`shared/ui/panel.tsx` 的 `Panel` 是「带标题的表面」的唯一实现：标题行同时拥有标题、副标题与右侧操作区，操作按钮与标题同行、由 flex 竖直居中——浮层的右上角不使用绝对定位，位置不随标题字号或内边距漂移。
+`shared/ui/panel.tsx` 的 `Panel` 是「带标题的表面」的唯一实现：标题行同时拥有标题、副标题与右侧操作区，操作按钮与标题同行、由 flex 竖直居中。
 
 - `layout="fill"` 用于铺满容器的高度型表面（设置弹窗的五个分区、工作台浮层）：标题行带下边界，内容区自带 `--spacing-lg` 内边距并独立滚动。
 - `layout="card"` 用于随内容增高的自足块（组件实验台的每个面板、岗位管理的两块面板）：自带边界、圆角、`--spacing-lg` 内边距与 `elevated-whisper`，标题行与内容区之间同样是 `--spacing-lg`。
-- `level` 决定标题用 `h2` 还是 `h3`，并随之选择 `type-title` 或 `type-subtitle`；`eyebrow` 是标题上方的 `type-eyebrow` 引导标签，`description` 是标题下方的 `type-meta` 说明，`actions` 是右侧操作区，`footer` 是带上下边界的底部动作条。
-- 高程卡片只有一个拥有者：`shared/ui/card.tsx` 的 `Card`。`Panel layout="card"` 与不带标题行的同高程块（数据看板的记分卡）都经它渲染，圆角、边界、`--spacing-lg` 内边距与 `elevated-whisper` 只此一处；卡内堆叠间距由组件的 `stack` 决定，调用点只传 layout 类。嵌在另一层表面里的内嵌卡片是另一个拥有者 `shared/ui/inset-card.tsx` 的 `InsetCard`（`ScoreTile` 与薄弱点条目共用此外壳）。
+- `level` 决定标题用 `h2` 还是 `h3`，并随之选择 `type-title` 或 `type-subtitle`；`eyebrow` 是标题上方的 `type-eyebrow`，`description` 是标题下方的 `type-meta`，`actions` 是右侧操作区，`footer` 是带上下边界的底部动作条。
+- 高程卡片只有一个拥有者：`shared/ui/card.tsx` 的 `Card`。`Panel layout="card"` 与不带标题行的同高程块（数据看板的记分卡）都经它渲染，圆角、边界、`--spacing-lg` 内边距与 `elevated-whisper` 只此一处；卡内堆叠间距由组件的 `stack` 决定。内嵌卡片是 `shared/ui/inset-card.tsx` 的 `InsetCard`（`ScoreTile` 与薄弱点条目共用）。
 
-全项目只有一种细分割线：`--border-width-default` 1px + `--color-border`，并且只画在 `--color-surface` 上（侧栏主操作下方那条线即基准，实测线色对表面色对比度 1.10）。`--color-border-warm` 是控件自身的边，`--color-line-decor` 只服务落在页面底色上的装饰边缘（登录卡），两者都不是分割线。需要更强的分层感时改间距与标题层级，不改线的颜色或粗细。
+全项目只有一种细分割线：`--border-width-default` 1px + `--color-border`，只画在 `--color-surface` 上（侧栏主操作下方那条线即基准，线色对表面色对比度 1.10）。`--color-border-warm` 是控件自身的边，`--color-line-decor` 只服务落在页面底色上的装饰边缘（登录卡）。更强的分层感来自间距与标题层级。
 
-一条分割线必须两侧都有留白，且两侧由同一个容器给出：线附着在上方块时，上方由该块的 `padding` 给出、下方由容器的 `gap` 给出；附着在下方块时反之。任何一侧为 0 都是调用点把内容贴到了线上。面板内部再分层时，小节容器写 `grid gap-sm border-t border-border pt-md`，配合父容器的 `gap-md` 让细线上下各 16px，小节标题与其控件仍按 `--spacing-sm` 8px 绑定。设置弹窗的「修改密码」与「高级设置」即此形态，组件实验台的 Field 面板给出同一份样例；`npm run verify:visual` 会实测每个分割线两侧的间隙不小于 `--spacing-sm`。
+一条分割线两侧都有留白，且两侧由同一个容器给出：线附着在上方块时，上方由该块的 `padding` 给出、下方由容器的 `gap` 给出；附着在下方块时反之。面板内部再分层时，小节容器写 `grid gap-sm border-t border-border pt-md`，配合父容器的 `gap-md` 让细线上下各 16px，小节标题与其控件按 `--spacing-sm` 8px 绑定。设置弹窗的「修改密码」与「高级设置」即此形态，组件实验台的 Field 面板给出同一份样例。
 
-语音输入不占用输入区：文字框在两种模式下都常驻可编辑，识别出的转录只写进草稿、由候选人自己发送，麦克风听到的内容不会直接成为对话里的一轮。尾部操作区两种模式同构——切换图标、（语音模式下）`按住说话`、`发送` 图标，全部 `--ui-height-control` 一方盒、右端收口。`发送` 用图标而非文字：它旁边可能站着 `按住说话`，两个带词的实心按钮只会互相抢权重，而层级已经由尺寸表达清楚；空草稿时它带着禁用态常驻，操作区不因输入而重排。录音反馈全部收在 `按住说话` 内部——按下时标签淡出、`VoiceLevelMeter` 覆盖在同一盒子里（标签继续撑宽，控件在手指下不改变尺寸），处理中复用按钮自己的 loading 态，面试官语音回放期间按钮不可按下。状态文案（旧的「语音模式已连接 / 正在处理 / 面试官正在回答」）不再存在：它们把一条输入通道说成了一块仪表。reduced-motion 下电平只采样一帧就停止，读数保留、泵动消失。
+语音输入与输入区分离：文字框在两种模式下都常驻可编辑，识别出的转录只写进草稿、由候选人自己发送。尾部操作区两种模式同构——切换图标、（语音模式下）`按住说话`、`发送` 图标，全部 `--ui-height-control` 一方盒、右端收口。`发送` 用图标：旁边可能站着 `按住说话`，两个带词的实心按钮会互相抢权重，而层级已经由尺寸表达；空草稿时它带着禁用态常驻，操作区不因输入而重排。
 
-按住态不得位移：`按住说话` 曾带一条 `translateY(2px)` 的按压下沉，那对瞬间点击是反馈，对一个要按住几秒的控件就是错位——实测它比同一行里的两个图标按钮低 2px。按压反馈一律用不改位置的手段表达（环影、颜色、内容替换）。`npm run verify:visual` 会实测每个 composer 尾部操作区里的按钮共享同一条上边与下边。
+录音反馈收在 `按住说话` 内部：按下时标签淡出、`VoiceLevelMeter` 覆盖在同一盒子里（标签继续撑宽，控件在手指下保持尺寸），处理中复用按钮自己的 loading 态，面试官语音回放期间按钮为禁用。reduced-motion 下电平只采样一帧，读数保留、泵动消失。
 
-重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。三态各有拥有者（`shared/ui/empty-state.tsx` 的 `LoadingState`/`EmptyState`/`ErrorState`），调用点不再手写 `className="empty-state"`：加载态自带 `role="status"`，读屏下是否被播报不靠运气；**失败态一律给重试**——能重发的读取失败没有出口，读起来就是界面坏了而不是有消息。页面区段仍用无框布局与受控内容宽度，只有需要明确边界的数据对象才升级为 `card`。
+按压反馈保持几何稳定，用环影、颜色、内容替换表达。composer 尾部操作区的按钮共享同一条上边与下边。
 
-侧栏分三层：`@utility sidebar-frame` 拥有 rail 的盒子（宽度、边框、表面、折叠宽度与过渡），`@utility app-sidebar` 只加页面锚定（sticky、层级、`100vh`，并把 frame 撑满高度），`@utility sidebar-rail` 只拥有内容作用域（图标内边距的推导，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`：brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚。主操作下方那条分割线的下线由 frame 自己的 `gap-md` 给出，调用点不补 padding——实验台曾补一个 `pt-sm` 而产品没补，同一个组件因此有两种渲染。产品 shell 是 `app-sidebar > SidebarFrame`，实验台让同一个 `SidebarFrame` 直接落在 `bg-bg` 上——盒子由组件拥有，宽度就不会被检阅用的边框偷走。折叠状态由两处局部属性表达：frame 与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入；图标规则以按钮自己的属性为锚点，不依赖祖先选择器，因此独立渲染的 rail 与真实 shell 表现一致。
+重复条目行用 `list-row`（带边界的完整行）或 `row-label-end`（名称与尾部动作两端对齐），加载、空库与失败统一落到 `empty-state`。三态拥有者是 `shared/ui/empty-state.tsx` 的 `LoadingState`/`EmptyState`/`ErrorState`：加载态自带 `role="status"`，失败态一律给重试。页面区段用无框布局与受控内容宽度，需要明确边界的数据对象升级为 `card`。
 
-报告是页面表面，不是卡片：它的分栏是 `auto-fit minmax(200px, 1fr)`，三维评分要三列并排需要约 632px 的纸面内宽。检阅它时给它与产品相同的内容宽度（`--layout-workspace-content-max-inline-size`），不要塞进 `Panel layout="card"`——卡片自己的内边距会吃掉最后一列，让第三个板块换行。
+侧栏分三层：`@utility sidebar-frame` 拥有 rail 的盒子（宽度、边框、表面、折叠宽度与过渡），`@utility app-sidebar` 只加页面锚定（sticky、层级、`100vh`，并把 frame 撑满高度），`@utility sidebar-rail` 只拥有内容作用域（图标内边距的推导，以及 `data-sidebar-label`、`data-sidebar-brand` 的折叠过渡）。
+
+结构归 `shared/ui/sidebar.tsx` 的 `SidebarFrame`：brand 与折叠按钮、分隔线下的主操作、滚动中段与页脚。主操作下方分割线的下线由 frame 自己的 `gap-md` 给出。产品 shell 是 `app-sidebar > SidebarFrame`，实验台让同一个 `SidebarFrame` 直接落在 `bg-bg` 上。折叠状态由两处局部属性表达：frame 与 rail 的 `is-collapsed` 控制宽度和淡出，`SidebarToggle` 自身的 `data-collapsed` 控制两枚箭头的交叉淡入；图标规则以按钮自己的属性为锚点。
+
+报告只以页面表面呈现：分栏是 `auto-fit minmax(200px, 1fr)`，三维评分三列并排需要约 632px 纸面内宽。检阅宽度取 `--layout-workspace-content-max-inline-size`；`Panel layout="card"` 的内边距会挤掉第三列。
 
 ## Accessibility
 
 - 交互控件具备可访问名称与完整键盘路径。
 - 键盘焦点使用可见的语义边界；字段、动作、选中与打开状态彼此独立。
-- 会滚动且内容里可能没有任何可聚焦元素的容器，自己必须是焦点点（`tabIndex={0}`）：这条可达性由 `shared/ui` 的 `ScrollRegion` 拥有，`Panel` 的 `fill` 主体、`SidebarPane`、面试文字流 `TranscriptScroll`、看板与组件实验台的页面壳都经它渲染——组件把 `overflow-y-auto` 画出来时，也就承担了这条可达性，调用点不需要重复声明。`focusable={false}` 只用于该区域同时对辅助技术隐藏的场合：`aria-hidden` 里再放一个焦点停点是反效果。滚动槽预留（`gutter-stable`）由调用方选而非基座强加：页面壳自己已声明 `scrollbar-gutter`，再预留一次会改变内容宽度；而会长出滚动条的裸列需要预留，才不会推动旁边的元素。块的留白归视图不归滚动容器，所以 `TranscriptScroll` 是一层薄 owner（加上两个视图共有的部分，各自 end padding 由 `view` 指名），而不是让每个视图手写一遍 `div` + `tabIndex`
+- 会滚动且内容里可能没有任何可聚焦元素的容器，自己是焦点点（`tabIndex={0}`）。这条可达性由 `shared/ui` 的 `ScrollRegion` 拥有：`Panel` 的 `fill` 主体、`SidebarPane`、面试文字流 `TranscriptScroll`、看板与组件实验台的页面壳都经它渲染。组件画出 `overflow-y-auto` 时即承担该可达性。`focusable={false}` 用于该区域同时对辅助技术隐藏的场合。滚动槽预留（`gutter-stable`）由调用方选：页面壳自己已声明 `scrollbar-gutter`；会长出滚动条的裸列需要预留。块的留白归视图；`TranscriptScroll` 是薄 owner（两个视图共有的部分 + 由 `view` 指名的 end padding）。
 - 图标装饰使用空替代文本；信息图像提供等价文本。
 - 文本与交互目标在桌面布局中保持互不遮挡。
 - 系统高对比度与 reduced motion 偏好保持可用。
@@ -177,6 +178,4 @@ shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮�
 
 ## Validation
 
-UI 改动验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准。
-
-视觉审查以本文件和 `frontend/src/shared/styles/index.css` 的 token 定义为准。
+UI 改动验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准。视觉审查以本文件和 `frontend/src/shared/styles/index.css` 的 token 定义为准。

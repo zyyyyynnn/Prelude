@@ -6,39 +6,39 @@
 
 | 门禁 | 断言 |
 | --- | --- |
-| `npm run check` | Vite+ 统一的格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
-| `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界。入口契约按 AST 读：`from`、`import()`、`require()` 与再导出四种写法都算一次深导入，且相对路径先解析到 src 内的目标模块再判定。`app/` 之外只能取 `@/features/<name>` 或 `@/shared/ui`；`app/` 是组合根，可以点名 feature 里**已被该 feature 入口登记**的具名文件，未登记的直接失败；登记同时充当"这个名字有人消费"的证据 |
-| `npm run verify:ui` | 禁止 feature CSS 文件与 feature 样式导入；空规则；未分层元素选择器（元素级重置须在 `@layer base`，浏览器外观覆写按 `/* browser-chrome: <理由> */` 具名豁免，标记与规则正文按完整选择器文本比对）；无消费者的类规则；功能 `@utility name-*` 必须有字面量调用点；单一拥有者配方（登记表 + 发现制：一段 ≥3 个类 token 且点名设计系统的 `className` 字面量跨 ≥2 个文件即失败，例外须具名并写明提升目标）；`ui-*__*` 与 `workspace-header__*` 不得在组件外写出；`sideOffset` 只能取 `OVERLAY_OFFSET` 成员 |
-| `npm run verify:tokens` | token 登记完整性与唯一性；声明但无任何消费者的 token；被引用但从未声明的 `var(--x)` 与 `atom-(--x)`；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度）按**声明**读取，跨行的 `calc()`、`@utility` 内的自定义属性、混用 `var()` 的值都在范围内，`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 必须仍是引用其来源的表达式；盒尺寸不得整值借用与某档 `--ui-glyph-*` 等值的 `--spacing-*` 步骤；读取器发现的声明数低于阈值即失败。相对单位 `%`/`em`/`vh`/`vw` 放行，技术必需的裸值（forced-colors 描边、`sr-only` 1px 裁剪盒）须在规则内标 `geometry-exempt: <理由>`。样式表之外的几何由 markup 读取器覆盖：`.tsx` 里的 Tailwind 任意值与无单位内联样式；图表内部几何以具名 allowlist 豁免，且每个条目必须仍在源码里存在 |
-| `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类必然压过核心原子造成的死原子；含经 `cn(base, className)` 注入的原子。须在 `npm run build` 之后执行 |
-| `npm run verify:production` | 生产产物按 chunk 断言不含开发态组件检查面的路由标识符，并断言这些标识符在源码树中仍然存在（改名即红） |
+| `npm run check` | 格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
+| `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界。入口契约按 AST 读：`from`、`import()`、`require()` 与再导出都算一次深导入，相对路径先解析到 src 内目标模块再判定。`app/` 之外只能取 `@/features/<name>` 或 `@/shared/ui`；`app/` 可以点名 feature 入口已登记的具名文件，登记同时充当「这个名字有人消费」的证据 |
+| `npm run verify:ui` | feature CSS 文件与 feature 样式导入为零；空规则为零；未分层元素选择器为零（元素级重置在 `@layer base`，浏览器外观覆写按 `/* browser-chrome: <理由> */` 具名豁免，标记与规则正文按完整选择器文本比对）；无消费者的类规则为零；功能 `@utility name-*` 必有字面量调用点；单一拥有者配方（登记表 + 发现制：一段 ≥3 个类 token 且点名设计系统的 `className` 字面量跨 ≥2 个文件即失败，例外具名并写明提升目标）；`ui-*__*` 与 `workspace-header__*` 只在组件内写出；`sideOffset` 只取 `OVERLAY_OFFSET` 成员 |
+| `npm run verify:tokens` | token 登记完整且唯一；声明且有消费者的 token；被引用且已声明的 `var(--x)` 与 `atom-(--x)`；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度）按声明读取，跨行 `calc()`、`@utility` 内自定义属性、混用 `var()` 的值都在范围内，`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 仍是引用其来源的表达式；盒尺寸与某档 `--ui-glyph-*` 等值时指名该 glyph token；读取器声明数低于阈值即失败。`%`/`em`/`vh`/`vw` 放行；技术必需的裸值在规则内标 `geometry-exempt: <理由>`。样式表之外的几何由 markup 读取器覆盖：`.tsx` 里的 Tailwind 任意值与无单位内联样式；图表内部几何以具名 allowlist 豁免，且每个条目仍在源码里存在 |
+| `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类压过核心原子造成的死原子；含经 `cn(base, className)` 注入的原子。在 `npm run build` 之后执行 |
+| `npm run verify:production` | 生产产物按 chunk 不含开发态组件检查面的路由标识符，且这些标识符仍在源码树中（改名即红） |
 | `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
-| `npm run verify:dark` | 暗色偏好启动恢复：两种 scheme 的解析值**不同**，且 `dark` 类先于 `#root` 出现 |
-| `npm run verify:a11y` | 真实浏览器 Axe，覆盖 `/interview` 与 `/components-lab` 两个面 × 亮/暗。两条都先等**被测页面自己画出**的 landmark 再扫描；判据保留 tags 覆盖的全部严重级（`wcag2a/aa/21a/21aa` 报出的多是 `serious`）；失败时打印 impact、规则 id、选择器与 axe 给出的原因文本 |
-| `npm run verify:visual` | 44 张 `*-win32.png` 像素基线：组件检查面按面板逐张（亮/暗各 14 张，高于视口的面板先按实测差额扩窗再取图，WebGL 品牌球 mask 后改用几何断言）、产品面按面逐张（登录、注册、面试准备态、看板、产品内报告面、设置主题面板，亮/暗各 6 张）、404 面与窄桌面布局各一张。另有四条实测断言：折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合、每个分割线两侧间隙不小于 `--spacing-sm`、字段尾部操作位落在控件盒内、composer 尾部操作簇内所有按钮共享同一条上下边。两条页面扫描都同时报告**自己量到了多少个目标**（分割线还单独报告"被测试的那块区域里量到几个"），量到 0 个即失败 |
+| `npm run verify:dark` | 暗色偏好启动恢复：两种 scheme 的解析值不同，且 `dark` 类先于 `#root` 出现 |
+| `npm run verify:a11y` | 真实浏览器 Axe，覆盖 `/interview` 与 `/components-lab` × 亮/暗。每条先等被测页面画出的 landmark 再扫描；判据保留 tags 覆盖的全部严重级；失败时打印 impact、规则 id、选择器与原因文本 |
+| `npm run verify:visual` | 44 张 `*-win32.png` 像素基线：组件检查面按面板逐张（亮/暗各 14 张，高于视口的面板先按实测差额扩窗再取图，WebGL 品牌球 mask 后改用几何断言）、产品面按面逐张（登录、注册、面试准备态、看板、产品内报告面、设置主题面板，亮/暗各 6 张）、404 面与窄桌面布局各一张。另有四条实测断言：折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合、每个分割线两侧间隙不小于 `--spacing-sm`、字段尾部操作位落在控件盒内、composer 尾部操作簇内所有按钮共享同一条上下边。页面扫描报告自己量到的目标数（分割线另报区域内在范围数），量到 0 个即失败 |
 | `npm run test:smoke` | React 开发 StrictMode 下真实浏览器核心行为与客户端路由 |
 
-新增或修改判据必须红测：把要防的缺陷种进去、看到 FAIL、再恢复看到 PASS。探针前把目标文件复制到仓库外，恢复用复制，不要 `git checkout`。
+新增或修改判据先红测：种入要防的缺陷、看到 FAIL、恢复后看到 PASS。探针前后用仓库外文件副本保存与恢复目标文件。
 
 ## shadcn/lint
 
-经 Oxlint 插件 `@shadcn/lint`（`vite.config.ts` → `lint.rules`）接入 `npm run check`。组件识别前缀为 `@/shared/ui`；错误提示统一指向 `DESIGN.md` 与 `frontend/src/shared/styles/index.css`。
+经 Oxlint 插件 `@shadcn/lint`（`vite.config.ts` → `lint.rules`）接入 `npm run check`。组件识别前缀为 `@/shared/ui`；错误提示指向 `DESIGN.md` 与 `frontend/src/shared/styles/index.css`。
 
 | 规则 | 级别 | 约束 |
 | --- | --- | --- |
-| `no-raw-colors` | error | 禁止色板色类名；只用 Prelude 语义 token |
-| `no-arbitrary-values` | error | 禁止任意值 utility；使用 DESIGN 间距/圆角/尺寸阶梯 |
-| `no-inline-styles` | error | 禁止内联样式与 `<style>`；仅允许文档化的运行时 CSS 变量（当前 `--score-fill`） |
-| `require-static-classes` | error | 类名必须为静态字面量，门禁可读 |
-| `no-restyle` | error | 禁止用 className 改写 DS 外观。对 `Button` / `Input` / `Textarea` / `Select` / Menu 项 / `IconTooltip` / `Dialog` / `SegmentedControl` / `Panel` 配置 contracts：**仅允许 layout**，并 deny `spacing` / `color` / `typography` / `shape` / `effects` 中与组件所有权冲突的类别 |
-| `no-unknown-classes` | error | 禁止 Tailwind 无法生成的类名；界面样式只能是调用点的原子类、`index.css` 中注册的 `@utility`，或承担组件内部结构与 `@internal` 归属 chrome 的顶层未分层类 |
+| `no-raw-colors` | error | 类名取 Prelude 语义 token |
+| `no-arbitrary-values` | error | utility 取 DESIGN 间距/圆角/尺寸阶梯（含 CSS 变量简写） |
+| `no-inline-styles` | error | 样式在 CSS；运行时 CSS 变量限文档化名单（当前 `--score-fill`） |
+| `require-static-classes` | error | 类名为静态字面量 |
+| `no-restyle` | error | className 只取 contract 允许的类别。contracts：`Button`、`SegmentedControl`、`Panel` 仅允许 layout；`ScrollRegion` 允许 layout 与 spacing（滚动 chrome 与焦点停点归组件，盒子与留白归调用方）；`Input`/`Textarea`/`Select`/Menu 项/`IconTooltip`/`Dialog` 允许 layout，deny 与组件所有权冲突的类别 |
+| `no-unknown-classes` | error | 类名是调用点原子、`index.css` 注册的 `@utility`，或承担组件内部结构与 `@internal` chrome 的顶层未分层类 |
 
-例外范围（仅组件实现层）：`src/shared/ui/**` 关闭 `no-restyle`、`no-arbitrary-values`、`require-static-classes`——primitive 自身拥有样式；调用点仍受上述 contracts 与 token 规则约束。`no-raw-colors` 与 `no-inline-styles` 在实现层仍生效。
+`src/shared/ui/**` 关闭 `no-restyle`、`no-arbitrary-values`、`require-static-classes`；`no-raw-colors` 与 `no-inline-styles` 在实现层仍生效。
 
-`no-unknown-classes` 只识别 `src/shared/styles/index.css` 生成的类，因此复合样式必须注册为该文件内的 `@utility`，feature 目录不含 CSS 文件。Tailwind 从源码文本读类名：只在查表里存在的类名不会产出任何规则，所以页面壳这类类名必须字面出现在调用点。注册命名与层叠次序约定见 `DESIGN.md` 的 Style Assembly。
+`no-unknown-classes` 只识别 `src/shared/styles/index.css` 生成的类，复合样式注册为该文件内的 `@utility`。注册命名与层叠次序见 `DESIGN.md` 的 Style Assembly。
 
-测试选择器只用 `data-slot`、`role` 与语义文本；需要以类名定位时，该类必须是 `index.css` 里注册的 `@utility`。
+测试选择器取 `data-slot`、`role` 与语义文本；以类名定位时该类是 `index.css` 里注册的 `@utility`。
 
 ## 判据浏览器
 
-`@playwright/test` 锁定的 Chromium，不用系统 Edge。换 Playwright 版本等于换 oracle，要按一次环境变更处理并重生成基线。
+`@playwright/test` 锁定的 Chromium（`playwright.config.ts` 无 `channel`）。Playwright 版本变更按一次环境变更处理并重生成基线。

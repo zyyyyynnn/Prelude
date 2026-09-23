@@ -14,9 +14,7 @@ Copy-Item .env.example .env
 docker compose up -d mysql redis rabbitmq versitygw
 ```
 
-四个基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）连同 app 配置里的 8080/5173 都只发布到 `127.0.0.1`：这套栈的凭据是仓库里公开的默认值（root/`root_password`、无密码 Redis、`guest`/`guest`——RabbitMQ 4.1 镜像的 `loopback_users` 为空，`guest` 本身不限来源主机），绑到所有网卡等于把它们交给局域网。
-
-- 确实需要别的设备访问时，改 `docker-compose.yml` 里对应那条映射，不要改默认值；并且同时改 `S3_PUBLIC_ENDPOINT`（预签名地址会写进响应体）与 `application.yml` 的 `app.cors.allowed-origins`（默认只放行 localhost/127.0.0.1:5173），否则页面能打开但资源下载与跨域请求会失败。
+基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）与 app 的 8080/5173 只发布到 `127.0.0.1`：这套栈的凭据是仓库公开默认值。需要别的设备访问时，改 `docker-compose.yml` 对应映射，并同步 `S3_PUBLIC_ENDPOINT` 与 `application.yml` 的 `app.cors.allowed-origins`（默认放行 localhost/127.0.0.1:5173）。
 
 后端：
 
@@ -26,7 +24,7 @@ mvn -f backend/pom.xml -Dspring-boot.run.profiles=dev spring-boot:run
 
 健康检查：`http://127.0.0.1:8080/actuator/health`。
 
-`dev` profile 会加载 `data-dev.sql`，提供 `demo / 123456`、三份匿名岗位简历、三场完整历史面试与一场进行中会话，覆盖 Java 后端、前端和算法岗位。每次开发启动只重置 `demo` 账户的验收数据，其他本地账户保持不变。
+`dev` profile 加载 `data-dev.sql`，提供 `demo / 123456`、三份匿名岗位简历、三场完整历史面试与一场进行中会话，覆盖 Java 后端、前端和算法岗位。每次开发启动只重置 `demo` 账户的验收数据。
 
 前端：
 
@@ -35,7 +33,7 @@ npm --prefix frontend ci
 npm --prefix frontend run dev
 ```
 
-访问 `http://127.0.0.1:5173`。`start-dev.bat` 执行相同的本地模式，`start-docker.bat` 执行完整容器模式。
+访问 `http://127.0.0.1:5173`。`start-dev.bat` 执行本地模式，`start-docker.bat` 执行完整容器模式。
 
 ## 验证
 
@@ -57,30 +55,32 @@ npm --prefix frontend audit --omit=dev
 git diff --check
 ```
 
-以上 `npm --prefix frontend run X` 均以仓库根为工作目录；在 `frontend/` 下执行时改用 `npm run X`。
+以上 `npm --prefix frontend run X` 以仓库根为工作目录；在 `frontend/` 下改用 `npm run X`。各门禁的断言范围见 `docs/quality/ui-quality-system.md`。
 
-集成验证由 CI 与本地 Docker 基础设施共同提供环境变量：
+集成验证由环境变量开关：
 
-- `PRELUDE_MYSQL_SMOKE=true`：MySQL 8.4 执行当前 Flyway baseline，并验证数据库集成契约与 `demo` 验收数据的确定性重置。
-- `PRELUDE_IDENTITY_SMOKE=true`：基于真实 MySQL 与 Redis 验证注册登录、Session rotation/revoke、CSRF、Origin 与 profile revision 契约。
-- `PRELUDE_S3_SMOKE=true`：通过 Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
+- `PRELUDE_MYSQL_SMOKE=true`：MySQL 8.4 执行当前 Flyway baseline，验证数据库集成契约与 `demo` 验收数据的确定性重置。
+- `PRELUDE_IDENTITY_SMOKE=true`：真实 MySQL 与 Redis 上的注册登录、Session rotation/revoke、CSRF、Origin 与 profile revision 契约。
+- `PRELUDE_S3_SMOKE=true`：Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
 
-上述开关未设置时对应测试直接跳过，因此本地跑单测默认拿不到数据库、会话与对象存储这三层专项保障。但跳过不等于不需要服务：`PreludeApplicationTest` 无开关，会加载完整应用上下文，而 Spring Session 在装配阶段就要连 Redis，所以 `mvn clean test` 仍要求上面 `docker compose up -d` 的那组服务在跑。若本机无法拉取 Testcontainers 的 `testcontainers/ryuk` 回收镜像，追加 `TESTCONTAINERS_RYUK_DISABLED=true`：本地 `versity/versitygw` 镜像已由 `docker compose` 提供，关闭回收器不影响这两组测试的判定。
+开关未设置时对应测试跳过。`PreludeApplicationTest` 无开关，加载完整应用上下文；Spring Session 在装配阶段连接 Redis，因此 `mvn clean test` 仍需要上面 `docker compose up -d` 的服务在跑。本机无法拉取 `testcontainers/ryuk` 时设置 `TESTCONTAINERS_RYUK_DISABLED=true`。
 
-## 视觉基线
-
-`npm --prefix frontend run verify:visual` 会按 `*-win32.png` 基线做像素比对，只在 Windows 渲染器上与 CI 一致。组件检查面按**面板**逐张比对（亮/暗各 14 张，`component-lab-<panel>-<scheme>-win32.png`），面板清单写在测试里，新增面板未登记会先失败在标题断言上；面板高于视口时测试会先按实测差额扩窗再取图（滚动容器不揭示的像素不会被绘制），含 WebGL 品牌球的面板把该元素 mask 掉，改用几何断言。有意改变视觉时用它更新基线，不要手工改图：
+## 视觉基线与界面资产
 
 ```powershell
 npm --prefix frontend run snapshot:update
 ```
 
-`npm --prefix frontend run capture:surfaces` 生成覆盖登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入、语音连接/聆听/转录/处理/播报/回退、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入仓库唯一的界面资产目录 `docs/screenshots/surfaces/`。它是随代码一起提交、供人工回归对照的界面资产，不产生断言，也不是门禁。`manifest.json` 除提交号外还记录采集时工作树是否与提交一致——截图总在提交前生成，因此 `inputsMatchRevision: false` 意味着这批图来自未提交的代码，采集时会同步告警。
+有意改变视觉时用它更新 `*-win32.png` 基线。渲染器与 CI 一致（Windows）。
 
-语音实时链路的六帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：它只假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑的是真实 `useVoiceInterview` 状态机与真实 composer。这些帧证明客户端状态与界面，不证明上游语音质量——后者只能由一次真实上游通话验证，无法在 CI 重生成。
+```powershell
+npm --prefix frontend run capture:surfaces
+```
 
-`@demo` 链路测试的截图只作为该次运行的诊断证据，随 Playwright 报告写入 `frontend/test-results/`，不进入资产目录。
+生成登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入、语音六态、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入 `docs/screenshots/surfaces/`。这是随代码提交的人工回归对照资产，无自动断言。`manifest.json` 记录提交号与采集时工作树是否与提交一致（`inputsMatchRevision: false` 表示图来自未提交代码）。
 
-所有 DDL 位于 `backend/src/main/resources/db/migration/`：`V20260830__establish_prelude_schema.sql` 建立当前 schema，其后的 `V<日期>__<语义>.sql` 依次增量修改，`R__reference_data.sql` 以幂等方式维护 reference data。**baseline 与任何已应用过的版本文件都不再编辑**：Flyway 按 checksum 校验已应用的 migration，改它会让你和 CI 的开发库直接拒绝启动；索引、约束与列的变更一律新增一个版本文件（需要时先在其中把既有数据规范化，再加强约束）。只有要彻底重来时才 `docker compose down -v` 空库重建。
+语音实时链路六帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`@demo` 链路测试的截图写入 `frontend/test-results/` 作为该次运行的诊断证据。
 
-OAuth（Google/GitHub）为可选能力：在 `.env` 中配置 `OAUTH_GOOGLE_CLIENT_ID`/`OAUTH_GOOGLE_CLIENT_SECRET` 与 `OAUTH_GITHUB_CLIENT_ID`/`OAUTH_GITHUB_CLIENT_SECRET` 后启用；未配置时密码登录正常启动，不要求任何 OAuth 凭据。
+DDL 位于 `backend/src/main/resources/db/migration/`：`V20260830__establish_prelude_schema.sql` 建立 schema，其后 `V<日期>__<语义>.sql` 增量修改，`R__reference_data.sql` 幂等维护 reference data。版本文件的编辑约定见 `docs/backend/architecture.md` 的 Persistence。彻底重来时 `docker compose down -v` 空库重建。
+
+OAuth（Google/GitHub）为可选能力：在 `.env` 配置 `OAUTH_GOOGLE_CLIENT_ID`/`OAUTH_GOOGLE_CLIENT_SECRET` 与 `OAUTH_GITHUB_CLIENT_ID`/`OAUTH_GITHUB_CLIENT_SECRET` 后启用；未配置时密码登录正常启动。
