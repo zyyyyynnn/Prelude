@@ -356,6 +356,40 @@ test('@smoke presents request failures as a dismissible top system toast', async
   await expect(page).toHaveURL(/\/login$/)
 })
 
+test('@smoke submits registration and returns to the login form', async ({ page }) => {
+  await installAnonymousSession(page)
+  const submits: Array<{ path: string; method: string; body: unknown }> = []
+  await page.route('**/api/auth/register', async (route) => {
+    submits.push({
+      path: new URL(route.request().url()).pathname,
+      method: route.request().method(),
+      body: route.request().postDataJSON(),
+    })
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 200, data: null }),
+    })
+  })
+  await page.goto('/login')
+  await page.getByRole('button', { name: '注册', exact: true }).click()
+  await page.getByLabel('用户名').fill('new-candidate')
+  await page.locator('#auth-password').fill('correct-horse')
+  await page.getByLabel('邮箱').fill('candidate@example.com')
+  await page.getByRole('button', { name: '完成注册' }).click()
+
+  await expect(
+    page.locator('[data-sonner-toast]').filter({ hasText: '注册成功，请继续登录。' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: '登录', exact: true }).last()).toBeVisible()
+  expect(submits).toHaveLength(1)
+  expect(submits[0].body).toEqual({
+    username: 'new-candidate',
+    password: 'correct-horse',
+    email: 'candidate@example.com',
+  })
+})
+
 test('@smoke keeps authentication validation out of the form layout', async ({ page }) => {
   await installAnonymousSession(page)
   await page.goto('/login')

@@ -1,6 +1,5 @@
 package com.prelude.activity;
 
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -67,7 +66,7 @@ public class RedisRealtimeHub implements RealtimePort, MessageListener, Initiali
                     serializePayload(payload)
                 ))
             );
-        } catch (JacksonException error) {
+        } catch (RuntimeException error) {
             log.warn("Failed to broadcast realtime event '{}' for session {}", eventName, sessionId, error);
         }
     }

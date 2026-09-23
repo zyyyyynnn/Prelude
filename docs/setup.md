@@ -71,7 +71,11 @@ git diff --check
 npm --prefix frontend run snapshot:update
 ```
 
-有意改变视觉时用它更新 `*-win32.png` 基线。渲染器与 CI 一致（Windows）。
+有意改变视觉时用它更新 `*-win32.png` 基线。渲染器与 CI 一致（Windows）。基线重生成通道：
+
+1. 失败运行把 actual/diff 帧留在 `frontend/test-results/`（CI 以 artifact 上传）。
+2. `npm --prefix frontend run visual:diff-report` 把这些帧收拢到 `frontend/output/visual-diffs/`。
+3. 人工核对每一帧后，在 Windows 工作站执行 `snapshot:update`，只提交核对过的基线。
 
 ```powershell
 npm --prefix frontend run capture:surfaces
