@@ -2,7 +2,7 @@ package com.prelude.artifact.application;
 
 import com.prelude.artifact.application.GenerateInterviewReport.GenerationResult;
 import com.prelude.artifact.application.GenerateInterviewReport.Outcome;
-import com.prelude.artifact.application.port.InsightRepository;
+import com.prelude.artifact.application.port.AnalyticsRepository;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class ReportJobCompletion {
 
     private final BackgroundJobOperations backgroundJobOperations;
     private final InterviewReportPort interviewReportPort;
-    private final InsightRepository insightRepository;
+    private final AnalyticsRepository analyticsRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public boolean complete(
@@ -41,27 +41,18 @@ public class ReportJobCompletion {
         }
 
         interviewReportPort.closeCurrentStage(sessionId);
-        persistInsightsBestEffort(sessionId, result);
         if (!interviewReportPort.completeReport(sessionId, result.reportJson())) {
             throw new IllegalStateException(
                 "Report session lost generating state before finalization: " + sessionId);
         }
+        persistAnalytics(sessionId, result);
         return true;
     }
 
-    private void persistInsightsBestEffort(Long sessionId, GenerationResult result) {
-        try {
-            if (result.scoreHistory() != null) {
-                insightRepository.replaceScore(result.scoreHistory());
-            }
-        } catch (RuntimeException exception) {
-            log.warn("Failed to persist score history for session {}", sessionId, exception);
+    private void persistAnalytics(Long sessionId, GenerationResult result) {
+        if (result.scoreHistory() != null) {
+            analyticsRepository.replaceScore(result.scoreHistory());
         }
-        try {
-            insightRepository.replaceWeaknesses(sessionId, result.weaknesses());
-        } catch (RuntimeException exception) {
-            log.warn("Failed to persist weaknesses for session {}", sessionId, exception);
-        }
+        analyticsRepository.replaceWeaknesses(sessionId, result.weaknesses());
     }
-
 }

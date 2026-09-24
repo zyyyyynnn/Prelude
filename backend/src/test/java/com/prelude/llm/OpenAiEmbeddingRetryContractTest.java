@@ -1,6 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.BusinessException;
+import com.prelude.test.ExceptionFixtures;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -52,7 +52,7 @@ class OpenAiEmbeddingRetryContractTest {
         });
         OpenAiEmbeddingAdapter adapter = adapter(3);
 
-        assertThatThrownBy(() -> adapter.embed("hello")).isInstanceOf(BusinessException.class);
+        ExceptionFixtures.assertBusinessException(() -> adapter.embed("hello"));
         assertThat(requests).hasValue(1);
     }
 

@@ -5,19 +5,23 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.port.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.port.JudgeResult;
 import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.LlmResponseText;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -25,6 +29,14 @@ import java.util.Optional;
 public class InterviewJudgeService {
 
     private static final String ROLE_ASSISTANT = "assistant";
+    /**
+     * A judge call may run for the full LLM call timeout once per transport attempt, so the
+     * lease has to outlive the worst case; a crashed holder only delays scoring for this long.
+     */
+    private static final Duration JUDGE_LOCK_LEASE = Duration.ofMinutes(5);
+    private static final RedisScript<Long> RELEASE_LOCK = RedisScript.of(
+        "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+        Long.class);
     private final InterviewMessageRepository interviewMessageRepository;
     private final LlmPort llmPort;
     private final ObjectMapper objectMapper;
@@ -34,14 +46,12 @@ public class InterviewJudgeService {
     public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg) {
         Long accountId = session.getAccountId();
         String lockKey = "lock:judge:" + accountId + ":" + session.getId();
-        boolean lockAcquired = false;
+        String lockToken = acquireJudgeLock(lockKey);
+        if (lockToken == null) {
+            log.warn("Failed to acquire judge lock for account {}, skipping judge", accountId);
+            return Optional.empty();
+        }
         try {
-            lockAcquired = acquireJudgeLock(lockKey);
-            if (!lockAcquired) {
-                log.warn("Failed to acquire judge lock for account {}, skipping judge", accountId);
-                return Optional.empty();
-            }
-
             JudgeResult result = resolveJudgeResult(session, userMsg);
             userMsg.setScore(result.score());
             userMsg.setHint(result.hint());
@@ -51,26 +61,33 @@ public class InterviewJudgeService {
             log.warn("Failed to update message with score/hint", exception);
             return Optional.empty();
         } finally {
-            if (lockAcquired) {
-                stringRedisTemplate.delete(lockKey);
-            }
+            releaseJudgeLock(lockKey, lockToken);
         }
     }
 
-    private boolean acquireJudgeLock(String lockKey) {
+    /**
+     * @return the ownership token to hand back on release, or null when the lease is held by someone else
+     */
+    private String acquireJudgeLock(String lockKey) {
+        String token = UUID.randomUUID().toString();
         for (int retry = 0; retry < 10; retry++) {
-            Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", Duration.ofSeconds(30));
+            Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, token, JUDGE_LOCK_LEASE);
             if (Boolean.TRUE.equals(acquired)) {
-                return true;
+                return token;
             }
             try {
                 Thread.sleep(500);
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
-                return false;
+                return null;
             }
         }
-        return false;
+        return null;
+    }
+
+    /** Deletes the key only while we are still the holder, so an expired lease cannot free another judge's lock. */
+    private void releaseJudgeLock(String lockKey, String token) {
+        stringRedisTemplate.execute(RELEASE_LOCK, List.of(lockKey), token);
     }
 
     private JudgeResult resolveJudgeResult(InterviewSession session, InterviewMessage userMsg) throws JacksonException {
@@ -97,7 +114,10 @@ public class InterviewJudgeService {
     }
 
     private JudgeResult parseJudgeOutput(String judgeOutput) throws JacksonException {
-        String trimmed = stripJsonFence(judgeOutput);
+        if (judgeOutput == null || judgeOutput.isBlank()) {
+            throw new IllegalArgumentException("Judge output is empty");
+        }
+        String trimmed = LlmResponseText.stripJsonFence(judgeOutput);
         Map<String, Object> map = objectMapper.readValue(trimmed, new TypeReference<>() {
         });
         Object scoreValue = map.get("score");
@@ -133,24 +153,5 @@ public class InterviewJudgeService {
             }
         }
         return "";
-    }
-
-    private String stripJsonFence(String text) {
-        if (text == null) {
-            return null;
-        }
-        String trimmed = text.trim();
-        if (trimmed.startsWith("```json")) {
-            trimmed = trimmed.substring(7);
-        } else if (trimmed.startsWith("```")) {
-            trimmed = trimmed.substring(3);
-        }
-        if (trimmed.endsWith("```")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 3);
-        }
-        return trimmed.trim();
-    }
-
-    public record JudgeResult(int score, String hint, String json) {
     }
 }

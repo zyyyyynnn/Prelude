@@ -23,11 +23,6 @@ public class VoiceModelAccessAdapter implements VoiceModelAccessPort {
         if (openAiSystemKey == null || openAiSystemKey.isBlank() || openAiSystemKey.startsWith("${")) {
             throw new IllegalStateException("缺少可用的 OpenAI 语音访问密钥");
         }
-        return new VoiceModelAccess(normalizeRoot(openAiBaseUrl), openAiSystemKey);
-    }
-
-    private String normalizeRoot(String baseUrl) {
-        String trimmed = baseUrl == null ? "" : baseUrl.trim();
-        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
+        return new VoiceModelAccess(EndpointRoots.trimTrailingSlash(openAiBaseUrl), openAiSystemKey);
     }
 }

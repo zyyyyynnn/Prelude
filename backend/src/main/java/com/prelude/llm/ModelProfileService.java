@@ -1,6 +1,5 @@
 package com.prelude.llm;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
 import com.prelude.llm.api.LlmPort.DiscoverModelsCommand;
 import com.prelude.llm.api.LlmPort.DiscoveredModelsView;
@@ -8,27 +7,24 @@ import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ProviderDescriptorView;
 import com.prelude.llm.api.SaveConfigurationCommand;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
-import com.prelude.llm.persistence.ProviderCredential;
-import com.prelude.llm.persistence.ProviderCredentialMapper;
+import com.prelude.llm.application.port.ModelProfileStore;
+import com.prelude.llm.application.port.ModelProfileStore.ProfileRow;
+import com.prelude.llm.application.port.ProviderCredentialStore;
+import com.prelude.llm.application.port.ProviderCredentialStore.CredentialRow;
 import lombok.RequiredArgsConstructor;
-import okhttp3.Request;
-import okhttp3.Response;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Account-scoped model configuration: ProviderCredential (BYOK, AES-GCM at
- * rest) + ModelProfile. Built-in providers may use the deployment system
+ * Account-scoped model configuration: ProviderCredentialEntity (BYOK, AES-GCM at
+ * rest) + ModelProfileEntity. Built-in providers may use the deployment system
  * credential; custom endpoints always require an account credential in the
  * same scope. A scope change clears an incompatible saved key instead of
  * silently reusing it across boundaries.
@@ -37,50 +33,21 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ModelProfileService {
 
-    private static final String MODELS_PATH = "/models";
-
-    private final ProviderCredentialMapper credentialMapper;
-    private final ModelProfileMapper profileMapper;
+    private final ProviderCredentialStore credentialStore;
+    private final ModelProfileStore profileStore;
     private final ProviderSecretCipher secretCipher;
+    private final ProviderCredentialResolver credentialResolver;
     private final ModelCapabilityCatalog capabilityCatalog;
     private final ReasoningLevels reasoningLevels;
     private final CustomModelCapabilityDiscovery capabilityDiscovery;
+    private final CustomModelCatalogClient catalogClient;
     private final CustomLlmEgressPolicy egressPolicy;
-    private final EgressHttpClientFactory egressHttpClientFactory;
     private final ModelCapabilityJson capabilityJson;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
 
-    public ModelProfile requireProfile(Long accountId) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
-        if (profile == null) {
-            throw BusinessException.badRequest("请先配置模型服务");
-        }
-        return profile;
-    }
-
-    public String resolveApiKey(Long accountId, ModelProfile profile) {
-        if (profile.getCredentialId() == null) {
-            return null;
-        }
-        ProviderCredential credential = credentialMapper.selectById(profile.getCredentialId());
-        if (credential == null || !accountId.equals(credential.getAccountId())) {
-            throw BusinessException.badRequest("模型凭据不可用，请重新配置");
-        }
-        return secretCipher.decrypt(credential.getApiKeyEncrypted());
-    }
-
     public String resolveApiKey(Long accountId, Long credentialId) {
-        if (credentialId == null) {
-            return null;
-        }
-        ProviderCredential credential = credentialMapper.selectById(credentialId);
-        if (credential == null || !accountId.equals(credential.getAccountId())) {
-            throw BusinessException.badRequest("模型凭据不可用，请重新配置");
-        }
-        return secretCipher.decrypt(credential.getApiKeyEncrypted());
+        return credentialResolver.resolve(accountId, credentialId);
     }
 
     public ModelConfigurationView saveConfiguration(Long accountId, SaveConfigurationCommand command) {
@@ -93,16 +60,14 @@ public class ModelProfileService {
             if (command.customEndpointUrl() == null || command.customEndpointUrl().isBlank()) {
                 throw BusinessException.badRequest("自定义端点必须填写 Base URL");
             }
-            customEndpointUrl = normalizeRoot(command.customEndpointUrl(), provider);
+            customEndpointUrl = EndpointRoots.normalize(command.customEndpointUrl(), provider);
             egressPolicy.validateConfiguredEndpoint(customEndpointUrl);
         }
         String model = command.model() == null ? "" : command.model().trim();
         capabilityCatalog.requireSupportedModel(provider, model);
 
-        ModelProfile existing = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
-        String credentialScope = customEndpointUrl == null ? ProviderCredential.SYSTEM_SCOPE : customEndpointUrl;
+        ProfileRow existing = profileStore.findActiveByAccount(accountId).orElse(null);
+        String credentialScope = customEndpointUrl == null ? ProviderCredentialStore.SYSTEM_SCOPE : customEndpointUrl;
         boolean clearKey = SaveConfigurationCommand.CLEAR_API_KEY.equals(command.apiKey());
         boolean newKey = command.apiKey() != null && !command.apiKey().isBlank() && !clearKey;
         Long reusableCredentialId = newKey || clearKey
@@ -112,8 +77,7 @@ public class ModelProfileService {
         if (newKey) {
             effectiveApiKey = command.apiKey();
         } else if (reusableCredentialId != null) {
-            effectiveApiKey = secretCipher.decrypt(
-                credentialMapper.selectById(reusableCredentialId).getApiKeyEncrypted());
+            effectiveApiKey = secretCipher.decrypt(encryptedKeyOf(reusableCredentialId));
         } else {
             effectiveApiKey = null;
         }
@@ -136,43 +100,42 @@ public class ModelProfileService {
         PreparedConfiguration prepared = new PreparedConfiguration(
             provider, customEndpointUrl, model, credentialScope, level, executionParameters,
             capability, fallbackCapabilities, newKey, clearKey, reusableCredentialId,
-            existing == null ? null : existing.getId());
+            existing == null ? null : existing.id());
         transactionTemplate.executeWithoutResult(status -> persistConfiguration(accountId, command, prepared));
         return currentConfiguration(accountId);
     }
 
     public ModelConfigurationView currentConfiguration(Long accountId) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
+        ProfileRow profile = profileStore.findActiveByAccount(accountId).orElse(null);
         if (profile == null) {
             return defaultConfiguration();
         }
-        boolean hasApiKey = profile.getCredentialId() != null;
+        boolean hasApiKey = profile.credentialId() != null;
         String masked = null;
         if (hasApiKey) {
-            ProviderCredential credential = credentialMapper.selectById(profile.getCredentialId());
-            masked = credential == null ? null : secretCipher.mask(credential.getApiKeyEncrypted());
+            masked = credentialStore.findById(profile.credentialId())
+                .map(credential -> secretCipher.mask(credential.apiKeyEncrypted()))
+                .orElse(null);
         }
-        ModelCapabilityResponse capability = capabilityForProfile(profile, profile.getModel());
+        ModelCapabilityResponse capability = capabilityForProfile(profile, profile.model());
         ModelExecutionParameters executionParameters = ModelExecutionParameters.fromProfileJson(
-            profile.getEffectiveParametersJson(), objectMapper);
+            profile.effectiveParametersJson(), objectMapper);
         return new ModelConfigurationView(
-            profile.getProvider(),
-            profile.getModel(),
-            profile.getCustomEndpointUrl(),
+            profile.provider(),
+            profile.model(),
+            profile.customEndpointUrl(),
             hasApiKey,
             masked,
-            profile.getReasoningLevel(),
+            profile.reasoningLevel(),
             executionParameters.maxOutputTokens(),
-            capabilityJson.readList(profile.getFallbackCapabilitiesJson()).stream()
+            capabilityJson.readList(profile.fallbackCapabilitiesJson()).stream()
                 .map(ModelCapabilityResponse::model)
                 .toList(),
             capability
         );
     }
 
-    public List<ProviderDescriptorView> listModels(Long accountId) {
+    public List<ProviderDescriptorView> listModels() {
         List<ProviderDescriptorView> descriptors = new ArrayList<>();
         for (String provider : capabilityCatalog.knownProviders()) {
             boolean customEndpoint = CustomLlmProtocol.isCustom(provider);
@@ -192,7 +155,7 @@ public class ModelProfileService {
      */
     public DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command) {
         CustomLlmProtocol protocol = CustomLlmProtocol.require(command.provider());
-        String baseUrl = normalizeRoot(command.baseUrl(), command.provider());
+        String baseUrl = EndpointRoots.normalize(command.baseUrl(), command.provider());
         String apiKey = command.apiKey();
         if (apiKey == null || apiKey.isBlank()) {
             apiKey = activeKeyForScope(accountId, command.provider(), baseUrl);
@@ -200,35 +163,7 @@ public class ModelProfileService {
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("API Key 不能为空");
         }
-        String modelsUrl = baseUrl + (protocol == CustomLlmProtocol.ANTHROPIC_MESSAGES
-            ? "/v1" + MODELS_PATH
-            : MODELS_PATH);
-        egressPolicy.validateConfiguredEndpoint(modelsUrl);
-        Request.Builder requestBuilder = new Request.Builder().url(modelsUrl).get();
-        if (protocol == CustomLlmProtocol.ANTHROPIC_MESSAGES) {
-            requestBuilder
-                .addHeader("x-api-key", apiKey)
-                .addHeader("anthropic-version", "2023-06-01");
-        } else {
-            requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
-        }
-        Request request = requestBuilder.build();
-        try (Response response = egressHttpClientFactory.discoveryClient()
-            .newCall(request).execute()) {
-            if (response.code() == 401 || response.code() == 403) {
-                throw BusinessException.badRequest("鉴权失败，请检查 API Key");
-            }
-            if (!response.isSuccessful()) {
-                throw BusinessException.badRequest("Base URL 不可达或模型列表接口返回异常：" + response.code());
-            }
-            String body = response.body() == null ? "" : response.body().string();
-            List<ModelCapabilityResponse> models = parseDiscoveredModels(command.provider(), body);
-            return new DiscoveredModelsView(baseUrl, models);
-        } catch (BusinessException exception) {
-            throw exception;
-        } catch (IOException exception) {
-            throw BusinessException.badRequest("Base URL 不可达，请检查 Base URL");
-        }
+        return new DiscoveredModelsView(baseUrl, catalogClient.listModels(protocol, baseUrl, apiKey));
     }
 
     public ModelCapabilityResponse discoverCustomModelCapability(
@@ -236,7 +171,7 @@ public class ModelProfileService {
         com.prelude.llm.api.LlmPort.DiscoverModelCapabilityCommand command
     ) {
         CustomLlmProtocol.require(command.provider());
-        String baseUrl = normalizeRoot(command.baseUrl(), command.provider());
+        String baseUrl = EndpointRoots.normalize(command.baseUrl(), command.provider());
         String model = command.model() == null ? "" : command.model().trim();
         if (model.isBlank()) {
             throw BusinessException.badRequest("模型不能为空");
@@ -251,56 +186,40 @@ public class ModelProfileService {
         return capabilityDiscovery.discover(accountId, command.provider(), baseUrl, apiKey, model);
     }
 
-    ModelCapabilityResponse capabilityForProfile(ModelProfile profile, String model) {
-        if (!CustomLlmProtocol.isCustom(profile.getProvider())) {
-            return capabilityCatalog.capability(profile.getProvider(), model);
-        }
-        if (profile.getModel().equals(model)) {
-            ModelCapabilityResponse stored = capabilityJson.read(profile.getModelCapabilityJson());
-            if (profile.getProvider().equals(stored.provider()) && model.equals(stored.model())) {
-                return stored;
-            }
-        }
-        return capabilityJson.readList(profile.getFallbackCapabilitiesJson()).stream()
-            .filter(capability -> profile.getProvider().equals(capability.provider()) && model.equals(capability.model()))
-            .findFirst()
-            .orElseThrow(() -> BusinessException.badRequest("所选模型能力尚未确认，请先保存模型配置"));
+    ModelCapabilityResponse capabilityForProfile(ProfileRow profile, String model) {
+        return ProfileCapabilities.capabilityForProfile(profile, model, capabilityCatalog, capabilityJson);
+    }
+
+    private String encryptedKeyOf(Long credentialId) {
+        return credentialStore.findById(credentialId)
+            .map(CredentialRow::apiKeyEncrypted)
+            .orElseThrow(() -> BusinessException.badRequest("模型凭证不存在或不属于当前账户"));
     }
 
     private String activeKeyForScope(Long accountId, String provider, String baseUrl) {
-        ModelProfile profile = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1"));
-        Long credentialId = reusableActiveCredentialId(
-            profile, accountId, provider, baseUrl);
-        return credentialId == null
-            ? null
-            : secretCipher.decrypt(credentialMapper.selectById(credentialId).getApiKeyEncrypted());
+        ProfileRow profile = profileStore.findActiveByAccount(accountId).orElse(null);
+        Long credentialId = reusableActiveCredentialId(profile, accountId, provider, baseUrl);
+        return credentialId == null ? null : secretCipher.decrypt(encryptedKeyOf(credentialId));
     }
 
-    private Long reusableActiveCredentialId(ModelProfile profile, Long accountId, String provider, String scope) {
-        if (profile == null || profile.getCredentialId() == null
-            || !provider.equals(profile.getProvider())) {
+    private Long reusableActiveCredentialId(ProfileRow profile, Long accountId, String provider, String scope) {
+        if (profile == null || profile.credentialId() == null
+            || !provider.equals(profile.provider())) {
             return null;
         }
-        ProviderCredential credential = credentialMapper.selectById(profile.getCredentialId());
+        CredentialRow credential = credentialStore.findById(profile.credentialId()).orElse(null);
         if (credential == null
-            || !accountId.equals(credential.getAccountId())
-            || !provider.equals(credential.getProvider())
-            || !scope.equals(credential.getScopeKey())) {
+            || !accountId.equals(credential.accountId())
+            || !provider.equals(credential.provider())
+            || !scope.equals(credential.scopeKey())) {
             return null;
         }
-        return credential.getId();
+        return credential.id();
     }
 
     private Long createCredential(Long accountId, String provider, String scope, String encryptedKey) {
-        ProviderCredential credential = new ProviderCredential();
-        credential.setAccountId(accountId);
-        credential.setProvider(provider);
-        credential.setScopeKey(scope);
-        credential.setApiKeyEncrypted(encryptedKey);
-        credentialMapper.insert(credential);
-        return credential.getId();
+        return credentialStore.insert(new CredentialRow(
+            null, accountId, provider, scope, encryptedKey)).id();
     }
 
     private ModelConfigurationView defaultConfiguration() {
@@ -354,13 +273,11 @@ public class ModelProfileService {
         SaveConfigurationCommand command,
         PreparedConfiguration prepared
     ) {
-        ModelProfile current = profileMapper.selectOne(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId)
-            .last("LIMIT 1 FOR UPDATE"));
+        ProfileRow current = profileStore.findActiveForUpdate(accountId).orElse(null);
         if ((prepared.expectedProfileId() == null && current != null)
             || (prepared.expectedProfileId() != null
-            && (current == null || !prepared.expectedProfileId().equals(current.getId())))) {
-            throw BusinessException.revisionConflict("模型配置已被其他请求更新，请重试");
+            && (current == null || !prepared.expectedProfileId().equals(current.id())))) {
+            throw BusinessException.revisionConflict("模型配置已被他人修改，请刷新后重试");
         }
 
         Long credentialId;
@@ -373,69 +290,44 @@ public class ModelProfileService {
             Long currentCredentialId = reusableActiveCredentialId(
                 current, accountId, prepared.provider(), prepared.credentialScope());
             if (!Objects.equals(currentCredentialId, prepared.reusableCredentialId())) {
-                throw BusinessException.revisionConflict("模型凭据已被更新，请重试");
+                throw BusinessException.revisionConflict("模型凭证已变更，请刷新后重试");
             }
             credentialId = currentCredentialId;
         }
 
-        ModelProfile profile = current == null ? new ModelProfile() : current;
-        profile.setAccountId(accountId);
-        profile.setProvider(prepared.provider());
-        profile.setModel(prepared.model());
-        profile.setCredentialId(credentialId);
-        profile.setCustomEndpointUrl(prepared.customEndpointUrl());
-        profile.setReasoningLevel(prepared.reasoningLevel().name());
-        profile.setEffectiveParametersJson(prepared.executionParameters().toJson(objectMapper));
-        profile.setModelCapabilityJson(CustomLlmProtocol.isCustom(prepared.provider())
-            ? capabilityJson.write(prepared.capability())
-            : null);
-        profile.setFallbackCapabilitiesJson(capabilityJson.writeList(prepared.fallbackCapabilities()));
+        ProfileRow profile = current == null
+            ? new ProfileRow(null, accountId, prepared.provider(), prepared.model(),
+                prepared.customEndpointUrl(), prepared.reasoningLevel().name(),
+                prepared.executionParameters().toJson(objectMapper),
+                CustomLlmProtocol.isCustom(prepared.provider())
+                    ? capabilityJson.write(prepared.capability())
+                    : null,
+                capabilityJson.writeList(prepared.fallbackCapabilities()),
+                credentialId)
+            : new ProfileRow(
+                current.id(), accountId, prepared.provider(), prepared.model(),
+                prepared.customEndpointUrl(), prepared.reasoningLevel().name(),
+                prepared.executionParameters().toJson(objectMapper),
+                CustomLlmProtocol.isCustom(prepared.provider())
+                    ? capabilityJson.write(prepared.capability())
+                    : null,
+                capabilityJson.writeList(prepared.fallbackCapabilities()),
+                credentialId);
         if (current == null) {
             try {
-                profileMapper.insert(profile);
-            } catch (org.springframework.dao.DuplicateKeyException race) {
-                throw BusinessException.revisionConflict("模型配置已被其他请求更新，请重试");
+                profileStore.insert(profile);
+            } catch (DuplicateKeyException | DeadlockLoserDataAccessException race) {
+                /* Two ways to lose the race for the account's one profile row. The second is not
+                   the foreign key: `findActiveForUpdate` asks for a row that does not exist yet,
+                   so each writer takes a gap lock, and both then want an insert-intention lock in
+                   the same gap — InnoDB breaks that with a deadlock rather than a duplicate key.
+                   A lock-wait timeout is deliberately not folded in here: that is some other
+                   transaction holding the row, and reporting it as "someone saved" would send the
+                   user to refresh a conflict that never happened. */
+                throw BusinessException.revisionConflict("模型配置已被他人修改，请刷新后重试");
             }
         } else {
-            profileMapper.updateById(profile);
-        }
-    }
-
-    private String normalizeRoot(String input, String provider) {
-        try {
-            URI uri = URI.create(input.trim());
-            String path = uri.getPath() == null ? "" : pathTrim(uri.getPath());
-            if (CustomLlmProtocol.isCustom(provider)) {
-                path = stripEndpointSuffix(path, CustomLlmProtocol.require(provider).endpointSuffix());
-            }
-            return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(),
-                path.isBlank() ? null : path, null, null).toString();
-        } catch (Exception exception) {
-            throw BusinessException.badRequest("Base URL 格式不正确");
-        }
-    }
-
-    private String pathTrim(String path) {
-        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
-    }
-
-    private String stripEndpointSuffix(String path, String suffix) {
-        return path.endsWith(suffix) ? pathTrim(path.substring(0, path.length() - suffix.length())) : path;
-    }
-
-    private List<ModelCapabilityResponse> parseDiscoveredModels(String provider, String body) {
-        try {
-            List<ModelCapabilityResponse> models = new ArrayList<>();
-            tools.jackson.databind.JsonNode root = objectMapper.readTree(body);
-            for (tools.jackson.databind.JsonNode node : root.path("data")) {
-                String id = node.path("id").asString(null);
-                if (id != null && !id.isBlank()) {
-                    models.add(capabilityCatalog.capability(provider, id));
-                }
-            }
-            return List.copyOf(models);
-        } catch (Exception exception) {
-            throw BusinessException.badRequest("模型列表响应格式不正确");
+            profileStore.update(profile);
         }
     }
 

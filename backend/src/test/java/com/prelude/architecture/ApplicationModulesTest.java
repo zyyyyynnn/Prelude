@@ -13,7 +13,7 @@ class ApplicationModulesTest {
 
     private static final Set<String> EXPECTED_MODULES = Set.of(
         "identity", "settings", "llm", "tools", "context", "agent", "artifact", "assets",
-        "jobs", "resume", "template", "documents", "interview", "voice", "activity", "telemetry"
+        "jobs", "resume", "position", "documents", "interview", "voice", "activity", "telemetry"
     );
 
     @Test

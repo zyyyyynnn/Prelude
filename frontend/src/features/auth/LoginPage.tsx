@@ -3,10 +3,17 @@ import { Eye, EyeOff } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { cn } from '@/shared/lib/cn'
-import { Button, Field, IconTooltip, Input } from '@/shared/ui'
-import { useFeedback } from '@/shared/ui/feedback'
+import {
+  Button,
+  Field,
+  FieldAction,
+  FieldActions,
+  Input,
+  SegmentedControl,
+  useFeedback,
+} from '@/shared/ui'
 import { login, register } from './api'
-import { useAuth } from './AuthProvider'
+import { useAuth } from './auth-context'
 
 type AuthMode = 'login' | 'register'
 
@@ -73,7 +80,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="page page--center page--auth">
+    <main className="page page--center page--viewport">
       <section className="login-card" aria-labelledby="auth-title">
         <div className="login-card__content">
           <aside className="login-card__brand-panel">
@@ -82,31 +89,25 @@ export function LoginPage() {
           </aside>
 
           <div className="login-card__form-panel">
-            <header className="page__header login-card__header">
-              <h1 id="auth-title" className="page__title">
+            <header className="login-card__header">
+              <h1 id="auth-title" className="type-hero">
                 {mode === 'login' ? '进入面试工作台' : '创建工作台账号'}
               </h1>
             </header>
 
-            <div className="segmented-control" role="group" aria-label="账号操作">
-              <button
-                className={cn(mode === 'login' && 'is-active')}
-                type="button"
-                onClick={() => switchMode('login')}
-              >
-                登录
-              </button>
-              <button
-                className={cn(mode === 'register' && 'is-active')}
-                type="button"
-                onClick={() => switchMode('register')}
-              >
-                注册
-              </button>
-            </div>
+            <SegmentedControl
+              ariaLabel="账号操作"
+              items={[
+                { value: 'login', label: '登录' },
+                { value: 'register', label: '注册' },
+              ]}
+              value={mode}
+              onValueChange={switchMode}
+            />
 
             <form
-              className="form-grid auth-form"
+              data-slot="auth-form"
+              className="flex min-h-0 flex-col gap-md"
               onSubmit={(event) => void submit(event)}
               noValidate
             >
@@ -122,7 +123,15 @@ export function LoginPage() {
               </Field>
 
               <Field label="密码" htmlFor="auth-password">
-                <div className="password-field">
+                <FieldActions
+                  actions={[
+                    <FieldAction
+                      label={showPassword ? '隐藏密码' : '显示密码'}
+                      icon={showPassword ? <Eye /> : <EyeOff />}
+                      onClick={() => setShowPassword((value) => !value)}
+                    />,
+                  ]}
+                >
                   <Input
                     id="auth-password"
                     value={password}
@@ -132,21 +141,11 @@ export function LoginPage() {
                     placeholder="请输入密码"
                     required
                   />
-                  <IconTooltip label={showPassword ? '隐藏密码' : '显示密码'}>
-                    <button
-                      type="button"
-                      className="password-field__toggle ui-action ui-action-icon"
-                      aria-label={showPassword ? '隐藏密码' : '显示密码'}
-                      onClick={() => setShowPassword((value) => !value)}
-                    >
-                      {showPassword ? <Eye size={17} /> : <EyeOff size={17} />}
-                    </button>
-                  </IconTooltip>
-                </div>
+                </FieldActions>
               </Field>
 
               <div
-                className={cn('auth-email-field', mode === 'register' && 'is-visible')}
+                className={cn('honeypot-field', mode === 'register' && 'is-visible')}
                 aria-hidden={mode !== 'register'}
               >
                 <Field label="邮箱" htmlFor="auth-email">
@@ -163,7 +162,7 @@ export function LoginPage() {
               </div>
 
               <div className="login-card__actions">
-                <Button type="submit" className="login-card__submit" loading={busy}>
+                <Button type="submit" className="w-full" loading={busy}>
                   {mode === 'login' ? '登录' : '完成注册'}
                 </Button>
               </div>

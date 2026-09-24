@@ -4,8 +4,8 @@ import com.prelude.BusinessException;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
-import com.prelude.interview.application.port.InterviewMessageRepository;
-import com.prelude.interview.application.port.InterviewStageRepository;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewStageRepository;
 import com.prelude.interview.domain.InterviewStagePolicy;
 import com.prelude.interview.domain.StageTransitionException;
 import lombok.RequiredArgsConstructor;
@@ -113,7 +113,7 @@ public class InterviewStageManager {
         }
     }
 
-    public int assistantRepliesInCurrentStage(Long sessionId) {
+    int assistantRepliesInCurrentStage(Long sessionId) {
         InterviewStage stage = currentOrLatestStage(sessionId);
         List<InterviewMessage> messages = listMessages(sessionId);
         if (stage == null || stage.getStartedAt() == null) {

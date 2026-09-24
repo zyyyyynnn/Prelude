@@ -10,6 +10,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.json.JsonMapper;
+import com.prelude.jobs.integration.JobTypes;
 
 /**
  * RabbitMQ topology for background job dispatch. The routing target matches
@@ -23,7 +24,7 @@ public class RabbitMqConfig {
 
     public static final String EXCHANGE = "prelude.job.exchange";
     public static final String QUEUE = "prelude.job.report.queue";
-    public static final String ROUTING_KEY = "report.generate";
+    public static final String ROUTING_KEY = JobTypes.REPORT_GENERATE;
     public static final String DLQ = QUEUE + ".dlq";
 
     @Bean

@@ -1,11 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { useAuth } from '@/features/auth'
+import { useAuth } from '@/features/auth/auth-context'
 
 export function RequireAuth() {
   const { status, expired } = useAuth()
   const location = useLocation()
   if (status === 'authenticated') return <Outlet />
-  if (status === 'checking') return <div className="app-boot" aria-busy="true" />
+  if (status === 'checking')
+    return <div className="flex min-h-dvh items-center justify-center" aria-busy="true" />
   const redirect = `${location.pathname}${location.search}`
   const target = expired
     ? `/login?reason=expired&redirect=${encodeURIComponent(redirect)}`

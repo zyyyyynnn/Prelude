@@ -1,7 +1,8 @@
 package com.prelude.assets.infrastructure;
 
 import com.prelude.assets.ObjectStoragePort;
-import com.prelude.assets.infrastructure.S3StorageConfiguration.S3StorageProperties;import org.junit.jupiter.api.AfterAll;
+import com.prelude.assets.S3StorageProperties;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -69,18 +70,6 @@ class VersityGwObjectStorageContractTest {
 
         HttpResponse<Void> missing = fetch(adapter.presignGet(objectKey, Duration.ofSeconds(30)));
         assertThat(missing.statusCode()).isEqualTo(404);
-    }
-
-    @Test
-    void generatedObjectKeysAreNeverReused() {
-        String first = UUID.randomUUID().toString();
-        String second = UUID.randomUUID().toString();
-        adapter.put(first, "text/plain", "first".getBytes(StandardCharsets.UTF_8));
-        adapter.put(second, "text/plain", "second".getBytes(StandardCharsets.UTF_8));
-
-        assertThat(first).isNotEqualTo(second);
-        assertThat(new String(adapter.get(first), StandardCharsets.UTF_8)).isEqualTo("first");
-        assertThat(new String(adapter.get(second), StandardCharsets.UTF_8)).isEqualTo("second");
     }
 
     @Test

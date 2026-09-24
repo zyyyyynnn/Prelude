@@ -1,14 +1,84 @@
 import type { Page, Route } from '@playwright/test'
-import type {
-  InterviewSessionDetailResponse,
-  InterviewSessionItem,
-} from '../src/features/interview/types'
-import type {
-  LlmConfigResponse,
-  LlmProviderResponse,
-  ModelCapabilityResponse,
-  ReasoningLevel,
-} from '../src/features/settings/types'
+
+export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
+
+export type ModelCapabilityResponse = {
+  provider: string
+  model: string
+  reasoning: boolean
+  structuredOutput: boolean
+  toolCalling: boolean
+  streaming: boolean
+  vision: boolean
+  multilingual: boolean
+  longContext: boolean
+  embedding: boolean
+  nativeRealtimeVoice: boolean
+  supportedReasoningLevels: ReasoningLevel[]
+}
+
+export type LlmProviderResponse = {
+  providerKey: string
+  displayName: string
+  customEndpoint: boolean
+  models: ModelCapabilityResponse[]
+}
+
+export type LlmConfigResponse = {
+  provider: string
+  model: string
+  customEndpointUrl: string | null
+  hasApiKey: boolean
+  apiKeyMasked: string | null
+  reasoningLevel: ReasoningLevel
+  maxOutputTokens: number
+  fallbackModels: string[]
+  capability?: ModelCapabilityResponse
+}
+
+export type InterviewSessionItem = {
+  sessionId: number
+  targetPosition?: string
+  positionName?: string
+  status?: string
+  currentStage?: 'warmup' | 'technical' | 'deep_dive' | 'closing'
+  createdAt?: string
+  summaryReport?: string
+}
+
+export type InterviewSessionDetailResponse = {
+  sessionId: number
+  targetPosition?: string
+  status?: string
+  currentStage?: 'warmup' | 'technical' | 'deep_dive' | 'closing'
+  model?: string
+  reasoningLevel?: string
+  summaryReport?: string
+  stages: {
+    stageName: 'warmup' | 'technical' | 'deep_dive' | 'closing'
+    startedAt?: string
+    endedAt?: string | null
+  }[]
+  messages: {
+    id: number
+    role: 'system' | 'user' | 'assistant'
+    content: string
+    seqNum?: number
+    createdAt?: string
+    score?: number
+    hint?: string
+  }[]
+  resumeId?: number
+  positionId?: number
+  jdText?: string
+  attachments: {
+    id: number
+    fileName: string
+    mediaType: string
+    size: number
+    image: boolean
+  }[]
+}
 
 export const DEMO_VIEWPORT = { width: 1440, height: 900 } as const
 
@@ -18,12 +88,39 @@ export type DemoRequest = {
   body: unknown
 }
 
+export type DemoPositionRow = {
+  id: number
+  name: string
+  systemPrompt: string
+  editable: boolean
+}
+
+export type DemoResumeRow = {
+  id: number
+  fileName: string
+  createdAt: string
+  sessionCount: number
+  inUse: boolean
+}
+
+export type DemoProfile = {
+  accountId: number
+  username: string
+  email: string | null
+  avatarUrl: string | null
+  themePreference: string
+  revision: number
+}
+
 export type DemoState = {
   authenticated: boolean
   requests: DemoRequest[]
   sessions: InterviewSessionItem[]
   session: InterviewSessionDetailResponse
   llmConfig: LlmConfigResponse
+  positions: DemoPositionRow[]
+  resumes: DemoResumeRow[]
+  profile: DemoProfile
 }
 
 function capability(
@@ -171,6 +268,55 @@ export function createDemoState(): DemoState {
   return {
     authenticated: false,
     requests: [],
+    positions: [
+      {
+        id: 1,
+        name: 'Java 后端工程师',
+        systemPrompt: '重点考察服务端基础与可靠性取舍',
+        editable: false,
+      },
+      { id: 2, name: '平台工程师', systemPrompt: '重点考察平台化与可观测性', editable: true },
+    ],
+    resumes: [
+      {
+        id: 1,
+        fileName: 'Java 后端工程师简历.pdf',
+        createdAt: '2026-09-03T09:00:00+08:00',
+        sessionCount: 1,
+        inUse: true,
+      },
+      {
+        id: 2,
+        fileName: '前端工程师简历.pdf',
+        createdAt: '2026-09-03T09:05:00+08:00',
+        sessionCount: 1,
+        inUse: true,
+      },
+      {
+        id: 3,
+        fileName: '算法工程师简历.pdf',
+        createdAt: '2026-09-03T09:10:00+08:00',
+        sessionCount: 2,
+        inUse: true,
+      },
+      {
+        // Deletion is only offered for a resume no session has used, so the demo set needs
+        // one; every other row here is deliberately in use.
+        id: 4,
+        fileName: '数据工程师简历.pdf',
+        createdAt: '2026-09-03T09:15:00+08:00',
+        sessionCount: 0,
+        inUse: false,
+      },
+    ],
+    profile: {
+      accountId: 1,
+      username: 'demo',
+      email: 'demo@prelude.local',
+      avatarUrl: null,
+      themePreference: 'system',
+      revision: 0,
+    },
     sessions: [
       {
         sessionId: 58,
@@ -398,44 +544,115 @@ async function respond(route: Route, state: DemoState) {
     return fulfillJson(route, state.sessions)
   if (/\/api\/interview\/\d+\/messages$/.test(path) && method === 'GET')
     return fulfillJson(route, state.session)
-  if (path === '/api/position/list' && method === 'GET')
-    return fulfillJson(route, [
-      { id: 1, name: 'Java 后端工程师', editable: false },
-      { id: 2, name: '平台工程师', editable: true },
-    ])
-  if (path === '/api/resume/list' && method === 'GET')
-    return fulfillJson(route, [
-      {
-        id: 1,
-        fileName: 'Java 后端工程师简历.pdf',
-        createdAt: '2026-09-03T09:00:00+08:00',
-        sessionCount: 1,
-        inUse: true,
-      },
-      {
-        id: 2,
-        fileName: '前端工程师简历.pdf',
-        createdAt: '2026-09-03T09:05:00+08:00',
-        sessionCount: 1,
-        inUse: true,
-      },
-      {
-        id: 3,
-        fileName: '算法工程师简历.pdf',
-        createdAt: '2026-09-03T09:10:00+08:00',
-        sessionCount: 2,
-        inUse: true,
-      },
-    ])
-  if (path === '/api/user/profile' && method === 'GET')
-    return fulfillJson(route, {
-      accountId: 1,
-      username: 'demo',
-      email: 'demo@prelude.local',
-      avatarUrl: null,
-      themePreference: 'system',
-      revision: 0,
-    })
+  if (path === '/api/position/list' && method === 'GET') return fulfillJson(route, state.positions)
+  if (path === '/api/position' && method === 'POST') {
+    const draft = (body ?? {}) as { name?: unknown; systemPrompt?: unknown }
+    const name = typeof draft.name === 'string' ? draft.name.trim() : ''
+    const systemPrompt = typeof draft.systemPrompt === 'string' ? draft.systemPrompt.trim() : ''
+    if (!name || !systemPrompt)
+      return fulfillProblem(
+        route,
+        400,
+        'validation_failed',
+        !name ? '岗位名称不能为空' : '面试侧重点不能为空',
+      )
+    if (state.positions.some((item) => item.name === name))
+      return fulfillProblem(route, 400, 'bad_request', '同名岗位已存在')
+    const created: DemoPositionRow = {
+      id: nextId(state.positions),
+      name,
+      systemPrompt,
+      editable: true,
+    }
+    state.positions = [...state.positions, created]
+    return fulfillJson(route, created)
+  }
+  const positionRoute = /^\/api\/position\/(\d+)$/.exec(path)
+  if (positionRoute && (method === 'PUT' || method === 'DELETE')) {
+    const id = Number(positionRoute[1])
+    const target = state.positions.find((item) => item.id === id)
+    if (!target || !target.editable)
+      return fulfillProblem(route, 400, 'bad_request', '岗位不存在或不可编辑')
+    if (method === 'DELETE') {
+      if (state.sessions.some((item) => item.targetPosition === target.name))
+        return fulfillProblem(route, 400, 'bad_request', '该岗位已被面试使用，无法删除')
+      state.positions = state.positions.filter((item) => item.id !== id)
+      return fulfillJson(route, null)
+    }
+    const draft = (body ?? {}) as { name?: unknown; systemPrompt?: unknown }
+    const name = typeof draft.name === 'string' ? draft.name.trim() : ''
+    const systemPrompt = typeof draft.systemPrompt === 'string' ? draft.systemPrompt.trim() : ''
+    if (!name || !systemPrompt)
+      return fulfillProblem(
+        route,
+        400,
+        'validation_failed',
+        !name ? '岗位名称不能为空' : '面试侧重点不能为空',
+      )
+    if (state.positions.some((item) => item.id !== id && item.name === name))
+      return fulfillProblem(route, 400, 'bad_request', '同名岗位已存在')
+    const updated: DemoPositionRow = { ...target, name, systemPrompt }
+    state.positions = state.positions.map((item) => (item.id === id ? updated : item))
+    return fulfillJson(route, updated)
+  }
+
+  if (path === '/api/resume/list' && method === 'GET') return fulfillJson(route, state.resumes)
+  if (path === '/api/resume/upload' && method === 'POST') {
+    const raw = request.postDataBuffer()?.toString('utf8') ?? ''
+    const fileName = /filename="([^"]*)"/.exec(raw)?.[1] ?? ''
+    if (!fileName.toLowerCase().endsWith('.pdf'))
+      return fulfillProblem(route, 400, 'bad_request', '仅支持 PDF 文件')
+    // 文件名以 broken 开头用来驱动后端解析失败路径。
+    if (fileName.toLowerCase().startsWith('broken'))
+      return fulfillProblem(route, 400, 'bad_request', 'PDF 文本提取失败，请检查文件格式')
+    const created: DemoResumeRow = {
+      id: nextId(state.resumes),
+      fileName,
+      createdAt: '2026-09-05T11:00:00+08:00',
+      sessionCount: 0,
+      inUse: false,
+    }
+    state.resumes = [...state.resumes, created]
+    return fulfillJson(route, { resumeId: created.id, skills: ['MySQL', 'Redis'], projects: [] })
+  }
+  const resumeRoute = /^\/api\/resume\/(\d+)$/.exec(path)
+  if (resumeRoute && method === 'DELETE') {
+    const id = Number(resumeRoute[1])
+    const target = state.resumes.find((item) => item.id === id)
+    if (!target) return fulfillProblem(route, 400, 'bad_request', '简历不存在或无权访问')
+    if (target.inUse)
+      return fulfillProblem(route, 400, 'bad_request', '该简历已被面试使用，无法删除')
+    state.resumes = state.resumes.filter((item) => item.id !== id)
+    return fulfillJson(route, null)
+  }
+
+  if (path === '/api/user/profile' && method === 'GET') return fulfillJson(route, state.profile)
+  if (path === '/api/user/profile' && method === 'PUT') {
+    const draft = (body ?? {}) as {
+      username?: string
+      email?: string
+      themePreference?: string
+      expectedRevision?: number
+    }
+    if (draft.expectedRevision !== state.profile.revision)
+      return fulfillProblem(route, 409, 'revision_conflict', '资料已被其他操作更新，请刷新后重试')
+    state.profile = {
+      ...state.profile,
+      username: draft.username?.trim() || state.profile.username,
+      email: draft.email?.trim() ?? state.profile.email,
+      themePreference: draft.themePreference ?? state.profile.themePreference,
+      revision: state.profile.revision + 1,
+    }
+    return fulfillJson(route, state.profile)
+  }
+  if (path === '/api/user/avatar' && method === 'POST') {
+    state.profile = {
+      ...state.profile,
+      avatarUrl: '/api/assets/avatar',
+      revision: state.profile.revision + 1,
+    }
+    return fulfillJson(route, state.profile)
+  }
   if (path === '/api/llm/providers' && method === 'GET') return fulfillJson(route, demoProviders)
   if (path === '/api/llm/config' && method === 'GET') return fulfillJson(route, state.llmConfig)
   if (path === '/api/llm/config' && method === 'PUT') {
@@ -500,6 +717,10 @@ function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessi
   }
 }
 
+function nextId(rows: { id: number }[]): number {
+  return rows.reduce((max, row) => Math.max(max, row.id), 0) + 1
+}
+
 async function fulfillProblem(route: Route, status: number, code: string, detail: string) {
   await route.fulfill({
     status,
@@ -513,5 +734,178 @@ async function fulfillJson(route: Route, data: unknown) {
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ code: 200, message: 'ok', data }),
+  })
+}
+
+/* ── Voice lane ───────────────────────────────────────────────────────────────
+   The realtime voice UI is driven by `useVoiceInterview`, which speaks `/api/ws` and
+   plays the assistant's audio. Both ends are faked here — the transport and the audio
+   sink — so the real client state machine runs frame by frame without an upstream
+   voice provider. The resulting frames are evidence of the client's states and
+   surfaces, never of upstream audio quality. Any other socket, including the dev
+   server's own, is handed straight to the real implementation. */
+export async function installVoiceLane(page: Page) {
+  await page.addInitScript(() => {
+    interface FakeSocket {
+      readyState: number
+      onopen: (() => void) | null
+      onmessage: ((event: { data: string }) => void) | null
+      onclose: (() => void) | null
+      sent: string[]
+      close(): void
+    }
+
+    const sockets: FakeSocket[] = []
+    const players: VoiceAudio[] = []
+    const RealSocket = window.WebSocket
+
+    class VoiceAudio {
+      onended: (() => void) | null = null
+      constructor(readonly src: string) {
+        players.push(this)
+      }
+      play() {
+        // Never settles: `speaking` holds until the frame is captured.
+        return new Promise<void>(() => undefined)
+      }
+      finish() {
+        this.onended?.()
+      }
+    }
+
+    class FakeVoiceSocket implements FakeSocket {
+      binaryType = 'arraybuffer'
+      readyState = 0
+      onopen: (() => void) | null = null
+      onmessage: ((event: { data: string }) => void) | null = null
+      onerror: (() => void) | null = null
+      onclose: (() => void) | null = null
+      sent: string[] = []
+      constructor(readonly url: string) {
+        sockets.push(this)
+        setTimeout(() => {
+          this.readyState = RealSocket.OPEN
+          this.onopen?.()
+        }, 0)
+      }
+      send(payload: string | ArrayBuffer) {
+        this.sent.push(typeof payload === 'string' ? payload : 'binary')
+      }
+      close() {
+        if (this.readyState === RealSocket.CLOSED) return
+        this.readyState = RealSocket.CLOSED
+        this.onclose?.()
+      }
+    }
+
+    const VoiceSocket = function (url: string | URL) {
+      const target = String(url)
+      return target.endsWith('/api/ws') ? new FakeVoiceSocket(target) : new RealSocket(target)
+    }
+    Object.assign(VoiceSocket, {
+      CONNECTING: RealSocket.CONNECTING,
+      OPEN: RealSocket.OPEN,
+      CLOSING: RealSocket.CLOSING,
+      CLOSED: RealSocket.CLOSED,
+    })
+
+    /* The microphone and the analyser are staged too: a headless run has no input device,
+       and the recording frame needs a level to draw. The stub reports a fixed sine, so the
+       meter renders one stable waveform instead of a different one per capture. */
+    class FakeVoiceAnalyser {
+      fftSize = 256
+      frequencyBinCount = 128
+      connect() {}
+      getByteTimeDomainData(samples: Uint8Array) {
+        for (let index = 0; index < samples.length; index += 1) {
+          samples[index] = 128 + Math.round(Math.sin(index / 6) * 27)
+        }
+      }
+    }
+
+    class FakeVoiceAudioContext {
+      state = 'running'
+      createAnalyser() {
+        return new FakeVoiceAnalyser()
+      }
+      createMediaStreamSource() {
+        return { connect: () => undefined }
+      }
+      close() {
+        return Promise.resolve()
+      }
+    }
+
+    class FakeVoiceRecorder {
+      state = 'inactive'
+      ondataavailable: ((event: BlobEvent) => void) | null = null
+      onstop: (() => void) | null = null
+      constructor(readonly stream: MediaStream) {}
+      start() {
+        this.state = 'recording'
+      }
+      stop() {
+        this.state = 'inactive'
+        this.onstop?.()
+      }
+    }
+
+    const fakeMic = {
+      id: 'staged-microphone',
+      getTracks: () => [{ stop: () => undefined, kind: 'audio' }],
+    } as unknown as MediaStream
+
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      value: FakeVoiceAudioContext,
+    })
+    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: FakeVoiceRecorder })
+    Object.defineProperty(window.MediaRecorder, 'isTypeSupported', {
+      configurable: true,
+      value: () => true,
+    })
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: () => Promise.resolve(fakeMic) },
+    })
+
+    window.WebSocket = VoiceSocket as unknown as typeof WebSocket
+    window.Audio = VoiceAudio as unknown as typeof Audio
+
+    Object.defineProperty(window, '__preludeVoice', {
+      value: {
+        push(payload: unknown) {
+          const socket = sockets[sockets.length - 1]
+          if (!socket) throw new Error('the voice lane has not opened yet')
+          socket.onmessage?.({ data: JSON.stringify(payload) })
+        },
+        finishAudio() {
+          players.forEach((player) => player.finish())
+        },
+        sent() {
+          return sockets[sockets.length - 1]?.sent ?? []
+        },
+      },
+    })
+  })
+}
+
+type VoiceLane = { push(payload: unknown): void; finishAudio(): void; sent(): string[] }
+
+export async function pushVoiceFrame(page: Page, payload: Record<string, unknown>) {
+  await page.evaluate((frame) => {
+    ;(window as unknown as { __preludeVoice: VoiceLane }).__preludeVoice.push(frame)
+  }, payload)
+}
+
+export async function releaseVoiceAudio(page: Page) {
+  await page.evaluate(() => {
+    ;(window as unknown as { __preludeVoice: VoiceLane }).__preludeVoice.finishAudio()
+  })
+}
+
+export async function voiceFramesSent(page: Page) {
+  return page.evaluate(() => {
+    ;(window as unknown as { __preludeVoice: VoiceLane }).__preludeVoice.sent()
   })
 }

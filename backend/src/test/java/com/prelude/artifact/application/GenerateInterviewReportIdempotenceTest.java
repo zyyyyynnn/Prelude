@@ -2,9 +2,8 @@ package com.prelude.artifact.application;
 
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
-import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.test.LlmFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
@@ -17,15 +16,11 @@ class GenerateInterviewReportIdempotenceTest {
 
     @Test
     void finishedPersistedReportIsRecognizedWithoutCallingTheModelAgain() {
-        InterviewReportPort reportPort = mock(InterviewReportPort.class);
-        LlmPort llmPort = mock(LlmPort.class);
+        var reportPort = SessionFixtures.mockReportPort();
+        var llmPort = LlmFixtures.mockPort();
         ReportParser parser = mock(ReportParser.class);
         InterviewReportAssembler assembler = mock(InterviewReportAssembler.class);
-        InterviewSession session = new InterviewSession();
-        session.setId(42L);
-        session.setAccountId(7L);
-        session.setStatus("finished");
-        session.setSummaryReport("{\"summary\":{}}");
+        var session = SessionFixtures.reportSession(42L, 7L, "finished", "{\"summary\":{}}");
         when(reportPort.findSession(42L)).thenReturn(session);
         GenerateInterviewReport generate = new GenerateInterviewReport(
             new ObjectMapper(), reportPort, llmPort, parser, assembler);

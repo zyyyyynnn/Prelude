@@ -21,16 +21,16 @@
 
 ## 项目概览
 
-Prelude 以面试为核心，将面试准备、实时问答、结构化评估和训练分析组织在一个工作区中。简历、岗位、职位描述与通用附件作为面试上下文资源，为每场面试提供可控上下文，而不是独立的简历编辑工作流。
+Prelude 以面试为核心，将面试准备、实时问答、结构化评估和训练分析组织在一个工作区中。简历、岗位、职位描述与通用附件作为面试上下文资源，为每场面试提供可控上下文。
 
-应用支持服务端会话、历史会话、文字与语音交互，以及按账号保存的自带密钥模型配置。身份支持密码登录与 Google/GitHub OAuth 绑定，会话存于 Redis，附件与头像等二进制以 Asset 形式存于 S3 兼容对象存储。当前仓库聚焦本地开发与可验证的模块化架构，不宣称公开托管或生产级软件即服务能力。
+应用支持服务端会话、历史会话、文字与语音交互，以及按账号保存的自带密钥模型配置。身份支持密码登录与 Google/GitHub OAuth 绑定，会话存于 Redis，附件与头像等二进制以 Asset 形式存于 S3 兼容对象存储。当前仓库定位为本地开发与可验证的模块化架构。
 
 ## 核心能力
 
 - 账号与安全：密码（Argon2id）与 OAuth 登录、服务端会话、Session revoke 与账户隔离。
 - 上下文面试准备：组合简历、岗位、职位描述与附件上下文。
 - 文字与语音面试：提供流式文字回答与可安全释放资源的语音交互。
-- 历史会话：浏览、置顶、隐藏和恢复历史面试会话。
+- 历史会话：服务端管理历史面试会话，支持浏览、置顶与永久删除；删除会一并移除该场会话的问答、评分与报告，不可恢复。
 - 结构化评估：生成并安全展示结构化训练报告。
 - 训练分析：查看能力雷达、趋势和薄弱点。
 - 自带密钥模型配置：配置 DeepSeek 或受支持的自定义模型协议。
@@ -75,15 +75,15 @@ shadcn/ui 与 Beautiful UI 仅提供已采用组件的源码结构或组合参�
 ### 环境要求
 
 - Windows 11 与 PowerShell 7+
-- Java 21、Maven
-- Node.js 22.22+、npm 12
+- Java 与 Maven，具体要求见 `backend/pom.xml`
+- Node.js 与 npm，具体要求见 `frontend/package.json`
 - Docker Desktop
 
 ### 启动基础设施
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up -d mysql redis rabbitmq
+docker compose up -d mysql redis rabbitmq versitygw
 ```
 
 ### 启动应用
@@ -91,7 +91,7 @@ docker compose up -d mysql redis rabbitmq
 分别在两个 PowerShell 窗口启动后端和前端：
 
 ```powershell
-mvn -f backend/pom.xml spring-boot:run
+mvn -f backend/pom.xml -Dspring-boot.run.profiles=dev spring-boot:run
 ```
 
 ```powershell
@@ -103,15 +103,7 @@ npm --prefix frontend run dev
 
 ## 验证
 
-```powershell
-mvn -f backend/pom.xml clean test
-npm --prefix frontend ci
-npm --prefix frontend run check
-npm --prefix frontend run build
-npm --prefix frontend run test:smoke
-```
-
-CI 还会执行生产产物、自带密钥契约、暗色主题、可访问性、代表性视觉与运行时依赖审计。GitHub 仅以 `backend` 和 `frontend` 两个职责域作为必需检查项。
+完整验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准，CI 执行与之对齐。GitHub 仅以 `backend` 和 `frontend` 两个职责域作为必需检查项。
 
 ## 仓库结构
 

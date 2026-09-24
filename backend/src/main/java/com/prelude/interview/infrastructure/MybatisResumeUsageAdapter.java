@@ -2,7 +2,7 @@ package com.prelude.interview.infrastructure;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.prelude.interview.domain.InterviewSession;
+import com.prelude.interview.infrastructure.persistence.InterviewSessionEntity;
 import com.prelude.interview.infrastructure.persistence.InterviewSessionMapper;
 import com.prelude.resume.application.port.ResumeUsagePort;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class MybatisResumeUsageAdapter implements ResumeUsagePort {
             return Map.of();
         }
         List<Map<String, Object>> rows = interviewSessionMapper.selectMaps(
-            new QueryWrapper<InterviewSession>()
+            new QueryWrapper<InterviewSessionEntity>()
                 .select("resume_id AS resumeId", "COUNT(*) AS cnt")
                 .in("resume_id", resumeIds)
                 .groupBy("resume_id")
@@ -42,7 +42,7 @@ public class MybatisResumeUsageAdapter implements ResumeUsagePort {
 
     @Override
     public boolean isUsed(Long resumeId) {
-        return interviewSessionMapper.selectCount(new LambdaQueryWrapper<InterviewSession>()
-            .eq(InterviewSession::getResumeId, resumeId)) > 0;
+        return interviewSessionMapper.selectCount(new LambdaQueryWrapper<InterviewSessionEntity>()
+            .eq(InterviewSessionEntity::getResumeId, resumeId)) > 0;
     }
 }

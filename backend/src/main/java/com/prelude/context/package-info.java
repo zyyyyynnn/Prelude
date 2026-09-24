@@ -1,5 +1,5 @@
 @org.springframework.modulith.ApplicationModule(
     displayName = "Context",
-    allowedDependencies = {"llm"}
+    allowedDependencies = {"llm", "llm::api"}
 )
 package com.prelude.context;

@@ -1,6 +1,15 @@
 /** Reasoning levels come from the backend capability catalog — never guessed. */
 export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
 
+export const REASONING_LABELS: Record<ReasoningLevel, string> = {
+  AUTO: '默认',
+  LOW: '低',
+  MEDIUM: '中',
+  HIGH: '高',
+  XHIGH: '超高',
+  MAX: '最大',
+}
+
 export type ModelCapabilityResponse = {
   provider: string
   model: string
@@ -82,3 +91,14 @@ export type UserProfileResponse = {
 }
 
 export type ThemePreference = 'light' | 'dark' | 'system'
+
+/** The theme choices as the settings panel and the gallery both show them. */
+export const themeOptions: Array<{
+  value: ThemePreference
+  label: string
+  description: string
+}> = [
+  { value: 'light', label: '浅色', description: '暖色纸面' },
+  { value: 'dark', label: '暗色', description: '低亮度阅读' },
+  { value: 'system', label: '跟随系统', description: '自动同步' },
+]

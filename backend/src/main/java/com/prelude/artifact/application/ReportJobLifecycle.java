@@ -2,10 +2,12 @@ package com.prelude.artifact.application;
 
 import com.prelude.activity.RealtimePort;
 import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.interview.domain.InterviewSession;
+import com.prelude.interview.api.port.InterviewSessionSnapshot;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
+import com.prelude.jobs.integration.JobTypes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -22,7 +24,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ReportJobLifecycle {
 
-    private static final String REPORT_JOB_TYPE = "report.generate";
+    private static final String REPORT_JOB_TYPE = JobTypes.REPORT_GENERATE;
 
     private final InterviewReportPort interviewReportPort;
     private final RealtimePort realtimePort;
@@ -32,14 +34,14 @@ public class ReportJobLifecycle {
         if (!REPORT_JOB_TYPE.equals(event.type())) {
             return;
         }
-        InterviewSession session = interviewReportPort.findSession(event.subjectId());
-        if (session == null || !"finished".equals(session.getStatus())
-            || session.getSummaryReport() == null || session.getSummaryReport().isBlank()) {
+        InterviewSessionSnapshot session = interviewReportPort.findSession(event.subjectId());
+        if (session == null || !InterviewSessionStatus.FINISHED.matches(session.status())
+            || session.summaryReport() == null || session.summaryReport().isBlank()) {
             log.error("Report job {} succeeded without a durable finished report for session {}",
                 event.jobId(), event.subjectId());
             return;
         }
-        publishBestEffort(event.subjectId(), "report_ready", session.getSummaryReport());
+        publishBestEffort(event.subjectId(), "report_ready", session.summaryReport());
     }
 
     @ApplicationModuleListener

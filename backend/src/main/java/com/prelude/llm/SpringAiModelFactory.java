@@ -3,7 +3,7 @@ package com.prelude.llm;
 import com.prelude.BusinessException;
 import com.prelude.llm.api.LlmPort.ResponseMode;
 import com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
 import com.anthropic.backends.AnthropicBackend;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientImpl;
@@ -64,9 +64,9 @@ public class SpringAiModelFactory {
         this.objectMapper = objectMapper;
     }
 
-    public ChatModel chatModel(ModelExecutionSnapshot snapshot, String apiKey) {
-        capabilityCatalog.requireSupportedModel(snapshot.getProvider(), snapshot.getModel());
-        return switch (snapshot.getProvider()) {
+    public ChatModel chatModel(SnapshotRow snapshot, String apiKey) {
+        capabilityCatalog.requireSupportedModel(snapshot.provider(), snapshot.model());
+        return switch (snapshot.provider()) {
             case ModelCapabilityCatalog.PROVIDER_DEEPSEEK -> deepSeek(snapshot, apiKey);
             case "openai-responses" -> openAiResponses(snapshot, apiKey);
             case "openai-chat-completions" -> openAiChatCompletions(snapshot, apiKey);
@@ -75,12 +75,12 @@ public class SpringAiModelFactory {
         };
     }
 
-    public ChatOptions requestOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
-        return switch (snapshot.getProvider()) {
+    public ChatOptions requestOptions(SnapshotRow snapshot, ResponseMode responseMode) {
+        return switch (snapshot.provider()) {
             case ModelCapabilityCatalog.PROVIDER_DEEPSEEK -> deepSeekOptions(snapshot, responseMode);
             case "openai-chat-completions" -> openAiChatCompletionsOptions(snapshot, responseMode);
             case "openai-responses" -> ChatOptions.builder()
-                .model(snapshot.getModel())
+                .model(snapshot.model())
                 .maxTokens(executionParameters(snapshot).maxOutputTokens())
                 .build();
             case "anthropic-messages" -> anthropicOptions(snapshot);
@@ -88,7 +88,7 @@ public class SpringAiModelFactory {
         };
     }
 
-    private ChatModel deepSeek(ModelExecutionSnapshot snapshot, String apiKey) {
+    private ChatModel deepSeek(SnapshotRow snapshot, String apiKey) {
         String key = apiKey != null && !apiKey.isBlank()
             ? apiKey
             : requireSystemKey(deepSeekApiKey, "DeepSeek");
@@ -118,11 +118,11 @@ public class SpringAiModelFactory {
             .build();
     }
 
-    private ChatModel openAiChatCompletions(ModelExecutionSnapshot snapshot, String apiKey) {
+    private ChatModel openAiChatCompletions(SnapshotRow snapshot, String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("自定义端点 API Key 未配置");
         }
-        URI root = egressPolicy.requireValidRoot(snapshot.getCustomEndpointUrl());
+        URI root = egressPolicy.requireValidRoot(snapshot.customEndpointUrl());
         okhttp3.OkHttpClient guardedClient = egressHttpClientFactory.runtimeClient();
         com.openai.core.http.HttpClient transport = new com.openai.client.okhttp.OkHttpClient(guardedClient);
         ClientOptions options = ClientOptions.builder()
@@ -141,24 +141,24 @@ public class SpringAiModelFactory {
             .build();
     }
 
-    private ChatModel openAiResponses(ModelExecutionSnapshot snapshot, String apiKey) {
+    private ChatModel openAiResponses(SnapshotRow snapshot, String apiKey) {
         requireCustomApiKey(apiKey);
-        URI root = egressPolicy.requireValidRoot(snapshot.getCustomEndpointUrl());
+        URI root = egressPolicy.requireValidRoot(snapshot.customEndpointUrl());
         return new OpenAiResponsesChatModel(
-            trimTrailingSlash(root.toString()),
+            EndpointRoots.trimTrailingSlash(root.toString()),
             apiKey,
-            snapshot.getModel(),
-            snapshot.getReasoningLevel(),
+            snapshot.model(),
+            snapshot.reasoningLevel(),
             executionParameters(snapshot).maxOutputTokens(),
             egressHttpClientFactory.runtimeClient(),
             objectMapper
         );
     }
 
-    private ChatModel anthropicMessages(ModelExecutionSnapshot snapshot, String apiKey) {
+    private ChatModel anthropicMessages(SnapshotRow snapshot, String apiKey) {
         requireCustomApiKey(apiKey);
-        URI root = egressPolicy.requireValidRoot(snapshot.getCustomEndpointUrl());
-        String baseUrl = trimTrailingSlash(root.toString());
+        URI root = egressPolicy.requireValidRoot(snapshot.customEndpointUrl());
+        String baseUrl = EndpointRoots.trimTrailingSlash(root.toString());
         AnthropicBackend backend = AnthropicBackend.builder()
             .baseUrl(baseUrl)
             .apiKey(apiKey)
@@ -180,11 +180,11 @@ public class SpringAiModelFactory {
             .build();
     }
 
-    private AnthropicChatOptions anthropicOptions(ModelExecutionSnapshot snapshot) {
+    private AnthropicChatOptions anthropicOptions(SnapshotRow snapshot) {
         AnthropicChatOptions.Builder builder = AnthropicChatOptions.builder()
-            .model(Model.of(snapshot.getModel()))
+            .model(Model.of(snapshot.model()))
             .maxTokens(executionParameters(snapshot).maxOutputTokens());
-        ReasoningLevel level = ReasoningLevel.valueOf(snapshot.getReasoningLevel());
+        ReasoningLevel level = ReasoningLevel.valueOf(snapshot.reasoningLevel());
         if (level != ReasoningLevel.AUTO) {
             builder.thinkingAdaptive()
                 .effort(OutputConfig.Effort.of(level.name().toLowerCase(java.util.Locale.ROOT)));
@@ -192,9 +192,9 @@ public class SpringAiModelFactory {
         return builder.build();
     }
 
-    private OpenAiChatOptions deepSeekOptions(ModelExecutionSnapshot snapshot, ResponseMode responseMode) {
+    private OpenAiChatOptions deepSeekOptions(SnapshotRow snapshot, ResponseMode responseMode) {
         OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
-            .model(snapshot.getModel())
+            .model(snapshot.model())
             .maxTokens(executionParameters(snapshot).maxOutputTokens());
         applyOpenAiReasoning(builder, snapshot);
         applyOpenAiJsonObject(builder, snapshot, responseMode);
@@ -202,19 +202,19 @@ public class SpringAiModelFactory {
     }
 
     private OpenAiChatOptions openAiChatCompletionsOptions(
-        ModelExecutionSnapshot snapshot,
+        SnapshotRow snapshot,
         ResponseMode responseMode
     ) {
         OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
-            .model(snapshot.getModel())
+            .model(snapshot.model())
             .maxCompletionTokens(executionParameters(snapshot).maxOutputTokens());
         applyOpenAiReasoning(builder, snapshot);
         applyOpenAiJsonObject(builder, snapshot, responseMode);
         return builder.build();
     }
 
-    private void applyOpenAiReasoning(OpenAiChatOptions.Builder builder, ModelExecutionSnapshot snapshot) {
-        ReasoningLevel level = ReasoningLevel.valueOf(snapshot.getReasoningLevel());
+    private void applyOpenAiReasoning(OpenAiChatOptions.Builder builder, SnapshotRow snapshot) {
+        ReasoningLevel level = ReasoningLevel.valueOf(snapshot.reasoningLevel());
         if (level != ReasoningLevel.AUTO) {
             builder.reasoningEffort(level.name().toLowerCase(java.util.Locale.ROOT));
         }
@@ -222,29 +222,25 @@ public class SpringAiModelFactory {
 
     private void applyOpenAiJsonObject(
         OpenAiChatOptions.Builder builder,
-        ModelExecutionSnapshot snapshot,
+        SnapshotRow snapshot,
         ResponseMode responseMode
     ) {
         if (responseMode == ResponseMode.JSON_OBJECT
-            && capabilityJson.read(snapshot.getModelCapabilityJson()).structuredOutput()) {
+            && capabilityJson.read(snapshot.modelCapabilityJson()).structuredOutput()) {
             builder.responseFormat(OpenAiChatModel.ResponseFormat.builder()
                 .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
                 .build());
         }
     }
 
-    private ModelExecutionParameters executionParameters(ModelExecutionSnapshot snapshot) {
-        return ModelExecutionParameters.fromFrozenJson(snapshot.getEffectiveParametersJson(), objectMapper);
+    private ModelExecutionParameters executionParameters(SnapshotRow snapshot) {
+        return ModelExecutionParameters.fromFrozenJson(snapshot.effectiveParametersJson(), objectMapper);
     }
 
     private void requireCustomApiKey(String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             throw BusinessException.badRequest("自定义端点 API Key 未配置");
         }
-    }
-
-    private String trimTrailingSlash(String value) {
-        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     private String requireSystemKey(String systemKey, String providerName) {

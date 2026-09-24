@@ -170,6 +170,20 @@ async function respond(route: Route, state: ApiState) {
     })
     return
   }
+  const deleted = /^\/api\/interview\/(\d+)$/.exec(path)
+  if (deleted && method === 'DELETE') {
+    const id = Number(deleted[1])
+    state.sessions = (state.sessions ?? []).filter(
+      (item) => (item as { sessionId: number }).sessionId !== id,
+    )
+  } else if (/\/api\/interview\/\d+\/pin$/.test(path) && method === 'PATCH') {
+    const id = Number(/\/api\/interview\/(\d+)\/pin$/.exec(path)?.[1])
+    const pinned = Boolean((body as { pinned?: boolean }).pinned)
+    state.sessions = (state.sessions ?? []).map((item) => {
+      const session = item as { sessionId: number }
+      return session.sessionId === id ? { ...session, pinned } : item
+    })
+  }
   let data: unknown = null
   if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
   else if (path === '/api/interview/sessions') data = state.sessions ?? []
@@ -338,8 +352,42 @@ test('@smoke presents request failures as a dismissible top system toast', async
     closeButton.click()
   })
   await expect(toast).toHaveCount(0)
-  await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
+  await expect(page.locator('[data-slot="auth-form"]').getByText('服务暂不可用')).toHaveCount(0)
   await expect(page).toHaveURL(/\/login$/)
+})
+
+test('@smoke submits registration and returns to the login form', async ({ page }) => {
+  await installAnonymousSession(page)
+  const submits: Array<{ path: string; method: string; body: unknown }> = []
+  await page.route('**/api/auth/register', async (route) => {
+    submits.push({
+      path: new URL(route.request().url()).pathname,
+      method: route.request().method(),
+      body: route.request().postDataJSON(),
+    })
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 200, data: null }),
+    })
+  })
+  await page.goto('/login')
+  await page.getByRole('button', { name: '注册', exact: true }).click()
+  await page.getByLabel('用户名').fill('new-candidate')
+  await page.locator('#auth-password').fill('correct-horse')
+  await page.getByLabel('邮箱').fill('candidate@example.com')
+  await page.getByRole('button', { name: '完成注册' }).click()
+
+  await expect(
+    page.locator('[data-sonner-toast]').filter({ hasText: '注册成功，请继续登录。' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: '登录', exact: true }).last()).toBeVisible()
+  expect(submits).toHaveLength(1)
+  expect(submits[0].body).toEqual({
+    username: 'new-candidate',
+    password: 'correct-horse',
+    email: 'candidate@example.com',
+  })
 })
 
 test('@smoke keeps authentication validation out of the form layout', async ({ page }) => {
@@ -351,7 +399,9 @@ test('@smoke keeps authentication validation out of the form layout', async ({ p
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '密码至少需要 6 个字符' })
   await expect(toast).toBeAttached()
   await expect(page.locator('#auth-password')).toBeFocused()
-  await expect(page.locator('.auth-form > .notice--error')).toHaveCount(0)
+  await expect(
+    page.locator('[data-slot="auth-form"]').getByText('密码至少需要 6 个字符'),
+  ).toHaveCount(0)
 })
 
 test('@smoke routes prompt bar management actions into global settings', async ({ page }) => {
@@ -420,13 +470,16 @@ test('@smoke centers the async button indicator without resizing the control', a
   await page.getByRole('button', { name: '模型管理' }).click()
 
   const save = page.getByRole('button', { name: '保存设置' })
+  await expect(save).toBeVisible()
   const idleWidth = (await save.boundingBox())!.width
   await save.click()
   await expect(save).toHaveAttribute('aria-busy', 'true')
   const loading = await save.evaluate((button) => {
     const control = button.getBoundingClientRect()
-    const spinner = button.querySelector<HTMLElement>('.button-spinner')!.getBoundingClientRect()
-    const content = button.querySelector<HTMLElement>('.prelude-button__content')!
+    const spinner = button
+      .querySelector<HTMLElement>('.ui-button__spinner')!
+      .getBoundingClientRect()
+    const content = button.querySelector<HTMLElement>('.ui-button__content')!
     return {
       width: control.width,
       centered:
@@ -440,7 +493,7 @@ test('@smoke centers the async button indicator without resizing the control', a
 
   await expect(page.getByText('LLM 配置已保存')).toBeVisible()
   await expect(save).not.toHaveAttribute('aria-busy')
-  await expect(save.locator('.prelude-button__content')).toHaveCSS('opacity', '1')
+  await expect(save.locator('.ui-button__content')).toHaveCSS('opacity', '1')
   expect((await save.boundingBox())!.width).toBe(idleWidth)
 })
 
@@ -500,7 +553,11 @@ test('@smoke updates the prompt model depth before the save request completes', 
   await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
 
   modelTrigger = page.getByRole('button', { name: /模型：/ })
-  expect(await modelTrigger.textContent()).toContain('deepseek-v4-pro · 高')
+  /* `toHaveText` retries; a one-shot `textContent()` does not. The optimistic label is written
+     by `setQueryData` in `InterviewSetup.tsx:53`, which sits behind `await
+     client.cancelQueries(...)` at `:51` — so it resumes in a continuation after the click
+     resolves rather than during it. */
+  await expect(modelTrigger).toHaveText(/deepseek-v4-pro · 高/)
   await expect(page.getByText('模型配置已更新')).toBeVisible()
   expect(putBodies[0]).toMatchObject({
     reasoningLevel: 'HIGH',
@@ -514,9 +571,7 @@ test('@smoke updates the prompt model depth before the save request completes', 
     (request) => request.url().endsWith('/api/llm/config') && request.method() === 'PUT',
   )
   await page.getByRole('menuitemradio', { name: '默认', exact: true }).click()
-  expect(await page.getByRole('button', { name: /模型：/ }).textContent()).toContain(
-    'deepseek-v4-pro · 默认',
-  )
+  await expect(page.getByRole('button', { name: /模型：/ })).toHaveText(/deepseek-v4-pro · 默认/)
   expect((await resetRequest).postDataJSON()).toMatchObject({
     reasoningLevel: 'AUTO',
     maxOutputTokens: 8192,
@@ -582,7 +637,7 @@ test('@smoke waits for model configuration persistence before starting an interv
   await expect(start).toBeEnabled()
 })
 
-test('@smoke persists pinned and hidden sessions per account', async ({ page }) => {
+test('@smoke pins and deletes sessions through the session API', async ({ page }) => {
   const state: ApiState = {
     requests: [],
     sessions: [
@@ -604,19 +659,22 @@ test('@smoke persists pinned and hidden sessions per account', async ({ page }) 
   await installApi(page, state)
   await page.goto('/interview')
   await page.getByRole('button', { name: '置顶会话' }).first().click()
-  await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem('prelude-interview-session-preferences:1')),
-    )
-    .toContain('"pinnedIds":[11]')
+  await expect(page.getByRole('button', { name: '取消置顶' }).first()).toBeVisible()
+  expect(
+    state.requests.some(
+      ({ method, path: requestPath }) =>
+        method === 'PATCH' && requestPath === '/api/interview/11/pin',
+    ),
+  ).toBe(true)
+
   await page.getByRole('button', { name: '删除会话' }).first().click()
   await page.getByRole('button', { name: '删除', exact: true }).click()
   await expect(page.getByText('平台工程师')).toHaveCount(0)
-  await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem('prelude-interview-session-preferences:1')),
-    )
-    .toContain('"hiddenIds":[11]')
+  expect(
+    state.requests.some(
+      ({ method, path: requestPath }) => method === 'DELETE' && requestPath === '/api/interview/11',
+    ),
+  ).toBe(true)
 })
 
 test('@smoke streams an interview answer with bounded context', async ({ page }) => {
@@ -1008,9 +1066,13 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
 
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '切换到语音输入' }).click()
-  const talk = page.locator('.prompt-bar__voice-button')
+  const talk = page.locator('.ui-button--hold')
   await talk.dispatchEvent('pointerdown')
-  await expect(talk).toHaveText('松开发送')
+  /* Held: the meter replaces the words inside the same box, so the control keeps its
+     name and its width and only the state moves. */
+  await expect(talk).toHaveAccessibleName('松开发送')
+  await expect(talk.locator('.voice-meter')).toBeVisible()
+  await expect(talk.locator('.ui-button__label')).toHaveCSS('opacity', '0')
   await page.evaluate(() => {
     const socket = (
       window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } }
@@ -1041,6 +1103,53 @@ test('@smoke releases voice resources and returns to text mode after a terminal 
     .toBeGreaterThan(0)
 })
 
+test('@smoke keeps a voice transcript in the composer until the candidate sends it', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'technical',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '请回答问题。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await installVoiceHarness(page)
+
+  await page.goto('/interview?session=11')
+  await page.getByRole('button', { name: '切换到语音输入' }).click()
+  await page.evaluate(() => {
+    const socket = (
+      window as unknown as { voiceSocket: { onmessage: (event: MessageEvent) => void } }
+    ).voiceSocket
+    socket.onmessage(
+      new MessageEvent('message', {
+        data: JSON.stringify({ type: 'user_text', text: '我会用支付单号作为幂等键。' }),
+      }),
+    )
+  })
+
+  /* What the microphone heard is a draft: it lands in the text box and stays there, so a
+     mis-transcription can be fixed before it becomes an interview answer. */
+  await expect(page.getByLabel('面试回答')).toHaveValue('我会用支付单号作为幂等键。')
+  await expect(
+    page.locator('.message-bubble-body', { hasText: '我会用支付单号作为幂等键。' }),
+  ).toHaveCount(0)
+
+  await page.getByRole('button', { name: '发送' }).click()
+  await expect(
+    page.locator('.message-bubble-body', { hasText: '我会用支付单号作为幂等键。' }),
+  ).toBeVisible()
+})
+
 test('@smoke releases media that arrives after voice mode closes', async ({ page }) => {
   const state: ApiState = {
     requests: [],
@@ -1062,7 +1171,7 @@ test('@smoke releases media that arrives after voice mode closes', async ({ page
 
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '切换到语音输入' }).click()
-  const talk = page.locator('.prompt-bar__voice-button')
+  const talk = page.locator('.ui-button--hold')
   await talk.dispatchEvent('pointerdown')
   await page.evaluate(() => {
     const socket = (
@@ -1256,7 +1365,7 @@ test('@smoke renders structured reports without resume mutation controls', async
   await page.getByRole('button', { name: '报告' }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await expect(page.getByText('8.1')).toBeVisible()
-  await expect(page.getByRole('button', { name: '导出 PDF' })).toHaveCount(1)
+  await expect(page.getByRole('button', { name: '打印报告' })).toHaveCount(1)
   const viewToggle = page.getByRole('group', { name: '工作区视图' })
   await expect(viewToggle.getByRole('button', { name: '面试' })).toHaveCount(1)
   await expect(viewToggle.getByRole('button', { name: '报告' })).toHaveCount(1)
@@ -1282,9 +1391,9 @@ test('@smoke renders structured reports without resume mutation controls', async
       const background = luminance(style.backgroundColor)
       return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05)
     }
-    const primary = document.querySelector<HTMLElement>('.app-sidebar__btn--primary')!
+    const primary = document.querySelector<HTMLElement>('.sidebar-action-primary')!
     const activeProbe = document.createElement('button')
-    activeProbe.className = 'session-item-btn is-active'
+    activeProbe.className = 'session-row is-active'
     document.body.append(activeProbe)
     const durations = getComputedStyle(primary)
       .transitionDuration.split(',')
@@ -1300,26 +1409,20 @@ test('@smoke renders structured reports without resume mutation controls', async
   expect(sharedUiMetrics.primaryContrast).toBeGreaterThanOrEqual(4.5)
   expect(sharedUiMetrics.activeContrast).toBeGreaterThanOrEqual(4.5)
   expect(sharedUiMetrics.longestInteractionTransition).toBeLessThanOrEqual(150)
-  const reportListMarker = await page
-    .locator('.structured-report__traits li')
-    .first()
-    .evaluate((item) => {
-      const marker = getComputedStyle(item, '::before')
-      return marker.content
+  const reportTypography = await page
+    .locator('[data-slot="structured-report"]')
+    .evaluate((surface) => {
+      const eyebrow = surface.querySelector<HTMLElement>('[data-slot="report-hero"] p')!
+      const sectionTitle = surface.querySelector<HTMLElement>('[data-slot="structured-report"] h2')!
+      const adviceBody = surface.querySelector<HTMLElement>('[data-slot="report-advice"] > p')!
+      const titleStyle = getComputedStyle(sectionTitle)
+      return {
+        eyebrowFamily: getComputedStyle(eyebrow).fontFamily,
+        adviceBodyFamily: getComputedStyle(adviceBody).fontFamily,
+        sectionTitleLineHeight: Number.parseFloat(titleStyle.lineHeight),
+        sectionTitleSize: Number.parseFloat(titleStyle.fontSize),
+      }
     })
-  expect(reportListMarker).toBe('none')
-  const reportTypography = await page.locator('.structured-report').evaluate((surface) => {
-    const eyebrow = surface.querySelector<HTMLElement>('.structured-report__hero > p:first-child')!
-    const sectionTitle = surface.querySelector<HTMLElement>('.report-section h2')!
-    const adviceBody = surface.querySelector<HTMLElement>('.structured-report__advice > p')!
-    const titleStyle = getComputedStyle(sectionTitle)
-    return {
-      eyebrowFamily: getComputedStyle(eyebrow).fontFamily,
-      adviceBodyFamily: getComputedStyle(adviceBody).fontFamily,
-      sectionTitleLineHeight: Number.parseFloat(titleStyle.lineHeight),
-      sectionTitleSize: Number.parseFloat(titleStyle.fontSize),
-    }
-  })
   expect(reportTypography.eyebrowFamily).toContain('Lora')
   expect(reportTypography.adviceBodyFamily).toContain('Inter')
   expect(
@@ -1327,25 +1430,37 @@ test('@smoke renders structured reports without resume mutation controls', async
   ).toBeLessThanOrEqual(1.3)
   const stageNavigation = page.getByRole('group', { name: '阶段复盘导航' })
   await expect(stageNavigation).toContainText('1 / 2')
-  await expect(page.locator('.stage-performance')).toHaveCount(2)
-  await expect(page.locator('.stage-performance.is-active')).toContainText('技术问答')
-  await expect(page.locator('.stage-performance.is-active .report-inline-score')).toHaveCSS(
-    'font-family',
-    /Lora/,
+  await expect(page.locator('[data-slot="stage-performance"]')).toHaveCount(2)
+  await expect(page.locator('[data-slot="stage-performance"][data-state="active"]')).toContainText(
+    '技术问答',
   )
-  await expect(page.locator('.stage-performance.is-active h4').first()).toHaveCSS(
-    'font-family',
-    /Lora/,
-  )
+  await expect(
+    page.locator('[data-slot="stage-performance"][data-state="active"] [data-slot="stage-score"]'),
+  ).toHaveCSS('font-family', /Lora/)
+  await expect(
+    page.locator('[data-slot="stage-performance"][data-state="active"] h4').first(),
+  ).toHaveCSS('font-family', /Lora/)
   await stageNavigation.getByRole('button', { name: '下一阶段' }).click()
   await expect(stageNavigation).toContainText('2 / 2')
-  await expect(page.locator('.stage-performance.is-active')).toContainText('深度追问')
-  await expect(page.locator('.question-review__body')).toHaveCSS('overflow', 'visible')
-  await expect(page.locator('.question-review__body')).toHaveCSS('max-block-size', 'none')
+  await expect(page.locator('[data-slot="stage-performance"][data-state="active"]')).toContainText(
+    '深度追问',
+  )
+
+  /* The question review is a second carousel on the same page with its own index state, so
+     the stage one passing says nothing about it. This report carries a single review, which
+     is the case that matters: both ends of the rail have to be spent at once. */
+  const reviewNavigation = page.getByRole('group', { name: '逐题复盘导航' })
+  await expect(reviewNavigation).toContainText('1 / 1')
+  await expect(page.locator('[data-slot="question-review"]')).toHaveCount(1)
+  await expect(reviewNavigation.getByRole('button', { name: '上一题' })).toBeDisabled()
+  await expect(reviewNavigation.getByRole('button', { name: '下一题' })).toBeDisabled()
+  await expect(stageNavigation).toContainText('2 / 2')
 
   const reviewSurfaces = await page.evaluate(() => {
-    const stage = getComputedStyle(document.querySelector('.stage-performance.is-active')!)
-    const question = getComputedStyle(document.querySelector('.question-review')!)
+    const stage = getComputedStyle(
+      document.querySelector('[data-slot="stage-performance"][data-state="active"]')!,
+    )
+    const question = getComputedStyle(document.querySelector('[data-slot="question-review"]')!)
     return {
       background: [stage.backgroundColor, question.backgroundColor],
       radius: [stage.borderRadius, question.borderRadius],
@@ -1358,9 +1473,9 @@ test('@smoke renders structured reports without resume mutation controls', async
 
   await page.setViewportSize({ width: 880, height: 781 })
   for (const selector of [
-    '.stage-performance.is-active .stage-performance__signals',
-    '.structured-report__traits > div',
-    '.training-plan__grid',
+    '[data-slot="stage-performance"][data-state="active"] [data-slot="stage-signals"]',
+    '[data-slot="report-traits"] > div',
+    '[data-slot="training-plan-grid"]',
   ]) {
     const adaptiveColumns = await page
       .locator(selector)
@@ -1369,7 +1484,7 @@ test('@smoke renders structured reports without resume mutation controls', async
         const style = getComputedStyle(grid)
         const minimum = Number.parseFloat(
           getComputedStyle(document.documentElement).getPropertyValue(
-            '--layout-report-column-min-inline-size',
+            '--layout-document-column-min-inline-size',
           ),
         )
         return style.gridTemplateColumns
@@ -1381,8 +1496,8 @@ test('@smoke renders structured reports without resume mutation controls', async
   await page.emulateMedia({ media: 'print' })
   await page.locator('body').evaluate((body) => body.classList.add('is-printing-report'))
   await expect(page.locator('.app-layout__main')).toHaveCSS('overflow', 'visible')
-  await expect(page.locator('.stage-performance').first()).toBeVisible()
-  await expect(page.locator('.stage-performance').last()).toBeVisible()
+  await expect(page.locator('[data-slot="stage-performance"]').first()).toBeVisible()
+  await expect(page.locator('[data-slot="stage-performance"]').last()).toBeVisible()
   await page.locator('body').evaluate((body) => body.classList.remove('is-printing-report'))
   await page.emulateMedia({ media: 'screen' })
   await page.evaluate(() => {
@@ -1390,7 +1505,7 @@ test('@smoke renders structured reports without resume mutation controls', async
       document.body.dataset.printCalled = 'true'
     }
   })
-  await page.getByRole('button', { name: '导出 PDF' }).click()
+  await page.getByRole('button', { name: '打印报告' }).click()
   await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true')
   await expect(page.locator('body')).not.toHaveClass(/is-printing-report/)
 })
@@ -1440,12 +1555,12 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   await expect(page.getByText('聚合')).toBeVisible()
 
   const typography = await page
-    .locator('.analytics-score-card')
+    .locator('[data-slot="score-card"]')
     .first()
     .evaluate((card) => {
-      const label = getComputedStyle(card.querySelector('.analytics-score-card__label')!)
-      const value = getComputedStyle(card.querySelector('.analytics-score-card__value')!)
-      const meta = getComputedStyle(card.querySelector('.analytics-score-card__meta')!)
+      const label = getComputedStyle(card.querySelector('[data-slot="score-label"]')!)
+      const value = getComputedStyle(card.querySelector('[data-slot="score-value"]')!)
+      const meta = getComputedStyle(card.querySelector('[data-slot="score-meta"]')!)
       return {
         label: {
           family: label.fontFamily,
@@ -1470,10 +1585,10 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
   expect(typography.meta.family).toContain('Inter')
 
-  const weaknessLayout = await page.locator('.analytics-weakness-item').evaluate((item) => {
-    const title = item.querySelector<HTMLElement>('.analytics-weakness-item__title')!
-    const summary = item.querySelector<HTMLElement>('.analytics-weakness-item__summary')!
-    const descriptions = item.querySelector<HTMLElement>('.analytics-weakness-item__descriptions')!
+  const weaknessLayout = await page.locator('[data-slot="weakness-item"]').evaluate((item) => {
+    const title = item.querySelector<HTMLElement>('[data-slot="weakness-title"]')!
+    const summary = item.querySelector<HTMLElement>('[data-slot="weakness-summary"]')!
+    const descriptions = item.querySelector<HTMLElement>('[data-slot="weakness-descriptions"]')!
     return {
       headingLayout: getComputedStyle(title.parentElement!).display,
       titleLeft: title.getBoundingClientRect().left,
@@ -1518,7 +1633,7 @@ test('@smoke degrades malformed structured reports to safe plain text', async ({
   await page.goto('/interview?session=11')
   await page.getByRole('button', { name: '报告' }).click()
 
-  await expect(page.locator('.report-plain-text')).toContainText('"expression":7')
+  await expect(page.locator('[data-slot="report-plain-text"]')).toContainText('"expression":7')
   await expect(page.getByText('6.0')).toHaveCount(0)
   await expect(page.getByText('破冰')).toHaveCount(0)
 })
@@ -1528,3 +1643,40 @@ async function selectContext(page: Page, menuLabel: string, option: string) {
   await page.getByRole('menuitem', { name: new RegExp(menuLabel) }).hover()
   await page.getByRole('menuitemradio', { name: option }).click()
 }
+
+/* The generating state is what a candidate stares at after 结束面试, and until now nothing
+   in the product rendered it under test — only the gallery's frozen copy did. A session that
+   is 'generating' with no report yet is the whole difference between that surface and the
+   report, so it is worth locking on its own. */
+test('@smoke shows the generating surface while a finished session waits for its report', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    sessions: [{ sessionId: 12, targetPosition: 'Java 后端工程师', status: 'generating' }],
+    session: {
+      sessionId: 12,
+      targetPosition: 'Java 后端工程师',
+      status: 'generating',
+      currentStage: 'closing',
+      summaryReport: null,
+      stages: [],
+      messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.goto('/interview?session=12')
+
+  const card = page.locator('.generating-card')
+  await expect(card).toBeVisible()
+  await expect(card.getByRole('heading', { name: 'AI 评估报告生成中…' })).toBeVisible()
+  await expect(card.locator('.generating-progress-indicator')).toBeVisible()
+  // The composer and the report are both absent: this surface replaces them entirely.
+  await expect(page.locator('[data-slot="prompt-bar-surface"]')).toHaveCount(0)
+  await expect(page.locator('[data-slot="workspace-report"]')).toHaveCount(0)
+  // The card is centred on a plain sheet by its owner, not by the page improvising.
+  await expect(page.locator('.generating-card')).toBeInViewport()
+})

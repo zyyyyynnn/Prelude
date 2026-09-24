@@ -9,16 +9,21 @@
     "preview": "vp preview",
     "test:serve": "vp dev --host 127.0.0.1 --port 4173",
     "test:smoke": "playwright test --grep @smoke --workers=1",
-    "verify:architecture": "node scripts/verify-architecture.cjs",
+    "test:unit": "node --experimental-strip-types --test src/features/interview/components/message-updates.test.ts src/features/interview/components/interview-turn-stream.test.ts src/features/interview/components/turn-buffer.test.ts",
+    "verify:architecture": "node --test scripts/verify-architecture.test.cjs && node scripts/verify-architecture.cjs",
     "verify:ui": "node scripts/verify-ui-guardrails.cjs",
+    "verify:demo-copy": "node scripts/verify-demo-copy.cjs",
     "verify:tokens": "node scripts/verify-ui-tokens.cjs",
     "verify:production": "node scripts/verify-production-bundle.cjs",
     "verify:byok": "playwright test --grep @byok",
     "verify:dark": "playwright test --grep @dark",
     "verify:a11y": "playwright test --grep @a11y",
     "verify:visual": "playwright test --grep @visual --workers=1",
-    "capture:visual": "playwright test --grep @visual",
-    "capture:demo": "playwright test --grep @demo --workers=1"
+    "visual:diff-report": "node scripts/visual-diff-report.cjs",
+    "snapshot:update": "playwright test --grep @visual --workers=1 --update-snapshots",
+    "capture:surfaces": "playwright test tests/app.surfaces-capture.spec.ts --workers=1",
+    "capture:demo": "playwright test --grep @demo --workers=1",
+    "verify:cascade": "node scripts/verify-ui-cascade.cjs"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
@@ -29,7 +34,7 @@
     "@paper-design/shaders-react": "^0.0.76",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/react-query": "5.102.8",
-    "cn": "0.2.5",
+    "cn": "0.2.6",
     "echarts": "6.1.0",
     "lucide-react": "1.34.0",
     "react": "19.2.8",
@@ -41,17 +46,18 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.62.1",
+    "@shadcn/lint": "^0.1.0",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "@vitejs/plugin-react": "6.1.1",
     "typescript": "6.0.3",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
-    "vite-plus": "0.3.0"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.2",
+    "vite-plus": "0.3.2"
   },
   "overrides": {
     "nanoid": "3.3.18",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.2"
   },
   "engines": {
     "node": "^22.22.0 || >=24.11.0"

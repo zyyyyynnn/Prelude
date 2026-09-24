@@ -1,20 +1,12 @@
 package com.prelude.interview.application;
 
-import com.prelude.BusinessException;
 import com.prelude.activity.RealtimeConnection;
-import com.prelude.activity.RealtimePort;
-import com.prelude.identity.api.SessionValidity;
-import com.prelude.identity.api.CurrentAccount;
+import com.prelude.activity.SseSessionStream;
+import com.prelude.interview.application.port.InterviewTurnPort;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,60 +19,56 @@ import static org.mockito.Mockito.when;
 class StreamChatTurnTest {
 
     private final InterviewSessionAccess sessionAccess = mock(InterviewSessionAccess.class);
-    private final RunInterviewTurn runInterviewTurn = mock(RunInterviewTurn.class);
-    private final InterviewJudgeService interviewJudgeService = mock(InterviewJudgeService.class);
-    private final InterviewSummaryService interviewSummaryService = mock(InterviewSummaryService.class);
-    private final RealtimePort realtimePort = mock(RealtimePort.class);
-    private final RealtimeConnection connection = mock(RealtimeConnection.class);
-    private final SessionValidity sessionValidity = mock(SessionValidity.class);
+    private final InterviewTurnPort interviewTurnPort = SessionFixtures.mockTurnPort();
+    private final SseSessionStream[] opened = new SseSessionStream[1];
+    private RealtimeConnection connection;
 
     private StreamChatTurn streamChatTurn(boolean sessionActive) {
-        when(sessionValidity.isActive(eq("auth-session-1"), eq(7L))).thenReturn(sessionActive);
-        when(realtimePort.register(any(), anyString(), any())).thenReturn(connection);
-        when(sessionAccess.currentAccountId()).thenReturn(7L);
-        return new StreamChatTurn(
+        return SessionFixtures.createStreamChatTurn(
             sessionAccess,
-            runInterviewTurn,
-            interviewJudgeService,
-            interviewSummaryService,
-            Runnable::run,
-            realtimePort,
-            sessionValidity
+            interviewTurnPort,
+            mock(RealtimeConnection.class),
+            sessionActive,
+            "auth-session-1",
+            7L
         );
     }
 
     @Test
     void aRevokedSessionStopsTheStreamAtTheNextSendBoundary() {
         StreamChatTurn streamChatTurn = streamChatTurn(false);
-        AtomicReference<InterviewTurnSink> sink = new AtomicReference<>();
-        when(runInterviewTurn.execute(any(), any())).thenAnswer(invocation -> {
-            sink.set(invocation.getArgument(1));
-            // The turn implementation streams through the sink; the wrapper's send
-            // boundary detects the revoked session and aborts the turn.
-            sink.get().assistantDelta("authenticated business delta");
+        connection = SessionFixtures.openStream(SessionFixtures.mockRealtimePort(), 51L, opened);
+        when(interviewTurnPort.execute(any(), any())).thenAnswer(invocation -> {
+            SessionFixtures.sendDelta(invocation, "authenticated business delta");
             return null;
         });
 
-        SseEmitter emitter = streamChatTurn.execute(51L, "回答", false, "auth-session-1");
+        streamChatTurn.execute(51L, "回答", false, "auth-session-1", opened[0]);
 
-        assertThat(emitter).isNotNull();
-        verify(connection).send("error", "登录已失效，请重新登录");
-        verify(connection).complete();
+        /* Neither business frame may leave: the turn's text and the judge result are both
+           authenticated content, and the revocation check sits on the send boundary for both. */
+        SessionFixtures.verifyConnectionNeverSends(connection, "message");
+        SessionFixtures.verifyConnectionNeverSends(connection, "judge");
+        SessionFixtures.verifyConnectionSend(connection, "error", "登录已失效，请重新登录");
+        SessionFixtures.verifyConnectionComplete(connection);
     }
 
     @Test
     void anActiveSessionKeepsStreamingBusinessData() {
         StreamChatTurn streamChatTurn = streamChatTurn(true);
-        when(runInterviewTurn.execute(any(), any())).thenAnswer(invocation -> {
-            InterviewTurnSink sink = invocation.getArgument(1);
-            sink.assistantDelta("business delta");
-            return new InterviewTurnResult(
-                mock(com.prelude.interview.domain.InterviewSession.class), null, "business delta");
+        connection = SessionFixtures.openStream(SessionFixtures.mockRealtimePort(), 51L, opened);
+        when(interviewTurnPort.execute(any(), any())).thenAnswer(invocation -> {
+            SessionFixtures.sendDelta(invocation, "business delta");
+            return SessionFixtures.turnResult(
+                SessionFixtures.turnSession(51L),
+                SessionFixtures.userTurn(12L, 51L, "回答"),
+                "business delta");
         });
-        when(interviewJudgeService.judgeAndPersist(any(), any())).thenReturn(Optional.empty());
+        when(interviewTurnPort.judgeAndPersist(any(), any())).thenReturn(java.util.Optional.empty());
 
-        streamChatTurn.execute(51L, "回答", false, "auth-session-1");
+        streamChatTurn.execute(51L, "回答", false, "auth-session-1", opened[0]);
 
-        verify(connection).send("message", "business delta");
+        SessionFixtures.verifyConnectionSend(connection, "message", "business delta");
+        verify(interviewTurnPort).summarizeIfNeeded(any());
     }
 }

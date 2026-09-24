@@ -97,11 +97,13 @@ CREATE TABLE `interview_session` (
   `summary` TEXT COMMENT '上下文压缩摘要',
   `summary_report` TEXT COMMENT '评估报告',
   `jd_text` MEDIUMTEXT COMMENT '职位描述文本',
+  `pinned_at` DATETIME DEFAULT NULL COMMENT '列表置顶时间，NULL 表示未置顶',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_session_account` (`account_id`),
   KEY `idx_session_resume_id` (`resume_id`),
   KEY `idx_session_position_id` (`position_id`),
+  KEY `idx_session_account_pinned` (`account_id`, `pinned_at`, `created_at`),
   CONSTRAINT `fk_session_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`),
   CONSTRAINT `fk_session_resume` FOREIGN KEY (`resume_id`) REFERENCES `resume` (`id`),
   CONSTRAINT `fk_session_position` FOREIGN KEY (`position_id`) REFERENCES `position_template` (`id`)
@@ -119,7 +121,7 @@ CREATE TABLE `interview_message` (
   PRIMARY KEY (`id`),
   KEY `idx_message_session_id` (`session_id`),
   KEY `idx_message_session_seq` (`session_id`, `seq_num`),
-  CONSTRAINT `fk_message_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
+  CONSTRAINT `fk_message_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试消息表';
 
 CREATE TABLE `interview_stage` (
@@ -131,7 +133,7 @@ CREATE TABLE `interview_stage` (
   PRIMARY KEY (`id`),
   KEY `idx_interview_stage_session_id` (`session_id`),
   KEY `idx_interview_stage_session_started_at` (`session_id`, `started_at`),
-  CONSTRAINT `fk_interview_stage_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
+  CONSTRAINT `fk_interview_stage_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='面试阶段表';
 
 CREATE TABLE `retrieval_chunk` (
@@ -164,7 +166,7 @@ CREATE TABLE `score_history` (
   UNIQUE KEY `uk_score_history_session_id` (`session_id`),
   KEY `idx_score_history_account` (`account_id`),
   CONSTRAINT `fk_score_history_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`),
-  CONSTRAINT `fk_score_history_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
+  CONSTRAINT `fk_score_history_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评分历史表';
 
 CREATE TABLE `account_weakness` (
@@ -178,7 +180,7 @@ CREATE TABLE `account_weakness` (
   KEY `idx_account_weakness_account` (`account_id`),
   KEY `idx_account_weakness_session` (`session_id`),
   CONSTRAINT `fk_account_weakness_account` FOREIGN KEY (`account_id`) REFERENCES `user_account` (`id`),
-  CONSTRAINT `fk_account_weakness_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`)
+  CONSTRAINT `fk_account_weakness_session` FOREIGN KEY (`session_id`) REFERENCES `interview_session` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户薄弱点表';
 
 CREATE TABLE `artifact` (

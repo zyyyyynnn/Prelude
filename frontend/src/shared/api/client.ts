@@ -80,6 +80,7 @@ export async function streamRequest(
   onEvent: (event: { name: string; data: string }) => void,
   signal?: AbortSignal,
 ) {
+  // Dual abort: caller signal and a hard stream timeout; timedOut selects the error copy.
   const controller = new AbortController()
   let timedOut = false
   const abort = () => controller.abort(signal?.reason)

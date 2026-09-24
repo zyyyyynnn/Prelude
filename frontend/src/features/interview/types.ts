@@ -1,4 +1,12 @@
-import type { AttachmentItem } from '@/features/assets'
+import type { ReasoningLevel } from '@/features/settings'
+
+export type InterviewAttachment = {
+  id: number
+  fileName: string
+  mediaType: string
+  size: number
+  image: boolean
+}
 
 export type InterviewStageName = 'warmup' | 'technical' | 'deep_dive' | 'closing'
 
@@ -18,7 +26,7 @@ export type InterviewStartResponse = {
 export type InterviewFinishResponse = {
   sessionId?: number
   summaryReport: string
-  status?: string
+  status?: InterviewSessionStatus
   jobId?: string
 }
 
@@ -40,20 +48,23 @@ export type InterviewMessageRecord = {
   hint?: string
 }
 
+export type InterviewSessionStatus = 'ongoing' | 'generating' | 'finished'
+
 export type InterviewSessionItem = {
   sessionId: number
   targetPosition?: string
   positionName?: string
-  status?: string
+  status?: InterviewSessionStatus
   currentStage?: InterviewStageName
   createdAt?: string
   summaryReport?: string
+  pinned?: boolean
 }
 
 export type InterviewSessionDetailResponse = {
   sessionId: number
   targetPosition?: string
-  status?: string
+  status?: InterviewSessionStatus
   currentStage?: InterviewStageName
   model?: string
   reasoningLevel?: string
@@ -63,10 +74,29 @@ export type InterviewSessionDetailResponse = {
   resumeId?: number
   positionId?: number
   jdText?: string
-  attachments: AttachmentItem[]
+  attachments: InterviewAttachment[]
 }
 
 export type InterviewChatRequest = {
   content: string
   messages?: InterviewMessageRecord[]
+}
+
+export type InterviewModelCapability = {
+  model: string
+  reasoning?: boolean
+  supportedReasoningLevels?: ReasoningLevel[]
+}
+
+export type InterviewModelConfig = {
+  model: string
+  provider: string
+  reasoningLevel: ReasoningLevel
+  capability: InterviewModelCapability
+}
+
+export type InterviewModelProvider = {
+  providerKey: string
+  displayName?: string
+  models: InterviewModelCapability[]
 }

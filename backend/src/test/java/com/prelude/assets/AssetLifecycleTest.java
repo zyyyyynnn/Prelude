@@ -1,22 +1,19 @@
 package com.prelude.assets;
 
-import com.prelude.BusinessException;
-import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.AssetMapper;
-import com.prelude.assets.persistence.StoredAttachment;
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
-import com.prelude.identity.AccountPrincipal;
-import com.prelude.identity.api.UserProfileResponse;
+import com.prelude.assets.infrastructure.persistence.AssetEntity;
+import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import com.prelude.identity.application.ProfileService;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.AssetFixtures;
+import com.prelude.test.ExceptionFixtures;
+import com.prelude.test.SessionFixtures;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -31,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Asset lifecycle against real MySQL and the S3-compatible endpoint:
+ * AssetEntity lifecycle against real MySQL and the S3-compatible endpoint:
  * PENDING_UPLOAD to READY, controlled reads, ownership checks and reconciler cleanup.
  * The VersityGW lifecycle is owned by this test via Testcontainers.
  */
@@ -73,7 +70,7 @@ class AssetLifecycleTest {
     private AssetMapper assetMapper;
 
     @Autowired
-    private AccountMapper accountMapper;
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private ObjectStoragePort objectStoragePort;
@@ -92,8 +89,8 @@ class AssetLifecycleTest {
         AttachmentServiceSnapshot snapshot = uploadSnapshot(accountId,
             "notes.txt", "text/plain", "attachment body".getBytes(StandardCharsets.UTF_8));
 
-        Asset asset = assetMapper.selectById(snapshot.assetId());
-        assertThat(asset.getStatus()).isEqualTo(AssetStatus.READY);
+        AssetEntity asset = assetMapper.selectById(snapshot.assetId());
+        assertThat(asset.getStatus()).isEqualTo(AssetFixtures.statusReady());
         assertThat(new String(objectStoragePort.get(asset.getObjectKey()), StandardCharsets.UTF_8))
             .isEqualTo("attachment body");
 
@@ -123,9 +120,9 @@ class AssetLifecycleTest {
         assertThat(content).isEqualTo(pngBytes);
 
         long other = createAccount("asset-image-other");
-        assertThatThrownBy(() -> attachmentService.readOwnedContent(other, bound.get(0).assetRef()))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
+        ExceptionFixtures.assertBusinessException(
+            () -> attachmentService.readOwnedContent(other, bound.get(0).assetRef()),
+            "not_found");
     }
 
     @Test
@@ -139,13 +136,13 @@ class AssetLifecycleTest {
         MockMultipartFile secondUpload =
             new MockMultipartFile("file", "me-2.png", "image/png", png);
 
-        UserProfileResponse first = profileService.updateAvatar(firstUpload);
+        var first = profileService.updateAvatar(SessionFixtures.avatarUpload(firstUpload));
         assertThat(first.avatarUrl()).startsWith("/api/assets/");
         assertThat(first.avatarUrl()).endsWith("/content");
         long firstAssetId = assetIdFromUrl(first.avatarUrl());
         assertThat(assetMapper.selectById(firstAssetId)).isNotNull();
 
-        UserProfileResponse second = profileService.updateAvatar(secondUpload);
+        var second = profileService.updateAvatar(SessionFixtures.avatarUpload(secondUpload));
         long secondAssetId = assetIdFromUrl(second.avatarUrl());
         assertThat(secondAssetId).isNotEqualTo(firstAssetId);
         assertThat(assetMapper.selectById(secondAssetId)).isNotNull();
@@ -165,9 +162,9 @@ class AssetLifecycleTest {
         AttachmentServiceSnapshot snapshot = uploadSnapshot(owner,
             "secret.txt", "text/plain", "private".getBytes(StandardCharsets.UTF_8));
 
-        assertThatThrownBy(() -> assetService.requireOwnedReady(other, snapshot.assetId()))
-            .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", "not_found");
+        ExceptionFixtures.assertBusinessException(
+            () -> assetService.requireOwnedReady(other, snapshot.assetId()),
+            "not_found");
         assertThat(assetService.requireOwnedReady(owner, snapshot.assetId())).isNotNull();
     }
 
@@ -178,8 +175,8 @@ class AssetLifecycleTest {
         AttachmentServiceSnapshot snapshot = uploadSnapshot(accountId,
             "orphan.txt", "text/plain", "orphan".getBytes(StandardCharsets.UTF_8));
 
-        Asset asset = assetMapper.selectById(snapshot.assetId());
-        asset.setStatus(AssetStatus.PENDING_UPLOAD);
+        AssetEntity asset = assetMapper.selectById(snapshot.assetId());
+        asset.setStatus(AssetFixtures.statusPendingUpload());
         asset.setCreatedAt(LocalDateTime.now().minusHours(48));
         assetMapper.updateById(asset);
 
@@ -190,18 +187,47 @@ class AssetLifecycleTest {
             .isInstanceOf(RuntimeException.class);
     }
 
+    /* Object keys are generated by the store that persists the asset row, so uniqueness is a
+       property of the lifecycle, not of the S3 adapter that merely receives a key. Asserting it
+       here is what keeps it a real claim: two uploads have to land on two addresses, each
+       reading back its own bytes. */
+    /* Byte-identical uploads are the case that matters: a key derived from the content would
+       pass a differing-content test and still leave one delete orphaning the other asset. */
+    @Test
+    void successiveUploadsGetTheirOwnObjectKeyEvenWhenTheBytesAreIdentical() {
+        long accountId = createAccount("asset-key-owner");
+        authenticate(accountId);
+        byte[] sameBytes = "the same content".getBytes(StandardCharsets.UTF_8);
+        AttachmentServiceSnapshot first = uploadSnapshot(accountId,
+            "first.txt", "text/plain", sameBytes);
+        AttachmentServiceSnapshot second = uploadSnapshot(accountId,
+            "second.txt", "text/plain", sameBytes);
+
+        String firstKey = assetMapper.selectById(first.assetId()).getObjectKey();
+        String secondKey = assetMapper.selectById(second.assetId()).getObjectKey();
+
+        assertThat(firstKey).isNotEqualTo(secondKey);
+        assertThat(new String(objectStoragePort.get(firstKey), StandardCharsets.UTF_8))
+            .isEqualTo("the same content");
+        assertThat(new String(objectStoragePort.get(secondKey), StandardCharsets.UTF_8))
+            .isEqualTo("the same content");
+
+        attachmentService.deleteUnbound(first.attachmentId());
+        assertThat(new String(objectStoragePort.get(secondKey), StandardCharsets.UTF_8))
+            .isEqualTo("the same content");
+    }
+
     private long createAccount(String prefix) {
-        Account account = new Account();
-        account.setUsername(prefix + "-" + UUID.randomUUID());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
+        return AccountFixtures.create(jdbcTemplate, prefix);
+    }
+
+    @AfterEach
+    void forgetTheAuthenticatedAccount() {
+        AccountFixtures.clearAuthentication();
     }
 
     private void authenticate(long accountId) {
-        AccountPrincipal principal = new AccountPrincipal(accountId, "tester");
-        SecurityContextHolder.getContext().setAuthentication(
-            UsernamePasswordAuthenticationToken.authenticated(principal, null, List.of()));
+        AccountFixtures.authenticate(accountId);
     }
 
     private AttachmentServiceSnapshot uploadSnapshot(long accountId, String name, String mediaType, byte[] bytes) {

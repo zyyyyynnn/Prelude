@@ -249,6 +249,7 @@
                         <prelude.jobs.scheduling-enabled>false</prelude.jobs.scheduling-enabled>
                         <prelude.jobs.report.consumer-enabled>false</prelude.jobs.report.consumer-enabled>
                         <spring.rabbitmq.listener.simple.auto-startup>false</spring.rabbitmq.listener.simple.auto-startup>
+                        <app.crypto.aes-secret>prelude-test-only-aes-secret-0123456789</app.crypto.aes-secret>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

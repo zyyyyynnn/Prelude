@@ -5,7 +5,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.BusinessException;
-import com.prelude.resume.infrastructure.persistence.Resume;
+import com.prelude.resume.infrastructure.persistence.ResumeEntity;
 import com.prelude.resume.infrastructure.persistence.ResumeMapper;
 import com.prelude.resume.application.port.ResumeRepository;
 import com.prelude.resume.application.port.ResumeUsagePort;
@@ -34,7 +34,7 @@ public class MybatisResumeRepository implements ResumeRepository {
 
     @Override
     public StoredResume create(NewResume draft) {
-        Resume row = new Resume();
+        ResumeEntity row = new ResumeEntity();
         row.setAccountId(draft.accountId());
         row.setFileName(draft.fileName());
         row.setRawText(draft.rawText());
@@ -51,13 +51,13 @@ public class MybatisResumeRepository implements ResumeRepository {
 
     @Override
     public List<ResumeListItem> listByOwner(Long accountId) {
-        List<Resume> resumes = resumeMapper.selectList(new LambdaQueryWrapper<Resume>()
-            .eq(Resume::getAccountId, accountId)
-            .orderByDesc(Resume::getCreatedAt));
+        List<ResumeEntity> resumes = resumeMapper.selectList(new LambdaQueryWrapper<ResumeEntity>()
+            .eq(ResumeEntity::getAccountId, accountId)
+            .orderByDesc(ResumeEntity::getCreatedAt));
         if (resumes == null || resumes.isEmpty()) {
             return List.of();
         }
-        List<Long> ids = resumes.stream().map(Resume::getId).toList();
+        List<Long> ids = resumes.stream().map(ResumeEntity::getId).toList();
         Map<Long, Long> countByResume = resumeUsagePort.countSessions(ids);
         return resumes.stream()
             .map(resume -> new ResumeListItem(
@@ -79,7 +79,7 @@ public class MybatisResumeRepository implements ResumeRepository {
         resumeMapper.deleteById(resumeId);
     }
 
-    private StoredResume toStored(Resume row) {
+    private StoredResume toStored(ResumeEntity row) {
         return new StoredResume(
             row.getId(),
             row.getAccountId(),

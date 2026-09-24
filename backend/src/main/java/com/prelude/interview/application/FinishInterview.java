@@ -1,11 +1,13 @@
 package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.jobs.integration.BackgroundJobOperations;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
 import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
+import com.prelude.jobs.integration.JobTypes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,17 +27,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FinishInterview {
 
-    private static final String STATUS_ONGOING = "ongoing";
-    private static final String STATUS_GENERATING = "generating";
-    private static final String STATUS_FINISHED = "finished";
     private static final String STAGE_CLOSING = "closing";
 
-    private static final String JOB_TYPE_REPORT = "report.generate";
+    private static final String JOB_TYPE_REPORT = JobTypes.REPORT_GENERATE;
 
     private final InterviewSessionAccess sessionAccess;
     private final InterviewSessionRepository interviewSessionRepository;
     private final BackgroundJobOperations backgroundJobOperations;
-    private final InterviewMessageService interviewMessageService;
     private final InterviewStageManager interviewStageManager;
 
     @Transactional(rollbackFor = Exception.class)
@@ -44,13 +42,14 @@ public class FinishInterview {
         InterviewSession session = sessionAccess.requireOwned(sessionId, accountId);
         String status = session.getStatus();
 
-        if (STATUS_GENERATING.equals(status)) {
-            return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, null);
+        if (InterviewSessionStatus.GENERATING.matches(status)) {
+            return new FinishInterviewResult(session.getId(), null, InterviewSessionStatus.GENERATING.wire(), null);
         }
-        if (STATUS_FINISHED.equals(status)) {
-            return new FinishInterviewResult(session.getId(), session.getSummaryReport(), STATUS_FINISHED, null);
+        if (InterviewSessionStatus.FINISHED.matches(status)) {
+            return new FinishInterviewResult(
+                session.getId(), session.getSummaryReport(), InterviewSessionStatus.FINISHED.wire(), null);
         }
-        if (!STATUS_ONGOING.equals(status)) {
+        if (!InterviewSessionStatus.ONGOING.matches(status)) {
             throw BusinessException.badRequest("面试会话状态异常");
         }
         if (!STAGE_CLOSING.equals(interviewStageManager.currentStageName(sessionId))) {
@@ -59,7 +58,8 @@ public class FinishInterview {
 
         if (interviewSessionRepository.markGeneratingIfOngoing(sessionId, accountId) != 1) {
             // Another request won the only valid ongoing -> generating transition.
-            return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, null);
+            return new FinishInterviewResult(
+                session.getId(), null, InterviewSessionStatus.GENERATING.wire(), null);
         }
 
         String operationId = UUID.randomUUID().toString();
@@ -72,7 +72,7 @@ public class FinishInterview {
         ));
         log.info("Requested report generation job {} for session {}", job.jobId(), sessionId);
 
-        interviewMessageService.invalidateSessionLock(sessionId);
-        return new FinishInterviewResult(session.getId(), null, STATUS_GENERATING, job.jobId());
+        return new FinishInterviewResult(
+            session.getId(), null, InterviewSessionStatus.GENERATING.wire(), job.jobId());
     }
 }

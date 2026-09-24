@@ -21,7 +21,7 @@ public interface LlmPort {
 
     ModelConfigurationView saveConfiguration(Long accountId, SaveConfigurationCommand command);
 
-    List<ProviderDescriptorView> listModels(Long accountId);
+    List<ProviderDescriptorView> listModels();
 
     DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command);
 
@@ -89,8 +89,8 @@ public interface LlmPort {
     }
 
     /**
-     * Usage handoff for #46 telemetry: correlation + token accounting. Values
-     * come from provider responses; nothing is fabricated.
+     * Usage handoff for telemetry: correlation and token accounting.
+     * Values come only from provider responses.
      */
     record Usage(
         Long snapshotId,

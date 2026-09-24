@@ -1,13 +1,12 @@
 package com.prelude.identity.infrastructure;
 
-import com.prelude.identity.AccountPrincipal;
+import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
@@ -34,7 +33,7 @@ class SpringSessionValidityTest {
         MockHttpSession carrier = new MockHttpSession();
         carrier.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
             new SecurityContextImpl(UsernamePasswordAuthenticationToken.authenticated(
-                new AccountPrincipal(7L, "owner"), null, List.of())));
+                AccountFixtures.principal(7L, "owner"), null, List.of())));
         var session = sessionRepository.createSession();
         for (String name : java.util.Collections.list(carrier.getAttributeNames())) {
             session.setAttribute(name, carrier.getAttribute(name));

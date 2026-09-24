@@ -1,7 +1,6 @@
 package com.prelude.llm;
 
 import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import okhttp3.Dns;
@@ -50,7 +49,11 @@ class CustomModelCapabilityDiscoveryTest {
         assertThat(requests).hasValue(6);
         assertThat(capability.reasoning()).isTrue();
         assertThat(capability.supportedReasoningLevels())
-            .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH, ReasoningLevel.MAX);
+            .containsExactly(
+                ModelCapabilityResponse.ReasoningLevel.AUTO,
+                ModelCapabilityResponse.ReasoningLevel.LOW,
+                ModelCapabilityResponse.ReasoningLevel.HIGH,
+                ModelCapabilityResponse.ReasoningLevel.MAX);
     }
 
     @Test
@@ -68,7 +71,7 @@ class CustomModelCapabilityDiscoveryTest {
 
         assertThat(requests).hasValue(1);
         assertThat(capability.reasoning()).isFalse();
-        assertThat(capability.supportedReasoningLevels()).containsExactly(ReasoningLevel.AUTO);
+        assertThat(capability.supportedReasoningLevels()).containsExactly(ModelCapabilityResponse.ReasoningLevel.AUTO);
     }
 
     @Test
@@ -84,7 +87,7 @@ class CustomModelCapabilityDiscoveryTest {
 
         assertThat(requests).hasValue(1);
         assertThat(capability.reasoning()).isFalse();
-        assertThat(capability.supportedReasoningLevels()).containsExactly(ReasoningLevel.AUTO);
+        assertThat(capability.supportedReasoningLevels()).containsExactly(ModelCapabilityResponse.ReasoningLevel.AUTO);
     }
 
     @Test
@@ -123,7 +126,11 @@ class CustomModelCapabilityDiscoveryTest {
         assertThat(capability.structuredOutput()).isFalse();
         assertThat(capability.toolCalling()).isFalse();
         assertThat(capability.supportedReasoningLevels())
-            .containsExactly(ReasoningLevel.AUTO, ReasoningLevel.LOW, ReasoningLevel.HIGH, ReasoningLevel.MAX);
+            .containsExactly(
+                ModelCapabilityResponse.ReasoningLevel.AUTO,
+                ModelCapabilityResponse.ReasoningLevel.LOW,
+                ModelCapabilityResponse.ReasoningLevel.HIGH,
+                ModelCapabilityResponse.ReasoningLevel.MAX);
     }
 
     @Test
@@ -150,7 +157,7 @@ class CustomModelCapabilityDiscoveryTest {
             7L, "anthropic-messages", anthropicRoot(), "account-key", "account-model");
 
         assertThat(capability.reasoning()).isFalse();
-        assertThat(capability.supportedReasoningLevels()).containsExactly(ReasoningLevel.AUTO);
+        assertThat(capability.supportedReasoningLevels()).containsExactly(ModelCapabilityResponse.ReasoningLevel.AUTO);
     }
 
     @Test

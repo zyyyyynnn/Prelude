@@ -1,37 +1,60 @@
 import { Button as ButtonPrimitive } from '@base-ui/react/button'
-import type { ButtonHTMLAttributes } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 
 export function Button({
   className,
   variant = 'primary',
   size = 'default',
+  shape,
   loading = false,
+  pressed,
   children,
+  held,
   disabled,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
+}: ComponentProps<typeof ButtonPrimitive> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-  size?: 'compact' | 'default' | 'icon'
+  /** One control height; "icon" only makes the box square. */
+  size?: 'default' | 'icon'
+  /** Content-driven shape that keeps the default height: a fixed action, or press-and-hold. */
+  shape?: 'action' | 'hold'
   loading?: boolean
+  pressed?: boolean
+  /** Press-and-hold only: what shows in place of the words while the control is held. */
+  held?: ReactNode
 }) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(
-        'prelude-button',
-        `prelude-button--${variant}`,
-        `prelude-button--${size}`,
+        'ui-button',
+        `ui-button--${variant}`,
+        `ui-button--${size}`,
+        shape && `ui-button--${shape}`,
         'ui-action',
         className,
       )}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       data-loading={loading || undefined}
+      data-pressed={pressed || undefined}
+      aria-pressed={pressed}
       {...props}
     >
-      {loading && <span className="button-spinner" aria-hidden="true" />}
-      <span className="prelude-button__content">{children}</span>
+      {loading && <span className="ui-button__spinner" aria-hidden="true" />}
+      <span className="ui-button__content">
+        {shape === 'hold' ? (
+          <>
+            {/* The words keep their box while held so the control never changes width under
+                the finger; `held` is what replaces them. */}
+            <span className="ui-button__label">{children}</span>
+            {held}
+          </>
+        ) : (
+          children
+        )}
+      </span>
     </ButtonPrimitive>
   )
 }

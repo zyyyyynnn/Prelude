@@ -4,6 +4,7 @@ import com.prelude.BusinessException;
 import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.SessionView;
+import com.prelude.identity.application.port.HttpSessionAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
@@ -21,13 +22,13 @@ public class SessionRevokeService {
     private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
     private final CurrentAccount currentAccount;
 
-    public List<SessionView> listCurrentAccountSessions(jakarta.servlet.http.HttpSession currentSession) {
+    public List<SessionView> listCurrentAccountSessions(HttpSessionAccess currentSession) {
         Map<String, ? extends Session> sessions =
             sessionRepository.findByPrincipalName(principalName());
         return sessions.values().stream()
             .map(session -> new SessionView(
                 session.getId(),
-                currentSession != null && session.getId().equals(currentSession.getId()),
+                currentSession != null && session.getId().equals(currentSession.currentSessionId()),
                 session.getLastAccessedTime()
             ))
             .sorted(Comparator.comparing(SessionView::lastAccessedAt).reversed())

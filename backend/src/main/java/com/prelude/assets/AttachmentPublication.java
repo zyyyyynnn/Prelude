@@ -1,9 +1,9 @@
 package com.prelude.assets;
 
 import com.prelude.BusinessException;
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.StoredAttachment;
-import com.prelude.assets.persistence.AttachmentMapper;
+import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AttachmentStorage;
+import com.prelude.assets.application.port.AttachmentStorage.AttachmentRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +18,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AttachmentPublication {
 
-    private final AttachmentMapper attachmentMapper;
+    private final AttachmentStorage attachmentStorage;
     private final AssetService assetService;
 
     @Transactional(rollbackFor = Exception.class)
-    public void finalizeUpload(Asset asset, StoredAttachment stored) {
-        attachmentMapper.insert(stored);
-        if (!assetService.markReady(asset.getId())) {
+    public AttachmentRow finalizeUpload(AssetRow asset, AttachmentRow stored) {
+        AttachmentRow persisted = attachmentStorage.insert(stored);
+        if (!assetService.markReady(asset.id())) {
             throw BusinessException.badRequest("附件上传失败");
         }
+        return persisted;
     }
 }

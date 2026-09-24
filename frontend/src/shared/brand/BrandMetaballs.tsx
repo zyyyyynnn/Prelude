@@ -1,5 +1,5 @@
 import { Metaballs } from '@paper-design/shaders-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/cn'
 
 const colorNames = [
@@ -10,40 +10,63 @@ const colorNames = [
   '--brand-metaballs-5',
 ]
 
-function cssColor(name: string) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+function readPalette() {
+  const style = getComputedStyle(document.documentElement)
+  return {
+    background: style.getPropertyValue('--brand-metaballs-bg').trim(),
+    colors: colorNames.map((name) => style.getPropertyValue(name).trim()),
+  }
 }
 
 export function BrandMetaballs({ className = '' }: { className?: string }) {
-  const [revision, setRevision] = useState(0)
+  const [palette, setPalette] = useState(readPalette)
+  const [still, setStill] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const refresh = () => setRevision((value) => value + 1)
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncMotion = () => setStill(reducedMotion.matches)
+    const refresh = () => setPalette(readPalette())
+    syncMotion()
     window.addEventListener('prelude-theme-change', refresh)
-    return () => window.removeEventListener('prelude-theme-change', refresh)
+    reducedMotion.addEventListener('change', syncMotion)
+    return () => {
+      window.removeEventListener('prelude-theme-change', refresh)
+      reducedMotion.removeEventListener('change', syncMotion)
+    }
   }, [])
 
-  if (revision < 0 || typeof document === 'undefined') return null
-  const palette = {
-    background: cssColor('--brand-metaballs-bg'),
-    colors: colorNames.map(cssColor),
-  }
+  /* The shader writes pixel width/height onto its canvas on resize. This component owns
+     the box, so those inline lengths are dropped the moment they appear. */
+  useEffect(() => {
+    const host = root.current
+    if (!host) return
+    const syncCanvasBox = () => {
+      for (const canvas of host.querySelectorAll('canvas')) {
+        canvas.style.removeProperty('width')
+        canvas.style.removeProperty('height')
+      }
+    }
+    syncCanvasBox()
+    const observer = new ResizeObserver(syncCanvasBox)
+    observer.observe(host)
+    return () => observer.disconnect()
+  }, [])
+
+  // A zero speed stops the shader loop, so reduced-motion users get a still frame
+  // instead of a surface that animates for the whole session.
+  const speed = still ? 0 : 1.7
+
   return (
-    <div className={cn('brand-metaballs', className)} aria-hidden="true">
+    <div ref={root} className={cn('brand-metaballs', className)} aria-hidden="true">
       <Metaballs
         colorBack={palette.background}
         colors={palette.colors}
         count={10}
         scale={1}
         size={1}
-        speed={1.7}
-        style={{
-          width: '100%',
-          height: '100%',
-          backgroundColor: palette.background,
-          borderRadius: 'var(--radius-3xl)',
-          boxShadow: 'var(--brand-metaballs-shadow)',
-        }}
+        speed={speed}
+        className="brand-metaballs__shader"
       />
     </div>
   )

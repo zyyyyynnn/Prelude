@@ -1,19 +1,8 @@
-import { createContext, use, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { configureApi } from '@/shared/api/client'
 import { fetchCurrentUser, logout } from './api'
-
-export type AuthStatus = 'checking' | 'authenticated' | 'anonymous'
-
-type AuthValue = {
-  status: AuthStatus
-  accountId: number | null
-  expired: boolean
-  signIn: (accountId: number) => Promise<void>
-  signOut: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthValue | null>(null)
+import { AuthContext, type AuthStatus } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient()
@@ -28,6 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus('anonymous')
       setExpired(reason === 'expired')
       setAccountId(null)
+      // Drop the previous account's server cache before the next principal loads.
       await client.cancelQueries()
       client.clear()
     },
@@ -85,11 +75,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext>
   )
-}
-
-// oxlint-disable-next-line react-refresh/only-export-components
-export function useAuth() {
-  const value = use(AuthContext)
-  if (!value) throw new Error('AuthProvider is missing')
-  return value
 }

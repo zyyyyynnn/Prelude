@@ -1,3 +1,4 @@
+import { OVERLAY_OFFSET } from './positioning'
 import { Select as BaseSelect } from '@base-ui/react/select'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
@@ -41,36 +42,33 @@ export function Select({
         id={id}
         data-slot="select-trigger"
         aria-label={ariaLabel}
-        className={cn('prelude-select', 'ui-field-control', className)}
+        className={cn('ui-select', 'ui-field-control', className)}
       >
         <BaseSelect.Value />
-        <BaseSelect.Icon className="prelude-select__icon">
+        <BaseSelect.Icon className="ui-select__icon">
           <ChevronDown aria-hidden="true" />
         </BaseSelect.Icon>
       </BaseSelect.Trigger>
       <BaseSelect.Portal>
         <BaseSelect.Positioner
-          className="prelude-menu-positioner"
-          sideOffset={4}
+          className="ui-menu-positioner"
+          sideOffset={OVERLAY_OFFSET.select}
           alignItemWithTrigger={false}
         >
-          <BaseSelect.Popup
-            data-slot="select-content"
-            className="prelude-menu prelude-select-popup"
-          >
-            <BaseSelect.List data-slot="select-list" className="prelude-select__list">
+          <BaseSelect.Popup data-slot="select-content" className="ui-menu ui-select-popup">
+            <BaseSelect.List data-slot="select-list" className="ui-select__list">
               {options.map((option) => (
                 <BaseSelect.Item
                   key={option.value}
                   value={option.value}
                   disabled={option.disabled}
                   data-slot="select-item"
-                  className="prelude-menu__item prelude-select__item"
+                  className="ui-menu__item ui-select__item"
                 >
-                  <BaseSelect.ItemIndicator className="prelude-menu__indicator" aria-hidden="true">
+                  <BaseSelect.ItemIndicator className="ui-menu__indicator" aria-hidden="true">
                     <Check />
                   </BaseSelect.ItemIndicator>
-                  <BaseSelect.ItemText className="prelude-menu__item-label">
+                  <BaseSelect.ItemText className="ui-menu__item-label">
                     {option.label}
                   </BaseSelect.ItemText>
                 </BaseSelect.Item>

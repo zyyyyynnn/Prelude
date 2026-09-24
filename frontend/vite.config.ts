@@ -130,6 +130,124 @@ export default defineConfig(({ mode }) => {
         'typescript/triple-slash-reference': 'error',
         'typescript/unbound-method': 'error',
         'vite-plus/prefer-vite-plus-imports': 'error',
+        'shadcn/no-raw-colors': [
+          'error',
+          {
+            message: 'Use Prelude semantic tokens from frontend/src/shared/styles/index.css.',
+          },
+        ],
+        'shadcn/no-arbitrary-values': [
+          'error',
+          {
+            message:
+              'Use theme scale values from DESIGN.md (spacing, radius, size). Do not invent pixel/arbitrary utilities.',
+          },
+        ],
+        'shadcn/no-inline-styles': [
+          'error',
+          {
+            message:
+              'Style tokens and layout belong in CSS (shared/styles or feature CSS). Inline styles only for documented runtime CSS variables.',
+          },
+        ],
+        'shadcn/require-static-classes': [
+          'error',
+          {
+            message:
+              'Class names must be static literals so architecture and design gates can read them.',
+          },
+        ],
+        'shadcn/no-restyle': [
+          'error',
+          {
+            // BEM page classes (e.g. login-card__submit) collide with Tailwind restyle detection.
+            // DS components still get contracts below so appearance/spacing overrides fail loudly.
+            allow: ['layout'],
+            contracts: [
+              {
+                pattern: '^Button$',
+                allow: ['layout'],
+                deny: ['spacing', 'color', 'typography', 'shape', 'effects'],
+                message:
+                  'Button owns spacing, color, type, and shape via variant/size. Place with layout classes or parent gap; do not restyle.',
+              },
+              {
+                pattern: '^Input$|^Textarea$',
+                allow: ['layout'],
+                deny: ['color', 'typography', 'shape', 'effects'],
+                message:
+                  'Fields own surface, border, and type (DESIGN.md Fields). Use error/hint props; layout only via parent.',
+              },
+              {
+                pattern: '^Select$',
+                allow: ['layout'],
+                deny: ['color', 'typography', 'shape', 'effects'],
+                message: 'Select owns its control chrome. Keep surface/border from shared tokens.',
+              },
+              {
+                pattern: '^DropdownMenu(Item|RadioItem|CheckboxItem)$',
+                allow: ['layout'],
+                deny: ['color', 'typography', 'shape', 'effects'],
+                message:
+                  'Menu items use the shared floating-surface chrome. Do not restyle item appearance.',
+              },
+              {
+                pattern: '^IconTooltip$|^Dialog$',
+                allow: ['layout'],
+                deny: ['color', 'typography', 'shape', 'effects'],
+                message:
+                  'Floating surfaces keep the shared high-contrast neutral chrome from DESIGN.md.',
+              },
+              {
+                pattern: '^SegmentedControl$',
+                allow: ['layout'],
+                deny: ['spacing', 'color', 'typography', 'shape'],
+                message:
+                  'SegmentedControl owns its tracks and labels. Change items via props, not className restyle.',
+              },
+              {
+                pattern: '^Panel$',
+                allow: ['layout'],
+                deny: ['spacing', 'color', 'typography', 'shape', 'effects'],
+                message:
+                  'Panel owns the surface chrome and the heading row. Choose layout/level; do not restyle the card or header from the call site.',
+              },
+              {
+                pattern: '^ScrollRegion$',
+                allow: [
+                  'layout',
+                  'spacing',
+                  'typography',
+                  'sidebar-pane',
+                  'sidebar-scroll-body',
+                  'is-*',
+                  'p-*',
+                  'px-*',
+                  'py-*',
+                  'pt-*',
+                  'pr-*',
+                  'pb-*',
+                  'pl-*',
+                  'gap-*',
+                  'text-*',
+                  'leading-*',
+                ],
+                deny: ['color', 'shape', 'effects'],
+                message:
+                  'ScrollRegion owns the scroll chrome and the tab stop. The call site owns the box, its inset, its stack gap, and the body type.',
+              },
+            ],
+          },
+        ],
+        'shadcn/no-unknown-classes': 'error',
+      },
+      settings: {
+        shadcn: {
+          ui: '@/shared/ui',
+          componentImports: ['^@/shared/ui'],
+          mergeFunctions: ['cn'],
+          note: 'See DESIGN.md and frontend/src/shared/styles/index.css. Prelude semantic tokens only.',
+        },
       },
       overrides: [
         {
@@ -179,7 +297,7 @@ export default defineConfig(({ mode }) => {
               'error',
               {
                 allowConstantExport: true,
-                allowExportNames: ['useFeedback'],
+                allowExportNames: ['useFeedback', 'printInterviewReport'],
               },
             ],
           },
@@ -262,11 +380,22 @@ export default defineConfig(({ mode }) => {
             node: true,
           },
         },
+        {
+          // Primitive internals still compose class lists; call sites keep the restyle gates.
+          files: ['src/shared/ui/**'],
+          rules: {
+            'shadcn/require-static-classes': 'off',
+          },
+        },
       ],
       jsPlugins: [
         {
           name: 'vite-plus',
           specifier: 'vite-plus/oxlint-plugin',
+        },
+        {
+          name: 'shadcn',
+          specifier: '@shadcn/lint',
         },
       ],
     },

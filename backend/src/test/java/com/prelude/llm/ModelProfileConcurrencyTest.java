@@ -1,33 +1,41 @@
 package com.prelude.llm;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.prelude.llm.persistence.ModelProfile;
-import com.prelude.llm.persistence.ModelProfileMapper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DuplicateKeyException;
-
+import com.prelude.BusinessException;
+import com.prelude.llm.api.LlmPort;
+import com.prelude.test.AccountFixtures;
+import com.prelude.test.LlmFixtures;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Two writers claiming the one authoritative profile row for an account, against real MySQL.
+ *
+ * <p>The unique index is only half of the contract: the service has to translate losing that race
+ * into the conflict the client is told to refresh against, rather than a raw persistence error. An
+ * earlier revision of this test inserted the rows itself and caught {@code DuplicateKeyException}
+ * itself, so it proved the index existed and never ran the branch that owns the behaviour.
+ */
 @EnabledIfEnvironmentVariable(named = "PRELUDE_MYSQL_SMOKE", matches = "true")
 @SpringBootTest(properties = "spring.rabbitmq.listener.simple.auto-startup=false")
 class ModelProfileConcurrencyTest {
 
     @Autowired
-    private ModelProfileMapper profileMapper;
+    private LlmPort llmPort;
 
     @Autowired
-    private com.prelude.identity.AccountMapper accountMapper;
+    private JdbcTemplate jdbcTemplate;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
@@ -37,36 +45,41 @@ class ModelProfileConcurrencyTest {
     }
 
     @Test
-    void concurrentFirstProfilesForDifferentProvidersStillProduceOneAuthoritativeRow() throws Exception {
-        long accountId = createAccount();
+    void concurrentFirstProfilesElectOneWinnerAndAnswerTheLoserWithAConflict() throws Exception {
+        long accountId = AccountFixtures.create(jdbcTemplate, "llm-profile-race");
         CyclicBarrier start = new CyclicBarrier(2);
 
-        List<Future<Boolean>> writes = List.of(
-            executor.submit(raced(start, () -> insertProfile(accountId, "deepseek", "deepseek-v4-pro"))),
-            executor.submit(raced(start, () -> insertProfile(
-                accountId, CustomLlmProtocol.OPENAI_CHAT_COMPLETIONS.providerKey(), "account-model")))
-        );
+        List<SaveOutcome> outcomes = List.of(
+                executor.submit(raced(start, () -> firstSave(accountId, "deepseek", "deepseek-v4-pro"))),
+                executor.submit(raced(start, () -> firstSave(accountId, "deepseek", "deepseek-v4-flash"))))
+            .stream()
+            .map(this::get)
+            .toList();
 
-        assertThat(writes.stream().map(this::get).filter(Boolean::booleanValue).count()).isEqualTo(1);
-        List<ModelProfile> stored = profileMapper.selectList(new LambdaQueryWrapper<ModelProfile>()
-            .eq(ModelProfile::getAccountId, accountId));
-        assertThat(stored).hasSize(1);
+        assertThat(outcomes.stream().filter(SaveOutcome::saved).count()).isEqualTo(1);
+        assertThat(outcomes).extracting(SaveOutcome::code).containsExactlyInAnyOrder(
+            "saved", "revision_conflict");
+
+        // The loser's write must not have landed either, and the row that exists is the winner's.
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM model_profile WHERE account_id = ?", Integer.class, accountId))
+            .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT model FROM model_profile WHERE account_id = ?", String.class, accountId))
+            .isEqualTo(outcomes.stream().filter(SaveOutcome::saved).findFirst().orElseThrow().model());
     }
 
-    private boolean insertProfile(long accountId, String provider, String model) {
-        ModelProfile profile = new ModelProfile();
-        profile.setAccountId(accountId);
-        profile.setProvider(provider);
-        profile.setModel(model);
-        profile.setReasoningLevel("AUTO");
-        profile.setEffectiveParametersJson("{\"maxOutputTokens\":4096}");
-        profile.setFallbackCapabilitiesJson("[]");
+    private SaveOutcome firstSave(long accountId, String provider, String model) {
         try {
-            profileMapper.insert(profile);
-            return true;
-        } catch (DuplicateKeyException expectedRaceLoser) {
-            return false;
+            llmPort.saveConfiguration(accountId,
+                LlmFixtures.saveConfigurationCommand(provider, model, null, null, "AUTO", null, List.of()));
+            return new SaveOutcome(true, model, "saved");
+        } catch (BusinessException rejected) {
+            return new SaveOutcome(false, model, rejected.getCode());
         }
+    }
+
+    private record SaveOutcome(boolean saved, String model, String code) {
     }
 
     private <T> Callable<T> raced(CyclicBarrier barrier, Callable<T> action) {
@@ -82,13 +95,5 @@ class ModelProfileConcurrencyTest {
         } catch (Exception exception) {
             throw new AssertionError(exception);
         }
-    }
-
-    private long createAccount() {
-        com.prelude.identity.Account account = new com.prelude.identity.Account();
-        account.setUsername("llm-profile-race-" + System.nanoTime());
-        account.setRevision(0L);
-        accountMapper.insert(account);
-        return account.getId();
     }
 }

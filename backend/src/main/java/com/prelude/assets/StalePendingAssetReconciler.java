@@ -1,9 +1,8 @@
 package com.prelude.assets;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.prelude.assets.application.port.AssetStorage;
+import com.prelude.assets.application.port.StaleAssetRef;
 import com.prelude.assets.domain.AssetStatus;
-import com.prelude.assets.persistence.Asset;
-import com.prelude.assets.persistence.AssetMapper;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,18 +27,18 @@ public class StalePendingAssetReconciler {
 
     private static final int BATCH_LIMIT = 100;
 
-    private final AssetMapper assetMapper;
+    private final AssetStorage assetStorage;
     private final ObjectStoragePort objectStoragePort;
     private final Duration stalePendingTtl;
     private final ScheduledExecutorService scheduler;
 
     public StalePendingAssetReconciler(
-        AssetMapper assetMapper,
+        AssetStorage assetStorage,
         ObjectStoragePort objectStoragePort,
         @Value("${prelude.storage.stale-pending-ttl:PT24H}") Duration stalePendingTtl,
         @Value("${prelude.storage.reconcile-interval-ms:300000}") long intervalMillis
     ) {
-        this.assetMapper = assetMapper;
+        this.assetStorage = assetStorage;
         this.objectStoragePort = objectStoragePort;
         this.stalePendingTtl = stalePendingTtl;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -61,22 +60,20 @@ public class StalePendingAssetReconciler {
 
     void reconcileStalePendingAssets() {
         LocalDateTime cutoff = LocalDateTime.now().minus(stalePendingTtl);
-        List<Asset> staleAssets = assetMapper.selectList(new LambdaQueryWrapper<Asset>()
-            .eq(Asset::getStatus, AssetStatus.PENDING_UPLOAD)
-            .lt(Asset::getCreatedAt, cutoff)
-            .last("LIMIT " + BATCH_LIMIT));
-        for (Asset asset : staleAssets) {
+        List<StaleAssetRef> staleAssets =
+            assetStorage.findStaleByStatus(AssetStatus.PENDING_UPLOAD, cutoff, BATCH_LIMIT);
+        for (StaleAssetRef asset : staleAssets) {
             try {
-                objectStoragePort.delete(asset.getObjectKey());
+                objectStoragePort.delete(asset.objectKey());
             } catch (RuntimeException exception) {
                 log.warn("Failed to delete stale pending object {}; the asset row remains for the next pass",
-                    asset.getObjectKey());
+                    asset.objectKey());
                 continue;
             }
             try {
-                assetMapper.deleteById(asset.getId());
+                assetStorage.deleteById(asset.assetId());
             } catch (RuntimeException exception) {
-                log.warn("Failed to delete stale pending asset {} metadata; retrying next pass", asset.getId());
+                log.warn("Failed to delete stale pending asset {} metadata; retrying next pass", asset.assetId());
             }
         }
         if (!staleAssets.isEmpty()) {

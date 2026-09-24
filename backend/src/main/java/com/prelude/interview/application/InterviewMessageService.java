@@ -1,46 +1,50 @@
 package com.prelude.interview.application;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
+import com.prelude.BusinessException;
+import com.prelude.interview.api.port.InterviewSessionStatus;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.application.port.InterviewMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-
+/** Appends messages to a session, numbering them from 0 within that session. */
 @Service
 @RequiredArgsConstructor
 public class InterviewMessageService {
 
-    private static final Cache<String, Object> SESSION_LOCKS = Caffeine.newBuilder()
-        .expireAfterAccess(Duration.ofMinutes(30))
-        .maximumSize(10_000)
-        .build();
-
     private final InterviewMessageRepository interviewMessageRepository;
+    private final InterviewSessionRepository interviewSessionRepository;
 
+    /**
+     * The number is allocated under the session row's write lock, so whoever appends next reads
+     * what the previous append committed rather than racing it, and the unique key on
+     * {@code (session_id, seq_num)} refuses the alternative outloud. The same lock carries the
+     * status gate: a turn that lost the ongoing→generating race to {@code FinishInterview} is
+     * refused here instead of appending into a closed session.
+     */
+    @Transactional(rollbackFor = Exception.class)
     public InterviewMessage insertMessage(Long sessionId, String role, String content) {
-        Object lock = SESSION_LOCKS.get(sessionId.toString(), ignored -> new Object());
-        synchronized (lock) {
-            InterviewMessage message = new InterviewMessage();
-            message.setSessionId(sessionId);
-            message.setRole(role);
-            message.setContent(content);
-            message.setSeqNum(nextSeqNum(sessionId));
-            interviewMessageRepository.add(message);
-            return message;
+        String status = interviewSessionRepository.lockAppendOrder(sessionId);
+        if (status == null) {
+            throw BusinessException.badRequest("面试会话不存在");
         }
-    }
+        if (!InterviewSessionStatus.ONGOING.matches(status)) {
+            throw BusinessException.badRequest("面试会话已结束或正在生成报告");
+        }
 
-    public void invalidateSessionLock(Long sessionId) {
-        if (sessionId != null) {
-            SESSION_LOCKS.invalidate(sessionId.toString());
-        }
+        InterviewMessage message = new InterviewMessage();
+        message.setSessionId(sessionId);
+        message.setRole(role);
+        message.setContent(content);
+        message.setSeqNum(nextSeqNum(sessionId));
+        interviewMessageRepository.add(message);
+        return message;
     }
 
     private int nextSeqNum(Long sessionId) {
-        InterviewMessage latest = interviewMessageRepository.findLatest(sessionId);
+        InterviewMessage latest = interviewMessageRepository.findLatestForAppend(sessionId);
         Integer seqNum = latest == null ? null : latest.getSeqNum();
         return seqNum == null ? 0 : seqNum + 1;
     }
