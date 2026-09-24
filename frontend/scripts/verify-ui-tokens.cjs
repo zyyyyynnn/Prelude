@@ -302,17 +302,8 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
     /^([ \t]*)(--[a-z0-9-]+):[ \t]*var\(\2\);[ \t]*$/gm,
     (_line, indent) => `${indent}/* self mirror */`,
   )
-  /* The shadcn bridge maps the product palette onto the semantic names shadcn-style
-     components expect (`bg-card`, `text-muted-foreground`, `border-input`). No first-party
-     rule or class reads them today; they stay as an adapter for components pulled in from
-     that ecosystem, so they are exempt from the consumer count by decision rather than by
-     oversight. Adding a token here is that decision, made out loud. */
-  const bridge = new Set(
-    (schema.categories['component-tailwind-theme']?.tokens ?? []).map((token) => `--${token}`),
-  )
   for (const match of rootBlock ? rootBlock[1].matchAll(/^ {2}(--[a-z0-9-]+):/gm) : []) {
     const token = match[1]
-    if (bridge.has(token)) continue
     /* A reference is `var(--token)` in CSS, the token's own name in code (the functional
        atom form `size-(--token)`), or a utility class carrying its key — `--spacing-0`
        backs `m-0`, `--radius-lg` backs `rounded-lg`, and neither writes the token out.
@@ -334,6 +325,7 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
       'blur-',
       'container-',
       'breakpoint-',
+      'tracking-',
     ]
     /* Tailwind fans `--color-*` and `--spacing-*` out across many utility prefixes, so
        those keys can only be matched loosely. The rest map to exactly one prefix, and a
@@ -345,6 +337,7 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
       'shadow-': 'shadow',
       'ease-': 'ease',
       'blur-': 'blur',
+      'tracking-': 'tracking',
     }
     const namespace = namespaces.find((prefix) => key.startsWith(prefix))
     const classKey = namespace ? key.slice(namespace.length) : key

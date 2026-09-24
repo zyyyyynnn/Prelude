@@ -178,14 +178,7 @@ const namesDesignSystem = (token) =>
    fixed three-token windows, so a longer recipe always contains the leading window of
    a shorter one, and a run-only match would silently excuse every caller that copies
    the whole recipe on top of it. */
-const duplicatedRecipeExceptions = [
-  {
-    run: 'rounded-lg border border-border',
-    files: ['src/app/lab/ComponentLab.tsx', 'src/shared/ui/card.tsx'],
-    reason:
-      'the component-lab preview frame is a border-only demo frame, not the elevated card, so it cannot go through Card; it needs its own owner or a narrower recipe',
-  },
-]
+const duplicatedRecipeExceptions = []
 
 const recipesByRun = new Map()
 for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) {

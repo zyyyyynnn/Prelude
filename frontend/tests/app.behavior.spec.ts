@@ -1484,7 +1484,7 @@ test('@smoke renders structured reports without resume mutation controls', async
         const style = getComputedStyle(grid)
         const minimum = Number.parseFloat(
           getComputedStyle(document.documentElement).getPropertyValue(
-            '--layout-report-column-min-inline-size',
+            '--layout-document-column-min-inline-size',
           ),
         )
         return style.gridTemplateColumns

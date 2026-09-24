@@ -87,7 +87,7 @@ export function ScoreCard({
           </div>
         }
       />
-      <div className="report-columns gap-md">
+      <div className="document-columns gap-md">
         {items.map(([label, value]) => (
           <ScoreTile key={label} label={label} value={value} />
         ))}
@@ -159,7 +159,7 @@ export function StagePerformanceList({
               </header>
               <p className="type-reading">{stage.summary}</p>
             </div>
-            <div className="report-columns gap-lg" data-slot="stage-signals">
+            <div className="document-columns gap-lg" data-slot="stage-signals">
               <Signal title={copy.stages.signals.positive} items={stage.positiveSignals} />
               <Signal title={copy.stages.signals.risk} items={stage.negativeSignals} />
               <Signal
@@ -194,7 +194,7 @@ export function ReportCarouselNavigation({
   return (
     <div className="flex items-center gap-xs print:hidden" role="group" aria-label={ariaLabel}>
       <span
-        className="min-w-(--layout-report-counter-min-inline-size) text-center font-sans text-sm text-text-secondary"
+        className="min-w-(--layout-counter-min-inline-size) text-center font-sans text-sm text-text-secondary"
         aria-live="polite"
       >
         {index + 1} / {count}
@@ -318,7 +318,7 @@ export function TrainingPlan({ plan, copy }: { plan: StructuredTrainingPlan; cop
   return (
     <ReportSection>
       <SectionHeading eyebrow={copy.plan.eyebrow} title={copy.plan.title} />
-      <div className="report-columns gap-xl" data-slot="training-plan-grid">
+      <div className="document-columns gap-xl" data-slot="training-plan-grid">
         {groups.map(([title, items], index) => (
           <section className="grid min-w-0 gap-sm break-inside-avoid" key={title}>
             <span className="font-sans text-xs tabular-nums text-text-tertiary" aria-hidden="true">

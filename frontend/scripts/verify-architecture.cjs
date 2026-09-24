@@ -344,7 +344,7 @@ for (const name of blockedPackages) {
 // ---------------------------------------------------------------- shared stays generic
 /* `shared/**` is the layer every feature builds on, so it must not name a feature. A
    design-system component that hard-codes a business word — the prompt bar deciding a
-   resume is called 简历, a settings column owning `--layout-settings-sidebar-inline-size`,
+   resume is called 简历, a settings column owning `--layout-nav-inline-size`,
    a score tile declaring `--score-fill` — has taken a product decision into the
    generic layer, where the next feature inherits it without being asked. The import rule
    above only catches a *code* dependency; this catches a *vocabulary* one, which is how
@@ -369,68 +369,10 @@ for (const name of blockedPackages) {
     `(?:/|\\b)(?:${featureNames.join('|')})(?:/|\\b)|--(?:${featureNames.join('|')})-`,
   )
 
-  /* Registered exceptions, each naming one declaration in the shared stylesheet whose
-     migration is still owed. The list is enumerable on purpose: the alternatives —
-     skipping the stylesheet, or skipping the word — retire the rule instead of the leak.
-     An entry whose declaration is gone is itself a violation, so the list cannot rot
-     into a permanent exemption. */
-  const sharedVocabularyExceptions = [
-    {
-      name: '--layout-settings-sidebar-inline-size',
-      reason:
-        "the settings sidebar is one fixed column, not a step on the layout scale; it is the settings feature's presentation contract and moves with it",
-    },
-    {
-      name: '--layout-position-catalog-min-inline-size',
-      reason:
-        "the position catalog's minimum column is the position feature's presentation contract, not a generic layout step; to move with it",
-    },
-    {
-      name: '--layout-position-form-min-inline-size',
-      reason:
-        "the position form's minimum width is the position feature's presentation contract, not a generic layout step; to move with it",
-    },
-    {
-      name: '--layout-position-item-min-inline-size',
-      reason:
-        "the position item grid's minimum column is the position feature's presentation contract, not a generic layout step; to move with it",
-    },
-    {
-      name: '--layout-workspace-report-block-padding',
-      reason:
-        "the print report band's block padding measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
-    },
-    {
-      name: '--layout-report-column-min-inline-size',
-      reason:
-        "the report's reading-column minimum measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
-    },
-    {
-      name: '--layout-report-label-inline-size',
-      reason:
-        "the report detail row's label column measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
-    },
-    {
-      name: '--layout-report-counter-min-inline-size',
-      reason:
-        "the report counter block's minimum width measures the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
-    },
-    {
-      name: '--content-report-reading-max-inline-size',
-      reason:
-        "the report reading column's measure sizes the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
-    },
-    {
-      name: 'position-item-grid',
-      reason:
-        "the position item grid's track recipe is the position feature's presentation contract, not a generic layout utility; to move with it",
-    },
-    {
-      name: 'report-columns',
-      reason:
-        "the report column track recipe sizes the report's printed page, not the interface scale; it is the report feature's presentation contract, to move with it",
-    },
-  ]
+  /* A shared declaration that names a feature directory is a leak. Geometry that is
+     one feature's presentation contract is named for its geometry (`document-columns`,
+     `item-grid`), never for the feature that first needed it. */
+  const sharedVocabularyExceptions = []
   const exceptionByName = new Map(sharedVocabularyExceptions.map((entry) => [entry.name, entry]))
 
   /* The names a shared stylesheet declares, each with where it is first written. A

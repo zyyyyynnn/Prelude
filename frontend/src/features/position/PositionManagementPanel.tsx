@@ -102,7 +102,7 @@ export function PositionManagementPanel() {
           layout="card"
           level={3}
           title="岗位库"
-          className="flex-1 basis-(--layout-position-catalog-min-inline-size)"
+          className="flex-1 basis-(--layout-catalog-min-inline-size)"
           data-slot="position-catalog"
         >
           {positions.isPending ? (
@@ -113,7 +113,7 @@ export function PositionManagementPanel() {
               onRetry={() => void positions.refetch()}
             />
           ) : (
-            <div className="position-item-grid" role="list" aria-label="岗位列表">
+            <div className="item-grid" role="list" aria-label="岗位列表">
               {positions.data?.map((position) => (
                 <PositionRow
                   key={position.id}
@@ -128,7 +128,7 @@ export function PositionManagementPanel() {
         <Panel
           layout="card"
           level={3}
-          className="grow-2 basis-(--layout-position-form-min-inline-size)"
+          className="grow-2 basis-(--layout-form-min-inline-size)"
           title={editing ? '编辑岗位' : '新建岗位'}
           actions={
             editing && (

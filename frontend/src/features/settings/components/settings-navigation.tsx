@@ -19,7 +19,7 @@ export function SettingsNavigation<TSection extends string>({
 }) {
   return (
     <aside
-      className="flex w-(--layout-settings-sidebar-inline-size) flex-col border-e border-e-border py-md"
+      className="flex w-(--layout-nav-inline-size) flex-col border-e border-e-border py-md"
       data-slot="settings-sidebar"
     >
       <nav className="flex flex-1 flex-col gap-sm px-sm" aria-label="设置分类">

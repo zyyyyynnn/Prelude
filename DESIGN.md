@@ -77,7 +77,7 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 | `type-body` | 成段正文 | sans `sm` / regular / `relaxed` / secondary |
 | `type-copy` | 阅读正文（copy 行高） | sans `sm` / `copy` / secondary |
 | `type-caption` | 图注与气泡时间戳 | serif `xs` / tertiary（行高取 Tailwind `text-xs` 自带值） |
-| `type-reading` | 报告正文（报告阅读宽度） | sans `sm` / `copy` / secondary / `--content-report-reading-max-inline-size` |
+| `type-reading` | 报告正文（报告阅读宽度） | sans `sm` / `copy` / secondary / `--content-reading-max-inline-size` |
 | `type-lead` | 页面导语（正文 + 阅读宽度） | sans `sm` / regular / `relaxed` / secondary / `--layout-lead-max-inline-size` |
 | `type-meta` | 计数、时间、辅助说明 | sans `xs` / regular / `compact` / tertiary |
 
@@ -96,10 +96,10 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 界面样式只有三种写法，自上而下层叠：未分层类 > utilities 层 > `@layer base`。
 
 1. **调用点 Tailwind 原子类**。`flex`、`gap-md`、`bg-surface`、`rounded-lg` 能表达的，就用原子。
-2. **`frontend/src/shared/styles/index.css` 中具名注册的 `@utility`**。承载嵌入 `var()` 的多值简写、`auto-fit`/`minmax` 轨道、来自 token 的 logical border、跨元素状态传播、`@keyframes`，以及页面壳与命名 chrome。只组合通用 token 的 utility 取通用名（`nav-item`、`list-row`、`elevated-modal`）；写死某个 owner 布局 token 的带该 owner 前缀（`sidebar-pane`、`prompt-bar-input`、`report-columns`）。
-3. **顶层未分层类**。只承担两类职责：组件自己的 BEM 内部结构（`ui-menu__item`、`ui-button__content`、`workspace-header__*`）与由 `/* @internal src/<owner>.tsx */` 声明归属的整段 chrome；以及浏览器外观覆写（autofill 底色与文字色、Blink/Edge 的 `::-ms-reveal`/`::-ms-clear`、Chrome 的 credentials 按钮），各带 `/* browser-chrome: <理由> */`，按完整选择器文本登记豁免。调用点可覆写的几何由原子与 utilities 承担。
+2. **`frontend/src/shared/styles/index.css` 中具名注册的 `@utility`**。承载嵌入 `var()` 的多值简写、`auto-fit`/`minmax` 轨道、来自 token 的 logical border、跨元素状态传播、`@keyframes`，以及页面壳与命名 chrome。只组合通用 token 的 utility 取通用名（`nav-item`、`list-row`、`elevated-modal`、`document-columns`）；写死某个 owner 布局 token 的带该 owner 前缀（`sidebar-pane`、`prompt-bar-input`）。共享词表按几何命名，名字不含 feature 目录名。
+3. **顶层未分层类**。只承担两类职责：组件自己的 BEM 内部结构（`ui-menu__item`、`ui-button__content`）与由 `/* @internal src/<owner>.tsx */` 声明归属的整段 chrome；以及浏览器外观覆写（autofill 底色与文字色、Blink/Edge 的 `::-ms-reveal`/`::-ms-clear`、Chrome 的 credentials 按钮），各带 `/* browser-chrome: <理由> */`，按完整选择器文本登记豁免。调用点可覆写的几何由原子与 utilities 承担。
 
-页面壳（`workspace-page*`、`app-layout*`、`app-sidebar`、`page*`）与滚动槽（`scrollable`、`gutter-stable`）一律是 `@utility`。`feature` 目录不含 CSS 文件；`features/*` 与 `app/shell` 只使用 token 与原子类。`frontend/src/app/styles.css` 装配 Tailwind、扫描范围与共享样式；`shared/styles/index.css` 拥有 token、主题、重置、全局排版、焦点状态、复合 utility 与文档级打印策略。
+页面壳（`workspace-page*`、`app-layout*`、`app-sidebar`、`page*`）、页眉带（`workspace-header*`）与滚动槽（`scrollable`、`gutter-stable`）一律是 `@utility`。`feature` 目录不含 CSS 文件；`features/*` 与 `app/shell` 只使用 token 与原子类。`frontend/src/app/styles.css` 装配 Tailwind、扫描范围与共享样式；`shared/styles/index.css` 拥有 token、主题、重置、全局排版、焦点状态、复合 utility 与文档级打印策略。
 
 - 跨组件状态用 Tailwind `group/*`、`peer/*` 与 `data-*` 变体；文档级行为（报告打印）留在 `index.css` 的 `@media print`，以 `data-slot` 为锚点。
 - 同一元素上叠加「注册 utility × 核心原子」或「utility × 未分层类」时，谁生效由 Tailwind 内部排序决定，视为缺陷。需要覆盖时只有两种写法：为基座声明 `base-variant` 命名的变体 utility，或把该属性从基座拆出交给调用点独占。

@@ -30,10 +30,10 @@
 | `no-arbitrary-values` | error | utility 取 DESIGN 间距/圆角/尺寸阶梯（含 CSS 变量简写） |
 | `no-inline-styles` | error | 样式在 CSS；运行时 CSS 变量限文档化名单（当前 `--score-fill`） |
 | `require-static-classes` | error | 类名为静态字面量 |
-| `no-restyle` | error | className 只取 contract 允许的类别。contracts：`Button`、`SegmentedControl`、`Panel` 仅允许 layout；`ScrollRegion` 允许 layout 与 spacing（滚动 chrome 与焦点停点归组件，盒子与留白归调用方）；`Input`/`Textarea`/`Select`/Menu 项/`IconTooltip`/`Dialog` 允许 layout，deny 与组件所有权冲突的类别 |
+| `no-restyle` | error | className 只取 contract 允许的类别。contracts：`Button`、`SegmentedControl`、`Panel` 仅允许 layout；`ScrollRegion` 允许 layout、spacing 与 typography（滚动 chrome 与焦点停点归组件，盒子、留白与正文排版归调用方）；`Input`/`Textarea`/`Select`/Menu 项/`IconTooltip`/`Dialog` 允许 layout，deny 与组件所有权冲突的类别 |
 | `no-unknown-classes` | error | 类名是调用点原子、`index.css` 注册的 `@utility`，或承担组件内部结构与 `@internal` chrome 的顶层未分层类 |
 
-`src/shared/ui/**` 关闭 `no-restyle`、`no-arbitrary-values`、`require-static-classes`；`no-raw-colors` 与 `no-inline-styles` 在实现层仍生效。
+`src/shared/ui/**` 关闭 `require-static-classes`；`no-restyle`、`no-arbitrary-values`、`no-raw-colors` 与 `no-inline-styles` 在实现层仍生效。
 
 `no-unknown-classes` 只识别 `src/shared/styles/index.css` 生成的类，复合样式注册为该文件内的 `@utility`。注册命名与层叠次序见 `DESIGN.md` 的 Style Assembly。
 

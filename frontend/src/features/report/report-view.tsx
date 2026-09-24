@@ -46,11 +46,11 @@ export function StructuredReport({
           <p className="type-eyebrow">{copy.eyebrow}</p>
           <h1 className="type-document-title text-balance">{copy.title}</h1>
         </div>
-        <p className="max-w-(--content-report-reading-max-inline-size) text-pretty font-serif text-md leading-copy text-text-secondary">
+        <p className="max-w-(--content-reading-max-inline-size) text-pretty font-serif text-md leading-copy text-text-secondary">
           {report.summary.fitAssessment}
         </p>
       </header>
-      <div className="report-columns gap-lg inset-card-lg">
+      <div className="document-columns gap-lg inset-card-lg">
         <section className="grid min-w-0 gap-sm">
           <h2 className="type-title text-balance">{copy.actionTitle}</h2>
           <p className="type-copy">{report.summary.actionRecommendation}</p>
@@ -65,7 +65,7 @@ export function StructuredReport({
       <QuestionReviewList reviews={report.questionReviews} copy={copy} />
       <ReportSection slot="report-traits">
         <SectionHeading eyebrow={copy.traits.eyebrow} title={copy.traits.title} />
-        <div className="report-columns items-start gap-xl">
+        <div className="document-columns items-start gap-xl">
           <Trait
             title={copy.traits.strengths}
             items={report.strengths}
@@ -80,7 +80,7 @@ export function StructuredReport({
       </ReportSection>
       <TrainingPlan plan={report.trainingPlan} copy={copy} />
       <ReportSection slot="report-advice" gap="sm">
-        <h2 className="type-title max-w-(--content-report-reading-max-inline-size) text-balance">
+        <h2 className="type-title max-w-(--content-reading-max-inline-size) text-balance">
           {copy.adviceTitle}
         </h2>
         <p className="type-reading">{report.finalAdvice}</p>

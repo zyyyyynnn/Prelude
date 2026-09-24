@@ -263,7 +263,7 @@ export function ComponentLab() {
         </Panel>
 
         <Panel layout="card" title="Panel" description="shared/ui/panel">
-          <div className="grid h-(--layout-demo-frame-block-size) w-full overflow-hidden rounded-lg border border-border">
+          <div className="demo-frame grid h-(--layout-demo-frame-block-size) w-full overflow-hidden">
             <Panel title="面板标题" actions={<Button>主要操作</Button>}>
               <p className="type-body">示例正文一。</p>
               <p className="type-body">示例正文二。</p>
@@ -523,7 +523,7 @@ export function ComponentLab() {
                 </div>
               </DemoGroup>
               <DemoGroup label="只读行">
-                <div className="position-item-grid w-full" role="list" aria-label="岗位列表">
+                <div className="item-grid w-full" role="list" aria-label="岗位列表">
                   {samplePositions.map((position: Position) => (
                     <PositionRow
                       key={position.id}

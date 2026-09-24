@@ -749,7 +749,7 @@ test('@visual keeps settings navigation and select surfaces on the shared compon
   expect(positionFields).toEqual({ sameWidth: true, stacked: true })
   await expect(page.getByRole('dialog', { name: '全局设置' })).toHaveScreenshot(
     'settings-position-dialog.png',
-    { animations: 'disabled', maxDiffPixels: 50 },
+    { animations: 'disabled' },
   )
   await page.getByRole('button', { name: '模型管理' }).click()
   const modelSelect = page.getByLabel('模型', { exact: true })

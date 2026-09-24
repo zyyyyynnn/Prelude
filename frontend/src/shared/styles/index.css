@@ -118,18 +118,18 @@
   /* Bridge product colors onto the shadcn semantic palette. */
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text-primary);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text-primary);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-text-primary);
   --color-primary: var(--color-accent-solid);
   --color-primary-foreground: var(--color-text-on-accent);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--color-surface-muted);
+  --color-secondary-foreground: var(--color-text-primary);
   --color-muted: var(--color-surface-muted);
   --color-muted-foreground: var(--color-text-tertiary);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--color-surface-hover);
+  --color-accent-foreground: var(--color-text-primary);
   --color-destructive: var(--color-error);
   --color-destructive-foreground: var(--color-surface);
   --color-input: var(--color-border-warm);
@@ -190,27 +190,6 @@
   --color-ring-deep: #c2c0b6;
 
   --color-line-decor: #c8c6be;
-
-  /* ── Component semantic tokens (mapped to the warm product palette) ── */
-  --background: var(--color-bg);
-  --foreground: var(--color-text-primary);
-  --card: var(--color-surface);
-  --card-foreground: var(--color-text-primary);
-  --popover: var(--color-surface);
-  --popover-foreground: var(--color-text-primary);
-  --primary: var(--color-accent-solid);
-  --primary-foreground: var(--color-text-on-accent);
-  --secondary: var(--color-surface-muted);
-  --secondary-foreground: var(--color-text-primary);
-  --muted: var(--color-surface-muted);
-  --muted-foreground: var(--color-text-tertiary);
-  --accent: var(--color-surface-hover);
-  --accent-foreground: var(--color-text-primary);
-  --destructive: var(--color-error);
-  --destructive-foreground: var(--color-surface);
-  --border: var(--color-border);
-  --input: var(--color-border-warm);
-  --ring: var(--color-focus-action);
 
   --radius-xs: 2px;
   --radius-sm: 6px;
@@ -324,14 +303,14 @@
   );
   --layout-sidebar-brand-inline-size: 180px;
   --layout-sidebar-header-block-size: 60px;
-  --layout-settings-sidebar-inline-size: 220px;
+  --layout-nav-inline-size: 220px;
   --layout-dialog-workspace-min-block-size: 500px;
   --layout-workspace-content-max-inline-size: 800px;
   --layout-form-field-min-inline-size: 260px;
   --layout-list-title-min-inline-size: 200px;
-  --layout-position-catalog-min-inline-size: 176px;
-  --layout-position-form-min-inline-size: 448px;
-  --layout-position-item-min-inline-size: 160px;
+  --layout-catalog-min-inline-size: 176px;
+  --layout-form-min-inline-size: 448px;
+  --layout-item-min-inline-size: 160px;
   --layout-empty-state-min-block-size: 120px;
   --layout-demo-frame-block-size: 200px;
   --layout-chart-block-size: 360px;
@@ -341,17 +320,17 @@
   --layout-prompt-truncate-max-inline-size: calc(var(--ui-height-control) * 7);
   --layout-generating-card-max-inline-size: 480px;
   --layout-generating-rose-inline-size: calc(var(--ui-height-control) * 2);
-  --layout-workspace-report-block-padding: calc(var(--spacing-2xl) + var(--spacing-lg));
-  --layout-report-column-min-inline-size: 200px;
-  --layout-report-label-inline-size: 80px;
-  --layout-report-counter-min-inline-size: 56px;
+  --layout-print-band-block-padding: calc(var(--spacing-2xl) + var(--spacing-lg));
+  --layout-document-column-min-inline-size: 200px;
+  --layout-document-label-inline-size: 80px;
+  --layout-counter-min-inline-size: 56px;
   --layout-profile-avatar-inline-size: 82px;
   --layout-brand-mark-inline-size: 72px;
 
   /* ── Content Semantics ── */
   --content-message-max-inline-size: 72ch;
   --content-message-bubble-max-inline-size: min(80%, var(--content-message-max-inline-size));
-  --content-report-reading-max-inline-size: 68ch;
+  --content-reading-max-inline-size: 68ch;
   --content-tooltip-max-inline-size: 20rem;
 
   /* ── Component Semantics ── */
@@ -719,7 +698,14 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   scrollbar-color: var(--color-ring) transparent;
 }
 
-/* Workspace layout shell: named page chrome lives in the utility registry so call sites may override geometry. */
+/* A border-only preview frame for the component gallery: not the elevated card. */
+@utility demo-frame {
+  border-radius: var(--radius-lg);
+  border: var(--border-width-default) solid var(--color-border);
+}
+
+/* Workspace layout shell and its header band: named chrome in the utility registry so
+   call sites may override geometry. */
 @utility workspace-page {
   flex: 1;
   display: flex;
@@ -728,7 +714,8 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   overflow: hidden;
   height: 100vh;
 }
-.workspace-header {
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header {
   height: var(--layout-header-block-size);
   display: flex;
   align-items: center;
@@ -742,21 +729,24 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   flex-shrink: 0;
   box-sizing: border-box;
 }
-.workspace-header__main {
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header__main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-lg);
   width: 100%;
 }
-.workspace-header__title-area {
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header__title-area {
   flex: 1;
   min-inline-size: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
 }
-.workspace-header__title {
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header__title {
   margin: 0;
   min-inline-size: 0;
   overflow: hidden;
@@ -939,7 +929,9 @@ input[type='password']::-webkit-credentials-auto-fill-button {
 .ui-textarea {
   min-height: var(--layout-textarea-min-block-size);
   padding: var(--spacing-md);
-  resize: vertical;
+  /* Field geometry is owned by the design system; the browser resizer grip is chrome
+     the pixel oracle would otherwise paint into every textarea corner. */
+  resize: none;
 }
 .ui-tooltip-positioner {
   z-index: var(--z-index-tooltip);
@@ -1414,11 +1406,11 @@ html[data-input-intent='keyboard']
   }
 }
 
-@utility position-item-grid {
+@utility item-grid {
   display: grid;
   grid-template-columns: repeat(
     auto-fit,
-    minmax(min(100%, var(--layout-position-item-min-inline-size)), 1fr)
+    minmax(min(100%, var(--layout-item-min-inline-size)), 1fr)
   );
 }
 
@@ -1524,7 +1516,7 @@ html[data-input-intent='keyboard']
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-copy);
-  max-inline-size: var(--content-report-reading-max-inline-size);
+  max-inline-size: var(--content-reading-max-inline-size);
   text-wrap: pretty;
 }
 
@@ -1584,11 +1576,11 @@ html[data-input-intent='keyboard']
 
 /* Report column tracks: every report band flows its children into as many
    reading columns as fit the report minimum, gaps stay per band. */
-@utility report-columns {
+@utility document-columns {
   display: grid;
   grid-template-columns: repeat(
     auto-fit,
-    minmax(min(100%, var(--layout-report-column-min-inline-size)), 1fr)
+    minmax(min(100%, var(--layout-document-column-min-inline-size)), 1fr)
   );
 }
 
@@ -1606,7 +1598,7 @@ html[data-input-intent='keyboard']
 /* @internal src/features/report/report-sections.tsx */
 @utility review-detail-grid {
   display: grid;
-  grid-template-columns: minmax(var(--layout-report-label-inline-size), 0.25fr) 1fr;
+  grid-template-columns: minmax(var(--layout-document-label-inline-size), 0.25fr) 1fr;
   gap: var(--spacing-md);
 }
 

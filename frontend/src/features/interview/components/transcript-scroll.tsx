@@ -24,7 +24,7 @@ export function TranscriptScroll({
       gutter="gutter-stable"
       className={
         view === 'report'
-          ? 'flex min-h-0 flex-1 px-(--spacing-2xl) items-start justify-center py-(--layout-workspace-report-block-padding)'
+          ? 'flex min-h-0 flex-1 px-(--spacing-2xl) items-start justify-center py-(--layout-print-band-block-padding)'
           : 'flex min-h-0 flex-1 px-(--spacing-2xl) flex-col gap-(--spacing-lg) pt-(--spacing-lg) pb-(--layout-composer-reserve-block-size)'
       }
       {...rest}

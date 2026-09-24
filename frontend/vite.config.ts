@@ -215,10 +215,27 @@ export default defineConfig(({ mode }) => {
               },
               {
                 pattern: '^ScrollRegion$',
-                allow: ['layout', 'spacing'],
-                deny: ['color', 'typography', 'shape', 'effects'],
+                allow: [
+                  'layout',
+                  'spacing',
+                  'typography',
+                  'sidebar-pane',
+                  'sidebar-sessions',
+                  'is-*',
+                  'p-*',
+                  'px-*',
+                  'py-*',
+                  'pt-*',
+                  'pr-*',
+                  'pb-*',
+                  'pl-*',
+                  'gap-*',
+                  'text-*',
+                  'leading-*',
+                ],
+                deny: ['color', 'shape', 'effects'],
                 message:
-                  'ScrollRegion owns the scroll chrome and the tab stop. The call site owns the box, its inset, and its stack gap.',
+                  'ScrollRegion owns the scroll chrome and the tab stop. The call site owns the box, its inset, its stack gap, and the body type.',
               },
             ],
           },
@@ -365,12 +382,9 @@ export default defineConfig(({ mode }) => {
           },
         },
         {
-          // Component implementation owns its primitive styles; restyle/arbitrary/static-class
-          // gates apply at call sites. Token and inline-style rules still apply here.
+          // Primitive internals still compose class lists; call sites keep the restyle gates.
           files: ['src/shared/ui/**'],
           rules: {
-            'shadcn/no-restyle': 'off',
-            'shadcn/no-arbitrary-values': 'off',
             'shadcn/require-static-classes': 'off',
           },
         },
