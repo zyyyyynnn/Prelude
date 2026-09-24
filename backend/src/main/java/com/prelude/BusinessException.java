@@ -19,12 +19,12 @@ public class BusinessException extends RuntimeException {
         this.code = code;
     }
 
-    public static BusinessException of(int status, String code, String message) {
-        return new BusinessException(status, code, message);
+    public static BusinessException badRequest(String message) {
+        return badRequest("bad_request", message);
     }
 
-    public static BusinessException badRequest(String message) {
-        return new BusinessException(400, "bad_request", message);
+    public static BusinessException badRequest(String code, String message) {
+        return new BusinessException(400, code, message);
     }
 
     public static BusinessException unauthorized(String message) {
@@ -40,11 +40,19 @@ public class BusinessException extends RuntimeException {
     }
 
     public static BusinessException notFound(String message) {
-        return new BusinessException(404, "not_found", message);
+        return notFound("not_found", message);
+    }
+
+    public static BusinessException notFound(String code, String message) {
+        return new BusinessException(404, code, message);
+    }
+
+    public static BusinessException conflict(String code, String message) {
+        return new BusinessException(409, code, message);
     }
 
     public static BusinessException revisionConflict(String message) {
-        return new BusinessException(409, "revision_conflict", message);
+        return conflict("revision_conflict", message);
     }
 
     public static BusinessException rateLimited(String message) {

@@ -205,6 +205,6 @@ public class BackgroundJobService implements BackgroundJobOperations {
 
     private JobRow requireJob(String jobId) {
         return jobStore.findByJobId(jobId)
-            .orElseThrow(() -> BusinessException.of(404, "job_not_found", "任务不存在"));
+            .orElseThrow(() -> BusinessException.notFound("job_not_found", "任务不存在"));
     }
 }

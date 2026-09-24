@@ -3,11 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchSession, finishInterview, streamInterview } from '../api'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 import { applyMessageUpdate } from './message-updates'
-import {
-  MAX_CONTEXT_MESSAGES,
-  handleInterviewStreamEvent,
-  type SessionReportCache,
-} from './interview-turn-stream'
+import { buildOptimisticTurn, shouldAutoStart } from './turn-buffer'
+import { handleInterviewStreamEvent, type SessionReportCache } from './interview-turn-stream'
 
 export function useInterviewSession(sessionId: number, onError: (message: string) => void) {
   const client = useQueryClient()
@@ -48,21 +45,14 @@ export function useInterviewSession(sessionId: number, onError: (message: string
       content: string
       autoStart?: boolean
     }) => {
-      const optimisticId = Date.now()
-      const assistantId = optimisticId + 1
-      const base = [...visibleMessages]
-      if (!autoStart)
-        base.push({ id: optimisticId, role: 'user', content, createdAt: new Date().toISOString() })
-      base.push({
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-        createdAt: new Date().toISOString(),
-      })
+      const {
+        messages: base,
+        assistantId,
+        context,
+      } = buildOptimisticTurn(visibleMessages, content, autoStart)
       setMessages(base)
       abort.current?.abort()
       abort.current = new AbortController()
-      const context = base.filter((item) => item.id !== assistantId).slice(-MAX_CONTEXT_MESSAGES)
       await streamInterview(
         sessionId,
         { content, messages: context },
@@ -93,13 +83,7 @@ export function useInterviewSession(sessionId: number, onError: (message: string
   const { mutate: appendTurn } = send
 
   useEffect(() => {
-    if (
-      !current ||
-      current.messages.length ||
-      autoStartedSessionId.current === sessionId ||
-      current.status === 'finished'
-    )
-      return
+    if (!shouldAutoStart(current, sessionId, autoStartedSessionId.current)) return
     const timer = window.setTimeout(() => {
       if (autoStartedSessionId.current === sessionId) return
       autoStartedSessionId.current = sessionId

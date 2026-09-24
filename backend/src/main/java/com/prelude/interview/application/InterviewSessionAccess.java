@@ -1,37 +1,17 @@
 package com.prelude.interview.application;
 
-import com.prelude.BusinessException;
-import com.prelude.identity.api.CurrentAccount;
-import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.repository.InterviewSessionRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-@Component
-@RequiredArgsConstructor
-public class InterviewSessionAccess {
+/**
+ * Ownership and lifecycle checks for one interview session, shared by the interview
+ * use cases. The domain model stays inside the module; this port hands out the session
+ * those use cases are allowed to mutate.
+ */
+public interface InterviewSessionAccess {
 
-    private final InterviewSessionRepository interviewSessionRepository;
-    private final CurrentAccount currentAccount;
+    long currentAccountId();
 
-    public long currentAccountId() {
-        return currentAccount.requireId();
-    }
+    InterviewSession requireOwned(Long sessionId, long accountId);
 
-    public InterviewSession requireOwned(Long sessionId, long accountId) {
-        InterviewSession session = interviewSessionRepository.selectById(sessionId);
-        if (session == null || accountId != session.getAccountId()) {
-            throw BusinessException.badRequest("面试会话不存在或无权访问");
-        }
-        return session;
-    }
-
-    public InterviewSession requireOngoing(Long sessionId, long accountId) {
-        InterviewSession session = requireOwned(sessionId, accountId);
-        if (!InterviewSessionStatus.ONGOING.matches(session.getStatus())) {
-            throw BusinessException.badRequest("面试会话已结束");
-        }
-        return session;
-    }
+    InterviewSession requireOngoing(Long sessionId, long accountId);
 }

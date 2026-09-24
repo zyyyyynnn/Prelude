@@ -16,7 +16,7 @@ class InterviewSessionAccessTest {
         var session = SessionFixtures.create(51L, 8L, "ongoing");
         when(repository.selectById(51L)).thenReturn(session);
 
-        InterviewSessionAccess access = new InterviewSessionAccess(repository, null);
+        InterviewSessionAccess access = new DefaultInterviewSessionAccess(repository, null);
 
         ExceptionFixtures.assertBusinessExceptionMessage(
             () -> access.requireOwned(51L, 7L), "面试会话不存在或无权访问");

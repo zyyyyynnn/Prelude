@@ -115,25 +115,6 @@
     }
   }
 
-  /* Bridge product colors onto the shadcn semantic palette. */
-  --color-background: var(--color-bg);
-  --color-foreground: var(--color-text-primary);
-  --color-card: var(--color-surface);
-  --color-card-foreground: var(--color-text-primary);
-  --color-popover: var(--color-surface);
-  --color-popover-foreground: var(--color-text-primary);
-  --color-primary: var(--color-accent-solid);
-  --color-primary-foreground: var(--color-text-on-accent);
-  --color-secondary: var(--color-surface-muted);
-  --color-secondary-foreground: var(--color-text-primary);
-  --color-muted: var(--color-surface-muted);
-  --color-muted-foreground: var(--color-text-tertiary);
-  --color-accent: var(--color-surface-hover);
-  --color-accent-foreground: var(--color-text-primary);
-  --color-destructive: var(--color-error);
-  --color-destructive-foreground: var(--color-surface);
-  --color-input: var(--color-border-warm);
-
   /* Default component radius */
   --radius: var(--radius-md);
 }
@@ -1602,16 +1583,48 @@ html[data-input-intent='keyboard']
   gap: var(--spacing-md);
 }
 
-/* The filled portion of a score track reads its width from --score-fill,
-   which the component supplies as a runtime CSS variable. */
+/* Filled portion of a score track: one width step per point on the 0-10 scale. */
 /* @internal src/shared/ui/score-tile.tsx */
 @utility score-fill {
   display: block;
   block-size: 100%;
-  inline-size: var(--score-fill, 0%);
   max-inline-size: 100%;
   border-radius: inherit;
   background: var(--color-brand);
+
+  &[data-score='0'] {
+    inline-size: 0%;
+  }
+  &[data-score='1'] {
+    inline-size: 10%;
+  }
+  &[data-score='2'] {
+    inline-size: 20%;
+  }
+  &[data-score='3'] {
+    inline-size: 30%;
+  }
+  &[data-score='4'] {
+    inline-size: 40%;
+  }
+  &[data-score='5'] {
+    inline-size: 50%;
+  }
+  &[data-score='6'] {
+    inline-size: 60%;
+  }
+  &[data-score='7'] {
+    inline-size: 70%;
+  }
+  &[data-score='8'] {
+    inline-size: 80%;
+  }
+  &[data-score='9'] {
+    inline-size: 90%;
+  }
+  &[data-score='10'] {
+    inline-size: 100%;
+  }
 }
 
 /* @internal src/shared/ui/navigation.tsx */

@@ -146,7 +146,6 @@ export default defineConfig(({ mode }) => {
         'shadcn/no-inline-styles': [
           'error',
           {
-            allow: ['--score-fill'],
             message:
               'Style tokens and layout belong in CSS (shared/styles or feature CSS). Inline styles only for documented runtime CSS variables.',
           },

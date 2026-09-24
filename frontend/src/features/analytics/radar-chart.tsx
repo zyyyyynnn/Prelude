@@ -9,6 +9,14 @@ import type { AnalyticsRadarResponse } from './types'
 
 echarts.use([RadarChart, RadarComponent, TooltipComponent, CanvasRenderer])
 
+/** Chart-internal geometry sized for the radar's own labels and frame. */
+const RADAR_GEOMETRY = {
+  radius: '64%',
+  splitNumber: 5,
+  areaOpacity: 0.16,
+  lineWidth: 2,
+} as const
+
 /**
  * The capability radar. Its option is rebuilt from the design tokens on every render,
  * because a canvas cannot read a CSS variable the way an element can.
@@ -23,8 +31,8 @@ export function Radar({ data }: { data: AnalyticsRadarResponse }) {
     return {
       animation: false,
       radar: {
-        radius: '64%',
-        splitNumber: 5,
+        radius: RADAR_GEOMETRY.radius,
+        splitNumber: RADAR_GEOMETRY.splitNumber,
         indicator: DIMENSIONS.map((dimension) => ({
           name: dimension.label,
           max: DIMENSION_SCALE,
@@ -45,8 +53,8 @@ export function Radar({ data }: { data: AnalyticsRadarResponse }) {
           data: [
             {
               value: [data.technical, data.expression, data.logic],
-              areaStyle: { color: brand, opacity: 0.16 },
-              lineStyle: { color: brand, width: 2 },
+              areaStyle: { color: brand, opacity: RADAR_GEOMETRY.areaOpacity },
+              lineStyle: { color: brand, width: RADAR_GEOMETRY.lineWidth },
               itemStyle: { color: brand },
             },
           ],

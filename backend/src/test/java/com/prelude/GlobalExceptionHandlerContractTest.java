@@ -53,7 +53,7 @@ class GlobalExceptionHandlerContractTest {
     @Test
     void businessExceptionKeepsItsOwnStatusAndCode() throws Exception {
         org.mockito.Mockito.when(positionService.listPositions())
-            .thenThrow(BusinessException.of(404, "position_missing", "岗位不存在"));
+            .thenThrow(BusinessException.notFound("position_missing", "岗位不存在"));
 
         mockMvc.perform(get("/api/position/list"))
             .andExpect(status().isNotFound())
