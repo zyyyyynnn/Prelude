@@ -101,6 +101,8 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 页面壳（`workspace-page*`、`app-layout*`、`app-sidebar`、`page*`）、页眉带（`workspace-header*`）与滚动槽（`scrollable`、`gutter-stable`）一律是 `@utility`。`feature` 目录不含 CSS 文件；`features/*` 与 `app/shell` 只使用 token 与原子类。`frontend/src/app/styles.css` 装配 Tailwind、扫描范围与共享样式；`shared/styles/index.css` 拥有 token、主题、重置、全局排版、焦点状态、复合 utility 与文档级打印策略。
 
+下列度量**不并入**界面尺度，各有自己的命名空间：图表内部几何（`features/analytics/chart-geometry.ts`）、光学负叠与屏幕阅读器裁剪盒（`geometry-exempt`）、浏览器自绘覆写（`browser-chrome`）。它们与 `--spacing-*` / `--layout-*` 并存，而不是被统一进 token 阶梯。
+
 - 跨组件状态用 Tailwind `group/*`、`peer/*` 与 `data-*` 变体；文档级行为（报告打印）留在 `index.css` 的 `@media print`，以 `data-slot` 为锚点。
 - 同一元素上叠加「注册 utility × 核心原子」或「utility × 未分层类」时，谁生效由 Tailwind 内部排序决定，视为缺陷。需要覆盖时只有两种写法：为基座声明 `base-variant` 命名的变体 utility，或把该属性从基座拆出交给调用点独占。
 - 元素级重置（`button`、`a`、标题与列表 margin）写在 `@layer base`，只承担字体族与 margin；字号与颜色由排版角色提供。

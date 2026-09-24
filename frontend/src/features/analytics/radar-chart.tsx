@@ -3,19 +3,12 @@ import { RadarChart } from 'echarts/charts'
 import { RadarComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { cssToken, cssVar, cssVarNumber } from './chart-tokens'
+import { RADAR_GEOMETRY } from './chart-geometry'
 import { DIMENSIONS, DIMENSION_SCALE, radarValue } from './dimensions'
 import { useChart } from './use-chart'
 import type { AnalyticsRadarResponse } from './types'
 
 echarts.use([RadarChart, RadarComponent, TooltipComponent, CanvasRenderer])
-
-/** Chart-internal geometry sized for the radar's own labels and frame. */
-const RADAR_GEOMETRY = {
-  radius: '64%',
-  splitNumber: 5,
-  areaOpacity: 0.16,
-  lineWidth: 2,
-} as const
 
 /**
  * The capability radar. Its option is rebuilt from the design tokens on every render,

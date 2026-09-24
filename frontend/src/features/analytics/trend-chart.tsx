@@ -3,19 +3,13 @@ import { LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { cssDeclarations, cssToken, cssVar, cssVarNumber, formatDate } from './chart-tokens'
+import { TREND_GRID } from './chart-geometry'
 import { DIMENSIONS, trendValue } from './dimensions'
 import { useChart } from './use-chart'
 import type { DimensionKey } from './dimensions'
 import type { AnalyticsTrendPoint } from './types'
 
 echarts.use([LineChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
-
-const TREND_GRID = {
-  left: 44,
-  right: 18,
-  top: 30,
-  bottom: 48,
-} as const
 
 /**
  * The score trend: one line per dimension, each reading its own chart token so the trend

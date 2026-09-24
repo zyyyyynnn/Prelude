@@ -8,7 +8,8 @@
 | --- | --- |
 | `npm run check` | 格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
 | `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界。入口契约按 AST 读：`from`、`import()`、`require()` 与再导出都算一次深导入，相对路径先解析到 src 内目标模块再判定。`app/` 之外只能取 `@/features/<name>` 或 `@/shared/ui`；`app/` 可以点名 feature 入口已登记的具名文件，登记同时充当「这个名字有人消费」的证据 |
-| `npm run verify:ui` | feature CSS 文件与 feature 样式导入为零；空规则为零；未分层元素选择器为零（元素级重置在 `@layer base`，浏览器外观覆写按 `/* browser-chrome: <理由> */` 具名豁免，标记与规则正文按完整选择器文本比对）；无消费者的类规则为零；功能 `@utility name-*` 必有字面量调用点；单一拥有者配方（登记表 + 发现制：一段 ≥3 个类 token 且点名设计系统的 `className` 字面量跨 ≥2 个文件即失败，例外具名并写明提升目标）；`ui-*__*` 与 `workspace-header__*` 只在组件内写出；`sideOffset` 只取 `OVERLAY_OFFSET` 成员 |
+| `npm run verify:ui` | feature CSS 文件与 feature 样式导入为零；空规则为零；未分层元素选择器为零（元素级重置在 `@layer base`，浏览器外观覆写按 `/* browser-chrome: <理由> */` 具名豁免，选择器全文锁在登记表，标记与规则正文按完整选择器文本比对）；无消费者的类规则为零；功能 `@utility name-*` 必有字面量调用点；单一拥有者配方（登记表 + 发现制：一段 ≥3 个类 token 且点名设计系统的 `className` 字面量跨 ≥2 个文件即失败，例外具名并写明提升目标）；`ui-*__*` 与 `workspace-header__*` 只在组件内写出；`sideOffset` 只取 `OVERLAY_OFFSET` 成员；`shared/ui` 的 `cn()` 不出现插值拼接类名 |
+| `npm run verify:demo-copy` | 演示 harness 与后端策略文案镜像一致 |
 | `npm run verify:tokens` | token 登记完整且唯一；声明且有消费者的 token；被引用且已声明的 `var(--x)` 与 `atom-(--x)`；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度）按声明读取，跨行 `calc()`、`@utility` 内自定义属性、混用 `var()` 的值都在范围内，`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 仍是引用其来源的表达式；盒尺寸与某档 `--ui-glyph-*` 等值时指名该 glyph token；读取器声明数低于阈值即失败。`%`/`em`/`vh`/`vw` 放行；技术必需的裸值在规则内标 `geometry-exempt: <理由>`。样式表之外的几何由 markup 读取器覆盖：`.tsx` 里的 Tailwind 任意值与无单位内联样式；图表内部几何以具名 allowlist 豁免，且每个条目仍在源码里存在 |
 | `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类压过核心原子造成的死原子；含经 `cn(base, className)` 注入的原子。在 `npm run build` 之后执行 |
 | `npm run verify:production` | 生产产物按 chunk 不含开发态组件检查面的路由标识符，且这些标识符仍在源码树中（改名即红） |

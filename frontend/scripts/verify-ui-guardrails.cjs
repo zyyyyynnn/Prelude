@@ -92,6 +92,24 @@ for (const { owner, pattern, label } of singleOwnerRules) {
 const CLASS_ATTRIBUTE = /className="([^"]*)"|className=\{`([^`]*)`\}|className=\{"([^"]*)"\}/g
 const MERGE_CALL = /\b(?:cn|clsx)\(/g
 
+/* `require-static-classes` is off under `shared/ui` so primitives can accept a call-site
+   `className`. Interpolated *BEM* names are fine: `ui-button--primary` is declared in the
+   sheet as a full class. Interpolated *@utility* names are not: Tailwind emits nothing for
+   them, and the functional-utility literal-call-site check above is the rule that catches
+   that failure mode. */
+function checkSharedUiNoComposedUtilityNames(relative, source) {
+  if (!relative.replaceAll('\\', '/').includes('src/shared/ui/')) return
+  for (const match of source.matchAll(MERGE_CALL)) {
+    const args = readCallArguments(source, match.index + match[0].length - 1)
+    if (args === null) continue
+    if (!args.includes('${')) continue
+    if (args.includes('ui-button--')) continue
+    violations.push(
+      `${relative}: composed class name in cn() — BEM may interpolate, a Tailwind utility may not; write the literal`,
+    )
+  }
+}
+
 /* A `cn(...)` argument list is read by counting parens, not by `[^)]*`. An arbitrary
    value closes a paren of its own — `max-w-(--layout-workspace-content-max-inline-size)`
    — so the character-class form stopped at the *value's* `)` and left the rest of the
@@ -259,6 +277,11 @@ for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) 
   }
 }
 
+for (const file of walk(sourceRoot).filter((item) => /\.(ts|tsx)$/.test(item))) {
+  const relative = path.relative(root, file).replaceAll('\\', '/')
+  checkSharedUiNoComposedUtilityNames(relative, fs.readFileSync(file, 'utf8'))
+}
+
 /* A component's internal element classes (`ui-menu__label`, `ui-button__content`)
    are its own layout contract. A call site that writes one is reaching past the component's
    props into its markup, and the two then drift with nothing to notice it — which is how the
@@ -362,6 +385,14 @@ for (const file of stylesheets) {
      declared by naming the selector it covers, and it is audited: a marker whose selector no
      longer needs it is itself a violation, the way every other register in this file is. */
   const browserChrome = new Map()
+  /* Locked selector texts: changing a browser-chrome selector is a new decision, so the
+     registry below must change in the same commit. A marker whose selector is not listed
+     is a violation — the same audit as every other register in this file. */
+  const BROWSER_CHROME_SELECTORS = new Set([
+    'input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus',
+    "input[type='password']::-ms-reveal, input[type='password']::-ms-clear",
+    "input[type='password']::-webkit-credentials-auto-fill-button",
+  ])
   for (const match of source.matchAll(/\/\*\s*browser-chrome:\s*([^]*?)\*\/\s*([^{}]+)\{/g)) {
     const selector = match[2].replace(/\s+/g, ' ').trim()
     browserChrome.set(selector, {
@@ -369,6 +400,11 @@ for (const file of stylesheets) {
       reason: match[1].trim(),
       used: false,
     })
+    if (!BROWSER_CHROME_SELECTORS.has(selector)) {
+      violations.push(
+        `${relative}: browser-chrome selector "${selector}" is not in the locked registry — register the new selector or restore the old one`,
+      )
+    }
   }
   const elementName = (part) => {
     const bare = part

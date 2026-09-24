@@ -12,6 +12,7 @@
     "test:unit": "node --experimental-strip-types --test src/features/interview/components/message-updates.test.ts src/features/interview/components/interview-turn-stream.test.ts src/features/interview/components/turn-buffer.test.ts",
     "verify:architecture": "node --test scripts/verify-architecture.test.cjs && node scripts/verify-architecture.cjs",
     "verify:ui": "node scripts/verify-ui-guardrails.cjs",
+    "verify:demo-copy": "node scripts/verify-demo-copy.cjs",
     "verify:tokens": "node scripts/verify-ui-tokens.cjs",
     "verify:production": "node scripts/verify-production-bundle.cjs",
     "verify:byok": "playwright test --grep @byok",

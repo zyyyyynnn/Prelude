@@ -402,8 +402,8 @@ for (const [token, sources] of Object.entries(schema.derived_tokens ?? {})) {
   /* Named chart constants allowed to hold unitless numbers (echarts reads them as px).
      Each entry must still be present: a stale entry is a leftover, not an exemption. */
   const chartGeometryConstants = [
-    { file: 'src/features/analytics/trend-chart.tsx', name: 'TREND_GRID' },
-    { file: 'src/features/analytics/radar-chart.tsx', name: 'RADAR_GEOMETRY' },
+    { file: 'src/features/analytics/chart-geometry.ts', name: 'TREND_GRID' },
+    { file: 'src/features/analytics/chart-geometry.ts', name: 'RADAR_GEOMETRY' },
   ]
   for (const { file, name } of chartGeometryConstants) {
     const text = fs.readFileSync(path.join(root, file), 'utf8')

@@ -43,6 +43,7 @@ npm --prefix frontend run check
 npm --prefix frontend run verify:architecture
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
+npm --prefix frontend run verify:demo-copy
 npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:a11y
