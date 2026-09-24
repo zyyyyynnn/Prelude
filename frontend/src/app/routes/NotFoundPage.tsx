@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui'
 
 export function NotFoundPage() {
   return (
-    <main className="page page--center bg-bg p-lg">
+    <main className="page page--center page--inset-viewport bg-bg p-lg">
       <section className="grid justify-items-center gap-lg text-center" data-slot="not-found">
         <BrandMetaballs className="size-(--layout-brand-mark-inline-size) rounded-full" />
         <div className="grid justify-items-center gap-sm" data-slot="not-found-body">

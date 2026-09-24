@@ -521,13 +521,19 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 }
 
 @utility page--center {
-  min-height: calc(100vh - var(--layout-page-center-block-offset));
   place-items: center;
 }
 
+/* Full-bleed anonymous shell: owns the viewport fill and its surface. */
 @utility page--viewport {
   min-height: 100vh;
   background: var(--color-bg);
+}
+
+/* Same fill under a chrome band: owns only the inset min-height, so a page may
+   combine it with `page--center` and a call-site background without a cascade fight. */
+@utility page--inset-viewport {
+  min-height: calc(100vh - var(--layout-page-center-block-offset));
 }
 
 .brand-metaballs {
