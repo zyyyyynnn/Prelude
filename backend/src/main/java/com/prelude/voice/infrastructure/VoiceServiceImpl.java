@@ -23,7 +23,7 @@ public class VoiceServiceImpl implements VoicePort {
     private final VoiceModelAccessPort voiceModelAccessPort;
     private final ObjectMapper objectMapper;
 
-    // Hard constraint: read/write/connect timeouts strictly set to 3 seconds for voice API circuit breaker
+    // Voice circuit-breaker budget: all transport timeouts stay at 3s.
     private final OkHttpClient voiceHttpClient = new OkHttpClient.Builder()
             .connectTimeout(3, TimeUnit.SECONDS)
             .readTimeout(3, TimeUnit.SECONDS)
@@ -92,10 +92,4 @@ public class VoiceServiceImpl implements VoicePort {
             throw new IllegalStateException("语音合成服务调用失败", e);
         }
     }
-
-    @Override
-    public boolean isVoiceSupported() {
-        return true;
-    }
-
 }

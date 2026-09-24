@@ -1,8 +1,6 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.LlmServerException;
-import com.prelude.LlmTimeoutException;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.LlmPort.Attachment;
 import com.prelude.llm.api.LlmPort.CompletionResult;
@@ -13,7 +11,7 @@ import com.prelude.llm.api.LlmPort.ToolBinding;
 import com.prelude.llm.api.LlmPort.Usage;
 import com.prelude.llm.api.LlmUsageRecorded;
 import com.prelude.llm.api.ModelCapabilityResponse;
-import com.prelude.llm.persistence.ModelExecutionSnapshot;
+import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -54,7 +52,7 @@ public class ModelExecutionService {
 
     private final SpringAiModelFactory modelFactory;
     private final ModelExecutionSnapshotService snapshotService;
-    private final ModelProfileService profileService;
+    private final ProviderCredentialResolver credentialResolver;
     private final ModelCapabilityJson capabilityJson;
     private final LlmTransportRetry transportRetry;
     private final ApplicationEventPublisher eventPublisher;
@@ -63,25 +61,25 @@ public class ModelExecutionService {
     public ModelExecutionService(
         SpringAiModelFactory modelFactory,
         ModelExecutionSnapshotService snapshotService,
-        ModelProfileService profileService,
+        ProviderCredentialResolver credentialResolver,
         ModelCapabilityJson capabilityJson,
         LlmTransportRetry transportRetry,
         ApplicationEventPublisher eventPublisher
     ) {
         this.modelFactory = modelFactory;
         this.snapshotService = snapshotService;
-        this.profileService = profileService;
+        this.credentialResolver = credentialResolver;
         this.capabilityJson = capabilityJson;
         this.transportRetry = transportRetry;
         this.eventPublisher = eventPublisher;
     }
 
     public CompletionResult complete(ModelExecutionRequest request) {
-        ModelExecutionSnapshot snapshot = snapshotService.require(request.snapshotId());
-        String apiKey = profileService.resolveApiKey(snapshot.getAccountId(), snapshot.getCredentialId());
+        SnapshotRow snapshot = snapshotService.require(request.snapshotId());
+        String apiKey = credentialResolver.resolve(snapshot.accountId(), snapshot.credentialId());
         RuntimeException lastTransient = null;
 
-        for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
+        for (SnapshotRow effective : executionCandidates(snapshot)) {
             UsageAccumulator usage = new UsageAccumulator();
             validateRequest(effective, request, false);
             ChatModel chatModel = modelFactory.chatModel(effective, apiKey);
@@ -97,7 +95,7 @@ public class ModelExecutionService {
                 flushObservedUsage(effective, request, usage);
                 lastTransient = failure.transportFailure();
                 log.warn("Model execution exhausted transport retry before tool execution for model {} (snapshot {})",
-                    effective.getModel(), effective.getId());
+                    effective.model(), effective.id());
             } catch (RuntimeException failure) {
                 flushObservedUsage(effective, request, usage);
                 throw failure;
@@ -109,11 +107,11 @@ public class ModelExecutionService {
     }
 
     public void stream(ModelExecutionRequest request, StreamSink sink) {
-        ModelExecutionSnapshot snapshot = snapshotService.require(request.snapshotId());
-        String apiKey = profileService.resolveApiKey(snapshot.getAccountId(), snapshot.getCredentialId());
+        SnapshotRow snapshot = snapshotService.require(request.snapshotId());
+        String apiKey = credentialResolver.resolve(snapshot.accountId(), snapshot.credentialId());
         RuntimeException lastTransient = null;
 
-        for (ModelExecutionSnapshot effective : executionCandidates(snapshot)) {
+        for (SnapshotRow effective : executionCandidates(snapshot)) {
             UsageAccumulator usage = new UsageAccumulator();
             validateRequest(effective, request, true);
             ChatModel chatModel = modelFactory.chatModel(effective, apiKey);
@@ -148,7 +146,7 @@ public class ModelExecutionService {
                 }
                 lastTransient = failure;
                 log.warn("Model stream exhausted transport retry before first delta for model {} (snapshot {})",
-                    effective.getModel(), effective.getId());
+                    effective.model(), effective.id());
             }
         }
         throw mapFailure(lastTransient == null
@@ -159,7 +157,7 @@ public class ModelExecutionService {
     private LogicalCompletion completeLogicalTurn(
         ChatModel chatModel,
         Prompt initialPrompt,
-        ModelExecutionSnapshot snapshot,
+        SnapshotRow snapshot,
         ModelExecutionRequest request,
         UsageAccumulator usage
     ) {
@@ -193,7 +191,7 @@ public class ModelExecutionService {
     }
 
     private void flushObservedUsage(
-        ModelExecutionSnapshot snapshot,
+        SnapshotRow snapshot,
         ModelExecutionRequest request,
         UsageAccumulator usage
     ) {
@@ -202,9 +200,9 @@ public class ModelExecutionService {
         }
     }
 
-    private ChatResponse callModel(ChatModel chatModel, Prompt prompt, ModelExecutionSnapshot snapshot) {
+    private ChatResponse callModel(ChatModel chatModel, Prompt prompt, SnapshotRow snapshot) {
         return transportRetry.execute(
-            "chat-" + snapshot.getProvider() + "-" + snapshot.getModel(),
+            "chat-" + snapshot.provider() + "-" + snapshot.model(),
             () -> chatModel.call(prompt));
     }
 
@@ -241,7 +239,7 @@ public class ModelExecutionService {
         }).toList();
     }
 
-    private void validateRequest(ModelExecutionSnapshot snapshot, ModelExecutionRequest request, boolean streaming) {
+    private void validateRequest(SnapshotRow snapshot, ModelExecutionRequest request, boolean streaming) {
         if (request.responseMode() == null) {
             throw BusinessException.badRequest("模型输出模式不能为空");
         }
@@ -251,7 +249,7 @@ public class ModelExecutionService {
         ModelCapabilityResponse capability = frozenCapability(snapshot);
         ModelCapabilityResponse.ReasoningLevel reasoningLevel;
         try {
-            reasoningLevel = ModelCapabilityResponse.ReasoningLevel.valueOf(snapshot.getReasoningLevel());
+            reasoningLevel = ModelCapabilityResponse.ReasoningLevel.valueOf(snapshot.reasoningLevel());
         } catch (IllegalArgumentException exception) {
             throw new IllegalStateException("Frozen reasoning level is invalid", exception);
         }
@@ -269,20 +267,20 @@ public class ModelExecutionService {
         }
     }
 
-    private List<ModelExecutionSnapshot> executionCandidates(ModelExecutionSnapshot snapshot) {
-        List<ModelExecutionSnapshot> candidates = new ArrayList<>();
+    private List<SnapshotRow> executionCandidates(SnapshotRow snapshot) {
+        List<SnapshotRow> candidates = new ArrayList<>();
         candidates.add(snapshot);
-        for (ModelCapabilityResponse fallback : capabilityJson.readList(snapshot.getFallbackCapabilitiesJson())) {
-            if (candidates.stream().noneMatch(candidate -> candidate.getModel().equals(fallback.model()))) {
+        for (ModelCapabilityResponse fallback : capabilityJson.readList(snapshot.fallbackCapabilitiesJson())) {
+            if (candidates.stream().noneMatch(candidate -> candidate.model().equals(fallback.model()))) {
                 candidates.add(withModel(snapshot, fallback));
             }
         }
         return List.copyOf(candidates);
     }
 
-    private ModelCapabilityResponse frozenCapability(ModelExecutionSnapshot snapshot) {
-        ModelCapabilityResponse capability = capabilityJson.read(snapshot.getModelCapabilityJson());
-        if (!snapshot.getProvider().equals(capability.provider()) || !snapshot.getModel().equals(capability.model())) {
+    private ModelCapabilityResponse frozenCapability(SnapshotRow snapshot) {
+        ModelCapabilityResponse capability = capabilityJson.read(snapshot.modelCapabilityJson());
+        if (!snapshot.provider().equals(capability.provider()) || !snapshot.model().equals(capability.model())) {
             throw new IllegalStateException("Frozen model capability does not match the execution snapshot");
         }
         return capability;
@@ -315,28 +313,15 @@ public class ModelExecutionService {
         return UserMessage.builder().text(content).media(media).build();
     }
 
-    private ModelExecutionSnapshot withModel(ModelExecutionSnapshot snapshot, ModelCapabilityResponse capability) {
-        ModelExecutionSnapshot copy = new ModelExecutionSnapshot();
-        copy.setId(snapshot.getId());
-        copy.setAccountId(snapshot.getAccountId());
-        copy.setProfileId(snapshot.getProfileId());
-        copy.setProvider(snapshot.getProvider());
-        copy.setModel(capability.model());
-        copy.setReasoningLevel(snapshot.getReasoningLevel());
-        copy.setEffectiveParametersJson(snapshot.getEffectiveParametersJson());
-        copy.setCapabilityVersion(snapshot.getCapabilityVersion());
-        copy.setModelCapabilityJson(capabilityJson.write(capability));
-        copy.setFallbackCapabilitiesJson(snapshot.getFallbackCapabilitiesJson());
-        copy.setCredentialId(snapshot.getCredentialId());
-        copy.setCustomEndpointUrl(snapshot.getCustomEndpointUrl());
-        return copy;
+    private SnapshotRow withModel(SnapshotRow snapshot, ModelCapabilityResponse capability) {
+        return snapshot.withModel(capability.model(), capabilityJson.write(capability));
     }
 
-    private String extractContent(ModelExecutionSnapshot snapshot, ChatResponse response) {
+    private String extractContent(SnapshotRow snapshot, ChatResponse response) {
         if (response == null) {
             throw BusinessException.badRequest("模型服务返回内容为空");
         }
-        if ("anthropic-messages".equals(snapshot.getProvider())) {
+        if ("anthropic-messages".equals(snapshot.provider())) {
             for (int index = response.getResults().size() - 1; index >= 0; index--) {
                 var output = response.getResults().get(index).getOutput();
                 if (output != null && isVisibleAnthropicOutput(output)
@@ -353,11 +338,11 @@ public class ModelExecutionService {
         return response.getResult().getOutput().getText();
     }
 
-    private String extractDelta(ModelExecutionSnapshot snapshot, ChatResponse response) {
+    private String extractDelta(SnapshotRow snapshot, ChatResponse response) {
         if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
             return null;
         }
-        if ("anthropic-messages".equals(snapshot.getProvider())
+        if ("anthropic-messages".equals(snapshot.provider())
             && !isVisibleAnthropicOutput(response.getResult().getOutput())) {
             return null;
         }
@@ -371,14 +356,14 @@ public class ModelExecutionService {
             && !metadata.containsKey("data");
     }
 
-    private void publishUsage(ModelExecutionSnapshot snapshot, ModelExecutionRequest request, Usage usage) {
+    private void publishUsage(SnapshotRow snapshot, ModelExecutionRequest request, Usage usage) {
         LlmUsageRecorded event = new LlmUsageRecorded(
-            snapshot.getAccountId(),
-            snapshot.getId(),
+            snapshot.accountId(),
+            snapshot.id(),
             request.purpose(),
             request.promptId(),
-            snapshot.getProvider(),
-            snapshot.getModel(),
+            snapshot.provider(),
+            snapshot.model(),
             usage.inputTokens(),
             usage.outputTokens(),
             usage.totalTokens(),
@@ -389,7 +374,7 @@ public class ModelExecutionService {
             eventPublisher.publishEvent(event);
         } catch (RuntimeException listenerFailure) {
             log.warn("LLM usage listener failed for snapshot {}; business execution result is unchanged ({})",
-                snapshot.getId(), listenerFailure.getClass().getSimpleName());
+                snapshot.id(), listenerFailure.getClass().getSimpleName());
         }
     }
 
@@ -457,9 +442,9 @@ public class ModelExecutionService {
             return observed;
         }
 
-        Usage toUsage(ModelExecutionSnapshot snapshot, ModelExecutionRequest request) {
+        Usage toUsage(SnapshotRow snapshot, ModelExecutionRequest request) {
             return new Usage(
-                snapshot.getId(), request.purpose(), snapshot.getProvider(), snapshot.getModel(),
+                snapshot.id(), request.purpose(), snapshot.provider(), snapshot.model(),
                 inputTokens, outputTokens, totalTokens);
         }
 
@@ -468,6 +453,70 @@ public class ModelExecutionService {
                 return current;
             }
             return (current == null ? 0L : current) + next.longValue();
+        }
+    }
+
+    /**
+     * Public {@link LlmPort} bean. Lives in this file so execution stays free
+     * of profile configuration without adding another source node.
+     */
+    @Service
+    @lombok.RequiredArgsConstructor
+    public static class PortAdapter implements LlmPort {
+
+        private final ModelExecutionSnapshotService snapshotService;
+        private final ModelExecutionService executionService;
+        private final ModelProfileService profileService;
+
+        @Override
+        public com.prelude.llm.api.ModelExecutionSnapshotRef freezeSnapshot(FreezeSnapshotCommand command) {
+            return snapshotService.freeze(command);
+        }
+
+        @Override
+        public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
+            return snapshotService.frozenConfiguration(accountId, snapshotId);
+        }
+
+        @Override
+        public CompletionResult complete(ModelExecutionRequest request) {
+            return executionService.complete(request);
+        }
+
+        @Override
+        public void stream(ModelExecutionRequest request, StreamSink sink) {
+            executionService.stream(request, sink);
+        }
+
+        @Override
+        public com.prelude.llm.api.ModelConfigurationView currentConfiguration(Long accountId) {
+            return profileService.currentConfiguration(accountId);
+        }
+
+        @Override
+        public com.prelude.llm.api.ModelConfigurationView saveConfiguration(
+            Long accountId,
+            com.prelude.llm.api.SaveConfigurationCommand command
+        ) {
+            return profileService.saveConfiguration(accountId, command);
+        }
+
+        @Override
+        public java.util.List<com.prelude.llm.api.ProviderDescriptorView> listModels() {
+            return profileService.listModels();
+        }
+
+        @Override
+        public DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command) {
+            return profileService.discoverCustomModels(accountId, command);
+        }
+
+        @Override
+        public ModelCapabilityResponse discoverCustomModelCapability(
+            Long accountId,
+            DiscoverModelCapabilityCommand command
+        ) {
+            return profileService.discoverCustomModelCapability(accountId, command);
         }
     }
 }

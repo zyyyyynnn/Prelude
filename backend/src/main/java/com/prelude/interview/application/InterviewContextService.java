@@ -2,8 +2,12 @@ package com.prelude.interview.application;
 
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.port.InterviewMessageRepository;
-import com.prelude.interview.application.port.InterviewSessionRepository;
+import com.prelude.interview.domain.InterviewStage;
+import com.prelude.interview.domain.InterviewStagePolicy;
+import com.prelude.interview.application.port.InterviewContextPort;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewStageRepository;
 import com.prelude.context.RetrievalPort;
 import com.prelude.resume.api.port.ResumeContextPort;
 import com.prelude.resume.api.port.ResumeProjection;
@@ -17,17 +21,18 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class InterviewContextService {
+public class InterviewContextService implements InterviewContextPort {
 
     private static final String ROLE_SYSTEM = "system";
     private static final String ROLE_USER = "user";
 
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewMessageRepository interviewMessageRepository;
+    private final InterviewStageRepository interviewStageRepository;
     private final ResumeContextPort resumeContextPort;
     private final RetrievalPort retrievalPort;
-    private final InterviewStageManager interviewStageManager;
 
+    @Override
     public List<Map<String, String>> buildContextMessages(Long sessionId) {
         InterviewSession session = interviewSessionRepository.selectById(sessionId);
         List<InterviewMessage> allMessages = listMessages(sessionId);
@@ -55,6 +60,7 @@ public class InterviewContextService {
         return buildRecentWindow(systemMsgs, dialogMsgs, ragSystemPrompt);
     }
 
+    @Override
     public List<Map<String, String>> buildAutoStartMessages(InterviewSession session) {
         ResumeProjection resume = resumeContextPort.requireOwnedProjection(
             session.getAccountId(),
@@ -64,7 +70,7 @@ public class InterviewContextService {
         StringBuilder userPrompt = new StringBuilder();
         userPrompt.append("请作为模拟面试官主动发起第一问。")
             .append("目标岗位：").append(session.getTargetPosition()).append("。")
-            .append("当前阶段：").append(interviewStageManager.currentStageName(session.getId())).append("。");
+            .append("当前阶段：").append(currentStageName(session.getId())).append("。");
         if (resume != null) {
             userPrompt.append("候选人简历文件名：").append(resume.displayName()).append("。");
             if (resume.plainText() != null && !resume.plainText().isBlank()) {
@@ -156,6 +162,14 @@ public class InterviewContextService {
 
     private List<InterviewMessage> listMessages(Long sessionId) {
         return interviewMessageRepository.listBySession(sessionId);
+    }
+
+    private String currentStageName(Long sessionId) {
+        InterviewStage current = interviewStageRepository.findCurrent(sessionId);
+        if (current == null) {
+            current = interviewStageRepository.findLatest(sessionId);
+        }
+        return current == null ? InterviewStagePolicy.WARMUP : current.getStageName();
     }
 
     private String limitText(String text, int maxLength) {

@@ -81,8 +81,13 @@ public class ProviderSecretCipher {
     }
 
     private SecretKeySpec buildKeySpec(String secret) {
-        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < KEY_SIZE_BYTES) {
-            throw new IllegalArgumentException("AES secret must be at least 32 bytes");
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                "app.crypto.aes-secret is not configured; set APP_CRYPTO_AES_SECRET to a unique value"
+                    + " of at least 32 bytes (the dev profile supplies a local-only key)");
+        }
+        if (secret.getBytes(StandardCharsets.UTF_8).length < KEY_SIZE_BYTES) {
+            throw new IllegalStateException("AES secret must be at least 32 bytes");
         }
         try {
             byte[] keyBytes = MessageDigest.getInstance("SHA-256")

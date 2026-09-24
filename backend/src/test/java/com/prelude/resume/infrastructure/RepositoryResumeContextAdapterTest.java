@@ -1,7 +1,7 @@
 package com.prelude.resume.infrastructure;
 
-import com.prelude.BusinessException;
 import com.prelude.resume.application.port.ResumeRepository;
+import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -56,9 +55,8 @@ class RepositoryResumeContextAdapterTest {
             LocalDateTime.now()
         )));
 
-        assertThatThrownBy(() -> new RepositoryResumeContextAdapter(repository)
-            .requireOwnedProjection(7L, 41L))
-            .isInstanceOf(BusinessException.class)
-            .hasMessage("简历不存在或无权访问");
+        ExceptionFixtures.assertBusinessExceptionMessage(
+            () -> new RepositoryResumeContextAdapter(repository).requireOwnedProjection(7L, 41L),
+            "简历不存在或无权访问");
     }
 }

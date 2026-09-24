@@ -1,3 +1,4 @@
-export { fetchResumes, uploadResume } from './api'
-export type { ResumeItem } from './types'
+export { fetchResumes } from './api'
 export { ResumeManagementPanel } from './ResumeManagementPanel'
+export { ResumeRow } from './ResumeRow'
+export type { ResumeItem } from './types'

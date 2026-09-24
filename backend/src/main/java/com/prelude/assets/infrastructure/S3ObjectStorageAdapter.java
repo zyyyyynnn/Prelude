@@ -1,6 +1,7 @@
 package com.prelude.assets.infrastructure;
 
 import com.prelude.assets.ObjectStoragePort;
+import com.prelude.assets.S3StorageProperties;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -32,11 +33,11 @@ import java.time.Duration;
 @Slf4j
 public class S3ObjectStorageAdapter implements ObjectStoragePort {
 
-    private final S3StorageConfiguration.S3StorageProperties properties;
+    private final S3StorageProperties properties;
     private final S3Client s3Client;
     private final S3Presigner presigner;
 
-    public S3ObjectStorageAdapter(S3StorageConfiguration.S3StorageProperties properties) {
+    public S3ObjectStorageAdapter(S3StorageProperties properties) {
         this.properties = properties;
         StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(
             AwsBasicCredentials.create(properties.accessKey(), properties.secretKey()));

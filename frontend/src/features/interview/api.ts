@@ -10,15 +10,28 @@ import type {
 
 export const fetchSessions = (signal?: AbortSignal) =>
   apiRequest<InterviewSessionItem[]>('/interview/sessions', { signal })
+
 export const fetchSession = (id: number, signal?: AbortSignal) =>
   apiRequest<InterviewSessionDetailResponse>(`/interview/${id}/messages`, { signal })
+
 export const startInterview = (payload: InterviewStartPayload) =>
   apiRequest<InterviewStartResponse>('/interview/start', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+
 export const finishInterview = (id: number) =>
   apiRequest<InterviewFinishResponse>(`/interview/${id}/finish`, { method: 'POST' })
+
+export const setSessionPinned = (id: number, pinned: boolean) =>
+  apiRequest<void>(`/interview/${id}/pin`, {
+    method: 'PATCH',
+    body: JSON.stringify({ pinned }),
+  })
+
+export const deleteSession = (id: number) =>
+  apiRequest<void>(`/interview/${id}`, { method: 'DELETE' })
+
 export const streamInterview = (
   id: number,
   payload: InterviewChatRequest,

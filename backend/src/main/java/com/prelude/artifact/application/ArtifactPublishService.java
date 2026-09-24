@@ -1,16 +1,14 @@
 package com.prelude.artifact.application;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
 import com.prelude.artifact.api.ArtifactCommandApi;
 import com.prelude.artifact.api.ArtifactQueryApi;
 import com.prelude.artifact.api.ArtifactRef;
 import com.prelude.artifact.api.ArtifactVersionRef;
 import com.prelude.artifact.api.AssetRefView;
+import com.prelude.artifact.application.port.ArtifactRepository;
 import com.prelude.artifact.domain.Artifact;
 import com.prelude.artifact.domain.ArtifactVersion;
-import com.prelude.artifact.persistence.ArtifactMapper;
-import com.prelude.artifact.persistence.ArtifactVersionMapper;
 import com.prelude.assets.api.AssetQueryApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +28,7 @@ public class ArtifactPublishService implements ArtifactCommandApi, ArtifactQuery
 
     private static final int MAX_VERSION_ASSIGNMENT_ATTEMPTS = 5;
 
-    private final ArtifactMapper artifactMapper;
-    private final ArtifactVersionMapper artifactVersionMapper;
+    private final ArtifactRepository artifacts;
     private final AssetQueryApi assetQueryApi;
 
     @Override
@@ -49,32 +46,23 @@ public class ArtifactPublishService implements ArtifactCommandApi, ArtifactQuery
 
     @Override
     public ArtifactRef findOwnedArtifact(Long accountId, String kind) {
-        Artifact artifact = artifactMapper.selectOne(new LambdaQueryWrapper<Artifact>()
-            .eq(Artifact::getAccountId, accountId)
-            .eq(Artifact::getKind, kind)
-            .last("LIMIT 1"));
+        Artifact artifact = artifacts.find(accountId, kind);
         return artifact == null ? null : new ArtifactRef(artifact.getId(), artifact.getKind());
     }
 
     @Override
     public List<ArtifactVersionRef> listVersions(Long accountId, Long artifactId) {
-        Artifact artifact = artifactMapper.selectById(artifactId);
+        Artifact artifact = artifacts.findById(artifactId);
         if (artifact == null || !artifact.getAccountId().equals(accountId)) {
             throw BusinessException.notFound("成果不存在");
         }
-        return artifactVersionMapper.selectList(new LambdaQueryWrapper<ArtifactVersion>()
-                .eq(ArtifactVersion::getArtifactId, artifactId)
-                .orderByAsc(ArtifactVersion::getVersionNumber))
-            .stream()
+        return artifacts.listVersions(artifactId).stream()
             .map(this::toVersionRef)
             .toList();
     }
 
     private Artifact requireOrCreateArtifact(Long accountId, String kind) {
-        Artifact artifact = artifactMapper.selectOne(new LambdaQueryWrapper<Artifact>()
-            .eq(Artifact::getAccountId, accountId)
-            .eq(Artifact::getKind, kind)
-            .last("LIMIT 1"));
+        Artifact artifact = artifacts.find(accountId, kind);
         if (artifact != null) {
             return artifact;
         }
@@ -82,32 +70,22 @@ public class ArtifactPublishService implements ArtifactCommandApi, ArtifactQuery
         created.setAccountId(accountId);
         created.setKind(kind);
         try {
-            artifactMapper.insert(created);
+            artifacts.add(created);
             return created;
         } catch (DuplicateKeyException duplicate) {
-            return artifactMapper.selectOne(new LambdaQueryWrapper<Artifact>()
-                .eq(Artifact::getAccountId, accountId)
-                .eq(Artifact::getKind, kind)
-                .last("LIMIT 1"));
+            return artifacts.find(accountId, kind);
         }
     }
 
     private ArtifactVersion insertNextVersion(Long artifactId, PublishVersionCommand command) {
         for (int attempt = 0; attempt < MAX_VERSION_ASSIGNMENT_ATTEMPTS; attempt++) {
-            Integer maxVersion = artifactVersionMapper.selectList(new LambdaQueryWrapper<ArtifactVersion>()
-                    .eq(ArtifactVersion::getArtifactId, artifactId))
-                .stream()
-                .map(ArtifactVersion::getVersionNumber)
-                .filter(java.util.Objects::nonNull)
-                .max(Integer::compareTo)
-                .orElse(0);
             ArtifactVersion version = new ArtifactVersion();
             version.setArtifactId(artifactId);
-            version.setVersionNumber(maxVersion + 1);
+            version.setVersionNumber(artifacts.highestVersionNumber(artifactId) + 1);
             version.setAssetId(command.assetId());
             version.setProvenanceJson(command.provenanceJson());
             try {
-                artifactVersionMapper.insert(version);
+                artifacts.addVersion(version);
                 return version;
             } catch (DuplicateKeyException duplicate) {
                 log.info("Concurrent version creation for artifact {}; retrying", artifactId);

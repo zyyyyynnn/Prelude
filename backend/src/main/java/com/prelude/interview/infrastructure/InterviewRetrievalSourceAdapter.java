@@ -1,7 +1,7 @@
 package com.prelude.interview.infrastructure;
 
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.infrastructure.persistence.InterviewSessionMapper;
 import com.prelude.context.RetrievalPort;
 import com.prelude.context.RetrievalSourcePort;
 import com.prelude.resume.api.port.ResumeContextPort;
@@ -16,7 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InterviewRetrievalSourceAdapter implements RetrievalSourcePort {
 
-    private final InterviewSessionMapper interviewSessionMapper;
+    private final InterviewSessionRepository interviewSessionRepository;
     private final ResumeContextPort resumeContextPort;
 
     @Override
@@ -24,7 +24,7 @@ public class InterviewRetrievalSourceAdapter implements RetrievalSourcePort {
         if (!RetrievalPort.SCOPE_SESSION.equals(scopeType)) {
             return List.of();
         }
-        InterviewSession session = interviewSessionMapper.selectById(scopeId);
+        InterviewSession session = interviewSessionRepository.selectById(scopeId);
         if (session == null) {
             return List.of();
         }

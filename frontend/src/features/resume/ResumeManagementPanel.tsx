@@ -1,8 +1,16 @@
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  HiddenFileInput,
+  Button,
+  Panel,
+  useFeedback,
+} from '@/shared/ui'
 import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { RefreshCw, Trash2 } from 'lucide-react'
-import { Button } from '@/shared/ui'
-import { useFeedback } from '@/shared/ui/feedback'
+import { sectionTitles } from '@/features/settings'
+import { ResumeRow } from './ResumeRow'
 import { deleteResume, fetchResumes, uploadResume } from './api'
 
 export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: number }) {
@@ -41,89 +49,55 @@ export function ResumeManagementPanel({ uploadRequest }: { uploadRequest?: numbe
   }
 
   return (
-    <div className="panel-content-wrapper resume-settings">
-      <div className="settings-inline-actions settings-inline-actions--header">
+    <Panel
+      title={sectionTitles.resumes}
+      actions={
         <Button onClick={() => input.current?.click()} loading={upload.isPending}>
           上传简历
         </Button>
-      </div>
-      <label className="sr-only" htmlFor="settings-resume-upload">
-        选择 PDF 简历
-      </label>
-      <input
+      }
+    >
+      <HiddenFileInput
         id="settings-resume-upload"
-        ref={input}
-        className="sr-only"
-        type="file"
+        label="选择 PDF 简历"
         accept="application/pdf"
-        onChange={(event) => {
-          selectFile(event.target.files?.[0])
-          event.currentTarget.value = ''
-        }}
+        inputRef={input}
+        onFiles={(files) => selectFile(files[0])}
       />
-      <section className="settings-section" aria-labelledby="resume-library-title">
-        <h3 id="resume-library-title" className="settings-section__title">
+      <section className="grid gap-sm" aria-labelledby="resume-library-title">
+        <h3 id="resume-library-title" className="type-subtitle" data-slot="section-title">
           已上传简历
         </h3>
         {resumes.isPending ? (
-          <div className="empty-state" aria-live="polite">
-            正在读取简历库…
-          </div>
+          <LoadingState message="正在读取简历库…" />
         ) : resumes.isError ? (
-          <div className="empty-state">
-            <p>{resumes.error.message}</p>
-            <Button variant="secondary" onClick={() => void resumes.refetch()}>
-              <RefreshCw aria-hidden="true" />
-              重新加载
-            </Button>
-          </div>
+          <ErrorState message={resumes.error.message} onRetry={() => void resumes.refetch()} />
         ) : resumes.data?.length ? (
-          <div className="resume-catalog">
+          <div className="flex flex-col gap-sm">
             {resumes.data.map((resume) => (
-              <article className="resume-row" key={resume.id}>
-                <div className="resume-row__main">
-                  <div className="resume-row__title-wrap">
-                    <h3 className="resume-item__title">{resume.fileName}</h3>
-                    <p className="resume-item__hint">
-                      {resume.createdAt
-                        ? new Intl.DateTimeFormat('zh-CN', {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          }).format(new Date(resume.createdAt))
-                        : '已解析'}{' '}
-                      · {resume.sessionCount ?? 0} 场面试
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`删除 ${resume.fileName}`}
-                  disabled={resume.inUse || remove.isPending}
-                  onClick={() => {
-                    void feedback
-                      .confirm({
-                        title: '删除简历',
-                        message: `确认删除“${resume.fileName}”？删除后无法恢复。`,
-                        confirmText: '删除',
-                        danger: true,
-                      })
-                      .then((accepted) => {
-                        if (accepted) remove.mutate(resume.id)
-                      })
-                  }}
-                >
-                  <Trash2 aria-hidden="true" />
-                </Button>
-              </article>
+              <ResumeRow
+                key={resume.id}
+                resume={resume}
+                pending={remove.isPending}
+                onDelete={() => {
+                  void feedback
+                    .confirm({
+                      title: '删除简历',
+                      message: `确认删除“${resume.fileName}”？删除后无法恢复。`,
+                      confirmText: '删除',
+                      danger: true,
+                    })
+                    .then((accepted) => {
+                      if (accepted) remove.mutate(resume.id)
+                    })
+                }}
+              />
             ))}
           </div>
         ) : (
-          <div className="empty-state resume-settings__empty">
-            <p>暂无简历，上传 PDF 后开始训练。</p>
-          </div>
+          <EmptyState message="暂无简历，上传 PDF 后开始训练。" />
         )}
       </section>
-    </div>
+    </Panel>
   )
 }

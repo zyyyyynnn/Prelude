@@ -1,6 +1,6 @@
-import { Download } from 'lucide-react'
-import { Button, IconTooltip, SegmentedControl } from '@/shared/ui'
-import type { InterviewStageName } from '../types'
+import { Printer } from 'lucide-react'
+import { Button, PageHeader, SegmentedControl } from '@/shared/ui'
+import type { InterviewSessionStatus, InterviewStageName } from '../types'
 
 export function WorkspaceHeader({
   title,
@@ -10,21 +10,21 @@ export function WorkspaceHeader({
   showingReport,
   sending,
   finishing,
-  exporting = false,
+  printing = false,
   onFinish,
-  onExportReport,
+  onPrintReport,
   onToggleReport,
 }: {
   title?: string
   stage?: InterviewStageName
-  status?: string
+  status?: InterviewSessionStatus
   hasReport: boolean
   showingReport: boolean
   sending: boolean
   finishing: boolean
-  exporting?: boolean
+  printing?: boolean
   onFinish: () => void
-  onExportReport: () => void
+  onPrintReport: () => void
   onToggleReport: (show: boolean) => void
 }) {
   const headerTitle = title?.trim() || '新面试会话'
@@ -32,21 +32,12 @@ export function WorkspaceHeader({
   const showGenerateButton = !showingReport && !finished
   const generateDisabled = sending || stage !== 'closing'
   return (
-    <header className="workspace-header">
-      <div className="workspace-header__main">
-        <div className="workspace-header__title-area">
-          <IconTooltip label={headerTitle}>
-            <h1
-              className="workspace-header__title workspace-header__title--truncated"
-              aria-label={headerTitle}
-            >
-              {headerTitle}
-            </h1>
-          </IconTooltip>
-        </div>
-        <div className="workspace-header__right">
+    <PageHeader
+      title={headerTitle}
+      actions={
+        <>
           {showGenerateButton && (
-            <div className="stage-actions">
+            <div className="flex gap-sm">
               <Button
                 variant="secondary"
                 loading={finishing}
@@ -58,10 +49,10 @@ export function WorkspaceHeader({
             </div>
           )}
           {hasReport && showingReport && (
-            <div className="workspace-header__actions">
-              <Button variant="secondary" loading={exporting} onClick={onExportReport}>
-                <Download size={15} />
-                导出 PDF
+            <div className="flex items-center gap-sm">
+              <Button variant="secondary" loading={printing} onClick={onPrintReport}>
+                <Printer />
+                打印报告
               </Button>
             </div>
           )}
@@ -78,8 +69,8 @@ export function WorkspaceHeader({
               ariaLabel="工作区视图"
             />
           )}
-        </div>
-      </div>
-    </header>
+        </>
+      }
+    />
   )
 }

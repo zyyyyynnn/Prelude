@@ -1,14 +1,14 @@
 package com.prelude.identity.application;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
 import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.LoginRequest;
 import com.prelude.identity.api.RegisterRequest;
-import jakarta.servlet.http.HttpSession;
+import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.HttpSessionAccess;
+import com.prelude.identity.domain.Account;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthenticationService {
 
-    private final AccountMapper accountMapper;
+    private final AccountRepository accounts;
     private final OAuthLoginService oauthLoginService;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(rollbackFor = Exception.class)
     public void register(RegisterRequest request) {
-        long count = accountMapper.selectCount(new LambdaQueryWrapper<Account>()
-            .eq(Account::getUsername, request.getUsername()));
-        if (count > 0) {
+        if (accounts.isUsernameTaken(request.getUsername())) {
             throw BusinessException.badRequest("用户名已存在");
         }
 
@@ -34,13 +32,17 @@ public class AuthenticationService {
         account.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         account.setEmail(request.getEmail());
         account.setRevision(0L);
-        accountMapper.insert(account);
+        try {
+            accounts.add(account);
+        } catch (DuplicateKeyException exception) {
+            // The check above is only a fast path; concurrent registrations of the same username
+            // reach the unique index, which is the actual authority.
+            throw BusinessException.badRequest("用户名已存在");
+        }
     }
 
-    public AccountPrincipal login(LoginRequest request, PendingOAuthBinding pending, HttpSession session) {
-        Account account = accountMapper.selectOne(new LambdaQueryWrapper<Account>()
-            .eq(Account::getUsername, request.getUsername())
-            .last("LIMIT 1"));
+    public AccountPrincipal login(LoginRequest request, PendingOAuthBinding pending, HttpSessionAccess session) {
+        Account account = accounts.findByUsername(request.getUsername());
         if (account == null
             || account.getPasswordHash() == null
             || !passwordEncoder.matches(request.getPassword(), account.getPasswordHash())) {

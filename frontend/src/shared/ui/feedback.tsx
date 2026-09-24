@@ -1,18 +1,10 @@
 import { Dialog } from '@base-ui/react'
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { CheckCircle2, Info, Loader2, OctagonX, TriangleAlert, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { Button } from './button'
+import { FeedbackContext, type ConfirmOptions, type NoticeTone } from './feedback-context'
 
-type NoticeTone = 'info' | 'success' | 'warning' | 'error'
-type ConfirmOptions = { title?: string; message: string; confirmText?: string; danger?: boolean }
-
-type FeedbackApi = {
-  notify: (message: string, tone?: NoticeTone) => void
-  confirm: (options: ConfirmOptions) => Promise<boolean>
-}
-
-const FeedbackContext = createContext<FeedbackApi | null>(null)
 const NOTICE_DURATION = 2000
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
@@ -42,23 +34,21 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         position="top-center"
         theme="light"
         closeButton
-        className="toaster"
+        className="ui-toaster"
         icons={{
-          success: <CheckCircle2 size={16} />,
-          info: <Info size={16} />,
-          warning: <TriangleAlert size={16} />,
-          error: <OctagonX size={16} />,
-          loading: <Loader2 className="prelude-toast__loader" size={16} />,
-          close: <X size={16} />,
+          success: <CheckCircle2 />,
+          info: <Info />,
+          warning: <TriangleAlert />,
+          error: <OctagonX />,
+          loading: <Loader2 className="ui-toast__loader" />,
+          close: <X />,
         }}
         toastOptions={{
           closeButtonAriaLabel: '关闭系统提示',
           classNames: {
-            toast: 'prelude-toast',
-            description: 'prelude-toast__description',
-            actionButton: 'prelude-toast__action',
-            cancelButton: 'prelude-toast__cancel',
-            closeButton: 'prelude-toast__close ui-action ui-action-icon',
+            toast: 'ui-toast',
+            description: 'ui-toast__description',
+            closeButton: 'ui-toast__close ui-action ui-action-icon',
           },
         }}
       />
@@ -69,9 +59,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         }}
       >
         <Dialog.Portal>
-          <Dialog.Backdrop className="prelude-dialog__backdrop" />
-          <Dialog.Viewport className="prelude-dialog__viewport">
-            <Dialog.Popup className="confirm-dialog">
+          <Dialog.Backdrop className="ui-dialog__backdrop" />
+          <Dialog.Viewport className="ui-dialog__viewport">
+            <Dialog.Popup className="ui-dialog confirm-dialog">
               <Dialog.Title className="confirm-dialog__title">
                 {confirmation?.options.title ?? '确认操作'}
               </Dialog.Title>
@@ -95,10 +85,4 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       </Dialog.Root>
     </FeedbackContext.Provider>
   )
-}
-
-export function useFeedback() {
-  const value = useContext(FeedbackContext)
-  if (!value) throw new Error('FeedbackProvider is missing')
-  return value
 }

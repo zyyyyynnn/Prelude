@@ -1,18 +1,13 @@
 package com.prelude.artifact.application;
 
-import com.prelude.activity.RealtimePort;
-import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.interview.domain.InterviewSession;
-import com.prelude.jobs.integration.BackgroundJobCancelled;
-import com.prelude.jobs.integration.BackgroundJobFailed;
-import com.prelude.jobs.integration.BackgroundJobSucceeded;
+import com.prelude.test.JobFixtures;
+import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,35 +16,32 @@ class ReportJobLifecycleTest {
 
     @Test
     void durableSuccessStaysSuccessfulWhenRealtimeDeliveryFails() {
-        InterviewReportPort reportPort = mock(InterviewReportPort.class);
-        RealtimePort realtime = mock(RealtimePort.class);
-        InterviewSession session = new InterviewSession();
-        session.setId(42L);
-        session.setStatus("finished");
-        session.setSummaryReport("{\"summary\":{}}");
+        var reportPort = SessionFixtures.mockReportPort();
+        var realtime = SessionFixtures.mockRealtimePort();
+        var session = SessionFixtures.reportSession(42L, 7L, "finished", "{\"summary\":{}}");
         when(reportPort.findSession(42L)).thenReturn(session);
         doThrow(new RuntimeException("redis unavailable"))
-            .when(realtime).publish(42L, "report_ready", session.getSummaryReport());
+            .when(realtime).publish(42L, "report_ready", session.summaryReport());
         ReportJobLifecycle lifecycle = new ReportJobLifecycle(reportPort, realtime);
 
         assertThatCode(() -> lifecycle.onSucceeded(
-            new BackgroundJobSucceeded("job-1", "report.generate", 7L, 42L)))
+            JobFixtures.succeeded("job-1", "report.generate", 7L, 42L)))
             .doesNotThrowAnyException();
 
         verify(reportPort, never()).restoreOngoing(42L);
-        verify(realtime).publish(42L, "report_ready", session.getSummaryReport());
+        verify(realtime).publish(42L, "report_ready", session.summaryReport());
     }
 
     @Test
     void terminalFailureRestoresAuthoritativeSessionBeforeBestEffortRealtime() {
-        InterviewReportPort reportPort = mock(InterviewReportPort.class);
-        RealtimePort realtime = mock(RealtimePort.class);
+        var reportPort = SessionFixtures.mockReportPort();
+        var realtime = SessionFixtures.mockRealtimePort();
         doThrow(new RuntimeException("redis unavailable"))
             .when(realtime).publish(42L, "error", "报告生成失败，请稍后重试");
         ReportJobLifecycle lifecycle = new ReportJobLifecycle(reportPort, realtime);
 
         assertThatCode(() -> lifecycle.onFailed(
-            new BackgroundJobFailed("job-2", "report.generate", 7L, 42L, "failed")))
+            JobFixtures.failed("job-2", "report.generate", 7L, 42L, "failed")))
             .doesNotThrowAnyException();
 
         InOrder order = inOrder(reportPort, realtime);
@@ -59,11 +51,11 @@ class ReportJobLifecycleTest {
 
     @Test
     void cancellationUsesTheSameAuthoritativeRestoreBoundary() {
-        InterviewReportPort reportPort = mock(InterviewReportPort.class);
-        RealtimePort realtime = mock(RealtimePort.class);
+        var reportPort = SessionFixtures.mockReportPort();
+        var realtime = SessionFixtures.mockRealtimePort();
         ReportJobLifecycle lifecycle = new ReportJobLifecycle(reportPort, realtime);
 
-        lifecycle.onCancelled(new BackgroundJobCancelled("job-3", "report.generate", 7L, 42L));
+        lifecycle.onCancelled(JobFixtures.cancelled("job-3", "report.generate", 7L, 42L));
 
         InOrder order = inOrder(reportPort, realtime);
         order.verify(reportPort).restoreOngoing(42L);

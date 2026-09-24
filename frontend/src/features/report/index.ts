@@ -1,6 +1,4 @@
-export { ReportPanel } from './ReportPanel'
-
-export async function printInterviewReport(title = '面试训练报告') {
-  const { printReport } = await import('./print-report')
-  return printReport(title)
-}
+export { printInterviewReport } from './print'
+export { ReportPanel, StructuredReport } from './report-view'
+export type { StructuredInterviewReport } from './types'
+export type { ReportCopy } from './copy'

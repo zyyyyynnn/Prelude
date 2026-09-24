@@ -1,6 +1,5 @@
 package com.prelude.activity;
 
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -67,7 +66,7 @@ public class RedisRealtimeHub implements RealtimePort, MessageListener, Initiali
                     serializePayload(payload)
                 ))
             );
-        } catch (JacksonException error) {
+        } catch (RuntimeException error) {
             log.warn("Failed to broadcast realtime event '{}' for session {}", eventName, sessionId, error);
         }
     }
@@ -78,7 +77,7 @@ public class RedisRealtimeHub implements RealtimePort, MessageListener, Initiali
         RealtimeEventMessage event;
         try {
             event = objectMapper.readValue(body, RealtimeEventMessage.class);
-        } catch (JacksonException error) {
+        } catch (RuntimeException error) {
             log.warn("Ignored malformed realtime pub/sub payload", error);
             return;
         }
@@ -115,7 +114,7 @@ public class RedisRealtimeHub implements RealtimePort, MessageListener, Initiali
         }
         try {
             return objectMapper.writeValueAsString(payload);
-        } catch (JacksonException error) {
+        } catch (RuntimeException error) {
             throw new IllegalArgumentException("Realtime payload must be serializable", error);
         }
     }

@@ -1,74 +1,97 @@
 package com.prelude.interview.infrastructure;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.prelude.interview.api.port.InterviewMessageSnapshot;
+import com.prelude.interview.api.port.InterviewReportPort;
+import com.prelude.interview.api.port.InterviewSessionSnapshot;
+import com.prelude.interview.api.port.InterviewStageSnapshot;
+import com.prelude.interview.application.InterviewStageManager;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewStageRepository;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
-import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.interview.infrastructure.persistence.InterviewMessageMapper;
-import com.prelude.interview.infrastructure.persistence.InterviewSessionMapper;
-import com.prelude.interview.infrastructure.persistence.InterviewStageMapper;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+/**
+ * Serves the report pipeline from the interview domain. The port speaks in snapshots;
+ * this adapter is the single place that turns a domain object into one, so a new column
+ * only has to be added here.
+ */
 @Component
 @RequiredArgsConstructor
 public class MybatisInterviewReportAdapter implements InterviewReportPort {
 
-    private static final String STATUS_GENERATING = "generating";
-    private static final String STATUS_ONGOING = "ongoing";
-
-    private final InterviewSessionMapper interviewSessionMapper;
-    private final InterviewMessageMapper interviewMessageMapper;
-    private final InterviewStageMapper interviewStageMapper;
+    private final InterviewSessionRepository interviewSessionRepository;
+    private final InterviewMessageRepository interviewMessageRepository;
+    private final InterviewStageRepository interviewStageRepository;
+    private final InterviewStageManager interviewStageManager;
 
     @Override
-    public InterviewSession findSession(Long sessionId) {
-        return interviewSessionMapper.selectById(sessionId);
+    public InterviewSessionSnapshot findSession(Long sessionId) {
+        InterviewSession session = interviewSessionRepository.selectById(sessionId);
+        return session == null ? null : new InterviewSessionSnapshot(
+            session.getId(),
+            session.getAccountId(),
+            session.getTargetPosition(),
+            session.getModelExecutionSnapshotId(),
+            session.getStatus(),
+            session.getSummary(),
+            session.getSummaryReport()
+        );
     }
 
     @Override
-    public List<InterviewMessage> listMessages(Long sessionId) {
-        return interviewMessageMapper.selectList(new LambdaQueryWrapper<InterviewMessage>()
-            .eq(InterviewMessage::getSessionId, sessionId)
-            .orderByAsc(InterviewMessage::getSeqNum));
+    public List<InterviewMessageSnapshot> listMessages(Long sessionId) {
+        return interviewMessageRepository.listBySession(sessionId).stream()
+            .map(this::toSnapshot)
+            .toList();
     }
 
     @Override
     public void closeCurrentStage(Long sessionId) {
-        InterviewStage stage = interviewStageMapper.selectOne(new LambdaQueryWrapper<InterviewStage>()
-            .eq(InterviewStage::getSessionId, sessionId)
-            .isNull(InterviewStage::getEndedAt)
-            .orderByDesc(InterviewStage::getStartedAt)
-            .last("LIMIT 1"));
-        if (stage != null) {
-            stage.setEndedAt(LocalDateTime.now());
-            interviewStageMapper.updateById(stage);
-        }
+        interviewStageManager.closeCurrentStage(sessionId);
     }
 
     @Override
-    public List<InterviewStage> listStages(Long sessionId) {
-        return interviewStageMapper.selectList(new LambdaQueryWrapper<InterviewStage>()
-            .eq(InterviewStage::getSessionId, sessionId)
-            .orderByAsc(InterviewStage::getStartedAt)
-            .orderByAsc(InterviewStage::getId));
+    public List<InterviewStageSnapshot> listStages(Long sessionId) {
+        return interviewStageRepository.listBySession(sessionId).stream()
+            .map(this::toSnapshot)
+            .toList();
     }
 
     @Override
     public boolean completeReport(Long sessionId, String reportJson) {
-        return interviewSessionMapper.completeReportIfGenerating(sessionId, reportJson) == 1;
+        return interviewSessionRepository.completeReportIfGenerating(sessionId, reportJson) == 1;
     }
 
     @Override
     public void restoreOngoing(Long sessionId) {
-        InterviewSession session = interviewSessionMapper.selectById(sessionId);
-        if (session != null && STATUS_GENERATING.equals(session.getStatus())) {
-            session.setStatus(STATUS_ONGOING);
-            interviewSessionMapper.updateById(session);
-        }
+        interviewSessionRepository.restoreOngoingIfGenerating(sessionId);
+    }
+
+    private InterviewMessageSnapshot toSnapshot(InterviewMessage message) {
+        return new InterviewMessageSnapshot(
+            message.getId(),
+            message.getSessionId(),
+            message.getRole(),
+            message.getContent(),
+            message.getSeqNum(),
+            message.getScore(),
+            message.getHint(),
+            message.getCreatedAt()
+        );
+    }
+
+    private InterviewStageSnapshot toSnapshot(InterviewStage stage) {
+        return new InterviewStageSnapshot(
+            stage.getId(),
+            stage.getSessionId(),
+            stage.getStageName(),
+            stage.getStartedAt(),
+            stage.getEndedAt()
+        );
     }
 }

@@ -1,15 +1,15 @@
 package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
-import com.prelude.interview.domain.InterviewMessage;
-import com.prelude.interview.domain.InterviewSession;
-import com.prelude.activity.RealtimePort;
 import com.prelude.activity.SseSessionStream;
+import com.prelude.identity.api.SessionValidity;
+import com.prelude.interview.application.port.InterviewTurnCommand;
+import com.prelude.interview.application.port.InterviewTurnPort;
+import com.prelude.interview.application.port.InterviewTurnResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.concurrent.Executor;
 
@@ -18,25 +18,25 @@ import java.util.concurrent.Executor;
 @RequiredArgsConstructor
 public class StreamChatTurn {
 
-    private static final long SSE_TIMEOUT_MS = 120000L;
-
     private final InterviewSessionAccess sessionAccess;
-    private final RunInterviewTurn runInterviewTurn;
-    private final InterviewJudgeService interviewJudgeService;
-    private final InterviewSummaryService interviewSummaryService;
+    private final InterviewTurnPort interviewTurnPort;
+    private final SessionValidity sessionValidity;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
-    private final RealtimePort realtimePort;
-    private final com.prelude.identity.api.SessionValidity sessionValidity;
 
-    public SseEmitter execute(Long sessionId, String content, boolean autoStart, String authSessionId) {
+    /**
+     * Streams one chat turn over a channel the caller opened. The use case authorizes the
+     * turn and drives the model call; it never constructs the transport itself.
+     */
+    public void execute(
+        Long sessionId,
+        String content,
+        boolean autoStart,
+        String authSessionId,
+        SseSessionStream stream
+    ) {
         long accountId = sessionAccess.currentAccountId();
-        SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, SSE_TIMEOUT_MS);
-        stream.emitter().onTimeout(() -> completeWithError(stream, "连接超时，请重试"));
-        stream.emitter().onError(error -> stream.complete());
-
         sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, authSessionId, content, autoStart, stream));
-        return stream.emitter();
     }
 
     private void runTurn(
@@ -48,7 +48,7 @@ public class StreamChatTurn {
         SseSessionStream stream
     ) {
         try {
-            InterviewTurnResult result = runInterviewTurn.execute(
+            InterviewTurnResult result = interviewTurnPort.execute(
                 new InterviewTurnCommand(
                     sessionId,
                     accountId,
@@ -65,35 +65,22 @@ public class StreamChatTurn {
                     stream.send("message", delta);
                 }
             );
-            if (result.userMessage() == null) {
+            if (result.userTurn() == null) {
                 stream.complete();
                 return;
             }
-            triggerAsyncJudge(result.session(), result.userMessage(), stream);
-            interviewSummaryService.triggerAsyncSummarizeIfNeeded(result.session());
+            triggerAsyncJudge(result.session().sessionId(), result.userTurn().messageId(), stream);
+            interviewTurnPort.summarizeIfNeeded(result.session().sessionId());
         } catch (RuntimeException error) {
-            completeWithError(stream, error.getMessage() == null ? "连接已断开，请重试" : error.getMessage());
+            String message = error.getMessage() == null ? "连接已断开，请重试" : error.getMessage();
+            stream.completeWithError(message);
         }
     }
 
-    private void completeWithError(SseSessionStream stream, String message) {
-        try {
-            stream.send("error", message);
-        } catch (RuntimeException ignored) {
-            // Connection may already be closed.
-        } finally {
-            stream.complete();
-        }
-    }
-
-    private void triggerAsyncJudge(
-        InterviewSession session,
-        InterviewMessage userMessage,
-        SseSessionStream stream
-    ) {
+    private void triggerAsyncJudge(Long sessionId, Long messageId, SseSessionStream stream) {
         sseTaskExecutor.execute(() -> {
             try {
-                interviewJudgeService.judgeAndPersist(session, userMessage)
+                interviewTurnPort.judgeAndPersist(sessionId, messageId)
                     .ifPresent(result -> sendJudgeEvent(stream, result.json()));
                 stream.complete();
             } catch (RuntimeException error) {

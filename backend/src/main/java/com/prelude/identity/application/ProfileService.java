@@ -1,21 +1,18 @@
 package com.prelude.identity.application;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.prelude.BusinessException;
-import com.prelude.identity.Account;
-import com.prelude.identity.AccountMapper;
-import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.AvatarStoragePort;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.UserProfileRequest;
 import com.prelude.identity.api.UserProfileResponse;
+import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AvatarUpload;
+import com.prelude.identity.domain.Account;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
 
@@ -27,7 +24,7 @@ public class ProfileService {
     private static final Set<String> THEME_PREFERENCES = Set.of("light", "dark", "system");
     private static final Set<String> AVATAR_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
-    private final AccountMapper accountMapper;
+    private final AccountRepository accounts;
     private final PasswordEncoder passwordEncoder;
     private final CurrentAccount currentAccount;
     private final AvatarStoragePort avatarStoragePort;
@@ -51,55 +48,29 @@ public class ProfileService {
         String oldPassword = normalizeNullable(request.getOldPassword());
         String newPassword = normalizeNullable(request.getNewPassword());
 
-        if (request.getUsername() != null && username == null) {
-            throw BusinessException.badRequest("用户名不能为空");
-        }
-        if (request.getEmail() != null && email == null) {
-            throw BusinessException.badRequest("邮箱不能为空");
-        }
-        if (themePreference != null && !THEME_PREFERENCES.contains(themePreference)) {
-            throw BusinessException.badRequest("主题设置不正确");
-        }
-        if ((oldPassword == null) != (newPassword == null)) {
-            throw BusinessException.badRequest("请同时提供旧密码和新密码");
-        }
+        validateProfileRequest(request, username, email, themePreference, oldPassword, newPassword);
 
         boolean changed = false;
-        String newUsername = account.getUsername();
-        String newEmail = account.getEmail();
-        String newThemePreference = account.getThemePreference();
-        String newPasswordHash = account.getPasswordHash();
 
-        if (username != null && !username.equals(account.getUsername())) {
-            long count = accountMapper.selectCount(new LambdaQueryWrapper<Account>()
-                .eq(Account::getUsername, username)
-                .ne(Account::getId, account.getId()));
-            if (count > 0) {
-                throw BusinessException.badRequest("用户名已存在");
-            }
-            newUsername = username;
+        String resolvedUsername = resolveUpdatedUsername(account, username);
+        if (resolvedUsername != null) {
+            account.setUsername(resolvedUsername);
             changed = true;
         }
 
         if (email != null && !email.equals(account.getEmail())) {
-            newEmail = email;
+            account.setEmail(email);
             changed = true;
         }
 
         if (themePreference != null && !themePreference.equals(account.getThemePreference())) {
-            newThemePreference = themePreference;
+            account.setThemePreference(themePreference);
             changed = true;
         }
 
-        if (oldPassword != null) {
-            if (account.getPasswordHash() == null
-                || !passwordEncoder.matches(oldPassword, account.getPasswordHash())) {
-                throw BusinessException.badRequest("旧密码错误");
-            }
-            if (passwordEncoder.matches(newPassword, account.getPasswordHash())) {
-                throw BusinessException.badRequest("新密码不能与旧密码相同");
-            }
-            newPasswordHash = passwordEncoder.encode(newPassword);
+        String resolvedPasswordHash = resolveUpdatedPassword(account, oldPassword, newPassword);
+        if (resolvedPasswordHash != null) {
+            account.setPasswordHash(resolvedPasswordHash);
             changed = true;
         }
 
@@ -107,56 +78,34 @@ public class ProfileService {
             throw BusinessException.badRequest("未检测到资料变更");
         }
 
-        int updated = accountMapper.updateProfileGuarded(
-            accountId,
-            newUsername,
-            newEmail,
-            newThemePreference,
-            newPasswordHash,
-            account.getAvatarUrl(),
-            request.getExpectedRevision(),
-            request.getOperationId()
-        );
+        int updated = accounts.replaceProfile(account, request.getExpectedRevision(), request.getOperationId());
         if (updated != 1) {
             throw BusinessException.revisionConflict("资料已被其他操作更新，请刷新后重试");
         }
-        return toResponse(accountMapper.selectById(accountId));
+        return toResponse(accounts.findById(accountId));
     }
 
-    public UserProfileResponse updateAvatar(MultipartFile file) {
+    public UserProfileResponse updateAvatar(AvatarUpload upload) {
         long accountId = currentAccount.requireId();
         Account account = requireAccount(accountId);
-        if (file == null || file.isEmpty()) {
+        if (upload == null || upload.isEmpty()) {
             throw BusinessException.badRequest("请选择头像文件");
         }
-        String extension = extensionOf(file.getOriginalFilename());
+        String extension = extensionOf(upload.fileName());
         if (!AVATAR_EXTENSIONS.contains(extension)) {
             throw BusinessException.badRequest("头像仅支持 JPG、PNG、WebP 或 GIF");
         }
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException exception) {
-            throw BusinessException.badRequest("头像上传失败");
-        }
-        String mediaType = file.getContentType() == null || file.getContentType().isBlank()
+        byte[] bytes = upload.content();
+        String mediaType = upload.mediaType() == null || upload.mediaType().isBlank()
             ? "application/octet-stream"
-            : file.getContentType();
+            : upload.mediaType();
 
         String previousAvatarUrl = account.getAvatarUrl();
         String candidateUrl = avatarStoragePort.stage(accountId, mediaType, bytes);
         try {
             // One DB transaction: guarded account reference + asset READY transition.
             // A failure rolls both back and leaves the asset PENDING for the reconciler.
-            avatarPublication.publish(
-                candidateUrl,
-                accountId,
-                account.getUsername(),
-                account.getEmail(),
-                account.getThemePreference(),
-                account.getPasswordHash(),
-                account.getRevision()
-            );
+            avatarPublication.publish(candidateUrl, account);
         } catch (RuntimeException failure) {
             discardQuietly(accountId, candidateUrl);
             if (failure instanceof BusinessException businessFailure) {
@@ -166,7 +115,7 @@ public class ProfileService {
         }
         // The committed reference is authoritative; obsolete-avatar cleanup is non-fatal.
         discardQuietly(accountId, previousAvatarUrl);
-        return toResponse(accountMapper.selectById(accountId));
+        return toResponse(accounts.findById(accountId));
     }
 
     private void discardQuietly(long accountId, String avatarUrl) {
@@ -179,11 +128,51 @@ public class ProfileService {
     }
 
     private Account requireAccount(long accountId) {
-        Account account = accountMapper.selectById(accountId);
+        Account account = accounts.findById(accountId);
         if (account == null) {
             throw BusinessException.unauthorized("请先登录");
         }
         return account;
+    }
+
+    private void validateProfileRequest(UserProfileRequest request, String username, String email,
+                                       String themePreference, String oldPassword, String newPassword) {
+        if (request.getUsername() != null && username == null) {
+            throw BusinessException.badRequest("用户名不能为空");
+        }
+        if (request.getEmail() != null && email == null) {
+            throw BusinessException.badRequest("邮箱不能为空");
+        }
+        if (themePreference != null && !THEME_PREFERENCES.contains(themePreference)) {
+            throw BusinessException.badRequest("主题设置不正确");
+        }
+        if ((oldPassword == null) != (newPassword == null)) {
+            throw BusinessException.badRequest("请同时提供旧密码和新密码");
+        }
+    }
+
+    private String resolveUpdatedUsername(Account account, String username) {
+        if (username == null || username.equals(account.getUsername())) {
+            return null;
+        }
+        if (accounts.isUsernameTakenByOther(account.getId(), username)) {
+            throw BusinessException.badRequest("用户名已存在");
+        }
+        return username;
+    }
+
+    private String resolveUpdatedPassword(Account account, String oldPassword, String newPassword) {
+        if (oldPassword == null) {
+            return null;
+        }
+        if (account.getPasswordHash() == null
+            || !passwordEncoder.matches(oldPassword, account.getPasswordHash())) {
+            throw BusinessException.badRequest("旧密码错误");
+        }
+        if (passwordEncoder.matches(newPassword, account.getPasswordHash())) {
+            throw BusinessException.badRequest("新密码不能与旧密码相同");
+        }
+        return passwordEncoder.encode(newPassword);
     }
 
     private String normalizeNullable(String value) {

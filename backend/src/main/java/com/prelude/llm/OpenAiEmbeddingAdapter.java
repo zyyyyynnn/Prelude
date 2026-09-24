@@ -1,5 +1,7 @@
 package com.prelude.llm;
 
+import com.prelude.llm.api.EmbedPort;
+
 import com.prelude.BusinessException;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;

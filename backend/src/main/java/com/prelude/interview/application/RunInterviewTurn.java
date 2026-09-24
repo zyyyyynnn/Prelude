@@ -4,7 +4,13 @@ import com.prelude.BusinessException;
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.application.port.InterviewMessageRepository;
+import com.prelude.interview.application.port.InterviewContextPort;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.port.InterviewTurnCommand;
+import com.prelude.interview.application.port.InterviewTurnResult;
+import com.prelude.interview.application.port.InterviewTurnSessionSnapshot;
+import com.prelude.interview.application.port.InterviewUserTurnSnapshot;
+import com.prelude.interview.application.port.InterviewTurnSink;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.PromptIds;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +31,7 @@ public class RunInterviewTurn {
     private final InterviewMessageRepository interviewMessageRepository;
     private final LlmPort llmPort;
     private final InterviewStageManager interviewStageManager;
-    private final InterviewContextService interviewContextService;
+    private final InterviewContextPort interviewContextService;
     private final InterviewMessageService interviewMessageService;
     private final AttachmentContextPort attachmentContextPort;
 
@@ -45,7 +51,7 @@ public class RunInterviewTurn {
                     throw BusinessException.badRequest("回答内容不能为空");
                 }
                 insertedUserMessage = interviewMessageService.insertMessage(command.sessionId(), ROLE_USER, content);
-                sink.userAccepted(insertedUserMessage);
+                sink.userAccepted(snapshotOf(insertedUserMessage));
                 messages = interviewContextService.buildContextMessages(command.sessionId());
             }
 
@@ -70,13 +76,35 @@ public class RunInterviewTurn {
             if (shouldAdvance) {
                 interviewStageManager.advanceStage(command.sessionId(), command.completionPrompt());
             }
-            return new InterviewTurnResult(session, insertedUserMessage, finalReply);
+            return new InterviewTurnResult(snapshotOf(session), snapshotOf(insertedUserMessage), finalReply);
         } catch (RuntimeException error) {
             if (insertedUserMessage != null && insertedUserMessage.getId() != null && !assistantPersisted) {
                 interviewMessageRepository.delete(insertedUserMessage.getId());
             }
             throw error;
         }
+    }
+
+    private InterviewTurnSessionSnapshot snapshotOf(InterviewSession session) {
+        return new InterviewTurnSessionSnapshot(
+            session.getId(),
+            session.getAccountId(),
+            session.getTargetPosition(),
+            session.getModelExecutionSnapshotId()
+        );
+    }
+
+    private InterviewUserTurnSnapshot snapshotOf(InterviewMessage message) {
+        if (message == null) {
+            return null;
+        }
+        return new InterviewUserTurnSnapshot(
+            message.getId(),
+            message.getSessionId(),
+            message.getContent(),
+            message.getSeqNum(),
+            message.getCreatedAt()
+        );
     }
 
     private boolean hasConversationRound(Long sessionId) {

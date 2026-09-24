@@ -1,7 +1,6 @@
 @theme {
-  /* 色彩 — 直接引用现有 :root 变量 */
+  /* Color — re-export the existing :root tokens into Tailwind theme. */
   --color-brand: var(--color-brand);
-  --color-brand-light: var(--color-brand-light);
   --color-accent-solid: var(--color-accent-solid);
   --color-accent-solid-hover: var(--color-accent-solid-hover);
   --color-accent-text: var(--color-accent-text);
@@ -10,23 +9,23 @@
   --color-surface-hover: var(--color-surface-hover);
   --color-surface-muted: var(--color-surface-muted);
   --color-bg: var(--color-bg);
-  --color-sand: var(--color-sand);
   --color-text-primary: var(--color-text-primary);
   --color-text-secondary: var(--color-text-secondary);
   --color-text-tertiary: var(--color-text-tertiary);
-  --color-text-button: var(--color-text-button);
   --color-border: var(--color-border);
   --color-border-warm: var(--color-border-warm);
   --color-ring: var(--color-ring);
   --color-ring-deep: var(--color-ring-deep);
   --color-error: var(--color-error);
+  --color-error-soft: var(--color-error-soft);
   --color-focus-field: var(--color-focus-field);
   --color-focus-action: var(--color-focus-action);
   --color-coral: var(--color-coral);
   --color-line-decor: var(--color-line-decor);
-  --color-line-decor-light: var(--color-line-decor-light);
 
-  /* 间距 */
+  /* Spacing — the 4px ladder, exposed as theme keys so p-/gap-/mt- never need a
+     raw value. Icon and control boxes are sized from --ui-glyph-*, not from here. */
+  --spacing-0: var(--spacing-0);
   --spacing-xs: var(--spacing-xs);
   --spacing-sm: var(--spacing-sm);
   --spacing-md: var(--spacing-md);
@@ -34,49 +33,90 @@
   --spacing-xl: var(--spacing-xl);
   --spacing-2xl: var(--spacing-2xl);
 
-  /* 圆角 */
+  /* Radius */
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
-  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
 
-  /* 字体 */
+  /* Typography — text-* and leading-* resolve to the Prelude scale, which
+     replaces Tailwind's default steps rather than sitting beside them. */
+  --text-xs: var(--font-size-xs);
+  --text-sm: var(--font-size-sm);
+  --text-md: var(--font-size-md);
+  --text-lg: var(--font-size-lg);
+  --text-xl: var(--font-size-xl);
+  --text-2xl: var(--font-size-2xl);
+
+  /* The sizes above are bare values, so Tailwind still supplies a leading for each step
+     from its own default scale and the Prelude ladder is bypassed. Declared here so the
+     numbers are owned and auditable rather than inherited from a dependency; the values
+     are exactly what those steps resolved to before. `md` and `xl` carry none, so those
+     two steps keep inheriting. Moving any of them onto the `--line-height-*` ladder is a
+     rendering change across every screen that uses the step and is not done here. */
+  --text-xs--line-height: calc(1 / 0.75);
+  --text-sm--line-height: calc(1.25 / 0.875);
+  --text-lg--line-height: calc(1.75 / 1.125);
+  --text-2xl--line-height: calc(2 / 1.5);
+
+  --leading-solid: var(--line-height-solid);
+  --leading-display: var(--line-height-display);
+  --leading-tight: var(--line-height-tight);
+  --leading-heading: var(--line-height-heading);
+  --leading-compact: var(--line-height-compact);
+  --leading-base: var(--line-height-base);
+  --leading-relaxed: var(--line-height-relaxed);
+  --leading-copy: var(--line-height-copy);
+
+  --font-weight-regular: var(--font-weight-regular);
+  --font-weight-medium: var(--font-weight-medium);
+  --font-weight-semibold: var(--font-weight-semibold);
+
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
-  /* 阴影 */
+  /* Shadow */
   --shadow-modal: var(--shadow-modal);
   --shadow-whisper: var(--shadow-whisper);
+  --shadow-ring: var(--shadow-ring);
+  --shadow-ring-deep: var(--shadow-ring-deep);
 
-  /* 动效 */
+  /* Motion */
   --ease-standard: var(--motion-ease-standard);
-  --animate-duration-base: var(--motion-duration-base);
 
-  /* 组件语义色彩桥接 */
-  --color-background: var(--color-bg);
-  --color-foreground: var(--color-text-primary);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--color-accent-solid);
-  --color-primary-foreground: var(--color-text-on-accent);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--color-surface-muted);
-  --color-muted-foreground: var(--color-text-tertiary);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--color-error);
-  --color-destructive-foreground: var(--color-surface);
-  --color-input: var(--color-border-warm);
+  --tracking-label: var(--tracking-label);
 
-  /* 组件基础圆角 */
+  /* Animation — the three interview keyframes, exposed as animate-* atoms. The voice
+     meter is not here: it is driven by the microphone's own level, not a loop. */
+  --animate-progress-sweep: progress-sweep var(--motion-duration-slow) infinite
+    var(--motion-ease-standard);
+  --animate-thinking-ellipsis: thinking-ellipsis var(--motion-duration-thinking) infinite;
+
+  @keyframes progress-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(200%);
+    }
+  }
+
+  @keyframes thinking-ellipsis {
+    0% {
+      content: '.';
+    }
+    33% {
+      content: '..';
+    }
+    66% {
+      content: '...';
+    }
+  }
+
+  /* Default component radius */
   --radius: var(--radius-md);
-
-  --color-mask-overlay: var(--mask-overlay);
 }
 
 :root {
@@ -86,7 +126,6 @@
 
   --color-bg: #f5f4ed;
   --color-surface: #faf9f5;
-  --color-sand: #e8e6dc;
   --color-surface-hover: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-surface));
   --color-surface-muted: color-mix(in srgb, var(--color-text-primary) 8%, var(--color-surface));
   --bg-paper-filter:
@@ -102,13 +141,15 @@
     ),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.12'/%3E%3Cg fill='none' stroke='%23beb7a8' stroke-opacity='0.2' stroke-width='1'%3E%3Cpath d='M18 42c24 11 51 -5 79 7 20 9 42 12 67 -1'/%3E%3Cpath d='M214 34c17 8 31 3 45 9 15 6 27 5 43 -3'/%3E%3Cpath d='M42 120c17 -7 35 6 57 0 18 -5 36 -3 51 5'/%3E%3Cpath d='M176 138c19 5 35 -7 60 -2 15 3 29 4 46 -5'/%3E%3Cpath d='M26 210c22 7 46 -8 72 4 18 8 33 11 56 1'/%3E%3Cpath d='M182 228c17 -6 36 6 60 1 16 -3 32 -1 51 7'/%3E%3Cpath d='M74 286c18 -8 38 4 57 -1 17 -5 31 -3 48 6'/%3E%3Cpath d='M208 284c13 4 29 -6 47 -2 14 3 28 2 40 -5'/%3E%3C/g%3E%3C/svg%3E");
 
+  /* The paper texture's own tile: it matches the `viewBox` of the SVG in
+     `--bg-paper-filter`, so it belongs to that asset rather than the layout scale. */
+  --bg-paper-tile-size: 320px 320px;
+
   --color-text-primary: #141413;
   --color-text-secondary: #5e5d59;
-  --color-text-tertiary: #6b6a65;
-  --color-text-button: #4d4c48;
+  --color-text-tertiary: #666561;
 
   --color-brand: #9e7b6a;
-  --color-brand-light: color-mix(in srgb, var(--color-brand) 12%, var(--color-surface));
   --color-accent-solid: #806050;
   --color-accent-solid-hover: color-mix(
     in srgb,
@@ -119,6 +160,7 @@
   --color-text-on-accent: var(--color-surface);
   --color-coral: #b08878;
   --color-error: #b53333;
+  --color-error-soft: color-mix(in srgb, var(--color-error) 10%, transparent);
   --color-focus-field: #7c7469;
   --color-focus-action: #9e7b6a;
 
@@ -129,62 +171,30 @@
   --color-ring-deep: #c2c0b6;
 
   --color-line-decor: #c8c6be;
-  --color-line-decor-light: #dddbd3;
 
-  /* ── 组件语义 Token（映射到项目暖色调体系） ── */
-  --background: var(--color-bg);
-  --foreground: var(--color-text-primary);
-  --card: var(--color-surface);
-  --card-foreground: var(--color-text-primary);
-  --popover: var(--color-surface);
-  --popover-foreground: var(--color-text-primary);
-  --primary: var(--color-accent-solid);
-  --primary-foreground: var(--color-text-on-accent);
-  --secondary: var(--color-surface-muted);
-  --secondary-foreground: var(--color-text-primary);
-  --muted: var(--color-surface-muted);
-  --muted-foreground: var(--color-text-tertiary);
-  --accent: var(--color-surface-hover);
-  --accent-foreground: var(--color-text-primary);
-  --destructive: var(--color-error);
-  --destructive-foreground: var(--color-surface);
-  --border: var(--color-border);
-  --input: var(--color-border-warm);
-  --ring: var(--color-focus-action);
-
+  --radius-xs: 2px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  --radius-2xl: 24px;
   --radius-3xl: 32px;
   --radius-full: 9999px;
 
   --shadow-ring: 0 0 0 1px var(--color-ring);
   --shadow-ring-deep: 0 0 0 1px var(--color-ring-deep);
   --shadow-whisper: 0 4px 24px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
-  --shadow-inset: inset 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   --shadow-modal: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
-  --shadow-app-header:
-    0 10px 30px color-mix(in srgb, var(--color-text-primary) 3.5%, transparent),
-    0 1px 0 color-mix(in srgb, var(--color-surface) 26%, transparent) inset,
-    inset 0 -1px 0 color-mix(in srgb, var(--color-surface) 14%, transparent);
-  --shadow-app-menu:
-    0 14px 34px color-mix(in srgb, var(--color-text-primary) 8%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 38%, transparent);
-  --shadow-app-menu-active:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 12%, transparent), var(--shadow-ring);
-  --shadow-brand-logo: 2px 2px 2px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   --shadow-login-card:
     0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
   --shadow-login-logo: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
-  --shadow-autofill-surface: 0 0 0px 1000px var(--color-surface) inset;
   --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   --chart-technical: var(--color-brand);
   --chart-expression: var(--color-coral);
   --chart-logic: var(--color-ring-deep);
+
+  --tracking-label: 0.03em;
 
   --brand-metaballs-1: #e9ded6;
   --brand-metaballs-2: #c6a99a;
@@ -192,29 +202,25 @@
   --brand-metaballs-4: #5f463b;
   --brand-metaballs-5: #2f241f;
   --brand-metaballs-bg: #f5f1ec;
-  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
+  --shadow-brand-metaballs: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
 
   --motion-duration-fast: 150ms;
   --motion-duration-base: 300ms;
   --motion-duration-slow: 600ms;
   --motion-duration-thinking: 1500ms;
   --motion-ease-standard: ease-in-out;
-  --motion-delay-min: 300ms;
-  --motion-transition-color: color var(--motion-duration-fast) var(--motion-ease-standard);
   --motion-transition-surface:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
     box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
     color var(--motion-duration-fast) var(--motion-ease-standard);
-  --motion-transition-opacity: opacity var(--motion-duration-fast) var(--motion-ease-standard);
-  --motion-transition-transform:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    opacity var(--motion-duration-fast) var(--motion-ease-standard);
 
   /* ── UI System Tokens ── */
   --font-size-xs: 13px;
   --font-size-sm: 14px;
-  --font-size-meta: 13.5px;
   --font-size-md: 16px;
   --font-size-lg: 24px;
   --font-size-xl: 36px;
@@ -234,58 +240,94 @@
   --line-height-copy: 1.7;
 
   --spacing-xs: 4px;
-  --spacing-0-5: 2px;
-  --spacing-1-5: 6px;
+  --spacing-0: 0px;
   --spacing-sm: 8px;
-  --spacing-2-5: 10px;
-  --spacing-3-5: 14px;
   --spacing-md: 16px;
-  --spacing-4-5: 18px;
-  --spacing-5-5: 22px;
-  --spacing-neg-xs: -4px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-2xl: 40px;
 
-  --ui-height-base: 34px;
-  --ui-height-compact: 30px;
-  --ui-height-sm: 34px;
-  --ui-height-md: 34px;
-  --header-height: 72px;
-  --composer-height: 260px;
+  --ui-glyph-sm: 16px;
+  --ui-glyph-md: 20px;
+  --ui-glyph-lg: 24px;
+  --ui-height-control: 36px;
+  --layout-header-block-size: 72px;
+  /* Room the message thread keeps clear of the floating composer. This is a reserve, not
+     the composer's height: measured at 1440px the composer is 162px idle and 202px with a
+     six-line draft, and attachments can add another row. It cannot be derived from the
+     composer because that height is content-driven, so the value is a chosen ceiling and
+     is named as one. */
+  --layout-composer-reserve-block-size: 260px;
   --border-width-default: 1px;
 
   /* ── Layout Semantics ── */
+  --layout-viewport-min-inline-size: 320px;
+  --layout-page-center-block-offset: 84px;
+  --layout-login-card-max-inline-size: 1180px;
+  --layout-login-card-min-block-size: 520px;
+  --layout-login-column-min-inline-size: 320px;
+  --layout-login-logo-max-inline-size: 500px;
+  --layout-textarea-min-block-size: 104px;
+  /* The option list is a scroll container with no padding or border of its own, and its
+     rows are one control tall, so this is exactly ten visible rows and no more. */
+  --layout-select-list-max-block-size: calc(var(--ui-height-control) * 10);
+  --layout-dialog-max-inline-size: 960px;
+  --layout-confirm-max-inline-size: 420px;
+  --overlay-blur-radius: 12px;
+  --tracking-eyebrow: 0.04em;
+  --tracking-caps: 0.18em;
+
   --layout-sidebar-inline-size: 260px;
-  --layout-sidebar-collapsed-inline-size: 51px;
+  /* The collapsed rail holds exactly one control row: the action's own 36px box
+     plus the gutter it sits in, plus the frame's single inline border. Derived so
+     the container can never drift away from the row it has to contain. */
+  --layout-sidebar-collapsed-inline-size: calc(
+    var(--ui-height-control) + var(--spacing-sm) * 2 + var(--border-width-default)
+  );
   --layout-sidebar-brand-inline-size: 180px;
   --layout-sidebar-header-block-size: 60px;
-  --layout-settings-sidebar-inline-size: 220px;
-  --layout-settings-dialog-max-inline-size: 960px;
-  --layout-settings-dialog-min-block-size: 500px;
+  --layout-nav-inline-size: 220px;
+  --layout-dialog-workspace-min-block-size: 500px;
   --layout-workspace-content-max-inline-size: 800px;
-  --layout-dashboard-card-min-inline-size: 400px;
   --layout-form-field-min-inline-size: 260px;
   --layout-list-title-min-inline-size: 200px;
-  --layout-position-catalog-min-inline-size: 176px;
-  --layout-position-form-min-inline-size: 448px;
-  --layout-position-item-min-inline-size: 160px;
-  --layout-report-column-min-inline-size: 200px;
-  --layout-report-label-inline-size: 80px;
-  --layout-report-counter-min-inline-size: 56px;
+  --layout-catalog-min-inline-size: 176px;
+  --layout-form-min-inline-size: 448px;
+  --layout-item-min-inline-size: 160px;
+  --layout-empty-state-min-block-size: 120px;
+  --layout-demo-frame-block-size: 200px;
+  --layout-chart-block-size: 360px;
+  --layout-lead-max-inline-size: 58ch;
+  --layout-prompt-input-min-block-size: calc(var(--ui-height-control) + var(--spacing-lg));
+  --layout-prompt-input-max-block-size: 100px;
+  --layout-prompt-truncate-max-inline-size: calc(var(--ui-height-control) * 7);
+  --layout-generating-card-max-inline-size: 480px;
+  --layout-generating-rose-inline-size: calc(var(--ui-height-control) * 2);
+  --layout-print-band-block-padding: calc(var(--spacing-2xl) + var(--spacing-lg));
+  --layout-document-column-min-inline-size: 200px;
+  --layout-document-label-inline-size: 80px;
+  --layout-counter-min-inline-size: 56px;
+  --layout-avatar-inline-size: 82px;
+  --layout-brand-mark-inline-size: 72px;
 
   /* ── Content Semantics ── */
   --content-message-max-inline-size: 72ch;
-  --content-report-reading-max-inline-size: 68ch;
+  --content-message-bubble-max-inline-size: min(80%, var(--content-message-max-inline-size));
+  --content-reading-max-inline-size: 68ch;
   --content-tooltip-max-inline-size: 20rem;
 
   /* ── Component Semantics ── */
   --ui-segmented-item-min-inline-size: 80px;
+  --ui-control-inset: 2px;
 
   /* ── Layer Semantics ── */
+  /* Content sitting above decoration belonging to the same box — a segmented control's
+     buttons over its sliding thumb, a card's text over its own wash. Two sites, one
+     concept, previously spelled `z-index: 1` in one place and a private custom property
+     in the other. */
+  --z-index-local-content: 1;
   --z-index-local-raised: 2;
   --z-index-workspace-composer: 10;
-  --z-index-app-header: 40;
   --z-index-sidebar: 100;
   --z-index-dialog-backdrop: 190;
   --z-index-dialog: 200;
@@ -297,11 +339,9 @@
 .dark {
   --color-bg: #191816;
   --color-surface: #22201d;
-  --color-sand: #34302a;
   --color-text-primary: #f1eee6;
   --color-text-secondary: #c9c2b7;
   --color-text-tertiary: #aaa296;
-  --color-text-button: #eee8dc;
   --color-brand: #c7a392;
   --color-accent-solid: var(--color-brand);
   --color-accent-text: var(--color-brand);
@@ -314,45 +354,37 @@
   --color-ring: #655c51;
   --color-ring-deep: #807568;
   --color-line-decor: #514a41;
-  --color-line-decor-light: #6a6156;
   --brand-metaballs-1: #6b5147;
   --brand-metaballs-2: #8a6a5c;
   --brand-metaballs-3: #b18a78;
   --brand-metaballs-4: #d0aa98;
   --brand-metaballs-5: #ead3c5;
   --brand-metaballs-bg: #201814;
-  --brand-metaballs-shadow: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-3) 18%, transparent);
+  --shadow-brand-metaballs: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-3) 18%, transparent);
 }
 
 * {
   box-sizing: border-box;
 }
 
-html {
-  background: var(--color-bg);
-  scrollbar-gutter: auto;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: var(--color-bg);
-  background-image: var(--bg-paper-filter);
-  background-attachment: fixed;
-  background-repeat: no-repeat, no-repeat, repeat;
-  background-size:
-    auto,
-    auto,
-    320px 320px;
-  background-blend-mode: normal, normal, multiply;
-  color: var(--color-text-primary);
-  font: var(--font-weight-regular) var(--font-size-md)/var(--line-height-relaxed) var(--font-sans);
-}
-
 @layer base {
+  html {
+    background: var(--color-bg);
+    scrollbar-gutter: auto;
+  }
+
   body {
-    font-family: var(--font-sans);
+    margin: 0;
+    min-width: var(--layout-viewport-min-inline-size);
+    min-height: 100vh;
+    background-color: var(--color-bg);
+    background-image: var(--bg-paper-filter);
+    background-attachment: fixed;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: auto, auto, var(--bg-paper-tile-size);
+    background-blend-mode: normal, normal, multiply;
+    color: var(--color-text-primary);
+    font: var(--font-weight-regular) var(--font-size-md)/var(--line-height-relaxed) var(--font-sans);
   }
 
   h1,
@@ -365,25 +397,58 @@ body {
     font-weight: var(--font-weight-medium);
   }
 
+  /* Only the face belongs to the element: size, weight and colour come from a
+     typographic role, so a bare label still reads on-brand without out-voting
+     `type-*` from the utilities layer. */
+  label,
   button,
   input,
   select,
   textarea {
     font-family: var(--font-serif);
   }
+
+  /* Base layer so a component can pick its own text colour. */
+  button,
+  input,
+  select,
+  textarea {
+    color: var(--color-text-primary);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* One reset for flow elements, so a typographic role never carries margin and a
+     layout atom (mt-*, mb-*) always wins without depending on emitted order. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  ul,
+  ol,
+  dl,
+  dd,
+  figure,
+  blockquote {
+    margin: 0;
+  }
+
+  ul,
+  ol {
+    padding: 0;
+  }
 }
 
-button,
-input,
-select,
-textarea {
-  color: var(--color-text-primary);
-}
-
-html.is-theme-transitioning *,
-html.is-theme-transitioning *::before,
-html.is-theme-transitioning *::after {
-  transition: none !important;
+html.is-theme-transitioning {
+  --motion-duration-fast: 0s;
+  --motion-duration-base: 0s;
+  --motion-duration-slow: 0s;
 }
 
 /*
@@ -392,55 +457,36 @@ html.is-theme-transitioning *::after {
  * - actions expose a semantic keyboard-only state;
  * - pointer focus and browser chrome function keys never create a residual halo;
  * - selected/open/active remain component-owned states.
+ *
+ * The outline is reserved transparent so the UA `:focus-visible` ring cannot take over
+ * the box; forced colours recolour that same reserved outline.
  */
 .ui-field-control,
-.ui-field-boundary {
-  outline: none;
+.ui-action {
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ui-field-control {
   transition: border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .ui-field-control:focus,
-.ui-field-control:focus-visible,
-.ui-field-boundary:focus,
-.ui-field-boundary:focus-visible,
-.ui-field-boundary:focus-within {
-  outline: none;
+.ui-field-control:focus-visible {
   border-color: var(--color-focus-field);
-}
-
-.ui-action {
-  border-width: 1px;
-  border-style: solid;
-  outline: none;
 }
 
 html[data-input-intent='pointer'] .ui-action:focus {
-  outline: none;
+  outline-color: transparent;
 }
 
-html:not([data-input-intent]) :is(.ui-action-primary, .ui-action-destructive):focus-visible,
-html[data-input-intent='keyboard'] :is(.ui-action-primary, .ui-action-destructive):focus {
-  outline: none;
+html:not([data-input-intent]) .ui-action-primary:focus-visible,
+html[data-input-intent='keyboard'] .ui-action-primary:focus {
   border-color: currentColor;
-}
-
-html:not([data-input-intent]) :is(.ui-action-outline, .ui-action-secondary):focus-visible,
-html[data-input-intent='keyboard'] :is(.ui-action-outline, .ui-action-secondary):focus {
-  outline: none;
-  border-color: var(--color-focus-field);
-}
-
-html:not([data-input-intent]) .ui-action-ghost:focus-visible,
-html[data-input-intent='keyboard'] .ui-action-ghost:focus {
-  outline: none;
-  border-color: var(--color-focus-action);
-  background-color: var(--color-accent);
-  color: var(--color-accent-foreground);
 }
 
 html:not([data-input-intent]) :is(.ui-action-icon, .ui-action-nav):focus-visible,
 html[data-input-intent='keyboard'] :is(.ui-action-icon, .ui-action-nav):focus {
-  outline: none;
   border-color: var(--color-focus-action);
   background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
@@ -448,183 +494,46 @@ html[data-input-intent='keyboard'] :is(.ui-action-icon, .ui-action-nav):focus {
 
 html:not([data-input-intent]) .ui-action-selectable:focus-visible,
 html[data-input-intent='keyboard'] .ui-action-selectable:focus {
-  outline: none;
   border-color: var(--color-focus-action);
 }
 
 html:not([data-input-intent]) .ui-action-danger:focus-visible,
 html[data-input-intent='keyboard'] .ui-action-danger:focus {
-  outline: none;
   border-color: var(--color-error);
   background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
   color: var(--color-error);
 }
 
-html:not([data-input-intent]) .ui-action-link:focus-visible,
-html[data-input-intent='keyboard'] .ui-action-link:focus {
-  outline: none;
-  color: var(--color-primary);
-  text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: var(--spacing-0-5);
-}
-
 @media (forced-colors: active) {
   :focus-visible {
-    outline: 2px solid CanvasText !important;
-    outline-offset: 2px !important;
+    outline-color: CanvasText;
+    outline-offset: var(--focus-ring-offset);
   }
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
 }
 
 #root {
   min-height: 100vh;
 }
 
-.page {
+@utility page {
   display: grid;
   gap: var(--spacing-xl);
 }
 
-.page--center {
-  min-height: calc(100vh - 84px);
+@utility page--center {
   place-items: center;
 }
 
-.page--auth {
+/* Full-bleed anonymous shell: owns the viewport fill and its surface. */
+@utility page--viewport {
   min-height: 100vh;
   background: var(--color-bg);
 }
 
-.page__hero,
-.page__header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-4-5);
-}
-
-.page__hero-main,
-.page__header {
-  display: grid;
-  gap: var(--spacing-sm);
-}
-
-.page__hero-actions,
-.page__subnav,
-.panel__actions,
-.button-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.page__title {
-  font-size: clamp(var(--font-size-xl), 5vw, var(--font-size-2xl));
-  line-height: 1.08;
-}
-
-.page__lead {
-  max-width: 54ch;
-  font-size: var(--font-size-md);
-  line-height: 1.68;
-}
-
-.page__lead--nowrap {
-  max-width: none;
-  white-space: nowrap;
-}
-
-.detail-grid,
-.field-grid,
-.workspace-stack {
-  display: grid;
-  gap: var(--spacing-md);
-}
-.detail-card {
-  display: grid;
-  gap: var(--spacing-1-5);
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 32%, transparent), transparent),
-    var(--color-surface);
-  box-shadow: var(--shadow-whisper);
-}
-
-.detail-card__meta {
-  margin: 0;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  line-height: 1.58;
-}
-
-.panel {
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-whisper);
-}
-
-.panel__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) 0;
-}
-
-.panel__head--compact {
-  align-items: center;
-}
-
-.panel__title {
-  font-size: clamp(var(--font-size-md), 2vw, var(--font-size-lg));
-  line-height: 1.4;
-}
-
-/* shadcn Label / FormLabel 品牌衬线体 */
-label,
-[data-slot='label'] {
-  font-family: var(--font-serif);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
-}
-
-.field {
-  display: grid;
-  gap: var(--spacing-2-5);
-}
-
-.field__label {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-}
-
-.field__hint {
-  font-size: var(--font-size-sm);
-}
-
-.status-banner {
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-/* ── Composer dropdown ── */
-/* ── Settings select dropdown ── */
-.ui-input,
-.ui-select,
-.ui-textarea {
+/* Same fill under a chrome band: owns only the inset min-height, so a page may
+   combine it with `page--center` and a call-site background without a cascade fight. */
+@utility page--inset-viewport {
+  min-height: calc(100vh - var(--layout-page-center-block-offset));
 }
 
 .brand-metaballs {
@@ -638,15 +547,23 @@ label,
 
 .brand-metaballs canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
+  position: absolute;
+  inset: 0;
   border-radius: inherit;
 }
 
+.brand-metaballs__shader {
+  width: 100%;
+  height: 100%;
+  background: var(--brand-metaballs-bg);
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-brand-metaballs);
+}
+
+/* Size belongs to the call site: an unlayered width here would outrank any
+   `size-*` atom and silently pin the mark to one step. */
 .rose-three-loader {
   display: inline-block;
-  inline-size: 1em;
-  block-size: 1em;
   overflow: visible;
 }
 
@@ -654,9 +571,8 @@ label,
   display: grid;
   place-items: center;
   gap: var(--spacing-md);
-  min-height: 120px;
+  min-height: var(--layout-empty-state-min-block-size);
   padding-block: var(--spacing-lg);
-  padding-inline: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -672,7 +588,7 @@ label,
 
 .login-card {
   position: relative;
-  width: min(100%, 1180px);
+  width: min(100%, var(--layout-login-card-max-inline-size));
   border: var(--border-width-default) solid var(--color-line-decor);
   border-radius: var(--radius-xl);
   padding: var(--spacing-2xl);
@@ -688,20 +604,19 @@ label,
 }
 
 .login-card__content {
-  --login-card-content-layer: 1;
   position: relative;
-  z-index: var(--login-card-content-layer);
+  z-index: var(--z-index-local-content);
   display: grid;
-  grid-template-columns: minmax(320px, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(var(--layout-login-column-min-inline-size), 3fr) minmax(0, 2fr);
   gap: var(--spacing-2xl);
   align-items: stretch;
-  min-height: 520px;
+  min-height: var(--layout-login-card-min-block-size);
 }
 
 .login-card__brand-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: var(--spacing-5-5);
+  gap: var(--spacing-lg);
   min-height: 100%;
   justify-content: center;
   justify-items: center;
@@ -710,8 +625,8 @@ label,
 }
 
 .login-card__logo {
-  width: min(100%, 500px);
-  max-width: 500px;
+  width: min(100%, var(--layout-login-logo-max-inline-size));
+  max-width: var(--layout-login-logo-max-inline-size);
   aspect-ratio: 1;
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-login-logo);
@@ -739,8 +654,8 @@ label,
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
-  letter-spacing: 0.18em;
-  line-height: 1.2;
+  letter-spacing: var(--tracking-caps);
+  line-height: var(--line-height-tight);
   text-align: center;
   text-transform: uppercase;
 }
@@ -748,7 +663,7 @@ label,
 .login-card__form-panel {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: var(--spacing-5-5);
+  gap: var(--spacing-lg);
   width: 100%;
   min-height: 100%;
   justify-self: stretch;
@@ -758,53 +673,27 @@ label,
   display: grid;
   gap: var(--spacing-sm);
 }
-.login-card__header .page__title {
-  font-family: var(--font-serif);
-}
-
-.auth-form {
-  align-content: start;
-  gap: var(--spacing-lg);
-  min-height: 0;
-}
-
-.auth-email-field {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-.auth-email-field.is-visible {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-}
 
 .login-card__actions {
   display: flex;
   align-items: center;
   margin-top: var(--spacing-lg);
 }
-.login-card__submit {
-  inline-size: 100%;
-}
-
 /* Custom scrollbar for scrollable areas */
-.scrollable {
+@utility scrollable {
   scrollbar-width: thin;
   scrollbar-color: var(--color-ring) transparent;
-  scrollbar-gutter: auto;
 }
 
-.scrollable::-webkit-scrollbar,
-.scrollable::-webkit-scrollbar-track,
-.scrollable::-webkit-scrollbar-thumb,
-.scrollable::-webkit-scrollbar-thumb:hover {
+/* A border-only preview frame for the component gallery: not the elevated card. */
+@utility demo-frame {
+  border-radius: var(--radius-lg);
+  border: var(--border-width-default) solid var(--color-border);
 }
 
-/* ==========================================================================
-   Workspace Layout System (全局工作区骨架锁死)
-   ========================================================================== */
-.workspace-page {
+/* Workspace layout shell and its header band: named chrome in the utility registry so
+   call sites may override geometry. */
+@utility workspace-page {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -812,35 +701,39 @@ label,
   overflow: hidden;
   height: 100vh;
 }
-.workspace-header {
-  height: var(--header-height);
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header {
+  height: var(--layout-header-block-size);
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-2xl);
   border-bottom: var(--border-width-default) solid var(--color-border);
   background: color-mix(in srgb, var(--color-surface) 85%, transparent);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--overlay-blur-radius));
   position: sticky;
   top: 0;
   z-index: var(--z-index-sidebar);
   flex-shrink: 0;
   box-sizing: border-box;
 }
-.workspace-header__main {
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header__main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-lg);
   width: 100%;
 }
-.workspace-header__title-area {
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header__title-area {
   flex: 1;
   min-inline-size: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
 }
-.workspace-header__title {
+/* @internal src/shared/ui/page-header.tsx */
+@utility workspace-header__title {
   margin: 0;
   min-inline-size: 0;
   overflow: hidden;
@@ -851,7 +744,7 @@ label,
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
-.workspace-page__content {
+@utility workspace-page__content {
   flex: 1;
   padding: var(--spacing-lg) var(--spacing-2xl);
   overflow-y: auto;
@@ -862,82 +755,42 @@ label,
 }
 
 /* ── Grid & Form Elements ── */
-.page-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
-}
-.form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-.detail-card {
-  padding: var(--spacing-sm);
-  background: var(--color-surface);
-  border: var(--border-width-default) solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-.detail-card__title {
-  margin: var(--spacing-xs) 0;
-  font-family: var(--font-serif);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-}
-.detail-card__meta {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-.button-row {
-  display: flex;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-md);
-}
-
-/* Keep browser autofill colors aligned with the input surface. */
+/* Autofill paint is covered by the field's own surface (`appearance: none`). */
+/* browser-chrome: the autofill paint must not leak through the field surface */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: var(--shadow-autofill-surface) !important;
-  -webkit-text-fill-color: var(--color-text-primary) !important;
   transition: none;
 }
 
-/* Hide native password controls where the product provides its own control. */
+/* Native password decorations sit inside the control box; the product draws its own. */
+.ui-input[type='password'] {
+  appearance: none;
+}
+/* browser-chrome: Blink/Edge draw reveal/clear inside the control box */
 input[type='password']::-ms-reveal,
 input[type='password']::-ms-clear {
-  display: none !important;
-}
-input[type='password']::-webkit-credentials-auto-fill-button {
-  visibility: hidden !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  right: 0 !important;
+  display: none;
 }
 
-.app-layout {
+/* browser-chrome: Chrome draws the credentials button over the trailing action slot */
+input[type='password']::-webkit-credentials-auto-fill-button {
+  display: none;
+}
+
+/* The application frame is a registered utility for the same reason as the page
+   shells above: it owns the viewport height, and an unlayered class declaring it
+   would silently outrank anything a call site wrote. */
+@utility app-layout {
   display: flex;
   height: 100vh;
   overflow: hidden;
   background: var(--color-bg);
 }
-.app-layout__main {
+@utility app-layout__main {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -945,64 +798,77 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   height: 100%;
   overflow: hidden;
 }
-.prelude-button {
+.ui-button {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  min-height: var(--ui-height-md);
+  min-block-size: var(--ui-height-control);
   padding: 0 var(--spacing-md);
+  border-width: var(--border-width-default);
+  border-style: solid;
   border-radius: var(--radius-md);
   font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
   cursor: pointer;
   transition: var(--motion-transition-surface);
 }
-.prelude-button__content {
+.ui-button__content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: inherit;
 }
-.prelude-button__content > svg {
-  inline-size: var(--spacing-4-5);
-  block-size: var(--spacing-4-5);
+/* Icons inside a control are sized here, never by a per-call-site size prop. */
+.ui-button__content > svg,
+.field-action > svg,
+.row-action > svg,
+.ui-dialog__close > svg,
+.ui-toast__close > svg,
+.ui-toast [data-icon] > svg {
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
   flex: 0 0 auto;
 }
-.prelude-button[data-loading] .prelude-button__content {
+.ui-button[data-loading] .ui-button__content {
   opacity: 0;
 }
-.prelude-button:disabled {
+.ui-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-.prelude-button--primary {
+.ui-button--primary {
   color: var(--color-text-on-accent);
   background: var(--color-accent-solid);
   border-color: var(--color-accent-solid);
 }
-.prelude-button--primary:hover:not(:disabled) {
+.ui-button--primary:hover:not(:disabled) {
   background: var(--color-accent-solid-hover);
   border-color: var(--color-accent-solid-hover);
 }
-.prelude-button--secondary {
+.ui-button--secondary {
   color: var(--color-text-primary);
   background: var(--color-surface-muted);
   border-color: var(--color-border-warm);
 }
-.prelude-button--ghost {
+.ui-button--ghost {
   color: var(--color-text-secondary);
   background: transparent;
   border-color: transparent;
 }
-.prelude-button--danger {
+.ui-button--danger {
   color: var(--color-error);
-  background: transparent;
-  border-color: var(--color-border-warm);
+  background: var(--color-error-soft);
+  border-color: color-mix(in srgb, var(--color-error) 32%, transparent);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-error) 16%, transparent);
+    border-color: var(--color-error);
+  }
 }
-.prelude-input,
-.prelude-textarea,
-.prelude-select {
+.ui-input,
+.ui-textarea,
+.ui-select {
   width: 100%;
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-md);
@@ -1010,12 +876,17 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
 }
-.prelude-input,
-.prelude-select {
-  height: var(--ui-height-md);
-  padding: 0 var(--spacing-3-5);
+.ui-input,
+.ui-select {
+  height: var(--ui-height-control);
+  padding: 0 var(--spacing-md);
 }
-.prelude-select {
+/* A field that carries trailing icon actions reserves room for them through
+   --field-trailing-gutter, which the wrapping layout element declares. */
+.ui-input {
+  padding-inline-end: calc(var(--spacing-md) + var(--field-trailing-gutter, 0px));
+}
+.ui-select {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1023,33 +894,35 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   text-align: start;
   cursor: pointer;
 }
-.prelude-select:disabled {
+.ui-select:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-.prelude-select__icon {
+.ui-select__icon {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   color: var(--color-text-tertiary);
 }
-.prelude-select__icon svg {
-  inline-size: var(--spacing-3-5);
-  block-size: var(--spacing-3-5);
+.ui-select__icon svg {
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
 }
-.prelude-textarea {
-  min-height: 104px;
-  padding: var(--spacing-3-5);
-  resize: vertical;
+.ui-textarea {
+  min-height: var(--layout-textarea-min-block-size);
+  padding: var(--spacing-md);
+  /* Field geometry is owned by the design system; the browser resizer grip is chrome
+     the pixel oracle would otherwise paint into every textarea corner. */
+  resize: none;
 }
-.prelude-tooltip-positioner {
+.ui-tooltip-positioner {
   z-index: var(--z-index-tooltip);
   pointer-events: none;
 }
-.prelude-tooltip {
+.ui-tooltip {
   pointer-events: none;
   max-width: var(--content-tooltip-max-inline-size);
-  padding: var(--spacing-1-5) var(--spacing-2-5);
+  padding: var(--spacing-sm);
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-sm);
   background: var(--color-text-primary);
@@ -1057,14 +930,14 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   box-shadow: var(--shadow-whisper);
   font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-heading) var(--font-sans);
 }
-.prelude-menu-positioner {
+.ui-menu-positioner {
   z-index: var(--z-index-menu);
   outline: none;
 }
-.prelude-menu {
-  min-inline-size: calc(var(--ui-height-compact) * 8);
+.ui-menu {
+  min-inline-size: calc(var(--ui-height-control) * 8);
   max-inline-size: var(--content-tooltip-max-inline-size);
-  padding: var(--spacing-0-5);
+  padding: var(--spacing-xs);
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-md);
   outline: none;
@@ -1076,17 +949,17 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     opacity var(--motion-duration-fast) var(--motion-ease-standard),
     transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.prelude-menu[data-starting-style],
-.prelude-menu[data-ending-style] {
+.ui-menu[data-starting-style],
+.ui-menu[data-ending-style] {
   opacity: 0;
   transform: translateY(var(--spacing-sm));
 }
-.prelude-menu__item {
+.ui-menu__item {
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  min-block-size: var(--ui-height-compact);
+  min-block-size: var(--ui-height-control);
   padding-inline: var(--spacing-sm);
   border-radius: var(--radius-md);
   outline: none;
@@ -1095,105 +968,117 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   cursor: pointer;
   user-select: none;
 }
-.prelude-menu__item[data-highlighted] {
+.ui-menu__item[data-highlighted] {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
-.prelude-menu__item[data-disabled] {
+.ui-menu__item[data-disabled] {
   cursor: not-allowed;
   opacity: 0.5;
 }
-.prelude-menu--structured .prelude-menu__item {
+.ui-menu--structured .ui-menu__item {
   display: grid;
   inline-size: 100%;
   grid-template-columns:
-    var(--spacing-4-5)
+    var(--ui-glyph-md)
     minmax(0, 1fr)
-    minmax(var(--spacing-4-5), auto)
-    var(--spacing-3-5);
+    minmax(var(--ui-glyph-md), auto)
+    var(--ui-glyph-sm);
   column-gap: var(--spacing-sm);
-  min-block-size: var(--ui-height-compact);
+  min-block-size: var(--ui-height-control);
 }
-.prelude-menu--structured .prelude-menu__icon {
+.ui-menu--structured .ui-menu__icon {
   grid-column: 1;
 }
-.prelude-menu--structured .prelude-menu__label {
+.ui-menu--structured .ui-menu__label {
   grid-column: 2;
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.prelude-menu--structured .prelude-menu__detail {
+.ui-menu--structured .ui-menu__detail {
   grid-column: 3;
   justify-self: end;
 }
-.prelude-menu--structured .prelude-menu__chevron,
-.prelude-menu--structured .prelude-menu__indicator--end {
+.ui-menu--structured .ui-menu__chevron,
+.ui-menu--structured .ui-menu__indicator--end {
   grid-column: 4;
   justify-self: center;
   margin-inline-start: 0;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__item {
-  grid-template-columns: minmax(0, 1fr) minmax(var(--spacing-4-5), auto) var(--spacing-3-5);
+.ui-menu--structured.ui-menu--model .ui-menu__item {
+  grid-template-columns: minmax(0, 1fr) minmax(var(--ui-glyph-md), auto) var(--ui-glyph-sm);
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__label {
+.ui-menu--structured.ui-menu--model .ui-menu__label {
   grid-column: 1;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__detail {
+.ui-menu--structured.ui-menu--model .ui-menu__detail {
   grid-column: 2;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__chevron {
+.ui-menu--structured.ui-menu--model .ui-menu__chevron {
   grid-column: 3;
 }
-.prelude-menu--structured.prelude-menu--model .prelude-menu__manage-item {
-  grid-template-columns: var(--spacing-4-5) minmax(0, 1fr);
+.ui-menu--structured.ui-menu--model .ui-menu__item--leading-icon {
+  grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
 }
-.prelude-menu__manage-icon {
-  inline-size: var(--spacing-3-5);
-  block-size: var(--spacing-3-5);
+/* The owner wraps the caller's glyph in a span, so this stays out of the layout and the svg
+   remains the grid item it was before — the colour still inherits, the box still sizes. */
+.ui-menu__icon--leading {
+  display: contents;
   color: var(--color-text-tertiary);
 }
-.prelude-menu__item-label {
+.ui-menu__icon--leading svg {
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
+}
+/* A quiet card sunk into a surface: one radius, one fill, one padding. Two sizes because
+   the report blocks and the score tiles genuinely differ, but the inset itself is one
+   decision — it had been written out five times with three different atom orders. */
+@utility inset-card {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-muted);
+  padding: var(--spacing-md);
+}
+
+@utility inset-card-lg {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-muted);
+  padding: var(--spacing-lg);
+}
+
+.ui-menu__item-label {
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.prelude-menu__indicator {
+.ui-menu__indicator {
   display: grid;
-  inline-size: var(--spacing-4-5);
-  block-size: var(--spacing-4-5);
+  inline-size: var(--ui-glyph-md);
+  block-size: var(--ui-glyph-md);
   flex: 0 0 auto;
   place-items: center;
   color: var(--color-text-primary);
 }
-.prelude-menu__indicator--end {
+.ui-menu__indicator--end {
   margin-inline-start: auto;
 }
-.prelude-menu__indicator svg,
-.prelude-menu__icon svg,
-.prelude-menu__chevron {
-  inline-size: var(--spacing-3-5);
-  block-size: var(--spacing-3-5);
+.ui-menu__indicator svg,
+.ui-menu__icon svg,
+.ui-menu__chevron {
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
 }
-.prelude-menu__icon {
+.ui-menu__icon {
   display: grid;
-  inline-size: var(--spacing-4-5);
-  block-size: var(--spacing-4-5);
+  inline-size: var(--ui-glyph-md);
+  block-size: var(--ui-glyph-md);
   flex: 0 0 auto;
   place-items: center;
   color: var(--color-text-tertiary);
 }
-.prelude-menu__copy {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: 1;
-  min-inline-size: 0;
-  gap: var(--spacing-sm);
-}
-.prelude-menu__detail {
+.ui-menu__detail {
   flex: 0 1 auto;
   overflow: hidden;
   color: var(--color-text-tertiary);
@@ -1201,43 +1086,43 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.prelude-menu__chevron {
+.ui-menu__chevron {
   flex: 0 0 auto;
   color: var(--color-text-tertiary);
 }
-.prelude-menu__separator {
-  block-size: 1px;
+.ui-menu__separator {
+  block-size: var(--border-width-default);
   margin: var(--spacing-xs);
   background: var(--color-border);
 }
-.prelude-select-popup {
+.ui-select-popup {
   min-inline-size: var(--anchor-width);
   max-block-size: var(--available-height);
 }
-.prelude-select__list {
-  max-block-size: min(360px, var(--available-height));
+.ui-select__list {
+  max-block-size: min(var(--layout-select-list-max-block-size), var(--available-height));
   overflow-y: auto;
   outline: none;
 }
-.prelude-select__item {
+.ui-select__item {
   display: grid;
-  grid-template-columns: var(--spacing-4-5) minmax(0, 1fr);
+  grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
   column-gap: var(--spacing-sm);
 }
-.prelude-select__item .prelude-menu__indicator {
+.ui-select__item .ui-menu__indicator {
   grid-column: 1;
   margin: 0;
 }
-.prelude-select__item .prelude-menu__item-label {
+.ui-select__item .ui-menu__item-label {
   grid-column: 2;
 }
-.prelude-dialog__backdrop {
+.ui-dialog__backdrop {
   position: fixed;
   inset: 0;
   z-index: var(--z-index-dialog-backdrop);
   background: var(--mask-overlay);
 }
-.prelude-dialog__viewport {
+.ui-dialog__viewport {
   position: fixed;
   inset: 0;
   z-index: var(--z-index-dialog);
@@ -1245,43 +1130,71 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   place-items: center;
   padding: var(--spacing-lg);
 }
-.prelude-dialog {
+.ui-dialog {
   position: relative;
-  width: min(960px, 92vw);
+  width: min(var(--layout-dialog-max-inline-size), 92vw);
   max-height: 88vh;
+  padding: var(--spacing-xl);
   overflow: hidden;
   border: var(--border-width-default) solid var(--color-border-warm);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-modal);
 }
-.prelude-dialog__close {
+.ui-dialog__close {
   position: absolute;
   top: var(--spacing-md);
   inset-inline-end: var(--spacing-md);
   z-index: var(--z-index-local-raised);
   display: grid;
-  width: var(--ui-height-md);
-  height: var(--ui-height-md);
+  width: var(--ui-height-control);
+  height: var(--ui-height-control);
   place-items: center;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
   border-color: transparent;
 }
-.prelude-button--compact {
-  min-height: var(--ui-height-compact);
-  padding-inline: var(--spacing-sm);
-}
-.prelude-button--icon {
-  width: var(--ui-height-md);
+.ui-button--icon {
+  inline-size: var(--ui-height-control);
+  block-size: var(--ui-height-control);
+  min-block-size: var(--ui-height-control);
   padding: 0;
 }
-.button-spinner {
+.ui-button--action {
+  flex-shrink: 0;
+  padding-inline: var(--spacing-lg);
+}
+.ui-button--hold {
+  position: relative;
+  padding: 0 var(--spacing-lg);
+  font-family: var(--font-serif);
+  user-select: none;
+}
+/* While held, the level meter takes the words' place. The label keeps its box, so the
+   control never changes width under the finger. */
+.ui-button--hold[data-pressed] .ui-button__label {
+  opacity: 0;
+}
+/* Held is a state that lasts seconds, not a click: a positional nudge would read as the
+   control sitting out of line with its neighbours. The deepened ring carries it instead,
+   alongside the meter that replaces the words. */
+.ui-button--hold[data-pressed] {
+  box-shadow: var(--shadow-ring-deep);
+}
+/* The workspace shell is full-bleed: the caller owns padding and its own regions. */
+.ui-dialog--workspace {
+  padding: 0;
+  max-inline-size: min(var(--layout-dialog-max-inline-size), 90vw);
+  block-size: 60vh;
+  min-block-size: var(--layout-dialog-workspace-min-block-size);
+  border-color: transparent;
+}
+.ui-button__spinner {
   position: absolute;
   inset: 0;
-  width: var(--spacing-md);
-  height: var(--spacing-md);
+  width: var(--ui-glyph-sm);
+  height: var(--ui-glyph-sm);
   margin: auto;
   border: var(--border-width-default) solid currentColor;
   border-right-color: transparent;
@@ -1293,11 +1206,11 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     transform: rotate(360deg);
   }
 }
-.toaster [data-sonner-toast] {
+.ui-toaster [data-sonner-toast] {
   pointer-events: auto;
 }
-.toaster [data-sonner-toast].prelude-toast {
-  min-block-size: calc(var(--ui-height-md) + var(--spacing-md));
+.ui-toaster [data-sonner-toast].ui-toast {
+  min-block-size: calc(var(--ui-height-control) + var(--spacing-md));
   padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) var(--spacing-md);
   border-color: transparent;
   border-radius: var(--radius-md);
@@ -1306,24 +1219,16 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   box-shadow: var(--shadow-whisper);
   font: var(--font-size-sm)/var(--line-height-base) var(--font-serif);
 }
-.toaster [data-sonner-toast] .prelude-toast__description {
+.ui-toaster [data-sonner-toast] .ui-toast__description {
   color: var(--color-text-secondary);
 }
-.toaster [data-sonner-toast] .prelude-toast__action {
-  background: var(--color-accent-solid);
-  color: var(--color-text-on-accent);
-}
-.toaster [data-sonner-toast] .prelude-toast__cancel {
-  background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
-}
-.toaster [data-sonner-toast][data-styled='true'] .prelude-toast__close {
+.ui-toaster [data-sonner-toast][data-styled='true'] .ui-toast__close {
   top: 50%;
   inset-inline-end: var(--spacing-sm);
   bottom: auto;
   inset-inline-start: auto;
-  width: var(--spacing-lg);
-  height: var(--spacing-lg);
+  width: var(--ui-glyph-lg);
+  height: var(--ui-glyph-lg);
   transform: translateY(-50%);
   border-color: transparent;
   border-radius: var(--radius-md);
@@ -1331,40 +1236,35 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-tertiary);
   box-shadow: none;
 }
-.toaster [data-sonner-toast][data-styled='true']:hover .prelude-toast__close:hover {
+.ui-toaster [data-sonner-toast][data-styled='true']:hover .ui-toast__close:hover {
   border-color: transparent;
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
-.prelude-toast__loader {
+.ui-toast__loader {
   animation: control-spin var(--motion-duration-slow) linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .button-spinner,
-  .prelude-toast__loader {
+  .ui-button__spinner,
+  .ui-toast__loader {
     animation: none;
   }
 }
 html:not([data-input-intent])
-  .toaster
+  .ui-toaster
   [data-sonner-toast][data-styled='true']
-  .prelude-toast__close:focus-visible,
+  .ui-toast__close:focus-visible,
 html[data-input-intent='keyboard']
-  .toaster
+  .ui-toaster
   [data-sonner-toast][data-styled='true']
-  .prelude-toast__close:focus {
+  .ui-toast__close:focus {
   border-color: var(--color-focus-action);
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
+/* Confirmation shares the dialog chrome; only its measure and action row differ. */
 .confirm-dialog {
-  width: calc(100vw - var(--spacing-2xl));
-  max-width: var(--content-tooltip-max-inline-size);
-  padding: var(--spacing-xl);
-  border: var(--border-width-default) solid var(--color-border-warm);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-modal);
+  width: min(var(--layout-confirm-max-inline-size), calc(100vw - var(--spacing-2xl)));
 }
 .confirm-dialog__title {
   margin: 0;
@@ -1378,11 +1278,15 @@ html[data-input-intent='keyboard']
 }
 .confirm-dialog__actions {
   display: flex;
-  justify-content: flex-end;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-xl);
+
+  & > * {
+    flex: 1;
+  }
 }
 .sr-only {
+  /* geometry-exempt: the 1px clip box is the screen-reader hiding technique itself */
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1393,36 +1297,9 @@ html[data-input-intent='keyboard']
   white-space: nowrap;
   border: 0;
 }
-.notice {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-default) solid var(--color-border-warm);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-.notice--error {
-  color: var(--color-error);
-  border-color: color-mix(in srgb, var(--color-error) 35%, var(--color-border));
-}
-.password-field {
-  position: relative;
-}
-.password-field__toggle {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-end: 0;
-  display: grid;
-  width: var(--ui-height-md);
-  place-items: center;
-  border-color: transparent;
-  background: transparent;
-  color: var(--color-text-tertiary);
-}
-.segmented-control {
+.ui-segmented-control {
   --segmented-index: 0;
   --segmented-count: 2;
-  --segmented-active-opacity: 0;
 
   position: relative;
   display: grid;
@@ -1430,34 +1307,30 @@ html[data-input-intent='keyboard']
     var(--segmented-count),
     minmax(var(--ui-segmented-item-min-inline-size), 1fr)
   );
-  padding: var(--spacing-xs);
   border-radius: var(--radius-md);
   background: var(--color-surface-muted);
 }
-.segmented-control[style] {
-  --segmented-active-opacity: 1;
-}
-.segmented-control::before {
+/* The thumb keeps the cell width so it stays concentric with the track: inset by
+   --ui-control-inset on every side, its radius is the track radius minus that
+   inset, so the gutter reads as an even ring instead of a cropped pill. */
+.ui-segmented-control::before {
   position: absolute;
-  inset-block: var(--spacing-xs);
-  inset-inline-start: var(--spacing-xs);
-  inline-size: calc((100% - (var(--spacing-xs) * 2)) / var(--segmented-count));
-  border-radius: var(--radius-sm);
+  inset-block: var(--ui-control-inset);
+  inset-inline-start: 0;
+  inline-size: calc(100% / var(--segmented-count));
+  border-radius: calc(var(--radius-md) - var(--ui-control-inset));
   background: var(--color-surface);
   box-shadow: var(--shadow-ring);
   content: '';
-  opacity: var(--segmented-active-opacity);
   pointer-events: none;
   transform: translateX(calc(var(--segmented-index) * 100%));
-  transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.segmented-control button {
+.ui-segmented-control button {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-index-local-content);
   min-inline-size: var(--ui-segmented-item-min-inline-size);
-  block-size: var(--ui-height-md);
+  block-size: var(--ui-height-control);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1466,17 +1339,1085 @@ html[data-input-intent='keyboard']
   cursor: pointer;
   transition: color var(--motion-duration-fast) var(--motion-ease-standard);
 }
-.segmented-control button.is-active,
-.segmented-control button[aria-pressed='true'] {
+.ui-segmented-control button.is-active,
+.ui-segmented-control button[aria-pressed='true'] {
   color: var(--color-text-primary);
 }
-.segmented-control:not([style]) button.is-active {
-  background: var(--color-surface);
-  box-shadow: var(--shadow-ring);
-}
 @media (prefers-reduced-motion: reduce) {
-  .segmented-control::before,
-  .segmented-control button {
+  .ui-segmented-control::before,
+  .ui-segmented-control button {
     transition: none;
   }
+}
+
+/* ==========================================================================
+   Composite utilities.
+   These patterns compose token values in ways stock utilities cannot express
+   (multi-value shorthands embedding var(), auto-fit/minmax tracks, a logical
+   border whose width comes from a token). Naming rule: a utility that only
+   composes generic tokens gets a generic name; one that bakes in a specific
+   owner's layout token carries that owner's prefix so the coupling is visible.
+   ========================================================================== */
+@utility truncate-title {
+  min-inline-size: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-compact) var(--font-serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* @internal src/features/position/PositionRow.tsx */
+@utility row-label-end {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-block-size: var(--ui-height-control);
+  padding-inline: 0;
+  border-block-end: var(--border-width-default) solid var(--color-border);
+  background: transparent;
+
+  &:last-child {
+    border-block-end: 0;
+  }
+
+  &:has(button):hover {
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-hover);
+  }
+}
+
+@utility item-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--layout-item-min-inline-size)), 1fr)
+  );
+}
+
+/* @internal src/features/resume/ResumeRow.tsx */
+@utility list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: var(--border-width-default) solid var(--color-border);
+  background: var(--color-surface);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover {
+    border-color: var(--color-border-warm);
+    background: var(--color-surface-hover);
+  }
+}
+
+/* Type scale. Each role fixes family, weight, size, leading and colour
+   together, so a screen picks a role instead of improvising a pairing.
+   Leading is bound to size deliberately: the pre-scale code paired
+   --font-size-xs with four different line-heights. */
+@utility type-eyebrow {
+  color: var(--color-text-tertiary);
+  font: var(--font-weight-medium) var(--font-size-xs)/var(--line-height-tight) var(--font-serif);
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+@utility type-metric {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-xl)/var(--line-height-display) var(--font-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+@utility type-title {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-lg)/var(--line-height-tight) var(--font-serif);
+}
+
+/* The one title that scales with the viewport: auth and terminal pages. */
+@utility type-hero {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium)
+    clamp(var(--font-size-xl), 5vw, var(--font-size-2xl))/var(--line-height-display)
+    var(--font-serif);
+}
+
+/* The document counterpart of `type-hero`: a report opens on a fixed display title, not
+   one that grows with the window, because the same sheet has to hold on paper. */
+@utility type-document-title {
+  color: var(--color-text-primary);
+  font: var(--font-weight-semibold) var(--font-size-xl)/var(--line-height-display) var(--font-serif);
+}
+
+@utility type-subtitle {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--font-size-md)/var(--line-height-compact) var(--font-serif);
+}
+
+@utility type-label {
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-compact) var(--font-serif);
+}
+
+@utility type-body {
+  color: var(--color-text-secondary);
+  font: var(--font-weight-regular) var(--font-size-sm)/var(--line-height-relaxed) var(--font-sans);
+}
+
+/* Reading copy at the copy leading rather than the relaxed one `type-body` uses. Declared
+   property-by-property rather than with the `font:` shorthand on purpose: the shorthand
+   always sets a weight and a leading, and the eleven call sites this replaces spelled the
+   role as bare utility classes that set neither, so both stay inherited exactly as before. */
+@utility type-copy {
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-copy);
+}
+
+/* A serif caption at the tertiary weight of colour: report figure captions and the
+   timestamp beside a chat bubble. The leading names Tailwind's own `--text-xs` step
+   rather than the `--line-height-*` ladder: this project maps `--text-xs` to a bare size,
+   so `text-xs` silently carries Tailwind's default 1.3333 leading, and the call sites this
+   replaces inherited exactly that. Moving the caption onto the ladder is a deliberate
+   rendering change and is not what this promotion is for. */
+@utility type-caption {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xs);
+  line-height: var(--text-xs--line-height);
+}
+
+/* Reading copy set to the report's own measure, so the width is not a layout decision
+   every report section re-makes. `type-lead` carries the lead measure; this carries the
+   report one, and it keeps the copy leading rather than the relaxed one. */
+@utility type-reading {
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-copy);
+  max-inline-size: var(--content-reading-max-inline-size);
+  text-wrap: pretty;
+}
+
+@utility type-meta {
+  color: var(--color-text-tertiary);
+  font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-compact) var(--font-sans);
+}
+
+/* Body text set to the reading measure a lead paragraph gets, so the measure is not a
+   layout decision every page re-makes. Same face as `type-body`; only the width differs. */
+@utility type-lead {
+  color: var(--color-text-secondary);
+  font: var(--font-weight-regular) var(--font-size-sm)/var(--line-height-relaxed) var(--font-sans);
+  max-inline-size: var(--layout-lead-max-inline-size);
+}
+
+/* Declares how many trailing icon actions a field reserves room for. The wrapper
+   is a grid so the control fills it exactly: as an inline block it would sit on a
+   text baseline and the box would grow taller than the control, mis-centring any
+   absolutely placed action inside it. */
+/* @internal src/shared/ui/field.tsx */
+@utility field-actions-* {
+  position: relative;
+  display: grid;
+  --field-trailing-gutter: calc(
+    (var(--ui-height-control) - var(--ui-control-inset)) * --value(integer)
+  );
+}
+
+/* Elevation. Tailwind's shadow-* namespace is reserved for palette colors by
+   the UI lint, so a token shadow is reached through an elevation class. */
+@utility elevated-modal {
+  box-shadow: var(--shadow-modal);
+}
+
+@utility elevated-ring {
+  box-shadow: var(--shadow-ring);
+}
+
+/* A row whose label takes the remaining space and whose trailing content keeps
+   its own width. Baseline alignment and gap stay at the call site because both
+   vary per surface. */
+@utility label-end-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@utility list-plain {
+  padding: 0;
+  list-style: none;
+
+  & li {
+    margin: 0;
+    text-wrap: pretty;
+  }
+}
+
+/* Report column tracks: every report band flows its children into as many
+   reading columns as fit the report minimum, gaps stay per band. */
+@utility document-columns {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--layout-document-column-min-inline-size)), 1fr)
+  );
+}
+
+/* A report page: one bordered, elevated sheet the reader can print or save. */
+/* @internal src/features/report/report-view.tsx */
+@utility document-sheet {
+  padding: var(--spacing-2xl);
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-whisper);
+}
+
+/* A question-review row: a fixed-minimum term beside a flowing definition. */
+/* @internal src/features/report/report-sections.tsx */
+@utility review-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(var(--layout-document-label-inline-size), 0.25fr) 1fr;
+  gap: var(--spacing-md);
+}
+
+/* Filled portion of a score track: one width step per point on the 0-10 scale. */
+/* @internal src/shared/ui/score-tile.tsx */
+@utility score-fill {
+  display: block;
+  block-size: 100%;
+  max-inline-size: 100%;
+  border-radius: inherit;
+  background: var(--color-brand);
+
+  &[data-score='0'] {
+    inline-size: 0%;
+  }
+  &[data-score='1'] {
+    inline-size: 10%;
+  }
+  &[data-score='2'] {
+    inline-size: 20%;
+  }
+  &[data-score='3'] {
+    inline-size: 30%;
+  }
+  &[data-score='4'] {
+    inline-size: 40%;
+  }
+  &[data-score='5'] {
+    inline-size: 50%;
+  }
+  &[data-score='6'] {
+    inline-size: 60%;
+  }
+  &[data-score='7'] {
+    inline-size: 70%;
+  }
+  &[data-score='8'] {
+    inline-size: 80%;
+  }
+  &[data-score='9'] {
+    inline-size: 90%;
+  }
+  &[data-score='10'] {
+    inline-size: 100%;
+  }
+}
+
+/* @internal src/shared/ui/navigation.tsx */
+@utility nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  inline-size: 100%;
+  block-size: var(--ui-height-control);
+  padding-inline: var(--spacing-md);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+
+  & > svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+    flex: 0 0 var(--spacing-md);
+    stroke-width: 2;
+  }
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &.is-active {
+    background: var(--color-surface-muted);
+    color: var(--color-accent-text);
+    border-color: var(--color-ring);
+  }
+}
+
+/* @internal src/shared/ui/option-card.tsx */
+@utility option-card {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover,
+  &.is-active {
+    background: var(--color-surface-hover);
+    border-color: var(--color-ring);
+  }
+}
+
+/* Fields sit side by side once there is room. Each one keeps its own height:
+   stretching them would let a taller neighbour (a textarea, a hint line) pull a
+   short field's control row open, so its trailing actions stop centring on the
+   control and the label-to-control gap grows past the bound-pair step. */
+@utility form-grid {
+  display: grid;
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(var(--layout-form-field-min-inline-size), 1fr));
+}
+
+/* Chrome for a trailing icon action inside a text field. Placement is left to
+   the call site so one, two or zero buttons all sit in the same wrapper. The
+   box is inset from the control edge so its hover fill stays concentric with
+   the field border instead of covering it. */
+/* @internal src/shared/ui/field.tsx */
+@utility field-action {
+  display: grid;
+  inline-size: calc(var(--ui-height-control) - var(--ui-control-inset) * 2);
+  block-size: calc(var(--ui-height-control) - var(--ui-control-inset) * 2);
+  place-items: center;
+  border: var(--border-width-default) solid transparent;
+  border-radius: calc(var(--radius-md) - var(--ui-control-inset));
+  background: transparent;
+  color: var(--color-text-tertiary);
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+}
+
+/* ==========================================================================
+   Print policy for the interview report.
+   This is document-level behaviour, not a component style: printing has to
+   hide the whole application chrome and hand the page to a single export
+   surface, which no per-element utility can express. The report's own print
+   tweaks (hidden carousel, revealed stages, break-inside) stay at call sites.
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body.is-printing-report,
+  body.is-printing-report #root,
+  body.is-printing-report .app-layout,
+  body.is-printing-report .app-layout__main,
+  body.is-printing-report [data-slot='interview-workspace'],
+  body.is-printing-report [data-slot='workspace-active'],
+  body.is-printing-report [data-slot='workspace-active-main'],
+  body.is-printing-report [data-slot='workspace-report'],
+  body.is-printing-report [data-slot='report-content'] {
+    display: block;
+    block-size: auto;
+    min-block-size: 0;
+    overflow: visible;
+  }
+
+  body.is-printing-report * {
+    visibility: hidden;
+  }
+
+  body.is-printing-report [data-slot='report-export'],
+  body.is-printing-report [data-slot='report-export'] * {
+    visibility: visible;
+  }
+
+  body.is-printing-report [data-slot='report-export'] {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    background: var(--color-surface);
+  }
+}
+
+/* ==========================================================================
+   Application rail.
+   Ordering contract for this sheet: a custom @utility always wins over a core
+   atom for the same property, and a later @utility block wins over an earlier
+   one. Variant utilities therefore follow the base they specialise, and a call
+   site must never try to override a utility with a core atom.
+   ========================================================================== */
+/* The rail's own box: width, surface and the collapse transition. `SidebarFrame`
+   renders it, so the column the product draws and the column the gallery draws are
+   the same column — same border, same width, same 36px row inside it. */
+/* @internal src/shared/ui/sidebar.tsx */
+@utility sidebar-frame {
+  display: flex;
+  flex-direction: column;
+  inline-size: var(--layout-sidebar-inline-size);
+  overflow-x: hidden;
+  border-inline-end: var(--border-width-default) solid var(--color-border);
+  background-color: var(--color-surface);
+  font-family: var(--font-serif);
+  transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
+
+  &.is-collapsed {
+    inline-size: var(--layout-sidebar-collapsed-inline-size);
+  }
+}
+
+/* The rail's content scope: the icon metrics every action inherits and the
+   collapse state its labels and brand read. */
+/* @internal src/shared/ui/sidebar.tsx */
+@utility sidebar-rail {
+  /* The action paints its own focus ring with its border, so centring the glyph
+     has to give that border back: (control − glyph − 2 × border) / 2. */
+  --sidebar-btn-padding-inline: calc(
+    (var(--ui-height-control) - var(--ui-glyph-md) - var(--border-width-default) * 2) / 2
+  );
+
+  /* Text that only exists while the rail is expanded fades out as one set. */
+  & [data-sidebar-label] {
+    display: inline-block;
+    flex-shrink: 0;
+    overflow: hidden;
+    opacity: 1;
+    white-space: nowrap;
+    transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  }
+
+  &.is-collapsed [data-sidebar-label] {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  & [data-sidebar-brand] {
+    inline-size: var(--layout-sidebar-brand-inline-size);
+    opacity: 1;
+    transition:
+      inline-size var(--motion-duration-base) var(--motion-ease-standard),
+      opacity var(--motion-duration-base) var(--motion-ease-standard);
+  }
+
+  &.is-collapsed [data-sidebar-brand] {
+    visibility: hidden;
+    inline-size: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* What only a full-height, page-anchored rail can declare. It exists to hold one
+   `sidebar-frame` column at viewport height, and it is the shell that stretches
+   that column — the frame stays content-sized wherever else it is rendered. */
+@utility app-sidebar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-index-sidebar);
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  block-size: 100vh;
+
+  & > .sidebar-frame {
+    min-block-size: 0;
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-frame,
+  .sidebar-rail [data-sidebar-label],
+  .sidebar-rail [data-sidebar-brand],
+  .sidebar-pane,
+  .sidebar-toggle [data-toggle-icon] {
+    transition: none;
+  }
+}
+
+/* @internal src/shared/ui/sidebar.tsx */
+@utility sidebar-toggle {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--ui-height-control);
+  block-size: var(--ui-height-control);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  & [data-toggle-icon-stack] {
+    position: relative;
+    inline-size: var(--ui-glyph-md);
+    block-size: var(--ui-glyph-md);
+  }
+
+  & [data-toggle-icon] {
+    position: absolute;
+    inset: 0;
+    inline-size: var(--ui-glyph-md);
+    block-size: var(--ui-glyph-md);
+    opacity: 0;
+    transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+  }
+
+  /* The two glyphs are stacked and swapped by the button's own state, so the
+     toggle needs no ancestor to decide which one shows. */
+  &:not([data-collapsed='true']) [data-toggle-icon='collapse'] {
+    opacity: 1;
+  }
+
+  &[data-collapsed='true'] [data-toggle-icon='expand'] {
+    opacity: 1;
+  }
+}
+
+/* @internal src/shared/ui/sidebar.tsx */
+@utility sidebar-action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  inline-size: 100%;
+  block-size: var(--ui-height-control);
+  padding-inline: var(--sidebar-btn-padding-inline);
+  overflow: hidden;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-md)/var(--line-height-solid) var(--font-serif);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  & > svg {
+    inline-size: var(--ui-glyph-md);
+    block-size: var(--ui-glyph-md);
+    flex: 0 0 var(--ui-glyph-md);
+  }
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &.is-active {
+    background-color: var(--color-surface-muted);
+    color: var(--color-accent-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+@utility nav-item-danger {
+  color: var(--color-error);
+
+  &:hover {
+    background-color: var(--color-error-soft);
+    color: var(--color-error);
+  }
+}
+
+@utility sidebar-action-primary {
+  background-color: var(--color-accent-solid);
+  box-shadow: var(--shadow-ring);
+  color: var(--color-text-on-accent);
+
+  &:hover {
+    background-color: var(--color-accent-solid-hover);
+    color: var(--color-text-on-accent);
+  }
+}
+
+/* Two panes share one slot and cross-fade as the rail collapses. Both inline
+   edges are pinned so the slot's own box decides the width — a pane that
+   re-declared the rail width by hand drifted a border's worth behind it. */
+/* @internal src/shared/ui/sidebar.tsx */
+@utility sidebar-pane {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--motion-duration-base) var(--motion-ease-standard),
+    visibility 0s linear var(--motion-duration-base);
+
+  &.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+}
+
+/* The scrolling middle of the sidebar (session list, etc.). */
+/* @internal src/shared/ui/sidebar.tsx */
+@utility sidebar-scroll-body {
+  min-block-size: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* @internal src/features/interview/components/session-row.tsx */
+@utility session-group {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin-block-end: var(--spacing-sm);
+  white-space: nowrap;
+
+  & + & {
+    margin-block-start: var(--spacing-md);
+    padding-block-start: var(--spacing-md);
+    border-block-start: var(--border-width-default) solid var(--color-border);
+  }
+}
+
+/* The session row owns the surface its trailing actions mask against. */
+@utility session-row-host {
+  --session-row-surface: var(--color-surface);
+
+  position: relative;
+
+  &:has(.session-row.is-active) {
+    --session-row-surface: var(--color-surface-muted);
+  }
+
+  &:hover,
+  &:focus-within {
+    --session-row-surface: var(--color-surface-hover);
+  }
+}
+
+/* @internal src/features/interview/components/session-row.tsx */
+@utility session-row {
+  display: flex;
+  align-items: center;
+  inline-size: 100%;
+  block-size: var(--ui-height-control);
+  min-block-size: var(--ui-height-control);
+  max-block-size: var(--ui-height-control);
+  padding-inline: var(--spacing-sm);
+  overflow: hidden;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &.is-active {
+    background-color: var(--color-surface-muted);
+    color: var(--color-accent-text);
+    font-weight: var(--font-weight-medium);
+  }
+
+  &.is-loading {
+    cursor: progress;
+  }
+
+  &.is-error {
+    color: var(--color-error);
+  }
+}
+
+@utility session-row-actions {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding-inline-start: var(--spacing-sm);
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--session-row-surface) 25%,
+    var(--session-row-surface) 100%
+  );
+  transform: translateY(-50%);
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+/* @internal src/features/interview/components/session-row.tsx */
+@utility row-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+    color: var(--color-text-primary);
+  }
+}
+
+@utility row-action-danger {
+  &:hover {
+    background-color: var(--color-error-soft);
+    color: var(--color-error);
+  }
+}
+
+/* ==========================================================================
+   Interview surface composites.
+   The prompt bar, the report-generating card and the message thread are the
+   three places where a control's geometry is derived from another control's
+   geometry, so they stay named utilities rather than long atom strings.
+   ========================================================================== */
+/* @internal src/shared/ui/prompt-bar.tsx */
+@utility prompt-bar-surface {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  overflow: hidden;
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-whisper), var(--shadow-ring);
+  transition: var(--motion-transition-surface);
+}
+
+/* @internal src/shared/ui/prompt-bar.tsx */
+@utility prompt-bar-input {
+  inline-size: 100%;
+  min-block-size: var(--layout-prompt-input-min-block-size);
+  max-block-size: var(--layout-prompt-input-max-block-size);
+  padding: var(--spacing-sm);
+  overflow-y: auto;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: var(--font-size-md)/var(--line-height-relaxed) var(--font-serif);
+
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+}
+
+/* @internal src/shared/ui/prompt-bar.tsx */
+@utility prompt-bar-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  block-size: var(--ui-height-control);
+  min-inline-size: calc(var(--ui-height-control) * 3);
+  max-inline-size: calc(var(--ui-height-control) * 6);
+  padding-inline: var(--spacing-sm);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  cursor: pointer;
+  transition: var(--motion-transition-surface);
+
+  &:hover,
+  &[aria-pressed='true'] {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &:focus-visible {
+    border-color: var(--color-focus-action);
+  }
+
+  & > svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+    flex: 0 0 auto;
+  }
+}
+
+/* Width policy for the prompt-bar controls that must not take the default
+   control floor; they override prompt-bar-control as named variants. */
+@utility prompt-bar-control-toggle {
+  min-inline-size: auto;
+}
+
+/* A prompt control whose content is text rather than an icon: it drops the
+   icon-button floor and takes the shared truncation measure instead. */
+@utility prompt-bar-control-text {
+  inline-size: auto;
+  min-inline-size: 0;
+  max-inline-size: var(--layout-prompt-truncate-max-inline-size);
+}
+
+/* @internal src/shared/ui/prompt-bar.tsx */
+@utility prompt-bar-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  max-inline-size: calc(var(--ui-height-control) * 6);
+  min-block-size: var(--ui-height-control);
+  padding-inline: var(--spacing-sm);
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  font: var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+
+  & > svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+    flex: 0 0 auto;
+  }
+}
+
+@utility prompt-bar-attachment-remove {
+  display: inline-grid;
+  flex: 0 0 auto;
+  inline-size: var(--ui-glyph-lg);
+  block-size: var(--ui-glyph-lg);
+  /* geometry-exempt: 2px optical overlap between the chip and its remove box */
+  margin-inline-end: -2px;
+  padding: 0;
+  place-items: center;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  line-height: 0;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  & svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+  }
+}
+
+/* The microphone's level, drawn inside the hold control. The analyser writes one custom
+   property and every bar scales by its own factor, so the row reads as a waveform instead
+   of one pumping block. The floor keeps the control legible as "recording" before any
+   audio arrives, and under reduced motion the meter stops sampling rather than animating. */
+/* @internal src/shared/ui/prompt-bar.tsx */
+@utility voice-meter {
+  --voice-level: 0.2;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--spacing-xs) / 2);
+
+  & span {
+    inline-size: calc(var(--spacing-xs) / 2);
+    block-size: var(--ui-glyph-sm);
+    border-radius: var(--radius-full);
+    background: currentColor;
+    transform-origin: center;
+  }
+
+  & span:nth-child(1) {
+    transform: scaleY(calc(var(--voice-level) * 0.45));
+  }
+
+  & span:nth-child(2) {
+    transform: scaleY(calc(var(--voice-level) * 0.8));
+  }
+
+  & span:nth-child(3) {
+    transform: scaleY(calc(var(--voice-level) * 1));
+  }
+
+  & span:nth-child(4) {
+    transform: scaleY(calc(var(--voice-level) * 0.7));
+  }
+
+  & span:nth-child(5) {
+    transform: scaleY(calc(var(--voice-level) * 0.4));
+  }
+}
+
+/* @internal src/shared/ui/generating-card.tsx */
+@utility generating-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  max-inline-size: var(--layout-generating-card-max-inline-size);
+  padding: var(--spacing-2xl);
+  border: var(--border-width-default) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-hover);
+  box-shadow: var(--shadow-whisper);
+  text-align: center;
+}
+
+/* @internal src/shared/ui/generating-card.tsx */
+@utility generating-title {
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium)
+    clamp(var(--font-size-md), 2vw, var(--font-size-lg))/var(--line-height-base) var(--font-serif);
+}
+
+/* @internal src/shared/ui/generating-card.tsx */
+@utility generating-progress-track {
+  position: relative;
+  inline-size: 100%;
+  block-size: var(--spacing-xs);
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+  background: var(--color-border);
+}
+
+/* @internal src/shared/ui/generating-card.tsx */
+@utility generating-progress-indicator {
+  position: absolute;
+  inset-inline-start: 0;
+  inline-size: 50%;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--color-brand);
+  transform: translateX(-100%);
+  animation: var(--animate-progress-sweep);
+}
+
+/* @internal src/shared/ui/message.tsx */
+@utility message-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-inline-size: var(--content-message-bubble-max-inline-size);
+}
+
+@utility message-bubble-body {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-default) solid var(--color-border);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-sans);
+}
+
+/* An indeterminate wait is shown as a typing ellipsis, never a spinner. */
+/* @internal src/shared/ui/message.tsx */
+@utility ellipsis-progress {
+  &::after {
+    content: '';
+    animation: var(--animate-thinking-ellipsis);
+  }
+}
+
+@utility elevated-whisper {
+  box-shadow: var(--shadow-whisper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .generating-progress-indicator,
+  .ellipsis-progress::after {
+    animation: none;
+  }
+
+  .generating-progress-indicator {
+    transform: translateX(50%);
+  }
+}
+
+/* The composer floats over the thread, so it is inert except for its own child. */
+/* @internal src/features/interview/components/InterviewSession.tsx */
+@utility composer-overlay {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: var(--z-index-workspace-composer);
+  padding: var(--spacing-md) var(--spacing-2xl) var(--spacing-lg);
+  background: transparent;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
+}
+
+/* safe center keeps the first line reachable when the empty state overflows. */
+@utility workspace-empty {
+  display: flex;
+  flex: 1;
+  align-items: safe center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--spacing-2xl);
+}
+
+/* Reserve room for the scrollbar so content never shifts when it appears. */
+@utility gutter-stable {
+  scrollbar-gutter: stable;
+}
+
+/* The honeypot field a form shows only in the mode that needs it: present in the
+   layout so the form does not reflow when it appears, invisible and inert until
+   then. Named for what it does rather than for the feature that first wanted it. */
+.honeypot-field {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.honeypot-field.is-visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }

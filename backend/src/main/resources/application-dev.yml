@@ -3,3 +3,9 @@ spring:
     init:
       mode: always
       data-locations: classpath:data-dev.sql
+
+app:
+  crypto:
+    # Local-only credential encryption key so `start-dev.bat` and docker compose boot without
+    # extra plumbing. Any other profile has no value here and must supply APP_CRYPTO_AES_SECRET.
+    aes-secret: ${APP_CRYPTO_AES_SECRET:prelude-dev-only-credential-key-not-for-deploy}

@@ -17,5 +17,6 @@ public class InterviewSession {
     private String summary;
     private String summaryReport;
     private String jdText;
+    private LocalDateTime pinnedAt;
     private LocalDateTime createdAt;
 }

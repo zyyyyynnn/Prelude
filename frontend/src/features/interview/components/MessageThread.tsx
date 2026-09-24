@@ -1,14 +1,9 @@
+import { EmptyState, MessageBubble } from '@/shared/ui'
 import { useEffect, useRef } from 'react'
-import { cn } from '@/shared/lib/cn'
 import type { InterviewMessageRecord } from '../types'
+import { TranscriptScroll } from './transcript-scroll'
 
-export function MessageThread({
-  messages,
-  connectionStatus,
-}: {
-  messages: InterviewMessageRecord[]
-  connectionStatus?: string
-}) {
+export function MessageThread({ messages }: { messages: InterviewMessageRecord[] }) {
   const thread = useRef<HTMLDivElement>(null)
   const visible = messages
     .filter((message) => message.role !== 'system')
@@ -26,35 +21,21 @@ export function MessageThread({
     return () => cancelAnimationFrame(frame)
   }, [messages])
   return (
-    <div className="message-thread scrollable" ref={thread}>
+    <TranscriptScroll ref={thread} data-slot="message-thread">
       {visible.length ? (
         visible.map((message, index) => (
-          <article
-            className={cn('message-bubble', `message-bubble--${message.role}`)}
+          <MessageBubble
             key={`${message.id}-${message.createdAt ?? index}`}
+            side={message.role === 'assistant' ? 'assistant' : 'user'}
+            speaker={message.role === 'assistant' ? '面试官' : '我'}
+            pending={message.role === 'assistant' && !message.content}
           >
-            <div className="message-bubble__head">
-              <span className="message-role">{message.role === 'assistant' ? '面试官' : '我'}</span>
-              {message.score != null && (
-                <span className="message-score">{message.score.toFixed(1)} / 10</span>
-              )}
-            </div>
-            <div className="message-bubble__content">
-              {message.role === 'assistant' && !message.content ? (
-                <span className="thinking-dots">思考中</span>
-              ) : (
-                message.content
-              )}
-            </div>
-            {message.hint && <p className="message-bubble__hint">{message.hint}</p>}
-          </article>
+            {message.content}
+          </MessageBubble>
         ))
       ) : (
-        <div className="message-thread__empty">
-          <p>会话已准备就绪，可以开始面试了。</p>
-        </div>
+        <EmptyState message="会话已准备就绪，可以开始面试了。" className="flex-1" />
       )}
-      {connectionStatus && <div className="reconnecting-status">{connectionStatus}</div>}
-    </div>
+    </TranscriptScroll>
   )
 }
