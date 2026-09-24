@@ -1,8 +1,8 @@
 {
-  "revision": "c82efa29a59dee4ec6483c6681343a2a547c7677",
-  "capturedAt": "2026-09-23T09:24:23.560Z",
-  "inputsMatchRevision": false,
-  "dirtyInputFiles": 29,
+  "revision": "088cb0e5a611909c3861ef2d407d55ff123df7d2",
+  "capturedAt": "2026-09-24T09:34:36.955Z",
+  "inputsMatchRevision": true,
+  "dirtyInputFiles": 0,
   "surfaces": [
     "01-login-light.png",
     "05-interview-empty.png",
