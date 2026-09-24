@@ -1,7 +1,5 @@
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 
-export const MAX_CONTEXT_MESSAGES = 20
-
 /** The one cache write the stream needs; React Query satisfies it at the call site. */
 export type SessionReportCache = {
   setQueryData(
