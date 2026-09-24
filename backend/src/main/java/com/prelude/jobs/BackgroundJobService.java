@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -205,6 +204,6 @@ public class BackgroundJobService implements BackgroundJobOperations {
 
     private JobRow requireJob(String jobId) {
         return jobStore.findByJobId(jobId)
-            .orElseThrow(() -> BusinessException.notFound("job_not_found", "任务不存在"));
+            .orElseThrow(() -> BusinessException.jobNotFound("任务不存在"));
     }
 }

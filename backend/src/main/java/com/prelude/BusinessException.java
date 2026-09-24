@@ -66,4 +66,12 @@ public class BusinessException extends RuntimeException {
     public static BusinessException oauthBindingConflict(String message) {
         return conflict("oauth_binding_conflict", message);
     }
+
+    public static BusinessException jobNotFound(String message) {
+        return notFound("job_not_found", message);
+    }
+
+    public static BusinessException modelSnapshotNotFound(String message) {
+        return notFound("model_snapshot_not_found", message);
+    }
 }

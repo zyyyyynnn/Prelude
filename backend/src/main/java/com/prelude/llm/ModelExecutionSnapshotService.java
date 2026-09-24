@@ -79,7 +79,7 @@ public class ModelExecutionSnapshotService {
     public SnapshotRow require(Long snapshotId) {
         SnapshotRow snapshot = snapshotStore.findById(snapshotId);
         if (snapshot == null) {
-            throw BusinessException.notFound("model_snapshot_not_found", "模型执行快照不存在");
+            throw BusinessException.modelSnapshotNotFound("模型执行快照不存在");
         }
         return snapshot;
     }
@@ -87,7 +87,7 @@ public class ModelExecutionSnapshotService {
     public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
         SnapshotRow snapshot = require(snapshotId);
         if (!accountId.equals(snapshot.accountId())) {
-            throw BusinessException.notFound("model_snapshot_not_found", "模型执行快照不存在");
+            throw BusinessException.modelSnapshotNotFound("模型执行快照不存在");
         }
         return new FrozenModelConfiguration(snapshot.model(), snapshot.reasoningLevel());
     }
