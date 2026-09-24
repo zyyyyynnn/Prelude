@@ -1,5 +1,5 @@
 import { Metaballs } from '@paper-design/shaders-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/cn'
 
 const colorNames = [
@@ -21,6 +21,7 @@ function readPalette() {
 export function BrandMetaballs({ className = '' }: { className?: string }) {
   const [palette, setPalette] = useState(readPalette)
   const [still, setStill] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -35,12 +36,29 @@ export function BrandMetaballs({ className = '' }: { className?: string }) {
     }
   }, [])
 
+  /* The shader writes pixel width/height onto its canvas on resize. This component owns
+     the box, so those inline lengths are dropped the moment they appear. */
+  useEffect(() => {
+    const host = root.current
+    if (!host) return
+    const syncCanvasBox = () => {
+      for (const canvas of host.querySelectorAll('canvas')) {
+        canvas.style.removeProperty('width')
+        canvas.style.removeProperty('height')
+      }
+    }
+    syncCanvasBox()
+    const observer = new ResizeObserver(syncCanvasBox)
+    observer.observe(host)
+    return () => observer.disconnect()
+  }, [])
+
   // A zero speed stops the shader loop, so reduced-motion users get a still frame
   // instead of a surface that animates for the whole session.
   const speed = still ? 0 : 1.7
 
   return (
-    <div className={cn('brand-metaballs', className)} aria-hidden="true">
+    <div ref={root} className={cn('brand-metaballs', className)} aria-hidden="true">
       <Metaballs
         colorBack={palette.background}
         colors={palette.colors}

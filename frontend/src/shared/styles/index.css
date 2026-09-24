@@ -443,10 +443,10 @@
   }
 }
 
-html.is-theme-transitioning *,
-html.is-theme-transitioning *::before,
-html.is-theme-transitioning *::after {
-  transition: none !important;
+html.is-theme-transitioning {
+  --motion-duration-fast: 0s;
+  --motion-duration-base: 0s;
+  --motion-duration-slow: 0s;
 }
 
 /*
@@ -455,35 +455,36 @@ html.is-theme-transitioning *::after {
  * - actions expose a semantic keyboard-only state;
  * - pointer focus and browser chrome function keys never create a residual halo;
  * - selected/open/active remain component-owned states.
+ *
+ * The outline is reserved at 2px transparent so the UA `:focus-visible` ring cannot
+ * take over the box; forced colours recolour that same reserved outline.
  */
+.ui-field-control,
+.ui-action {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
 .ui-field-control {
-  outline: none;
   transition: border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .ui-field-control:focus,
 .ui-field-control:focus-visible {
-  outline: none;
   border-color: var(--color-focus-field);
 }
 
-.ui-action {
-  outline: none;
-}
-
 html[data-input-intent='pointer'] .ui-action:focus {
-  outline: none;
+  outline-color: transparent;
 }
 
 html:not([data-input-intent]) .ui-action-primary:focus-visible,
 html[data-input-intent='keyboard'] .ui-action-primary:focus {
-  outline: none;
   border-color: currentColor;
 }
 
 html:not([data-input-intent]) :is(.ui-action-icon, .ui-action-nav):focus-visible,
 html[data-input-intent='keyboard'] :is(.ui-action-icon, .ui-action-nav):focus {
-  outline: none;
   border-color: var(--color-focus-action);
   background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
@@ -491,13 +492,11 @@ html[data-input-intent='keyboard'] :is(.ui-action-icon, .ui-action-nav):focus {
 
 html:not([data-input-intent]) .ui-action-selectable:focus-visible,
 html[data-input-intent='keyboard'] .ui-action-selectable:focus {
-  outline: none;
   border-color: var(--color-focus-action);
 }
 
 html:not([data-input-intent]) .ui-action-danger:focus-visible,
 html[data-input-intent='keyboard'] .ui-action-danger:focus {
-  outline: none;
   border-color: var(--color-error);
   background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
   color: var(--color-error);
@@ -505,9 +504,8 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 
 @media (forced-colors: active) {
   :focus-visible {
-    /* geometry-exempt: forced-colors uses system colours and widths, not design tokens */
-    outline: 2px solid CanvasText !important;
-    outline-offset: 2px !important;
+    outline-color: CanvasText;
+    outline-offset: 2px;
   }
 }
 
@@ -541,8 +539,8 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 
 .brand-metaballs canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
+  position: absolute;
+  inset: 0;
   border-radius: inherit;
 }
 
@@ -749,35 +747,30 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 }
 
 /* ── Grid & Form Elements ── */
-/* Three rules that override what the browser paints on its own. They stay outside
-   `@layer base` on purpose: the field focus contract below is an unlayered class rule, and a
-   layered declaration could never outrank it — which is the whole point of suppressing the
-   browser's own autofill paint and reveal controls. `verify:ui` accepts them by name. */
-/* browser-chrome: the autofill paint must beat the unlayered field transition it cancels */
+/* Autofill paint is covered by the field's own surface (`appearance: none`). */
+/* browser-chrome: the autofill paint must not leak through the field surface */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: var(--shadow-autofill-surface) !important;
-  -webkit-text-fill-color: var(--color-text-primary) !important;
   transition: none;
 }
 
-/* Hide native password controls where the product provides its own control. */
-/* browser-chrome: Blink/Edge draw these controls inside the control box */
+/* Native password decorations sit inside the control box; the product draws its own. */
+.ui-input[type='password'] {
+  appearance: none;
+}
+/* browser-chrome: Blink/Edge draw reveal/clear inside the control box */
 input[type='password']::-ms-reveal,
 input[type='password']::-ms-clear {
-  display: none !important;
+  display: none;
 }
 
 /* browser-chrome: Chrome draws the credentials button over the trailing action slot */
 input[type='password']::-webkit-credentials-auto-fill-button {
-  visibility: hidden !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  right: 0 !important;
+  display: none;
 }
 
 /* The application frame is a registered utility for the same reason as the page

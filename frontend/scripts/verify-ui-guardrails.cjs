@@ -390,6 +390,7 @@ for (const file of stylesheets) {
      is a violation — the same audit as every other register in this file. */
   const BROWSER_CHROME_SELECTORS = new Set([
     'input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus',
+    "input[type='password']",
     "input[type='password']::-ms-reveal, input[type='password']::-ms-clear",
     "input[type='password']::-webkit-credentials-auto-fill-button",
   ])
