@@ -1,5 +1,6 @@
 package com.prelude.interview.infrastructure;
 
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.infrastructure.persistence.InterviewSessionEntity;
@@ -42,12 +43,21 @@ public class MybatisInterviewSessionRepository implements InterviewSessionReposi
 
     @Override
     public int markGeneratingIfOngoing(Long sessionId, Long accountId) {
-        return sessionMapper.markGeneratingIfOngoing(sessionId, accountId);
+        return sessionMapper.transitionStatusOwned(
+            sessionId,
+            accountId,
+            InterviewSessionStatus.ONGOING.wire(),
+            InterviewSessionStatus.GENERATING.wire()
+        );
     }
 
     @Override
     public int updateSummary(Long sessionId, String summary) {
-        return sessionMapper.updateSummary(sessionId, summary);
+        return sessionMapper.updateSummaryIfStatus(
+            sessionId,
+            summary,
+            InterviewSessionStatus.ONGOING.wire()
+        );
     }
 
     @Override
@@ -57,12 +67,21 @@ public class MybatisInterviewSessionRepository implements InterviewSessionReposi
 
     @Override
     public int completeReportIfGenerating(Long sessionId, String reportJson) {
-        return sessionMapper.completeReportIfGenerating(sessionId, reportJson);
+        return sessionMapper.completeReportIfStatus(
+            sessionId,
+            reportJson,
+            InterviewSessionStatus.GENERATING.wire(),
+            InterviewSessionStatus.FINISHED.wire()
+        );
     }
 
     @Override
     public int restoreOngoingIfGenerating(Long sessionId) {
-        return sessionMapper.restoreOngoingIfGenerating(sessionId);
+        return sessionMapper.transitionStatus(
+            sessionId,
+            InterviewSessionStatus.GENERATING.wire(),
+            InterviewSessionStatus.ONGOING.wire()
+        );
     }
 
     @Override

@@ -1,4 +1,4 @@
-import type { InterviewMessageRecord } from '../types'
+import type { InterviewMessageRecord, InterviewSessionStatus } from '../types'
 
 export const MAX_CONTEXT_MESSAGES = 20
 
@@ -27,7 +27,7 @@ export function buildOptimisticTurn(
 
 /** An empty, unfinished session starts one turn and only one. */
 export function shouldAutoStart(
-  session: { messages: InterviewMessageRecord[]; status?: string } | undefined,
+  session: { messages: InterviewMessageRecord[]; status?: InterviewSessionStatus } | undefined,
   sessionId: number,
   autoStartedSessionId: number | null,
 ): boolean {

@@ -155,7 +155,7 @@ export function SidebarPane({
     <ScrollRegion
       className={cn(
         'sidebar-pane',
-        kind === 'sessions' ? 'sidebar-sessions' : 'flex flex-col justify-end pb-sm',
+        kind === 'sessions' ? 'sidebar-scroll-body' : 'flex flex-col justify-end pb-sm',
         visible && 'is-visible',
       )}
       /* A pane hidden from assistive tech must not be a tab stop either. */

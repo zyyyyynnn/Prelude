@@ -11,16 +11,25 @@ import org.apache.ibatis.annotations.Update;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Session status never appears as a literal here: callers pass the wire values from
+ * {@code InterviewSessionStatus}, so the enum is the only place that spells them.
+ */
 public interface InterviewSessionMapper extends BaseMapper<InterviewSessionEntity> {
 
     @Update("""
         UPDATE interview_session
-        SET status = 'generating'
+        SET status = #{toStatus}
         WHERE id = #{sessionId}
           AND account_id = #{accountId}
-          AND status = 'ongoing'
+          AND status = #{fromStatus}
         """)
-    int markGeneratingIfOngoing(@Param("sessionId") Long sessionId, @Param("accountId") Long accountId);
+    int transitionStatusOwned(
+        @Param("sessionId") Long sessionId,
+        @Param("accountId") Long accountId,
+        @Param("fromStatus") String fromStatus,
+        @Param("toStatus") String toStatus
+    );
 
     /**
      * Takes the session row's write lock, which is what serialises message appends for one
@@ -33,28 +42,38 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSessionEntit
         UPDATE interview_session
         SET summary = #{summary}
         WHERE id = #{sessionId}
-          AND status = 'ongoing'
+          AND status = #{fromStatus}
         """)
-    int updateSummary(@Param("sessionId") Long sessionId, @Param("summary") String summary);
-
-    @Update("""
-        UPDATE interview_session
-        SET status = 'finished', summary_report = #{reportJson}
-        WHERE id = #{sessionId}
-          AND status = 'generating'
-        """)
-    int completeReportIfGenerating(
+    int updateSummaryIfStatus(
         @Param("sessionId") Long sessionId,
-        @Param("reportJson") String reportJson
+        @Param("summary") String summary,
+        @Param("fromStatus") String fromStatus
     );
 
     @Update("""
         UPDATE interview_session
-        SET status = 'ongoing'
+        SET status = #{toStatus}, summary_report = #{reportJson}
         WHERE id = #{sessionId}
-          AND status = 'generating'
+          AND status = #{fromStatus}
         """)
-    int restoreOngoingIfGenerating(@Param("sessionId") Long sessionId);
+    int completeReportIfStatus(
+        @Param("sessionId") Long sessionId,
+        @Param("reportJson") String reportJson,
+        @Param("fromStatus") String fromStatus,
+        @Param("toStatus") String toStatus
+    );
+
+    @Update("""
+        UPDATE interview_session
+        SET status = #{toStatus}
+        WHERE id = #{sessionId}
+          AND status = #{fromStatus}
+        """)
+    int transitionStatus(
+        @Param("sessionId") Long sessionId,
+        @Param("fromStatus") String fromStatus,
+        @Param("toStatus") String toStatus
+    );
 
     @Update("""
         UPDATE interview_session

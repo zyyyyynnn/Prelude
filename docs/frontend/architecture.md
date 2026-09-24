@@ -11,7 +11,7 @@ frontend/src/
 ├── shared/    品牌资源、设计 token、纯工具与 Prelude-owned UI source
 ```
 
-依赖方向是 `app -> features -> shared`。公共入口有两处，规则相同：每个 feature 的 `index.ts`，以及设计系统的 `shared/ui/index.ts`——调用点分别取 `@/features/<name>` 与 `@/shared/ui`。两者都只再导出确有外部消费者的符号；视图与解析留在具名文件里（`features/report` 即 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`）。入口之外的调用方只取入口导出的名字。唯一例外是 `app/`：它是组合根，也是唯一决定「某个视图何时加载」的层，因此可以点名入口已登记的具名文件（`@/features/settings/SettingsModal`）；登记同时充当「这个名字有人消费」的证据。登记 + 组合根选择性深导入下入口 JS 为 209.58 kB（gzip 66.03 kB），四个路由件各自独立 chunk。`shared` 不依赖 feature、路由实例或服务端状态模块。内部互相取用走相对路径，绕开自己的 barrel。
+依赖方向是 `app -> features -> shared`。公共入口有两处，规则相同：每个 feature 的 `index.ts`，以及设计系统的 `shared/ui/index.ts`——调用点分别取 `@/features/<name>` 与 `@/shared/ui`。两者都只再导出确有外部消费者的符号；视图与解析留在具名文件里（`features/report` 即 `parse.ts` + `report-view.tsx` + `report-sections.tsx` + `print.ts`）。入口之外的调用方只取入口导出的名字。唯一例外是 `app/`：它是组合根，也是唯一决定「某个视图何时加载」的层，因此可以点名入口已登记的具名文件（`@/features/settings/SettingsModal`）；登记同时充当「这个名字有人消费」的证据；组合根选择性深导入使每个路由件保持独立 chunk，入口只收公共壳层。`shared` 不依赖 feature、路由实例或服务端状态模块。内部互相取用走相对路径，绕开自己的 barrel。
 
 ## Feature Ownership
 

@@ -10,7 +10,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -216,7 +215,7 @@ class DevAcceptanceDataResetMySqlTest {
         assertThat(count("SELECT COUNT(*) FROM position_template WHERE account_id = ?", preservedAccountId)).isOne();
         assertThat(count("SELECT COUNT(*) FROM asset WHERE id = ?", preservedAssetId)).isOne();
         ExceptionFixtures.assertBusinessException(() -> jobs.dispatchedJob(oldJobId), "job_not_found")
-            .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND);
+            .hasFieldOrPropertyWithValue("status", 404);
     }
 
     private void assertCanonicalDataset() throws Exception {

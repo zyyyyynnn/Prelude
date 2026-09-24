@@ -141,14 +141,14 @@ export function PromptBarModelTrigger({
   )
 }
 
-/** The JD-matching chip. Matching is either on or absent — there is no off state — so
- *  the control only renders while it is on, and pressing it turns matching off. The
- *  wording comes from the caller: `shared/ui` names no business concept. */
-export function PromptBarJdToggle({ label, onDisable }: { label: string; onDisable: () => void }) {
+/** A pressed toggle chip that the caller labels. Matching is either on or absent — there is
+ *  no off state — so the control only renders while it is on, and pressing it turns the
+ *  option off. The wording comes from the caller: `shared/ui` names no business concept. */
+export function PromptBarToggle({ label, onDisable }: { label: string; onDisable: () => void }) {
   return (
     <button
       type="button"
-      className="prompt-bar-control prompt-bar-control-jd ui-action"
+      className="prompt-bar-control prompt-bar-control-toggle ui-action"
       aria-pressed="true"
       onClick={onDisable}
     >

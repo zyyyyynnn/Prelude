@@ -4,7 +4,7 @@ import {
   Button,
   ContextAttachment,
   PromptBar,
-  PromptBarJdToggle,
+  PromptBarToggle,
 } from '@/shared/ui'
 import { Briefcase, FileText, Image, Paperclip } from 'lucide-react'
 import { useRef, useState, type FormEvent } from 'react'
@@ -170,9 +170,7 @@ export function InterviewSetupComposer({
               onThinkingDepthChange={onThinkingDepthChange}
               onManage={() => onManageModel()}
             />
-            {jdEnabled && (
-              <PromptBarJdToggle label="JD 匹配" onDisable={() => setJdEnabled(false)} />
-            )}
+            {jdEnabled && <PromptBarToggle label="JD 匹配" onDisable={() => setJdEnabled(false)} />}
           </PromptBarActions>
         }
         rightActions={

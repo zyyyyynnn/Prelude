@@ -84,7 +84,7 @@ export function ProfilePanel() {
         onSubmit={submit}
       >
         <section className="grid items-center justify-items-center gap-sm">
-          <div className="grid size-(--layout-profile-avatar-inline-size) place-items-center overflow-hidden rounded-full bg-surface-muted font-serif text-lg font-semibold text-brand elevated-ring">
+          <div className="grid size-(--layout-avatar-inline-size) place-items-center overflow-hidden rounded-full bg-surface-muted font-serif text-lg font-semibold text-brand elevated-ring">
             {profile.data?.avatarUrl ? (
               <img className="size-full object-cover" src={profile.data.avatarUrl} alt="当前头像" />
             ) : (

@@ -219,7 +219,7 @@ export default defineConfig(({ mode }) => {
                   'spacing',
                   'typography',
                   'sidebar-pane',
-                  'sidebar-sessions',
+                  'sidebar-scroll-body',
                   'is-*',
                   'p-*',
                   'px-*',

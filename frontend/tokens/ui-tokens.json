@@ -66,8 +66,7 @@
         "shadow-modal",
         "shadow-brand-metaballs",
         "shadow-login-card",
-        "shadow-login-logo",
-        "shadow-autofill-surface"
+        "shadow-login-logo"
       ],
       "rules": {
         "raw-only-in-token-definitions": true
@@ -132,6 +131,11 @@
       "description": "图标与图标按钮的盒尺寸；尺寸不从 spacing 阶梯借用。",
       "tokens": ["ui-glyph-sm", "ui-glyph-md", "ui-glyph-lg"]
     },
+    "focus": {
+      "prefix": "focus",
+      "description": "键盘焦点保留环的宽度与偏移；forced-colors 复用同一几何。",
+      "tokens": ["focus-ring-width", "focus-ring-offset"]
+    },
     "layout": {
       "prefix": "layout",
       "description": "跨页面布局语义尺寸（Sidebar / Settings dialog / Workspace content）。",
@@ -161,7 +165,7 @@
         "layout-document-column-min-inline-size",
         "layout-document-label-inline-size",
         "layout-counter-min-inline-size",
-        "layout-profile-avatar-inline-size",
+        "layout-avatar-inline-size",
         "layout-brand-mark-inline-size",
         "layout-viewport-min-inline-size",
         "layout-page-center-block-offset",

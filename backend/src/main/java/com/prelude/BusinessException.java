@@ -58,4 +58,12 @@ public class BusinessException extends RuntimeException {
     public static BusinessException rateLimited(String message) {
         return new BusinessException(429, "rate_limited", message);
     }
+
+    public static BusinessException avatarUnreadable(String message) {
+        return badRequest("avatar_unreadable", message);
+    }
+
+    public static BusinessException oauthBindingConflict(String message) {
+        return conflict("oauth_binding_conflict", message);
+    }
 }

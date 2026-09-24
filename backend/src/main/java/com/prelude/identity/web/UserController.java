@@ -45,7 +45,7 @@ public class UserController {
         try {
             return new AvatarUpload(file.getOriginalFilename(), file.getContentType(), file.getBytes());
         } catch (IOException exception) {
-            throw com.prelude.BusinessException.badRequest("avatar_unreadable", "头像读取失败");
+            throw com.prelude.BusinessException.avatarUnreadable("头像读取失败");
         }
     }
 }

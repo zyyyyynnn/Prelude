@@ -27,7 +27,7 @@ export { SubSection, Panel } from './panel'
 export {
   ContextAttachment,
   PromptBarFact,
-  PromptBarJdToggle,
+  PromptBarToggle,
   PromptBar,
   VoiceLevelMeter,
   PromptBarActions,

@@ -1,6 +1,6 @@
 import { Printer } from 'lucide-react'
 import { Button, PageHeader, SegmentedControl } from '@/shared/ui'
-import type { InterviewStageName } from '../types'
+import type { InterviewSessionStatus, InterviewStageName } from '../types'
 
 export function WorkspaceHeader({
   title,
@@ -17,7 +17,7 @@ export function WorkspaceHeader({
 }: {
   title?: string
   stage?: InterviewStageName
-  status?: string
+  status?: InterviewSessionStatus
   hasReport: boolean
   showingReport: boolean
   sending: boolean

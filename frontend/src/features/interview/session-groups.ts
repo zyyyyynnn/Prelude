@@ -1,6 +1,8 @@
+import type { InterviewSessionStatus } from './types'
+
 type SessionListItem = {
   sessionId: number
-  status?: string
+  status?: InterviewSessionStatus
 }
 
 /**

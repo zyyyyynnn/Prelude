@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.prelude.BusinessException;
+import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewMessage;
@@ -26,7 +27,7 @@ class InterviewMessageStatusGateTest {
 
     @Test
     void refusesAnAppendWhenTheLockedSessionIsAlreadyGenerating() {
-        when(sessions.lockAppendOrder(9L)).thenReturn("generating");
+        when(sessions.lockAppendOrder(9L)).thenReturn(InterviewSessionStatus.GENERATING.wire());
 
         assertThatThrownBy(() -> service.insertMessage(9L, "user", "late"))
             .isInstanceOf(BusinessException.class)
@@ -36,7 +37,7 @@ class InterviewMessageStatusGateTest {
 
     @Test
     void refusesAnAppendWhenTheLockedSessionIsFinished() {
-        when(sessions.lockAppendOrder(9L)).thenReturn("finished");
+        when(sessions.lockAppendOrder(9L)).thenReturn(InterviewSessionStatus.FINISHED.wire());
 
         assertThatThrownBy(() -> service.insertMessage(9L, "assistant", "late"))
             .isInstanceOf(BusinessException.class);
@@ -55,7 +56,7 @@ class InterviewMessageStatusGateTest {
 
     @Test
     void appendsWhenTheLockedSessionIsStillOngoing() {
-        when(sessions.lockAppendOrder(9L)).thenReturn("ongoing");
+        when(sessions.lockAppendOrder(9L)).thenReturn(InterviewSessionStatus.ONGOING.wire());
         when(messages.findLatestForAppend(9L)).thenReturn(null);
 
         InterviewMessage inserted = service.insertMessage(9L, "user", "answer");

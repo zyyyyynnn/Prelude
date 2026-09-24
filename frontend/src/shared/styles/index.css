@@ -188,7 +188,6 @@
     0 28px 60px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--color-surface) 40%, transparent);
   --shadow-login-logo: 0 8px 32px color-mix(in srgb, var(--color-brand) 15%, transparent);
-  --shadow-autofill-surface: 0 0 0px 1000px var(--color-surface) inset;
   --mask-overlay: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   --chart-technical: var(--color-brand);
@@ -204,6 +203,9 @@
   --brand-metaballs-5: #2f241f;
   --brand-metaballs-bg: #f5f1ec;
   --shadow-brand-metaballs: 0 8px 32px color-mix(in srgb, var(--brand-metaballs-4) 18%, transparent);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
 
   --motion-duration-fast: 150ms;
   --motion-duration-base: 300ms;
@@ -305,7 +307,7 @@
   --layout-document-column-min-inline-size: 200px;
   --layout-document-label-inline-size: 80px;
   --layout-counter-min-inline-size: 56px;
-  --layout-profile-avatar-inline-size: 82px;
+  --layout-avatar-inline-size: 82px;
   --layout-brand-mark-inline-size: 72px;
 
   /* ── Content Semantics ── */
@@ -456,13 +458,13 @@ html.is-theme-transitioning {
  * - pointer focus and browser chrome function keys never create a residual halo;
  * - selected/open/active remain component-owned states.
  *
- * The outline is reserved at 2px transparent so the UA `:focus-visible` ring cannot
- * take over the box; forced colours recolour that same reserved outline.
+ * The outline is reserved transparent so the UA `:focus-visible` ring cannot take over
+ * the box; forced colours recolour that same reserved outline.
  */
 .ui-field-control,
 .ui-action {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
 }
 
 .ui-field-control {
@@ -505,7 +507,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 @media (forced-colors: active) {
   :focus-visible {
     outline-color: CanvasText;
-    outline-offset: 2px;
+    outline-offset: var(--focus-ring-offset);
   }
 }
 
@@ -1979,9 +1981,9 @@ html[data-input-intent='keyboard']
   }
 }
 
-/* The session list pane scrolls inside that slot. */
+/* The scrolling middle of the sidebar (session list, etc.). */
 /* @internal src/shared/ui/sidebar.tsx */
-@utility sidebar-sessions {
+@utility sidebar-scroll-body {
   min-block-size: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -2182,7 +2184,7 @@ html[data-input-intent='keyboard']
 
 /* Width policy for the prompt-bar controls that must not take the default
    control floor; they override prompt-bar-control as named variants. */
-@utility prompt-bar-control-jd {
+@utility prompt-bar-control-toggle {
   min-inline-size: auto;
 }
 
