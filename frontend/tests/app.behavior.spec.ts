@@ -4,6 +4,8 @@ import { installAnonymousSession } from './auth-bootstrap'
 type ApiState = {
   sessions?: unknown[]
   session?: Record<string, unknown>
+  resumeConversations?: unknown[]
+  resumeTurns?: unknown[]
   requests: Array<{ path: string; method: string; body: unknown }>
 }
 
@@ -184,6 +186,26 @@ async function respond(route: Route, state: ApiState) {
       return session.sessionId === id ? { ...session, pinned } : item
     })
   }
+  const resumeConversationRoute = /^\/api\/resume\/workspace\/conversations\/(\d+)$/.exec(path)
+  const resumeConversationPinRoute = /^\/api\/resume\/workspace\/conversations\/(\d+)\/pin$/.exec(
+    path,
+  )
+  const resumeTurnsRoute = /^\/api\/resume\/workspace\/conversations\/(\d+)\/turns$/.exec(path)
+  if (resumeConversationPinRoute && method === 'PUT') {
+    const id = Number(resumeConversationPinRoute[1])
+    const pinned = Boolean((body as { pinned?: boolean }).pinned)
+    state.resumeConversations = (state.resumeConversations ?? []).map((item) =>
+      (item as { id: number }).id === id ? { ...(item as object), pinned } : item,
+    )
+  } else if (resumeConversationRoute && method === 'DELETE') {
+    const id = Number(resumeConversationRoute[1])
+    state.resumeConversations = (state.resumeConversations ?? []).filter(
+      (item) => (item as { id: number }).id !== id,
+    )
+    state.resumeTurns = (state.resumeTurns ?? []).filter(
+      (turn) => (turn as { conversationId: number }).conversationId !== id,
+    )
+  }
   let data: unknown = null
   if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
   else if (path === '/api/interview/sessions') data = state.sessions ?? []
@@ -198,7 +220,37 @@ async function respond(route: Route, state: ApiState) {
       { id: 1, fileName: '候选人简历.pdf', sessionCount: 2, inUse: false },
       { id: 2, fileName: '作品集简历.pdf', sessionCount: 0, inUse: false },
     ]
-  else if (path === '/api/user/profile')
+  else if (path === '/api/resume/workspace/conversations' && method === 'GET')
+    data = state.resumeConversations ?? []
+  else if (path === '/api/resume/workspace/conversations' && method === 'POST') {
+    const conversation = {
+      id: 901,
+      title: '新的简历工作',
+      resumeId: null,
+      updatedAt: '2026-09-26T10:00:00+08:00',
+      pinned: false,
+      status: 'active',
+    }
+    state.resumeConversations = [conversation, ...(state.resumeConversations ?? [])]
+    data = conversation
+  } else if (resumeTurnsRoute && method === 'GET')
+    data = (state.resumeTurns ?? []).filter(
+      (turn) => (turn as { conversationId: number }).conversationId === Number(resumeTurnsRoute[1]),
+    )
+  else if (resumeTurnsRoute && method === 'POST') {
+    const turn = {
+      id: 9101,
+      conversationId: Number(resumeTurnsRoute[1]),
+      instruction: (body as { instruction?: string }).instruction ?? '',
+      status: 'done',
+      createdAt: '2026-09-26T10:01:00+08:00',
+      startedAt: '2026-09-26T10:01:00+08:00',
+      completedAt: '2026-09-26T10:01:08+08:00',
+      messages: [],
+    }
+    state.resumeTurns = [...(state.resumeTurns ?? []), turn]
+    data = turn
+  } else if (path === '/api/user/profile')
     data = {
       accountId: 1,
       username: 'prelude',
@@ -675,6 +727,308 @@ test('@smoke pins and deletes sessions through the session API', async ({ page }
       ({ method, path: requestPath }) => method === 'DELETE' && requestPath === '/api/interview/11',
     ),
   ).toBe(true)
+})
+
+test('@smoke creates no resume conversation until the first instruction is sent', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    resumeConversations: [
+      {
+        id: 1,
+        title: '量化导向改写',
+        resumeId: 1,
+        updatedAt: '2026-09-25T10:00:00+08:00',
+        pinned: false,
+        status: 'finished',
+      },
+    ],
+  }
+  await installApi(page, state)
+  await page.goto('/resume')
+  await expect(page.getByRole('heading', { name: '准备开始简历制作' })).toBeVisible()
+  /* StrictMode double-mounts the workspace, and the old auto-create effect re-fired on
+     every render while the id was still null — one visit left a sidebar row per POST.
+     The empty state must issue no write at all, mounts included. */
+  await page.waitForTimeout(300)
+  const createRequests = () =>
+    state.requests.filter(
+      (request) =>
+        request.path === '/api/resume/workspace/conversations' && request.method === 'POST',
+    )
+  expect(createRequests()).toHaveLength(0)
+  /* The list is grouped exactly like the interview side: the finished conversation sits
+     under 已完成, and 进行中 keeps its 暂无会话 note. */
+  await expect(
+    page.getByRole('region', { name: '已完成' }).getByRole('button', {
+      name: '打开已结束会话 量化导向改写',
+    }),
+  ).toBeVisible()
+  await expect(page.getByRole('region', { name: '进行中' }).getByText('暂无会话')).toBeVisible()
+
+  await page.getByLabel('简历制作指令').fill('把工作经历改成量化导向。')
+  await page.getByRole('button', { name: '发送', exact: true }).click()
+  await expect(page).toHaveURL(/conversation=901/)
+  await expect(page.getByText('把工作经历改成量化导向。')).toBeVisible()
+  /* One instruction, one conversation, one turn — and the row the send created. */
+  expect(createRequests()).toHaveLength(1)
+  expect(
+    state.requests.filter(
+      (request) =>
+        request.path === '/api/resume/workspace/conversations/901/turns' &&
+        request.method === 'POST',
+    ),
+  ).toHaveLength(1)
+  await expect(
+    page
+      .getByRole('region', { name: '进行中' })
+      .getByRole('button', { name: '打开会话 新的简历工作' }),
+  ).toBeVisible()
+  /* The header band belongs to the loaded conversation, never to the empty state. */
+  await expect(page.getByRole('heading', { name: '准备开始简历制作' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: '新的简历工作' })).toBeVisible()
+})
+
+test('@smoke pins and deletes resume conversations through the conversation API', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    resumeConversations: [
+      {
+        id: 1,
+        title: '量化导向改写',
+        resumeId: 1,
+        updatedAt: '2026-09-25T10:00:00+08:00',
+        pinned: false,
+        status: 'active',
+      },
+      {
+        id: 2,
+        title: '附件整理',
+        resumeId: null,
+        updatedAt: '2026-09-24T10:00:00+08:00',
+        pinned: false,
+        status: 'finished',
+      },
+    ],
+  }
+  await installApi(page, state)
+  await page.goto('/resume')
+  await page.getByRole('button', { name: '置顶会话' }).first().click()
+  await expect(page.getByRole('button', { name: '取消置顶' }).first()).toBeVisible()
+  expect(
+    state.requests.some(
+      ({ method, path: requestPath }) =>
+        method === 'PUT' && requestPath === '/api/resume/workspace/conversations/1/pin',
+    ),
+  ).toBe(true)
+
+  await page.getByRole('button', { name: '删除会话' }).first().click()
+  await page.getByRole('button', { name: '删除', exact: true }).click()
+  await expect(page.getByRole('button', { name: '打开会话 量化导向改写' })).toHaveCount(0)
+  expect(
+    state.requests.some(
+      ({ method, path: requestPath }) =>
+        method === 'DELETE' && requestPath === '/api/resume/workspace/conversations/1',
+    ),
+  ).toBe(true)
+})
+
+test('@smoke switches workspaces in sidebar and keeps session state consistent across settings navigation', async ({
+  page,
+}) => {
+  const state: ApiState = {
+    requests: [],
+    sessions: [
+      {
+        sessionId: 101,
+        targetPosition: 'Java 后端工程师',
+        status: 'ongoing',
+        currentStage: 'warmup',
+      },
+    ],
+    resumeConversations: [
+      {
+        id: 201,
+        title: '量化导向改写',
+        resumeId: 1,
+        updatedAt: '2026-09-25T10:00:00+08:00',
+        pinned: false,
+        status: 'finished',
+      },
+    ],
+  }
+  await installApi(page, state)
+  await page.goto('/resume')
+  await expect(page.getByRole('heading', { name: '准备开始简历制作' })).toBeVisible()
+
+  await expect(
+    page.getByRole('region', { name: '已完成' }).getByRole('button', {
+      name: '打开已结束会话 量化导向改写',
+    }),
+  ).toBeVisible()
+
+  await page.getByLabel('设置').click()
+  await expect(page.getByRole('dialog', { name: '全局设置' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog', { name: '全局设置' })).toHaveCount(0)
+
+  await expect(
+    page.getByRole('region', { name: '已完成' }).getByRole('button', {
+      name: '打开已结束会话 量化导向改写',
+    }),
+  ).toBeVisible()
+
+  await page.getByRole('group', { name: '工作区' }).getByRole('button', { name: '面试' }).click()
+  await expect(page).toHaveURL(/\/interview$/)
+  await expect(
+    page.getByRole('region', { name: '进行中' }).getByRole('button', {
+      name: '打开会话 Java 后端工程师',
+    }),
+  ).toBeVisible()
+
+  await page.getByRole('group', { name: '工作区' }).getByRole('button', { name: '简历' }).click()
+  await page.getByRole('group', { name: '工作区' }).getByRole('button', { name: '面试' }).click()
+  await page.getByRole('group', { name: '工作区' }).getByRole('button', { name: '简历' }).click()
+  await expect(page).toHaveURL(/\/resume$/)
+  await expect(page.getByRole('heading', { name: '准备开始简历制作' })).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '已完成' }).getByRole('button', {
+      name: '打开已结束会话 量化导向改写',
+    }),
+  ).toBeVisible()
+})
+
+test('@smoke keeps the active resume instruction pinned until the next turn takes over', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const reply = Array.from(
+    { length: 32 },
+    (_, index) => `第 ${index + 1} 条处理结果：保留可验证的内容与修改依据，便于回看。`,
+  ).join('\n')
+  const turns = [1, 2, 3].map((id) => ({
+    id,
+    conversationId: 1,
+    instruction: `第 ${id} 轮用户指令：请按量化结果整理工作经历。`,
+    status: 'done',
+    createdAt: `2026-09-26T10:0${id}:00+08:00`,
+    startedAt: `2026-09-26T10:0${id}:00+08:00`,
+    completedAt: `2026-09-26T10:0${id}:08+08:00`,
+    messages: [
+      {
+        id: 100 + id,
+        turnId: id,
+        content: reply,
+        createdAt: `2026-09-26T10:0${id}:08+08:00`,
+      },
+    ],
+  }))
+  const state: ApiState = {
+    requests: [],
+    resumeConversations: [
+      {
+        id: 1,
+        title: '滚动回看',
+        resumeId: 1,
+        updatedAt: '2026-09-26T10:30:00+08:00',
+        pinned: false,
+        status: 'finished',
+      },
+    ],
+    resumeTurns: turns,
+  }
+  await installApi(page, state)
+  await page.goto('/resume?conversation=1')
+
+  const scroller = page.locator('[data-slot="workspace-active-main"] > div.overflow-y-auto')
+  const sections = page.locator('[data-turn-id]')
+  const instructions = page.locator('[data-turn-id] > .sticky-instruction')
+  await expect(page.getByRole('heading', { name: '滚动回看' })).toBeVisible()
+  await expect(sections).toHaveCount(3)
+  await expect(instructions).toHaveCount(3)
+  await scroller.evaluate((element) => element.scrollTo({ top: 0 }))
+  await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0)
+  await page.screenshot({ path: testInfo.outputPath('resume-instruction-frame-1.png') })
+
+  const firstInstruction = instructions.nth(0)
+  await scroller.evaluate((element) => element.scrollTo({ top: 180 }))
+  const stickyTop = await scroller.evaluate((scrollport) => {
+    const paddingTop = Number.parseFloat(getComputedStyle(scrollport).paddingTop)
+    return scrollport.getBoundingClientRect().top + paddingTop
+  })
+  await expect
+    .poll(() => firstInstruction.evaluate((element) => element.getBoundingClientRect().top))
+    .toBeCloseTo(stickyTop, 1)
+  await expect(firstInstruction).toContainText('第 1 轮用户指令')
+  const topPaddingCovered = await firstInstruction.evaluate((sticky) => {
+    const scrollport = sticky.closest('[data-slot="workspace-active-main"]')!
+      .firstElementChild as HTMLElement
+    const paddingTop = Number.parseFloat(getComputedStyle(scrollport).paddingTop)
+    const pointX = sticky.getBoundingClientRect().left + 8
+    const pointY = scrollport.getBoundingClientRect().top + paddingTop / 2
+    return sticky.contains(document.elementFromPoint(pointX, pointY))
+  })
+  expect(topPaddingCovered).toBe(true)
+  const handoffFade = await firstInstruction.evaluate(
+    (sticky) => getComputedStyle(sticky, '::after').backgroundImage,
+  )
+  expect(handoffFade).toContain('linear-gradient')
+  await page.screenshot({ path: testInfo.outputPath('resume-instruction-frame-2.png') })
+
+  const secondInstruction = instructions.nth(1)
+  const fadeHeight = await firstInstruction.evaluate((sticky) =>
+    Number.parseFloat(getComputedStyle(sticky, '::after').height),
+  )
+  const scrollInstructionTo = async (instruction: typeof secondInstruction, top: number) => {
+    const scrollTop = await instruction.evaluate((element, targetTop) => {
+      const scrollport = element.closest('[data-slot="workspace-active-main"]')!
+        .firstElementChild as HTMLElement
+      return scrollport.scrollTop + element.getBoundingClientRect().top - targetTop
+    }, top)
+    await scroller.evaluate((element, nextTop) => element.scrollTo({ top: nextTop }), scrollTop)
+  }
+
+  const handoffTop = stickyTop + fadeHeight / 2
+  await scrollInstructionTo(secondInstruction, handoffTop)
+  await expect
+    .poll(async () => {
+      const top = await secondInstruction.evaluate((element) => element.getBoundingClientRect().top)
+      return Math.abs(top - handoffTop)
+    })
+    .toBeLessThan(1)
+  const firstTopDuringHandoff = await firstInstruction.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  expect(firstTopDuringHandoff).toBeLessThan(stickyTop)
+  await page.screenshot({ path: testInfo.outputPath('resume-instruction-frame-3.png') })
+
+  await scrollInstructionTo(secondInstruction, stickyTop)
+  await expect
+    .poll(async () => {
+      const top = await secondInstruction.evaluate((element) => element.getBoundingClientRect().top)
+      return Math.abs(top - stickyTop)
+    })
+    .toBeLessThan(1)
+  const firstTopAfterHandoff = await firstInstruction.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  expect(firstTopAfterHandoff).toBeLessThan(stickyTop)
+  await expect(secondInstruction).toContainText('第 2 轮用户指令')
+})
+
+test('@smoke animates the RoseThree loading card', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await installApi(page, { requests: [] })
+  await page.goto('/components-lab')
+
+  const rose = page.locator('.generating-card .rose-three-loader > g')
+  await expect(rose).toHaveAttribute('transform', /rotate\(/)
+  const firstFrame = await rose.getAttribute('transform')
+  await expect.poll(() => rose.getAttribute('transform')).not.toBe(firstFrame)
 })
 
 test('@smoke streams an interview answer with bounded context', async ({ page }) => {
@@ -1582,7 +1936,7 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   expect(typography.label.family).toContain('Lora')
   expect(typography.value.family).toContain('Lora')
   expect(typography.value.numeric).toBe('tabular-nums')
-  expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
+  expect(typography.meta).toMatchObject({ size: '12px', weight: '400' })
   expect(typography.meta.family).toContain('Inter')
 
   const weaknessLayout = await page.locator('[data-slot="weakness-item"]').evaluate((item) => {
@@ -1673,7 +2027,8 @@ test('@smoke shows the generating surface while a finished session waits for its
   const card = page.locator('.generating-card')
   await expect(card).toBeVisible()
   await expect(card.getByRole('heading', { name: 'AI 评估报告生成中…' })).toBeVisible()
-  await expect(card.locator('.generating-progress-indicator')).toBeVisible()
+  await expect(card.locator('.rose-three-loader')).toBeVisible()
+  await expect(card.locator('.generating-progress-track')).toHaveCount(0)
   // The composer and the report are both absent: this surface replaces them entirely.
   await expect(page.locator('[data-slot="prompt-bar-surface"]')).toHaveCount(0)
   await expect(page.locator('[data-slot="workspace-report"]')).toHaveCount(0)

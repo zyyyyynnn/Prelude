@@ -113,7 +113,14 @@ class FrameworkLeakageTest {
             "com.prelude.voice..",
             "com.prelude.artifact..",
             "com.prelude.activity..",
-            "com.prelude.context.."
+            "com.prelude.context..",
+            /* The four placeholder modules are pinned in the topology precisely so the root
+               package cannot become their first consumer: a root class reaching into a
+               not-yet-built module is how a shared kernel sneaks back in. */
+            "com.prelude.agent..",
+            "com.prelude.settings..",
+            "com.prelude.telemetry..",
+            "com.prelude.tools.."
         );
 
     private static String[] concat(String[] first, String[] second) {

@@ -1,8 +1,9 @@
 import { Menu } from '@base-ui/react/menu'
-import { Check, ChevronRight } from 'lucide-react'
 import type { ReactElement, ReactNode } from 'react'
 import { OVERLAY_OFFSET } from './positioning'
 import { cn } from '@/shared/lib/cn'
+import { RiArrowRightSLine, RiCheckLine } from '@remixicon/react'
+import { Icon } from './Icon'
 
 export function DropdownMenu({
   trigger,
@@ -100,7 +101,7 @@ export function DropdownMenuRadioItem({ value, children }: { value: string; chil
         className="ui-menu__indicator ui-menu__indicator--end"
         aria-hidden="true"
       >
-        <Check />
+        <Icon as={RiCheckLine} />
       </Menu.RadioItemIndicator>
     </Menu.RadioItem>
   )
@@ -127,7 +128,7 @@ export function DropdownMenuCheckboxItem({
         className="ui-menu__indicator ui-menu__indicator--end"
         aria-hidden="true"
       >
-        <Check />
+        <Icon as={RiCheckLine} />
       </Menu.CheckboxItemIndicator>
     </Menu.CheckboxItem>
   )
@@ -194,7 +195,11 @@ export function MenuLabel({
       )}
       <span className="ui-menu__label">{label}</span>
       {detail && <span className="ui-menu__detail">{detail}</span>}
-      {submenu && <ChevronRight className="ui-menu__chevron" aria-hidden="true" />}
+      {submenu && (
+        <span className="ui-menu__chevron" aria-hidden="true">
+          <Icon as={RiArrowRightSLine} />
+        </span>
+      )}
     </>
   )
 }

@@ -113,8 +113,11 @@ jobs:
 
       - name: Verify frontend architecture and UI contracts
         working-directory: frontend
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           npm run verify:architecture
+          npm run verify:governance
           npm run verify:ui
           npm run verify:tokens
 

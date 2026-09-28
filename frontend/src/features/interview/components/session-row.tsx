@@ -1,7 +1,7 @@
-import { Pin, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
-import { IconTooltip } from '@/shared/ui'
+import { Icon, IconTooltip } from '@/shared/ui'
+import { RiDeleteBinLine, RiPushpinFill, RiPushpinLine } from '@remixicon/react'
 
 export type SessionRowState = 'idle' | 'active' | 'loading' | 'error'
 
@@ -47,11 +47,12 @@ export function SessionRow({
         )}
       </button>
       {pinned && (
-        <Pin
-          className="pointer-events-none absolute top-1/2 inset-e-sm flex size-(--ui-glyph-sm) -translate-y-1/2 items-center text-accent-text opacity-80 group-hover/row:hidden group-focus-within/row:hidden"
-          fill="currentColor"
+        <span
           aria-hidden="true"
-        />
+          className="pointer-events-none absolute top-1/2 inset-e-sm flex size-(--ui-glyph-sm) -translate-y-1/2 items-center text-accent-text opacity-80 group-hover/row:hidden group-focus-within/row:hidden"
+        >
+          <Icon as={RiPushpinFill} size="sm" />
+        </span>
       )}
       <div className="session-row-actions group-hover/row:opacity-100 group-focus-within/row:opacity-100">
         <IconTooltip label={pinned ? '取消置顶' : '置顶会话'}>
@@ -60,7 +61,7 @@ export function SessionRow({
             aria-label={pinned ? '取消置顶' : '置顶会话'}
             onClick={onTogglePin}
           >
-            <Pin fill={pinned ? 'currentColor' : 'none'} />
+            <Icon as={pinned ? RiPushpinFill : RiPushpinLine} />
           </button>
         </IconTooltip>
         <IconTooltip label="删除会话">
@@ -69,7 +70,7 @@ export function SessionRow({
             aria-label="删除会话"
             onClick={onRemove}
           >
-            <Trash2 />
+            <Icon as={RiDeleteBinLine} />
           </button>
         </IconTooltip>
       </div>

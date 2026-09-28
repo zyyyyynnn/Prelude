@@ -264,6 +264,17 @@ const report = JSON.stringify({
   finalAdvice: '保持当前工程化表达，并用恢复时间、积压量和人工介入条件补全可靠性论证。',
 })
 
+/** Workspace conversation/turn rows for the resume assistant capture path. */
+let demoResumeConversations: Array<{
+  id: number
+  title: string
+  resumeId: number | null
+  updatedAt: string
+  pinned: boolean
+}> = []
+
+let demoResumeTurns: Array<{ id: number; [key: string]: unknown }> = []
+
 export function createDemoState(): DemoState {
   return {
     authenticated: false,
@@ -450,6 +461,11 @@ export function createDemoState(): DemoState {
 }
 
 export async function installDemoHarness(page: Page, state: DemoState) {
+  /* The resume rows live at module scope because the workspace mutates them across requests.
+     Installing a harness is the per-test boundary, so it clears them too: left over, the second
+     theme's page answered with the first theme's turn and the trace rendered twice. */
+  demoResumeConversations = []
+  demoResumeTurns = []
   await page.context().route(/^https?:\/\/[^/]+\/api\//, async (route) => respond(route, state))
 }
 
@@ -602,7 +618,7 @@ async function respond(route: Route, state: DemoState) {
     const fileName = /filename="([^"]*)"/.exec(raw)?.[1] ?? ''
     if (!fileName.toLowerCase().endsWith('.pdf'))
       return fulfillProblem(route, 400, 'bad_request', '仅支持 PDF 文件')
-    // 文件名以 broken 开头用来驱动后端解析失败路径。
+    // Filenames starting with 'broken' trigger backend parse failure paths.
     if (fileName.toLowerCase().startsWith('broken'))
       return fulfillProblem(route, 400, 'bad_request', 'PDF 文本提取失败，请检查文件格式')
     const created: DemoResumeRow = {
@@ -624,6 +640,133 @@ async function respond(route: Route, state: DemoState) {
       return fulfillProblem(route, 400, 'bad_request', '该简历已被面试使用，无法删除')
     state.resumes = state.resumes.filter((item) => item.id !== id)
     return fulfillJson(route, null)
+  }
+
+  if (path === '/api/resume/workspace/conversations' && method === 'GET') {
+    /* The status is derived from the turns, exactly as the backend derives it: active while
+       a turn is queued or running or none has been sent, finished once every turn is done. */
+    return fulfillJson(
+      route,
+      demoResumeConversations.map((conversation) => ({
+        ...conversation,
+        status: demoResumeTurns.some(
+          (turn) => turn.conversationId === conversation.id && turn.status !== 'done',
+        )
+          ? 'active'
+          : demoResumeTurns.some((turn) => turn.conversationId === conversation.id)
+            ? 'finished'
+            : 'active',
+      })),
+    )
+  }
+  if (path === '/api/resume/workspace/conversations' && method === 'POST') {
+    const conversation = {
+      id: nextId(demoResumeConversations),
+      title: '新的简历工作',
+      resumeId: (body as { resumeId?: number } | undefined)?.resumeId ?? null,
+      updatedAt: '2026-09-26T10:00:00+08:00',
+      pinned: false,
+    }
+    demoResumeConversations = [conversation, ...demoResumeConversations]
+    return fulfillJson(route, conversation)
+  }
+  const resumeConversationRoute = /^\/api\/resume\/workspace\/conversations\/(\d+)$/.exec(path)
+  if (resumeConversationRoute && method === 'DELETE') {
+    const id = Number(resumeConversationRoute[1])
+    demoResumeConversations = demoResumeConversations.filter((item) => item.id !== id)
+    demoResumeTurns = demoResumeTurns.filter((turn) => turn.conversationId !== id)
+    return fulfillJson(route, null)
+  }
+  const resumeConversationPinRoute = /^\/api\/resume\/workspace\/conversations\/(\d+)\/pin$/.exec(
+    path,
+  )
+  if (resumeConversationPinRoute && method === 'PUT') {
+    const id = Number(resumeConversationPinRoute[1])
+    const pinned = Boolean((body as { pinned?: boolean } | undefined)?.pinned)
+    demoResumeConversations = demoResumeConversations.map((item) =>
+      item.id === id ? { ...item, pinned } : item,
+    )
+    return fulfillJson(route, null)
+  }
+  const resumeTurnsRoute = /^\/api\/resume\/workspace\/conversations\/(\d+)\/turns$/.exec(path)
+  if (resumeTurnsRoute && method === 'GET') {
+    const conversationId = Number(resumeTurnsRoute[1])
+    return fulfillJson(
+      route,
+      demoResumeTurns.filter((turn) => turn.conversationId === conversationId),
+    )
+  }
+  if (resumeTurnsRoute && method === 'POST') {
+    const conversationId = Number(resumeTurnsRoute[1])
+    const instruction =
+      (body as { instruction?: string } | undefined)?.instruction?.trim() ||
+      '把工作经历改成量化导向'
+    const turn = {
+      id: nextId(demoResumeTurns.map((item) => ({ id: item.id }))),
+      conversationId,
+      instruction,
+      status: 'done',
+      createdAt: '2026-09-26T10:01:00+08:00',
+      startedAt: '2026-09-26T10:01:00+08:00',
+      completedAt: '2026-09-26T10:01:08+08:00',
+      messages: [
+        {
+          id: 9101,
+          turnId: 0,
+          content: '我先核对与本次指令相关的材料，再给出可落地的修改。',
+          createdAt: '2026-09-26T10:01:02+08:00',
+          toolCalls: {
+            id: 9201,
+            summary:
+              '思考 2轮 · 读1次文件、改1次文件、网络搜1次、查找1次、更新任务1次、执行1次命令…',
+            status: 'done',
+            steps: [
+              {
+                id: 9301,
+                icon: 'think',
+                text: '思考了 3s',
+                detail: ['梳理指令涉及的模块与证据。', '定位工作经历中的数字与结果。'],
+              },
+              { id: 9302, icon: 'search', text: '搜索网络', chips: ['接口性能指标写法'] },
+              {
+                id: 9303,
+                icon: 'find',
+                text: '查找',
+                chips: ['*.md'],
+                detail: ['work history · 3 blocks'],
+              },
+              { id: 9304, icon: 'read', text: '读取', chips: ['resume-context'] },
+              {
+                id: 9305,
+                icon: 'edit',
+                text: '改写工作经历',
+                detail: ['+ P99 从 480ms 降到 210ms', '+ 错误率保持在千分之一以内'],
+              },
+              { id: 9306, icon: 'update', text: '更新任务 2 项新建任务' },
+              {
+                id: 9307,
+                icon: 'write',
+                text: '写入',
+                files: [{ name: 'resume.md', add: 22, del: 10 }],
+              },
+              {
+                id: 9308,
+                icon: 'run',
+                text: '执行',
+                state: 'error',
+                chips: ['npm run check'],
+                badge: '退出码 1',
+                badgeTone: 'error',
+                detail: ['样式门禁 1 项未通过。', '该步未产生改动，助手仍给出建议。'],
+              },
+            ],
+          },
+        },
+      ],
+    }
+    turn.messages[0].turnId = turn.id
+    demoResumeTurns = [...demoResumeTurns, turn]
+    return fulfillJson(route, turn)
   }
 
   if (path === '/api/user/profile' && method === 'GET') return fulfillJson(route, state.profile)

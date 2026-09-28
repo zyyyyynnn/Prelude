@@ -1,21 +1,22 @@
-import {
-  ErrorState,
-  LoadingState,
-  SubSection,
-  Button,
-  Field,
-  FieldAction,
-  FieldActions,
-  Input,
-  Panel,
-  Select,
-} from '@/shared/ui'
 import { useQuery } from '@tanstack/react-query'
-import { Eye, EyeOff, RefreshCw, Trash2 } from 'lucide-react'
 import { fetchLlmConfig, fetchProviders } from '../api'
 import { sectionTitles } from '../settings-context'
 import { REASONING_LABELS, type LlmConfigResponse, type LlmProviderResponse } from '../types'
 import { useLlmSettings } from '../use-llm-settings'
+import { RiDeleteBinLine, RiEyeLine, RiEyeOffLine, RiRefreshLine } from '@remixicon/react'
+import {
+  Button,
+  ErrorState,
+  Field,
+  FieldAction,
+  FieldActions,
+  Icon,
+  Input,
+  LoadingState,
+  Panel,
+  Select,
+  SubSection,
+} from '@/shared/ui'
 
 export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
   const config = useQuery({ queryKey: ['llm-config'], queryFn: fetchLlmConfig })
@@ -56,7 +57,7 @@ function LlmSettingsForm({
   const revealKey = (
     <FieldAction
       label={state.showKey ? '隐藏 API Key' : '显示 API Key'}
-      icon={state.showKey ? <Eye /> : <EyeOff />}
+      icon={state.showKey ? <Icon as={RiEyeLine} /> : <Icon as={RiEyeOffLine} />}
       onClick={() => state.setShowKey(!state.showKey)}
     />
   )
@@ -117,7 +118,7 @@ function LlmSettingsForm({
                 loading={state.discovering}
                 onClick={state.discover}
               >
-                <RefreshCw />
+                <Icon as={RiRefreshLine} />
                 检测模型
               </Button>
             )}
@@ -135,7 +136,7 @@ function LlmSettingsForm({
               ? [
                   <FieldAction
                     label="清除已保存的 API Key"
-                    icon={<Trash2 />}
+                    icon={<Icon as={RiDeleteBinLine} />}
                     onClick={() => state.update('apiKey', '__CLEAR__')}
                   />,
                   revealKey,

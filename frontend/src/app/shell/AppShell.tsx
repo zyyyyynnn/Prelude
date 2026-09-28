@@ -1,9 +1,26 @@
-import { SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from '@/shared/ui'
-import { useState } from 'react'
-import { BarChart3, PanelLeft, Plus, Settings } from 'lucide-react'
-import { Outlet, useNavigate } from 'react-router'
+import {
+  Icon,
+  SidebarAction,
+  SidebarBrand,
+  SidebarFrame,
+  SidebarPane,
+  SegmentedControl,
+} from '@/shared/ui'
+import { useEffect, useState } from 'react'
+import { RiAddLine, RiBarChartLine, RiSettings3Line, RiSideBarLine } from '@remixicon/react'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 import { SessionGroup, SessionGroupLabel, useSessionList } from '@/features/interview'
+import { useResumeConversationList } from '@/features/resume'
 import { useSettings } from '@/features/settings'
+
+type WorkspaceMode = 'interview' | 'resume'
+
+const WORKSPACE_STORAGE_KEY = 'prelude-workspace'
+
+function readWorkspace(): WorkspaceMode {
+  const stored = window.localStorage.getItem(WORKSPACE_STORAGE_KEY)
+  return stored === 'resume' ? 'resume' : 'interview'
+}
 
 export function AppShell() {
   const { openSettings } = useSettings()
@@ -20,9 +37,35 @@ export function AppShell() {
 function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
-  const { groups, isPending } = useSessionList()
+  const location = useLocation()
+  const [storedWorkspace, setStoredWorkspace] = useState<WorkspaceMode>(readWorkspace)
+  const workspace: WorkspaceMode = location.pathname.startsWith('/resume')
+    ? 'resume'
+    : location.pathname.startsWith('/interview')
+      ? 'interview'
+      : storedWorkspace
 
-  const startNewInterview = () => void navigate('/interview')
+  const interviewList = useSessionList()
+  const resumeList = useResumeConversationList(
+    (() => {
+      const raw = new URLSearchParams(location.search).get('conversation')
+      return raw == null ? null : Number(raw)
+    })(),
+    workspace === 'resume',
+  )
+  const { groups, isPending } = workspace === 'resume' ? resumeList : interviewList
+
+  useEffect(() => {
+    window.localStorage.setItem(WORKSPACE_STORAGE_KEY, workspace)
+  }, [workspace])
+
+  const switchWorkspace = (mode: WorkspaceMode) => {
+    setStoredWorkspace(mode)
+    void navigate(mode === 'resume' ? '/resume' : '/interview')
+  }
+
+  const primaryLabel = workspace === 'resume' ? '开始新简历' : '开始新面试'
+  const startPrimary = () => void navigate(workspace === 'resume' ? '/resume' : '/interview')
 
   return (
     <aside className="app-sidebar">
@@ -31,19 +74,32 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
         onToggle={() => setCollapsed((value) => !value)}
         brand={<SidebarBrand />}
         primary={
-          <SidebarAction
-            collapsed={collapsed}
-            label="开始新面试"
-            icon={<Plus />}
-            tone="primary"
-            onClick={startNewInterview}
-          />
+          <div className="grid gap-sm">
+            {!collapsed && (
+              <SegmentedControl
+                ariaLabel="工作区"
+                items={[
+                  { value: 'interview', label: '面试' },
+                  { value: 'resume', label: '简历' },
+                ]}
+                value={workspace}
+                onValueChange={(value) => switchWorkspace(value)}
+              />
+            )}
+            <SidebarAction
+              collapsed={collapsed}
+              label={primaryLabel}
+              icon={<Icon as={RiAddLine} />}
+              tone="primary"
+              onClick={startPrimary}
+            />
+          </div>
         }
         footer={
           <SidebarAction
             collapsed={collapsed}
             label="设置"
-            icon={<Settings />}
+            icon={<Icon as={RiSettings3Line} />}
             onClick={onOpenSettings}
           />
         }
@@ -63,7 +119,12 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
           </SidebarPane>
 
           <SidebarPane kind="rail" visible={collapsed}>
-            <SidebarAction collapsed label="工作区" to="/interview" icon={<PanelLeft />} />
+            <SidebarAction
+              collapsed
+              label="工作区"
+              to={workspace === 'resume' ? '/resume' : '/interview'}
+              icon={<Icon as={RiSideBarLine} />}
+            />
           </SidebarPane>
         </div>
 
@@ -72,7 +133,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
             collapsed={collapsed}
             label="数据看板"
             to="/analytics"
-            icon={<BarChart3 />}
+            icon={<Icon as={RiBarChartLine} />}
           />
         </nav>
       </SidebarFrame>

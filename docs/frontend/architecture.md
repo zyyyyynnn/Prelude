@@ -19,7 +19,7 @@ frontend/src/
 | --- | --- |
 | `auth` | 登录、注册与 Session 客户端状态 |
 | `assets` | 面试附件上传、删除与附件类型契约 |
-| `resume` | 简历列表、上传、删除与面试上下文契约 |
+| `resume` | 简历列表、上传/删除、简历工作区（指令吸附 + 助手消息 + Toolcall 流）与面试上下文契约 |
 | `position` | 内置岗位读取与用户岗位管理 |
 | `interview` | 开面配置、会话、文字流、语音编排与报告入口 |
 | `report` | 报告解析、展示与 PDF 打印导出 |
@@ -44,7 +44,7 @@ Base UI 是对话框、弹出层、菜单、选择器、焦点和键盘行为的
 
 `shared/ui` 中的 Button、Field 与表单控件采用 shadcn source ownership 结构，Modal、Menu 与 Tooltip 使用 Base UI。面试输入区的 Prompt Bar 采用 [Beautiful UI](https://www.beautifului.dev/) 组合模式，来源记录位于 `frontend/beautiful-ui.sources.json`。Prompt Bar 负责附件、简历、岗位、JD 与模型选择；管理动作统一进入设置弹窗。
 
-划分边界以样式归属为准：`shared/styles/index.css` 里注册了 chrome 的表面，其 markup 只允许有一处拥有者，产品界面与组件实验台都调用它。被多个 feature 复用的通用表面归 `shared/ui`——`Panel`/`SubSection`、`Card`/`InsetCard`、`SidebarFrame`/`SidebarBrand`/`SidebarAction`/`SidebarPane`/`SidebarToggle`、`ScrollRegion`、`MessageBubble`、`GeneratingCard`/`GeneratingSurface`、`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceLevelMeter`、`FieldActions`/`FieldAction`、`NavItem`、`OptionCard`、`ScoreTile`、`LoadingState`/`EmptyState`/`ErrorState`、`MenuLabel`/`PromptBarActions`、`PageHeader`、`HiddenFileInput`。只服务一个领域视图的件留在该 feature 并由其 barrel 导出：`ResumeRow` 归 `features/resume`；`StructuredReport`/`ScoreCard`/`StagePerformanceList`/`Trait`/`TrainingPlan`/`SectionHeading`/`ReportSection` 归 `features/report`；`InterviewSetupComposer`/`AnswerComposerSurface`/`SessionGroup`/`SessionGroupLabel`/`SessionRow` 归 `features/interview`；`SettingsNavigation`/`ThemePreview`/`ThemeChoiceGroup` 归 `features/settings`。组合器把状态留在内部时，实验台冻结呈现走无状态呈现层（`AnswerComposerSurface`）。feature 负责取数与把领域类型映射成原始 props；`AppShell` 与面试、报告页保留查询与回调的薄封装。
+划分边界以样式归属为准：`shared/styles/index.css` 里注册了 chrome 的表面，其 markup 只允许有一处拥有者，产品界面与组件实验台都调用它。被多个 feature 复用的通用表面归 `shared/ui`——`Icon`、`Panel`/`SubSection`、`Card`/`InsetCard`、`SidebarFrame`/`SidebarBrand`/`SidebarAction`/`SidebarPane`、`ScrollRegion`、`MessageBubble`、`GeneratingSurface`、`PromptBar`/`ContextAttachment`/`PromptBarFact`/`VoiceLevelMeter`、`FieldActions`/`FieldAction`、`NavItem`、`OptionCard`、`ScoreTile`、`LoadingState`/`EmptyState`/`ErrorState`/`LoadingIndicator`、`ToolTrace`、`MenuLabel`/`PromptBarActions`、`PageHeader`、`HiddenFileInput`。只服务一个领域视图的件留在该 feature 的目录里，确有跨 feature 或实验台消费者时才进该 feature 的 barrel：`ResumeRow`/`ResumeWorkspace` 归 `features/resume`；`StructuredReport`/`ScoreCard`/`StagePerformanceList`/`Trait`/`TrainingPlan`/`SectionHeading`/`ReportSection` 归 `features/report`；`InterviewSetupComposer`/`AnswerComposerSurface`/`SessionGroup`/`SessionGroupLabel`/`SessionRow` 归 `features/interview`；`SettingsNavigation`/`ThemePreview`/`ThemeChoiceGroup` 归 `features/settings`。组合器把状态留在内部时，实验台冻结呈现走无状态呈现层（`AnswerComposerSurface`）。feature 负责取数与把领域类型映射成原始 props；`AppShell` 与面试、报告页保留查询与回调的薄封装。
 
 组件实验台位于 `app/lab/ComponentLab.tsx`，由 `main.tsx` 的 DEV-only 路由挂载。它属于组合根，组合 feature 的公开导出并渲染真实组件；样例数据在 `app/lab/samples.ts`，按角色命名（见 `DESIGN.md` 的脱敏口径）。
 

@@ -43,6 +43,11 @@ class BackgroundJobPublicationRecoveryTest {
     @MockitoBean
     private RabbitMessageOperations rabbitMessageOperations;
 
+    @org.junit.jupiter.api.BeforeEach
+    void cleanIncompletePublications() {
+        jdbcTemplate.update("DELETE FROM EVENT_PUBLICATION WHERE COMPLETION_DATE IS NULL");
+    }
+
     @Test
     void failedExternalizationRemainsDurableAndTheSamePublicationCanBeResubmitted() {
         doThrow(new AmqpException("broker unavailable"))

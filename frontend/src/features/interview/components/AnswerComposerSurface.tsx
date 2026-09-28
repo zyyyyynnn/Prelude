@@ -1,16 +1,24 @@
-import { Briefcase, FileText, Image, Paperclip } from 'lucide-react'
 import { type FormEvent } from 'react'
-import { ArrowUp, Keyboard, Mic } from 'lucide-react'
 import type { AttachmentItem } from '@/features/assets'
+import { InterviewContextFacts } from './PromptBarControls'
+import {
+  RiArrowUpLine,
+  RiAttachmentLine,
+  RiBriefcaseLine,
+  RiFileTextLine,
+  RiImageLine,
+  RiKeyboardLine,
+  RiMicLine,
+} from '@remixicon/react'
 import {
   Button,
-  IconTooltip,
   ContextAttachment,
+  Icon,
+  IconTooltip,
   PromptBar,
   VoiceLevelMeter,
-  type VoiceStatus,
 } from '@/shared/ui'
-import { InterviewContextFacts } from './PromptBarControls'
+import type { VoiceStatus } from '@/shared/ui'
 
 /** The composer with its wiring left to the caller: what the draft says, whether the
  *  microphone lane is open and what the level meter should read. The live composer
@@ -61,13 +69,13 @@ export function AnswerComposerSurface({
         <>
           {resumeName && (
             <ContextAttachment
-              icon={<FileText aria-hidden="true" />}
+              icon={<Icon as={RiFileTextLine} aria-hidden="true" />}
               kindLabel="简历"
               label={resumeName}
             />
           )}
           <ContextAttachment
-            icon={<Briefcase aria-hidden="true" />}
+            icon={<Icon as={RiBriefcaseLine} aria-hidden="true" />}
             kindLabel="岗位"
             label={positionName}
           />
@@ -75,7 +83,11 @@ export function AnswerComposerSurface({
             <ContextAttachment
               key={attachment.id}
               icon={
-                attachment.image ? <Image aria-hidden="true" /> : <Paperclip aria-hidden="true" />
+                attachment.image ? (
+                  <Icon as={RiImageLine} aria-hidden="true" />
+                ) : (
+                  <Icon as={RiAttachmentLine} aria-hidden="true" />
+                )
               }
               kindLabel={attachment.image ? '图片' : '附件'}
               label={attachment.fileName}
@@ -95,7 +107,11 @@ export function AnswerComposerSurface({
               onClick={onToggleVoice}
               disabled={disabled}
             >
-              {voice ? <Keyboard aria-hidden="true" /> : <Mic aria-hidden="true" />}
+              {voice ? (
+                <Icon as={RiKeyboardLine} aria-hidden="true" />
+              ) : (
+                <Icon as={RiMicLine} aria-hidden="true" />
+              )}
             </Button>
           </IconTooltip>
           {/* Held, the control keeps its box: the words fade and the meter takes their
@@ -134,7 +150,7 @@ export function AnswerComposerSurface({
               disabled={disabled || !answer.trim()}
               aria-label="发送"
             >
-              <ArrowUp aria-hidden="true" />
+              <Icon as={RiArrowUpLine} aria-hidden="true" />
             </Button>
           </IconTooltip>
         </>

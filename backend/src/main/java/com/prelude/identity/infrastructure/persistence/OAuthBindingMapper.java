@@ -2,7 +2,7 @@ package com.prelude.identity.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.prelude.identity.api.port.OAuthBindingRepository;
+import com.prelude.identity.application.port.OAuthBindingRepository;
 import com.prelude.identity.domain.OAuthBinding;
 
 public interface OAuthBindingMapper extends BaseMapper<OAuthBindingEntity>, OAuthBindingRepository {

@@ -69,8 +69,8 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 | --- | --- | --- |
 | `type-eyebrow` | 标题上方的引导标签 | serif `xs` / medium / `tight` / tertiary |
 | `type-metric` | 大号数字指标 | serif `xl` / medium / `display` / primary |
-| `type-hero` | 页面级响应式大标题（认证、终态页、面试空态） | serif `clamp(xl, 5vw, 2xl)` / medium / `display` / primary |
-| `type-document-title` | 文档面主标题（报告的 `h1`） | serif `xl` / semibold / `display` / primary |
+| `type-hero` | 页面级大标题（认证、终态页、面试空态） | serif `2xl` / medium / `display` / primary |
+| `type-document-title` | 文档面主标题（报告的 `h1`） | serif `xl` / medium / `display` / primary |
 | `type-title` | 区块主标题 | serif `lg` / medium / `tight` / primary |
 | `type-subtitle` | 次级标题 | serif `md` / medium / `compact` / primary |
 | `type-label` | 字段与条目名称 | serif `sm` / medium / `compact` / secondary |
@@ -147,7 +147,7 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 - `level` 决定标题用 `h2` 还是 `h3`，并随之选择 `type-title` 或 `type-subtitle`；`eyebrow` 是标题上方的 `type-eyebrow`，`description` 是标题下方的 `type-meta`，`actions` 是右侧操作区，`footer` 是带上下边界的底部动作条。
 - 高程卡片只有一个拥有者：`shared/ui/card.tsx` 的 `Card`。`Panel layout="card"` 与不带标题行的同高程块（数据看板的记分卡）都经它渲染，圆角、边界、`--spacing-lg` 内边距与 `elevated-whisper` 只此一处；卡内堆叠间距由组件的 `stack` 决定。内嵌卡片是 `shared/ui/inset-card.tsx` 的 `InsetCard`（`ScoreTile` 与薄弱点条目共用）。
 
-全项目只有一种细分割线：`--border-width-default` 1px + `--color-border`，只画在 `--color-surface` 上（侧栏主操作下方那条线即基准，线色对表面色对比度 1.10）。`--color-border-warm` 是控件自身的边，`--color-line-decor` 只服务落在页面底色上的装饰边缘（登录卡）。更强的分层感来自间距与标题层级。
+全项目只有一种细分割线：`--border-width-default` 1px + `--color-border`，只画在 `--color-surface` 上（侧栏主操作下方那条线即基准，线色对表面色对比度 1.10）。`--color-border-warm` 是控件自身的边。`--color-line-decor` 服务落在页面底色 `--color-bg` 上的装饰线——登录卡边缘、工具轨迹展开态的缩进轨即此两处；同一条线换到页面底色上时 `--color-border` 只有 1.05 对比度，等于没画，所以底色上的线必须用装饰线色（亮 1.55、暗 2.03）。更强的分层感来自间距与标题层级。
 
 一条分割线两侧都有留白，且两侧由同一个容器给出：线附着在上方块时，上方由该块的 `padding` 给出、下方由容器的 `gap` 给出；附着在下方块时反之。面板内部再分层时，小节容器写 `grid gap-sm border-t border-border pt-md`，配合父容器的 `gap-md` 让细线上下各 16px，小节标题与其控件按 `--spacing-sm` 8px 绑定。设置弹窗的「修改密码」与「高级设置」即此形态，组件实验台的 Field 面板给出同一份样例。
 
@@ -176,7 +176,7 @@ Dialog、Confirm 与 Toast 使用同一表面语义；遮罩使用 `--mask-overl
 
 ## Source Adoption
 
-shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮层交互语义。[Beautiful UI](https://www.beautifului.dev/) Prompt Bar 组合用于面试输入区。品牌字体由 Fontsource 本地可变字体资产提供，运行时不依赖远端字体服务。组件视觉统一由本文件和 Prelude Design Tokens 定义。
+shadcn 提供 Button、Field 与表单控件的源码组织，Base UI 提供浮层交互语义。[Beautiful UI](https://www.beautifului.dev/) Prompt Bar、Tool Chips 与 Loading State 组合用于面试输入区与简历 toolcall 流。图标由 [RemixIcon](https://remixicon.com/) 经 `shared/ui/Icon` 收口。品牌字体由 Fontsource 本地可变字体资产提供，运行时不依赖远端字体服务。组件视觉统一由本文件和 Prelude Design Tokens 定义。
 
 ## Validation
 

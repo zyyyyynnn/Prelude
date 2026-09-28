@@ -41,6 +41,7 @@ npm --prefix frontend run dev
 mvn -f backend/pom.xml clean test
 npm --prefix frontend run check
 npm --prefix frontend run verify:architecture
+npm --prefix frontend run verify:governance
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
 npm --prefix frontend run verify:demo-copy
@@ -82,7 +83,7 @@ npm --prefix frontend run snapshot:update
 npm --prefix frontend run capture:surfaces
 ```
 
-生成登录深浅色、侧栏展开折叠、面试空态、上下文选择器、文字输入、语音六态、报告、看板、设置五个分区、组件检查面与 404 的界面截图，写入 `docs/screenshots/surfaces/`。这是随代码提交的人工回归对照资产，无自动断言。`manifest.json` 记录提交号与采集时工作树是否与提交一致（`inputsMatchRevision: false` 表示图来自未提交代码）。
+生成界面参考图，写入 `docs/screenshots/<light|dark>/<interview|resume|lab>/`（主题 × 板块）。`manifest.json` 记录提交号、路径约定与工作树是否与提交一致（`inputsMatchRevision: false` 表示图来自未提交代码）。这是随代码提交的人工回归对照资产，无自动断言。
 
 语音实时链路六帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`@demo` 链路测试的截图写入 `frontend/test-results/` 作为该次运行的诊断证据。
 
