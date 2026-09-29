@@ -1,6 +1,6 @@
-import { Trash2 } from 'lucide-react'
-import { Button } from '@/shared/ui'
 import type { ResumeItem } from './types'
+import { RiDeleteBinLine } from '@remixicon/react'
+import { Button, Icon } from '@/shared/ui'
 
 const timestamp = new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -33,7 +33,7 @@ export function ResumeRow({
         disabled={resume.inUse || pending}
         onClick={onDelete}
       >
-        <Trash2 aria-hidden="true" />
+        <Icon as={RiDeleteBinLine} aria-hidden="true" />
       </Button>
     </article>
   )

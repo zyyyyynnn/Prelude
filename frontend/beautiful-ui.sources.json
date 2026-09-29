@@ -5,7 +5,23 @@
       "upstream": "https://github.com/slev12397/beautiful-ui",
       "revision": "fa3ed75d53e30517d0ed41c19e7fe7bcf46acb7d",
       "path": "components/primitives/PromptBar.tsx",
-      "localPath": "src/features/interview/components/PromptBar.tsx",
+      "localPath": "src/shared/ui/prompt-bar.tsx",
+      "license": "MIT"
+    },
+    {
+      "component": "Tool Chips",
+      "upstream": "https://github.com/slev12397/beautiful-ui",
+      "revision": "fa3ed75d53e30517d0ed41c19e7fe7bcf46acb7d",
+      "path": "components/primitives/ToolChips.tsx",
+      "localPath": "src/shared/ui/tool-trace.tsx",
+      "license": "MIT"
+    },
+    {
+      "component": "Loading State",
+      "upstream": "https://github.com/slev12397/beautiful-ui",
+      "revision": "fa3ed75d53e30517d0ed41c19e7fe7bcf46acb7d",
+      "path": "components/primitives/LoadingState.tsx",
+      "localPath": "src/shared/ui/loading-indicator.tsx",
       "license": "MIT"
     }
   ]

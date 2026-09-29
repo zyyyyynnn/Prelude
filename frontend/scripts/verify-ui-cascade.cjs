@@ -32,6 +32,28 @@ if (!fs.existsSync(distDir)) {
   process.exit(1)
 }
 
+const cssFiles = fs.readdirSync(distDir).filter((name) => name.endsWith('.css'))
+if (cssFiles.length === 0) {
+  console.error(
+    'Cascade verification: FAIL — no CSS files found in dist/assets; run `npm run build` first',
+  )
+  process.exit(1)
+}
+
+// Ensure emitted CSS is at least as fresh as source stylesheet to prevent false-green checks on stale dist
+const distCssMtime = Math.max(
+  ...cssFiles.map((file) => fs.statSync(path.join(distDir, file)).mtimeMs),
+)
+const indexCssMtime = fs.statSync(path.join(root, 'src', 'shared', 'styles', 'index.css')).mtimeMs
+
+if (distCssMtime < indexCssMtime) {
+  console.error(
+    'Cascade verification: FAIL — emitted CSS in dist/ is stale compared to src/shared/styles/index.css.\n' +
+      'Run `npm run build` before `verify:cascade` to ensure emitted rules match current source.',
+  )
+  process.exit(1)
+}
+
 const registeredUtilities = new Set(declaredUtilities(indexCss).map(utilityFamily))
 // An unlayered class outranks every utility, so it counts as an override too.
 const unlayeredStart = indexCss.indexOf('\n* {')

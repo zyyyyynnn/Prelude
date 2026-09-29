@@ -2,7 +2,7 @@ package com.prelude.identity;
 
 import com.prelude.identity.application.AuthenticationService;
 import com.prelude.identity.application.OAuthLoginService;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.domain.Account;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.ExceptionFixtures;

@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { cn } from '@/shared/lib/cn'
+import { login, register } from './api'
+import { useAuth } from './auth-context'
+import { RiEyeLine, RiEyeOffLine } from '@remixicon/react'
 import {
   Button,
   Field,
   FieldAction,
   FieldActions,
+  Icon,
   Input,
   SegmentedControl,
   useFeedback,
 } from '@/shared/ui'
-import { login, register } from './api'
-import { useAuth } from './auth-context'
 
 type AuthMode = 'login' | 'register'
 
@@ -127,7 +128,7 @@ export function LoginPage() {
                   actions={[
                     <FieldAction
                       label={showPassword ? '隐藏密码' : '显示密码'}
-                      icon={showPassword ? <Eye /> : <EyeOff />}
+                      icon={showPassword ? <Icon as={RiEyeLine} /> : <Icon as={RiEyeOffLine} />}
                       onClick={() => setShowPassword((value) => !value)}
                     />,
                   ]}

@@ -52,10 +52,7 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
   }
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-slot="interview-workspace">
-      <div
-        className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-bg"
-        data-slot="workspace-active"
-      >
+      <div className="workspace-active" data-slot="workspace-active">
         <WorkspaceHeader
           title={current.targetPosition}
           stage={current.currentStage}

@@ -7,6 +7,7 @@ public final class PromptIds {
     public static final String REPORT = "interview.report";
     public static final String SUMMARY = "interview.summary";
     public static final String RESUME_PARSE = "resume.parse";
+    public static final String RESUME_ASSISTANT = "resume.assistant";
 
     private PromptIds() {
     }

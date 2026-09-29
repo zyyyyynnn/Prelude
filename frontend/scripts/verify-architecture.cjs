@@ -100,6 +100,61 @@ for (const name of blockedPackages) {
   if (declared[name]) violations.push(`package.json: blocked dependency ${name}`)
 }
 
+// ---------------------------------------------------------------- glyph rendering
+/* A glyph is a value, so importing one from the icon package is free. Rendering one is not:
+   `shared/ui/Icon` owns the box token, the inherited colour and the decorative `aria-hidden`,
+   and a call site that writes `<RiSearchLine />` re-decides all three in a file no
+   design-system rule reaches — which is how an icon ends up at a size no token names. */
+{
+  const bareGlyph = /^Ri[A-Z]/
+  for (const file of walk(sourceRoot).filter((entry) => path.extname(entry) === '.tsx')) {
+    const source = fs.readFileSync(file, 'utf8')
+    const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
+    const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+    const rendered = new Set()
+    const visit = (node) => {
+      if (
+        (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+        ts.isIdentifier(node.tagName) &&
+        bareGlyph.test(node.tagName.escapedText.toString())
+      ) {
+        rendered.add(node.tagName.escapedText.toString())
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(tree)
+    if (rendered.size) {
+      violations.push(
+        `${relative}: bare glyph render of ${[...rendered].join(', ')} — a glyph renders through <Icon as={…} />`,
+      )
+    }
+  }
+}
+
+// ---------------------------------------------------------------- adopted source provenance
+/* `beautiful-ui.sources.json` is the attribution record for vendored components: upstream
+   name, upstream file, and the local file that now carries the code. The upstream fields
+   describe someone else's tree and cannot be checked from here; `localPath` can, and a
+   renamed local file leaves an attribution pointing at nothing — the one record whose whole
+   job is to be findable. */
+{
+  const sourcesFile = path.join(root, 'beautiful-ui.sources.json')
+  if (fs.existsSync(sourcesFile)) {
+    const parsed = JSON.parse(fs.readFileSync(sourcesFile, 'utf8'))
+    for (const entry of parsed.sources ?? []) {
+      if (typeof entry.localPath !== 'string') {
+        violations.push(`beautiful-ui.sources.json: ${entry.component} has no localPath`)
+        continue
+      }
+      if (!fs.existsSync(path.join(root, entry.localPath))) {
+        violations.push(
+          `beautiful-ui.sources.json: ${entry.component} attributes to ${entry.localPath}, which does not exist`,
+        )
+      }
+    }
+  }
+}
+
 // ---------------------------------------------------------------- feature public entry
 /* A public entry — a feature's `index.ts`, or the design system's — is a barrel that
    re-exports chosen names and nothing else. Two failures follow from putting implementation
@@ -364,10 +419,11 @@ for (const name of blockedPackages) {
     : []
   /* A feature directory whose name is also an ordinary English word would fire on prose,
      so the test is the directory name as a path segment or a `--<name>-` token, never a
-     bare substring. */
-  const featureReference = new RegExp(
-    `(?:/|\\b)(?:${featureNames.join('|')})(?:/|\\b)|--(?:${featureNames.join('|')})-`,
-  )
+     bare substring. With no feature directory at all the alternation would be empty and
+     match every slash, so the rule reports nothing rather than everything. */
+  const featureReference = featureNames.length
+    ? new RegExp(`(?:/|\\b)(?:${featureNames.join('|')})(?:/|\\b)|--(?:${featureNames.join('|')})-`)
+    : null
 
   /* A shared declaration that names a feature directory is a leak. Geometry that is
      one feature's presentation contract is named for its geometry (`document-columns`,
@@ -398,7 +454,7 @@ for (const name of blockedPackages) {
     for (const match of utilityPositions(sheet)) record(match[1], match.index)
   }
   for (const [name, where] of declaredNames) {
-    if (!featureReference.test(name)) continue
+    if (!featureReference || !featureReference.test(name)) continue
     if (exceptionByName.has(name)) continue
     violations.push(
       `${where.file}:${where.line}: declares ${name}, which names the feature "${name.match(featureReference)[0]}" — a shared stylesheet must not carry a feature's vocabulary`,
@@ -439,7 +495,7 @@ for (const name of blockedPackages) {
         texts.push(node.text)
       if (ts.isJsxText(node)) texts.push(node.text)
       for (const text of texts) {
-        if (featureReference.test(text)) {
+        if (featureReference && featureReference.test(text)) {
           violations.push(
             `${relative}: names the feature "${text.match(featureReference)[0]}" — a shared component must not carry a feature's vocabulary`,
           )

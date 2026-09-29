@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -e
+
+# Monorepo guard: only run frontend staged checks if staged changes touch frontend/
+TOPDIR=$(git rev-parse --show-toplevel)
+if [ -z "$(git -C "$TOPDIR" diff --cached --name-only -- frontend)" ]; then
+  exit 0
+fi
+
+cd "$TOPDIR/frontend"
+if command -v vp >/dev/null 2>&1; then
+  vp check
+else
+  npx vp check
+fi

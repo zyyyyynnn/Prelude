@@ -5,8 +5,11 @@ export { FeedbackProvider } from './feedback'
 export { useFeedback } from './feedback-context'
 export { Field, FieldAction, FieldActions, Input, Textarea } from './field'
 export { HiddenFileInput } from './file-input'
+export { Icon } from './Icon'
+export type { IconGlyph } from './Icon'
 export { GeneratingSurface } from './generating-card'
 export { InsetCard } from './inset-card'
+export { LoadingIndicator } from './loading-indicator'
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -39,3 +42,5 @@ export { ScrollRegion } from './scroll-region'
 export { SegmentedControl } from './segmented-control'
 export { Select } from './select'
 export { SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from './sidebar'
+export { ToolTrace } from './tool-trace'
+export type { ToolTraceIcon, ToolTraceStep, ToolTraceLabels, ToolTraceFile } from './tool-trace'

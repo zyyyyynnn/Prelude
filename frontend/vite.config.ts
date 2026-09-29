@@ -419,5 +419,23 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      target: 'es2023',
+      chunkSizeWarningLimit: 600,
+    },
+    run: {
+      cache: {
+        scripts: true,
+      },
+    },
+    staged: {
+      '*.{ts,tsx}': ['vp check --fix'],
+      '*.{json,css,html,md}': ['vp fmt --check'],
+    },
+    test: {
+      include: ['src/**/*.test.{ts,tsx}'],
+      exclude: ['tests/**', 'scripts/**', 'node_modules/**'],
+      environment: 'node',
+    },
   }
 })

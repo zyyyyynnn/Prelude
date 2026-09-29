@@ -1,10 +1,11 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
 import { cn } from '@/shared/lib/cn'
 import { ScrollRegion } from './scroll-region'
 import { IconTooltip } from '@/shared/ui/overlay'
 import type { ReactNode } from 'react'
+import { RiSidebarFoldLine, RiSidebarUnfoldLine } from '@remixicon/react'
+import { Icon } from './Icon'
 
 /**
  * The rail's top row: the brand mark and the wordmark. The mark takes the same
@@ -69,7 +70,7 @@ export function SidebarAction({
   return collapsed ? <IconTooltip label={label}>{body}</IconTooltip> : body
 }
 
-/** The collapse control: both chevrons are painted and CSS cross-fades between them,
+/** The collapse control: fold and unfold glyphs cross-fade between each other,
  *  so the icon never changes size while the rail animates. */
 export function SidebarToggle({
   collapsed,
@@ -89,8 +90,8 @@ export function SidebarToggle({
         onClick={onToggle}
       >
         <span data-toggle-icon-stack aria-hidden="true">
-          <ChevronLeft data-toggle-icon="collapse" />
-          <ChevronRight data-toggle-icon="expand" />
+          <Icon as={RiSidebarFoldLine} data-toggle-icon="fold" />
+          <Icon as={RiSidebarUnfoldLine} data-toggle-icon="unfold" />
         </span>
       </button>
     </IconTooltip>

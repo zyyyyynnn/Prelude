@@ -4,7 +4,7 @@ import com.prelude.BusinessException;
 import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.LoginRequest;
 import com.prelude.identity.api.RegisterRequest;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.application.port.HttpSessionAccess;
 import com.prelude.identity.domain.Account;
 import lombok.RequiredArgsConstructor;

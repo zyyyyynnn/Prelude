@@ -1,6 +1,7 @@
-import { RefreshCw } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { Button } from './button'
+import { RiRefreshLine } from '@remixicon/react'
+import { Icon } from './Icon'
 
 /** What a region says when it has no content yet. `.empty-state` owns the centring and the
  *  floor height; these three own the difference between "still coming", "nothing here" and
@@ -39,7 +40,7 @@ export function ErrorState({
     <div className={cn('empty-state', className)} data-slot="error-state">
       <p>{message}</p>
       <Button variant="secondary" onClick={onRetry}>
-        <RefreshCw aria-hidden="true" />
+        <Icon as={RiRefreshLine} aria-hidden="true" />
         {retryLabel}
       </Button>
     </div>

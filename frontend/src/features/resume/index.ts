@@ -1,4 +1,6 @@
 export { fetchResumes } from './api'
 export { ResumeManagementPanel } from './ResumeManagementPanel'
+export { ResumeWorkspace } from './ResumeWorkspace'
 export { ResumeRow } from './ResumeRow'
+export { useResumeConversationList } from './use-resume-conversation-list'
 export type { ResumeItem } from './types'

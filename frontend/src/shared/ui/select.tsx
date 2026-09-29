@@ -1,7 +1,8 @@
 import { OVERLAY_OFFSET } from './positioning'
 import { Select as BaseSelect } from '@base-ui/react/select'
-import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
+import { RiArrowDownSLine, RiCheckLine } from '@remixicon/react'
+import { Icon } from './Icon'
 
 export type SelectOption = {
   value: string
@@ -46,7 +47,7 @@ export function Select({
       >
         <BaseSelect.Value />
         <BaseSelect.Icon className="ui-select__icon">
-          <ChevronDown aria-hidden="true" />
+          <Icon as={RiArrowDownSLine} aria-hidden="true" />
         </BaseSelect.Icon>
       </BaseSelect.Trigger>
       <BaseSelect.Portal>
@@ -66,7 +67,7 @@ export function Select({
                   className="ui-menu__item ui-select__item"
                 >
                   <BaseSelect.ItemIndicator className="ui-menu__indicator" aria-hidden="true">
-                    <Check />
+                    <Icon as={RiCheckLine} />
                   </BaseSelect.ItemIndicator>
                   <BaseSelect.ItemText className="ui-menu__item-label">
                     {option.label}

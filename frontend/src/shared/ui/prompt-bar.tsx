@@ -7,9 +7,10 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react'
-import { ChevronDown, ScanSearch, X } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { IconTooltip } from '@/shared/ui/overlay'
+import { RiArrowDownSLine, RiCloseLine, RiScanLine, RiTerminalBoxLine } from '@remixicon/react'
+import { Icon } from './Icon'
 
 /*
  * Prompt Bar shell adapted from Beautiful UI's Prompt Bar.
@@ -135,8 +136,9 @@ export function PromptBarModelTrigger({
       className={cn('prompt-bar-control prompt-bar-control-text ui-action', className)}
       {...props}
     >
+      <Icon as={RiTerminalBoxLine} aria-hidden="true" />
       <span className="min-w-0 flex-1 truncate text-start">{text}</span>
-      <ChevronDown aria-hidden="true" />
+      <Icon as={RiArrowDownSLine} aria-hidden="true" />
     </button>
   )
 }
@@ -152,7 +154,7 @@ export function PromptBarToggle({ label, onDisable }: { label: string; onDisable
       aria-pressed="true"
       onClick={onDisable}
     >
-      <ScanSearch aria-hidden="true" />
+      <Icon as={RiScanLine} aria-hidden="true" />
       <span>{label}</span>
     </button>
   )
@@ -188,7 +190,7 @@ export function ContextAttachment({
           aria-label={`移除${kindLabel}：${label}`}
           onClick={onRemove}
         >
-          <X aria-hidden="true" />
+          <Icon as={RiCloseLine} aria-hidden="true" />
         </button>
       )}
     </div>

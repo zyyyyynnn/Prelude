@@ -1,7 +1,7 @@
 package com.prelude.identity;
 
-import com.prelude.identity.api.port.AccountRepository;
-import com.prelude.identity.api.port.OAuthBindingRepository;
+import com.prelude.identity.application.port.AccountRepository;
+import com.prelude.identity.application.port.OAuthBindingRepository;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.application.PendingOAuthBinding;
 import com.prelude.identity.domain.Account;

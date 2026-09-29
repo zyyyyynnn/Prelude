@@ -1,8 +1,9 @@
 import { Dialog as BaseDialog, Tooltip } from '@base-ui/react'
 import { OVERLAY_OFFSET } from './positioning'
-import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { RiCloseLine } from '@remixicon/react'
+import { Icon } from './Icon'
 
 export function IconTooltip({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -51,7 +52,7 @@ export function Dialog({
                 className="ui-dialog__close ui-action ui-action-icon"
                 aria-label="关闭"
               >
-                <X />
+                <Icon as={RiCloseLine} />
               </BaseDialog.Close>
             )}
             {children}

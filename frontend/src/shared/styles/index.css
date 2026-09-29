@@ -88,20 +88,9 @@
 
   --tracking-label: var(--tracking-label);
 
-  /* Animation — the three interview keyframes, exposed as animate-* atoms. The voice
-     meter is not here: it is driven by the microphone's own level, not a loop. */
-  --animate-progress-sweep: progress-sweep var(--motion-duration-slow) infinite
-    var(--motion-ease-standard);
+  /* Animation — the thinking ellipsis is exposed as an animate-* atom. The voice meter is
+     driven by the microphone's own level, not a loop. */
   --animate-thinking-ellipsis: thinking-ellipsis var(--motion-duration-thinking) infinite;
-
-  @keyframes progress-sweep {
-    from {
-      transform: translateX(-100%);
-    }
-    to {
-      transform: translateX(200%);
-    }
-  }
 
   @keyframes thinking-ellipsis {
     0% {
@@ -159,6 +148,11 @@
   --color-accent-text: var(--color-accent-solid);
   --color-text-on-accent: var(--color-surface);
   --color-coral: #b08878;
+  /* A diff's two directions. The palette had no green at all, which is why an addition count
+     rendered brown; deletions reuse neither --color-border nor --color-error, because a removed
+     line is not a failed one. Both pairs clear AA on the page background and on a surface. */
+  --color-diff-add: #2f6340;
+  --color-diff-del: #a8413a;
   --color-error: #b53333;
   --color-error-soft: color-mix(in srgb, var(--color-error) 10%, transparent);
   --color-focus-field: #7c7469;
@@ -172,7 +166,6 @@
 
   --color-line-decor: #c8c6be;
 
-  --radius-xs: 2px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -219,12 +212,12 @@
     color var(--motion-duration-fast) var(--motion-ease-standard);
 
   /* ── UI System Tokens ── */
-  --font-size-xs: 13px;
+  --font-size-xs: 12px;
   --font-size-sm: 14px;
   --font-size-md: 16px;
   --font-size-lg: 24px;
-  --font-size-xl: 36px;
-  --font-size-2xl: 54px;
+  --font-size-xl: 32px;
+  --font-size-2xl: 40px;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -337,6 +330,8 @@
 
 :root.dark,
 .dark {
+  --color-diff-add: #7fb98a;
+  --color-diff-del: #d4746a;
   --color-bg: #191816;
   --color-surface: #22201d;
   --color-text-primary: #f1eee6;
@@ -474,6 +469,10 @@ html.is-theme-transitioning {
 .ui-field-control:focus,
 .ui-field-control:focus-visible {
   border-color: var(--color-focus-field);
+}
+
+.ui-field-control[aria-invalid='true'] {
+  border-color: var(--color-error);
 }
 
 html[data-input-intent='pointer'] .ui-action:focus {
@@ -715,6 +714,50 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   z-index: var(--z-index-sidebar);
   flex-shrink: 0;
   box-sizing: border-box;
+}
+/* The active-workspace shell: one header band plus a scrolling body, on the page
+   background. Both the interview and the resume workspace sit in it so the two
+   sides cannot drift apart in header height, overflow, or background. */
+@utility workspace-active {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+/* The instruction stays at the padded content edge of the resume scroller. Its cover extends
+   through the scrollport's top padding so older response text cannot leak into the breathing
+   space above the pinned instruction while the turn's body moves behind it. */
+/* @internal src/features/resume/sticky-instruction.tsx */
+@utility sticky-instruction {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-workspace-composer);
+  inline-size: 100%;
+  max-inline-size: var(--layout-workspace-content-max-inline-size);
+  margin-inline: auto;
+  background-color: var(--color-bg);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block-start: calc(-1 * var(--spacing-lg));
+    inset-inline: 0;
+    block-size: var(--ui-glyph-lg);
+    background-color: var(--color-bg);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline: 0;
+    block-size: var(--ui-glyph-lg);
+    background: linear-gradient(to bottom, var(--color-bg), transparent);
+    pointer-events: none;
+  }
 }
 /* @internal src/shared/ui/page-header.tsx */
 @utility workspace-header__main {
@@ -1206,6 +1249,380 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     transform: rotate(360deg);
   }
 }
+
+/* The running affordance beside a status label: nine square cells on a 3x3 grid, ported
+   from Beautiful UI's Loading State (the Drive variant — square cells; Dots rounds them
+   to circles, and a half-cell radius is exactly where that happens). The chevron
+   wavefront drives right — the middle row leads, the outer rows trail a column behind —
+   and because the cycle is shorter than the sweep, two fronts are always in flight. The
+   cells rest dim and one sweeps to full strength. Reduced motion freezes the grid at its
+   dim state, upstream's own fallback. The mark sits inline to the left of the words it
+   qualifies — the tool trace's closing line and the standalone loading indicator are the
+   same mark, so one quiet vocabulary covers "running" everywhere it appears. */
+.loading-pixel {
+  inline-size: var(--spacing-xs);
+  block-size: var(--spacing-xs);
+  /* One hairline of radius: the upstream's 1px, expressed as the repo's border token. */
+  border-radius: var(--border-width-default);
+  background: var(--color-text-primary);
+  opacity: 0.15;
+  animation: pixel-on var(--motion-duration-slow) ease-in-out infinite;
+}
+
+/* The chevron wavefront, upstream-for-upstream: column + distance from the middle row.
+   In its resting or frozen state, the wavefront holds an active gradient so "running"
+   reads clearly at a glance rather than freezing into a dim, dead grid. */
+.loading-pixel:nth-child(4) {
+  opacity: 0.95;
+  animation-delay: 0ms;
+}
+.loading-pixel:nth-child(1),
+.loading-pixel:nth-child(5),
+.loading-pixel:nth-child(7) {
+  opacity: 0.65;
+  animation-delay: 90ms;
+}
+.loading-pixel:nth-child(2),
+.loading-pixel:nth-child(6),
+.loading-pixel:nth-child(8) {
+  opacity: 0.35;
+  animation-delay: 180ms;
+}
+.loading-pixel:nth-child(3),
+.loading-pixel:nth-child(9) {
+  opacity: 0.15;
+  animation-delay: 270ms;
+}
+
+/* The grid is an intrinsic square mark sized to its 3 cells and 2 hairlines. Centred in a mark
+   slot, its horizontal and vertical axes align exactly with the spine and the text line box. */
+.loading-pixel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, var(--spacing-xs));
+  gap: var(--border-width-default);
+  flex-shrink: 0;
+  inline-size: calc(3 * var(--spacing-xs) + 2 * var(--border-width-default));
+  block-size: calc(3 * var(--spacing-xs) + 2 * var(--border-width-default));
+}
+
+.loading-pixel-grid + .type-meta {
+  line-height: var(--line-height-solid);
+}
+
+@keyframes pixel-on {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* Upstream's fallback: the sweep stops and the grid holds its active wavefront pattern. */
+@media (prefers-reduced-motion: reduce) {
+  .loading-pixel {
+    animation: none;
+  }
+}
+
+/* Agent tool-call trace: a run header, step rows on an indent spine, and a closing status
+   line. The block sizes to its own header text (capped at the container) so the summary is
+   not forced into a narrow ellipsis. Rows are content-width: the mark and the label share
+   one left edge across rows because every row opens with the same mark slot, and the
+   trailing payload plus the disclosure chevron follow their own content rather than being
+   parked in a far column. */
+.tool-trace {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  inline-size: max-content;
+  max-inline-size: 100%;
+  color: var(--color-text-secondary);
+}
+
+.tool-trace__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.tool-trace__summary-text {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-solid);
+}
+
+.tool-trace[data-open='false'] .tool-trace__summary .tool-trace__chevron {
+  transform: rotate(-90deg);
+}
+
+.tool-trace__body {
+  display: grid;
+  grid-template-rows: 1fr;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--motion-duration-base) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.tool-trace[data-open='false'] .tool-trace__body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.tool-trace__clip {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+/* The run's spine hangs off the header mark's centre — the same axis the closing line's
+   content is centred on, so the trace reads as one vertical stroke from the header icon
+   down through the opening glyph of the status label (or the loading mark beside the
+   in-progress label). It is a pseudo-element rather than the list's own border because a border
+   would drag the rows with it; the rows keep their integer grid and only the line is painted.
+   On the page background the line has to be line-decor: --color-border measures 1.05 here and
+   disappears. */
+.tool-trace__list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  margin-inline-start: calc(var(--ui-glyph-sm) / 2);
+  padding: 0 0 0 var(--spacing-lg);
+  list-style: none;
+}
+
+/* The list already sits half a glyph in; half a border width back puts the line's centre
+   exactly on the header mark's centre. */
+.tool-trace__list::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(var(--border-width-default) / -2);
+  inline-size: var(--border-width-default);
+  background: var(--color-line-decor);
+}
+
+.tool-trace__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Content-width row on an integer grid: mark, label, payload, chevron. Grid columns land
+   on whole pixels so the mark and label boxes cannot drift a pixel row to row; `auto`
+   columns collapse when a row has no payload or no chevron, so an empty cell never opens
+   a hole. The label sizes to its own words and the payload sits beside the verb. */
+.tool-trace__row {
+  display: inline-grid;
+  grid-template-columns: auto auto auto auto;
+  align-items: center;
+  column-gap: var(--spacing-sm);
+  min-inline-size: 0;
+  block-size: var(--ui-height-control);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  text-align: start;
+}
+
+.tool-trace__row:not(:disabled) {
+  cursor: pointer;
+}
+
+.tool-trace__mark {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
+  color: inherit;
+}
+
+.tool-trace__text {
+  white-space: nowrap;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-solid);
+}
+
+/* The row's disclosure chevron sits in the last grid column. A row with nothing to reveal
+   keeps the cell and paints nothing in it. The grid gap alone spaces it — an extra margin
+   here made the chevron-to-content gap a different measure from every other gap in the row. */
+.tool-trace__chevron {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--ui-glyph-sm);
+  block-size: var(--ui-glyph-sm);
+  color: var(--color-text-tertiary);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.tool-trace__chevron--closed {
+  transform: rotate(-90deg);
+}
+
+/* The row's single payload slot: every chip, the file diff and the badge share one flex
+   lane so the grid above sees four items per row, never five. Without it a row carrying
+   both a chip and a badge pushes the chevron onto a second line under the icon. */
+.tool-trace__payload {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  min-inline-size: 0;
+}
+
+.tool-trace__chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-solid);
+}
+
+/* The measured result of a write: the file it touched plus its line counts, additions before
+   deletions because that is the order a diff is read off. */
+.tool-trace__file {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-solid);
+  font-variant-numeric: tabular-nums;
+}
+
+.tool-trace__file-name {
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.tool-trace__file-add {
+  color: var(--color-diff-add);
+}
+
+.tool-trace__file-del {
+  color: var(--color-diff-del);
+}
+
+/* The step's outcome marker: the exit code of a failed call, in the brand serif like the
+   rest of the row's words. It is the only red element on a failed row — the text, chip and
+   chevron keep their normal colours, so a row never mixes the two palettes. */
+.tool-trace__badge {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-solid);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+.tool-trace__badge[data-tone='add'] {
+  color: var(--color-diff-add);
+}
+
+.tool-trace__badge[data-tone='error'] {
+  color: var(--color-error);
+}
+
+.tool-trace__detail {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--motion-duration-base) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.tool-trace__item[data-open='false'] .tool-trace__detail {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.tool-trace__detail-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  /* The body starts on the row's icon column; icon+gap puts the text on the label column. */
+  padding: 0 var(--spacing-md) var(--spacing-sm) calc(var(--ui-glyph-sm) + var(--spacing-sm));
+  color: var(--color-text-tertiary);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-base);
+}
+
+/* The detail's own rail, hung off the icon centre of the row it belongs to. The list rail
+   outside it is the run's spine; this one says which steps these lines came from. */
+.tool-trace__detail-body::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(var(--ui-glyph-sm) / 2);
+  inline-size: var(--border-width-default);
+  background: var(--color-line-decor);
+}
+
+/* The run's closing line terminates on the spine axis — perfectly aligned with the header
+   icon's centre and the rail, preserving the three-element vertical axis
+   (header icon - spine fine line - status copy / loading indicator). In the running state, the
+   loading indicator sits in the 16px mark slot centred at x = 8px. In the finished state,
+   padding-inline-start centres the opening 14px glyph on the same 8px axis
+   without introducing an artificial break between the glyph and the rest of the status copy. */
+.tool-trace__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-solid);
+  font-variant-numeric: tabular-nums;
+}
+
+.tool-trace__status[data-running='false'] {
+  padding-inline-start: calc((var(--ui-glyph-sm) - var(--font-size-sm)) / 2);
+}
+
+/* The closing line's failure disclosure: a run that finished with a failed step says so
+   here, so a collapsed trace never reports a bare completion label over a step that blew up.
+   It is the run's outcome, not a step's — the failed row's badge stays the only red on the
+   row itself. */
+.tool-trace__status-failure {
+  color: var(--color-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-trace__chevron,
+  .tool-trace__body,
+  .tool-trace__detail {
+    transition: none;
+  }
+}
+
 .ui-toaster [data-sonner-toast] {
   pointer-events: auto;
 }
@@ -1439,16 +1856,14 @@ html[data-input-intent='keyboard']
 /* The one title that scales with the viewport: auth and terminal pages. */
 @utility type-hero {
   color: var(--color-text-primary);
-  font: var(--font-weight-medium)
-    clamp(var(--font-size-xl), 5vw, var(--font-size-2xl))/var(--line-height-display)
-    var(--font-serif);
+  font: var(--font-weight-medium) var(--font-size-2xl)/var(--line-height-display) var(--font-serif);
 }
 
 /* The document counterpart of `type-hero`: a report opens on a fixed display title, not
    one that grows with the window, because the same sheet has to hold on paper. */
 @utility type-document-title {
   color: var(--color-text-primary);
-  font: var(--font-weight-semibold) var(--font-size-xl)/var(--line-height-display) var(--font-serif);
+  font: var(--font-weight-medium) var(--font-size-xl)/var(--line-height-display) var(--font-serif);
 }
 
 @utility type-subtitle {
@@ -1526,6 +1941,12 @@ html[data-input-intent='keyboard']
   --field-trailing-gutter: calc(
     (var(--ui-height-control) - var(--ui-control-inset)) * --value(integer)
   );
+}
+
+/* @internal src/shared/ui/field.tsx */
+@utility field-error {
+  color: var(--color-error);
+  font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-compact) var(--font-sans);
 }
 
 /* Elevation. Tailwind's shadow-* namespace is reserved for palette colors by
@@ -1897,11 +2318,11 @@ html[data-input-intent='keyboard']
 
   /* The two glyphs are stacked and swapped by the button's own state, so the
      toggle needs no ancestor to decide which one shows. */
-  &:not([data-collapsed='true']) [data-toggle-icon='collapse'] {
+  &:not([data-collapsed='true']) [data-toggle-icon='fold'] {
     opacity: 1;
   }
 
-  &[data-collapsed='true'] [data-toggle-icon='expand'] {
+  &[data-collapsed='true'] [data-toggle-icon='unfold'] {
     opacity: 1;
   }
 }
@@ -2167,7 +2588,7 @@ html[data-input-intent='keyboard']
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
-  font: var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  font: var(--font-size-sm)/var(--line-height-compact) var(--font-serif);
   cursor: pointer;
   transition: var(--motion-transition-surface);
 
@@ -2214,7 +2635,7 @@ html[data-input-intent='keyboard']
   border-radius: var(--radius-md);
   background: var(--color-surface-muted);
   color: var(--color-text-secondary);
-  font: var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+  font: var(--font-size-sm)/var(--line-height-base) var(--font-serif);
 
   & > svg {
     inline-size: var(--ui-glyph-sm);
@@ -2314,28 +2735,6 @@ html[data-input-intent='keyboard']
     clamp(var(--font-size-md), 2vw, var(--font-size-lg))/var(--line-height-base) var(--font-serif);
 }
 
-/* @internal src/shared/ui/generating-card.tsx */
-@utility generating-progress-track {
-  position: relative;
-  inline-size: 100%;
-  block-size: var(--spacing-xs);
-  overflow: hidden;
-  border-radius: var(--radius-xs);
-  background: var(--color-border);
-}
-
-/* @internal src/shared/ui/generating-card.tsx */
-@utility generating-progress-indicator {
-  position: absolute;
-  inset-inline-start: 0;
-  inline-size: 50%;
-  block-size: 100%;
-  border-radius: inherit;
-  background: var(--color-brand);
-  transform: translateX(-100%);
-  animation: var(--animate-progress-sweep);
-}
-
 /* @internal src/shared/ui/message.tsx */
 @utility message-bubble {
   display: flex;
@@ -2367,13 +2766,8 @@ html[data-input-intent='keyboard']
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .generating-progress-indicator,
   .ellipsis-progress::after {
     animation: none;
-  }
-
-  .generating-progress-indicator {
-    transform: translateX(50%);
   }
 }
 

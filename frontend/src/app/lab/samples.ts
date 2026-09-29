@@ -201,3 +201,44 @@ export const sampleReport: StructuredInterviewReport = {
   },
   finalAdvice: '示例文本一，长度用来检查末段在报告阅读宽度下的行长与两端对齐。示例文本二。',
 }
+
+import type { ToolTraceStep } from '@/shared/ui'
+
+/** Tool trace gallery: coding-agent step phrases, not invented product labels. */
+export const sampleToolTrace: { summary: string; steps: ToolTraceStep[] } = {
+  summary: '思考 2轮 · 读1次文件、改1次文件、网络搜1次、查找1次、更新任务1次、执行1次命令',
+  steps: [
+    {
+      id: 'think-3',
+      icon: 'think',
+      text: '思考了 3s',
+      detail: ['梳理指令涉及的模块与证据。', '定位工作经历中的数字与结果。'],
+    },
+    { id: 'search-web', icon: 'search', text: '搜索网络', chips: ['接口性能指标写法'] },
+    { id: 'find-md', icon: 'find', text: '查找', chips: ['*.md'] },
+    { id: 'read-ctx', icon: 'read', text: '读取', chips: ['resume-context'] },
+    {
+      id: 'edit-exp',
+      icon: 'edit',
+      text: '改写工作经历',
+      detail: ['+ P99 从 480ms 降到 210ms', '+ 错误率保持在千分之一以内'],
+    },
+    { id: 'update-task', icon: 'update', text: '更新任务 1 项新建任务' },
+    {
+      id: 'write-resume',
+      icon: 'write',
+      text: '写入',
+      files: [{ name: 'resume.md', add: 22, del: 10 }],
+    },
+    {
+      id: 'run-failed',
+      icon: 'run',
+      text: '执行',
+      state: 'error',
+      badge: '退出码 1',
+      badgeTone: 'error',
+      chips: ['npm run check'],
+      detail: ['样式门禁 1 项未通过。', '该步未产生改动，助手仍给出建议。'],
+    },
+  ],
+}
