@@ -1,301 +1,321 @@
 package com.prelude.resume.application;
 
 import com.prelude.BusinessException;
+import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.resume.api.ResumeAssistantMessageResponse;
 import com.prelude.resume.api.ResumeConversationResponse;
-import com.prelude.resume.api.ResumeToolStepResponse;
+import com.prelude.resume.api.ResumeConversationStatus;
+import com.prelude.resume.api.ResumeDocumentResponse;
+import com.prelude.resume.api.ResumeInstructionRequest;
 import com.prelude.resume.api.ResumeToolGroupResponse;
+import com.prelude.resume.api.ResumeToolStepResponse;
+import com.prelude.resume.api.ResumeProposalResponse;
 import com.prelude.resume.api.ResumeTurnResponse;
-import com.prelude.resume.api.port.ResumeConversationStatus;
-import com.prelude.resume.api.port.ResumeToolState;
-import com.prelude.resume.api.port.ResumeTurnStatus;
-import com.prelude.resume.infrastructure.persistence.ResumeAssistantMessageEntity;
-import com.prelude.resume.infrastructure.persistence.ResumeAssistantMessageMapper;
-import com.prelude.resume.infrastructure.persistence.ResumeConversationEntity;
-import com.prelude.resume.infrastructure.persistence.ResumeConversationMapper;
-import com.prelude.resume.infrastructure.persistence.ResumeToolCallEntity;
-import com.prelude.resume.infrastructure.persistence.ResumeToolCallMapper;
-import com.prelude.resume.infrastructure.persistence.ResumeToolDiffEntity;
-import com.prelude.resume.infrastructure.persistence.ResumeToolDiffMapper;
-import com.prelude.resume.infrastructure.persistence.ResumeToolGroupEntity;
-import com.prelude.resume.infrastructure.persistence.ResumeToolGroupMapper;
-import com.prelude.resume.infrastructure.persistence.ResumeTurnEntity;
-import com.prelude.resume.infrastructure.persistence.ResumeTurnMapper;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.type.TypeFactory;
+import com.prelude.resume.application.port.ResumeRepository;
+import com.prelude.resume.application.repository.ResumeDocumentRepository;
+import com.prelude.resume.application.repository.ResumeTranscriptRepository;
+import com.prelude.resume.application.repository.ResumeWorkspaceRepository;
+import com.prelude.resume.domain.ResumeAgentRun;
+import com.prelude.resume.domain.ResumeAgentStep;
+import com.prelude.resume.domain.ResumeConversation;
+import com.prelude.resume.domain.ResumePatchProposal;
+import com.prelude.resume.domain.ResumeRevision;
+import com.prelude.resume.domain.ResumeTurn;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Resume workspace conversations: one user instruction is a turn, each assistant
- * message may own one tool-call group. The assistant run here is a controlled
- * integration that writes real rows and emits real events — the product path never
- * fabricates a stream on the client.
+ * The resume workspace as the candidate sees it: conversations and their turns, the trace
+ * each run left behind, the proposal awaiting a decision, and the document a patch would
+ * change.
+ *
+ * <p>Submitting a turn only enqueues it; the drain runs it. A turn therefore has exactly one
+ * owner at any moment, and the route a turn takes after a restart is the route it takes
+ * every time. Nothing here reaches into persistence: the module's repositories and the ports
+ * it declares are the only collaborators.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ResumeWorkspaceService {
 
-    private final ResumeConversationMapper conversations;
-    private final ResumeTurnMapper turns;
-    private final ResumeAssistantMessageMapper messages;
-    private final ResumeToolGroupMapper toolGroups;
-    private final ResumeToolCallMapper toolCalls;
-    private final ResumeToolDiffMapper toolDiffs;
-    private final ObjectMapper objectMapper;
+    private static final String UNTITLED = "新的简历工作";
 
-    @Transactional
-    public ResumeConversationResponse createConversation(Long accountId, Long resumeId) {
-        ResumeConversationEntity entity = new ResumeConversationEntity();
-        entity.setAccountId(accountId);
-        entity.setResumeId(resumeId);
-        entity.setTitle("新的简历工作");
-        entity.setCreatedAt(LocalDateTime.now());
-        entity.setUpdatedAt(LocalDateTime.now());
-        conversations.insert(entity);
-        return toConversation(entity, ResumeConversationStatus.ACTIVE);
-    }
+    private final ResumeWorkspaceRepository workspace;
+    private final ResumeTranscriptRepository transcript;
+    private final ResumeDocumentRepository documents;
+    private final ResumeRepository resumes;
+    private final AttachmentContextPort attachments;
+    private final ResumePatchDecisionService decisions;
 
-    /**
-     * The sidebar list. A conversation's group is derived from its turns — active while a
-     * turn is queued or running or none has been sent yet, finished once every turn is
-     * done — so the list needs no status column of its own to keep.
-     */
     public List<ResumeConversationResponse> listConversations(Long accountId) {
-        List<ResumeConversationEntity> rows = conversations.listByOwner(accountId);
-        if (rows.isEmpty()) return List.of();
-        List<Long> ids = rows.stream().map(ResumeConversationEntity::getId).toList();
-        Set<Long> activeIds = Set.copyOf(turns.findActiveConversationIds(ids));
-        Set<Long> idsWithTurns = Set.copyOf(turns.findConversationIdsWithTurns(ids));
-        return rows.stream()
-            .map(entity -> toConversation(
-                entity,
-                activeIds.contains(entity.getId()) || !idsWithTurns.contains(entity.getId())
+        List<ResumeConversation> conversations = workspace.listConversations(accountId);
+        if (conversations.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = conversations.stream().map(ResumeConversation::id).toList();
+        var active = workspace.conversationIdsWithPendingWork(ids);
+        var withTurns = workspace.conversationIdsWithTurns(ids);
+        return conversations.stream()
+            .map(conversation -> toConversation(conversation,
+                active.contains(conversation.id()) || !withTurns.contains(conversation.id())
                     ? ResumeConversationStatus.ACTIVE
                     : ResumeConversationStatus.FINISHED))
             .toList();
     }
 
-    public List<ResumeTurnResponse> listTurns(Long accountId, Long conversationId) {
-        requireConversation(accountId, conversationId);
-        List<ResumeTurnEntity> turnRows = turns.listByConversation(conversationId);
-        if (turnRows.isEmpty()) return List.of();
-        Map<Long, List<ResumeAssistantMessageResponse>> byTurn = new LinkedHashMap<>();
-        for (ResumeTurnEntity turn : turnRows) byTurn.put(turn.getId(), new ArrayList<>());
-        for (ResumeAssistantMessageEntity message : messages.listByConversation(conversationId)) {
-            byTurn.computeIfAbsent(message.getTurnId(), key -> new ArrayList<>())
-                .add(toMessage(message));
-        }
-        return turnRows.stream()
-            .map(turn -> toTurn(turn, byTurn.getOrDefault(turn.getId(), List.of())))
-            .toList();
-    }
-
-    /**
-     * Submits one user instruction. A running turn keeps the queue; the new turn
-     * stays {@code queued} until the current one completes.
-     */
     @Transactional
-    public ResumeTurnResponse submitTurn(Long accountId, Long conversationId, String instruction) {
-        requireConversation(accountId, conversationId);
-        ResumeTurnEntity running = turns.findRunning(conversationId);
-        ResumeTurnEntity turn = new ResumeTurnEntity();
-        turn.setConversationId(conversationId);
-        turn.setAccountId(accountId);
-        turn.setInstruction(instruction);
-        turn.setCreatedAt(LocalDateTime.now());
-        turn.setQueuePosition(turns.maxQueuePosition(conversationId) + 1);
-        if (running == null) {
-            turn.setStatus(ResumeTurnStatus.RUNNING.wire());
-            turn.setStartedAt(LocalDateTime.now());
-        } else {
-            turn.setStatus(ResumeTurnStatus.QUEUED.wire());
+    public ResumeConversationResponse createConversation(Long accountId, Long resumeId) {
+        if (resumeId != null) {
+            resumes.findById(resumeId)
+                .filter(stored -> stored.accountId().equals(accountId))
+                .orElseThrow(() -> BusinessException.notFound("简历不存在"));
         }
-        turns.insert(turn);
-        return toTurn(turn, List.of());
+        ResumeConversation conversation = ResumeConversation.create(accountId, resumeId, UNTITLED, LocalDateTime.now());
+        Long id = workspace.createConversation(conversation);
+        return toConversation(conversation.withId(id), ResumeConversationStatus.ACTIVE);
     }
 
-    /** Marks the running turn done and promotes the next queued turn, if any. */
-    @Transactional
-    public void completeTurn(Long accountId, Long turnId) {
-        ResumeTurnEntity turn = turns.findOwned(turnId, accountId);
-        if (turn == null) throw BusinessException.notFound("会话轮次不存在");
-        turn.setStatus(ResumeTurnStatus.DONE.wire());
-        turn.setCompletedAt(LocalDateTime.now());
-        turns.updateById(turn);
-        ResumeTurnEntity next = turns.findNextQueued(turn.getConversationId());
-        if (next != null) {
-            next.setStatus(ResumeTurnStatus.RUNNING.wire());
-            next.setStartedAt(LocalDateTime.now());
-            turns.updateById(next);
-        }
-        ResumeConversationEntity conversation = conversations.selectById(turn.getConversationId());
-        if (conversation != null) {
-            conversation.setUpdatedAt(LocalDateTime.now());
-            conversations.updateById(conversation);
-        }
-    }
-
-    /**
-     * Controlled assistant step: one natural-language message and one tool-call
-     * group, persisted and returned. Not a client-side mock — these rows are the
-     * product truth the stream replays.
-     */
-    @Transactional
-    public ResumeAssistantMessageResponse runAssistantStep(
-        Long accountId,
-        Long turnId,
-        String messageContent,
-        String summary,
-        List<ToolCallDraft> toolDrafts
-    ) {
-        ResumeTurnEntity turn = turns.findOwned(turnId, accountId);
-        if (turn == null) throw BusinessException.notFound("会话轮次不存在");
-        ResumeAssistantMessageEntity message = new ResumeAssistantMessageEntity();
-        message.setTurnId(turnId);
-        message.setConversationId(turn.getConversationId());
-        message.setSeqNum(messages.maxSeq(turnId) + 1);
-        message.setContent(messageContent);
-        message.setCreatedAt(LocalDateTime.now());
-        messages.insert(message);
-
-        if (!toolDrafts.isEmpty()) {
-            ResumeToolGroupEntity group = new ResumeToolGroupEntity();
-            group.setMessageId(message.getId());
-            group.setLabel(summary);
-            group.setStatus(ResumeToolState.DONE.wire());
-            group.setCreatedAt(LocalDateTime.now());
-            toolGroups.insert(group);
-            int order = 0;
-            for (ToolCallDraft draft : toolDrafts) {
-                ResumeToolCallEntity call = new ResumeToolCallEntity();
-                call.setGroupId(group.getId());
-                call.setSortOrder(order++);
-                call.setKind(draft.icon());
-                call.setLabel(draft.text());
-                call.setChip(String.join("\u0000", draft.chips() == null ? List.of() : draft.chips()));
-                call.setDetail(writeDetail(draft.detail()));
-                call.setState(ResumeToolState.DONE.wire());
-                call.setError(draft.badge() == null ? null : draft.badge() + "|" + draft.badgeTone());
-                toolCalls.insert(call);
-            }
-        }
-        return toMessage(message);
-    }
-
-    public record ToolCallDraft(
-        String icon,
-        String text,
-        String badge,
-        String badgeTone,
-        List<String> chips,
-        List<String> detail
-    ) {
-    }
-
-    private ResumeConversationEntity requireConversation(Long accountId, Long conversationId) {
-        ResumeConversationEntity entity = conversations.findOwned(conversationId, accountId);
-        if (entity == null) throw BusinessException.notFound("会话不存在");
-        return entity;
-    }
-
-    private String writeDetail(List<String> detail) {
-        try {
-            return objectMapper.writeValueAsString(detail == null ? List.of() : detail);
-        } catch (Exception failure) {
-            throw BusinessException.badRequest("工具明细序列化失败");
-        }
-    }
-
-    private List<String> readDetail(String detail) {
-        if (detail == null || detail.isBlank()) return List.of();
-        try {
-            return objectMapper.readValue(detail, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
-        } catch (Exception failure) {
-            return List.of();
-        }
-    }
-
-    private ResumeConversationResponse toConversation(
-        ResumeConversationEntity entity,
-        ResumeConversationStatus status
-    ) {
-        return new ResumeConversationResponse(
-            entity.getId(),
-            entity.getTitle(),
-            entity.getResumeId(),
-            entity.getUpdatedAt(),
-            entity.getPinnedAt() != null,
-            status.wire()
-        );
-    }
-
-    /** Sidebar pin, same affordance the interview session list carries. */
     @Transactional
     public void pinConversation(Long accountId, Long conversationId, boolean pinned) {
-        ResumeConversationEntity entity = requireConversation(accountId, conversationId);
-        entity.setPinnedAt(pinned ? LocalDateTime.now() : null);
-        conversations.updateById(entity);
+        requireConversation(accountId, conversationId);
+        workspace.setPinned(accountId, conversationId, pinned, LocalDateTime.now());
     }
 
-    /** Removes a conversation and its turns. The resume it is hung off stays in the library. */
     @Transactional
     public void deleteConversation(Long accountId, Long conversationId) {
         requireConversation(accountId, conversationId);
-        conversations.deleteById(conversationId);
+        attachments.unbind(accountId, "resume", conversationId);
+        workspace.deleteConversation(accountId, conversationId);
     }
 
-    private ResumeTurnResponse toTurn(ResumeTurnEntity entity, List<ResumeAssistantMessageResponse> messageRows) {
-        return new ResumeTurnResponse(
-            entity.getId(),
-            entity.getInstruction(),
-            entity.getStatus(),
-            entity.getCreatedAt(),
-            entity.getStartedAt(),
-            entity.getCompletedAt(),
-            messageRows
-        );
-    }
+    public List<ResumeTurnResponse> listTurns(Long accountId, Long conversationId) {
+        requireConversation(accountId, conversationId);
+        List<ResumeTurn> turns = workspace.listTurns(conversationId);
+        if (turns.isEmpty()) {
+            return List.of();
+        }
 
-    private ResumeAssistantMessageResponse toMessage(ResumeAssistantMessageEntity entity) {
-        ResumeToolGroupEntity group = toolGroups.findByMessage(entity.getId());
-        return new ResumeAssistantMessageResponse(
-            entity.getId(),
-            entity.getTurnId(),
-            entity.getContent(),
-            entity.getCreatedAt(),
-            group == null ? null : toToolGroup(group)
-        );
-    }
+        List<Long> turnIds = turns.stream().map(ResumeTurn::id).toList();
+        Map<Long, ResumeAgentRun> runByTurn = transcript.listRuns(turnIds).stream()
+            .collect(Collectors.toMap(ResumeAgentRun::turnId, Function.identity(), (first, last) -> last));
+        List<Long> runIds = List.copyOf(runByTurn.values().stream().map(ResumeAgentRun::id).toList());
+        Map<Long, List<ResumeAgentStep>> stepsByRun = transcript.listSteps(runIds).stream()
+            .collect(Collectors.groupingBy(ResumeAgentStep::runId));
+        Map<Long, List<ResumeTranscriptRepository.AssistantMessage>> messagesByTurn =
+            transcript.listMessages(turnIds).stream()
+                .collect(Collectors.groupingBy(ResumeTranscriptRepository.AssistantMessage::turnId));
 
-    private ResumeToolGroupResponse toToolGroup(ResumeToolGroupEntity group) {
-        List<ResumeToolStepResponse> steps = toolCalls.listByGroup(group.getId()).stream()
-            .map(call -> {
-                String[] badgeParts = call.getError() == null ? new String[0] : call.getError().split("\\|", 2);
-                return new ResumeToolStepResponse(
-                    call.getId(),
-                    call.getKind(),
-                    call.getLabel(),
-                    badgeParts.length > 0 ? badgeParts[0] : null,
-                    badgeParts.length > 1 ? badgeParts[1] : null,
-                    call.getChip() == null || call.getChip().isBlank()
-                        ? List.of()
-                        : List.of(call.getChip().split("\\u0000")),
-                    readDetail(call.getDetail())
-                );
-            })
-            .sorted(Comparator.comparing(ResumeToolStepResponse::id))
+        return turns.stream()
+            .map(turn -> toTurn(turn,
+                messagesByTurn.getOrDefault(turn.id(), List.of()),
+                runByTurn.get(turn.id()),
+                stepsByRun))
             .toList();
-        return new ResumeToolGroupResponse(group.getId(), group.getLabel(), group.getStatus(), steps);
+    }
+
+    /**
+     * Enqueue one instruction and report where it stands. Execution belongs to the drain:
+     * one consumer for the whole queue means a submitted turn has exactly one owner, and the
+     * path a turn takes after a restart is the path it takes every time.
+     */
+    public ResumeTurnResponse submit(
+        Long accountId,
+        Long conversationId,
+        ResumeInstructionRequest request
+    ) {
+        requireConversation(accountId, conversationId);
+        if (!request.attachmentIds().isEmpty()) {
+            attachments.requireOwned(accountId, request.attachmentIds());
+        }
+        ResumeTurn queued = ResumeTurn.queued(
+            conversationId, accountId, request.instruction().trim(),
+            request.blockIds(), request.attachmentIds(), 0, LocalDateTime.now());
+        Long turnId = workspace.enqueueTurn(queued);
+        return toTurn(workspace.findTurn(accountId, turnId).orElse(queued),
+            List.of(), null, Map.of());
+    }
+
+    /**
+     * Withdraw a turn that has not started. A turn already in flight is left alone: aborting
+     * a model call mid-way is not implemented, and pretending otherwise would report a
+     * cancellation that changed nothing.
+     */
+    @Transactional
+    public void cancel(Long accountId, Long conversationId, Long turnId) {
+        requireConversation(accountId, conversationId);
+        ResumeTurn turn = workspace.findTurn(accountId, turnId)
+            .orElseThrow(() -> BusinessException.notFound("指令轮不存在"));
+        if (!turn.conversationId().equals(conversationId)) {
+            throw BusinessException.notFound("指令轮不存在");
+        }
+        if (turn.status() != ResumeTurn.Status.QUEUED) {
+            throw BusinessException.conflict("resume_turn_running", "这条指令已经在执行，无法撤回");
+        }
+        if (!workspace.cancelQueuedTurn(turnId, LocalDateTime.now())) {
+            throw BusinessException.conflict("resume_turn_running", "这条指令已经在执行，无法撤回");
+        }
+    }
+
+    /** The document the workspace previews and selects blocks from. */
+    public ResumeDocumentResponse document(Long accountId, Long conversationId) {
+        ResumeConversation conversation = requireConversation(accountId, conversationId);
+        if (conversation.resumeId() == null) {
+            return new ResumeDocumentResponse(null, 0, List.of());
+        }
+        ResumeRevision latest = documents.latest(conversation.resumeId()).orElse(null);
+        return new ResumeDocumentResponse(
+            conversation.resumeId(),
+            latest == null ? 0 : latest.revisionNumber(),
+            latest == null
+                ? List.of()
+                : latest.document().blocks().stream()
+                    .map(block -> new ResumeDocumentResponse.Block(
+                        block.id(), block.section(), block.kind(), block.text()))
+                    .toList());
+    }
+
+    public ResumeProposalResponse proposal(Long accountId, Long proposalId) {
+        ResumePatchProposal proposal = transcript.findProposal(proposalId)
+            .orElseThrow(() -> BusinessException.notFound("提案不存在"));
+        requireConversation(accountId, proposal.conversationId());
+        return decisions.view(proposal);
+    }
+
+    /** Proposals awaiting a decision, newest first — read by the decision surface, not the stream. */
+    public List<ResumeProposalResponse> proposals(Long accountId, Long conversationId) {
+        requireConversation(accountId, conversationId);
+        return transcript.listProposals(List.of(conversationId)).stream()
+            .map(decisions::view)
+            .toList();
+    }
+
+    private ResumeConversation requireConversation(Long accountId, Long conversationId) {
+        return workspace.findConversation(accountId, conversationId)
+            .orElseThrow(() -> BusinessException.notFound("会话不存在"));
+    }
+
+    private ResumeTurnResponse toTurn(
+        ResumeTurn turn,
+        List<ResumeTranscriptRepository.AssistantMessage> messages,
+        ResumeAgentRun run,
+        Map<Long, List<ResumeAgentStep>> stepsByRun
+    ) {
+        return new ResumeTurnResponse(
+            turn.id(),
+            turn.instruction(),
+            turn.status().wire(),
+            turn.createdAt(),
+            turn.startedAt(),
+            turn.completedAt(),
+            turn.failureReason(),
+            messages.stream()
+                .map(message -> toMessage(message, run, stepsByRun))
+                .toList());
+    }
+
+    private ResumeAssistantMessageResponse toMessage(
+        ResumeTranscriptRepository.AssistantMessage message,
+        ResumeAgentRun run,
+        Map<Long, List<ResumeAgentStep>> stepsByRun
+    ) {
+        List<ResumeAgentStep> steps = run == null
+            ? List.of()
+            : stepsByRun.getOrDefault(run.id(), List.of());
+        return new ResumeAssistantMessageResponse(
+            message.id(),
+            message.turnId(),
+            message.content(),
+            message.createdAt(),
+            run == null || steps.isEmpty() ? null : toGroup(run, steps));
+    }
+
+    /**
+     * The trace header, counted from the steps that actually ran and spelled with the words the
+     * workspace already uses for a run: a kind that did not happen is left out rather than
+     * rounded into a sentence, and nothing trails an ellipsis that no truncation produced.
+     */
+    private static String summaryOf(List<ResumeAgentStep> steps) {
+        java.util.Map<ResumeAgentStep.Kind, Long> counts = steps.stream()
+            .collect(Collectors.groupingBy(ResumeAgentStep::kind, Collectors.counting()));
+        List<String> thoughts = new java.util.ArrayList<>();
+        List<String> actions = new java.util.ArrayList<>();
+        appendIfPositive(thoughts, counts.get(ResumeAgentStep.Kind.THINK), "思考 %d轮");
+        appendIfPositive(actions, counts.get(ResumeAgentStep.Kind.READ), "读%d次文件");
+        appendIfPositive(actions, counts.get(ResumeAgentStep.Kind.WRITE), "改%d次文件");
+        appendIfPositive(actions, counts.get(ResumeAgentStep.Kind.SEARCH), "查找%d次");
+        appendIfPositive(actions, counts.get(ResumeAgentStep.Kind.RUN), "执行%d次命令");
+        if (actions.isEmpty()) {
+            return String.join(" · ", thoughts);
+        }
+        if (thoughts.isEmpty()) {
+            return String.join("、", actions);
+        }
+        return String.join(" · ", thoughts) + " · " + String.join("、", actions);
+    }
+
+    private static void appendIfPositive(List<String> into, Long count, String format) {
+        if (count != null && count > 0) {
+            into.add(String.format(format, count));
+        }
+    }
+
+    /**
+     * The trace header counts what really happened in the run: how many actions it took and how
+     * many of those were tool calls the model itself initiated.
+     */
+    private ResumeToolGroupResponse toGroup(ResumeAgentRun run, List<ResumeAgentStep> steps) {
+        return new ResumeToolGroupResponse(
+            run.id(),
+            summaryOf(steps),
+            run.status() == ResumeAgentRun.Status.RUNNING ? "running" : "done",
+            steps.stream().map(this::toStep).toList());
+    }
+
+    /** The run's step vocabulary spelled in the icons the stream already renders. */
+    private static String icon(ResumeAgentStep.Kind kind) {
+        return switch (kind) {
+            case THINK -> "think";
+            case READ -> "read";
+            case SEARCH -> "search";
+            case WRITE -> "write";
+            case RUN -> "run";
+            case POLICY -> "find";
+            case PROPOSAL -> "edit";
+        };
+    }
+
+    private ResumeToolStepResponse toStep(ResumeAgentStep step) {
+        return new ResumeToolStepResponse(
+            step.id(),
+            icon(step.kind()),
+            step.label(),
+            step.badge(),
+            step.badgeTone() == null ? null : step.badgeTone().wire(),
+            step.chips(),
+            step.detail(),
+            step.files().stream()
+                .map(file -> new ResumeToolStepResponse.FileDiff(file.name(), file.add(), file.del()))
+                .toList(),
+            step.state().wire(),
+            step.error());
+    }
+
+    private ResumeConversationResponse toConversation(
+        ResumeConversation conversation,
+        ResumeConversationStatus status
+    ) {
+        return new ResumeConversationResponse(
+            conversation.id(),
+            conversation.title(),
+            conversation.resumeId(),
+            conversation.updatedAt(),
+            conversation.pinned(),
+            status.wire());
     }
 }

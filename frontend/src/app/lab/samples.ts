@@ -206,7 +206,7 @@ import type { ToolTraceStep } from '@/shared/ui'
 
 /** Tool trace gallery: coding-agent step phrases, not invented product labels. */
 export const sampleToolTrace: { summary: string; steps: ToolTraceStep[] } = {
-  summary: '思考 2轮 · 读1次文件、改1次文件、网络搜1次、查找1次、更新任务1次、执行1次命令…',
+  summary: '思考 2轮 · 读1次文件、改1次文件、网络搜1次、查找1次、更新任务1次、执行1次命令',
   steps: [
     {
       id: 'think-3',

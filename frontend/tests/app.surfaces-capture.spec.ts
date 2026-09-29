@@ -64,6 +64,29 @@ async function logIn(page: Page) {
  * reference — a state no user ever sees. `pointerIsState` is the opt-out for the frames whose
  * subject genuinely is a hover, a tooltip or an open submenu.
  */
+/**
+ * Waits until a floating element stops moving. The lab is captured with motion allowed, so a
+ * toast can be caught mid-slide and every recording of "the warning toast" is a different
+ * frame. Polling the box until two reads agree makes the resting state the thing on record,
+ * without hard-coding a duration that only happens to be long enough today.
+ */
+async function atRest(page: Page, selector: string) {
+  await page.locator(selector).first().waitFor()
+  let previous = ''
+  await expect
+    .poll(
+      async () => {
+        const box = await page.locator(selector).first().boundingBox()
+        const now = box ? `${Math.round(box.x)},${Math.round(box.y)}` : 'none'
+        const stable = now === previous
+        previous = now
+        return stable
+      },
+      { timeout: 5000 },
+    )
+    .toBe(true)
+}
+
 async function capture(
   page: Page,
   theme: Theme,
@@ -299,6 +322,7 @@ async function terminalStatesFlow(page: Page, theme: Theme) {
   await page.getByRole('button', { name: '取消' }).click()
 
   await page.getByRole('button', { name: '警告', exact: true }).click()
+  await atRest(page, '.ui-toast')
   await capture(page, theme, 'lab', 'toast-warning')
   await page.locator('.ui-toast__close').click()
   await expect(page.locator('.ui-toast')).toHaveCount(0)

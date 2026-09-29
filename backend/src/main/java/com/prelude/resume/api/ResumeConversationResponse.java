@@ -2,9 +2,7 @@ package com.prelude.resume.api;
 
 import java.time.LocalDateTime;
 
-/** Conversation list row for the sidebar. `status` is derived from the conversation's turns:
- *  {@code active} while a turn is queued or running or the conversation has no turns yet,
- *  {@code finished} once every turn is done. */
+/** One conversation row of the resume workspace sidebar. */
 public record ResumeConversationResponse(
     Long id,
     String title,

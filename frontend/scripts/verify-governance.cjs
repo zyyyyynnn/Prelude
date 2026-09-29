@@ -4,9 +4,10 @@
 /**
  * Repository governance gate for commit subjects and PR titles.
  *
- * Enforces the Conventional Commits contract specified in AGENTS.md,
- * CONTRIBUTING.md, and .github/ISSUE_TEMPLATE/01-feature.yml:
- *   <type>(<scope>): <semantic title in imperative english>
+ * The rule it enforces is the one written in CONTRIBUTING.md (提交与标题):
+ *   <type>(<scope>): <semantic title in lowercase imperative english>
+ * with no phase or process markers, and PR/Issue bodies in Chinese. Issue and PR title formats
+ * are additionally fixed by .github/ISSUE_TEMPLATE/*.
  *
  * Rules:
  * 1. Type must be one of: feat, fix, arch, refactor, test, chore, build, ci, docs, security.
@@ -79,16 +80,13 @@ function verifyCommits(baseRef = 'origin/main') {
       commits = raw.split(/\r?\n/).filter(Boolean)
     }
   } catch {
-    // Fallback to checking the latest commit when baseRef is unavailable
-    try {
-      const raw = execSync('git log -1 --format=%s', {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-      }).trim()
-      if (raw) commits = [raw]
-    } catch {
-      commits = []
-    }
+    /* A missing base ref is a checkout problem, not a clean run. Falling back to the last
+       commit here would let a branch of any length pass on the strength of one subject, so the
+       gate says what happened and leaves the step red until the range can be resolved. */
+    return [
+      `cannot resolve ${baseRef}: fetch the base branch (checkout with fetch-depth: 0) ` +
+        'or pass the range explicitly',
+    ]
   }
 
   const errors = []

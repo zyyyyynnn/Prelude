@@ -1,6 +1,7 @@
 package com.prelude.jobs;
 
 import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.integration.BackgroundJobRequested;
 import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -31,6 +32,8 @@ import static org.mockito.Mockito.verify;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class BackgroundJobPublicationRecoveryTest {
 
+    private static final String JOB_TYPE = "test.publication";
+
     @Autowired
     private BackgroundJobOperations jobs;
 
@@ -43,11 +46,12 @@ class BackgroundJobPublicationRecoveryTest {
     @MockitoBean
     private RabbitMessageOperations rabbitMessageOperations;
 
-    @org.junit.jupiter.api.BeforeEach
-    void cleanIncompletePublications() {
-        jdbcTemplate.update("DELETE FROM EVENT_PUBLICATION WHERE COMPLETION_DATE IS NULL");
-    }
-
+    /**
+     * Resubmission is driven through the predicate overload rather than the global sweep, and
+     * no rows are deleted to make room: the shared test database holds other tests' incomplete
+     * publications, and handing those to this test's mock would turn its call count into noise
+     * while a blanket cleanup would destroy the evidence those tests assert on.
+     */
     @Test
     void failedExternalizationRemainsDurableAndTheSamePublicationCanBeResubmitted() {
         doThrow(new AmqpException("broker unavailable"))
@@ -57,16 +61,18 @@ class BackgroundJobPublicationRecoveryTest {
 
         long accountId = createAccount();
         var job = jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
-            "test.publication",
+            JOB_TYPE,
             accountId,
             401L,
-            "test.publication:recovery:" + System.nanoTime(),
+            JOB_TYPE + ":recovery:" + System.nanoTime(),
             "{}"
         ));
 
         assertThat(incompletePublicationRows(job.jobId())).isEqualTo(1);
 
-        incompleteEventPublications.resubmitIncompletePublicationsOlderThan(Duration.ZERO);
+        incompleteEventPublications.resubmitIncompletePublications(
+            publication -> publication.getEvent() instanceof BackgroundJobRequested requested
+                && requested.jobId().equals(job.jobId()));
         awaitCompletedPublication(job.jobId());
 
         verify(rabbitMessageOperations, times(2))

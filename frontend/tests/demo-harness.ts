@@ -718,7 +718,7 @@ async function respond(route: Route, state: DemoState) {
           toolCalls: {
             id: 9201,
             summary:
-              '思考 2轮 · 读1次文件、改1次文件、网络搜1次、查找1次、更新任务1次、执行1次命令…',
+              '思考 2轮 · 读1次文件、改1次文件、网络搜1次、查找1次、更新任务1次、执行1次命令',
             status: 'done',
             steps: [
               {

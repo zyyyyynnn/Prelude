@@ -3,15 +3,17 @@ package com.prelude.resume.web;
 import com.prelude.BusinessException;
 import com.prelude.Result;
 import com.prelude.identity.api.CurrentAccount;
-import com.prelude.resume.api.ResumeAssistantMessageResponse;
 import com.prelude.resume.api.ResumeConversationResponse;
+import com.prelude.resume.api.ResumeCreateConversationRequest;
+import com.prelude.resume.api.ResumeDocumentResponse;
 import com.prelude.resume.api.ResumeInstructionRequest;
+import com.prelude.resume.api.ResumePinRequest;
+import com.prelude.resume.api.ResumeProposalResponse;
 import com.prelude.resume.api.ResumeTurnResponse;
-import com.prelude.resume.application.ResumeAssistantRunner;
+import com.prelude.resume.application.ResumePatchDecisionService;
 import com.prelude.resume.application.ResumeWorkspaceService;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,13 +24,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/** HTTP adapter for the resume workspace. Every path resolves the caller first. */
 @RestController
 @RequestMapping("/api/resume/workspace")
 @RequiredArgsConstructor
 public class ResumeWorkspaceController {
 
     private final ResumeWorkspaceService workspace;
-    private final ResumeAssistantRunner assistantRunner;
+    private final ResumePatchDecisionService decisions;
     private final CurrentAccount currentAccount;
 
     @GetMapping("/conversations")
@@ -37,16 +40,18 @@ public class ResumeWorkspaceController {
     }
 
     @PostMapping("/conversations")
-    public Result<ResumeConversationResponse> createConversation(@RequestBody Map<String, Long> body) {
-        return Result.success(workspace.createConversation(currentAccountId(), body.get("resumeId")));
+    public Result<ResumeConversationResponse> createConversation(
+        @Valid @RequestBody ResumeCreateConversationRequest request
+    ) {
+        return Result.success(workspace.createConversation(currentAccountId(), request.resumeId()));
     }
 
     @PutMapping("/conversations/{conversationId}/pin")
     public Result<Void> pinConversation(
         @PathVariable Long conversationId,
-        @RequestBody Map<String, Boolean> body
+        @Valid @RequestBody ResumePinRequest request
     ) {
-        workspace.pinConversation(currentAccountId(), conversationId, Boolean.TRUE.equals(body.get("pinned")));
+        workspace.pinConversation(currentAccountId(), conversationId, request.pinned());
         return Result.success();
     }
 
@@ -66,32 +71,48 @@ public class ResumeWorkspaceController {
         @PathVariable Long conversationId,
         @Valid @RequestBody ResumeInstructionRequest request
     ) {
-        Long accountId = currentAccountId();
-        ResumeTurnResponse turn = workspace.submitTurn(accountId, conversationId, request.instruction());
-        if ("running".equals(turn.status())) {
-            ResumeAssistantMessageResponse message =
-                assistantRunner.run(accountId, turn.id(), request.instruction());
-            workspace.completeTurn(accountId, turn.id());
-            return Result.success(workspace.listTurns(accountId, conversationId).stream()
-                .filter(row -> row.id().equals(turn.id()))
-                .findFirst()
-                .map(row -> new ResumeTurnResponse(
-                    row.id(),
-                    row.instruction(),
-                    row.status(),
-                    row.createdAt(),
-                    row.startedAt(),
-                    row.completedAt(),
-                    List.of(message)
-                ))
-                .orElse(turn));
-        }
-        return Result.success(turn);
+        return Result.success(workspace.submit(currentAccountId(), conversationId, request));
+    }
+
+    @DeleteMapping("/conversations/{conversationId}/turns/{turnId}")
+    public Result<Void> cancel(
+        @PathVariable Long conversationId,
+        @PathVariable Long turnId
+    ) {
+        workspace.cancel(currentAccountId(), conversationId, turnId);
+        return Result.success();
+    }
+
+    @GetMapping("/conversations/{conversationId}/document")
+    public Result<ResumeDocumentResponse> document(@PathVariable Long conversationId) {
+        return Result.success(workspace.document(currentAccountId(), conversationId));
+    }
+
+    /**
+     * The patches awaiting a decision. Deliberately its own read rather than part of the turn
+     * stream: the workspace that renders instructions stays as reviewed, and the decision
+     * surface consumes this when it is built.
+     */
+    @GetMapping("/conversations/{conversationId}/proposals")
+    public Result<List<ResumeProposalResponse>> proposals(@PathVariable Long conversationId) {
+        return Result.success(workspace.proposals(currentAccountId(), conversationId));
+    }
+
+    @PostMapping("/proposals/{proposalId}/accept")
+    public Result<ResumeProposalResponse> accept(@PathVariable Long proposalId) {
+        return Result.success(decisions.accept(currentAccountId(), proposalId));
+    }
+
+    @PostMapping("/proposals/{proposalId}/reject")
+    public Result<ResumeProposalResponse> reject(@PathVariable Long proposalId) {
+        return Result.success(decisions.reject(currentAccountId(), proposalId));
     }
 
     private Long currentAccountId() {
         Long accountId = currentAccount.idOrNull();
-        if (accountId == null) throw BusinessException.unauthorized("请先登录");
+        if (accountId == null) {
+            throw BusinessException.unauthorized("请先登录");
+        }
         return accountId;
     }
 }

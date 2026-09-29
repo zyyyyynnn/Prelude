@@ -12,9 +12,12 @@ public class ResumeTurnEntity {
     private Long conversationId;
     private Long accountId;
     private String instruction;
+    private String blockIds;
+    private String attachmentIds;
     private String status;
     private Integer queuePosition;
     private LocalDateTime createdAt;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
+    private String failureReason;
 }

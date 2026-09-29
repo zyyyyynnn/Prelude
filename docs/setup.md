@@ -45,10 +45,12 @@ npm --prefix frontend run verify:governance
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
 npm --prefix frontend run verify:demo-copy
+npm --prefix frontend run test:unit
 npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:a11y
 npm --prefix frontend run verify:visual
+npm --prefix frontend run verify:contract
 npm --prefix frontend run build
 npm --prefix frontend run verify:cascade
 npm --prefix frontend run verify:production

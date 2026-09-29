@@ -60,3 +60,13 @@ test('rejects invalid types or malformed structures', () => {
   assert.match(validateTitle('feat(resume): UpperCaseStart'), /must start with a lowercase letter/)
   assert.match(validateTitle(''), /non-empty string/)
 })
+
+test('refuses to pass when the base range cannot be resolved', () => {
+  const { verifyCommits } = require('./verify-governance.cjs')
+  /* A shallow checkout used to make this fall back to the last commit, so a branch of any
+     length could pass on one subject. An unresolvable range is now itself the failure. */
+  assert.match(
+    verifyCommits('no-such-remote/no-such-branch').join('\n'),
+    /cannot resolve no-such-remote\/no-such-branch/,
+  )
+})

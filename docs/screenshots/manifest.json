@@ -1,8 +1,8 @@
 {
-  "revision": "d06377dcc19426ee9e3440919ede4be5f23bdfd2",
-  "capturedAt": "2026-09-28T09:49:12.516Z",
+  "revision": "baba48624086edc22c36d35bac835e3e685d8037",
+  "capturedAt": "2026-09-29T08:34:59.840Z",
   "inputsMatchRevision": false,
-  "dirtyInputFiles": 82,
+  "dirtyInputFiles": 75,
   "layout": "<theme>/<area>/<name>.png",
   "themes": [
     "light",

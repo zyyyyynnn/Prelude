@@ -7,16 +7,18 @@
 | 门禁 | 断言 |
 | --- | --- |
 | `npm run check` | 格式、Oxlint type-aware lint 与 TypeScript 类型检查 |
-| `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界。入口契约按 AST 读：`from`、`import()`、`require()` 与再导出都算一次深导入，相对路径先解析到 src 内目标模块再判定。`app/` 之外只能取 `@/features/<name>` 或 `@/shared/ui`；`app/` 可以点名 feature 入口已登记的具名文件，登记同时充当「这个名字有人消费」的证据 |
+| `npm run verify:architecture` | 前端目录、依赖方向与 CSS owner 边界。入口契约按 AST 读：`from`、`import()`、`require()` 与再导出都算一次深导入，相对路径先解析到 src 内目标模块再判定。`app/` 之外只能取 `@/features/<name>` 或 `@/shared/ui`；`app/` 可以点名 feature 入口已登记的具名文件，登记同时充当「这个名字有人消费」的证据。另有两条渲染面断言：图标只能经 `shared/ui/Icon` 渲染（裸 `<Ri… />` JSX 即失败），以及 `beautiful-ui.sources.json` 每条来源的 `localPath` 必须真的存在（归因不得指向不存在的文件） |
 | `npm run verify:ui` | feature CSS 文件与 feature 样式导入为零；空规则为零；未分层元素选择器为零（元素级重置在 `@layer base`，浏览器外观覆写按 `/* browser-chrome: <理由> */` 具名豁免，选择器全文锁在登记表，标记与规则正文按完整选择器文本比对）；无消费者的类规则为零；功能 `@utility name-*` 必有字面量调用点；单一拥有者配方（登记表 + 发现制：一段 ≥3 个类 token 且点名设计系统的 `className` 字面量跨 ≥2 个文件即失败，例外具名并写明提升目标）；`ui-*__*` 与 `workspace-header__*` 只在组件内写出；`sideOffset` 只取 `OVERLAY_OFFSET` 成员；`shared/ui` 的 `cn()` 不出现插值拼接类名 |
+| `npm run verify:governance` | 提交标题与 PR 标题符合 `CONTRIBUTING.md` 第 6 条：`<type>(<scope>): <英文小写命令式>`、纯 ASCII、无 `wip`/`temp`/`patch1`/`phase1` 等过程标识。基线范围取不到即判失败，不回退成「只看最后一个提交」 |
 | `npm run verify:demo-copy` | 演示 harness 与后端策略文案镜像一致 |
 | `npm run verify:tokens` | token 登记完整且唯一；声明且有消费者的 token；被引用且已声明的 `var(--x)` 与 `atom-(--x)`；CSS 规则中的裸值（阴影、字重、边框宽度、绝对长度）按声明读取，跨行 `calc()`、`@utility` 内自定义属性、混用 `var()` 的值都在范围内，`var(--x, 0px)` 的回退值不算尺寸；`derived_tokens` 仍是引用其来源的表达式；盒尺寸与某档 `--ui-glyph-*` 等值时指名该 glyph token；读取器声明数低于阈值即失败。`%`/`em`/`vh`/`vw` 放行；技术必需的裸值在规则内标 `geometry-exempt: <理由>`。样式表之外的几何由 markup 读取器覆盖：`.tsx` 里的 Tailwind 任意值与无单位内联样式；图表内部几何以具名 allowlist 豁免，且每个条目仍在源码里存在 |
 | `npm run verify:cascade` | 用构建产物实测同一元素上「注册 utility × 核心原子 / 未分层类」的同属性冲突，以及未分层类压过核心原子造成的死原子；含经 `cn(base, className)` 注入的原子。在 `npm run build` 之后执行 |
 | `npm run verify:production` | 生产产物按 chunk 不含开发态组件检查面的路由标识符，且这些标识符仍在源码树中（改名即红） |
 | `npm run verify:byok` | 四种 provider 协议暴露、设置交互与精确 DTO 行为 |
 | `npm run verify:dark` | 暗色偏好启动恢复：两种 scheme 的解析值不同，且 `dark` 类先于 `#root` 出现 |
-| `npm run verify:a11y` | 真实浏览器 Axe，覆盖 `/interview` 与 `/components-lab` × 亮/暗。每条先等被测页面画出的 landmark 再扫描；判据保留 tags 覆盖的全部严重级；失败时打印 impact、规则 id、选择器与原因文本 |
-| `npm run verify:visual` | 46 张 `*-win32.png` 像素基线：组件检查面按面板逐张（亮/暗各 15 张，每个面板都从同一固定窗口起量、按实测差额扩窗并把顶边对齐到整数滚动偏移后再取图，避免基线受前一个面板留下的滚动位置影响；WebGL 品牌球 mask 后改用几何断言）、产品面按面逐张（登录、注册、面试准备态、看板、产品内报告面、设置主题面板，亮/暗各 6 张）、404 面与窄桌面布局各一张。另有四条实测断言：折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合、每个分割线两侧间隙不小于 `--spacing-sm`、字段尾部操作位落在控件盒内、composer 尾部操作簇内所有按钮共享同一条上下边。页面扫描报告自己量到的目标数（分割线另报区域内在范围数），量到 0 个即失败 |
+| `npm run verify:a11y` | 真实浏览器 Axe，覆盖 `/interview`、`/resume` 与 `/components-lab` × 亮/暗。每条先等被测页面画出的 landmark 再扫描；判据保留 tags 覆盖的全部严重级；失败时打印 impact、规则 id、选择器与原因文本 |
+| `npm run verify:visual` | 46 张 `*-win32.png` 像素基线：组件检查面按面板逐张（亮/暗各 15 张，每个面板都从同一固定窗口起量、按实测差额扩窗并把顶边对齐到整数滚动偏移后再取图，避免基线受前一个面板留下的滚动位置影响；WebGL 品牌球 mask 后改用几何断言）、产品面按面逐张（登录、注册、面试准备态、看板、产品内报告面、设置主题面板，亮/暗各 6 张）、404 面与窄桌面布局各一张。另有四条实测断言：折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合、每条**水平**分割线两侧间隙不小于 `--spacing-sm`（竖向单边线是缩进轨，量「上下留白」是在要求它当水平线用，全应用任何一条 rail 都会假红；轨的对齐由几何断言覆盖）、字段尾部操作位落在控件盒内、composer 尾部操作簇内所有按钮共享同一条上下边。页面扫描报告自己量到的目标数（分割线另报区域内在范围数），量到 0 个即失败 |
+| `npm run verify:contract` | 简历工作区与实验台互相欠下的契约：一条助手消息一组轨迹、文件改动以实测行差芯片呈现而非写进文案、失败步留在自己那一行且整组照常收口、补丁提案的改前改后与事实风险、队列态与撤回，以及 composer 只出现能动作的控件；另断言会话列表读失败时报错而非显示「暂无会话」 |
 | `npm run test:smoke` | React 开发 StrictMode 下真实浏览器核心行为与客户端路由 |
 
 新增或修改判据先红测：种入要防的缺陷、看到 FAIL、恢复后看到 PASS。探针前后用仓库外文件副本保存与恢复目标文件。

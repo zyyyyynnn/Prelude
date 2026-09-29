@@ -108,6 +108,10 @@ prelude:
     scheduling-enabled: ${PRELUDE_JOBS_SCHEDULING_ENABLED:true}
     stale-recovery-delay-ms: ${PRELUDE_JOBS_STALE_RECOVERY_DELAY_MS:60000}
     publication-resubmission-delay-ms: ${PRELUDE_JOBS_PUBLICATION_RESUBMISSION_DELAY_MS:120000}
+  resume:
+    # The queue's only consumer. The workspace polls on the same beat, so a turn that was
+    # just submitted shows up as running within one tick rather than after a long pause.
+    queue-drain-delay-ms: ${PRELUDE_RESUME_QUEUE_DRAIN_DELAY_MS:1500}
     lease-duration-seconds: ${PRELUDE_JOBS_LEASE_DURATION_SECONDS:120}
     heartbeat-interval-seconds: ${PRELUDE_JOBS_HEARTBEAT_INTERVAL_SECONDS:30}
   sse:

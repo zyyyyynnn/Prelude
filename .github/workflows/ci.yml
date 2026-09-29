@@ -82,11 +82,16 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # The governance gate compares commit subjects against main, so this job needs the same
+      # full history the backend job gets: a shallow checkout leaves it checking one commit and
+      # calling that a pass.
       - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
 
       - uses: voidzero-dev/setup-vp@v1.19.0
         with:
-          version: '0.3.2'
+          version: '1.0.0'
           node-version: '24'
           working-directory: frontend
           run-install: 'false'
@@ -96,6 +101,15 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Cache Vite task cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules/.vite/task-cache
+          key: ${{ runner.os }}-vite-task-cache-${{ hashFiles('frontend/package-lock.json', 'frontend/vite.config.ts') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-vite-task-cache-${{ hashFiles('frontend/package-lock.json', 'frontend/vite.config.ts') }}-
+            ${{ runner.os }}-vite-task-cache-
 
       # The version comes from the @playwright/test pin, so the runner and a workstation
       # rasterise the same way instead of agreeing by luck.
@@ -153,6 +167,21 @@ jobs:
       - name: Visual regression
         working-directory: frontend
         run: npm run verify:visual
+
+      # The resume workspace's contract — the decision surface, the queue states, and which
+      # controls the composer is allowed to show. Its own lane because it pins a contract rather
+      # than a journey, and it has to fail loudly when the two drift apart.
+      - name: Verify UI contracts
+        working-directory: frontend
+        run: npm run verify:contract
+
+      - name: Verify demo copy
+        working-directory: frontend
+        run: npm run verify:demo-copy
+
+      - name: Frontend unit tests
+        working-directory: frontend
+        run: npm run test:unit
 
       # A pixel gate that fails without leaving the frames behind cannot be diagnosed: the
       # only evidence is "N pixels differ", which does not say *which* N. Upload the raw
