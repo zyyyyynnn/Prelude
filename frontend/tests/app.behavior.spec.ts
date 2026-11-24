@@ -426,7 +426,7 @@ test('@smoke routes prompt bar management actions into global settings', async (
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: '全局设置' })).toBeHidden()
 
-  await page.getByRole('button', { name: /模型：deepseek-v4-pro · 默认，思考深度：默认/ }).click()
+  await page.getByRole('button', { name: /模型：deepseek-v4-pro · 默认/ }).click()
   await page.getByRole('menuitem', { name: '管理模型' }).click()
   await expect(page.getByRole('heading', { name: '模型管理' })).toBeVisible()
   await expect(page.getByLabel('接入方式')).toContainText('DeepSeek')

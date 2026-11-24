@@ -967,7 +967,7 @@ for (const scheme of schemes) {
     const promptPanel = panels.nth(labPanels.indexOf('Prompt Bar'))
     const modelTrigger = promptPanel.getByRole('button', { name: /模型：示例模型一/ })
     await expect(modelTrigger).toContainText('示例模型一 · 默认')
-    await expect(modelTrigger).toHaveAttribute('aria-label', /思考深度：默认/)
+    await expect(modelTrigger).toHaveAttribute('aria-label', '模型：示例模型一 · 默认')
     await expect(modelTrigger.locator('svg')).toHaveCount(2)
     const attachmentText = await promptPanel
       .locator('[data-slot="prompt-bar-attachments"] .prompt-bar-attachment')

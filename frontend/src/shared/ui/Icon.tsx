@@ -11,7 +11,7 @@ export type IconGlyph = ComponentType<Record<string, unknown>>
 
 export type IconProps = SVGProps<SVGSVGElement> & {
   as: IconGlyph
-  size?: 'sm' | 'md' | 'lg' | number
+  size?: 'sm' | 'md' | 'lg'
 }
 
 const GLYPH_CLASS = {
@@ -21,12 +21,11 @@ const GLYPH_CLASS = {
 } as const
 
 export function Icon({ as: Glyph, size = 'md', className, ...rest }: IconProps) {
-  const glyphClass = typeof size === 'string' ? GLYPH_CLASS[size] : undefined
   return (
     <Glyph
       aria-hidden="true"
-      className={cn('shrink-0', glyphClass, className)}
-      size={typeof size === 'number' ? size : '1em'}
+      className={cn('shrink-0', GLYPH_CLASS[size], className)}
+      size="1em"
       {...rest}
     />
   )

@@ -268,6 +268,11 @@ test.afterAll(async () => {
   if (missing.length) {
     throw new Error(`captured in this run but absent on disk: ${missing.join(', ')}`)
   }
+  const capturedSet = new Set(captured)
+  const stale = [...onDisk].filter((relative) => !capturedSet.has(relative))
+  if (stale.length) {
+    throw new Error(`stale surface captures absent from this run: ${stale.join(', ')}`)
+  }
 
   /* Both themes are produced by the same flow, so a frame that exists in one and not the other
      is a capture that failed on one side — exactly how the dark set fell behind the light one.

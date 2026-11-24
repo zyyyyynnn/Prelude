@@ -10,12 +10,15 @@ import { isolatedDeclarationSync, transformSync } from 'oxc-transform'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const entry = `${root}src/app/main.tsx`
 const declarationEntry = `${root}src/features/report/types.ts`
+const functionDeclarationEntry = `${root}src/features/interview/components/turn-buffer.ts`
 const entrySource = readFileSync(entry, 'utf8')
 const declarationSource = readFileSync(declarationEntry, 'utf8')
+const functionDeclarationSource = readFileSync(functionDeclarationEntry, 'utf8')
 
 for (const [filename, source] of [
   ['main.tsx', entrySource],
   ['types.ts', declarationSource],
+  ['turn-buffer.ts', functionDeclarationSource],
 ]) {
   const result = parseSync(filename, source)
   assert.equal(result.errors.length, 0, `${filename} must parse without errors`)
@@ -47,6 +50,18 @@ assert.match(
   declaration.code,
   /export type StructuredInterviewReport/,
   'isolated declarations must preserve exported types',
+)
+
+const functionDeclaration = isolatedDeclarationSync('turn-buffer.ts', functionDeclarationSource)
+assert.equal(
+  functionDeclaration.errors.length,
+  0,
+  'isolated declarations must accept exported functions with explicit signatures',
+)
+assert.match(
+  functionDeclaration.code,
+  /export declare function buildOptimisticTurn/,
+  'isolated declarations must preserve exported functions',
 )
 
 const minified = minifySync('main.js', transformed.code, {

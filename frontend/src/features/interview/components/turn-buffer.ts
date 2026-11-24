@@ -7,7 +7,7 @@ export function buildOptimisticTurn(
   visible: InterviewMessageRecord[],
   content: string,
   autoStart: boolean,
-  now = Date.now(),
+  now: number = Date.now(),
 ): { messages: InterviewMessageRecord[]; assistantId: number; context: InterviewMessageRecord[] } {
   const optimisticId = now
   const assistantId = now + 1

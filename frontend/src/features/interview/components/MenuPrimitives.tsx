@@ -41,7 +41,6 @@ export function InterviewModelMenu({
   const thinkingValue = config.reasoningLevel
   const thinkingLabel = reasoningSupported ? REASONING_LABELS[thinkingValue] : null
   const triggerText = `${config.model}${thinkingLabel ? ` · ${thinkingLabel}` : ''}`
-  const ariaThinking = thinkingLabel ? `，思考深度：${thinkingLabel}` : ''
 
   return (
     <DropdownMenu
@@ -50,7 +49,7 @@ export function InterviewModelMenu({
       trigger={
         <PromptBarModelTrigger
           text={triggerText}
-          aria-label={`模型：${triggerText}${ariaThinking}`}
+          aria-label={`模型：${triggerText}`}
           disabled={saving}
         />
       }

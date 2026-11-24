@@ -731,6 +731,7 @@ html.is-theme-transitioning {
   box-sizing: border-box;
 }
 /* The active interview shell: one header band plus a scrolling body on the page background. */
+/* @internal src/features/interview/components/InterviewSession.tsx */
 @utility workspace-active {
   display: flex;
   height: 100%;

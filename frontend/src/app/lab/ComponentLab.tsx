@@ -319,7 +319,7 @@ export function ComponentLab() {
                   --font-size-2xl (40px) · display (1.15) · medium · Lora
                 </span>
               </div>
-              <p className="type-hero">页面大标题 · Prelude Typography</p>
+              <p className="type-hero">示例文本一 · type-hero</p>
             </div>
 
             <div className="flex flex-col gap-xs rounded-md border border-border-warm bg-surface p-md">
@@ -329,7 +329,7 @@ export function ComponentLab() {
                   --font-size-xl (32px) · display (1.15) · medium · Lora
                 </span>
               </div>
-              <p className="type-document-title">文档报告主标题 · Evaluation Report</p>
+              <p className="type-document-title">示例文本一，示例文本一 · type-document-title</p>
             </div>
 
             <div className="flex flex-col gap-xs rounded-md border border-border-warm bg-surface p-md">
@@ -339,7 +339,7 @@ export function ComponentLab() {
                   --font-size-lg (24px) · tight (1.25) · medium · Lora
                 </span>
               </div>
-              <p className="type-title">区块主标题 · Section Title</p>
+              <p className="type-title">示例文本一 · type-title</p>
             </div>
 
             <div className="flex flex-col gap-xs rounded-md border border-border-warm bg-surface p-md">
@@ -349,7 +349,7 @@ export function ComponentLab() {
                   --font-size-md (16px) · compact (1.4) · medium · Lora
                 </span>
               </div>
-              <p className="type-subtitle">次级副标题 · Subtitle & Subsection</p>
+              <p className="type-subtitle">示例文本一，示例文本一 · type-subtitle</p>
             </div>
 
             <div className="grid grid-cols-2 gap-sm">
@@ -360,7 +360,7 @@ export function ComponentLab() {
                     --font-size-sm (14px) · compact · Lora
                   </span>
                 </div>
-                <p className="type-label">字段与条目标签 · Field Label</p>
+                <p className="type-label">示例文本一 · type-label</p>
               </div>
 
               <div className="flex flex-col gap-xs rounded-md border border-border-warm bg-surface p-md">
@@ -370,7 +370,7 @@ export function ComponentLab() {
                     --font-size-xs (12px) · tight · Lora
                   </span>
                 </div>
-                <p className="type-eyebrow">EYEBROW · 标题引导标签</p>
+                <p className="type-eyebrow">示例文本一 · type-eyebrow</p>
               </div>
             </div>
 
@@ -401,7 +401,7 @@ export function ComponentLab() {
                   <span className="type-label">type-caption</span>
                   <span className="font-mono text-xs text-text-tertiary">12px · Lora</span>
                 </div>
-                <p className="type-caption">图注与时间戳 · 12:45 PM</p>
+                <p className="type-caption">示例文本一 · type-caption</p>
               </div>
 
               <div className="flex flex-col gap-xs rounded-md border border-border-warm bg-surface p-md">
@@ -409,7 +409,7 @@ export function ComponentLab() {
                   <span className="type-label">type-meta</span>
                   <span className="font-mono text-xs text-text-tertiary">12px · Inter</span>
                 </div>
-                <p className="type-meta">计数与辅助说明 · 共 12 个条目</p>
+                <p className="type-meta">示例文本一 · type-meta</p>
               </div>
 
               <div className="flex flex-col gap-xs rounded-md border border-border-warm bg-surface p-md">
@@ -417,7 +417,7 @@ export function ComponentLab() {
                   <span className="type-label">type-metric</span>
                   <span className="font-mono text-xs text-text-tertiary">32px · Tabular</span>
                 </div>
-                <p className="type-metric">92.8%</p>
+                <p className="type-metric">00.0% · type-metric</p>
               </div>
             </div>
           </div>
