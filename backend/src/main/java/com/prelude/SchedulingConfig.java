@@ -9,12 +9,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * the beans register, the delays read from configuration, and nothing ever runs.
  *
  * <p>The default task scheduler is single-threaded, which is the intended shape here: a pass
- * must not overlap itself, and both passes are bounded queries. Both are also claim-checked —
- * recovery wins the lease transition as a compare-and-set, so a second instance finds nothing
- * to do rather than double-publishing. That makes the passes safe to leave enabled when the
- * deployment scales out; nothing in this application scales out today, and
- * {@code prelude.jobs.scheduling-enabled} is the switch that turns them off if a future one
- * needs a single designated runner.
+ * must not overlap itself. Job recovery is bounded and claim-checked with compare-and-set.
+ * Publication resubmission is bounded by batch size and maximum in-flight count, but relies on
+ * the framework's in-process tracking; scaling out requires a single designated scheduler or a
+ * database-backed claim mechanism. {@code prelude.jobs.scheduling-enabled} turns both passes off.
  */
 @Configuration
 @EnableScheduling

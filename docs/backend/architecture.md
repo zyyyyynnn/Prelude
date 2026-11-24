@@ -39,7 +39,7 @@ Port 用于外部基础设施、框架隔离或跨模块接口；普通内部类
 - `position` 拥有内置岗位与用户自定义岗位。
 - `interview` 拥有会话置顶与消息序号。置顶字段落在 `interview_session.pinned_at`，排序与过滤在内存完成。消息序号由 `interview_message.seq_num`、唯一键 `uk_message_session_seq` 与 `interview_session` 行锁共同保证：`InterviewMessageService.insertMessage` 在会话行 `SELECT … FOR UPDATE` 下分配序号，同一会话的追加跨进程串行；唯一键拒绝任何绕过分配逻辑的写入。`voice` 的回合编排只经 `interview` 的集成端口驱动会话。
 - `artifact` 拥有训练报告与分析（不回写简历）、`artifact`/`artifact_version` 正式成果基础模型（版本 immutable，发布走公开 API），以及 Analytics 视图；`jobs` 拥有报告异步任务。
-- `jobs` 的两条自愈通道由调度器周期执行：租约过期的 RUNNING 任务回收，以及 Modulith 未完成事件的补投。调度由根包 `SchedulingConfig` 的 `@EnableScheduling` 打开，`prelude.jobs.scheduling-enabled` 可整体关闭；两条通道都以 CAS 领取工作，重复执行无副作用。`SchedulingEnabledTest` 钉住开关，`BackgroundJobMaintenanceSchedulingTest` 钉住两个方法确实被登记。
+- `jobs` 的两条自愈通道由调度器周期执行：租约过期的 RUNNING 任务回收，以及 Modulith 未完成事件的补投。调度由根包 `SchedulingConfig` 的 `@EnableScheduling` 打开，`prelude.jobs.scheduling-enabled` 可整体关闭；租约回收以 CAS 领取且有批量上限，事件补投有批量与最大在途上限，当前依赖单实例调度，不宣称跨实例去重。`SchedulingEnabledTest` 钉住开关，`BackgroundJobMaintenanceSchedulingTest` 钉住两个方法确实被登记。
 - Redis 承载认证会话与实时广播，RabbitMQ 承载报告任务，MySQL 承载业务数据。
 
 ## Persistence
