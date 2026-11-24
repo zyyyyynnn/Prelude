@@ -1,8 +1,7 @@
 import { RoseThree } from '@/shared/brand/RoseThree'
 import type { ReactNode } from 'react'
 
-/** The waiting surface for a background turn: brand mark, what is happening, and an
- *  indeterminate progress rail. */
+/** The waiting surface for a background turn: brand mark and what is happening. */
 export function GeneratingCard({ title, hint }: { title: ReactNode; hint: ReactNode }) {
   return (
     <div className="generating-card">
@@ -10,9 +9,6 @@ export function GeneratingCard({ title, hint }: { title: ReactNode; hint: ReactN
       <div className="grid gap-xs">
         <h2 className="generating-title">{title}</h2>
         <p className="type-body">{hint}</p>
-      </div>
-      <div className="generating-progress-track">
-        <div className="generating-progress-indicator" />
       </div>
     </div>
   )

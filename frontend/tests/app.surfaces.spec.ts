@@ -624,7 +624,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   const modelTrigger = page.getByRole('button', { name: /模型：/ })
   await expect(modelTrigger).toContainText('deepseek-v4-pro · 默认')
   await expect(modelTrigger).not.toContainText('DeepSeek')
-  await expect(modelTrigger.locator('svg')).toHaveCount(1)
+  await expect(modelTrigger.locator('svg')).toHaveCount(2)
   await modelTrigger.screenshot({ path: test.info().outputPath('interview-model-trigger.png') })
   await modelTrigger.click()
   const modelMenu = page.locator('.ui-menu--structured[data-open]')
@@ -816,20 +816,20 @@ test('@visual keeps every composer control on one centre line', async ({ page })
    the top two panels. This list is the coverage contract: a panel added to the gallery
    without an entry fails the title assertion. */
 const labPanels = [
+  'Brand',
   'Typography',
-  'Panel',
   'Button',
   'Field',
   'SegmentedControl',
+  'Panel',
+  'App rail',
   'Prompt Bar',
   'Conversation',
-  'App rail',
   'List & Navigation',
-  'Report',
-  'Empty & Error',
   'DropdownMenu',
+  'Empty & Error',
   'Overlay & Feedback',
-  'Brand',
+  'Report',
 ] as const
 
 const panelSlug = (title: string) =>
@@ -837,6 +837,13 @@ const panelSlug = (title: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+
+/* Every panel starts from this window. Growing it to fit a tall panel and leaving it grown
+   would make each baseline a function of which panels were captured before it — inserting one
+   panel silently moved every successor, and the frames still came out the right size, so
+   nothing but the pixel diff showed it. Reset per panel and the growth below is a property of
+   the panel under test alone. */
+const labPanelWindow = { width: 1280, height: 720 }
 
 for (const scheme of schemes) {
   test(`@visual keeps every component lab panel pixel-stable in ${scheme}`, async ({ page }) => {
@@ -848,6 +855,7 @@ for (const scheme of schemes) {
     expect(titles).toEqual([...labPanels])
 
     for (const [index, title] of labPanels.entries()) {
+      await page.setViewportSize(labPanelWindow)
       const panel = panels.nth(index)
       /* The panels live inside the page's own scroll container, and an element screenshot
          can only paint the pixels that container reveals — a panel taller than the window
@@ -864,6 +872,15 @@ for (const scheme of schemes) {
           height: geometry.viewport + geometry.height - geometry.available,
         })
       }
+      /* Park the panel's top edge on an integer scroll offset. Left to the implicit scroll
+         inside toHaveScreenshot, a panel can land a fraction of a pixel off its container,
+         and that repaints every text edge in the frame — the baseline then records wherever
+         the previous panel happened to leave the scroll, not how this panel renders. */
+      await panel.evaluate((section) => {
+        const container = section.parentElement as HTMLElement
+        const delta = section.getBoundingClientRect().top - container.getBoundingClientRect().top
+        container.scrollTop = Math.round(container.scrollTop + delta)
+      })
       expect(
         await panel.evaluate(
           (section) =>
@@ -895,6 +912,80 @@ for (const scheme of schemes) {
           .toBe(1)
       }
     }
+  })
+}
+
+for (const scheme of schemes) {
+  test(`@visual keeps component lab layout contracts in ${scheme}`, async ({ page }) => {
+    await gotoComponentLab(page, scheme)
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'no-preference' })
+
+    const panels = page.locator('.workspace-page__content > section')
+    const railPanel = panels.nth(labPanels.indexOf('App rail'))
+    const expandedRail = railPanel.locator('[data-slot="lab-rail-expanded"]')
+    const collapsedRail = railPanel.locator('[data-slot="lab-rail-collapsed"]')
+    await expect(expandedRail.getByRole('group', { name: '工作区' })).toHaveCount(0)
+    await expect(collapsedRail.getByRole('group', { name: '工作区' })).toHaveCount(0)
+
+    const expand = collapsedRail.getByRole('button', { name: '展开侧栏' })
+    const primary = collapsedRail.getByRole('button', { name: '主要操作' })
+    await expect(expand).toBeVisible()
+    await expect(primary).toBeVisible()
+    const railOrder = await expand.evaluate((button) => {
+      const primaryButton = button
+        .closest('[data-slot="lab-rail-collapsed"]')!
+        .querySelector<HTMLButtonElement>('button[aria-label="主要操作"]')!
+      return button.getBoundingClientRect().bottom <= primaryButton.getBoundingClientRect().top
+    })
+    expect(railOrder).toBe(true)
+
+    const navigationPanel = panels.nth(labPanels.indexOf('List & Navigation'))
+    const navigationGap = await navigationPanel
+      .locator('[data-slot="settings-sidebar"]')
+      .evaluate((aside) => {
+        const lastSection = aside.querySelector('nav')!.lastElementChild!
+        const danger = aside.querySelector<HTMLButtonElement>('nav + div button')!
+        const gap = danger.getBoundingClientRect().top - lastSection.getBoundingClientRect().bottom
+        const minimum = Number.parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--spacing-md'),
+        )
+        return { gap, minimum }
+      })
+    expect(navigationGap.gap).toBeGreaterThanOrEqual(navigationGap.minimum)
+
+    const hero = await panels
+      .nth(labPanels.indexOf('Typography'))
+      .locator('.type-hero')
+      .evaluate((element) => ({
+        size: Number.parseFloat(getComputedStyle(element).fontSize),
+        maximum: Number.parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--font-size-2xl'),
+        ),
+      }))
+    expect(hero.size).toBe(hero.maximum)
+
+    const promptPanel = panels.nth(labPanels.indexOf('Prompt Bar'))
+    const modelTrigger = promptPanel.getByRole('button', { name: /模型：示例模型一/ })
+    await expect(modelTrigger).toContainText('示例模型一 · 默认')
+    await expect(modelTrigger).toHaveAttribute('aria-label', '模型：示例模型一 · 默认')
+    await expect(modelTrigger.locator('svg')).toHaveCount(2)
+    const attachmentText = await promptPanel
+      .locator('[data-slot="prompt-bar-attachments"] .prompt-bar-attachment')
+      .first()
+      .evaluate((chip) => {
+        const label = chip.querySelector<HTMLElement>('[tabindex="0"]')!
+        const labelRect = label.getBoundingClientRect()
+        const chipRect = chip.getBoundingClientRect()
+        const style = getComputedStyle(label)
+        return {
+          lineHeight: Number.parseFloat(style.lineHeight),
+          fontSize: Number.parseFloat(style.fontSize),
+          textBottom: labelRect.bottom,
+          chipBottom: chipRect.bottom,
+        }
+      })
+    expect(attachmentText.lineHeight).toBeGreaterThan(attachmentText.fontSize)
+    expect(attachmentText.textBottom).toBeLessThanOrEqual(attachmentText.chipBottom - 1)
   })
 }
 
@@ -1094,6 +1185,10 @@ async function gotoComponentLab(page: Page, scheme: Scheme) {
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Typography' })).toBeVisible()
   await expectScheme(page, scheme)
+  /* The gallery is all serif type. A frame taken while the webfont is still swapping paints
+     fallback metrics, so `--update-snapshots` — which captures a single early frame instead
+     of waiting for two stable ones — would commit a baseline no compare run can reproduce. */
+  await page.evaluate(() => document.fonts.ready)
 }
 
 /** A session far enough along to change what the header offers. `status` decides which of
@@ -1262,6 +1357,18 @@ async function hairlineDividerScan(page: Page, scope: string): Promise<Measured>
         return el.getBoundingClientRect().bottom - px(getComputedStyle(el).paddingBottom)
       return Math.max(...kids.map(contentBottom))
     }
+    const contentLeft = (el: Element): number => {
+      const kids = Array.from(el.children).filter(inFlow)
+      if (!kids.length)
+        return el.getBoundingClientRect().left + px(getComputedStyle(el).paddingLeft)
+      return Math.min(...kids.map(contentLeft))
+    }
+    const contentRight = (el: Element): number => {
+      const kids = Array.from(el.children).filter(inFlow)
+      if (!kids.length)
+        return el.getBoundingClientRect().right - px(getComputedStyle(el).paddingRight)
+      return Math.max(...kids.map(contentRight))
+    }
     const floor = px(getComputedStyle(document.documentElement).getPropertyValue('--spacing-sm'))
     const name = (el: Element) =>
       `${el.tagName.toLowerCase()}.${(el.getAttribute('class') ?? '').split(/\s+/).slice(0, 3).join('.')}`
@@ -1272,32 +1379,64 @@ async function hairlineDividerScan(page: Page, scope: string): Promise<Measured>
       if (!inFlow(el) || el.closest('svg')) continue
       const style = getComputedStyle(el)
       if (edges(style).length !== 1 || px(style.borderRadius) > 0) continue
+      const top = px(style.borderTopWidth) >= 1
+      const bottom = px(style.borderBottomWidth) >= 1
+      const left = px(style.borderLeftWidth) >= 1
+      const right = px(style.borderRightWidth) >= 1
       if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') continue
       const box = el.getBoundingClientRect()
       if (box.width < 8 || box.height < 2) continue
       dividers += 1
       if (el.closest(scopeSelector)) inScope += 1
-      const isTop = px(style.borderTopWidth) >= 1
-      const lineY = isTop ? box.top : box.bottom
+      if (top || bottom) {
+        const isTop = top
+        const lineY = isTop ? box.top : box.bottom
+        const overlaps = (other: Element) => {
+          const rect = other.getBoundingClientRect()
+          return rect.right > box.left + 1 && rect.left < box.right - 1
+        }
+        const siblings = el.parentElement
+          ? Array.from(el.parentElement.children).filter(
+              (s) => s !== el && inFlow(s) && overlaps(s),
+            )
+          : []
+        const next = siblings.find((s) => s.getBoundingClientRect().top >= box.top - 1)
+        const previous = [...siblings]
+          .reverse()
+          .find((s) => s.getBoundingClientRect().bottom <= box.top + 1)
+        const above = isTop
+          ? previous
+            ? lineY - contentBottom(previous)
+            : floor
+          : lineY - contentBottom(el)
+        const below = isTop ? contentTop(el) - lineY : next ? contentTop(next) - lineY : floor
+        if (above < floor - 0.6 || below < floor - 0.6) {
+          bad.push(`${name(el)} — above ${Math.round(above)}px, below ${Math.round(below)}px`)
+        }
+        continue
+      }
+
+      const isLeft = left || !right
+      const lineX = isLeft ? box.left : box.right
       const overlaps = (other: Element) => {
         const rect = other.getBoundingClientRect()
-        return rect.right > box.left + 1 && rect.left < box.right - 1
+        return rect.bottom > box.top + 1 && rect.top < box.bottom - 1
       }
       const siblings = el.parentElement
         ? Array.from(el.parentElement.children).filter((s) => s !== el && inFlow(s) && overlaps(s))
         : []
-      const next = siblings.find((s) => s.getBoundingClientRect().top >= box.top - 1)
+      const next = siblings.find((s) => s.getBoundingClientRect().left >= box.right - 1)
       const previous = [...siblings]
         .reverse()
-        .find((s) => s.getBoundingClientRect().bottom <= box.top + 1)
-      const above = isTop
+        .find((s) => s.getBoundingClientRect().right <= box.left + 1)
+      const before = isLeft
         ? previous
-          ? lineY - contentBottom(previous)
+          ? lineX - contentRight(previous)
           : floor
-        : lineY - contentBottom(el)
-      const below = isTop ? contentTop(el) - lineY : next ? contentTop(next) - lineY : floor
-      if (above < floor - 0.6 || below < floor - 0.6) {
-        bad.push(`${name(el)} — above ${Math.round(above)}px, below ${Math.round(below)}px`)
+        : lineX - contentRight(el)
+      const after = isLeft ? contentLeft(el) - lineX : next ? contentLeft(next) - lineX : floor
+      if (before < floor - 0.6 || after < floor - 0.6) {
+        bad.push(`${name(el)} — before ${Math.round(before)}px, after ${Math.round(after)}px`)
       }
     }
     return { measured: dividers, inScope, violations: bad }

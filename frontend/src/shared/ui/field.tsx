@@ -30,11 +30,13 @@ export function Field({
   label,
   htmlFor,
   hint,
+  error,
   children,
 }: {
   label: string
   htmlFor: string
   hint?: string
+  error?: string
   children: ReactNode
 }) {
   return (
@@ -43,11 +45,15 @@ export function Field({
         {label}
       </label>
       {children}
-      {hint && (
+      {error ? (
+        <span className="field-error" data-slot="field-error">
+          {error}
+        </span>
+      ) : hint ? (
         <span className="type-meta" data-slot="field-description">
           {hint}
         </span>
-      )}
+      ) : null}
     </div>
   )
 }

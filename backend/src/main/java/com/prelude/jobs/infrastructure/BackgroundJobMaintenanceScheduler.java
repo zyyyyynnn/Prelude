@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.modulith.events.IncompleteEventPublications;
+import org.springframework.modulith.events.ResubmissionOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 @ConditionalOnProperty(prefix = "prelude.jobs", name = "scheduling-enabled", havingValue = "true", matchIfMissing = true)
 public class BackgroundJobMaintenanceScheduler {
 
-    private static final int RECOVERY_BATCH = 100;
+    private static final int MAINTENANCE_BATCH = 100;
 
     private final BackgroundJobRecoveryService recoveryService;
     private final IncompleteEventPublications incompleteEventPublications;
@@ -26,7 +27,7 @@ public class BackgroundJobMaintenanceScheduler {
     @Scheduled(fixedDelayString = "${prelude.jobs.stale-recovery-delay-ms:60000}")
     public void recoverStaleRunning() {
         LocalDateTime now = LocalDateTime.now();
-        for (String jobId : recoveryService.findExpiredLeaseJobIds(now, RECOVERY_BATCH)) {
+        for (String jobId : recoveryService.findExpiredLeaseJobIds(now, MAINTENANCE_BATCH)) {
             try {
                 recoveryService.recover(jobId, now);
             } catch (RuntimeException exception) {
@@ -38,7 +39,10 @@ public class BackgroundJobMaintenanceScheduler {
     @Scheduled(fixedDelayString = "${prelude.jobs.publication-resubmission-delay-ms:120000}")
     public void resubmitIncompletePublications() {
         try {
-            incompleteEventPublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(2));
+            incompleteEventPublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
+                    .withMinAge(Duration.ofMinutes(2))
+                    .withBatchSize(MAINTENANCE_BATCH)
+                    .withMaxInFlight(MAINTENANCE_BATCH));
         } catch (RuntimeException exception) {
             log.warn("Publication resubmission pass failed; retrying next cycle", exception);
         }

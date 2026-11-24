@@ -5,7 +5,7 @@ import com.prelude.identity.api.AvatarStoragePort;
 import com.prelude.identity.api.CurrentAccount;
 import com.prelude.identity.api.UserProfileRequest;
 import com.prelude.identity.api.UserProfileResponse;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.application.port.AvatarUpload;
 import com.prelude.identity.domain.Account;
 import lombok.RequiredArgsConstructor;

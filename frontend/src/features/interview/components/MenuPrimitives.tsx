@@ -1,8 +1,8 @@
-import { Settings } from 'lucide-react'
 import { REASONING_LABELS } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
+import type { InterviewModelConfig, InterviewModelProvider } from '../types'
+import { RiSettings3Line } from '@remixicon/react'
 import {
-  PromptBarModelTrigger,
   DropdownMenu,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -10,9 +10,10 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
+  Icon,
   MenuLabel,
+  PromptBarModelTrigger,
 } from '@/shared/ui'
-import type { InterviewModelConfig, InterviewModelProvider } from '../types'
 
 export function InterviewModelMenu({
   config,
@@ -38,7 +39,8 @@ export function InterviewModelMenu({
     (config.capability.model === config.model ? config.capability : undefined)
   const reasoningSupported = capability?.reasoning ?? false
   const thinkingValue = config.reasoningLevel
-  const ariaThinking = reasoningSupported ? `，思考深度：${REASONING_LABELS[thinkingValue]}` : ''
+  const thinkingLabel = reasoningSupported ? REASONING_LABELS[thinkingValue] : null
+  const triggerText = `${config.model}${thinkingLabel ? ` · ${thinkingLabel}` : ''}`
 
   return (
     <DropdownMenu
@@ -46,10 +48,8 @@ export function InterviewModelMenu({
       layout="model"
       trigger={
         <PromptBarModelTrigger
-          text={`${config.model}${
-            reasoningSupported ? ` · ${REASONING_LABELS[thinkingValue]}` : ''
-          }`}
-          aria-label={`模型：${config.model}${ariaThinking}`}
+          text={triggerText}
+          aria-label={`模型：${triggerText}`}
           disabled={saving}
         />
       }
@@ -89,7 +89,7 @@ export function InterviewModelMenu({
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem icon={<Settings />} onClick={onManage}>
+        <DropdownMenuItem icon={<Icon as={RiSettings3Line} />} onClick={onManage}>
           管理模型
         </DropdownMenuItem>
       </DropdownMenuGroup>

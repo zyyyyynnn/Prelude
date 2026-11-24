@@ -1,6 +1,6 @@
-import { SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from '@/shared/ui'
+import { Icon, SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from '@/shared/ui'
 import { useState } from 'react'
-import { BarChart3, PanelLeft, Plus, Settings } from 'lucide-react'
+import { RiAddLine, RiBarChartLine, RiSettings3Line, RiSideBarLine } from '@remixicon/react'
 import { Outlet, useNavigate } from 'react-router'
 import { SessionGroup, SessionGroupLabel, useSessionList } from '@/features/interview'
 import { useSettings } from '@/features/settings'
@@ -34,7 +34,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
           <SidebarAction
             collapsed={collapsed}
             label="开始新面试"
-            icon={<Plus />}
+            icon={<Icon as={RiAddLine} />}
             tone="primary"
             onClick={startNewInterview}
           />
@@ -43,7 +43,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
           <SidebarAction
             collapsed={collapsed}
             label="设置"
-            icon={<Settings />}
+            icon={<Icon as={RiSettings3Line} />}
             onClick={onOpenSettings}
           />
         }
@@ -63,7 +63,12 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
           </SidebarPane>
 
           <SidebarPane kind="rail" visible={collapsed}>
-            <SidebarAction collapsed label="工作区" to="/interview" icon={<PanelLeft />} />
+            <SidebarAction
+              collapsed
+              label="面试"
+              to="/interview"
+              icon={<Icon as={RiSideBarLine} />}
+            />
           </SidebarPane>
         </div>
 
@@ -72,7 +77,7 @@ function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
             collapsed={collapsed}
             label="数据看板"
             to="/analytics"
-            icon={<BarChart3 />}
+            icon={<Icon as={RiBarChartLine} />}
           />
         </nav>
       </SidebarFrame>

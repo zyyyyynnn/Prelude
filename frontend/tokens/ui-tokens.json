@@ -46,15 +46,7 @@
     "radius": {
       "prefix": "radius",
       "description": "圆角阶梯。",
-      "tokens": [
-        "radius-xs",
-        "radius-sm",
-        "radius-md",
-        "radius-lg",
-        "radius-xl",
-        "radius-3xl",
-        "radius-full"
-      ]
+      "tokens": ["radius-sm", "radius-md", "radius-lg", "radius-xl", "radius-3xl", "radius-full"]
     },
     "shadow": {
       "prefix": "shadow",

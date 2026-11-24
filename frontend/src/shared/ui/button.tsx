@@ -24,14 +24,22 @@ export function Button({
   /** Press-and-hold only: what shows in place of the words while the control is held. */
   held?: ReactNode
 }) {
+  const variantClasses = {
+    primary: 'ui-button--primary',
+    secondary: 'ui-button--secondary',
+    ghost: 'ui-button--ghost',
+    danger: 'ui-button--danger',
+  } as const
+
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(
         'ui-button',
-        `ui-button--${variant}`,
-        `ui-button--${size}`,
-        shape && `ui-button--${shape}`,
+        variantClasses[variant],
+        size === 'icon' && 'ui-button--icon',
+        shape === 'action' && 'ui-button--action',
+        shape === 'hold' && 'ui-button--hold',
         'ui-action',
         className,
       )}

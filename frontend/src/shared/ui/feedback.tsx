@@ -1,9 +1,17 @@
 import { Dialog } from '@base-ui/react'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { CheckCircle2, Info, Loader2, OctagonX, TriangleAlert, X } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { Button } from './button'
 import { FeedbackContext, type ConfirmOptions, type NoticeTone } from './feedback-context'
+import {
+  RiCheckboxCircleLine,
+  RiCloseCircleLine,
+  RiCloseLine,
+  RiErrorWarningLine,
+  RiInformationLine,
+  RiLoader2Line,
+} from '@remixicon/react'
+import { Icon } from './Icon'
 
 const NOTICE_DURATION = 2000
 
@@ -36,12 +44,16 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         closeButton
         className="ui-toaster"
         icons={{
-          success: <CheckCircle2 />,
-          info: <Info />,
-          warning: <TriangleAlert />,
-          error: <OctagonX />,
-          loading: <Loader2 className="ui-toast__loader" />,
-          close: <X />,
+          success: <Icon as={RiCheckboxCircleLine} size="sm" />,
+          info: <Icon as={RiInformationLine} size="sm" />,
+          warning: <Icon as={RiErrorWarningLine} size="sm" />,
+          error: <Icon as={RiCloseCircleLine} size="sm" />,
+          loading: (
+            <span className="ui-toast__loader">
+              <Icon as={RiLoader2Line} size="sm" />
+            </span>
+          ),
+          close: <Icon as={RiCloseLine} size="sm" />,
         }}
         toastOptions={{
           closeButtonAriaLabel: '关闭系统提示',

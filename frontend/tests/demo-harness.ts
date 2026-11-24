@@ -602,7 +602,7 @@ async function respond(route: Route, state: DemoState) {
     const fileName = /filename="([^"]*)"/.exec(raw)?.[1] ?? ''
     if (!fileName.toLowerCase().endsWith('.pdf'))
       return fulfillProblem(route, 400, 'bad_request', '仅支持 PDF 文件')
-    // 文件名以 broken 开头用来驱动后端解析失败路径。
+    // Filenames starting with 'broken' trigger backend parse failure paths.
     if (fileName.toLowerCase().startsWith('broken'))
       return fulfillProblem(route, 400, 'bad_request', 'PDF 文本提取失败，请检查文件格式')
     const created: DemoResumeRow = {

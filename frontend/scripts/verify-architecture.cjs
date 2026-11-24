@@ -3,6 +3,7 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { parseSync, visitorKeys } = require('oxc-parser')
 const { utilityPositions } = require('./utility-names.cjs')
 
 const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..')
@@ -19,26 +20,50 @@ const blockedPackages = [
   'jspdf',
 ]
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.vue', '.css'])
-const ts = require('typescript')
+
+function parseTree(file, source) {
+  const result = parseSync(file, source, { sourceType: 'unambiguous', preserveParens: false })
+  if (result.errors.length) {
+    throw new Error(`${file}: ${result.errors.map((error) => error.message).join('; ')}`)
+  }
+  return result.program
+}
+
+function walkAst(node, visit, ancestors = []) {
+  if (!node || typeof node !== 'object') return
+  if (Array.isArray(node)) {
+    for (const child of node) walkAst(child, visit, ancestors)
+    return
+  }
+  if (typeof node.type !== 'string') return
+  visit(node, ancestors)
+  const nextAncestors = [...ancestors, node]
+  for (const key of visitorKeys[node.type] ?? []) walkAst(node[key], visit, nextAncestors)
+}
 
 function importSpecifiers(file, source) {
   const specifiers = []
-  const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
-  function visit(node) {
-    let specifier
-    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
-      specifier = node.moduleSpecifier
-    } else if (
-      ts.isCallExpression(node) &&
-      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-        (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
+  const tree = parseTree(file, source)
+  walkAst(tree, (node) => {
+    if (
+      (node.type === 'ImportDeclaration' ||
+        node.type === 'ExportNamedDeclaration' ||
+        node.type === 'ExportAllDeclaration' ||
+        node.type === 'ImportExpression') &&
+      node.source?.type === 'Literal'
     ) {
-      specifier = node.arguments[0]
+      specifiers.push(node.source.value)
+      return
     }
-    if (specifier && ts.isStringLiteralLike(specifier)) specifiers.push(specifier.text)
-    ts.forEachChild(node, visit)
-  }
-  visit(tree)
+    if (
+      node.type === 'CallExpression' &&
+      node.callee?.type === 'Identifier' &&
+      node.callee.name === 'require' &&
+      node.arguments[0]?.type === 'Literal'
+    ) {
+      specifiers.push(node.arguments[0].value)
+    }
+  })
   return specifiers
 }
 const cssImportPattern = /@import\s+(?:url\(\s*)?['"]([^'"]+)['"]\s*\)?/g
@@ -100,6 +125,59 @@ for (const name of blockedPackages) {
   if (declared[name]) violations.push(`package.json: blocked dependency ${name}`)
 }
 
+// ---------------------------------------------------------------- glyph rendering
+/* A glyph is a value, so importing one from the icon package is free. Rendering one is not:
+   `shared/ui/Icon` owns the box token, the inherited colour and the decorative `aria-hidden`,
+   and a call site that writes `<RiSearchLine />` re-decides all three in a file no
+   design-system rule reaches — which is how an icon ends up at a size no token names. */
+{
+  const bareGlyph = /^Ri[A-Z]/
+  for (const file of walk(sourceRoot).filter((entry) => path.extname(entry) === '.tsx')) {
+    const source = fs.readFileSync(file, 'utf8')
+    const tree = parseTree(file, source)
+    const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+    const rendered = new Set()
+    walkAst(tree, (node) => {
+      if (
+        (node.type === 'JSXOpeningElement' || node.type === 'JSXSelfClosingElement') &&
+        node.name?.type === 'JSXIdentifier' &&
+        bareGlyph.test(node.name.name)
+      ) {
+        rendered.add(node.name.name)
+      }
+    })
+    if (rendered.size) {
+      violations.push(
+        `${relative}: bare glyph render of ${[...rendered].join(', ')} — a glyph renders through <Icon as={…} />`,
+      )
+    }
+  }
+}
+
+// ---------------------------------------------------------------- adopted source provenance
+/* `beautiful-ui.sources.json` is the attribution record for vendored components: upstream
+   name, upstream file, and the local file that now carries the code. The upstream fields
+   describe someone else's tree and cannot be checked from here; `localPath` can, and a
+   renamed local file leaves an attribution pointing at nothing — the one record whose whole
+   job is to be findable. */
+{
+  const sourcesFile = path.join(root, 'beautiful-ui.sources.json')
+  if (fs.existsSync(sourcesFile)) {
+    const parsed = JSON.parse(fs.readFileSync(sourcesFile, 'utf8'))
+    for (const entry of parsed.sources ?? []) {
+      if (typeof entry.localPath !== 'string') {
+        violations.push(`beautiful-ui.sources.json: ${entry.component} has no localPath`)
+        continue
+      }
+      if (!fs.existsSync(path.join(root, entry.localPath))) {
+        violations.push(
+          `beautiful-ui.sources.json: ${entry.component} attributes to ${entry.localPath}, which does not exist`,
+        )
+      }
+    }
+  }
+}
+
 // ---------------------------------------------------------------- feature public entry
 /* A public entry — a feature's `index.ts`, or the design system's — is a barrel that
    re-exports chosen names and nothing else. Two failures follow from putting implementation
@@ -149,56 +227,75 @@ for (const name of blockedPackages) {
      because a lazy route bypasses an entry without anyone typing `from`. A relative specifier
      names the same file through another syntax, so it resolves and is judged the same way. */
   const patternNames = (pattern) => {
-    if (!ts.isObjectBindingPattern(pattern) && !ts.isArrayBindingPattern(pattern)) return []
-    return pattern.elements.flatMap((element) => {
-      if (!ts.isBindingElement(element)) return []
-      if (ts.isObjectBindingPattern(element.name) || ts.isArrayBindingPattern(element.name))
-        return patternNames(element.name)
-      if (element.propertyName && ts.isIdentifier(element.propertyName))
-        return [element.propertyName.text]
-      return ts.isIdentifier(element.name) ? [element.name.text] : []
-    })
+    if (!pattern) return []
+    if (pattern.type === 'Identifier') return [pattern.name]
+    if (pattern.type === 'AssignmentPattern') return patternNames(pattern.left)
+    if (pattern.type === 'RestElement') return patternNames(pattern.argument)
+    if (pattern.type === 'ArrayPattern') {
+      return pattern.elements.flatMap((element) => patternNames(element))
+    }
+    if (pattern.type === 'ObjectPattern') {
+      return pattern.properties.flatMap((property) => {
+        if (property.type === 'RestElement') return patternNames(property.argument)
+        if (property.type !== 'Property') return []
+        if (property.value?.type === 'ObjectPattern' || property.value?.type === 'ArrayPattern') {
+          return patternNames(property.value)
+        }
+        return property.key?.type === 'Identifier' ? [property.key.name] : []
+      })
+    }
+    return []
   }
 
-  const dynamicNames = (call) => {
-    let node = call
-    let anchor = node.parent
-    while (anchor) {
-      if (ts.isAwaitExpression(anchor) || ts.isParenthesizedExpression(anchor)) {
-        node = anchor
-        anchor = anchor.parent
+  const dynamicNames = (call, ancestors) => {
+    let current = call
+    for (let index = ancestors.length - 1; index >= 0; index--) {
+      const anchor = ancestors[index]
+      if (anchor.type === 'AwaitExpression') {
+        current = anchor
         continue
       }
-      /* Inside an array literal the call is one of `Promise.all`'s tasks, so the name it
-         contributes is whatever binds the matching position of the pattern it is assigned to. */
-      if (anchor.elements && ts.isArrayLiteralExpression(anchor)) {
-        const position = anchor.elements.findIndex((element) => element === node)
-        let bound = anchor.parent
-        while (bound && ts.isAwaitExpression(bound)) bound = bound.parent
+      if (anchor.type === 'ArrayExpression') {
+        const position = anchor.elements.indexOf(current)
+        let callIndex = index - 1
+        while (
+          callIndex >= 0 &&
+          !['CallExpression', 'VariableDeclaration', 'AssignmentExpression'].includes(
+            ancestors[callIndex].type,
+          )
+        ) {
+          callIndex--
+        }
+        const bound = ancestors[callIndex]
+        let declarationIndex = callIndex - 1
+        while (
+          declarationIndex >= 0 &&
+          ['AwaitExpression', 'ParenthesizedExpression'].includes(ancestors[declarationIndex].type)
+        ) {
+          declarationIndex--
+        }
+        const declaration = ancestors[declarationIndex]
         const pattern =
-          bound && ts.isCallExpression(bound)
-            ? (() => {
-                let declaration = bound.parent
-                while (declaration && ts.isAwaitExpression(declaration))
-                  declaration = declaration.parent
-                if (declaration && ts.isVariableDeclaration(declaration)) return declaration.name
-                if (
-                  declaration &&
-                  ts.isBinaryExpression(declaration) &&
-                  ts.isArrayBindingPattern(declaration.left)
-                )
-                  return declaration.left
-                return undefined
-              })()
-            : undefined
-        const element =
-          pattern && ts.isArrayBindingPattern(pattern) ? pattern.elements[position] : undefined
-        return element && ts.isBindingElement(element) ? patternNames(element.name) : []
+          declaration?.type === 'VariableDeclaration'
+            ? declaration.id
+            : declaration?.type === 'VariableDeclarator'
+              ? declaration.id
+              : declaration?.type === 'AssignmentExpression'
+                ? declaration.left
+                : bound?.type === 'VariableDeclarator'
+                  ? bound.id
+                  : undefined
+        const element = pattern?.type === 'ArrayPattern' ? pattern.elements[position] : undefined
+        return patternNames(element)
       }
-      if (ts.isPropertyAccessExpression(anchor)) return [anchor.name.text]
-      if (ts.isVariableDeclaration(anchor)) return patternNames(anchor.name)
-      if (ts.isBinaryExpression(anchor) && anchor.operatorToken.kind === ts.SyntaxKind.EqualsToken)
+      if (anchor.type === 'MemberExpression') {
+        return anchor.property.type === 'Identifier' ? [anchor.property.name] : []
+      }
+      if (anchor.type === 'VariableDeclarator') return patternNames(anchor.id)
+      if (anchor.type === 'VariableDeclaration') return patternNames(anchor.id)
+      if (anchor.type === 'AssignmentExpression' && anchor.operator === '=') {
         return patternNames(anchor.left)
+      }
       return []
     }
     return []
@@ -206,39 +303,47 @@ for (const name of blockedPackages) {
 
   const moduleReads = (file) => {
     const source = fs.readFileSync(file, 'utf8')
-    const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
+    const tree = parseTree(file, source)
     const reads = []
-    const visit = (node) => {
+    walkAst(tree, (node, ancestors) => {
       let specifier
       let names = []
-      if (ts.isImportDeclaration(node)) {
-        specifier = node.moduleSpecifier
-        const bindings = node.importClause?.namedBindings
-        if (bindings && ts.isNamedImports(bindings))
-          names = bindings.elements.map((element) => element.name.text)
-        else if (bindings) names = ['*']
-      } else if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
-        specifier = node.moduleSpecifier
-        const clause = node.exportClause
-        if (clause && ts.isNamedExports(clause))
-          names = clause.elements.map((element) => element.name.text)
+      if (node.type === 'ImportDeclaration' && node.source?.type === 'Literal') {
+        specifier = node.source.value
+        names = node.specifiers.flatMap((specifierNode) => {
+          if (specifierNode.type === 'ImportNamespaceSpecifier') return ['*']
+          if (specifierNode.type !== 'ImportSpecifier') return []
+          const imported = specifierNode.imported
+          return [imported.type === 'Identifier' ? imported.name : imported.value]
+        })
       } else if (
-        ts.isCallExpression(node) &&
-        node.arguments[0] &&
-        ts.isStringLiteralLike(node.arguments[0]) &&
-        (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-          (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
+        (node.type === 'ExportNamedDeclaration' || node.type === 'ExportAllDeclaration') &&
+        node.source?.type === 'Literal'
       ) {
-        specifier = node.arguments[0]
-        names = dynamicNames(node)
+        specifier = node.source.value
+        if (node.type === 'ExportNamedDeclaration') {
+          names = node.specifiers.map((specifierNode) => {
+            const exported = specifierNode.exported
+            return exported.type === 'Identifier' ? exported.name : exported.value
+          })
+        }
+      } else if (node.type === 'ImportExpression' && node.source?.type === 'Literal') {
+        specifier = node.source.value
+        names = dynamicNames(node, ancestors)
+      } else if (
+        node.type === 'CallExpression' &&
+        node.callee?.type === 'Identifier' &&
+        node.callee.name === 'require' &&
+        node.arguments[0]?.type === 'Literal'
+      ) {
+        specifier = node.arguments[0].value
+        names = dynamicNames(node, ancestors)
       }
       if (specifier) {
-        const { line } = ts.getLineAndCharacterOfPosition(tree, node.getStart(tree))
-        reads.push({ specifier: specifier.getText(tree).slice(1, -1), line: line + 1, names })
+        const line = source.slice(0, node.start).split('\n').length
+        reads.push({ specifier, line, names })
       }
-      ts.forEachChild(node, visit)
-    }
-    visit(tree)
+    })
     return reads
   }
 
@@ -255,27 +360,28 @@ for (const name of blockedPackages) {
      is registered there, and the consumer rule needs the export list. */
   const readEntry = (surface) => {
     const source = fs.readFileSync(surface.entryPath, 'utf8')
-    const tree = ts.createSourceFile(surface.entryPath, source, ts.ScriptTarget.Latest, true)
+    const tree = parseTree(surface.entryPath, source)
     const exported = []
     const byFile = new Map()
-    for (const statement of tree.statements) {
+    for (const statement of tree.body) {
       const isReexport =
-        ts.isExportDeclaration(statement) &&
-        Boolean(statement.moduleSpecifier) &&
-        Boolean(statement.exportClause) &&
-        ts.isNamedExports(statement.exportClause)
+        statement.type === 'ExportNamedDeclaration' &&
+        statement.source?.type === 'Literal' &&
+        Array.isArray(statement.specifiers)
       if (!isReexport) {
-        const line = source.slice(0, statement.getStart(tree)).split('\n').length
+        const line = source.slice(0, statement.start).split('\n').length
         violations.push(
           `${surface.label}/index.ts:${line}: a public entry may only re-export named symbols from a named file`,
         )
         continue
       }
-      const specifier = statement.moduleSpecifier.getText(tree).slice(1, -1)
+      const specifier = statement.source.value
       if (!byFile.has(specifier)) byFile.set(specifier, [])
-      for (const element of statement.exportClause.elements) {
-        exported.push(element.name.text)
-        byFile.get(specifier).push(element.name.text)
+      for (const element of statement.specifiers) {
+        const name =
+          element.exported.type === 'Identifier' ? element.exported.name : element.exported.value
+        exported.push(name)
+        byFile.get(specifier).push(name)
       }
     }
     return { exported, byFile, deepConsumed: new Set() }
@@ -364,10 +470,11 @@ for (const name of blockedPackages) {
     : []
   /* A feature directory whose name is also an ordinary English word would fire on prose,
      so the test is the directory name as a path segment or a `--<name>-` token, never a
-     bare substring. */
-  const featureReference = new RegExp(
-    `(?:/|\\b)(?:${featureNames.join('|')})(?:/|\\b)|--(?:${featureNames.join('|')})-`,
-  )
+     bare substring. With no feature directory at all the alternation would be empty and
+     match every slash, so the rule reports nothing rather than everything. */
+  const featureReference = featureNames.length
+    ? new RegExp(`(?:/|\\b)(?:${featureNames.join('|')})(?:/|\\b)|--(?:${featureNames.join('|')})-`)
+    : null
 
   /* A shared declaration that names a feature directory is a leak. Geometry that is
      one feature's presentation contract is named for its geometry (`document-columns`,
@@ -398,7 +505,7 @@ for (const name of blockedPackages) {
     for (const match of utilityPositions(sheet)) record(match[1], match.index)
   }
   for (const [name, where] of declaredNames) {
-    if (!featureReference.test(name)) continue
+    if (!featureReference || !featureReference.test(name)) continue
     if (exceptionByName.has(name)) continue
     violations.push(
       `${where.file}:${where.line}: declares ${name}, which names the feature "${name.match(featureReference)[0]}" — a shared stylesheet must not carry a feature's vocabulary`,
@@ -424,30 +531,22 @@ for (const name of blockedPackages) {
   })
   for (const file of sharedFiles) {
     const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
-    const tree = ts.createSourceFile(
-      file,
-      fs.readFileSync(file, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const check = (node) => {
+    const tree = parseTree(file, fs.readFileSync(file, 'utf8'))
+    walkAst(tree, (node) => {
       /* String literals, template spans and JSX text only: an identifier named
          `settings` is a local variable, not a claim about the product. */
       const texts = []
-      if (ts.isStringLiteralLike(node)) texts.push(node.text)
-      if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node))
-        texts.push(node.text)
-      if (ts.isJsxText(node)) texts.push(node.text)
+      if (node.type === 'Literal' && typeof node.value === 'string') texts.push(node.value)
+      if (node.type === 'TemplateElement') texts.push(node.value.raw)
+      if (node.type === 'JSXText') texts.push(node.value)
       for (const text of texts) {
-        if (featureReference.test(text)) {
+        if (featureReference && featureReference.test(text)) {
           violations.push(
             `${relative}: names the feature "${text.match(featureReference)[0]}" — a shared component must not carry a feature's vocabulary`,
           )
         }
       }
-      ts.forEachChild(node, check)
-    }
-    ts.forEachChild(tree, check)
+    })
   }
 }
 

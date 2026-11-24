@@ -1,6 +1,6 @@
-import { Printer } from 'lucide-react'
-import { Button, PageHeader, SegmentedControl } from '@/shared/ui'
 import type { InterviewSessionStatus, InterviewStageName } from '../types'
+import { RiPrinterLine } from '@remixicon/react'
+import { Button, Icon, PageHeader, SegmentedControl } from '@/shared/ui'
 
 export function WorkspaceHeader({
   title,
@@ -51,7 +51,7 @@ export function WorkspaceHeader({
           {hasReport && showingReport && (
             <div className="flex items-center gap-sm">
               <Button variant="secondary" loading={printing} onClick={onPrintReport}>
-                <Printer />
+                <Icon as={RiPrinterLine} />
                 打印报告
               </Button>
             </div>

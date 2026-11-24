@@ -1,22 +1,23 @@
-import {
-  ErrorState,
-  LoadingState,
-  HiddenFileInput,
-  SubSection,
-  Button,
-  Field,
-  FieldAction,
-  FieldActions,
-  Input,
-  Panel,
-  useFeedback,
-} from '@/shared/ui'
 import { useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Eye, EyeOff, Upload } from 'lucide-react'
 import { formText } from '@/shared/lib/form-data'
 import { fetchProfile, saveProfile, uploadAvatar } from '../api'
 import { sectionTitles } from '../settings-context'
+import { RiEyeLine, RiEyeOffLine, RiUploadLine } from '@remixicon/react'
+import {
+  Button,
+  ErrorState,
+  Field,
+  FieldAction,
+  FieldActions,
+  HiddenFileInput,
+  Icon,
+  Input,
+  LoadingState,
+  Panel,
+  SubSection,
+  useFeedback,
+} from '@/shared/ui'
 
 export function ProfilePanel() {
   const profile = useQuery({ queryKey: ['profile'], queryFn: fetchProfile })
@@ -105,7 +106,7 @@ export function ProfilePanel() {
               loading={avatar.isPending}
               onClick={() => avatarInput.current?.click()}
             >
-              <Upload />
+              <Icon as={RiUploadLine} />
               上传头像
             </Button>
           </div>
@@ -172,7 +173,7 @@ function PasswordField({
         actions={[
           <FieldAction
             label={visible ? '隐藏密码' : '显示密码'}
-            icon={visible ? <Eye /> : <EyeOff />}
+            icon={visible ? <Icon as={RiEyeLine} /> : <Icon as={RiEyeOffLine} />}
             onClick={onToggle}
           />,
         ]}

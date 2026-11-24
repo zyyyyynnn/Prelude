@@ -38,25 +38,13 @@ Prelude 以面试为核心，将面试准备、实时问答、结构化评估和
 
 ## 系统架构
 
-```mermaid
-flowchart TB
-    U[用户] --> C[React 19 客户端]
-    C --> A[Spring Boot + Spring Modulith<br/>面试 · 语音 · 上下文 · 报告 · 分析 · 身份 · 设置]
-
-    A --> L[模型网关<br/>DeepSeek · 自定义模型服务]
-    A --> D[(MySQL<br/>业务数据持久化)]
-    A --> R[(Redis<br/>认证会话与实时广播)]
-    A --> S[(S3 兼容对象存储<br/>VersityGW local/CI)]
-    A --> Q[RabbitMQ<br/>异步报告任务]
-```
-
-README 只展示系统职责分层；16 个应用模块的完整边界与依赖拓扑见[后端架构](docs/backend/architecture.md)。前端状态所有权与目录边界见[前端架构](docs/frontend/architecture.md)。
+16 个应用模块的完整边界与依赖拓扑见[后端架构](docs/backend/architecture.md)。前端状态所有权与目录边界见[前端架构](docs/frontend/architecture.md)。
 
 ## 技术栈
 
 | 层级 | 技术 | 职责 |
 | --- | --- | --- |
-| 前端应用 | React 19、React Router、TypeScript、Vite+ | 页面组合、路由导航、类型契约和统一前端工具链 |
+| 前端应用 | React 19、React Router、TypeScript、Vite+、Rolldown、Oxc | 页面组合、路由导航、类型契约和统一前端工具链 |
 | 界面基础 | Base UI、Tailwind CSS | 浮层、焦点与键盘交互原语，以及设计令牌和布局样式 |
 | 服务端状态 | TanStack Query | 请求生命周期、缓存、失效与乐观更新 |
 | 模块化后端 | Java 21、Spring Boot 4.1、Spring Modulith | 接口边界、模块化业务用例与依赖拓扑验证 |
@@ -123,8 +111,6 @@ docs/      环境、架构、质量体系与产品文档资产
 | [前端架构](docs/frontend/architecture.md) | React 目录、状态所有权与界面源码所有权 |
 | [界面质量体系](docs/quality/ui-quality-system.md) | 设计令牌、主题、可访问性与视觉验证 |
 | [设计规范](DESIGN.md) | Prelude 视觉与交互规范 |
-| [贡献指南](CONTRIBUTING.md) | 分支、验证与拉取请求要求 |
-| [安全策略](SECURITY.md) | 私密漏洞报告渠道与当前维护范围 |
 
 ## 许可证
 

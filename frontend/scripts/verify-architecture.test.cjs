@@ -236,6 +236,15 @@ test('accepts an entry that only re-exports names the app reads', () => {
   assert.equal(result.status, 0, result.stderr)
 })
 
+test('counts aliased static imports by their exported name', () => {
+  const result = verify({
+    'features/report/index.ts': "export { Thing } from './Thing'",
+    'features/report/Thing.ts': 'export const Thing = 1',
+    'app/page.tsx': "import { Thing as LocalThing } from '@/features/report'",
+  })
+  assert.equal(result.status, 0, result.stderr)
+})
+
 /* A template span's literal part is as much a claim about the product as a string literal.
    This source used to be read through `ts.isTemplateLiteralLiteralPart`, which is not a
    function in the TypeScript API — the optional call made the third claimed source silently
@@ -250,4 +259,29 @@ test('rejects shared vocabulary carried by a substituted template literal', () =
   assert.equal(result.status, 1)
   assert.match(result.stderr, /FAIL \(1\)/)
   assert.match(result.stderr, /shared\/ui\/label\.tsx: names the feature "report\/"/)
+})
+
+/* Importing a glyph is free; rendering it is what bypasses the box token, the inherited
+   colour and the decorative `aria-hidden`. The attribute position is the easy miss — a bare
+   glyph there is invisible to a scan that only looks at element children. */
+test('rejects a glyph rendered without the Icon wrapper', () => {
+  const result = verify({
+    'app/shell.tsx':
+      "import { RiSearchLine } from '@remixicon/react'\nexport const Shell = () => <div><RiSearchLine /></div>",
+    'app/trailing.tsx':
+      "import { RiCloseLine } from '@remixicon/react'\nexport const Trailing = () => <span suffix={<RiCloseLine />} />",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /bare glyph render of RiSearchLine/)
+  assert.match(result.stderr, /bare glyph render of RiCloseLine/)
+})
+
+test('accepts a glyph handed to Icon as a value', () => {
+  const result = verify({
+    'app/shell.tsx':
+      "import { RiSearchLine } from '@remixicon/react'\nimport { Icon } from '@/shared/ui'\nexport const Shell = () => <Icon as={RiSearchLine} size=\"sm\" />",
+    'shared/ui/Icon.tsx': 'export const Icon = () => null',
+    'shared/ui/index.ts': "export { Icon } from './Icon'",
+  })
+  assert.equal(result.status, 0, result.stderr)
 })

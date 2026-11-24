@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/cn'
 
 const config = {
@@ -25,6 +25,15 @@ export function RoseThree({
   const groupRef = useRef<SVGGElement>(null)
   const pathRef = useRef<SVGPathElement>(null)
   const particleRefs = useRef<Array<SVGCircleElement | null>>([])
+  const [resting, setResting] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncMotion = () => setResting(media.matches)
+    syncMotion()
+    media.addEventListener('change', syncMotion)
+    return () => media.removeEventListener('change', syncMotion)
+  }, [])
 
   useEffect(() => {
     const group = groupRef.current
@@ -32,42 +41,42 @@ export function RoseThree({
     if (!group || !path) return
     path.setAttribute('stroke-width', String(config.strokeWidth))
 
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     let frame = 0
     let startedAt: number | null = null
     const render = (now: number) => {
       if (startedAt == null) startedAt = now
       const time = now - startedAt
-      const detailScale = media.matches ? 0.72 : getDetailScale(time, speedMultiplier)
-      const progress = media.matches
+      const detailScale = resting ? 0.72 : getDetailScale(time, speedMultiplier)
+      const progress = resting
         ? 0
         : (time % (config.durationMs / speedMultiplier)) / (config.durationMs / speedMultiplier)
-      const rotation = media.matches ? 0 : getRotation(time, speedMultiplier)
+      const rotation = resting ? 0 : getRotation(time, speedMultiplier)
       group.setAttribute('transform', `rotate(${rotation.toFixed(1)} 50 50)`)
       path.setAttribute('d', buildPath(detailScale))
       particleRefs.current.forEach((node, index) => {
         if (!node) return
-        const particle = getParticle(index, progress, detailScale)
+        const particle = getParticle(index, progress, detailScale, resting)
         node.setAttribute('cx', particle.x.toFixed(2))
         node.setAttribute('cy', particle.y.toFixed(2))
         node.setAttribute('r', particle.radius.toFixed(2))
         node.setAttribute('opacity', particle.opacity.toFixed(3))
       })
-      if (!media.matches) frame = requestAnimationFrame(render)
+      if (!resting) frame = requestAnimationFrame(render)
     }
 
     frame = requestAnimationFrame(render)
     return () => cancelAnimationFrame(frame)
-  }, [speedMultiplier])
+  }, [speedMultiplier, resting])
 
   return (
     <svg
       className={cn('rose-three-loader', className)}
+      data-slot="rose-three-loader"
       viewBox="0 0 100 100"
       fill="none"
       aria-hidden="true"
     >
-      <g ref={groupRef}>
+      <g ref={groupRef} data-slot="rose-three">
         <path
           ref={pathRef}
           stroke="currentColor"
@@ -124,10 +133,14 @@ function buildPath(detailScale: number, steps = 240) {
   return path
 }
 
-function getParticle(index: number, progress: number, detailScale: number) {
+function getParticle(index: number, progress: number, detailScale: number, resting: boolean) {
   const tailOffset = index / (config.particleCount - 1)
-  const current = point(normalizeProgress(progress - tailOffset * config.trailSpan), detailScale)
-  const fade = Math.pow(1 - tailOffset, 0.56)
+  /* Under reduced motion the mark cannot sweep, and a frozen instant of the comet is a fragment
+     of a rose. Spread the same particles over the full loop at even strength and the static
+     frame is the complete figure instead. */
+  const span = resting ? 1 : config.trailSpan
+  const current = point(normalizeProgress(progress - tailOffset * span), detailScale)
+  const fade = resting ? 1 : Math.pow(1 - tailOffset, 0.56)
   return {
     x: current.x,
     y: current.y,

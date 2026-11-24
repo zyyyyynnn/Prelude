@@ -219,7 +219,6 @@ export default defineConfig(({ mode }) => {
                   'spacing',
                   'typography',
                   'sidebar-pane',
-                  'sidebar-scroll-body',
                   'is-*',
                   'p-*',
                   'px-*',
@@ -239,7 +238,14 @@ export default defineConfig(({ mode }) => {
             ],
           },
         ],
-        'shadcn/no-unknown-classes': 'error',
+        'shadcn/no-unknown-classes': [
+          'error',
+          {
+            allow: ['is-active', 'is-collapsed', 'is-error', 'is-loading', 'is-visible'],
+            message:
+              'Use Tailwind utilities or a registered @utility. State marker classes are declared in this contract.',
+          },
+        ],
       },
       settings: {
         shadcn: {
@@ -417,6 +423,29 @@ export default defineConfig(({ mode }) => {
             proxy.on('proxyReq', (proxyRequest) => proxyRequest.removeHeader('origin'))
           },
         },
+      },
+    },
+    build: {
+      target: 'es2023',
+      chunkSizeWarningLimit: 600,
+    },
+    run: {
+      cache: {
+        scripts: true,
+      },
+    },
+    staged: {
+      '*.{ts,tsx}': ['vp check --fix'],
+      '*.{json,css,html,md}': ['vp fmt --check'],
+    },
+    test: {
+      include: ['src/**/*.test.{ts,tsx}'],
+      exclude: ['tests/**', 'scripts/**', 'node_modules/**'],
+      environment: 'node',
+    },
+    pack: {
+      dts: {
+        generator: 'oxc',
       },
     },
   }

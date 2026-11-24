@@ -99,16 +99,14 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     mutationFn: () => finishInterview(sessionId),
     onSuccess: async (result) => {
       setShowReport(true)
-      client.setQueryData<InterviewSessionDetailResponse>(
-        ['interview-session', sessionId],
-        (old) =>
-          old
-            ? {
-                ...old,
-                status: result.status ?? 'generating',
-                summaryReport: result.summaryReport || old.summaryReport,
-              }
-            : old,
+      client.setQueryData<InterviewSessionDetailResponse>(['interview-session', sessionId], (old) =>
+        old
+          ? {
+              ...old,
+              status: result.status ?? 'generating',
+              summaryReport: result.summaryReport || old.summaryReport,
+            }
+          : old,
       )
       await client.invalidateQueries({ queryKey: ['interview-sessions'] })
     },

@@ -426,7 +426,7 @@ test('@smoke routes prompt bar management actions into global settings', async (
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: '全局设置' })).toBeHidden()
 
-  await page.getByRole('button', { name: /模型：deepseek-v4-pro，思考深度：默认/ }).click()
+  await page.getByRole('button', { name: /模型：deepseek-v4-pro · 默认/ }).click()
   await page.getByRole('menuitem', { name: '管理模型' }).click()
   await expect(page.getByRole('heading', { name: '模型管理' })).toBeVisible()
   await expect(page.getByLabel('接入方式')).toContainText('DeepSeek')
@@ -675,6 +675,33 @@ test('@smoke pins and deletes sessions through the session API', async ({ page }
       ({ method, path: requestPath }) => method === 'DELETE' && requestPath === '/api/interview/11',
     ),
   ).toBe(true)
+})
+
+test('@smoke animates the RoseThree loading card and follows reduced-motion changes', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await installApi(page, { requests: [] })
+  await page.goto('/components-lab')
+
+  const rose = page.locator('[data-slot="rose-three"]')
+  await expect(rose).toHaveAttribute('transform', /rotate\(/)
+  const firstFrame = await rose.getAttribute('transform')
+  await expect.poll(() => rose.getAttribute('transform')).not.toBe(firstFrame)
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect.poll(() => rose.getAttribute('transform')).toBe('rotate(0.0 50 50)')
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  )
+  await expect(rose).toHaveAttribute('transform', 'rotate(0.0 50 50)')
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await expect.poll(() => rose.getAttribute('transform')).not.toBe('rotate(0.0 50 50)')
 })
 
 test('@smoke streams an interview answer with bounded context', async ({ page }) => {
@@ -1582,7 +1609,7 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   expect(typography.label.family).toContain('Lora')
   expect(typography.value.family).toContain('Lora')
   expect(typography.value.numeric).toBe('tabular-nums')
-  expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
+  expect(typography.meta).toMatchObject({ size: '12px', weight: '400' })
   expect(typography.meta.family).toContain('Inter')
 
   const weaknessLayout = await page.locator('[data-slot="weakness-item"]').evaluate((item) => {
@@ -1673,7 +1700,8 @@ test('@smoke shows the generating surface while a finished session waits for its
   const card = page.locator('.generating-card')
   await expect(card).toBeVisible()
   await expect(card.getByRole('heading', { name: 'AI 评估报告生成中…' })).toBeVisible()
-  await expect(card.locator('.generating-progress-indicator')).toBeVisible()
+  await expect(card.locator('[data-slot="rose-three-loader"]')).toBeVisible()
+  await expect(card.locator('.generating-progress-track')).toHaveCount(0)
   // The composer and the report are both absent: this surface replaces them entirely.
   await expect(page.locator('[data-slot="prompt-bar-surface"]')).toHaveCount(0)
   await expect(page.locator('[data-slot="workspace-report"]')).toHaveCount(0)

@@ -2,7 +2,7 @@ package com.prelude.identity.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.domain.Account;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
