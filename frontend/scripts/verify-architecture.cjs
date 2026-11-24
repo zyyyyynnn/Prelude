@@ -312,7 +312,9 @@ for (const name of blockedPackages) {
         specifier = node.source.value
         names = node.specifiers.flatMap((specifierNode) => {
           if (specifierNode.type === 'ImportNamespaceSpecifier') return ['*']
-          return specifierNode.type === 'ImportSpecifier' ? [specifierNode.local.name] : []
+          if (specifierNode.type !== 'ImportSpecifier') return []
+          const imported = specifierNode.imported
+          return [imported.type === 'Identifier' ? imported.name : imported.value]
         })
       } else if (
         (node.type === 'ExportNamedDeclaration' || node.type === 'ExportAllDeclaration') &&

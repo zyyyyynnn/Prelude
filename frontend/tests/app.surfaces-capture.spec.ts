@@ -90,7 +90,6 @@ async function settle(page: Page) {
     await document.fonts.ready
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
-    await new Promise((resolve) => setTimeout(resolve, 250))
   })
 }
 

@@ -29,5 +29,5 @@
 ## 项目补充约束
 
 - 界面规范：`DESIGN.md` 为视觉与交互最高规范。UI 改动验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准。
-- GitHub 内容：PR 正文只描述最终交付、必要架构与稳定契约，禁止写入 Issue 编号或链接，禁止 `Closes`、`Fixes`、`Resolves`、`Refs` 等关联标识；Issue 关系只通过 GitHub Development 原生关系维护；验证事实只由 GitHub Checks / Actions 表达。
-- 提交与 PR 标题使用 `<type>(<scope>): <英文小写命令式语义标题>`，`type` 取 `feat|fix|arch|refactor|test|chore|build|ci|docs|security`，`scope` 使用小写字母数字与 `-`/`_`，标题仅允许 ASCII 且禁止 `wip`、`temp`、`patch1`、`phase1` 等过程标识；Issue 与 PR 正文使用中文。由 `npm --prefix frontend run verify:governance` 校验。
+- GitHub 内容：PR 正文只描述最终交付、必要架构与稳定契约，禁止写入 Issue 编号或链接，禁止 `Closes`、`Fixes`、`Resolves`、`Refs` 等关联标识；Issue 关系只通过 GitHub Development 原生关系维护。PR 正文使用中文，固定模板标题与字段名保持英文；验证摘要置于 `Evidence`，完整验证事实由 GitHub Checks / Actions 表达。
+- 提交与 PR 标题使用 `<type>(<scope>): <英文小写命令式语义标题>`，`type` 取 `feat|fix|arch|refactor|test|chore|build|ci|docs|security`，`scope` 使用小写字母数字与 `-`/`_`，标题仅允许 ASCII 且禁止 `wip`、`temp`、`patch1`、`phase1` 等过程标识；Issue 与 PR 正文使用中文，固定模板标题与字段名除外。由 `npm --prefix frontend run verify:governance` 校验。
