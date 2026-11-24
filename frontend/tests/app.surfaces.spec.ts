@@ -1357,6 +1357,18 @@ async function hairlineDividerScan(page: Page, scope: string): Promise<Measured>
         return el.getBoundingClientRect().bottom - px(getComputedStyle(el).paddingBottom)
       return Math.max(...kids.map(contentBottom))
     }
+    const contentLeft = (el: Element): number => {
+      const kids = Array.from(el.children).filter(inFlow)
+      if (!kids.length)
+        return el.getBoundingClientRect().left + px(getComputedStyle(el).paddingLeft)
+      return Math.min(...kids.map(contentLeft))
+    }
+    const contentRight = (el: Element): number => {
+      const kids = Array.from(el.children).filter(inFlow)
+      if (!kids.length)
+        return el.getBoundingClientRect().right - px(getComputedStyle(el).paddingRight)
+      return Math.max(...kids.map(contentRight))
+    }
     const floor = px(getComputedStyle(document.documentElement).getPropertyValue('--spacing-sm'))
     const name = (el: Element) =>
       `${el.tagName.toLowerCase()}.${(el.getAttribute('class') ?? '').split(/\s+/).slice(0, 3).join('.')}`
@@ -1367,37 +1379,64 @@ async function hairlineDividerScan(page: Page, scope: string): Promise<Measured>
       if (!inFlow(el) || el.closest('svg')) continue
       const style = getComputedStyle(el)
       if (edges(style).length !== 1 || px(style.borderRadius) > 0) continue
-      /* The contract is vertical clearance, so it belongs to a horizontal hairline only. A
-         single left or right border is an indent rail — measuring "above" and "below" it asks a
-         vertical rule to be a horizontal one, and every rail in the app would fail. */
-      const horizontal = px(style.borderTopWidth) >= 1 || px(style.borderBottomWidth) >= 1
-      if (!horizontal) continue
+      const top = px(style.borderTopWidth) >= 1
+      const bottom = px(style.borderBottomWidth) >= 1
+      const left = px(style.borderLeftWidth) >= 1
+      const right = px(style.borderRightWidth) >= 1
       if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') continue
       const box = el.getBoundingClientRect()
       if (box.width < 8 || box.height < 2) continue
       dividers += 1
       if (el.closest(scopeSelector)) inScope += 1
-      const isTop = px(style.borderTopWidth) >= 1
-      const lineY = isTop ? box.top : box.bottom
+      if (top || bottom) {
+        const isTop = top
+        const lineY = isTop ? box.top : box.bottom
+        const overlaps = (other: Element) => {
+          const rect = other.getBoundingClientRect()
+          return rect.right > box.left + 1 && rect.left < box.right - 1
+        }
+        const siblings = el.parentElement
+          ? Array.from(el.parentElement.children).filter(
+              (s) => s !== el && inFlow(s) && overlaps(s),
+            )
+          : []
+        const next = siblings.find((s) => s.getBoundingClientRect().top >= box.top - 1)
+        const previous = [...siblings]
+          .reverse()
+          .find((s) => s.getBoundingClientRect().bottom <= box.top + 1)
+        const above = isTop
+          ? previous
+            ? lineY - contentBottom(previous)
+            : floor
+          : lineY - contentBottom(el)
+        const below = isTop ? contentTop(el) - lineY : next ? contentTop(next) - lineY : floor
+        if (above < floor - 0.6 || below < floor - 0.6) {
+          bad.push(`${name(el)} — above ${Math.round(above)}px, below ${Math.round(below)}px`)
+        }
+        continue
+      }
+
+      const isLeft = left || !right
+      const lineX = isLeft ? box.left : box.right
       const overlaps = (other: Element) => {
         const rect = other.getBoundingClientRect()
-        return rect.right > box.left + 1 && rect.left < box.right - 1
+        return rect.bottom > box.top + 1 && rect.top < box.bottom - 1
       }
       const siblings = el.parentElement
         ? Array.from(el.parentElement.children).filter((s) => s !== el && inFlow(s) && overlaps(s))
         : []
-      const next = siblings.find((s) => s.getBoundingClientRect().top >= box.top - 1)
+      const next = siblings.find((s) => s.getBoundingClientRect().left >= box.right - 1)
       const previous = [...siblings]
         .reverse()
-        .find((s) => s.getBoundingClientRect().bottom <= box.top + 1)
-      const above = isTop
+        .find((s) => s.getBoundingClientRect().right <= box.left + 1)
+      const before = isLeft
         ? previous
-          ? lineY - contentBottom(previous)
+          ? lineX - contentRight(previous)
           : floor
-        : lineY - contentBottom(el)
-      const below = isTop ? contentTop(el) - lineY : next ? contentTop(next) - lineY : floor
-      if (above < floor - 0.6 || below < floor - 0.6) {
-        bad.push(`${name(el)} — above ${Math.round(above)}px, below ${Math.round(below)}px`)
+        : lineX - contentRight(el)
+      const after = isLeft ? contentLeft(el) - lineX : next ? contentLeft(next) - lineX : floor
+      if (before < floor - 0.6 || after < floor - 0.6) {
+        bad.push(`${name(el)} — before ${Math.round(before)}px, after ${Math.round(after)}px`)
       }
     }
     return { measured: dividers, inScope, violations: bad }

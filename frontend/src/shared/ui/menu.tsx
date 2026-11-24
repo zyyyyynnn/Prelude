@@ -197,7 +197,7 @@ export function MenuLabel({
       {detail && <span className="ui-menu__detail">{detail}</span>}
       {submenu && (
         <span className="ui-menu__chevron" aria-hidden="true">
-          <Icon as={RiArrowRightSLine} />
+          <Icon as={RiArrowRightSLine} size="sm" />
         </span>
       )}
     </>

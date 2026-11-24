@@ -44,16 +44,16 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         closeButton
         className="ui-toaster"
         icons={{
-          success: <Icon as={RiCheckboxCircleLine} />,
-          info: <Icon as={RiInformationLine} />,
-          warning: <Icon as={RiErrorWarningLine} />,
-          error: <Icon as={RiCloseCircleLine} />,
+          success: <Icon as={RiCheckboxCircleLine} size="sm" />,
+          info: <Icon as={RiInformationLine} size="sm" />,
+          warning: <Icon as={RiErrorWarningLine} size="sm" />,
+          error: <Icon as={RiCloseCircleLine} size="sm" />,
           loading: (
             <span className="ui-toast__loader">
-              <Icon as={RiLoader2Line} />
+              <Icon as={RiLoader2Line} size="sm" />
             </span>
           ),
-          close: <Icon as={RiCloseLine} />,
+          close: <Icon as={RiCloseLine} size="sm" />,
         }}
         toastOptions={{
           closeButtonAriaLabel: '关闭系统提示',

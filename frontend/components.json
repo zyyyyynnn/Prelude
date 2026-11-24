@@ -17,5 +17,5 @@
     "lib": "@/shared/lib",
     "hooks": "@/shared/lib"
   },
-  "iconLibrary": "lucide"
+  "iconLibrary": "remixicon"
 }

@@ -101,6 +101,8 @@ async function captureLab(page: Page, theme: Theme, name: string) {
   await expect(rose).toHaveAttribute('transform', /rotate\(/)
   const firstFrame = await rose.getAttribute('transform')
   await expect.poll(() => rose.getAttribute('transform')).not.toBe(firstFrame)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect(rose).toHaveAttribute('transform', 'rotate(0.0 50 50)')
   await settle(page)
   /* The lab lives in a viewport-sized scroll shell. Expand that shell to its
      content height so fullPage captures the whole gallery as one long reference. */
