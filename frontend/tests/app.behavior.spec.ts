@@ -677,16 +677,31 @@ test('@smoke pins and deletes sessions through the session API', async ({ page }
   ).toBe(true)
 })
 
-test('@smoke animates the RoseThree loading card', async ({ page }) => {
+test('@smoke animates the RoseThree loading card and follows reduced-motion changes', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await installApi(page, { requests: [] })
   await page.goto('/components-lab')
 
-  const rose = page.locator('.generating-card .rose-three-loader > g')
+  const rose = page.locator('[data-slot="rose-three"]')
   await expect(rose).toHaveAttribute('transform', /rotate\(/)
   const firstFrame = await rose.getAttribute('transform')
   await expect.poll(() => rose.getAttribute('transform')).not.toBe(firstFrame)
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect.poll(() => rose.getAttribute('transform')).toBe('rotate(0.0 50 50)')
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  )
+  await expect(rose).toHaveAttribute('transform', 'rotate(0.0 50 50)')
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await expect.poll(() => rose.getAttribute('transform')).not.toBe('rotate(0.0 50 50)')
 })
 
 test('@smoke streams an interview answer with bounded context', async ({ page }) => {
@@ -1685,7 +1700,7 @@ test('@smoke shows the generating surface while a finished session waits for its
   const card = page.locator('.generating-card')
   await expect(card).toBeVisible()
   await expect(card.getByRole('heading', { name: 'AI 评估报告生成中…' })).toBeVisible()
-  await expect(card.locator('.rose-three-loader')).toBeVisible()
+  await expect(card.locator('[data-slot="rose-three-loader"]')).toBeVisible()
   await expect(card.locator('.generating-progress-track')).toHaveCount(0)
   // The composer and the report are both absent: this surface replaces them entirely.
   await expect(page.locator('[data-slot="prompt-bar-surface"]')).toHaveCount(0)

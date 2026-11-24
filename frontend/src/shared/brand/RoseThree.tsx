@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/cn'
 
 const config = {
@@ -25,6 +25,15 @@ export function RoseThree({
   const groupRef = useRef<SVGGElement>(null)
   const pathRef = useRef<SVGPathElement>(null)
   const particleRefs = useRef<Array<SVGCircleElement | null>>([])
+  const [resting, setResting] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncMotion = () => setResting(media.matches)
+    syncMotion()
+    media.addEventListener('change', syncMotion)
+    return () => media.removeEventListener('change', syncMotion)
+  }, [])
 
   useEffect(() => {
     const group = groupRef.current
@@ -32,7 +41,6 @@ export function RoseThree({
     if (!group || !path) return
     path.setAttribute('stroke-width', String(config.strokeWidth))
 
-    const resting = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let frame = 0
     let startedAt: number | null = null
     const render = (now: number) => {
@@ -58,16 +66,17 @@ export function RoseThree({
 
     frame = requestAnimationFrame(render)
     return () => cancelAnimationFrame(frame)
-  }, [speedMultiplier])
+  }, [speedMultiplier, resting])
 
   return (
     <svg
       className={cn('rose-three-loader', className)}
+      data-slot="rose-three-loader"
       viewBox="0 0 100 100"
       fill="none"
       aria-hidden="true"
     >
-      <g ref={groupRef}>
+      <g ref={groupRef} data-slot="rose-three">
         <path
           ref={pathRef}
           stroke="currentColor"

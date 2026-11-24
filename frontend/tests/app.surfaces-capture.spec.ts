@@ -77,23 +77,11 @@ async function capture(
   const relative = `${theme}/${area}/${name}.png`
   const target = path.join(surfaceDirectory, theme, area, `${name}.png`)
   await mkdir(path.dirname(target), { recursive: true })
-  /* Windows intermittently refuses the write for a beat after the directory is created or the
-     previous frame is still held by the indexer — an `UNKNOWN: unknown error, open`. A capture
-     that dies on that leaves the theme sets asymmetric for a reason that has nothing to do with
-     the UI, so the write retries before it fails the run. */
-  for (let attempt = 1; ; attempt += 1) {
-    try {
-      await page.screenshot({
-        path: target,
-        fullPage: options.fullPage ?? false,
-        animations: 'disabled',
-      })
-      break
-    } catch (error) {
-      if (attempt >= 3) throw error
-      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
-    }
-  }
+  await page.screenshot({
+    path: target,
+    fullPage: options.fullPage ?? false,
+    animations: 'disabled',
+  })
   captured.push(relative)
 }
 
@@ -110,7 +98,7 @@ async function captureLab(page: Page, theme: Theme, name: string) {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
-  const rose = page.locator('.generating-card .rose-three-loader > g')
+  const rose = page.locator('[data-slot="rose-three"]')
   await expect(rose).toHaveAttribute('transform', /rotate\(/)
   const firstFrame = await rose.getAttribute('transform')
   await expect.poll(() => rose.getAttribute('transform')).not.toBe(firstFrame)

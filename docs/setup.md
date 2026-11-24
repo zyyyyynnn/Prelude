@@ -86,7 +86,7 @@ npm --prefix frontend run capture:surfaces
 
 生成界面参考图，写入 `docs/screenshots/<light|dark>/<interview|lab>/`（主题 × 板块）。`manifest.json` 记录提交号、路径约定与工作树是否与提交一致（`inputsMatchRevision: false` 表示图来自未提交代码）。这是随代码提交的人工回归对照资产，无自动断言。
 
-语音实时链路六帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`@demo` 链路测试的截图写入 `frontend/test-results/` 作为该次运行的诊断证据。
+语音实时链路五帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`@demo` 链路测试的截图写入 `frontend/test-results/` 作为该次运行的诊断证据。
 
 DDL 位于 `backend/src/main/resources/db/migration/`：`V20260830__establish_prelude_schema.sql` 建立 schema，其后 `V<日期>__<语义>.sql` 增量修改，`R__reference_data.sql` 幂等维护 reference data。版本文件的编辑约定见 `docs/backend/architecture.md` 的 Persistence。彻底重来时 `docker compose down -v` 空库重建。
 

@@ -381,24 +381,18 @@ export function ComponentLab() {
                   --font-size-sm (14px) · relaxed (1.6) · regular · Inter
                 </span>
               </div>
-              <p className="type-body">
-                成段正文文本，用于对话气泡、设置项说明与通用表单提示。保持舒适的行高与清晰的无衬线体字形可读性。
-              </p>
+              <p className="type-body">示例文本一，示例文本一，示例文本一。 · type-body</p>
             </div>
 
             <div className="flex flex-col gap-xs rounded-md border border-border-warm bg-surface p-md">
               <div className="flex flex-wrap items-center justify-between gap-xs">
                 <span className="type-label">type-lead & type-reading</span>
                 <span className="font-mono text-xs text-text-tertiary">
-                  --font-size-sm (14px) · copy (1.7) · Inter · 约束行宽
+                  --font-size-sm (14px) · relaxed (1.6) / copy (1.7) · Inter · 约束行宽
                 </span>
               </div>
-              <p className="type-lead">
-                导语文本 · 采用限定阅读宽度（58ch），提供舒适的首段视觉焦点。
-              </p>
-              <p className="type-reading">
-                报告正文 · 采用报告专有阅读宽度（68ch）与 copy 行高，保证长文阅读体验。
-              </p>
+              <p className="type-lead">示例文本一，示例文本一。 · type-lead</p>
+              <p className="type-reading">示例文本一，示例文本一，示例文本一。 · type-reading</p>
             </div>
 
             <div className="grid grid-cols-3 gap-sm">
