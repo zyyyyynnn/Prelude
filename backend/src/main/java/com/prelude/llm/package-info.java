@@ -1,5 +1,5 @@
 @org.springframework.modulith.ApplicationModule(
     displayName = "Llm",
-    allowedDependencies = {"identity", "identity::api", "activity"}
+    allowedDependencies = {"identity::api"}
 )
 package com.prelude.llm;

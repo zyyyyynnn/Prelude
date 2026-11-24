@@ -1,7 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
-import { Button, ScoreTile } from '@/shared/ui'
 import type { ReportCopy } from './copy'
 import type {
   StructuredInterviewReport,
@@ -9,6 +7,8 @@ import type {
   StructuredStagePerformance,
   StructuredTrainingPlan,
 } from './types'
+import { RiArrowLeftSLine, RiArrowRightSLine } from '@remixicon/react'
+import { Button, Icon, ScoreTile } from '@/shared/ui'
 
 /** A report section: the hairline that separates it from the one above, the room that line
  *  needs on both sides, and the gap binding its heading to its content. `gap="sm"` is the
@@ -207,7 +207,7 @@ export function ReportCarouselNavigation({
         disabled={index === 0}
         onClick={onPrevious}
       >
-        <ChevronLeft />
+        <Icon as={RiArrowLeftSLine} />
       </Button>
       <Button
         type="button"
@@ -217,7 +217,7 @@ export function ReportCarouselNavigation({
         disabled={index === count - 1}
         onClick={onNext}
       >
-        <ChevronRight />
+        <Icon as={RiArrowRightSLine} />
       </Button>
     </div>
   )

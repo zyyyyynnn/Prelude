@@ -2,7 +2,7 @@ package com.prelude.identity.application;
 
 import com.prelude.BusinessException;
 import com.prelude.identity.api.AvatarStoragePort;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.domain.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

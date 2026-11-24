@@ -2,9 +2,9 @@ package com.prelude.identity.application;
 
 import com.prelude.BusinessException;
 import com.prelude.identity.AccountPrincipal;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.application.port.HttpSessionAccess;
-import com.prelude.identity.api.port.OAuthBindingRepository;
+import com.prelude.identity.application.port.OAuthBindingRepository;
 import com.prelude.identity.domain.Account;
 import com.prelude.identity.domain.OAuthBinding;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,5 @@
-// @ts-expect-error node strip-types resolves the sibling TypeScript module by extension
-import { handleInterviewStreamEvent } from './interview-turn-stream.ts'
-import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { expect, test } from 'vite-plus/test'
+import { handleInterviewStreamEvent } from './interview-turn-stream'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 
 type Captured = {
@@ -67,21 +65,21 @@ function harness() {
   }
 }
 
-void test('message deltas target the assistant placeholder', () => {
+test('message deltas target the assistant placeholder', () => {
   const { captured, cache, callbacks } = harness()
   handleInterviewStreamEvent({ name: 'message', data: '你好' }, 2, 51, cache, callbacks)
-  assert.deepEqual(captured.updated, [{ id: 2, role: 'assistant', content: '你好' }])
+  expect(captured.updated).toEqual([{ id: 2, role: 'assistant', content: '你好' }])
 })
 
-void test('report_ready freezes the session and opens the report', () => {
+test('report_ready freezes the session and opens the report', () => {
   const { captured, cache, callbacks } = harness()
   handleInterviewStreamEvent({ name: 'report_ready', data: '{"ok":true}' }, 2, 51, cache, callbacks)
-  assert.equal(captured.cacheWrites[0].summaryReport, '{"ok":true}')
-  assert.equal(captured.cacheWrites[0].status, 'finished')
-  assert.deepEqual(captured.reportShown, [true])
+  expect(captured.cacheWrites[0].summaryReport).toBe('{"ok":true}')
+  expect(captured.cacheWrites[0].status).toBe('finished')
+  expect(captured.reportShown).toEqual([true])
 })
 
-void test('judge attaches score and hint to the latest user turn', () => {
+test('judge attaches score and hint to the latest user turn', () => {
   const { captured, cache, callbacks } = harness()
   handleInterviewStreamEvent(
     { name: 'judge', data: JSON.stringify({ score: 8, hint: 'clear' }) },
@@ -91,22 +89,20 @@ void test('judge attaches score and hint to the latest user turn', () => {
     callbacks,
   )
   const last = captured.lists.at(-1)
-  assert.equal(last?.[0].score, 8)
-  assert.equal(last?.[0].hint, 'clear')
-  assert.equal(last?.[1].score, undefined)
+  expect(last?.[0].score).toBe(8)
+  expect(last?.[0].hint).toBe('clear')
+  expect(last?.[1].score).toBeUndefined()
 })
 
-void test('malformed judge payload reports a parse failure', () => {
+test('malformed judge payload reports a parse failure', () => {
   const { captured, cache, callbacks } = harness()
   handleInterviewStreamEvent({ name: 'judge', data: '{bad' }, 2, 51, cache, callbacks)
-  assert.deepEqual(captured.errors, ['评分数据无法解析'])
+  expect(captured.errors).toEqual(['评分数据无法解析'])
 })
 
-void test('error frames fail the stream so the optimistic turn is discarded', () => {
+test('error frames fail the stream so the optimistic turn is discarded', () => {
   const { cache, callbacks } = harness()
-  assert.throws(
-    () =>
-      handleInterviewStreamEvent({ name: 'error', data: '登录已失效' }, 2, 51, cache, callbacks),
-    /登录已失效/,
-  )
+  expect(() =>
+    handleInterviewStreamEvent({ name: 'error', data: '登录已失效' }, 2, 51, cache, callbacks),
+  ).toThrow(/登录已失效/)
 })

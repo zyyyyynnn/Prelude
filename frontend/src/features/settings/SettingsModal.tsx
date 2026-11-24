@@ -1,6 +1,4 @@
-import { LoadingState, Dialog } from '@/shared/ui'
 import { SettingsNavigation } from './components/settings-navigation'
-import { LogOut } from 'lucide-react'
 import { Suspense, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@/features/auth'
@@ -16,6 +14,8 @@ import {
   type SettingsRequest,
   type SettingsSection,
 } from './settings-context'
+import { RiLogoutBoxLine } from '@remixicon/react'
+import { Dialog, Icon, LoadingState } from '@/shared/ui'
 
 type ResourcePanelRenderer = (request: SettingsRequest) => ReactNode
 
@@ -85,16 +85,16 @@ export function SettingsModal({
     <Dialog open={open} onOpenChange={onOpenChange} title="全局设置" layout="workspace">
       <div className="flex size-full min-h-0 overflow-hidden rounded-lg elevated-modal">
         <SettingsNavigation
-          items={sections.map(({ key, icon: Icon }) => ({
+          items={sections.map(({ key, icon: Glyph }) => ({
             key,
             label: sectionTitles[key],
-            icon: <Icon aria-hidden="true" />,
+            icon: <Icon as={Glyph} />,
           }))}
           active={section}
           onSelect={onSectionChange}
           danger={{
             label: '退出登录',
-            icon: <LogOut aria-hidden="true" />,
+            icon: <Icon as={RiLogoutBoxLine} aria-hidden="true" />,
             onSelect: () => {
               onOpenChange(false)
               void auth.signOut().then(() => navigate('/login'))

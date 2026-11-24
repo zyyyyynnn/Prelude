@@ -5,6 +5,8 @@ export { FeedbackProvider } from './feedback'
 export { useFeedback } from './feedback-context'
 export { Field, FieldAction, FieldActions, Input, Textarea } from './field'
 export { HiddenFileInput } from './file-input'
+export { Icon } from './Icon'
+export type { IconGlyph } from './Icon'
 export { GeneratingSurface } from './generating-card'
 export { InsetCard } from './inset-card'
 export {

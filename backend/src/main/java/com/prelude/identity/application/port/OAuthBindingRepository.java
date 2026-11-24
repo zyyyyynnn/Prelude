@@ -1,4 +1,4 @@
-package com.prelude.identity.api.port;
+package com.prelude.identity.application.port;
 
 import com.prelude.identity.domain.OAuthBinding;
 

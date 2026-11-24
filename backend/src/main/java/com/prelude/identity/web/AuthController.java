@@ -3,7 +3,7 @@ package com.prelude.identity.web;
 import com.prelude.Result;
 import com.prelude.identity.domain.Account;
 import com.prelude.identity.AccountPrincipal;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.application.AuthenticationService;
 import com.prelude.identity.application.OAuthLoginService;
 import com.prelude.identity.application.PendingOAuthBinding;

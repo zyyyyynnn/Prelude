@@ -1,18 +1,24 @@
-import type { LucideIcon } from 'lucide-react'
-import { BriefcaseBusiness, FileText, Palette, SquareTerminal, UserRound } from 'lucide-react'
 import { createContext, useContext } from 'react'
+import {
+  RiBriefcaseLine,
+  RiFileTextLine,
+  RiPaletteLine,
+  RiTerminalBoxLine,
+  RiUserLine,
+} from '@remixicon/react'
+import type { IconGlyph } from '@/shared/ui'
 
 export type SettingsSection = 'profile' | 'resumes' | 'positions' | 'llm' | 'theme'
 export type SettingsIntent = 'upload-resume' | 'create-position'
 
 /** The one source for the settings sections: order, title and icon. The navigation
  *  column, every panel heading and the component gallery all read this list. */
-export const sections: { key: SettingsSection; title: string; icon: LucideIcon }[] = [
-  { key: 'profile', title: '账号资料', icon: UserRound },
-  { key: 'resumes', title: '简历管理', icon: FileText },
-  { key: 'positions', title: '岗位管理', icon: BriefcaseBusiness },
-  { key: 'llm', title: '模型管理', icon: SquareTerminal },
-  { key: 'theme', title: '主题', icon: Palette },
+export const sections: { key: SettingsSection; title: string; icon: IconGlyph }[] = [
+  { key: 'profile', title: '账号资料', icon: RiUserLine },
+  { key: 'resumes', title: '简历管理', icon: RiFileTextLine },
+  { key: 'positions', title: '岗位管理', icon: RiBriefcaseLine },
+  { key: 'llm', title: '模型管理', icon: RiTerminalBoxLine },
+  { key: 'theme', title: '主题', icon: RiPaletteLine },
 ]
 
 export const sectionTitles = Object.fromEntries(

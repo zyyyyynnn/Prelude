@@ -1,8 +1,8 @@
-import { Settings } from 'lucide-react'
 import { REASONING_LABELS } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
+import type { InterviewModelConfig, InterviewModelProvider } from '../types'
+import { RiSettings3Line } from '@remixicon/react'
 import {
-  PromptBarModelTrigger,
   DropdownMenu,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -10,9 +10,10 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
+  Icon,
   MenuLabel,
+  PromptBarModelTrigger,
 } from '@/shared/ui'
-import type { InterviewModelConfig, InterviewModelProvider } from '../types'
 
 export function InterviewModelMenu({
   config,
@@ -89,7 +90,7 @@ export function InterviewModelMenu({
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem icon={<Settings />} onClick={onManage}>
+        <DropdownMenuItem icon={<Icon as={RiSettings3Line} />} onClick={onManage}>
           管理模型
         </DropdownMenuItem>
       </DropdownMenuGroup>

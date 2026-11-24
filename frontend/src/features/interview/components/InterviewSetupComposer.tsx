@@ -1,12 +1,3 @@
-import {
-  HiddenFileInput,
-  PromptBarActions,
-  Button,
-  ContextAttachment,
-  PromptBar,
-  PromptBarToggle,
-} from '@/shared/ui'
-import { Briefcase, FileText, Image, Paperclip } from 'lucide-react'
 import { useRef, useState, type FormEvent } from 'react'
 import type { AttachmentItem } from '@/features/assets'
 import type { Position } from '@/features/position'
@@ -15,6 +6,16 @@ import type { ReasoningLevel } from '@/features/settings'
 import type { InterviewModelConfig, InterviewModelProvider } from '../types'
 import { InterviewModelMenu } from './MenuPrimitives'
 import { InterviewContextMenu } from './PromptBarControls'
+import { RiAttachmentLine, RiBriefcaseLine, RiFileTextLine, RiImageLine } from '@remixicon/react'
+import {
+  Button,
+  ContextAttachment,
+  HiddenFileInput,
+  Icon,
+  PromptBar,
+  PromptBarActions,
+  PromptBarToggle,
+} from '@/shared/ui'
 
 export function InterviewSetupComposer({
   resumes,
@@ -114,7 +115,7 @@ export function InterviewSetupComposer({
             <>
               {selectedResume && (
                 <ContextAttachment
-                  icon={<FileText aria-hidden="true" />}
+                  icon={<Icon as={RiFileTextLine} aria-hidden="true" />}
                   kindLabel="简历"
                   label={selectedResume.fileName}
                   onRemove={() => setResumeId(null)}
@@ -122,7 +123,7 @@ export function InterviewSetupComposer({
               )}
               {selectedPosition && (
                 <ContextAttachment
-                  icon={<Briefcase aria-hidden="true" />}
+                  icon={<Icon as={RiBriefcaseLine} aria-hidden="true" />}
                   kindLabel="岗位"
                   label={selectedPosition.name}
                   onRemove={() => setPositionId(null)}
@@ -133,9 +134,9 @@ export function InterviewSetupComposer({
                   key={attachment.id}
                   icon={
                     attachment.image ? (
-                      <Image aria-hidden="true" />
+                      <Icon as={RiImageLine} aria-hidden="true" />
                     ) : (
-                      <Paperclip aria-hidden="true" />
+                      <Icon as={RiAttachmentLine} aria-hidden="true" />
                     )
                   }
                   kindLabel={attachment.image ? '图片' : '附件'}

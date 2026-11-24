@@ -1,7 +1,7 @@
 package com.prelude.test;
 
 import com.prelude.identity.domain.Account;
-import com.prelude.identity.api.port.AccountRepository;
+import com.prelude.identity.application.port.AccountRepository;
 import com.prelude.identity.AccountPrincipal;
 import com.prelude.identity.api.AvatarStoragePort;
 import com.prelude.identity.api.CurrentAccount;

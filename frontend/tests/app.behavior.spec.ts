@@ -677,6 +677,18 @@ test('@smoke pins and deletes sessions through the session API', async ({ page }
   ).toBe(true)
 })
 
+test('@smoke animates the RoseThree loading card', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await installApi(page, { requests: [] })
+  await page.goto('/components-lab')
+
+  const rose = page.locator('.generating-card .rose-three-loader > g')
+  await expect(rose).toHaveAttribute('transform', /rotate\(/)
+  const firstFrame = await rose.getAttribute('transform')
+  await expect.poll(() => rose.getAttribute('transform')).not.toBe(firstFrame)
+})
+
 test('@smoke streams an interview answer with bounded context', async ({ page }) => {
   const state: ApiState = {
     requests: [],
@@ -1582,7 +1594,7 @@ test('@smoke renders analytics charts and recent-score labels from the React das
   expect(typography.label.family).toContain('Lora')
   expect(typography.value.family).toContain('Lora')
   expect(typography.value.numeric).toBe('tabular-nums')
-  expect(typography.meta).toMatchObject({ size: '13px', weight: '400' })
+  expect(typography.meta).toMatchObject({ size: '12px', weight: '400' })
   expect(typography.meta.family).toContain('Inter')
 
   const weaknessLayout = await page.locator('[data-slot="weakness-item"]').evaluate((item) => {
@@ -1673,7 +1685,8 @@ test('@smoke shows the generating surface while a finished session waits for its
   const card = page.locator('.generating-card')
   await expect(card).toBeVisible()
   await expect(card.getByRole('heading', { name: 'AI 评估报告生成中…' })).toBeVisible()
-  await expect(card.locator('.generating-progress-indicator')).toBeVisible()
+  await expect(card.locator('.rose-three-loader')).toBeVisible()
+  await expect(card.locator('.generating-progress-track')).toHaveCount(0)
   // The composer and the report are both absent: this surface replaces them entirely.
   await expect(page.locator('[data-slot="prompt-bar-surface"]')).toHaveCount(0)
   await expect(page.locator('[data-slot="workspace-report"]')).toHaveCount(0)

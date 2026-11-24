@@ -1,20 +1,21 @@
-import {
-  ErrorState,
-  LoadingState,
-  Button,
-  Field,
-  Input,
-  Textarea,
-  Panel,
-  useFeedback,
-} from '@/shared/ui'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2 } from 'lucide-react'
 import { sectionTitles } from '@/features/settings'
 import { createPosition, deletePosition, fetchPositions, updatePosition } from './api'
 import { PositionRow } from './PositionRow'
 import type { Position } from './types'
+import { RiAddLine, RiDeleteBinLine } from '@remixicon/react'
+import {
+  Button,
+  ErrorState,
+  Field,
+  Icon,
+  Input,
+  LoadingState,
+  Panel,
+  Textarea,
+  useFeedback,
+} from '@/shared/ui'
 
 const emptyDraft = { name: '', systemPrompt: '' }
 
@@ -82,7 +83,7 @@ export function PositionManagementPanel() {
               disabled={save.isPending}
               onClick={() => void removePosition(editing)}
             >
-              <Trash2 aria-hidden="true" />
+              <Icon as={RiDeleteBinLine} aria-hidden="true" />
               删除岗位
             </Button>
           )}
@@ -140,7 +141,7 @@ export function PositionManagementPanel() {
                   setDraft(emptyDraft)
                 }}
               >
-                <Plus aria-hidden="true" />
+                <Icon as={RiAddLine} aria-hidden="true" />
                 新建
               </Button>
             )

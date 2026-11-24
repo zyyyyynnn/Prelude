@@ -1,6 +1,14 @@
-import { Briefcase, FileText, Paperclip, Plus, ScanSearch, Terminal, Upload } from 'lucide-react'
 import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
+import {
+  RiAddLine,
+  RiAttachmentLine,
+  RiBriefcaseLine,
+  RiFileTextLine,
+  RiScanLine,
+  RiTerminalBoxLine,
+  RiUploadLine,
+} from '@remixicon/react'
 import {
   Button,
   DropdownMenu,
@@ -11,8 +19,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
-  MenuLabel,
+  Icon,
   IconTooltip,
+  MenuLabel,
   PromptBarActions,
   PromptBarFact,
 } from '@/shared/ui'
@@ -53,19 +62,22 @@ export function InterviewContextMenu({
       layout="structured"
       trigger={
         <Button type="button" size="icon" variant="ghost" aria-label="添加面试上下文">
-          <Plus aria-hidden="true" />
+          <Icon as={RiAddLine} aria-hidden="true" />
         </Button>
       }
     >
       <DropdownMenuGroup>
         <DropdownMenuItem disabled={uploading} onClick={onUpload}>
-          <MenuLabel icon={<Paperclip />} label={uploading ? '正在上传…' : '上传附件'} />
+          <MenuLabel
+            icon={<Icon as={RiAttachmentLine} />}
+            label={uploading ? '正在上传…' : '上传附件'}
+          />
         </DropdownMenuItem>
         <DropdownMenuSubmenu
           trigger={
             <MenuLabel
               submenu
-              icon={<FileText />}
+              icon={<Icon as={RiFileTextLine} />}
               label="选择简历"
               detail={resumeName ?? '未选择'}
             />
@@ -88,7 +100,7 @@ export function InterviewContextMenu({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={onNewResume}>
-              <MenuLabel icon={<Upload />} label="新建简历" />
+              <MenuLabel icon={<Icon as={RiUploadLine} />} label="新建简历" />
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuSubmenu>
@@ -96,7 +108,7 @@ export function InterviewContextMenu({
           trigger={
             <MenuLabel
               submenu
-              icon={<Briefcase />}
+              icon={<Icon as={RiBriefcaseLine} />}
               label="选择岗位"
               detail={positionName ?? '未选择'}
             />
@@ -119,13 +131,13 @@ export function InterviewContextMenu({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={onNewPosition}>
-              <MenuLabel icon={<Plus />} label="新建岗位" />
+              <MenuLabel icon={<Icon as={RiAddLine} />} label="新建岗位" />
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuSubmenu>
         <DropdownMenuCheckboxItem checked={jdEnabled} onCheckedChange={onJdEnabledChange}>
           <MenuLabel
-            icon={<ScanSearch />}
+            icon={<Icon as={RiScanLine} />}
             label="JD 匹配"
             detail={jdEnabled ? '已开启' : '未开启'}
           />
@@ -147,8 +159,10 @@ export function InterviewContextFacts({
   return (
     <PromptBarActions>
       <LockedInterviewContextButton />
-      <PromptBarFact label={modelName} icon={<Terminal aria-hidden="true" />} />
-      {jdMatched && <PromptBarFact label="JD 匹配" icon={<ScanSearch aria-hidden="true" />} />}
+      <PromptBarFact label={modelName} icon={<Icon as={RiTerminalBoxLine} aria-hidden="true" />} />
+      {jdMatched && (
+        <PromptBarFact label="JD 匹配" icon={<Icon as={RiScanLine} aria-hidden="true" />} />
+      )}
     </PromptBarActions>
   )
 }
@@ -158,7 +172,7 @@ export function LockedInterviewContextButton() {
     <IconTooltip label="面试开始后上下文已锁定">
       <span className="inline-flex" tabIndex={0}>
         <Button type="button" size="icon" variant="ghost" aria-label="面试上下文已锁定" disabled>
-          <Plus aria-hidden="true" />
+          <Icon as={RiAddLine} aria-hidden="true" />
         </Button>
       </span>
     </IconTooltip>

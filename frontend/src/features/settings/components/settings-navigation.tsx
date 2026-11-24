@@ -33,7 +33,7 @@ export function SettingsNavigation<TSection extends string>({
           />
         ))}
       </nav>
-      <div className="mt-auto px-sm">
+      <div className="mt-auto px-sm pt-md">
         <NavItem label={danger.label} tone="danger" icon={danger.icon} onClick={danger.onSelect} />
       </div>
     </aside>
