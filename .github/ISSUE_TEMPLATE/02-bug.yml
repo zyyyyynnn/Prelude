@@ -1,57 +1,57 @@
 # yaml-language-server: $schema=https://www.schemastore.org/github-issue-forms.json
 name: Bug / Regression
-description: 可复现的错误、回归或与既定契约不一致的行为
+description: Reproducible errors, regressions, or behavior that violates an established contract
 body:
   - type: markdown
     attributes:
       value: |
-        标题使用 `fix(<scope>): <problem statement>`，描述问题本身而不是解决方案。
-        一个 Issue 只描述一个可复现问题。
+        Use `fix(<scope>): <problem statement>` for the title and describe the problem rather than the solution.
+        Describe one reproducible problem per issue.
 
   - type: textarea
     id: problem
     attributes:
-      label: 问题
-      description: 描述当前错误行为、影响及出现条件。
+      label: Problem
+      description: Describe the current incorrect behavior, its impact, and the conditions under which it occurs.
     validations:
       required: true
 
   - type: textarea
     id: reproduction
     attributes:
-      label: 复现
-      description: 给出最小、稳定、可重复的复现步骤。
+      label: Reproduction
+      description: Provide minimal, stable, and repeatable reproduction steps.
       placeholder: |
-        1. ……
-        2. ……
-        3. ……
+        1. ...
+        2. ...
+        3. ...
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: 期望
-      description: 描述既定契约下应出现的正确行为。
+      label: Expected behavior
+      description: Describe the correct behavior required by the established contract.
     validations:
       required: true
 
   - type: textarea
     id: environment
     attributes:
-      label: 环境
-      description: 仅填写与问题相关的版本、平台、浏览器、Provider 或运行条件。
+      label: Environment
+      description: Include only relevant versions, platforms, browsers, providers, or runtime conditions.
       placeholder: |
         - Branch / Commit:
         - Runtime / Browser:
-        - 其他相关条件:
+        - Other relevant conditions:
     validations:
       required: false
 
   - type: textarea
     id: supplement
     attributes:
-      label: 补充
-      description: 日志、截图、最小复现仓库或其他必要上下文。
+      label: Supplement
+      description: Logs, screenshots, a minimal reproduction repository, or other required context.
     validations:
       required: false
