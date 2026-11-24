@@ -12,6 +12,7 @@
     "test:unit": "vp test --run",
     "test:watch": "vp test",
     "verify:architecture": "node --test scripts/verify-architecture.test.cjs && node scripts/verify-architecture.cjs",
+    "verify:oxc": "node scripts/verify-oxc.mjs",
     "verify:governance": "node --test scripts/verify-governance.test.cjs && node scripts/verify-governance.cjs",
     "verify:ui": "node scripts/verify-ui-guardrails.cjs",
     "verify:demo-copy": "node scripts/verify-demo-copy.cjs",
@@ -28,39 +29,42 @@
     "verify:cascade": "node scripts/verify-ui-cascade.cjs"
   },
   "dependencies": {
-    "@base-ui/react": "1.8.0",
+    "@base-ui/react": "^1.9.0",
     "@fontsource-variable/inter": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@fontsource-variable/lora": "5.3.0",
-    "@fontsource-variable/noto-serif-sc": "5.3.0",
-    "@paper-design/shaders-react": "^0.0.81",
+    "@fontsource-variable/noto-serif-sc": "^5.3.1",
+    "@paper-design/shaders-react": "^0.0.82",
     "@remixicon/react": "^4.9.0",
-    "@tailwindcss/vite": "4.3.3",
-    "@tanstack/react-query": "5.104.0",
-    "cn": "0.4.0",
+    "@tanstack/react-query": "^5.108.4",
+    "cn": "^0.5.2",
     "echarts": "6.1.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "react-router": "8.4.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^8.5.2",
     "sonner": "2.0.8",
-    "tailwindcss": "4.3.3"
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.13.0",
-    "@playwright/test": "1.62.1",
-    "@shadcn/lint": "^0.1.0",
-    "@types/node": "24.13.3",
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.1",
+    "@shadcn/lint": "^0.2.5",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitejs/plugin-react": "6.1.1",
-    "typescript": "6.0.3",
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
-    "vite-plus": "1.0.0"
+    "@vitejs/plugin-react": "^6.3.0",
+    "oxc-minify": "^0.160.0",
+    "oxc-parser": "^0.160.0",
+    "oxc-resolver": "^11.24.2",
+    "oxc-transform": "^0.160.0",
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vite-plus": "latest"
   },
   "overrides": {
     "nanoid": "3.3.18",
-    "playwright-core": "1.62.1",
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0"
+    "playwright-core": "1.65.1",
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest"
   },
   "engines": {
     "node": "^22.22.0 || >=24.11.0"

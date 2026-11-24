@@ -4,7 +4,7 @@
 /**
  * Repository governance gate for commit subjects and PR titles.
  *
- * The rule it enforces is the one written in CONTRIBUTING.md (提交与标题):
+ * The rule it enforces is the one written in AGENTS.md (提交与标题):
  *   <type>(<scope>): <semantic title in lowercase imperative english>
  * with no phase or process markers, and PR/Issue bodies in Chinese. Issue and PR title formats
  * are additionally fixed by .github/ISSUE_TEMPLATE/*.

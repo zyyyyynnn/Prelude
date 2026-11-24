@@ -154,11 +154,8 @@ export function SidebarPane({
 }) {
   return (
     <ScrollRegion
-      className={cn(
-        'sidebar-pane',
-        kind === 'sessions' ? 'sidebar-scroll-body' : 'flex flex-col justify-end pb-sm',
-        visible && 'is-visible',
-      )}
+      className={cn('sidebar-pane', visible && 'is-visible')}
+      data-kind={kind}
       /* A pane hidden from assistive tech must not be a tab stop either. */
       focusable={kind === 'sessions' && visible}
       aria-hidden={!visible}

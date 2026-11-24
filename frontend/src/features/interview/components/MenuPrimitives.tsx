@@ -39,7 +39,9 @@ export function InterviewModelMenu({
     (config.capability.model === config.model ? config.capability : undefined)
   const reasoningSupported = capability?.reasoning ?? false
   const thinkingValue = config.reasoningLevel
-  const ariaThinking = reasoningSupported ? `，思考深度：${REASONING_LABELS[thinkingValue]}` : ''
+  const thinkingLabel = reasoningSupported ? REASONING_LABELS[thinkingValue] : null
+  const triggerText = `${config.model}${thinkingLabel ? ` · ${thinkingLabel}` : ''}`
+  const ariaThinking = thinkingLabel ? `，思考深度：${thinkingLabel}` : ''
 
   return (
     <DropdownMenu
@@ -47,10 +49,8 @@ export function InterviewModelMenu({
       layout="model"
       trigger={
         <PromptBarModelTrigger
-          text={`${config.model}${
-            reasoningSupported ? ` · ${REASONING_LABELS[thinkingValue]}` : ''
-          }`}
-          aria-label={`模型：${config.model}${ariaThinking}`}
+          text={triggerText}
+          aria-label={`模型：${triggerText}${ariaThinking}`}
           disabled={saving}
         />
       }

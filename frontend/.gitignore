@@ -27,3 +27,4 @@ dist-ssr
 tests/visual/__screenshots__/
 output/
 test-results/
+.vitest/

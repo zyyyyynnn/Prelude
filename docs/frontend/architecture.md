@@ -2,7 +2,7 @@
 
 ## Runtime
 
-Prelude 前端是由 Vite+ 统一驱动开发、检查、构建与预览的 React SPA。React Router 管理路由与 URL，TanStack Query 管理服务端状态，组件状态保留在最接近使用位置的 React 组件中。
+Prelude 前端是由 Vite+ 统一驱动开发、检查、构建与预览的 React SPA，生产构建使用 Rolldown 与 Oxc，格式与 Lint 分别使用 Oxfmt 与 Oxlint，类型检查使用 tsrs。React Router 管理路由与 URL，TanStack Query 管理服务端状态，组件状态保留在最接近使用位置的 React 组件中。
 
 ```text
 frontend/src/

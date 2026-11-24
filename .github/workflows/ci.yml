@@ -89,9 +89,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: voidzero-dev/setup-vp@v1.19.0
+      - uses: voidzero-dev/setup-vp@v1.22.0
         with:
-          version: '1.0.0'
           node-version: '24'
           working-directory: frontend
           run-install: 'false'
@@ -131,6 +130,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           npm run verify:architecture
+          npm run verify:oxc
           npm run verify:governance
           npm run verify:ui
           npm run verify:tokens

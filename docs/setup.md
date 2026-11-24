@@ -41,6 +41,7 @@ npm --prefix frontend run dev
 mvn -f backend/pom.xml clean test
 npm --prefix frontend run check
 npm --prefix frontend run verify:architecture
+npm --prefix frontend run verify:oxc
 npm --prefix frontend run verify:governance
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens

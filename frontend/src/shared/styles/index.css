@@ -449,51 +449,75 @@ html.is-theme-transitioning {
  * The outline is reserved transparent so the UA `:focus-visible` ring cannot take over
  * the box; forced colours recolour that same reserved outline.
  */
-.ui-field-control,
-.ui-action {
+@utility ui-field-control {
+  width: 100%;
+  border: var(--border-width-default) solid var(--color-border-warm);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
   outline: var(--focus-ring-width) solid transparent;
   outline-offset: var(--focus-ring-offset);
-}
-
-.ui-field-control {
   transition: border-color var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &:focus,
+  &:focus-visible {
+    border-color: var(--color-focus-field);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--color-error);
+  }
 }
 
-.ui-field-control:focus,
-.ui-field-control:focus-visible {
-  border-color: var(--color-focus-field);
+@utility ui-action {
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+
+  html[data-input-intent='pointer'] &:focus {
+    outline-color: transparent;
+  }
 }
 
-.ui-field-control[aria-invalid='true'] {
-  border-color: var(--color-error);
+@utility ui-action-primary {
+  html:not([data-input-intent]) &:focus-visible,
+  html[data-input-intent='keyboard'] &:focus {
+    border-color: currentColor;
+  }
 }
 
-html[data-input-intent='pointer'] .ui-action:focus {
-  outline-color: transparent;
+@utility ui-action-icon {
+  html:not([data-input-intent]) &:focus-visible,
+  html[data-input-intent='keyboard'] &:focus {
+    border-color: var(--color-focus-action);
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
 }
 
-html:not([data-input-intent]) .ui-action-primary:focus-visible,
-html[data-input-intent='keyboard'] .ui-action-primary:focus {
-  border-color: currentColor;
+@utility ui-action-nav {
+  html:not([data-input-intent]) &:focus-visible,
+  html[data-input-intent='keyboard'] &:focus {
+    border-color: var(--color-focus-action);
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
 }
 
-html:not([data-input-intent]) :is(.ui-action-icon, .ui-action-nav):focus-visible,
-html[data-input-intent='keyboard'] :is(.ui-action-icon, .ui-action-nav):focus {
-  border-color: var(--color-focus-action);
-  background-color: var(--color-surface-hover);
-  color: var(--color-text-primary);
+@utility ui-action-selectable {
+  html:not([data-input-intent]) &:focus-visible,
+  html[data-input-intent='keyboard'] &:focus {
+    border-color: var(--color-focus-action);
+  }
 }
 
-html:not([data-input-intent]) .ui-action-selectable:focus-visible,
-html[data-input-intent='keyboard'] .ui-action-selectable:focus {
-  border-color: var(--color-focus-action);
-}
-
-html:not([data-input-intent]) .ui-action-danger:focus-visible,
-html[data-input-intent='keyboard'] .ui-action-danger:focus {
-  border-color: var(--color-error);
-  background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
+@utility ui-action-danger {
+  html:not([data-input-intent]) &:focus-visible,
+  html[data-input-intent='keyboard'] &:focus {
+    border-color: var(--color-error);
+    background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+    color: var(--color-error);
+  }
 }
 
 @media (forced-colors: active) {
@@ -528,23 +552,23 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   min-height: calc(100vh - var(--layout-page-center-block-offset));
 }
 
-.brand-metaballs {
+@utility brand-metaballs {
   position: relative;
   display: block;
   overflow: hidden;
   border: var(--border-width-default) solid
     color-mix(in srgb, var(--color-border) 82%, var(--color-surface));
   background: var(--color-bg);
+
+  & canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
 }
 
-.brand-metaballs canvas {
-  display: block;
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-
-.brand-metaballs__shader {
+@utility brand-metaballs__shader {
   width: 100%;
   height: 100%;
   background: var(--brand-metaballs-bg);
@@ -554,12 +578,12 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
 
 /* Size belongs to the call site: an unlayered width here would outrank any
    `size-*` atom and silently pin the mark to one step. */
-.rose-three-loader {
+@utility rose-three-loader {
   display: inline-block;
   overflow: visible;
 }
 
-.empty-state {
+@utility empty-state {
   display: grid;
   place-items: center;
   gap: var(--spacing-md);
@@ -571,14 +595,14 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   color: var(--color-text-tertiary);
   font: var(--font-size-sm)/var(--line-height-relaxed) var(--font-serif);
   text-align: center;
+
+  & > p {
+    max-inline-size: var(--content-message-max-inline-size);
+    margin: 0;
+  }
 }
 
-.empty-state > p {
-  max-inline-size: var(--content-message-max-inline-size);
-  margin: 0;
-}
-
-.login-card {
+@utility login-card {
   position: relative;
   width: min(100%, var(--layout-login-card-max-inline-size));
   border: var(--border-width-default) solid var(--color-line-decor);
@@ -595,7 +619,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   transform: scale(1);
 }
 
-.login-card__content {
+@utility login-card__content {
   position: relative;
   z-index: var(--z-index-local-content);
   display: grid;
@@ -605,7 +629,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   min-height: var(--layout-login-card-min-block-size);
 }
 
-.login-card__brand-panel {
+@utility login-card__brand-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: var(--spacing-lg);
@@ -616,13 +640,17 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   padding: var(--spacing-sm) 0;
 }
 
-.login-card__logo {
+@utility login-card__logo {
   width: min(100%, var(--layout-login-logo-max-inline-size));
   max-width: var(--layout-login-logo-max-inline-size);
   aspect-ratio: 1;
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-login-logo);
   animation: brand-awaken var(--motion-duration-slow) var(--motion-ease-standard) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes brand-awaken {
@@ -636,13 +664,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .login-card__logo {
-    animation: none;
-  }
-}
-
-.login-card__brand-caption {
+@utility login-card__brand-caption {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
@@ -652,7 +674,7 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   text-transform: uppercase;
 }
 
-.login-card__form-panel {
+@utility login-card__form-panel {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   gap: var(--spacing-lg);
@@ -661,12 +683,12 @@ html[data-input-intent='keyboard'] .ui-action-danger:focus {
   justify-self: stretch;
 }
 
-.login-card__header {
+@utility login-card__header {
   display: grid;
   gap: var(--spacing-sm);
 }
 
-.login-card__actions {
+@utility login-card__actions {
   display: flex;
   align-items: center;
   margin-top: var(--spacing-lg);
@@ -769,9 +791,6 @@ textarea:-webkit-autofill:focus {
 }
 
 /* Native password decorations sit inside the control box; the product draws its own. */
-.ui-input[type='password'] {
-  appearance: none;
-}
 /* browser-chrome: Blink/Edge draw reveal/clear inside the control box */
 input[type='password']::-ms-reveal,
 input[type='password']::-ms-clear {
@@ -800,7 +819,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   height: 100%;
   overflow: hidden;
 }
-.ui-button {
+@utility ui-button {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -814,13 +833,30 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
   cursor: pointer;
   transition: var(--motion-transition-surface);
+
+  &[data-loading] .ui-button__content {
+    opacity: 0;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
 }
-.ui-button__content {
+
+@utility ui-button__content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: inherit;
 }
+
+@utility ui-button__label {
+  .ui-button--hold[data-pressed] & {
+    opacity: 0;
+  }
+}
+
 /* Icons inside a control are sized here, never by a per-call-site size prop. */
 .ui-button__content > svg,
 .field-action > svg,
@@ -832,33 +868,31 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   block-size: var(--ui-glyph-sm);
   flex: 0 0 auto;
 }
-.ui-button[data-loading] .ui-button__content {
-  opacity: 0;
-}
-.ui-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-.ui-button--primary {
+
+@utility ui-button--primary {
   color: var(--color-text-on-accent);
   background: var(--color-accent-solid);
   border-color: var(--color-accent-solid);
+
+  &:hover:not(:disabled) {
+    background: var(--color-accent-solid-hover);
+    border-color: var(--color-accent-solid-hover);
+  }
 }
-.ui-button--primary:hover:not(:disabled) {
-  background: var(--color-accent-solid-hover);
-  border-color: var(--color-accent-solid-hover);
-}
-.ui-button--secondary {
+
+@utility ui-button--secondary {
   color: var(--color-text-primary);
   background: var(--color-surface-muted);
   border-color: var(--color-border-warm);
 }
-.ui-button--ghost {
+
+@utility ui-button--ghost {
   color: var(--color-text-secondary);
   background: transparent;
   border-color: transparent;
 }
-.ui-button--danger {
+
+@utility ui-button--danger {
   color: var(--color-error);
   background: var(--color-error-soft);
   border-color: color-mix(in srgb, var(--color-error) 32%, transparent);
@@ -868,60 +902,60 @@ input[type='password']::-webkit-credentials-auto-fill-button {
     border-color: var(--color-error);
   }
 }
-.ui-input,
-.ui-textarea,
-.ui-select {
-  width: 100%;
-  border: var(--border-width-default) solid var(--color-border-warm);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-.ui-input,
-.ui-select {
+@utility ui-input {
   height: var(--ui-height-control);
   padding: 0 var(--spacing-md);
-}
-/* A field that carries trailing icon actions reserves room for them through
-   --field-trailing-gutter, which the wrapping layout element declares. */
-.ui-input {
+
+  &[type='password'] {
+    appearance: none;
+  }
+
+  /* A field that carries trailing icon actions reserves room for them through
+     --field-trailing-gutter, which the wrapping layout element declares. */
   padding-inline-end: calc(var(--spacing-md) + var(--field-trailing-gutter, 0px));
 }
-.ui-select {
+
+@utility ui-select {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-sm);
+  height: var(--ui-height-control);
+  padding: 0 var(--spacing-md);
   text-align: start;
   cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
 }
-.ui-select:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-.ui-select__icon {
+
+@utility ui-select__icon {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   color: var(--color-text-tertiary);
+
+  & svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+  }
 }
-.ui-select__icon svg {
-  inline-size: var(--ui-glyph-sm);
-  block-size: var(--ui-glyph-sm);
-}
-.ui-textarea {
+
+@utility ui-textarea {
   min-height: var(--layout-textarea-min-block-size);
   padding: var(--spacing-md);
   /* Field geometry is owned by the design system; the browser resizer grip is chrome
      the pixel oracle would otherwise paint into every textarea corner. */
   resize: none;
 }
-.ui-tooltip-positioner {
+@utility ui-tooltip-positioner {
   z-index: var(--z-index-tooltip);
   pointer-events: none;
 }
-.ui-tooltip {
+
+@utility ui-tooltip {
   pointer-events: none;
   max-width: var(--content-tooltip-max-inline-size);
   padding: var(--spacing-sm);
@@ -932,12 +966,14 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   box-shadow: var(--shadow-whisper);
   font: var(--font-weight-regular) var(--font-size-xs)/var(--line-height-heading) var(--font-sans);
 }
-.ui-menu-positioner {
+
+@utility ui-menu-positioner {
   z-index: var(--z-index-menu);
   outline: none;
 }
-.ui-menu {
-  min-inline-size: calc(var(--ui-height-control) * 8);
+
+@utility ui-menu {
+  min-inline-size: var(--menu-min-inline-size, calc(var(--ui-height-control) * 8));
   max-inline-size: var(--content-tooltip-max-inline-size);
   padding: var(--spacing-xs);
   border: var(--border-width-default) solid var(--color-border-warm);
@@ -950,17 +986,19 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   transition:
     opacity var(--motion-duration-fast) var(--motion-ease-standard),
     transform var(--motion-duration-fast) var(--motion-ease-standard);
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: translateY(var(--spacing-sm));
+  }
 }
-.ui-menu[data-starting-style],
-.ui-menu[data-ending-style] {
-  opacity: 0;
-  transform: translateY(var(--spacing-sm));
-}
-.ui-menu__item {
+
+@utility ui-menu__item {
   position: relative;
-  display: flex;
+  display: var(--menu-item-display, flex);
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--menu-item-gap, var(--spacing-sm));
   min-block-size: var(--ui-height-control);
   padding-inline: var(--spacing-sm);
   border-radius: var(--radius-md);
@@ -969,71 +1007,74 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   font: var(--font-size-sm)/var(--line-height-tight) var(--font-serif);
   cursor: pointer;
   user-select: none;
+
+  &[data-highlighted] {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }
-.ui-menu__item[data-highlighted] {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
+
+@utility ui-menu--structured {
+  & .ui-menu__item {
+    display: grid;
+    inline-size: 100%;
+    grid-template-columns:
+      var(--ui-glyph-md)
+      minmax(0, 1fr)
+      minmax(var(--ui-glyph-md), auto)
+      var(--ui-glyph-sm);
+    column-gap: var(--spacing-sm);
+    min-block-size: var(--ui-height-control);
+  }
+
+  & .ui-menu__icon {
+    grid-column: 1;
+  }
+
+  & .ui-menu__detail {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  & .ui-menu__chevron,
+  & .ui-menu__indicator--end {
+    grid-column: 4;
+    justify-self: center;
+    margin-inline-start: 0;
+  }
 }
-.ui-menu__item[data-disabled] {
-  cursor: not-allowed;
-  opacity: 0.5;
+
+@utility ui-menu--model {
+  &.ui-menu--structured .ui-menu__item {
+    grid-template-columns: minmax(0, 1fr) minmax(var(--ui-glyph-md), auto) var(--ui-glyph-sm);
+  }
+
+  &.ui-menu--structured .ui-menu__detail {
+    grid-column: 2;
+  }
+
+  &.ui-menu--structured .ui-menu__chevron {
+    grid-column: 3;
+  }
 }
-.ui-menu--structured .ui-menu__item {
-  display: grid;
-  inline-size: 100%;
-  grid-template-columns:
-    var(--ui-glyph-md)
-    minmax(0, 1fr)
-    minmax(var(--ui-glyph-md), auto)
-    var(--ui-glyph-sm);
-  column-gap: var(--spacing-sm);
-  min-block-size: var(--ui-height-control);
-}
-.ui-menu--structured .ui-menu__icon {
-  grid-column: 1;
-}
-.ui-menu--structured .ui-menu__label {
-  grid-column: 2;
-  min-inline-size: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ui-menu--structured .ui-menu__detail {
-  grid-column: 3;
-  justify-self: end;
-}
-.ui-menu--structured .ui-menu__chevron,
-.ui-menu--structured .ui-menu__indicator--end {
-  grid-column: 4;
-  justify-self: center;
-  margin-inline-start: 0;
-}
-.ui-menu--structured.ui-menu--model .ui-menu__item {
-  grid-template-columns: minmax(0, 1fr) minmax(var(--ui-glyph-md), auto) var(--ui-glyph-sm);
-}
-.ui-menu--structured.ui-menu--model .ui-menu__label {
-  grid-column: 1;
-}
-.ui-menu--structured.ui-menu--model .ui-menu__detail {
-  grid-column: 2;
-}
-.ui-menu--structured.ui-menu--model .ui-menu__chevron {
-  grid-column: 3;
-}
-.ui-menu--structured.ui-menu--model .ui-menu__item--leading-icon {
-  grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
-}
+
 /* The owner wraps the caller's glyph in a span, so this stays out of the layout and the svg
    remains the grid item it was before — the colour still inherits, the box still sizes. */
-.ui-menu__icon--leading {
+@utility ui-menu__icon--leading {
   display: contents;
   color: var(--color-text-tertiary);
+
+  & svg {
+    inline-size: var(--ui-glyph-sm);
+    block-size: var(--ui-glyph-sm);
+  }
 }
-.ui-menu__icon--leading svg {
-  inline-size: var(--ui-glyph-sm);
-  block-size: var(--ui-glyph-sm);
-}
+
 /* A quiet card sunk into a surface: one radius, one fill, one padding. Two sizes because
    the report blocks and the score tiles genuinely differ, but the inset itself is one
    decision — it had been written out five times with three different atom orders. */
@@ -1049,13 +1090,34 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   padding: var(--spacing-lg);
 }
 
-.ui-menu__item-label {
+@utility ui-menu__item-label {
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ui-menu__indicator {
+
+@utility ui-menu__label {
+  .ui-menu--structured & {
+    grid-column: 2;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ui-menu--structured.ui-menu--model & {
+    grid-column: 1;
+  }
+}
+
+@utility ui-menu__item--leading-icon {
+  .ui-menu--structured.ui-menu--model & {
+    grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
+  }
+}
+
+@utility ui-menu__indicator {
   display: grid;
   inline-size: var(--ui-glyph-md);
   block-size: var(--ui-glyph-md);
@@ -1063,16 +1125,19 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   place-items: center;
   color: var(--color-text-primary);
 }
-.ui-menu__indicator--end {
+
+@utility ui-menu__indicator--end {
   margin-inline-start: auto;
 }
+
 .ui-menu__indicator svg,
 .ui-menu__icon svg,
 .ui-menu__chevron {
   inline-size: var(--ui-glyph-sm);
   block-size: var(--ui-glyph-sm);
 }
-.ui-menu__icon {
+
+@utility ui-menu__icon {
   display: grid;
   inline-size: var(--ui-glyph-md);
   block-size: var(--ui-glyph-md);
@@ -1080,7 +1145,8 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   place-items: center;
   color: var(--color-text-tertiary);
 }
-.ui-menu__detail {
+
+@utility ui-menu__detail {
   flex: 0 1 auto;
   overflow: hidden;
   color: var(--color-text-tertiary);
@@ -1088,43 +1154,51 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ui-menu__chevron {
+
+@utility ui-menu__chevron {
   flex: 0 0 auto;
   color: var(--color-text-tertiary);
 }
-.ui-menu__separator {
+
+@utility ui-menu__separator {
   block-size: var(--border-width-default);
   margin: var(--spacing-xs);
   background: var(--color-border);
 }
-.ui-select-popup {
-  min-inline-size: var(--anchor-width);
+
+@utility ui-select-popup {
+  --menu-min-inline-size: var(--anchor-width);
   max-block-size: var(--available-height);
 }
-.ui-select__list {
+
+@utility ui-select__list {
   max-block-size: min(var(--layout-select-list-max-block-size), var(--available-height));
   overflow-y: auto;
   outline: none;
 }
-.ui-select__item {
-  display: grid;
+
+@utility ui-select__item {
+  --menu-item-display: grid;
+  --menu-item-gap: var(--spacing-sm);
   grid-template-columns: var(--ui-glyph-md) minmax(0, 1fr);
-  column-gap: var(--spacing-sm);
+
+  & .ui-menu__indicator {
+    grid-column: 1;
+    margin: 0;
+  }
+
+  & .ui-menu__item-label {
+    grid-column: 2;
+  }
 }
-.ui-select__item .ui-menu__indicator {
-  grid-column: 1;
-  margin: 0;
-}
-.ui-select__item .ui-menu__item-label {
-  grid-column: 2;
-}
-.ui-dialog__backdrop {
+@utility ui-dialog__backdrop {
   position: fixed;
   inset: 0;
   z-index: var(--z-index-dialog-backdrop);
   background: var(--mask-overlay);
 }
-.ui-dialog__viewport {
+
+@utility ui-dialog__viewport {
   position: fixed;
   inset: 0;
   z-index: var(--z-index-dialog);
@@ -1132,9 +1206,10 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   place-items: center;
   padding: var(--spacing-lg);
 }
-.ui-dialog {
+
+@utility ui-dialog {
   position: relative;
-  width: min(var(--layout-dialog-max-inline-size), 92vw);
+  inline-size: min(var(--dialog-max-inline-size, var(--layout-dialog-max-inline-size)), 92vw);
   max-height: 88vh;
   padding: var(--spacing-xl);
   overflow: hidden;
@@ -1143,7 +1218,8 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   background: var(--color-surface);
   box-shadow: var(--shadow-modal);
 }
-.ui-dialog__close {
+
+@utility ui-dialog__close {
   position: absolute;
   top: var(--spacing-md);
   inset-inline-end: var(--spacing-md);
@@ -1157,42 +1233,43 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   color: var(--color-text-secondary);
   border-color: transparent;
 }
-.ui-button--icon {
+
+@utility ui-button--icon {
   inline-size: var(--ui-height-control);
   block-size: var(--ui-height-control);
   min-block-size: var(--ui-height-control);
   padding: 0;
 }
-.ui-button--action {
+
+@utility ui-button--action {
   flex-shrink: 0;
   padding-inline: var(--spacing-lg);
 }
-.ui-button--hold {
+
+@utility ui-button--hold {
   position: relative;
   padding: 0 var(--spacing-lg);
   font-family: var(--font-serif);
   user-select: none;
+
+  /* Held is a state that lasts seconds, not a click: a positional nudge would read as the
+     control sitting out of line with its neighbours. The deepened ring carries it instead,
+     alongside the meter that replaces the words. */
+  &[data-pressed] {
+    box-shadow: var(--shadow-ring-deep);
+  }
 }
-/* While held, the level meter takes the words' place. The label keeps its box, so the
-   control never changes width under the finger. */
-.ui-button--hold[data-pressed] .ui-button__label {
-  opacity: 0;
-}
-/* Held is a state that lasts seconds, not a click: a positional nudge would read as the
-   control sitting out of line with its neighbours. The deepened ring carries it instead,
-   alongside the meter that replaces the words. */
-.ui-button--hold[data-pressed] {
-  box-shadow: var(--shadow-ring-deep);
-}
+
 /* The workspace shell is full-bleed: the caller owns padding and its own regions. */
-.ui-dialog--workspace {
+@utility ui-dialog--workspace {
   padding: 0;
   max-inline-size: min(var(--layout-dialog-max-inline-size), 90vw);
   block-size: 60vh;
   min-block-size: var(--layout-dialog-workspace-min-block-size);
   border-color: transparent;
 }
-.ui-button__spinner {
+
+@utility ui-button__spinner {
   position: absolute;
   inset: 0;
   width: var(--ui-glyph-sm);
@@ -1202,84 +1279,99 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   border-right-color: transparent;
   border-radius: var(--radius-full);
   animation: control-spin var(--motion-duration-slow) linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
+
 @keyframes control-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.ui-toaster [data-sonner-toast] {
-  pointer-events: auto;
+@utility ui-toaster {
+  & [data-sonner-toast] {
+    pointer-events: auto;
+  }
 }
-.ui-toaster [data-sonner-toast].ui-toast {
-  min-block-size: calc(var(--ui-height-control) + var(--spacing-md));
-  padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) var(--spacing-md);
-  border-color: transparent;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-whisper);
-  font: var(--font-size-sm)/var(--line-height-base) var(--font-serif);
+
+@utility ui-toast {
+  .ui-toaster [data-sonner-toast]& {
+    min-block-size: calc(var(--ui-height-control) + var(--spacing-md));
+    padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) var(--spacing-md);
+    border-color: transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-whisper);
+    font: var(--font-size-sm)/var(--line-height-base) var(--font-serif);
+  }
 }
-.ui-toaster [data-sonner-toast] .ui-toast__description {
-  color: var(--color-text-secondary);
+
+@utility ui-toast__description {
+  .ui-toaster [data-sonner-toast] & {
+    color: var(--color-text-secondary);
+  }
 }
-.ui-toaster [data-sonner-toast][data-styled='true'] .ui-toast__close {
-  top: 50%;
-  inset-inline-end: var(--spacing-sm);
-  bottom: auto;
-  inset-inline-start: auto;
-  width: var(--ui-glyph-lg);
-  height: var(--ui-glyph-lg);
-  transform: translateY(-50%);
-  border-color: transparent;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-tertiary);
-  box-shadow: none;
+
+@utility ui-toast__close {
+  .ui-toaster [data-sonner-toast][data-styled='true'] & {
+    top: 50%;
+    inset-inline-end: var(--spacing-sm);
+    bottom: auto;
+    inset-inline-start: auto;
+    width: var(--ui-glyph-lg);
+    height: var(--ui-glyph-lg);
+    transform: translateY(-50%);
+    border-color: transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-tertiary);
+    box-shadow: none;
+  }
+
+  .ui-toaster [data-sonner-toast][data-styled='true']:hover &:hover {
+    border-color: transparent;
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  html:not([data-input-intent]) .ui-toaster [data-sonner-toast][data-styled='true'] &:focus-visible,
+  html[data-input-intent='keyboard'] .ui-toaster [data-sonner-toast][data-styled='true'] &:focus {
+    border-color: var(--color-focus-action);
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
 }
-.ui-toaster [data-sonner-toast][data-styled='true']:hover .ui-toast__close:hover {
-  border-color: transparent;
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
-}
-.ui-toast__loader {
+
+@utility ui-toast__loader {
   animation: control-spin var(--motion-duration-slow) linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ui-button__spinner,
-  .ui-toast__loader {
+
+  @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 }
-html:not([data-input-intent])
-  .ui-toaster
-  [data-sonner-toast][data-styled='true']
-  .ui-toast__close:focus-visible,
-html[data-input-intent='keyboard']
-  .ui-toaster
-  [data-sonner-toast][data-styled='true']
-  .ui-toast__close:focus {
-  border-color: var(--color-focus-action);
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
-}
+
 /* Confirmation shares the dialog chrome; only its measure and action row differ. */
-.confirm-dialog {
-  width: min(var(--layout-confirm-max-inline-size), calc(100vw - var(--spacing-2xl)));
+@utility confirm-dialog {
+  --dialog-max-inline-size: var(--layout-confirm-max-inline-size);
 }
-.confirm-dialog__title {
+
+@utility confirm-dialog__title {
   margin: 0;
   color: var(--color-text-primary);
   font: var(--font-weight-semibold) var(--font-size-lg)/var(--line-height-tight) var(--font-serif);
 }
-.confirm-dialog__description {
+
+@utility confirm-dialog__description {
   margin: var(--spacing-sm) 0 0;
   color: var(--color-text-secondary);
   font: var(--font-size-sm)/var(--line-height-copy) var(--font-sans);
 }
-.confirm-dialog__actions {
+
+@utility confirm-dialog__actions {
   display: flex;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-xl);
@@ -1300,7 +1392,7 @@ html[data-input-intent='keyboard']
   white-space: nowrap;
   border: 0;
 }
-.ui-segmented-control {
+@utility ui-segmented-control {
   --segmented-index: 0;
   --segmented-count: 2;
 
@@ -1312,44 +1404,48 @@ html[data-input-intent='keyboard']
   );
   border-radius: var(--radius-md);
   background: var(--color-surface-muted);
-}
-/* The thumb keeps the cell width so it stays concentric with the track: inset by
-   --ui-control-inset on every side, its radius is the track radius minus that
-   inset, so the gutter reads as an even ring instead of a cropped pill. */
-.ui-segmented-control::before {
-  position: absolute;
-  inset-block: var(--ui-control-inset);
-  inset-inline-start: 0;
-  inline-size: calc(100% / var(--segmented-count));
-  border-radius: calc(var(--radius-md) - var(--ui-control-inset));
-  background: var(--color-surface);
-  box-shadow: var(--shadow-ring);
-  content: '';
-  pointer-events: none;
-  transform: translateX(calc(var(--segmented-index) * 100%));
-  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
-}
-.ui-segmented-control button {
-  position: relative;
-  z-index: var(--z-index-local-content);
-  min-inline-size: var(--ui-segmented-item-min-inline-size);
-  block-size: var(--ui-height-control);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
-  cursor: pointer;
-  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
-}
-.ui-segmented-control button.is-active,
-.ui-segmented-control button[aria-pressed='true'] {
-  color: var(--color-text-primary);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ui-segmented-control::before,
-  .ui-segmented-control button {
-    transition: none;
+
+  /* The thumb keeps the cell width so it stays concentric with the track: inset by
+     --ui-control-inset on every side, its radius is the track radius minus that
+     inset, so the gutter reads as an even ring instead of a cropped pill. */
+  &::before {
+    position: absolute;
+    inset-block: var(--ui-control-inset);
+    inset-inline-start: 0;
+    inline-size: calc(100% / var(--segmented-count));
+    border-radius: calc(var(--radius-md) - var(--ui-control-inset));
+    background: var(--color-surface);
+    box-shadow: var(--shadow-ring);
+    content: '';
+    pointer-events: none;
+    transform: translateX(calc(var(--segmented-index) * 100%));
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  & button {
+    position: relative;
+    z-index: var(--z-index-local-content);
+    min-inline-size: var(--ui-segmented-item-min-inline-size);
+    block-size: var(--ui-height-control);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font: var(--font-weight-medium) var(--font-size-sm)/var(--line-height-solid) var(--font-serif);
+    cursor: pointer;
+    transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  & button.is-active,
+  & button[aria-pressed='true'] {
+    color: var(--color-text-primary);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before,
+    & button {
+      transition: none;
+    }
   }
 }
 
@@ -1992,14 +2088,19 @@ html[data-input-intent='keyboard']
     pointer-events: auto;
     transition-delay: 0s;
   }
-}
 
-/* The scrolling middle of the sidebar (session list, etc.). */
-/* @internal src/shared/ui/sidebar.tsx */
-@utility sidebar-scroll-body {
-  min-block-size: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  &[data-kind='sessions'] {
+    min-block-size: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  &[data-kind='rail'] {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-block-end: var(--spacing-sm);
+  }
 }
 
 /* @internal src/features/interview/components/session-row.tsx */
