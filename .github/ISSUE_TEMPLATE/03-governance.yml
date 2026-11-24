@@ -1,44 +1,44 @@
 # yaml-language-server: $schema=https://www.schemastore.org/github-issue-forms.json
 name: Governance / CI / Docs
-description: 工程治理、CI 门禁、文档规范、发布与仓库级约束
+description: Engineering governance, CI gates, documentation standards, releases, and repository-wide constraints
 body:
   - type: markdown
     attributes:
       value: |
-        标题同样使用 `<type>(<scope>): <semantic title>`。
-        只维护长期有效的治理规则，不维护项目进度、阶段状态或验证流水账。
+        Use `<type>(<scope>): <semantic title>` for the title.
+        Maintain durable governance rules only. Do not track project progress, phase status, or verification logs.
 
   - type: textarea
     id: goal
     attributes:
-      label: 目标
-      description: 描述需要建立或收敛的治理结果。
+      label: Goal
+      description: Describe the governance outcome that must be established or consolidated.
     validations:
       required: true
 
   - type: textarea
     id: specification
     attributes:
-      label: 规范
-      description: 记录执行时不得偏离的仓库、工具链、质量门禁或文档规则。
+      label: Specification
+      description: Record repository, toolchain, quality-gate, or documentation rules that must not be violated.
     validations:
       required: true
 
   - type: textarea
     id: design
     attributes:
-      label: 设计
-      description: 仅在治理方案本身存在结构、职责或流程设计时填写。
+      label: Design
+      description: Complete only when the governance proposal has structural, ownership, or workflow design.
     validations:
       required: false
 
   - type: textarea
     id: acceptance
     attributes:
-      label: 验收
-      description: 使用 checklist 表达治理结果，不填写 CI run 或测试数量。
+      label: Acceptance
+      description: Use a checklist to express governance outcomes. Do not include CI runs or test counts.
       placeholder: |
-        - [ ] ……
-        - [ ] ……
+        - [ ] ...
+        - [ ] ...
     validations:
       required: true

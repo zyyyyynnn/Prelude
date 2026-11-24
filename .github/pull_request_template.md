@@ -1,18 +1,18 @@
-## 摘要
+## Summary
 
-<!-- 用最小树图、差异或流程说明最终交付、职责边界与稳定结构。按模块覆盖本次变更的全量差异，包括新增、删除、重命名、配置、测试、文档与证据资产；不得只复述标题或遗漏主要变更面。正文使用中文，技术标识符仅放在反引号中。 -->
+<!-- Use the smallest tree, diff, or flow that explains the delivered behavior, ownership boundaries, and stable structure. Cover the full diff by module, including additions, deletions, renames, configuration, tests, documentation, and evidence assets. Do not merely restate the title or omit major change areas. Write in English and keep technical identifiers in backticks. -->
 
-## 证据
+## Evidence
 
-<!-- 给出可复查的前后证据；界面变更优先截图，行为变更优先精确测试命令与结果。完整验证事实由持续集成检查表达。 -->
+<!-- Provide reproducible before-and-after evidence. Prefer screenshots for UI changes and exact commands/results for behavior changes. Continuous integration checks remain the source of complete verification facts. -->
 
-- **变更前：** <失败输出、旧行为或旧截图>
-  **变更后：** <通过输出、新行为或新截图>
+- **Before:** <failing output, old behavior, or old screenshot>
+  **After:** <passing output, new behavior, or new screenshot>
 
-## 合并风险
+## Merge Danger
 
-**变更门：** <单向门 | 双向门>
+**Door:** <one-way | two-way>
 
-<!-- 说明合并后的回滚边界；涉及破坏性操作、数据迁移或共享契约时明确不可自动回滚的部分。 -->
+<!-- Explain the rollback boundary after merge. Call out destructive operations, data migrations, or shared contracts that cannot be rolled back automatically. -->
 
-**影响范围：** <一句话说明受影响模块、用户或维护边界>
+**Blast Radius:** <one sentence describing affected modules, users, or maintenance boundaries>
