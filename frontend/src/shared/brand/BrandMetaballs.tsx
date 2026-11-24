@@ -60,9 +60,11 @@ export function BrandMetaballs({ className = '' }: { className?: string }) {
   return (
     <div ref={root} className={cn('brand-metaballs', className)} aria-hidden="true">
       <Metaballs
+        key={still ? 'still' : 'animated'}
         colorBack={palette.background}
         colors={palette.colors}
         count={10}
+        frame={still ? 0 : undefined}
         scale={1}
         size={1}
         speed={speed}
