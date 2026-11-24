@@ -28,6 +28,5 @@
 
 ## 项目补充约束
 
-- 论文资产：`thesis-assets/meta/workflow-governance.md` 为论文工作流最高规范，与其他规范冲突时以其为准。正文唯一真相源为 `thesis-assets/chapters/*.md`；证据未锁定严禁重写正文；PaperSpine 严格单章执行；阶段推进须用户与审查官复核，本地不自行判定通过。
 - 界面规范：`DESIGN.md` 为视觉与交互最高规范。UI 改动验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准。
 - GitHub 内容：PR 正文只描述最终交付、必要架构与稳定契约，禁止写入 Issue 编号或链接，禁止 `Closes`、`Fixes`、`Resolves`、`Refs` 等关联标识；Issue 关系只通过 GitHub Development 原生关系维护；验证事实只由 GitHub Checks / Actions 表达。
