@@ -12,7 +12,11 @@ public interface InterviewStageRepository {
 
     InterviewStage findCurrent(Long sessionId);
 
+    InterviewStage findCurrentForUpdate(Long sessionId);
+
     InterviewStage findLatest(Long sessionId);
+
+    InterviewStage findLatestForUpdate(Long sessionId);
 
     List<InterviewStage> listBySession(Long sessionId);
 }

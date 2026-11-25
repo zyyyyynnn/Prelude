@@ -2,7 +2,9 @@ package com.prelude.interview.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.prelude.interview.domain.AssessmentStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface InterviewMessageMapper extends BaseMapper<InterviewMessageEntity> {
@@ -33,9 +35,27 @@ public interface InterviewMessageMapper extends BaseMapper<InterviewMessageEntit
             .orderByAsc(InterviewMessageEntity::getSeqNum));
     }
 
+    default List<InterviewMessageEntity> findPendingForJudge(LocalDateTime cutoff, int limit) {
+        return selectList(new LambdaQueryWrapper<InterviewMessageEntity>()
+            .eq(InterviewMessageEntity::getRole, "user")
+            .eq(InterviewMessageEntity::getAssessmentStatus, AssessmentStatus.PENDING)
+            .le(InterviewMessageEntity::getCreatedAt, cutoff)
+            .orderByAsc(InterviewMessageEntity::getCreatedAt)
+            .orderByAsc(InterviewMessageEntity::getId)
+            .last("LIMIT " + limit));
+    }
+
     default long countConversationMessages(Long sessionId) {
         return selectCount(new LambdaQueryWrapper<InterviewMessageEntity>()
             .eq(InterviewMessageEntity::getSessionId, sessionId)
             .in(InterviewMessageEntity::getRole, "user", "assistant"));
+    }
+
+    default long countPendingAssessments(Long sessionId) {
+        return selectCount(new LambdaQueryWrapper<InterviewMessageEntity>()
+            .eq(InterviewMessageEntity::getSessionId, sessionId)
+            .eq(InterviewMessageEntity::getRole, "user")
+            .eq(InterviewMessageEntity::getAssessmentStatus, AssessmentStatus.PENDING)
+            .last("FOR UPDATE"));
     }
 }

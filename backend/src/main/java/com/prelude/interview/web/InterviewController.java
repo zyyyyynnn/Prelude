@@ -4,6 +4,7 @@ import com.prelude.Result;
 import com.prelude.activity.RealtimePort;
 import com.prelude.activity.SseSessionStream;
 import com.prelude.interview.api.InterviewChatRequest;
+import com.prelude.interview.api.InterviewDeletionAcceptedResponse;
 import com.prelude.interview.api.InterviewFinishResponse;
 import com.prelude.interview.api.InterviewMessagesResponse;
 import com.prelude.interview.api.InterviewPinRequest;
@@ -22,6 +23,7 @@ import com.prelude.interview.application.StreamChatTurn;
 import com.prelude.interview.application.UpdateInterviewStage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -117,9 +120,10 @@ public class InterviewController {
     }
 
     @DeleteMapping("/{sessionId}")
-    public Result<Void> delete(@PathVariable Long sessionId) {
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Result<InterviewDeletionAcceptedResponse> delete(@PathVariable Long sessionId) {
         deleteInterviewSession.execute(sessionId);
-        return Result.success(null);
+        return Result.success(new InterviewDeletionAcceptedResponse(true));
     }
 
     @GetMapping(value = "/{sessionId}/listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

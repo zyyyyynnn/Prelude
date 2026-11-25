@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Locale;
 import java.util.Set;
 
 @Slf4j
@@ -22,7 +21,6 @@ import java.util.Set;
 public class ProfileService {
 
     private static final Set<String> THEME_PREFERENCES = Set.of("light", "dark", "system");
-    private static final Set<String> AVATAR_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
     private final AccountRepository accounts;
     private final PasswordEncoder passwordEncoder;
@@ -91,21 +89,11 @@ public class ProfileService {
         if (upload == null || upload.isEmpty()) {
             throw BusinessException.badRequest("请选择头像文件");
         }
-        String extension = extensionOf(upload.fileName());
-        if (!AVATAR_EXTENSIONS.contains(extension)) {
-            throw BusinessException.badRequest("头像仅支持 JPG、PNG、WebP 或 GIF");
-        }
-        byte[] bytes = upload.content();
-        String mediaType = upload.mediaType() == null || upload.mediaType().isBlank()
-            ? "application/octet-stream"
-            : upload.mediaType();
-
         String previousAvatarUrl = account.getAvatarUrl();
-        String candidateUrl = avatarStoragePort.stage(accountId, mediaType, bytes);
+        String candidateUrl = avatarStoragePort.stage(
+            accountId, upload.fileName(), upload.mediaType(), upload.content());
         try {
-            // One DB transaction: guarded account reference + asset READY transition.
-            // A failure rolls both back and leaves the asset PENDING for the reconciler.
-            avatarPublication.publish(candidateUrl, account);
+            avatarPublication.publish(candidateUrl, previousAvatarUrl, account);
         } catch (RuntimeException failure) {
             discardQuietly(accountId, candidateUrl);
             if (failure instanceof BusinessException businessFailure) {
@@ -113,8 +101,6 @@ public class ProfileService {
             }
             throw BusinessException.badRequest("头像上传失败");
         }
-        // The committed reference is authoritative; obsolete-avatar cleanup is non-fatal.
-        discardQuietly(accountId, previousAvatarUrl);
         return toResponse(accounts.findById(accountId));
     }
 
@@ -181,13 +167,6 @@ public class ProfileService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private String extensionOf(String fileName) {
-        if (fileName == null || !fileName.contains(".")) {
-            return "";
-        }
-        return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
     }
 
     private UserProfileResponse toResponse(Account account) {

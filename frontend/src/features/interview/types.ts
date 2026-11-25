@@ -14,7 +14,8 @@ export type InterviewStartPayload = {
   resumeId: number
   positionId: number
   jdText?: string
-  requestedModel?: string
+  model: string
+  reasoningLevel: ReasoningLevel
   attachmentIds?: number[]
 }
 
@@ -38,6 +39,8 @@ export type InterviewStageRecord = {
 
 export type InterviewMessageRole = 'system' | 'user' | 'assistant'
 
+export type InterviewAssessmentStatus = 'PENDING' | 'SCORED' | 'UNSCORED'
+
 export type InterviewMessageRecord = {
   id: number
   role: InterviewMessageRole
@@ -46,6 +49,8 @@ export type InterviewMessageRecord = {
   createdAt?: string
   score?: number
   hint?: string
+  assessmentStatus?: InterviewAssessmentStatus
+  assessmentError?: string
 }
 
 export type InterviewSessionStatus = 'ongoing' | 'generating' | 'finished'

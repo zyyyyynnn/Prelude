@@ -40,7 +40,6 @@ public class ReportJobCompletion {
             return true;
         }
 
-        interviewReportPort.closeCurrentStage(sessionId);
         if (!interviewReportPort.completeReport(sessionId, result.reportJson())) {
             throw new IllegalStateException(
                 "Report session lost generating state before finalization: " + sessionId);

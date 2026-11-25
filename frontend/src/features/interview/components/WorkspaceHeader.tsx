@@ -10,6 +10,7 @@ export function WorkspaceHeader({
   showingReport,
   sending,
   finishing,
+  assessing = false,
   printing = false,
   onFinish,
   onPrintReport,
@@ -22,6 +23,7 @@ export function WorkspaceHeader({
   showingReport: boolean
   sending: boolean
   finishing: boolean
+  assessing?: boolean
   printing?: boolean
   onFinish: () => void
   onPrintReport: () => void
@@ -30,7 +32,7 @@ export function WorkspaceHeader({
   const headerTitle = title?.trim() || '新面试会话'
   const finished = status === 'finished' || status === 'generating'
   const showGenerateButton = !showingReport && !finished
-  const generateDisabled = sending || stage !== 'closing'
+  const generateDisabled = sending || assessing || stage !== 'closing'
   return (
     <PageHeader
       title={headerTitle}
@@ -44,7 +46,7 @@ export function WorkspaceHeader({
                 disabled={generateDisabled}
                 onClick={onFinish}
               >
-                生成报告
+                {assessing ? '回答评估中' : '生成报告'}
               </Button>
             </div>
           )}

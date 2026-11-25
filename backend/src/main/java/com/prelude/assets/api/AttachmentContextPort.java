@@ -11,11 +11,10 @@ public interface AttachmentContextPort {
     List<AttachmentSnapshot> list(Long accountId, String scopeType, Long scopeId);
 
     /**
-     * Drops the attachment bindings held by a scope that no longer exists.
-     * AssetEntity binaries are not touched here: their lifecycle stays inside the
-     * owning module.
+     * Removes the scope's attachment metadata and durably registers its owned assets for deletion.
+     * Physical object deletion is asynchronous and may be retried after this method returns.
      */
-    void unbind(Long accountId, String scopeType, Long scopeId);
+    void deleteScope(Long accountId, String scopeType, Long scopeId);
 
     /**
      * Controlled binary read for consumers that genuinely need the bytes

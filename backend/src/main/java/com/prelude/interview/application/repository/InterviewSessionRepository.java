@@ -10,23 +10,18 @@ public interface InterviewSessionRepository {
 
     InterviewSession selectById(Serializable sessionId);
 
+    InterviewSession selectByIdForUpdate(Serializable sessionId);
+
     int add(InterviewSession session);
 
     int update(InterviewSession session);
 
     int markGeneratingIfOngoing(Long sessionId, Long accountId);
 
-    /**
-     * Serialises whoever is about to append to this session and reports the status under that
-     * lock, or null when the session is missing. Callers hold it for the rest of their
-     * transaction, so two appends cannot read the same "last message" and number alike.
-     */
+    /** Locks the session for the current transaction and returns its current status. */
     String lockAppendOrder(Long sessionId);
 
-    /**
-     * Persists only the sliding-window summary, so an async writer cannot roll back columns
-     * that changed while the model call was in flight.
-     */
+    /** Persists only the summary so an async writer cannot overwrite concurrent columns. */
     int updateSummary(Long sessionId, String summary);
 
     int updatePinnedAt(Long sessionId, Long accountId, LocalDateTime pinnedAt);

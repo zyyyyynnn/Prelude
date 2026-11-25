@@ -40,7 +40,6 @@ public class UserController {
         return Result.success(profileService.updateAvatar(toUpload(file)));
     }
 
-    /** Reads the upload's bytes here, so the use case never names the multipart type. */
     private AvatarUpload toUpload(MultipartFile file) {
         try {
             return new AvatarUpload(file.getOriginalFilename(), file.getContentType(), file.getBytes());

@@ -184,7 +184,10 @@ test('@smoke uploads an avatar and keeps the returned profile', async ({ page })
   await dialog.locator('#avatar-upload').setInputFiles({
     name: '头像.png',
     mimeType: 'image/png',
-    buffer: Buffer.from('89504e470d0a1a0a', 'hex'),
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4AWJiYGD4DwAAAP//cGajQwAAAAZJREFUAwABDgEC81VxbAAAAABJRU5ErkJggg==',
+      'base64',
+    ),
   })
 
   await sentRequests('POST', '/api/user/avatar', 1)

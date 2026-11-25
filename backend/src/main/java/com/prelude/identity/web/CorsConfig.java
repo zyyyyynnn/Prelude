@@ -1,7 +1,9 @@
-package com.prelude;
+package com.prelude.identity.web;
 
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import com.prelude.identity.api.security.OriginPolicy;
+import com.prelude.identity.infrastructure.security.CorsProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -13,9 +15,9 @@ import org.springframework.web.filter.CorsFilter;
 public class CorsConfig {
 
     @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsProperties corsProperties) {
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(OriginPolicy originPolicy) {
         CorsConfiguration configuration = new CorsConfiguration();
-        corsProperties.allowedOrigins().forEach(configuration::addAllowedOrigin);
+        originPolicy.allowedOrigins().forEach(configuration::addAllowedOrigin);
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         configuration.setAllowCredentials(true);

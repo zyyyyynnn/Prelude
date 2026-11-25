@@ -12,8 +12,6 @@ public interface InterviewReportPort {
 
     List<InterviewMessageSnapshot> listMessages(Long sessionId);
 
-    void closeCurrentStage(Long sessionId);
-
     List<InterviewStageSnapshot> listStages(Long sessionId);
 
     boolean completeReport(Long sessionId, String reportJson);

@@ -186,6 +186,7 @@ async function respond(route: Route, state: ApiState) {
   }
   let data: unknown = null
   if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
+  else if (path === '/api/auth/oauth/providers') data = []
   else if (path === '/api/interview/sessions') data = state.sessions ?? []
   else if (/\/api\/interview\/\d+\/messages$/.test(path)) data = state.session
   else if (path === '/api/position/list')
@@ -318,7 +319,8 @@ test('@smoke sends the selected prompt bar context when starting an interview', 
     resumeId: 2,
     positionId: 2,
     jdText: '负责复杂交互与前端架构。',
-    requestedModel: 'deepseek-v4-pro',
+    model: 'deepseek-v4-pro',
+    reasoningLevel: 'AUTO',
     attachmentIds: [51],
   })
 })
@@ -497,144 +499,133 @@ test('@smoke centers the async button indicator without resizing the control', a
   expect((await save.boundingBox())!.width).toBe(idleWidth)
 })
 
-test('@smoke updates the prompt model depth before the save request completes', async ({
-  page,
-}) => {
-  const state: ApiState = { requests: [] }
-  const putBodies: Record<string, unknown>[] = []
-  await installApi(page, state)
-  await page.route('**/api/llm/config', async (route) => {
-    if (route.request().method() === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: ok({
-          provider: 'deepseek',
-          model: 'deepseek-v4-pro',
-          customEndpointUrl: null,
-          hasApiKey: false,
-          apiKeyMasked: null,
-          reasoningLevel: 'AUTO',
-          maxOutputTokens: 8192,
-          fallbackModels: ['deepseek-v4-flash'],
-          capability: deepSeekCapability(),
-        }),
-      })
-      return
-    }
-    if (route.request().method() !== 'PUT') {
-      await route.fallback()
-      return
-    }
-    const body = route.request().postDataJSON() as Record<string, unknown>
-    putBodies.push(body)
-    await new Promise((resolve) => setTimeout(resolve, 400))
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: ok({
-        provider: (body as { provider?: string }).provider ?? 'deepseek',
-        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
-        customEndpointUrl: null,
-        hasApiKey: false,
-        apiKeyMasked: null,
-        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
-        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
-        fallbackModels: (body as { fallbackModels?: string[] }).fallbackModels ?? [],
-        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
-      }),
-    })
-  })
-  await page.goto('/interview')
-
-  let modelTrigger = page.getByRole('button', { name: /模型：/ })
-  await modelTrigger.click()
-  await page.getByRole('menuitem', { name: /思考深度/ }).hover()
-  await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
-
-  modelTrigger = page.getByRole('button', { name: /模型：/ })
-  /* `toHaveText` retries; a one-shot `textContent()` does not. The optimistic label is written
-     by `setQueryData` in `InterviewSetup.tsx:53`, which sits behind `await
-     client.cancelQueries(...)` at `:51` — so it resumes in a continuation after the click
-     resolves rather than during it. */
-  await expect(modelTrigger).toHaveText(/deepseek-v4-pro · 高/)
-  await expect(page.getByText('模型配置已更新')).toBeVisible()
-  expect(putBodies[0]).toMatchObject({
-    reasoningLevel: 'HIGH',
-    maxOutputTokens: 8192,
-    fallbackModels: ['deepseek-v4-flash'],
-  })
-
-  await modelTrigger.click()
-  await page.getByRole('menuitem', { name: /思考深度/ }).hover()
-  const resetRequest = page.waitForRequest(
-    (request) => request.url().endsWith('/api/llm/config') && request.method() === 'PUT',
-  )
-  await page.getByRole('menuitemradio', { name: '默认', exact: true }).click()
-  await expect(page.getByRole('button', { name: /模型：/ })).toHaveText(/deepseek-v4-pro · 默认/)
-  expect((await resetRequest).postDataJSON()).toMatchObject({
-    reasoningLevel: 'AUTO',
-    maxOutputTokens: 8192,
-    fallbackModels: ['deepseek-v4-flash'],
-  })
-})
-
-test('@smoke waits for model configuration persistence before starting an interview', async ({
-  page,
-}) => {
+test('@smoke keeps prompt model selection local and sends the current draft', async ({ page }) => {
   const state: ApiState = { requests: [] }
   await installApi(page, state)
-
-  let releaseSave!: () => void
-  const saveReleased = new Promise<void>((resolve) => {
-    releaseSave = resolve
-  })
-  let signalSaveStarted!: () => void
-  const saveStarted = new Promise<void>((resolve) => {
-    signalSaveStarted = resolve
-  })
-  await page.route('**/api/llm/config', async (route) => {
-    if (route.request().method() !== 'PUT') {
-      await route.fallback()
-      return
-    }
-    const body = route.request().postDataJSON() as Record<string, unknown>
-    signalSaveStarted()
-    await saveReleased
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: ok({
-        provider: (body as { provider?: string }).provider ?? 'deepseek',
-        model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
-        customEndpointUrl: null,
-        hasApiKey: false,
-        apiKeyMasked: null,
-        reasoningLevel: (body as { reasoningLevel?: string }).reasoningLevel ?? 'AUTO',
-        maxOutputTokens: (body as { maxOutputTokens?: number }).maxOutputTokens ?? 4096,
-        fallbackModels: [],
-        capability: deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro'),
-      }),
-    })
-  })
-
   await page.goto('/interview')
   await selectContext(page, '选择简历', '作品集简历.pdf')
   await selectContext(page, '选择岗位', '前端工程师')
-  const start = page.getByRole('button', { name: '开始面试' })
-  await expect(start).toBeEnabled()
+
+  await page.getByRole('button', { name: /模型：/ }).click()
+  await page.getByRole('menuitem', { name: /^模型\s/ }).hover()
+  await page.getByRole('menuitemradio', { name: 'deepseek-v4-flash', exact: true }).click()
+  await page.getByRole('button', { name: /模型：/ }).click()
+  await page.getByRole('menuitem', { name: /思考深度/ }).hover()
+  await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
+
+  const modelTrigger = page.getByRole('button', { name: /模型：/ })
+  await expect(modelTrigger).toHaveText(/deepseek-v4-flash · 高/)
+  await expect(page.getByText('模型配置已更新')).toHaveCount(0)
+  expect(
+    state.requests.some(
+      (request) => request.path === '/api/llm/config' && request.method === 'PUT',
+    ),
+  ).toBe(false)
+
+  await page.getByRole('button', { name: '开始面试' }).click()
+  await expect(page).toHaveURL(/session=11/)
+  const request = state.requests.find((item) => item.path === '/api/interview/start')
+  expect(request?.body).toEqual({
+    resumeId: 2,
+    positionId: 2,
+    model: 'deepseek-v4-flash',
+    reasoningLevel: 'HIGH',
+  })
+  expect(
+    state.requests.some((item) => item.path === '/api/llm/config' && item.method === 'PUT'),
+  ).toBe(false)
+  await expect(page.getByText('模型配置已更新')).toHaveCount(0)
+})
+
+test('@smoke blocks incompatible model drafts and preserves selections after start failure', async ({
+  page,
+}) => {
+  const state: ApiState = { requests: [] }
+  const limitedModel = 'deepseek-v4-limited'
+  await installApi(page, state)
+  await page.route('**/api/llm/providers', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: ok(
+        providers.map((provider) =>
+          provider.providerKey === 'deepseek'
+            ? {
+                ...provider,
+                models: [
+                  ...provider.models,
+                  {
+                    ...deepSeekCapability(limitedModel),
+                    supportedReasoningLevels: ['AUTO', 'LOW'],
+                  },
+                ],
+              }
+            : provider,
+        ),
+      ),
+    })
+  })
+  await page.goto('/interview')
+  await selectContext(page, '选择简历', '作品集简历.pdf')
+  await selectContext(page, '选择岗位', '前端工程师')
 
   await page.getByRole('button', { name: /模型：/ }).click()
   await page.getByRole('menuitem', { name: /思考深度/ }).hover()
   await page.getByRole('menuitemradio', { name: '高', exact: true }).click()
-  await saveStarted
+  await page.getByRole('button', { name: /模型：/ }).click()
+  await page.getByRole('menuitem', { name: /^模型\s/ }).hover()
+  await page.getByRole('menuitemradio', { name: limitedModel, exact: true }).click()
 
+  const start = page.getByRole('button', { name: '开始面试' })
+  await expect(page.getByRole('alert')).toHaveText('该模型不支持当前思考深度，请选择兼容的思考深度')
   await expect(start).toBeDisabled()
   expect(state.requests.some((request) => request.path === '/api/interview/start')).toBe(false)
+  expect(
+    state.requests.some(
+      (request) => request.path === '/api/llm/config' && request.method === 'PUT',
+    ),
+  ).toBe(false)
 
-  releaseSave()
-  await expect(page.getByText('模型配置已更新')).toBeVisible()
+  await page.getByRole('button', { name: /模型：/ }).click()
+  await page.getByRole('menuitem', { name: /思考深度/ }).hover()
+  await page.getByRole('menuitemradio', { name: '低', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveCount(0)
   await expect(start).toBeEnabled()
+  await expect(page.getByRole('button', { name: /模型：/ })).toHaveText(
+    new RegExp(`${limitedModel} · 低`),
+  )
+
+  await page.route('**/api/interview/start', async (route) => {
+    state.requests.push({
+      path: '/api/interview/start',
+      method: 'POST',
+      body: route.request().postDataJSON(),
+    })
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({
+        type: 'about:blank',
+        title: 'service_unavailable',
+        status: 503,
+        detail: '模型服务暂不可用',
+        code: 'service_unavailable',
+      }),
+    })
+  })
+  await start.click()
+  await expect(
+    page.locator('[data-sonner-toast]').filter({ hasText: '模型服务暂不可用' }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/interview$/)
+  await expect(page.getByRole('button', { name: /模型：/ })).toHaveText(
+    new RegExp(`${limitedModel} · 低`),
+  )
+  const request = state.requests.find((item) => item.path === '/api/interview/start')
+  expect(request?.body).toMatchObject({ model: limitedModel, reasoningLevel: 'LOW' })
+  expect(
+    state.requests.some((item) => item.path === '/api/llm/config' && item.method === 'PUT'),
+  ).toBe(false)
 })
 
 test('@smoke pins and deletes sessions through the session API', async ({ page }) => {
@@ -782,6 +773,37 @@ test('@smoke enables report generation only during the closing stage', async ({ 
   await page.goto('/interview?session=11')
 
   await expect(page.getByRole('button', { name: '生成报告' })).toBeEnabled()
+})
+
+test('@smoke waits for closing answer assessment before generating a report', async ({ page }) => {
+  const state: ApiState = {
+    requests: [],
+    session: {
+      sessionId: 11,
+      targetPosition: '平台工程师',
+      status: 'ongoing',
+      currentStage: 'closing',
+      summaryReport: null,
+      stages: [],
+      messages: [
+        { id: 1, role: 'assistant', content: '面试即将结束。' },
+        {
+          id: 2,
+          role: 'user',
+          content: '这是我的收尾回答。',
+          assessmentStatus: 'PENDING',
+        },
+      ],
+      resumeId: 1,
+      positionId: 1,
+      attachments: [],
+    },
+  }
+  await installApi(page, state)
+  await page.goto('/interview?session=11')
+
+  await expect(page.getByRole('button', { name: '回答评估中' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '生成报告' })).toHaveCount(0)
 })
 
 test('@smoke keeps the active session when a requested session fails and retries that target', async ({
@@ -1026,19 +1048,27 @@ test('@smoke isolates account-scoped queries when a previous principal completes
   await installApi(page, state)
   let profileRequests = 0
   let releaseAccountA!: () => void
+  let finishAccountA!: () => void
   const accountAGate = new Promise<void>((resolve) => {
     releaseAccountA = resolve
+  })
+  const accountAFinished = new Promise<void>((resolve) => {
+    finishAccountA = resolve
   })
   await page.route('**/api/user/profile', async (route) => {
     profileRequests += 1
     const requestNumber = profileRequests
     if (requestNumber === 1) await accountAGate
     const account = requestNumber === 1 ? 'account-a' : 'account-b'
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: ok({ username: account, email: `${account}@example.com`, themePreference: 'system' }),
-    })
+    try {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: ok({ username: account, email: `${account}@example.com`, themePreference: 'system' }),
+      })
+    } finally {
+      if (requestNumber === 1) finishAccountA()
+    }
   })
   await page.route('**/api/auth/login', async (route) => {
     await route.fulfill({
@@ -1062,7 +1092,7 @@ test('@smoke isolates account-scoped queries when a previous principal completes
     await expect.poll(() => profileRequests).toBe(2)
     await expect(page.getByLabel('用户名')).toHaveValue('account-b')
     releaseAccountA()
-    await page.waitForTimeout(100)
+    await accountAFinished
     await expect(page.getByLabel('用户名')).toHaveValue('account-b')
     await expect(page.getByText('account-a')).toHaveCount(0)
   } finally {

@@ -16,7 +16,9 @@ public class InterviewStartRequest {
 
     private String jdText;
 
-    private String requestedModel;
+    private String model;
+
+    private String reasoningLevel;
 
     private List<Long> attachmentIds;
 }

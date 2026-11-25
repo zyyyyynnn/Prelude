@@ -24,6 +24,12 @@ public class MybatisInterviewSessionRepository implements InterviewSessionReposi
     }
 
     @Override
+    public InterviewSession selectByIdForUpdate(java.io.Serializable sessionId) {
+        InterviewSessionEntity entity = sessionMapper.selectByIdForUpdate(sessionId);
+        return entity == null ? null : entity.toDomain();
+    }
+
+    @Override
     public int add(InterviewSession session) {
         InterviewSessionEntity entity = InterviewSessionEntity.of(session);
         int rows = sessionMapper.insert(entity);

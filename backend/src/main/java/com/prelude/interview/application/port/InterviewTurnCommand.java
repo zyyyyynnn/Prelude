@@ -4,7 +4,6 @@ public record InterviewTurnCommand(
     Long sessionId,
     Long accountId,
     String content,
-    boolean autoStart,
-    boolean completionPrompt
+    boolean autoStart
 ) {
 }

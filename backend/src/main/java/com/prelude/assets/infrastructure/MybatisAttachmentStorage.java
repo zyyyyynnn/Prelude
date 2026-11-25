@@ -10,7 +10,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-/** MyBatis-Plus adapter for {@link AttachmentStorage}; the only place that names the mapper. */
 @Repository
 @RequiredArgsConstructor
 public class MybatisAttachmentStorage implements AttachmentStorage {
@@ -61,11 +60,13 @@ public class MybatisAttachmentStorage implements AttachmentStorage {
     }
 
     @Override
-    public void unbindScope(Long accountId, String scopeType, Long scopeId) {
+    public List<AttachmentRow> deleteScope(Long accountId, String scopeType, Long scopeId) {
+        List<AttachmentRow> deleted = listByScope(accountId, scopeType, scopeId);
         attachmentMapper.delete(new LambdaQueryWrapper<StoredAttachmentEntity>()
             .eq(StoredAttachmentEntity::getAccountId, accountId)
             .eq(StoredAttachmentEntity::getScopeType, scopeType)
             .eq(StoredAttachmentEntity::getScopeId, scopeId));
+        return deleted;
     }
 
     @Override

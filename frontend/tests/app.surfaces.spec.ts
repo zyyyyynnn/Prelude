@@ -80,7 +80,8 @@ async function installApi(page: Page) {
   await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
     const path = new URL(route.request().url()).pathname
     let data: unknown = null
-    if (path === '/api/interview/sessions')
+    if (path === '/api/auth/oauth/providers') data = []
+    else if (path === '/api/interview/sessions')
       data = [
         {
           sessionId: 7,
@@ -98,7 +99,12 @@ async function installApi(page: Page) {
         accountId: 1,
         username: 'prelude',
         email: 'prelude@example.com',
-        themePreference: 'system',
+        themePreference: await page.evaluate(
+          () =>
+            localStorage.getItem('prelude-theme-preference:1') ??
+            localStorage.getItem('prelude-theme-preference') ??
+            'system',
+        ),
         revision: 0,
       }
     else if (path === '/api/llm/providers') data = providers

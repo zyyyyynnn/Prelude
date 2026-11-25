@@ -132,8 +132,9 @@ public final class AccountFixtures {
         return Mockito.mock(AvatarStoragePort.class);
     }
 
-    public static void whenStagedAvatar(AvatarStoragePort port, long accountId, String mimeType, byte[] bytes, String resultUrl) {
-        Mockito.when(port.stage(accountId, mimeType, bytes)).thenReturn(resultUrl);
+    public static void whenStagedAvatar(AvatarStoragePort port, long accountId, String fileName,
+                                        String mimeType, byte[] bytes, String resultUrl) {
+        Mockito.when(port.stage(accountId, fileName, mimeType, bytes)).thenReturn(resultUrl);
     }
 
     public static void verifyAvatarDiscarded(AvatarStoragePort port, long accountId, String avatarUrl) {

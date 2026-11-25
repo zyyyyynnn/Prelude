@@ -35,8 +35,20 @@ public class MybatisInterviewStageRepository implements InterviewStageRepository
     }
 
     @Override
+    public InterviewStage findCurrentForUpdate(Long sessionId) {
+        InterviewStageEntity entity = stageMapper.findCurrentForUpdate(sessionId);
+        return entity == null ? null : entity.toDomain();
+    }
+
+    @Override
     public InterviewStage findLatest(Long sessionId) {
         InterviewStageEntity entity = stageMapper.findLatest(sessionId);
+        return entity == null ? null : entity.toDomain();
+    }
+
+    @Override
+    public InterviewStage findLatestForUpdate(Long sessionId) {
+        InterviewStageEntity entity = stageMapper.findLatestForUpdate(sessionId);
         return entity == null ? null : entity.toDomain();
     }
 

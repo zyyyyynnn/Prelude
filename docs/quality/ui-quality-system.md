@@ -20,6 +20,12 @@
 | `npm run verify:a11y` | 真实浏览器 Axe，覆盖 `/interview` 与 `/components-lab` × 亮/暗。每条先等被测页面画出的 landmark 再扫描；判据保留 tags 覆盖的全部严重级；失败时打印 impact、规则 id、选择器与原因文本 |
 | `npm run verify:visual` | 44 张 `*-win32.png` 像素基线：组件检查面按面板逐张（亮/暗各 14 张，每个面板都从同一固定窗口起量、按实测差额扩窗并把顶边对齐到整数滚动偏移后再取图，避免基线受前一个面板留下的滚动位置影响；WebGL 品牌球 mask 后改用几何断言）、产品面按面逐张（登录、注册、面试准备态、看板、产品内报告面、设置主题面板，亮/暗各 6 张）、404 面与窄桌面布局各一张。另有四条实测断言：折叠 rail 的容器宽度/行盒/图标间隙与 token 闭合、每条**水平**分割线两侧间隙不小于 `--spacing-sm`（竖向单边线是缩进轨，量「上下留白」是在要求它当水平线用，全应用任何一条 rail 都会假红；轨的对齐由几何断言覆盖）、字段尾部操作位落在控件盒内、composer 尾部操作簇内所有按钮共享同一条上下边。页面扫描报告自己量到的目标数（分割线另报区域内在范围数），量到 0 个即失败 |
 | `npm run test:smoke` | React 开发 StrictMode 下真实浏览器核心行为与客户端路由 |
+| `npm run verify:identity` | OAuth provider/redirect/pending 重认证、头像解码与跨账户主题/profile 迟到响应隔离 |
+| `npm run generate:sbom` | 从 lockfile 生成 CycloneDX 1.6 runtime SBOM，排除 dev 依赖，输出到 `frontend/output/sbom.cdx.json` |
+| `npm run verify:licenses` | 两份 runtime SBOM 的许可证必须满足明确 allow/deny 规则；CycloneDX `licenses` 数组按全部条目允许或例外处理，只有 SPDX `expression` 内部使用 `OR` 语义；多选许可可按精确 PURL 版本显式选择一个允许许可证；未知许可证阻断，例外仅接受精确组件、许可证、理由、批准人和到期日 |
+| `npm run verify:evidence` | `docs/screenshots/manifest.json` 与全部 surface 文件存在，每个文件的 SHA-256 与清单一致，`inputRevision` 等于经 Git 过滤器规范化的前端输入内容哈希，且工作树前端输入确实干净；捕获仅对最大通道差 ≤2、差异像素占比 ≤0.1% 的抗锯齿噪声保留原图；CI 在截图捕获前验证已提交证据，捕获后以 `git diff --exit-code -- docs/screenshots` 验证可复现性 |
+
+依赖漏洞由同一 Grype 0.122.1 路径扫描前后端 SBOM，HIGH/CRITICAL 阻断；`npm audit --omit=dev` 仅作为本地辅助命令，不是 CI 门禁。命令顺序与本地复现方式见 `docs/setup.md#依赖与证据门禁`。
 
 新增或修改判据先红测：种入要防的缺陷、看到 FAIL、恢复后看到 PASS。探针前后用仓库外文件副本保存与恢复目标文件。
 

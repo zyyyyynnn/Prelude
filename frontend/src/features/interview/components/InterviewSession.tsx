@@ -39,6 +39,9 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
   const current = controller.current
   const resumeName = resumes.data?.find((item) => item.id === current.resumeId)?.fileName
   const hasReport = Boolean(current.summaryReport)
+  const assessing = controller.messages.some(
+    (message) => message.role === 'user' && message.assessmentStatus === 'PENDING',
+  )
   async function printReport() {
     setPrinting(true)
     try {
@@ -61,6 +64,7 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
           showingReport={controller.showReport}
           sending={controller.sending}
           finishing={controller.finishing}
+          assessing={assessing}
           printing={printing}
           onFinish={controller.finish}
           onPrintReport={() => void printReport()}

@@ -95,14 +95,15 @@ class InterviewControllerTest {
 
     @Test
     void startForwardsEveryDecodedFieldIntoTheCommand() throws Exception {
-        when(startInterview.execute(new StartInterviewCommand(3L, 5L, "jd", "deepseek-v4-pro", List.of(8L))))
+        when(startInterview.execute(new StartInterviewCommand(
+            3L, 5L, "jd", "deepseek-v4-pro", "HIGH", List.of(8L))))
             .thenReturn(new StartInterviewResult(77L, "Java 后端工程师", "warmup"));
 
         mockMvc.perform(post("/api/interview/start")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"resumeId":3,"positionId":5,"jdText":"jd","requestedModel":"deepseek-v4-pro",\
-                    "attachmentIds":[8]}"""))
+                    {"resumeId":3,"positionId":5,"jdText":"jd","model":"deepseek-v4-pro",\
+                    "reasoningLevel":"HIGH","attachmentIds":[8]}"""))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(200))
             .andExpect(jsonPath("$.data.sessionId").value(77))
@@ -171,7 +172,7 @@ class InterviewControllerTest {
             "HIGH",
             null,
             List.of(new InterviewStageView("warmup", LocalDateTime.parse("2026-09-01T08:00:00"), null)),
-            List.of(new InterviewMessageView(9L, "assistant", "请先介绍一下你自己。", 2, null, null, null)),
+            List.of(new InterviewMessageView(9L, "assistant", "请先介绍一下你自己。", 2, null, null, null, null, null)),
             3L,
             5L,
             "jd",
@@ -290,10 +291,11 @@ class InterviewControllerTest {
     }
 
     @Test
-    void deleteUsesThePathSessionAsTheOwnershipScope() throws Exception {
+    void deleteAcceptsThePathSessionWithoutClaimingPhysicalDeletion() throws Exception {
         mockMvc.perform(delete("/api/interview/41"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data").doesNotExist());
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(jsonPath("$.data.accepted").value(true));
 
         verify(deleteInterviewSession).execute(41L);
     }

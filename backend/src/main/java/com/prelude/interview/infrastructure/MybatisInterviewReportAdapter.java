@@ -4,7 +4,6 @@ import com.prelude.interview.api.port.InterviewMessageSnapshot;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.interview.api.port.InterviewSessionSnapshot;
 import com.prelude.interview.api.port.InterviewStageSnapshot;
-import com.prelude.interview.application.InterviewStageManager;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.application.repository.InterviewStageRepository;
@@ -15,11 +14,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * Serves the report pipeline from the interview domain. The port speaks in snapshots;
- * this adapter is the single place that turns a domain object into one, so a new column
- * only has to be added here.
- */
 @Component
 @RequiredArgsConstructor
 public class MybatisInterviewReportAdapter implements InterviewReportPort {
@@ -27,7 +21,6 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewMessageRepository interviewMessageRepository;
     private final InterviewStageRepository interviewStageRepository;
-    private final InterviewStageManager interviewStageManager;
 
     @Override
     public InterviewSessionSnapshot findSession(Long sessionId) {
@@ -48,11 +41,6 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
         return interviewMessageRepository.listBySession(sessionId).stream()
             .map(this::toSnapshot)
             .toList();
-    }
-
-    @Override
-    public void closeCurrentStage(Long sessionId) {
-        interviewStageManager.closeCurrentStage(sessionId);
     }
 
     @Override
@@ -81,6 +69,8 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
             message.getSeqNum(),
             message.getScore(),
             message.getHint(),
+            message.getAssessmentStatus() == null ? null : message.getAssessmentStatus().name(),
+            message.getAssessmentError(),
             message.getCreatedAt()
         );
     }

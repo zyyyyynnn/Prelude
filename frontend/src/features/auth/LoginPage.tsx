@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
+import { apiBaseUrl } from '@/shared/api/client'
 import { cn } from '@/shared/lib/cn'
-import { login, register } from './api'
+import { fetchOAuthProviders, login, register } from './api'
 import { useAuth } from './auth-context'
-import { RiEyeLine, RiEyeOffLine } from '@remixicon/react'
+import { oauthStartPath, safeLocalRedirect } from './redirect'
+import type { OAuthProvider } from './types'
+import { RiEyeLine, RiEyeOffLine, RiGithubLine, RiGoogleLine } from '@remixicon/react'
 import {
   Button,
   Field,
@@ -18,6 +22,11 @@ import {
 
 type AuthMode = 'login' | 'register'
 
+const oauthOptions = {
+  google: { label: 'Google', icon: RiGoogleLine },
+  github: { label: 'GitHub', icon: RiGithubLine },
+} satisfies Record<OAuthProvider, { label: string; icon: typeof RiGoogleLine }>
+
 export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('login')
   const [username, setUsername] = useState('')
@@ -29,15 +38,25 @@ export function LoginPage() {
   const feedback = useFeedback()
   const location = useLocation()
   const reportedExpiration = useRef(false)
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search])
+  const oauthPending = searchParams.get('oauth') === 'pending'
+  const providers = useQuery({
+    queryKey: ['oauth-providers'],
+    queryFn: fetchOAuthProviders,
+    retry: false,
+  })
+  const enabledProviders = (providers.data ?? []).filter(
+    (provider): provider is OAuthProvider => provider === 'google' || provider === 'github',
+  )
 
   useEffect(() => {
-    const expired = new URLSearchParams(location.search).get('reason') === 'expired'
+    const expired = searchParams.get('reason') === 'expired'
     if (!expired) reportedExpiration.current = false
     else if (!reportedExpiration.current) {
       reportedExpiration.current = true
       feedback.notify('登录已失效，请重新登录。', 'error')
     }
-  }, [feedback, location.search])
+  }, [feedback, searchParams])
 
   const switchMode = (next: AuthMode) => {
     setMode(next)
@@ -76,8 +95,7 @@ export function LoginPage() {
   }
 
   if (auth.status === 'authenticated') {
-    const redirect = new URLSearchParams(location.search).get('redirect') || '/interview'
-    return <Navigate to={redirect} replace />
+    return <Navigate to={safeLocalRedirect(searchParams.get('redirect'))} replace />
   }
 
   return (
@@ -95,6 +113,12 @@ export function LoginPage() {
                 {mode === 'login' ? '进入面试工作台' : '创建工作台账号'}
               </h1>
             </header>
+
+            {mode === 'login' && oauthPending && (
+              <p role="alert" className="text-sm text-text-secondary">
+                外部账号已匹配现有账户，请使用密码登录以完成验证。
+              </p>
+            )}
 
             <SegmentedControl
               ariaLabel="账号操作"
@@ -168,6 +192,30 @@ export function LoginPage() {
                 </Button>
               </div>
             </form>
+
+            {mode === 'login' && enabledProviders.length > 0 && (
+              <div className="grid gap-sm">
+                {enabledProviders.map((provider) => {
+                  const option = oauthOptions[provider]
+                  return (
+                    <Button
+                      key={provider}
+                      variant="secondary"
+                      className="w-full"
+                      nativeButton={false}
+                      render={
+                        <a
+                          href={`${apiBaseUrl}${oauthStartPath(provider, searchParams.get('redirect'))}`}
+                        />
+                      }
+                    >
+                      <Icon as={option.icon} />
+                      {option.label}
+                    </Button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>

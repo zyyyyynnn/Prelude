@@ -1,8 +1,12 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { formText } from '@/shared/lib/form-data'
-import { fetchProfile, saveProfile, uploadAvatar } from '../api'
+import { ApiClientError } from '@/shared/api/client'
+import { ProfileAvatar } from '@/features/profile'
+import { useAuth } from '@/features/auth'
+import { fetchProfile, profileQueryKey, saveProfile, uploadAvatar } from '../api'
 import { sectionTitles } from '../settings-context'
+import type { UserProfilePayload } from '../types'
 import { RiEyeLine, RiEyeOffLine, RiUploadLine } from '@remixicon/react'
 import {
   Button,
@@ -19,31 +23,90 @@ import {
   useFeedback,
 } from '@/shared/ui'
 
+type ProfileWrite = { kind: 'save'; payload: UserProfilePayload } | { kind: 'avatar'; file: File }
+
 export function ProfilePanel() {
-  const profile = useQuery({ queryKey: ['profile'], queryFn: fetchProfile })
+  const auth = useAuth()
+  const queryKey = profileQueryKey(auth.accountId ?? 0)
+  const profile = useQuery({
+    queryKey,
+    queryFn: ({ signal }) => fetchProfile(signal),
+    enabled: auth.accountId != null,
+  })
   const client = useQueryClient()
   const feedback = useFeedback()
   const avatarInput = useRef<HTMLInputElement>(null)
+  const mounted = useRef(true)
+  const activeWrite = useRef(false)
+  const writeSequence = useRef(0)
+  const revisionRefreshPending = useRef(false)
+  const [refreshingRevision, setRefreshingRevision] = useState(false)
   const [oldVisible, setOldVisible] = useState(false)
   const [newVisible, setNewVisible] = useState(false)
-  const save = useMutation({
-    mutationFn: saveProfile,
-    onSuccess: (data) => {
-      client.setQueryData(['profile'], data)
-      feedback.notify('资料已保存', 'success')
+
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
+  const write = useMutation({
+    mutationFn: ({ operation }: { operation: ProfileWrite; sequence: number }) =>
+      operation.kind === 'save' ? saveProfile(operation.payload) : uploadAvatar(operation.file),
+    onMutate: ({ sequence }) => {
+      void client.cancelQueries({ queryKey })
+      return { sequence, accountId: auth.accountId }
     },
-    onError: (error) => feedback.notify(error.message, 'error'),
-  })
-  const avatar = useMutation({
-    mutationFn: uploadAvatar,
-    onSuccess: (data) => {
-      client.setQueryData(['profile'], data)
-      feedback.notify('头像已更新', 'success')
+    onSuccess: (data, _, context) => {
+      if (
+        !mounted.current ||
+        context.sequence !== writeSequence.current ||
+        data.accountId !== context.accountId
+      ) {
+        return
+      }
+      client.setQueryData(queryKey, data)
+      feedback.notify(
+        write.variables?.operation.kind === 'avatar' ? '头像已更新' : '资料已保存',
+        'success',
+      )
     },
-    onError: (error) => feedback.notify(error.message, 'error'),
+    onError: (error, _, context) => {
+      if (!mounted.current || !context || context.sequence !== writeSequence.current) return
+      if (error instanceof ApiClientError && error.status === 409) {
+        revisionRefreshPending.current = true
+        setRefreshingRevision(true)
+        void profile.refetch().finally(() => {
+          if (mounted.current && context.sequence === writeSequence.current) {
+            revisionRefreshPending.current = false
+            setRefreshingRevision(false)
+          }
+        })
+      }
+      feedback.notify(error.message, 'error')
+    },
+    onSettled: (_, __, context) => {
+      if (context.sequence === writeSequence.current) activeWrite.current = false
+    },
   })
+
+  function beginWrite(operation: ProfileWrite) {
+    if (
+      activeWrite.current ||
+      revisionRefreshPending.current ||
+      !profile.data ||
+      auth.accountId == null
+    ) {
+      return
+    }
+    activeWrite.current = true
+    write.mutate({ operation, sequence: ++writeSequence.current })
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (activeWrite.current || revisionRefreshPending.current) return
     const data = new FormData(event.currentTarget)
     const oldPassword = formText(data, 'oldPassword')
     const newPassword = formText(data, 'newPassword')
@@ -56,24 +119,37 @@ export function ProfilePanel() {
       return
     }
     if (!profile.data) return
-    save.mutate({
-      username: formText(data, 'username'),
-      email: formText(data, 'email'),
-      oldPassword: oldPassword || undefined,
-      newPassword: newPassword || undefined,
-      expectedRevision: profile.data.revision,
-      operationId: crypto.randomUUID(),
+    beginWrite({
+      kind: 'save',
+      payload: {
+        username: formText(data, 'username'),
+        email: formText(data, 'email'),
+        oldPassword: oldPassword || undefined,
+        newPassword: newPassword || undefined,
+        expectedRevision: profile.data.revision,
+        operationId: crypto.randomUUID(),
+      },
     })
   }
+
   if (profile.isPending) return <LoadingState message="正在读取账号资料…" />
   if (profile.isError)
     return <ErrorState message={profile.error.message} onRetry={() => void profile.refetch()} />
   const initial = (profile.data?.username?.trim()[0] || 'P').toUpperCase()
+  const saving = write.isPending && write.variables?.operation.kind === 'save'
+  const uploading = write.isPending && write.variables?.operation.kind === 'avatar'
+  const writeBusy = write.isPending || refreshingRevision
+
   return (
     <Panel
       title={sectionTitles.profile}
       actions={
-        <Button type="submit" form="profile-settings-form" loading={save.isPending}>
+        <Button
+          type="submit"
+          form="profile-settings-form"
+          loading={saving || refreshingRevision}
+          disabled={writeBusy}
+        >
           保存设置
         </Button>
       }
@@ -81,29 +157,26 @@ export function ProfilePanel() {
       <form
         className="flex flex-col gap-md"
         id="profile-settings-form"
-        key={`${profile.data?.username}:${profile.data?.email}:${profile.data?.avatarUrl}`}
+        key={`${profile.data?.accountId}:${profile.data?.revision}:${profile.data?.username}:${profile.data?.email}:${profile.data?.avatarUrl}`}
         onSubmit={submit}
       >
         <section className="grid items-center justify-items-center gap-sm">
-          <div className="grid size-(--layout-avatar-inline-size) place-items-center overflow-hidden rounded-full bg-surface-muted font-serif text-lg font-semibold text-brand elevated-ring">
-            {profile.data?.avatarUrl ? (
-              <img className="size-full object-cover" src={profile.data.avatarUrl} alt="当前头像" />
-            ) : (
-              <span>{initial}</span>
-            )}
-          </div>
+          <ProfileAvatar src={profile.data?.avatarUrl} fallback={initial} />
           <div className="grid justify-items-center gap-xs">
             <HiddenFileInput
               id="avatar-upload"
               label="选择头像"
               accept="image/png,image/jpeg,image/webp,image/gif"
               inputRef={avatarInput}
-              onFiles={(files) => avatar.mutate(files[0])}
+              onFiles={(files) => {
+                if (files[0]) beginWrite({ kind: 'avatar', file: files[0] })
+              }}
             />
             <Button
               type="button"
               variant="secondary"
-              loading={avatar.isPending}
+              loading={uploading}
+              disabled={writeBusy}
               onClick={() => avatarInput.current?.click()}
             >
               <Icon as={RiUploadLine} />

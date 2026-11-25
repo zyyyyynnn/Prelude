@@ -582,7 +582,6 @@ export function ComponentLab() {
                 llmConfig={llmConfig}
                 llmProviders={sampleModelProviders}
                 uploadingAttachment={false}
-                savingModel={false}
                 creating={false}
                 onUploadAttachment={rejectUpload}
                 onDeleteAttachment={ignoreDelete}

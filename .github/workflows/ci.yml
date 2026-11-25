@@ -14,6 +14,78 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  supply-chain:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-java@v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: '24'
+          working-directory: frontend
+          run-install: 'false'
+          cache: 'true'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Generate backend runtime SBOM
+        run: mvn --batch-mode -f backend/pom.xml -Pquality cyclonedx:makeBom
+
+      - name: Generate frontend runtime SBOM
+        working-directory: frontend
+        run: npm run generate:sbom
+
+      - name: Verify dependency licenses
+        working-directory: frontend
+        run: npm run verify:licenses
+
+      - name: Scan backend runtime vulnerabilities
+        uses: anchore/scan-action@82049099348cd4edcc94d22cafd8f1e9f8493321 # v7.4.3
+        with:
+          sbom: backend/target/bom.json
+          grype-version: v0.122.1
+          fail-build: true
+          only-fixed: false
+          severity-cutoff: high
+          output-format: json
+          output-file: backend-vulnerabilities.json
+
+      - name: Scan frontend runtime vulnerabilities
+        if: ${{ !cancelled() }}
+        uses: anchore/scan-action@82049099348cd4edcc94d22cafd8f1e9f8493321 # v7.4.3
+        with:
+          sbom: frontend/output/sbom.cdx.json
+          grype-version: v0.122.1
+          fail-build: true
+          only-fixed: false
+          severity-cutoff: high
+          output-format: json
+          output-file: frontend-vulnerabilities.json
+
+      - name: Upload dependency scan evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: runtime-dependency-sboms
+          path: |
+            backend/target/bom.json
+            frontend/output/sbom.cdx.json
+            backend-vulnerabilities.json
+            frontend-vulnerabilities.json
+          if-no-files-found: error
+          retention-days: 7
+
   backend:
     runs-on: ubuntu-latest
     services:
@@ -79,12 +151,22 @@ jobs:
         run: mvn --batch-mode clean test
 
   frontend:
+    needs: supply-chain
+    if: ${{ always() }}
     runs-on: windows-latest
 
     steps:
-      # The governance gate compares commit subjects against main, so this job needs the same
-      # full history the backend job gets: a shallow checkout leaves it checking one commit and
-      # calling that a pass.
+      - name: Require supply chain success
+        shell: bash
+        env:
+          SUPPLY_CHAIN_RESULT: ${{ needs.supply-chain.result }}
+        run: |
+          if [ "$SUPPLY_CHAIN_RESULT" != "success" ]; then
+            echo "supply-chain did not succeed: $SUPPLY_CHAIN_RESULT"
+            exit 1
+          fi
+
+      # Governance compares the full commit range against main.
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
@@ -110,15 +192,10 @@ jobs:
             ${{ runner.os }}-vite-task-cache-${{ hashFiles('frontend/package-lock.json', 'frontend/vite.config.ts') }}-
             ${{ runner.os }}-vite-task-cache-
 
-      # The version comes from the @playwright/test pin, so the runner and a workstation
-      # rasterise the same way instead of agreeing by luck.
+      # Use the browser version pinned by @playwright/test.
       - name: Install the pinned browser
         working-directory: frontend
         run: npx playwright install chromium
-
-      - name: Audit runtime dependencies
-        working-directory: frontend
-        run: npm audit --omit=dev
 
       - name: Verify frontend
         working-directory: frontend
@@ -152,6 +229,10 @@ jobs:
         working-directory: frontend
         run: npm run test:smoke
 
+      - name: Identity and account isolation
+        working-directory: frontend
+        run: npm run verify:identity
+
       - name: BYOK behavior
         working-directory: frontend
         run: npm run verify:byok
@@ -168,6 +249,17 @@ jobs:
         working-directory: frontend
         run: npm run verify:visual
 
+      - name: Verify committed visual evidence
+        working-directory: frontend
+        run: npm run verify:evidence
+
+      - name: Capture surface references
+        working-directory: frontend
+        run: npm run capture:surfaces
+
+      - name: Verify surface capture reproducibility
+        run: git diff --exit-code -- docs/screenshots
+
       - name: Verify demo copy
         working-directory: frontend
         run: npm run verify:demo-copy
@@ -176,10 +268,11 @@ jobs:
         working-directory: frontend
         run: npm run test:unit
 
-      # A pixel gate that fails without leaving the frames behind cannot be diagnosed: the
-      # only evidence is "N pixels differ", which does not say *which* N. Upload the raw
-      # actual/diff PNGs Playwright writes under test-results so a runner-vs-workstation
-      # difference can be read as an image instead of guessed at.
+      - name: Collect visual evidence
+        working-directory: frontend
+        run: npm run visual:diff-report
+
+      # Preserve actual and diff frames so pixel failures remain diagnosable.
       - name: Upload visual evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4.6.2
@@ -188,5 +281,7 @@ jobs:
           path: |
             frontend/test-results/**/*.png
             frontend/test-results/**/*.md
+            frontend/output/visual-diffs/**
+            docs/screenshots/manifest.json
           retention-days: 7
-          if-no-files-found: ignore
+          if-no-files-found: error

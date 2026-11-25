@@ -50,11 +50,27 @@ class InterviewStagePolicyTest {
     }
 
     @Test
+    void replyQuotasAreDeterministicForEveryStage() {
+        assertThat(policy.replyQuota("warmup")).isEqualTo(1);
+        assertThat(policy.replyQuota("technical")).isEqualTo(2);
+        assertThat(policy.replyQuota("deep_dive")).isEqualTo(2);
+        assertThat(policy.replyQuota("closing")).isEqualTo(1);
+        assertThat(policy.shouldAdvance("warmup", 0)).isFalse();
+        assertThat(policy.shouldAdvance("warmup", 1)).isTrue();
+        assertThat(policy.shouldAdvance("technical", 1)).isFalse();
+        assertThat(policy.shouldAdvance("technical", 2)).isTrue();
+        assertThatThrownBy(() -> policy.shouldAdvance("unknown", 10))
+            .isInstanceOf(StageTransitionException.class);
+    }
+
+    @Test
     void nextAfterWalksTheOrderedStagesAndStopsAfterClosing() {
         assertThat(policy.nextAfter("warmup")).contains("technical");
         assertThat(policy.nextAfter("technical")).contains("deep_dive");
         assertThat(policy.nextAfter("deep_dive")).contains("closing");
         assertThat(policy.nextAfter("closing")).isEqualTo(Optional.empty());
-        assertThat(policy.nextAfter("unknown")).contains("technical");
+        assertThatThrownBy(() -> policy.nextAfter("unknown"))
+            .isInstanceOf(StageTransitionException.class)
+            .hasMessage("无效的面试阶段");
     }
 }

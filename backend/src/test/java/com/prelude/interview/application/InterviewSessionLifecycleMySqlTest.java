@@ -32,6 +32,9 @@ class InterviewSessionLifecycleMySqlTest {
     private DeleteInterviewSession deleteInterviewSession;
 
     @Autowired
+    private FinishInterview finishInterview;
+
+    @Autowired
     private PinInterviewSession pinInterviewSession;
 
     @Autowired
@@ -110,6 +113,34 @@ class InterviewSessionLifecycleMySqlTest {
 
         assertThat(count("SELECT COUNT(*) FROM interview_session WHERE id = ?", sessionId)).isEqualTo(1);
         assertThat(pinned(sessionId)).isFalse();
+    }
+
+    @Test
+    void pendingClosingAssessmentBlocksTheReportJobUntilItIsScored() {
+        long accountId = AccountFixtures.create(jdbcTemplate, "finish-assessment");
+        long sessionId = createSession(accountId);
+        insert("INSERT INTO interview_stage (session_id, stage_name) VALUES (?, 'closing')", sessionId);
+        long messageId = insert(
+            "INSERT INTO interview_message (session_id, role, content, seq_num, assessment_status) VALUES (?, 'user', ?, 0, 'PENDING')",
+            sessionId, "closing answer");
+        AccountFixtures.authenticate(accountId);
+
+        assertThatThrownBy(() -> finishInterview.execute(sessionId))
+            .isInstanceOfSatisfying(BusinessException.class, exception -> {
+                assertThat(exception.getStatus()).isEqualTo(409);
+                assertThat(exception.getCode()).isEqualTo("assessment_pending");
+            });
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT status FROM interview_session WHERE id = ?", String.class, sessionId)).isEqualTo("ongoing");
+        assertThat(count("SELECT COUNT(*) FROM background_job WHERE subject_id = ?", sessionId)).isZero();
+
+        jdbcTemplate.update(
+            "UPDATE interview_message SET assessment_status = 'SCORED', score = 8 WHERE id = ?", messageId);
+        FinishInterviewResult result = finishInterview.execute(sessionId);
+
+        assertThat(result.status()).isEqualTo("generating");
+        assertThat(result.jobId()).isNotBlank();
+        assertThat(count("SELECT COUNT(*) FROM background_job WHERE subject_id = ?", sessionId)).isEqualTo(1);
     }
 
     private List<Long> sessionIds(long accountId) {

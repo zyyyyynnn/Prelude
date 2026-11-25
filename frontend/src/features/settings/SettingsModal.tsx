@@ -1,5 +1,5 @@
 import { SettingsNavigation } from './components/settings-navigation'
-import { Suspense, useState, type ReactNode } from 'react'
+import { Suspense, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@/features/auth'
 import { LlmSettingsPanel } from './components/LlmSettingsPanel'
@@ -28,13 +28,14 @@ export function SettingsProvider({
 }) {
   const [open, setOpen] = useState(false)
   const [request, setRequest] = useState<SettingsRequest>({ section: 'profile', requestId: 0 })
+  const nextRequestId = useRef(0)
 
   function openSettings(next: SettingsOpenRequest = {}) {
     setRequest({
       section: next.section ?? 'profile',
       provider: next.provider,
       intent: next.intent,
-      requestId: Date.now(),
+      requestId: ++nextRequestId.current,
     })
     setOpen(true)
   }
@@ -103,11 +104,11 @@ export function SettingsModal({
         />
         <main className="flex min-w-0 flex-1 flex-col" data-slot="settings-main">
           <Suspense fallback={<LoadingState message="正在加载设置…" />}>
-            {section === 'profile' && <ProfilePanel />}
+            {section === 'profile' && <ProfilePanel key={auth.accountId} />}
             {(section === 'resumes' || section === 'positions') &&
               renderResourcePanel({ section, provider, intent, requestId })}
             {section === 'llm' && <LlmSettingsPanel providerKey={provider} />}
-            {section === 'theme' && <ThemePanel />}
+            {section === 'theme' && <ThemePanel key={auth.accountId} />}
           </Suspense>
         </main>
       </div>

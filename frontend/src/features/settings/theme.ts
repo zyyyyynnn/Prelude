@@ -2,13 +2,19 @@ import type { ThemePreference } from './types'
 
 const STORAGE_KEY = 'prelude-theme-preference'
 
-export function readTheme(): ThemePreference {
-  const value = localStorage.getItem(STORAGE_KEY)
+export function themeStorageKey(accountId?: number | null) {
+  return accountId == null ? STORAGE_KEY : `${STORAGE_KEY}:${accountId}`
+}
+
+export function readTheme(accountId?: number | null): ThemePreference {
+  const value =
+    localStorage.getItem(themeStorageKey(accountId)) ??
+    (accountId == null ? null : localStorage.getItem(STORAGE_KEY))
   return value === 'light' || value === 'dark' ? value : 'system'
 }
 
-export function applyTheme(value: ThemePreference) {
-  localStorage.setItem(STORAGE_KEY, value)
+export function applyTheme(value: ThemePreference, accountId?: number | null) {
+  localStorage.setItem(themeStorageKey(accountId), value)
   const dark =
     value === 'dark' || (value === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
   // Double rAF after the forced reflow so the transition class only covers the color flip.

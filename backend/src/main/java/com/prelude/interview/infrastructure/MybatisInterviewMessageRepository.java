@@ -1,14 +1,16 @@
 package com.prelude.interview.infrastructure;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.infrastructure.persistence.InterviewMessageEntity;
 import com.prelude.interview.infrastructure.persistence.InterviewMessageMapper;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-/** Adapts the message port to the row table, so the port never carries the row type. */
 @Repository
 @RequiredArgsConstructor
 public class MybatisInterviewMessageRepository implements InterviewMessageRepository {
@@ -24,13 +26,21 @@ public class MybatisInterviewMessageRepository implements InterviewMessageReposi
     }
 
     @Override
-    public int update(InterviewMessage message) {
-        return messageMapper.updateById(InterviewMessageEntity.of(message));
+    public int updateAssessmentIfPending(InterviewMessage message) {
+        return messageMapper.update(null, new LambdaUpdateWrapper<InterviewMessageEntity>()
+            .set(InterviewMessageEntity::getScore, message.getScore())
+            .set(InterviewMessageEntity::getHint, message.getHint())
+            .set(InterviewMessageEntity::getAssessmentStatus, message.getAssessmentStatus())
+            .set(InterviewMessageEntity::getAssessmentError, message.getAssessmentError())
+            .eq(InterviewMessageEntity::getId, message.getId())
+            .eq(InterviewMessageEntity::getAssessmentStatus, AssessmentStatus.PENDING));
     }
 
     @Override
-    public int delete(java.io.Serializable messageId) {
-        return messageMapper.deleteById(messageId);
+    public List<InterviewMessage> findPendingForJudge(LocalDateTime cutoff, int limit) {
+        return messageMapper.findPendingForJudge(cutoff, limit).stream()
+            .map(InterviewMessageEntity::toDomain)
+            .toList();
     }
 
     @Override
@@ -61,5 +71,10 @@ public class MybatisInterviewMessageRepository implements InterviewMessageReposi
     @Override
     public long countConversationMessages(Long sessionId) {
         return messageMapper.countConversationMessages(sessionId);
+    }
+
+    @Override
+    public long countPendingAssessments(Long sessionId) {
+        return messageMapper.countPendingAssessments(sessionId);
     }
 }

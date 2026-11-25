@@ -1,21 +1,6 @@
 #!/usr/bin/env node
 'use strict'
 
-/**
- * Repository governance gate for commit subjects and PR titles.
- *
- * The rule it enforces is the one written in AGENTS.md (提交与标题):
- *   <type>(<scope>): <semantic title in lowercase imperative english>
- * with no phase or process markers, and PR/Issue bodies in Chinese. Issue and PR title formats
- * are additionally fixed by .github/ISSUE_TEMPLATE/*.
- *
- * Rules:
- * 1. Type must be one of: feat, fix, arch, refactor, test, chore, build, ci, docs, security.
- * 2. Scope must be lowercase alphanumeric with hyphens/underscores.
- * 3. Title must be English (no non-ASCII), start with a lowercase alphanumeric character.
- * 4. Phase markers or process tags (wip, temp, patch1, etc.) are strictly forbidden.
- */
-
 const { execSync } = require('node:child_process')
 
 const ALLOWED_TYPES = new Set([

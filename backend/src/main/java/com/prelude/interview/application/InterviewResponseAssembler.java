@@ -8,10 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Maps domain entities to application query views.
- * Contains no business logic, no DB access, no side effects.
- */
 @Component
 public class InterviewResponseAssembler {
 
@@ -67,7 +63,9 @@ public class InterviewResponseAssembler {
             message.getSeqNum(),
             message.getCreatedAt(),
             message.getScore(),
-            message.getHint()
+            message.getHint(),
+            message.getAssessmentStatus(),
+            message.getAssessmentError()
         );
     }
 }

@@ -35,9 +35,7 @@ backend/.factorypath
 backend/.project
 backend/.settings/
 
-# Ephemeral tool caches kept inside the workspace. CI does not use this path: it sets
-# `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` and runs the runner's own Microsoft Edge channel,
-# so only local runs leave anything here.
+# Ephemeral tool caches
 .cache/
 backend/startup*.log
 

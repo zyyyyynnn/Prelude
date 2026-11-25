@@ -1599,6 +1599,13 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   line-height: var(--text-xs--line-height);
 }
 
+@utility type-caption-error {
+  color: var(--color-error);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xs);
+  line-height: var(--text-xs--line-height);
+}
+
 /* Reading copy set to the report's own measure, so the width is not a layout decision
    every report section re-makes. `type-lead` carries the lead measure; this carries the
    report one, and it keeps the copy leading rather than the relaxed one. */
