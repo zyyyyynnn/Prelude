@@ -19,6 +19,8 @@ export function logout() {
   return apiRequest<void>('/auth/logout', { method: 'POST' })
 }
 
+export const fetchOAuthProviders = () => apiRequest<string[]>('/auth/oauth/providers')
+
 /**
  * Bootstrap session check. A 401 here is an anonymous visitor, not an expired
  * session, so it must not trigger the global unauthorized handling.

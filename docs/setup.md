@@ -14,7 +14,9 @@ Copy-Item .env.example .env
 docker compose up -d mysql redis rabbitmq versitygw
 ```
 
-基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）与 app 的 8080/5173 只发布到 `127.0.0.1`：这套栈的凭据是仓库公开默认值。需要别的设备访问时，改 `docker-compose.yml` 对应映射，并同步 `S3_PUBLIC_ENDPOINT` 与 `application.yml` 的 `app.cors.allowed-origins`（默认放行 localhost/127.0.0.1:5173）。
+基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）与 app 的 8080/5173 只发布到 `127.0.0.1`：这套栈的凭据是仓库公开默认值。需要别的设备访问时，改 `docker-compose.yml` 对应映射，并同步 `S3_PUBLIC_ENDPOINT` 与 `application.yml` 的 `app.cors.allowed-origins`（默认放行 localhost/127.0.0.1:5173）。CORS 与 WebSocket 共用该显式 Origin 列表，并始终允许 same-origin；不允许 `*`。
+
+生产部署使用 `prod` profile 时必须设置 `SESSION_COOKIE_SECURE=true`，否则启动失败。密码登录与注册默认按远端地址和端点执行 Redis 令牌桶限流；可通过 `PRELUDE_AUTH_RATE_LIMIT_ENABLED=false` 关闭，容量与速率见 `application.yml`。nginx 用 `$remote_addr` 覆盖 `X-Forwarded-For` 并清除其他转发头，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
 
 后端：
 
@@ -39,6 +41,9 @@ npm --prefix frontend run dev
 
 ```powershell
 mvn -f backend/pom.xml clean test
+mvn -f backend/pom.xml -Pquality cyclonedx:makeBom
+npm --prefix frontend run generate:sbom
+npm --prefix frontend run verify:licenses
 npm --prefix frontend run check
 npm --prefix frontend run verify:architecture
 npm --prefix frontend run verify:oxc
@@ -51,15 +56,33 @@ npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:a11y
 npm --prefix frontend run verify:visual
+npm --prefix frontend run capture:surfaces
 npm --prefix frontend run build
 npm --prefix frontend run verify:cascade
 npm --prefix frontend run verify:production
 npm --prefix frontend run test:smoke
-npm --prefix frontend audit --omit=dev
+npm --prefix frontend run verify:identity
 git diff --check
 ```
 
-以上 `npm --prefix frontend run X` 以仓库根为工作目录；在 `frontend/` 下改用 `npm run X`。各门禁的断言范围见 `docs/quality/ui-quality-system.md`。
+以上 `npm --prefix frontend run X` 以仓库根为工作目录；在 `frontend/` 下改用 `npm run X`。`capture:surfaces` 在提交前更新证据，提交后执行 `npm --prefix frontend run verify:evidence` 验证干净工作树。各门禁的断言范围见 `docs/quality/ui-quality-system.md`。
+
+### 依赖与证据门禁
+
+后端 `quality` profile 使用 CycloneDX Maven Plugin 2.9.3 生成 `backend/target/bom.json`，前端使用 `@cyclonedx/cyclonedx-npm` 7.0.1 生成 `frontend/output/sbom.cdx.json`。两份 SBOM 均为 CycloneDX 1.6，只包含 compile/runtime 或非 dev 依赖。
+
+CI 对两份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。本地安装同版本 Grype 后可复现：
+
+```powershell
+grype sbom:backend/target/bom.json --fail-on high --output json --file backend/target/vulnerabilities.json
+grype sbom:frontend/output/sbom.cdx.json --fail-on high --output json --file frontend/output/vulnerabilities.json
+```
+
+`verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
+
+`npm audit --omit=dev` 仅可作为本地辅助命令，不是 CI 门禁；CI 统一使用上述 SBOM 与 Grype 的 HIGH/CRITICAL 漏洞门禁。
+
+`verify:evidence` 要求 `docs/screenshots/manifest.json` 存在、列出的 surface 文件存在且 SHA-256 与清单一致、`inputRevision` 等于当前前端输入的内容哈希，且工作树中的前端输入确实干净。输入哈希覆盖 `frontend/` 下已跟踪与未忽略文件，并经过 Git 过滤器规范化，不包含截图清单自身，避免提交 SHA 自指。CI 在 `capture:surfaces` 前验证已提交证据，捕获后执行 `git diff --exit-code -- docs/screenshots` 验证可复现性；visual evidence artifact 找不到文件即失败。
 
 集成验证由环境变量开关：
 
@@ -81,11 +104,13 @@ npm --prefix frontend run snapshot:update
 2. `npm --prefix frontend run visual:diff-report` 把这些帧收拢到 `frontend/output/visual-diffs/`。
 3. 人工核对每一帧后，在 Windows 工作站执行 `snapshot:update`，只提交核对过的基线。
 
+CI 上传 Playwright 的 actual/diff PNG、差异报告与 `manifest.json` 作为 `visual-regression-evidence`；artifact 为空会阻断。
+
 ```powershell
 npm --prefix frontend run capture:surfaces
 ```
 
-生成界面参考图，写入 `docs/screenshots/<light|dark>/<interview|lab>/`（主题 × 板块）。`manifest.json` 记录提交号、路径约定与工作树是否与提交一致（`inputsMatchRevision: false` 表示图来自未提交代码）。这是随代码提交的人工回归对照资产，无自动断言。
+生成界面参考图，写入 `docs/screenshots/<light|dark>/<interview|lab>/`（主题 × 板块），浏览器上下文固定为 `zh-CN` 与 `Asia/Shanghai`，避免本机时区改变日期文案。`manifest.json` 记录前端输入内容哈希、每个 surface 的 SHA-256 与路径约定；输入哈希、surface 集合或图像字节未变化时保留原 `capturedAt`。捕获会解码比较像素；仅最大通道差不超过 2 且差异像素占比不超过 0.1% 时保留原图，以消除 Chromium 抗锯齿噪声，manifest 的文件 SHA-256 仍严格校验。随后执行 `verify:evidence`；只有前端输入哈希匹配且工作树干净时通过。这是随代码提交的人工回归对照资产，CI 同时校验其哈希、输入一致性与捕获可复现性。
 
 语音实时链路五帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`@demo` 链路测试的截图写入 `frontend/test-results/` 作为该次运行的诊断证据。
 

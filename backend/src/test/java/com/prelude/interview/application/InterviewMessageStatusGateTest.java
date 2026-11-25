@@ -12,6 +12,7 @@ import com.prelude.BusinessException;
 import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.interview.domain.InterviewMessage;
 import org.junit.jupiter.api.Test;
 
@@ -62,6 +63,16 @@ class InterviewMessageStatusGateTest {
         InterviewMessage inserted = service.insertMessage(9L, "user", "answer");
 
         assertThat(inserted.getSeqNum()).isZero();
+        assertThat(inserted.getAssessmentStatus()).isEqualTo(AssessmentStatus.PENDING);
         verify(messages).add(any());
+    }
+
+    @Test
+    void assistantAndSystemMessagesDoNotStartAnAssessment() {
+        when(sessions.lockAppendOrder(9L)).thenReturn(InterviewSessionStatus.ONGOING.wire());
+        when(messages.findLatestForAppend(9L)).thenReturn(null);
+
+        assertThat(service.insertMessage(9L, "assistant", "question").getAssessmentStatus()).isNull();
+        assertThat(service.insertMessage(9L, "system", "context").getAssessmentStatus()).isNull();
     }
 }

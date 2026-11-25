@@ -30,7 +30,10 @@ export const discoverCapabilities = (payload: LlmCapabilityDiscoveryPayload) =>
     body: JSON.stringify(payload),
   })
 
-export const fetchProfile = () => apiRequest<UserProfileResponse>('/user/profile')
+export const profileQueryKey = (accountId: number) => ['profile', accountId] as const
+
+export const fetchProfile = (signal?: AbortSignal) =>
+  apiRequest<UserProfileResponse>('/user/profile', { signal })
 
 export const saveProfile = (payload: UserProfilePayload) =>
   apiRequest<UserProfileResponse>('/user/profile', { method: 'PUT', body: JSON.stringify(payload) })

@@ -114,6 +114,7 @@ export type DemoProfile = {
 
 export type DemoState = {
   authenticated: boolean
+  oauthProviders: string[]
   requests: DemoRequest[]
   sessions: InterviewSessionItem[]
   session: InterviewSessionDetailResponse
@@ -267,6 +268,7 @@ const report = JSON.stringify({
 export function createDemoState(): DemoState {
   return {
     authenticated: false,
+    oauthProviders: [],
     requests: [],
     positions: [
       {
@@ -467,11 +469,17 @@ async function respond(route: Route, state: DemoState) {
   if (path === '/api/auth/me' && method === 'GET') {
     if (!state.authenticated)
       return fulfillProblem(route, 401, 'authentication_required', '请先登录')
-    return fulfillJson(route, { accountId: 1, username: 'demo' })
+    return fulfillJson(route, {
+      accountId: state.profile.accountId,
+      username: state.profile.username,
+    })
+  }
+  if (path === '/api/auth/oauth/providers' && method === 'GET') {
+    return fulfillJson(route, state.oauthProviders)
   }
   if (path === '/api/auth/login' && method === 'POST') {
     state.authenticated = true
-    return fulfillJson(route, { accountId: 1 })
+    return fulfillJson(route, { accountId: state.profile.accountId })
   }
   if (path === '/api/auth/logout' && method === 'POST') {
     state.authenticated = false

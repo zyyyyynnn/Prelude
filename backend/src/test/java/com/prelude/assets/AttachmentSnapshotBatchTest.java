@@ -50,7 +50,8 @@ class AttachmentSnapshotBatchTest {
                 }
 
                 @Override
-                public void unbindScope(Long a, String s, Long i) {
+                public List<AttachmentRow> deleteScope(Long a, String s, Long i) {
+                    return List.of();
                 }
 
                 @Override
@@ -78,7 +79,7 @@ class AttachmentSnapshotBatchTest {
                 public void deleteById(Long id) {
                 }
             },
-            null, null, null, null, null
+            null, null, null, null, null, null
         );
     }
 

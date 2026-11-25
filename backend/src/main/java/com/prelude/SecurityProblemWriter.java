@@ -23,7 +23,7 @@ public class SecurityProblemWriter implements AuthenticationEntryPoint, AccessDe
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    static void write(HttpServletResponse response, int status, String code, String message) throws IOException {
+    public static void write(HttpServletResponse response, int status, String code, String message) throws IOException {
         if (response.isCommitted()) {
             return;
         }

@@ -50,7 +50,6 @@ class ModelExecutionSnapshotTest {
         assertThat(frozen.capabilityVersion())
             .isEqualTo(LlmFixtures.CAPABILITY_VERSION);
 
-        // Later profile mutation: the frozen snapshot must not change.
         llmPort.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
             "deepseek", "deepseek-v4-flash", null, null, "AUTO", 8192, List.of()));
         LlmFixtures.SnapshotRow reloaded = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
@@ -61,14 +60,15 @@ class ModelExecutionSnapshotTest {
 
     @Test
     @Transactional
-    void requestedModelOverrideFreezesTheComposerSelection() {
+    void composerSelectionOverridesProfileModelAndReasoning() {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
         long snapshotId = llmPort.freezeSnapshot(
-            LlmFixtures.freezeSnapshotCommand(accountId, null, "deepseek-v4-flash")).snapshotId();
+            LlmFixtures.freezeSnapshotCommand(accountId, "HIGH", "deepseek-v4-flash")).snapshotId();
 
         LlmFixtures.SnapshotRow frozen = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
         assertThat(frozen.model()).isEqualTo("deepseek-v4-flash");
+        assertThat(frozen.reasoningLevel()).isEqualTo("HIGH");
     }
 
     @Test

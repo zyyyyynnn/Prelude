@@ -14,5 +14,7 @@ public class InterviewMessage {
     private Integer seqNum;
     private Integer score;
     private String hint;
+    private AssessmentStatus assessmentStatus;
+    private String assessmentError;
     private LocalDateTime createdAt;
 }

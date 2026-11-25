@@ -1,5 +1,7 @@
 package com.prelude.interview.api;
 
+import com.prelude.interview.domain.AssessmentStatus;
+
 import java.time.LocalDateTime;
 
 public record InterviewMessageItemResponse(
@@ -9,6 +11,8 @@ public record InterviewMessageItemResponse(
     Integer seqNum,
     LocalDateTime createdAt,
     Integer score,
-    String hint
+    String hint,
+    AssessmentStatus assessmentStatus,
+    String assessmentError
 ) {
 }

@@ -1,26 +1,28 @@
 package com.prelude.interview.application;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import com.prelude.BusinessException;
+import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.port.JudgeOutcome;
 import com.prelude.interview.application.port.JudgeResult;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.LlmResponseText;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
+import java.math.BigInteger;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -28,74 +30,88 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class InterviewJudgeService {
 
+    private static final String ROLE_USER = "user";
     private static final String ROLE_ASSISTANT = "assistant";
-    /**
-     * A judge call may run for the full LLM call timeout once per transport attempt, so the
-     * lease has to outlive the worst case; a crashed holder only delays scoring for this long.
-     */
+    private static final int MAX_HINT_LENGTH = 255;
     private static final Duration JUDGE_LOCK_LEASE = Duration.ofMinutes(5);
     private static final RedisScript<Long> RELEASE_LOCK = RedisScript.of(
         "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
         Long.class);
+
     private final InterviewMessageRepository interviewMessageRepository;
     private final LlmPort llmPort;
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final PromptRegistry promptRegistry;
 
-    public Optional<JudgeResult> judgeAndPersist(InterviewSession session, InterviewMessage userMsg) {
-        Long accountId = session.getAccountId();
-        String lockKey = "lock:judge:" + accountId + ":" + session.getId();
+    public JudgeOutcome judgeAndPersist(InterviewSession session, InterviewMessage userMessage) {
+        if (session == null || session.getId() == null || userMessage == null) {
+            throw BusinessException.notFound("面试消息不存在");
+        }
+        if (!session.getId().equals(userMessage.getSessionId()) || !ROLE_USER.equals(userMessage.getRole())) {
+            throw BusinessException.badRequest("面试消息不属于当前会话或不是候选人回答");
+        }
+        JudgeOutcome terminal = terminalOutcome(userMessage);
+        if (terminal != null) {
+            return terminal;
+        }
+
+        String lockKey = "lock:judge:" + userMessage.getId();
         String lockToken = acquireJudgeLock(lockKey);
         if (lockToken == null) {
-            log.warn("Failed to acquire judge lock for account {}, skipping judge", accountId);
-            return Optional.empty();
+            log.warn("Judge is already running for message {}", userMessage.getId());
+            return JudgeOutcome.busy();
         }
         try {
-            JudgeResult result = resolveJudgeResult(session, userMsg);
-            userMsg.setScore(result.score());
-            userMsg.setHint(result.hint());
-            interviewMessageRepository.update(userMsg);
-            return Optional.of(result);
-        } catch (Exception exception) {
-            log.warn("Failed to update message with score/hint", exception);
-            return Optional.empty();
+            InterviewMessage current = interviewMessageRepository.findById(userMessage.getId());
+            if (current == null) {
+                throw BusinessException.notFound("面试消息不存在");
+            }
+            if (!session.getId().equals(current.getSessionId()) || !ROLE_USER.equals(current.getRole())) {
+                throw BusinessException.badRequest("面试消息不属于当前会话或不是候选人回答");
+            }
+            terminal = terminalOutcome(current);
+            if (terminal != null) {
+                return terminal;
+            }
+            final JudgeResult result;
+            try {
+                result = resolveJudgeResult(session, current);
+            } catch (Exception exception) {
+                String error = failureMessage(exception);
+                log.warn("Judge failed for message {}: {}", current.getId(), error);
+                return persistAssessment(current, null, error);
+            }
+            return persistAssessment(current, result, null);
         } finally {
             releaseJudgeLock(lockKey, lockToken);
         }
     }
 
-    /**
-     * @return the ownership token to hand back on release, or null when the lease is held by someone else
-     */
     private String acquireJudgeLock(String lockKey) {
         String token = UUID.randomUUID().toString();
-        for (int retry = 0; retry < 10; retry++) {
-            Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, token, JUDGE_LOCK_LEASE);
-            if (Boolean.TRUE.equals(acquired)) {
-                return token;
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
-                return null;
-            }
-        }
-        return null;
+        return Boolean.TRUE.equals(stringRedisTemplate.opsForValue()
+            .setIfAbsent(lockKey, token, JUDGE_LOCK_LEASE)) ? token : null;
     }
 
-    /** Deletes the key only while we are still the holder, so an expired lease cannot free another judge's lock. */
     private void releaseJudgeLock(String lockKey, String token) {
         stringRedisTemplate.execute(RELEASE_LOCK, List.of(lockKey), token);
     }
 
-    private JudgeResult resolveJudgeResult(InterviewSession session, InterviewMessage userMsg) throws JacksonException {
-        String questionContent = lastAssistantQuestion(session.getId(), userMsg);
+    private JudgeResult resolveJudgeResult(InterviewSession session, InterviewMessage userMessage) {
+        if (session.getModelExecutionSnapshotId() == null
+            || session.getTargetPosition() == null || session.getTargetPosition().isBlank()
+            || userMessage.getContent() == null || userMessage.getContent().isBlank()) {
+            throw new IllegalArgumentException("BUSINESS_FAILURE: incomplete interview or answer context");
+        }
+        String questionContent = lastAssistantQuestion(session.getId(), userMessage);
+        if (questionContent == null || questionContent.isBlank()) {
+            throw new IllegalArgumentException("EVIDENCE_FAILURE: missing preceding interviewer question");
+        }
         String systemPrompt = promptRegistry.load(PromptIds.JUDGE);
         String userPrompt = "面试岗位：" + session.getTargetPosition() + "\n" +
             "面试官提出的问题：" + questionContent + "\n" +
-            "候选人的回答：" + userMsg.getContent() + "\n";
+            "候选人的回答：" + userMessage.getContent() + "\n";
 
         LlmPort.CompletionResult completion = llmPort.complete(
             new LlmPort.ModelExecutionRequest(
@@ -113,45 +129,115 @@ public class InterviewJudgeService {
         return parseJudgeOutput(completion.content());
     }
 
-    private JudgeResult parseJudgeOutput(String judgeOutput) throws JacksonException {
+    private JudgeResult parseJudgeOutput(String judgeOutput) {
         if (judgeOutput == null || judgeOutput.isBlank()) {
-            throw new IllegalArgumentException("Judge output is empty");
+            throw new IllegalArgumentException("STRUCTURE_FAILURE: judge output is empty");
         }
-        String trimmed = LlmResponseText.stripJsonFence(judgeOutput);
-        Map<String, Object> map = objectMapper.readValue(trimmed, new TypeReference<>() {
-        });
-        Object scoreValue = map.get("score");
-        if (!(scoreValue instanceof Number number)) {
-            throw new IllegalArgumentException("Judge output must contain a numeric score");
+        try {
+            Map<String, Object> map = objectMapper.readValue(
+                LlmResponseText.stripJsonFence(judgeOutput), new tools.jackson.core.type.TypeReference<>() {
+                });
+            Object scoreValue = map.get("score");
+            if (!(scoreValue instanceof Byte || scoreValue instanceof Short
+                || scoreValue instanceof Integer || scoreValue instanceof Long || scoreValue instanceof BigInteger)) {
+                throw new IllegalArgumentException("STRUCTURE_FAILURE: score must be an integer");
+            }
+            int score = new BigInteger(scoreValue.toString()).intValueExact();
+            if (score < 1 || score > 10) {
+                throw new IllegalArgumentException("STRUCTURE_FAILURE: score must be between 1 and 10");
+            }
+            Object hintValue = map.get("hint");
+            if (hintValue != null && !(hintValue instanceof String)) {
+                throw new IllegalArgumentException("STRUCTURE_FAILURE: hint must be text");
+            }
+            String hint = hintValue == null ? null : ((String) hintValue).trim();
+            if (hint != null && hint.isBlank()) {
+                hint = null;
+            }
+            if (hint != null && hint.length() > MAX_HINT_LENGTH) {
+                throw new IllegalArgumentException("STRUCTURE_FAILURE: hint exceeds " + MAX_HINT_LENGTH + " characters");
+            }
+            return toJudgeResult(score, hint);
+        } catch (IllegalArgumentException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("STRUCTURE_FAILURE: invalid judge output", exception);
         }
-        double numericScore = number.doubleValue();
-        if (!Double.isFinite(numericScore) || numericScore != Math.rint(numericScore)) {
-            throw new IllegalArgumentException("Judge score must be a finite integer");
-        }
-        int score = (int) Math.max(1, Math.min(10, numericScore));
-        Object hintValue = map.get("hint");
-        if (hintValue != null && !(hintValue instanceof String)) {
-            throw new IllegalArgumentException("Judge hint must be text");
-        }
-        String hint = hintValue == null || ((String) hintValue).isBlank()
-            ? null
-            : ((String) hintValue).trim();
-        Map<String, Object> normalized = new java.util.LinkedHashMap<>();
-        normalized.put("score", score);
-        if (hint != null) {
-            normalized.put("hint", hint);
-        }
-        return new JudgeResult(score, hint, objectMapper.writeValueAsString(normalized));
     }
 
-    private String lastAssistantQuestion(Long sessionId, InterviewMessage userMsg) {
-        List<InterviewMessage> allMessages = interviewMessageRepository.listBySession(sessionId);
-        for (int i = allMessages.size() - 1; i >= 0; i--) {
-            InterviewMessage message = allMessages.get(i);
-            if (ROLE_ASSISTANT.equals(message.getRole()) && message.getSeqNum() < userMsg.getSeqNum()) {
+    private JudgeOutcome persistAssessment(InterviewMessage userMessage, JudgeResult result, String error) {
+        InterviewMessage update = new InterviewMessage();
+        update.setId(userMessage.getId());
+        update.setScore(result == null ? null : result.score());
+        update.setHint(result == null ? null : result.hint());
+        update.setAssessmentStatus(result == null ? AssessmentStatus.UNSCORED : AssessmentStatus.SCORED);
+        update.setAssessmentError(error);
+        if (interviewMessageRepository.updateAssessmentIfPending(update) == 1) {
+            userMessage.setScore(update.getScore());
+            userMessage.setHint(update.getHint());
+            userMessage.setAssessmentStatus(update.getAssessmentStatus());
+            userMessage.setAssessmentError(update.getAssessmentError());
+            return result == null ? JudgeOutcome.unscored(error) : JudgeOutcome.completed(result);
+        }
+        JudgeOutcome terminal = terminalOutcome(interviewMessageRepository.findById(userMessage.getId()));
+        if (terminal != null) {
+            return terminal;
+        }
+        throw new IllegalStateException("Failed to persist assessment for message " + userMessage.getId());
+    }
+
+    private JudgeOutcome terminalOutcome(InterviewMessage message) {
+        if (message == null || message.getAssessmentStatus() == null) {
+            return null;
+        }
+        return switch (message.getAssessmentStatus()) {
+            case SCORED -> {
+                if (message.getScore() == null) {
+                    throw new IllegalStateException("SCORED assessment is missing its score for message " + message.getId());
+                }
+                yield JudgeOutcome.completed(toJudgeResult(message));
+            }
+            case UNSCORED -> JudgeOutcome.unscored(message.getAssessmentError());
+            case PENDING -> null;
+        };
+    }
+
+    private JudgeResult toJudgeResult(InterviewMessage message) {
+        return toJudgeResult(message.getScore(), message.getHint());
+    }
+
+    private JudgeResult toJudgeResult(int score, String hint) {
+        Map<String, Object> normalized = new LinkedHashMap<>();
+        normalized.put("score", score);
+        if (hint != null && !hint.isBlank()) {
+            normalized.put("hint", hint);
+        }
+        try {
+            return new JudgeResult(score, hint, objectMapper.writeValueAsString(normalized));
+        } catch (tools.jackson.core.JacksonException exception) {
+            throw new IllegalStateException("Failed to serialize judge result", exception);
+        }
+    }
+
+    private String failureMessage(Exception exception) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank()
+            ? exception.getClass().getSimpleName()
+            : message;
+    }
+
+    private String lastAssistantQuestion(Long sessionId, InterviewMessage userMessage) {
+        if (userMessage.getSeqNum() == null) {
+            return null;
+        }
+        List<InterviewMessage> messages = interviewMessageRepository.listBySession(sessionId);
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            InterviewMessage message = messages.get(index);
+            if (ROLE_ASSISTANT.equals(message.getRole()) && message.getSeqNum() != null
+                && message.getSeqNum() < userMessage.getSeqNum()) {
                 return message.getContent();
             }
         }
-        return "";
+        return null;
     }
 }

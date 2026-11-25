@@ -6,6 +6,7 @@ import com.prelude.interview.application.port.InterviewTurnCommand;
 import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
 import com.prelude.interview.application.port.InterviewTurnSink;
+import com.prelude.interview.application.port.JudgeOutcome;
 import com.prelude.interview.application.port.VoicePort;
 import com.prelude.interview.application.port.InterviewUserTurnSnapshot;
 import lombok.RequiredArgsConstructor;
@@ -69,7 +70,7 @@ public class VoiceInterviewTurnService {
             AtomicBoolean ttsTimedOut = new AtomicBoolean(false);
 
             InterviewTurnResult result = interviewTurnPort.execute(
-                new InterviewTurnCommand(sessionId, accountId, transcribed, false, false),
+                new InterviewTurnCommand(sessionId, accountId, transcribed, false),
                 new InterviewTurnSink() {
                     @Override
                     public void userAccepted(InterviewUserTurnSnapshot userTurn) {
@@ -183,9 +184,10 @@ public class VoiceInterviewTurnService {
             return;
         }
         try {
-            interviewTurnPort.judgeAndPersist(sessionId, userTurn.messageId()).ifPresent(result ->
-                sink.judge(result.score(), result.hint())
-            );
+            JudgeOutcome outcome = interviewTurnPort.judgeAndPersist(sessionId, userTurn.messageId());
+            if (outcome.status() == JudgeOutcome.Status.COMPLETED) {
+                sink.judge(outcome.result().score(), outcome.result().hint());
+            }
         } catch (RuntimeException error) {
             log.warn("Failed to update and push message score/hint in voice mode", error);
         }

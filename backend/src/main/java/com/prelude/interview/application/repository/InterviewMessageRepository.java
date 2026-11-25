@@ -2,16 +2,16 @@ package com.prelude.interview.application.repository;
 
 import com.prelude.interview.domain.InterviewMessage;
 
-import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface InterviewMessageRepository {
 
     int add(InterviewMessage message);
 
-    int update(InterviewMessage message);
+    int updateAssessmentIfPending(InterviewMessage message);
 
-    int delete(Serializable messageId);
+    List<InterviewMessage> findPendingForJudge(LocalDateTime cutoff, int limit);
 
     InterviewMessage findLatest(Long sessionId);
 
@@ -23,4 +23,6 @@ public interface InterviewMessageRepository {
     List<InterviewMessage> listBySession(Long sessionId);
 
     long countConversationMessages(Long sessionId);
+
+    long countPendingAssessments(Long sessionId);
 }

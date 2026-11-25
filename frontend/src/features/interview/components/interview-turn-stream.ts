@@ -38,11 +38,24 @@ export function handleInterviewStreamEvent(
   }
   if (name === 'judge') {
     try {
-      const result = JSON.parse(data) as { score?: number; hint?: string }
+      const result = JSON.parse(data) as {
+        score?: number
+        hint?: string
+        assessmentStatus?: InterviewMessageRecord['assessmentStatus']
+        assessmentError?: string
+      }
       callbacks.setMessages((list) => {
         const next = [...(list ?? [])]
         const index = next.findLastIndex((item) => item.role === 'user')
-        if (index >= 0) next[index] = { ...next[index], score: result.score, hint: result.hint }
+        if (index >= 0) {
+          next[index] = {
+            ...next[index],
+            score: result.score,
+            hint: result.hint,
+            assessmentStatus: result.assessmentStatus,
+            assessmentError: result.assessmentError,
+          }
+        }
         return next
       })
     } catch {

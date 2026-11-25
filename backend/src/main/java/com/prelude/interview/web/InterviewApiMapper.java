@@ -28,7 +28,8 @@ final class InterviewApiMapper {
             request.getResumeId(),
             request.getPositionId(),
             request.getJdText(),
-            request.getRequestedModel(),
+            request.getModel(),
+            request.getReasoningLevel(),
             request.getAttachmentIds()
         );
     }
@@ -94,7 +95,9 @@ final class InterviewApiMapper {
             message.seqNum(),
             message.createdAt(),
             message.score(),
-            message.hint()
+            message.hint(),
+            message.assessmentStatus(),
+            message.assessmentError()
         );
     }
 }

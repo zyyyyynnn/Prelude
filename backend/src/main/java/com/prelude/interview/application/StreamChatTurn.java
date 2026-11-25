@@ -3,9 +3,13 @@ package com.prelude.interview.application;
 import com.prelude.BusinessException;
 import com.prelude.activity.SseSessionStream;
 import com.prelude.identity.api.SessionValidity;
+import com.prelude.interview.api.InterviewJudgeEventResponse;
 import com.prelude.interview.application.port.InterviewTurnCommand;
 import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
+import com.prelude.interview.application.port.JudgeOutcome;
+import com.prelude.interview.application.port.JudgeResult;
+import com.prelude.interview.domain.AssessmentStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,10 +28,6 @@ public class StreamChatTurn {
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
 
-    /**
-     * Streams one chat turn over a channel the caller opened. The use case authorizes the
-     * turn and drives the model call; it never constructs the transport itself.
-     */
     public void execute(
         Long sessionId,
         String content,
@@ -53,8 +53,7 @@ public class StreamChatTurn {
                     sessionId,
                     accountId,
                     content,
-                    autoStart,
-                    true
+                    autoStart
                 ),
                 delta -> {
                     // Natural send boundary: a revoked session stops the stream
@@ -80,8 +79,7 @@ public class StreamChatTurn {
     private void triggerAsyncJudge(Long sessionId, Long messageId, SseSessionStream stream) {
         sseTaskExecutor.execute(() -> {
             try {
-                interviewTurnPort.judgeAndPersist(sessionId, messageId)
-                    .ifPresent(result -> sendJudgeEvent(stream, result.json()));
+                sendJudgeEvent(stream, interviewTurnPort.judgeAndPersist(sessionId, messageId));
                 stream.complete();
             } catch (RuntimeException error) {
                 log.error("Error in async judge task", error);
@@ -90,9 +88,19 @@ public class StreamChatTurn {
         });
     }
 
-    private void sendJudgeEvent(SseSessionStream stream, String judgeJson) {
+    private void sendJudgeEvent(SseSessionStream stream, JudgeOutcome outcome) {
         try {
-            stream.send("judge", judgeJson);
+            JudgeResult result = outcome.result();
+            stream.send("judge", new InterviewJudgeEventResponse(
+                result == null ? null : result.score(),
+                result == null ? null : result.hint(),
+                switch (outcome.status()) {
+                    case COMPLETED -> AssessmentStatus.SCORED;
+                    case BUSY -> AssessmentStatus.PENDING;
+                    case UNSCORED -> AssessmentStatus.UNSCORED;
+                },
+                outcome.error()
+            ));
         } catch (RuntimeException error) {
             log.warn("Failed to send judge event via SSE", error);
         }

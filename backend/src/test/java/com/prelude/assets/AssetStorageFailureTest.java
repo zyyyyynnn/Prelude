@@ -20,19 +20,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
-/**
- * Failure-path contracts for asset publication: a successful S3 put followed
- * by a failed business-reference finalization must leave the asset PENDING so
- * the bounded reconciler can reclaim it. No READY orphan may exist.
- */
 @EnabledIfEnvironmentVariable(named = "PRELUDE_MYSQL_SMOKE", matches = "true")
 @SpringBootTest
 class AssetStorageFailureTest {
@@ -51,6 +46,9 @@ class AssetStorageFailureTest {
 
     @Autowired
     private StalePendingAssetReconciler stalePendingAssetReconciler;
+
+    @Autowired
+    private AssetDeletionService assetDeletionService;
 
     @Autowired
     private AssetMapper assetMapper;
@@ -75,7 +73,6 @@ class AssetStorageFailureTest {
         assertThat(anchor).isNotNull();
         assertThat(anchor.getStatus()).isEqualTo(AssetFixtures.statusPendingUpload());
 
-        // The reconciler reclaims the anchor: object delete + metadata delete.
         anchor.setCreatedAt(LocalDateTime.now().minusHours(48));
         assetMapper.updateById(anchor);
         stalePendingAssetReconciler.reconcileStalePendingAssets();
@@ -87,9 +84,7 @@ class AssetStorageFailureTest {
         long accountId = createAccount("avatar-finalize-anchor");
         authenticate(accountId);
         doThrow(ExceptionFixtures.revisionConflict("资料已被其他操作更新，请刷新后重试"))
-            .when(avatarPublication).publish(anyString(), any());
-        doThrow(new IllegalStateException("gateway down"))
-            .when(objectStoragePort).delete(anyString());
+            .when(avatarPublication).publish(anyString(), any(), any());
 
         ExceptionFixtures.assertBusinessException(
             () -> profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile())), "revision_conflict");
@@ -97,19 +92,20 @@ class AssetStorageFailureTest {
         AssetEntity anchor = latestPendingAsset(accountId);
         assertThat(anchor).isNotNull();
         assertThat(anchor.getStatus()).isEqualTo(AssetFixtures.statusPendingUpload());
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT status FROM asset_deletion_request WHERE asset_id = ?", String.class, anchor.getId()))
+            .isEqualTo("PENDING");
+        verify(objectStoragePort, never()).delete(anyString());
 
-        // Next reconciler pass: the object delete finally succeeds and reclaims the anchor.
-        // (Discard consumed the first throw; give the reconciler one failing pass, then success.)
         doThrow(new IllegalStateException("gateway down"))
             .doNothing()
-            .doNothing()
-            .when(objectStoragePort).delete(anyString());
-        anchor.setCreatedAt(LocalDateTime.now().minusHours(48));
-        assetMapper.updateById(anchor);
-        stalePendingAssetReconciler.reconcileStalePendingAssets();
+            .when(objectStoragePort).delete(anchor.getObjectKey());
+        assetDeletionService.processNextBatch();
         assertThat(assetMapper.selectById(anchor.getId())).isNotNull();
 
-        stalePendingAssetReconciler.reconcileStalePendingAssets();
+        jdbcTemplate.update("UPDATE asset_deletion_request SET next_attempt_at = ? WHERE asset_id = ?",
+            LocalDateTime.now().minusSeconds(1), anchor.getId());
+        assetDeletionService.processNextBatch();
         assertThat(assetMapper.selectById(anchor.getId())).isNull();
     }
 
@@ -139,7 +135,7 @@ class AssetStorageFailureTest {
 
     private MockMultipartFile avatarFile() {
         byte[] png = Base64.getDecoder().decode(
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4AWJiYGD4DwAAAP//cGajQwAAAAZJREFUAwABDgEC81VxbAAAAABJRU5ErkJggg==");
         return new MockMultipartFile("file", "me.png", "image/png", png);
     }
 }

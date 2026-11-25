@@ -16,10 +16,8 @@ public class UpdateInterviewStage {
     @Transactional(rollbackFor = Exception.class)
     public UpdateInterviewStageResult execute(Long sessionId, String stageName) {
         InterviewSession session = sessionAccess.requireOngoing(sessionId, sessionAccess.currentAccountId());
-        if (interviewStageManager.currentOrLatestStage(sessionId) == null) {
-            interviewStageManager.ensureInitialStage(session);
-        }
-        InterviewStage stage = interviewStageManager.moveToStage(sessionId, stageName, true);
+        interviewStageManager.ensureInitialStage(session);
+        InterviewStage stage = interviewStageManager.moveToStage(sessionId, stageName);
         return new UpdateInterviewStageResult(stage.getStageName(), stage.getStartedAt());
     }
 }

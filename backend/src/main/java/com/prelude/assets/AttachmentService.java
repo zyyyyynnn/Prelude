@@ -23,11 +23,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Interview-context attachments. Binary content lives only in the referenced
- * asset (object storage); this service owns the attachment metadata and the
- * business binding semantics.
- */
 @Service
 @RequiredArgsConstructor
 public class AttachmentService implements AttachmentContextPort {
@@ -39,6 +34,7 @@ public class AttachmentService implements AttachmentContextPort {
 
     private final AttachmentStorage attachmentStorage;
     private final AssetLookup assetLookup;
+    private final AssetDeletionService assetDeletionService;
     private final AssetService assetService;
     private final AttachmentPublication attachmentPublication;
     private final ObjectStoragePort objectStoragePort;
@@ -62,15 +58,12 @@ public class AttachmentService implements AttachmentContextPort {
         try {
             objectStoragePort.put(asset.objectKey(), resolvedMediaType, bytes);
         } catch (RuntimeException exception) {
-            // The PENDING row stays as the recovery anchor; the reconciler reclaims it.
             throw BusinessException.badRequest("附件上传失败");
         }
 
         AttachmentRow stored = new AttachmentRow(
             null, accountId, asset.id(), fileName,
             truncate(extracted.text(), MAX_EXTRACTED_TEXT), null, null);
-        // One DB transaction: business reference + PENDING_UPLOAD → READY.
-        // A failure rolls both back and leaves the asset PENDING for the reconciler.
         try {
             stored = attachmentPublication.finalizeUpload(asset, stored);
         } catch (RuntimeException exception) {
@@ -80,12 +73,6 @@ public class AttachmentService implements AttachmentContextPort {
         return toSnapshot(stored, assetService.requireOwnedReady(accountId, asset.id()));
     }
 
-    /**
-     * Deterministic deletion: validate ownership, delete the remote object
-     * (failure leaves both rows intact), then remove the asset row — the
-     * attachment metadata goes with it through the FK cascade in the same
-     * statement.
-     */
     public void deleteUnbound(Long attachmentId) {
         long accountId = currentAccount.requireId();
         AttachmentRow stored = attachmentStorage.findUnboundOwned(accountId, attachmentId);
@@ -132,8 +119,25 @@ public class AttachmentService implements AttachmentContextPort {
     }
 
     @Override
-    public void unbind(Long accountId, String scopeType, Long scopeId) {
-        attachmentStorage.unbindScope(accountId, scopeType, scopeId);
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteScope(Long accountId, String scopeType, Long scopeId) {
+        List<AttachmentRow> deleted = attachmentStorage.deleteScope(accountId, scopeType, scopeId);
+        if (deleted.isEmpty()) {
+            return;
+        }
+        List<Long> assetIds = deleted.stream().map(AttachmentRow::assetId).distinct().toList();
+        Map<Long, AssetRow> assetsById = assetLookup.findByIds(assetIds).stream()
+            .collect(Collectors.toMap(AssetRow::id, Function.identity()));
+        for (AttachmentRow attachment : deleted) {
+            AssetRow asset = assetsById.get(attachment.assetId());
+            if (asset == null) {
+                throw BusinessException.notFound("附件素材不存在，无法删除");
+            }
+            if (!accountId.equals(asset.accountId())) {
+                throw BusinessException.notFound("附件不存在或无权删除");
+            }
+            assetDeletionService.register(asset);
+        }
     }
 
     @Override

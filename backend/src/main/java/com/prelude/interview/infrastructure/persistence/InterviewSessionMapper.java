@@ -11,10 +11,7 @@ import org.apache.ibatis.annotations.Update;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Session status never appears as a literal here: callers pass the wire values from
- * {@code InterviewSessionStatus}, so the enum is the only place that spells them.
- */
+// Status values come from InterviewSessionStatus rather than SQL literals.
 public interface InterviewSessionMapper extends BaseMapper<InterviewSessionEntity> {
 
     @Update("""
@@ -31,12 +28,12 @@ public interface InterviewSessionMapper extends BaseMapper<InterviewSessionEntit
         @Param("toStatus") String toStatus
     );
 
-    /**
-     * Takes the session row's write lock, which is what serialises message appends for one
-     * session across every process. Returns the status it locked, or null when there is no session.
-     */
+    // Serialises message appends across processes and returns the locked status.
     @Select("SELECT status FROM interview_session WHERE id = #{sessionId} FOR UPDATE")
     String lockAppendOrder(@Param("sessionId") Long sessionId);
+
+    @Select("SELECT * FROM interview_session WHERE id = #{sessionId} FOR UPDATE")
+    InterviewSessionEntity selectByIdForUpdate(@Param("sessionId") java.io.Serializable sessionId);
 
     @Update("""
         UPDATE interview_session

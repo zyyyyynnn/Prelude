@@ -3,7 +3,7 @@ import type { AttachmentItem } from '@/features/assets'
 import type { Position } from '@/features/position'
 import type { ResumeItem } from '@/features/resume'
 import type { ReasoningLevel } from '@/features/settings'
-import type { InterviewModelConfig, InterviewModelProvider } from '../types'
+import type { InterviewModelConfig, InterviewModelProvider, InterviewStartPayload } from '../types'
 import { InterviewModelMenu } from './MenuPrimitives'
 import { InterviewContextMenu } from './PromptBarControls'
 import { RiAttachmentLine, RiBriefcaseLine, RiFileTextLine, RiImageLine } from '@remixicon/react'
@@ -23,7 +23,6 @@ export function InterviewSetupComposer({
   llmConfig,
   llmProviders,
   uploadingAttachment,
-  savingModel,
   creating,
   onUploadAttachment,
   onDeleteAttachment,
@@ -39,7 +38,6 @@ export function InterviewSetupComposer({
   llmConfig: InterviewModelConfig
   llmProviders: InterviewModelProvider[]
   uploadingAttachment: boolean
-  savingModel: boolean
   creating: boolean
   onUploadAttachment: (file: File) => Promise<AttachmentItem>
   onDeleteAttachment: (id: number) => Promise<void>
@@ -48,13 +46,7 @@ export function InterviewSetupComposer({
   onManageModel: (providerKey?: string) => void
   onNewResume: () => void
   onNewPosition: () => void
-  onStart: (value: {
-    resumeId: number
-    positionId: number
-    jdText?: string
-    requestedModel?: string
-    attachmentIds?: number[]
-  }) => void
+  onStart: (value: InterviewStartPayload) => void
 }) {
   const attachmentInput = useRef<HTMLInputElement>(null)
   const [resumeId, setResumeId] = useState<number | null>(null)
@@ -64,7 +56,19 @@ export function InterviewSetupComposer({
   const [jdEnabled, setJdEnabled] = useState(false)
   const selectedResume = resumes.find((item) => item.id === resumeId)
   const selectedPosition = positions.find((item) => item.id === positionId)
-  const canStart = Boolean(selectedResume && selectedPosition) && !savingModel && !creating
+  const provider = llmProviders.find((item) => item.providerKey === llmConfig.provider)
+  const capability =
+    provider?.models.find((item) => item.model === llmConfig.model) ??
+    (llmConfig.capability.model === llmConfig.model ? llmConfig.capability : undefined)
+  const supportedReasoningLevels = capability?.supportedReasoningLevels
+  const modelError = supportedReasoningLevels?.length
+    ? supportedReasoningLevels.includes(llmConfig.reasoningLevel)
+      ? null
+      : '该模型不支持当前思考深度，请选择兼容的思考深度'
+    : llmConfig.reasoningLevel === 'AUTO'
+      ? null
+      : '所选模型能力尚未确认，请选择默认思考深度'
+  const canStart = Boolean(selectedResume && selectedPosition) && !modelError && !creating
 
   async function uploadFiles(files: FileList | null) {
     if (!files) return
@@ -95,7 +99,8 @@ export function InterviewSetupComposer({
       resumeId: selectedResume.id,
       positionId: selectedPosition.id,
       jdText: jdEnabled && normalizedJd ? normalizedJd : undefined,
-      requestedModel: llmConfig.model,
+      model: llmConfig.model,
+      reasoningLevel: llmConfig.reasoningLevel,
       attachmentIds: attachments.length ? attachments.map((item) => item.id) : undefined,
     })
   }
@@ -166,7 +171,6 @@ export function InterviewSetupComposer({
             <InterviewModelMenu
               config={llmConfig}
               providers={llmProviders}
-              saving={savingModel}
               onModelChange={onModelChange}
               onThinkingDepthChange={onThinkingDepthChange}
               onManage={() => onManageModel()}
@@ -181,6 +185,11 @@ export function InterviewSetupComposer({
         }
         onSubmit={submit}
       />
+      {modelError && (
+        <p role="alert" className="type-caption-error">
+          {modelError}
+        </p>
+      )}
       <HiddenFileInput
         id="interview-attachment-upload"
         label="选择面试附件"

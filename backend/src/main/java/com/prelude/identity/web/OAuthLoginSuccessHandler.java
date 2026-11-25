@@ -17,6 +17,8 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
@@ -39,6 +41,7 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
         String provider = oauthToken.getAuthorizedClientRegistrationId();
+        String redirect = OAuthLoginRedirect.consume(request);
 
         String subject;
         String verifiedEmail = null;
@@ -65,11 +68,12 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
         AccountPrincipal principal = oauthLoginService.resolveLogin(
             provider, subject, verifiedEmail, new ServletHttpSessionAccess(request.getSession()));
         if (principal == null) {
-            response.sendRedirect("/login?oauth=pending");
+            response.sendRedirect("/login?oauth=pending&redirect="
+                + URLEncoder.encode(redirect, StandardCharsets.UTF_8));
             return;
         }
         com.prelude.identity.infrastructure.SessionAuthentication.establish(
             principal, securityContextRepository, sessionAuthenticationStrategy, request, response);
-        response.sendRedirect("/interview");
+        response.sendRedirect(redirect);
     }
 }

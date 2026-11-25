@@ -15,32 +15,13 @@ const chunks = fs
   .filter((name) => /\.(?:js|css)$/.test(name))
   .map((name) => ({ name, text: fs.readFileSync(path.join(assetsDir, name), 'utf8') }))
 
-/* The component gallery is a development-only route: `main.tsx` registers it behind
-   `import.meta.env.DEV`, so a production build must not carry it.
-
-   Earlier revisions matched identifiers local to `app/lab/ComponentLab.tsx` (`ComponentLab`,
-   `DemoGroup`). Minifiers rename local symbols, so those identifiers never survive into `dist/`;
-   the match could not fire and the check stayed green even when the gallery actually shipped.
-   The markers below are therefore string literals, which minifiers copy verbatim:
-
-     - `/components-lab` — the route path, registered only inside the DEV-guarded block;
-     - `Component Lab`   — the page title, unique to the gallery component.
-
-   A leak scatters these across chunks: the route path lands in the entry chunk, the title in the
-   lazily-split gallery chunk. So we assert per chunk with "carries any marker" instead of "all
-   markers in one chunk" — the old every() reading was only sound while both identifiers lived in
-   the same file. On a clean build neither literal appears in any asset, so there is no false
-   positive, and each offending chunk is still named in the failure below. */
+// Minifiers rename local identifiers, so the dev-only gallery is detected by its literal markers.
 const LAB_MARKERS = [
   { text: '/components-lab', source: 'app/main.tsx' },
   { text: 'Component Lab', source: 'app/lab/ComponentLab.tsx' },
 ]
 
-/* Guard the reader against walking nothing. If the route is renamed or the page retitled, the
-   literals above vanish from the source tree, the leak scan below then matches zero chunks, and
-   the gate silently passes — the exact disarm this family of checks must never allow. Confirm each
-   marker is still declared where we expect it, so a rename turns the gate red instead of quietly
-   disarming it. */
+// Missing source markers make the scan vacuous, so renames must fail the gate.
 for (const marker of LAB_MARKERS) {
   const sourceFile = path.join(src, marker.source)
   if (!fs.existsSync(sourceFile)) {
@@ -66,11 +47,20 @@ if (leaked.length) {
   )
 }
 
-/* A reader that quietly walks nothing is worse than no reader. */
 if (chunks.length === 0) {
   throw new Error('Production bundle has no assets to inspect')
 }
 
+const nginx = fs.readFileSync(path.resolve(__dirname, '..', 'nginx.conf'), 'utf8')
+if (!nginx.includes('proxy_set_header X-Forwarded-For $remote_addr;')) {
+  throw new Error('Production proxy must overwrite X-Forwarded-For with the client address')
+}
+for (const header of ['Forwarded', 'X-Forwarded-Host', 'X-Forwarded-Port', 'X-Forwarded-Prefix']) {
+  if (!nginx.includes(`proxy_set_header ${header} "";`)) {
+    throw new Error(`Production proxy must clear the client-supplied ${header} header`)
+  }
+}
+
 console.log(
-  `Production bundle verification: PASS (${chunks.length} chunks, no component-lab chunk)`,
+  `Production bundle verification: PASS (${chunks.length} chunks, no component-lab chunk, trusted proxy headers)`,
 )

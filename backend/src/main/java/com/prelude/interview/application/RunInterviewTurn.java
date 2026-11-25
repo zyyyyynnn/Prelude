@@ -6,11 +6,14 @@ import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.port.InterviewContextPort;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.application.port.InterviewTurnCommand;
+import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
 import com.prelude.interview.application.port.InterviewTurnSessionSnapshot;
 import com.prelude.interview.application.port.InterviewUserTurnSnapshot;
 import com.prelude.interview.application.port.InterviewTurnSink;
+import com.prelude.interview.application.port.JudgeOutcome;
 import com.prelude.llm.api.LlmPort;
 import com.prelude.llm.api.PromptIds;
 import lombok.RequiredArgsConstructor;
@@ -21,67 +24,71 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class RunInterviewTurn {
+public class RunInterviewTurn implements InterviewTurnPort {
 
     private static final String ROLE_USER = "user";
-    private static final String ROLE_ASSISTANT = "assistant";
-    private static final String STAGE_COMPLETE_TAG = "[STAGE_COMPLETE]";
 
     private final InterviewSessionAccess sessionAccess;
     private final InterviewMessageRepository interviewMessageRepository;
+    private final InterviewSessionRepository interviewSessionRepository;
     private final LlmPort llmPort;
-    private final InterviewStageManager interviewStageManager;
     private final InterviewContextPort interviewContextService;
     private final InterviewMessageService interviewMessageService;
     private final AttachmentContextPort attachmentContextPort;
+    private final InterviewTurnCompletion interviewTurnCompletion;
+    private final InterviewJudgeService interviewJudgeService;
+    private final InterviewSummaryService interviewSummaryService;
 
+    @Override
     public InterviewTurnResult execute(InterviewTurnCommand command, InterviewTurnSink sink) {
+        InterviewSession session = sessionAccess.requireOngoing(command.sessionId(), command.accountId());
+        String content = normalizeContent(command.content());
+        boolean firstRound = !hasConversationRound(command.sessionId());
         InterviewMessage insertedUserMessage = null;
-        boolean assistantPersisted = false;
-        try {
-            InterviewSession session = sessionAccess.requireOngoing(command.sessionId(), command.accountId());
-            String content = normalizeContent(command.content());
-            boolean firstRound = !hasConversationRound(command.sessionId());
-            List<Map<String, String>> messages;
+        List<Map<String, String>> messages;
 
-            if (command.autoStart() && firstRound && content.isEmpty()) {
-                messages = interviewContextService.buildAutoStartMessages(session);
-            } else {
-                if (content.isEmpty()) {
-                    throw BusinessException.badRequest("回答内容不能为空");
-                }
-                insertedUserMessage = interviewMessageService.insertMessage(command.sessionId(), ROLE_USER, content);
-                sink.userAccepted(snapshotOf(insertedUserMessage));
-                messages = interviewContextService.buildContextMessages(command.sessionId());
+        if (command.autoStart() && firstRound && content.isEmpty()) {
+            messages = interviewContextService.buildAutoStartMessages(session);
+        } else {
+            if (content.isEmpty()) {
+                throw BusinessException.badRequest("回答内容不能为空");
             }
+            insertedUserMessage = interviewMessageService.insertMessage(command.sessionId(), ROLE_USER, content);
+            sink.userAccepted(snapshotOf(insertedUserMessage));
+            messages = interviewContextService.buildContextMessages(command.sessionId());
+        }
 
-            StringBuilder assistantReply = new StringBuilder();
-            List<LlmPort.Attachment> imageAttachments = command.autoStart() && firstRound
-                ? attachmentContextPort.list(session.getAccountId(), "interview", session.getId()).stream()
-                    .filter(attachment -> attachment.image())
-                    .map(attachment -> new LlmPort.Attachment(
-                        attachment.fileName(),
-                        attachment.mediaType(),
-                        attachmentContextPort.readOwnedContent(session.getAccountId(), attachment.assetRef())))
-                    .toList()
-                : List.of();
-            streamAssistantReply(session, messages, imageAttachments, assistantReply, sink);
-            boolean shouldAdvance = assistantReply.indexOf(STAGE_COMPLETE_TAG) >= 0;
-            String finalReply = assistantReply.toString().replace(STAGE_COMPLETE_TAG, "").trim();
-            if (!finalReply.isEmpty()) {
-                interviewMessageService.insertMessage(command.sessionId(), ROLE_ASSISTANT, finalReply);
-            }
-            assistantPersisted = true;
+        List<LlmPort.Attachment> imageAttachments = command.autoStart() && firstRound
+            ? attachmentContextPort.list(session.getAccountId(), "interview", session.getId()).stream()
+                .filter(attachment -> attachment.image())
+                .map(attachment -> new LlmPort.Attachment(
+                    attachment.fileName(),
+                    attachment.mediaType(),
+                    attachmentContextPort.readOwnedContent(session.getAccountId(), attachment.assetRef())))
+                .toList()
+            : List.of();
+        StringBuilder assistantReply = new StringBuilder();
+        streamAssistantReply(session, messages, imageAttachments, assistantReply, sink);
+        String finalReply = assistantReply.toString().trim();
+        interviewTurnCompletion.complete(command.sessionId(), finalReply);
+        return new InterviewTurnResult(snapshotOf(session), snapshotOf(insertedUserMessage), finalReply);
+    }
 
-            if (shouldAdvance) {
-                interviewStageManager.advanceStage(command.sessionId(), command.completionPrompt());
-            }
-            return new InterviewTurnResult(snapshotOf(session), snapshotOf(insertedUserMessage), finalReply);
-        } catch (RuntimeException error) {
-            if (insertedUserMessage != null && insertedUserMessage.getId() != null && !assistantPersisted) {
-                interviewMessageRepository.delete(insertedUserMessage.getId());
-            }
-            throw error;
+    @Override
+    public JudgeOutcome judgeAndPersist(Long sessionId, Long messageId) {
+        InterviewSession session = interviewSessionRepository.selectById(sessionId);
+        InterviewMessage userMessage = interviewMessageRepository.findById(messageId);
+        if (session == null || userMessage == null) {
+            throw BusinessException.notFound("面试消息不存在");
+        }
+        return interviewJudgeService.judgeAndPersist(session, userMessage);
+    }
+
+    @Override
+    public void summarizeIfNeeded(Long sessionId) {
+        InterviewSession session = interviewSessionRepository.selectById(sessionId);
+        if (session != null) {
+            interviewSummaryService.triggerAsyncSummarizeIfNeeded(session);
         }
     }
 
@@ -133,15 +140,11 @@ public class RunInterviewTurn {
             new LlmPort.StreamSink() {
                 @Override
                 public void onNext(String delta) {
-                    appendAndSend(assistantReply, sink, delta);
+                    assistantReply.append(delta);
+                    sink.assistantDelta(delta);
                 }
             }
         );
-    }
-
-    private void appendAndSend(StringBuilder reply, InterviewTurnSink sink, String delta) {
-        reply.append(delta);
-        sink.assistantDelta(delta);
     }
 
     private String normalizeContent(String content) {

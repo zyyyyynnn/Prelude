@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.1</version>
+        <version>4.1.3</version>
         <relativePath/>
     </parent>
 
@@ -19,7 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring-modulith.version>2.1.1</spring-modulith.version>
+        <spring-modulith.version>2.1.3</spring-modulith.version>
         <spring-ai.version>2.0.1</spring-ai.version>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <langgraph4j.version>1.8.25</langgraph4j.version>
@@ -165,6 +165,11 @@
             <version>${pdfbox.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-webp</artifactId>
+            <version>3.12.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
@@ -248,6 +253,8 @@
                     <systemPropertyVariables>
                         <prelude.jobs.scheduling-enabled>false</prelude.jobs.scheduling-enabled>
                         <prelude.jobs.report.consumer-enabled>false</prelude.jobs.report.consumer-enabled>
+                        <prelude.storage.deletion.scheduling-enabled>false</prelude.storage.deletion.scheduling-enabled>
+                        <prelude.interview.judge.retry.enabled>false</prelude.interview.judge.retry.enabled>
                         <spring.rabbitmq.listener.simple.auto-startup>false</spring.rabbitmq.listener.simple.auto-startup>
                         <app.crypto.aes-secret>prelude-test-only-aes-secret-0123456789</app.crypto.aes-secret>
                     </systemPropertyVariables>
@@ -255,4 +262,32 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>quality</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.cyclonedx</groupId>
+                            <artifactId>cyclonedx-maven-plugin</artifactId>
+                            <version>2.9.3</version>
+                            <configuration>
+                                <schemaVersion>1.6</schemaVersion>
+                                <outputFormat>json</outputFormat>
+                                <outputName>bom</outputName>
+                                <includeBomSerialNumber>false</includeBomSerialNumber>
+                                <includeCompileScope>true</includeCompileScope>
+                                <includeRuntimeScope>true</includeRuntimeScope>
+                                <includeProvidedScope>false</includeProvidedScope>
+                                <includeSystemScope>false</includeSystemScope>
+                                <includeTestScope>false</includeTestScope>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
 </project>

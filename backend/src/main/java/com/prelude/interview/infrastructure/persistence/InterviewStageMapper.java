@@ -15,11 +15,26 @@ public interface InterviewStageMapper extends BaseMapper<InterviewStageEntity> {
             .last("LIMIT 1"));
     }
 
+    default InterviewStageEntity findCurrentForUpdate(Long sessionId) {
+        return selectOne(new LambdaQueryWrapper<InterviewStageEntity>()
+            .eq(InterviewStageEntity::getSessionId, sessionId)
+            .isNull(InterviewStageEntity::getEndedAt)
+            .orderByDesc(InterviewStageEntity::getStartedAt)
+            .last("LIMIT 1 FOR UPDATE"));
+    }
+
     default InterviewStageEntity findLatest(Long sessionId) {
         return selectOne(new LambdaQueryWrapper<InterviewStageEntity>()
             .eq(InterviewStageEntity::getSessionId, sessionId)
             .orderByDesc(InterviewStageEntity::getStartedAt)
             .last("LIMIT 1"));
+    }
+
+    default InterviewStageEntity findLatestForUpdate(Long sessionId) {
+        return selectOne(new LambdaQueryWrapper<InterviewStageEntity>()
+            .eq(InterviewStageEntity::getSessionId, sessionId)
+            .orderByDesc(InterviewStageEntity::getStartedAt)
+            .last("LIMIT 1 FOR UPDATE"));
     }
 
     default List<InterviewStageEntity> listBySession(Long sessionId) {

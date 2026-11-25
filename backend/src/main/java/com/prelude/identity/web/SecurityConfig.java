@@ -1,5 +1,8 @@
-package com.prelude;
+package com.prelude.identity.web;
 
+import com.prelude.SecurityProblemWriter;
+import com.prelude.SpaCsrfTokenRequestHandler;
+import com.prelude.identity.api.security.OriginPolicy;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,7 +49,7 @@ public class SecurityConfig {
         SecurityContextRepository securityContextRepository,
         AuthenticationSuccessHandler oauthLoginSuccessHandler,
         org.springframework.security.oauth2.client.userinfo.OAuth2UserService<org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest, org.springframework.security.oauth2.core.user.OAuth2User> providerIdentityUserService,
-        CorsProperties corsProperties
+        OriginPolicy originPolicy
     ) throws Exception {
         var chain = http
             .csrf(csrf -> csrf
@@ -57,12 +60,19 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .sessionFixation(fixation -> fixation.changeSessionId()))
-            .addFilterBefore(new OriginValidationFilter(corsProperties), CsrfFilter.class)
+            .addFilterBefore(new OriginValidationFilter(originPolicy), CsrfFilter.class)
             .exceptionHandling(handling -> handling
                 .authenticationEntryPoint(new SecurityProblemWriter())
                 .accessDeniedHandler(new SecurityProblemWriter()))
             .authorizeHttpRequests(requests -> requests
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/health", "/actuator/health")
+                .requestMatchers(
+                    "/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/oauth/providers",
+                    "/api/auth/oauth/*/start",
+                    "/api/health",
+                    "/actuator/health"
+                )
                 .permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/llm/providers").permitAll()
                 .anyRequest().authenticated());

@@ -18,14 +18,12 @@ import {
 export function InterviewModelMenu({
   config,
   providers,
-  saving,
   onModelChange,
   onThinkingDepthChange,
   onManage,
 }: {
   config: InterviewModelConfig
   providers: InterviewModelProvider[]
-  saving: boolean
   onModelChange: (model: string) => void
   onThinkingDepthChange: (level: ReasoningLevel | null) => void
   onManage: () => void
@@ -46,13 +44,7 @@ export function InterviewModelMenu({
     <DropdownMenu
       side="top"
       layout="model"
-      trigger={
-        <PromptBarModelTrigger
-          text={triggerText}
-          aria-label={`模型：${triggerText}`}
-          disabled={saving}
-        />
-      }
+      trigger={<PromptBarModelTrigger text={triggerText} aria-label={`模型：${triggerText}`} />}
     >
       <DropdownMenuGroup>
         <DropdownMenuSubmenu trigger={<MenuLabel label="模型" detail={config.model} submenu />}>
@@ -68,7 +60,7 @@ export function InterviewModelMenu({
             )}
           </DropdownMenuRadioGroup>
         </DropdownMenuSubmenu>
-        {reasoningSupported ? (
+        {capability?.supportedReasoningLevels?.length ? (
           <DropdownMenuSubmenu
             trigger={
               <MenuLabel label="思考深度" detail={REASONING_LABELS[thinkingValue]} submenu />

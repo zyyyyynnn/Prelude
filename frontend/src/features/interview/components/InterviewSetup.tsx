@@ -1,19 +1,19 @@
 import { ErrorState, LoadingState, useFeedback } from '@/shared/ui'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteAttachment, uploadAttachment } from '@/features/assets'
 import { fetchPositions } from '@/features/position'
 import { fetchResumes } from '@/features/resume'
-import {
-  fetchLlmConfig,
-  fetchProviders,
-  saveLlmConfig,
-  useSettings,
-  type LlmConfigPayload,
-  type LlmConfigResponse,
-} from '@/features/settings'
+import { fetchLlmConfig, fetchProviders, useSettings } from '@/features/settings'
+import type { InterviewModelConfig } from '../types'
 import { startInterview } from '../api'
 import { InterviewSetupComposer } from './InterviewSetupComposer'
+import {
+  interviewModelSource,
+  resolveInterviewModelConfig,
+  type InterviewModelDraft,
+} from './model-draft'
 
 export function InterviewSetup() {
   const navigate = useNavigate()
@@ -36,6 +36,9 @@ export function InterviewSetup() {
     queryKey: ['llm-providers'],
     queryFn: fetchProviders,
   })
+  const globalConfigKey = llmConfig.data ? interviewModelSource(llmConfig.data) : ''
+  const [modelDraft, setModelDraft] = useState<InterviewModelDraft | null>(null)
+  const composerConfig = resolveInterviewModelConfig(modelDraft, globalConfigKey, llmConfig.data)
   const upload = useMutation({
     mutationFn: (file: File) => uploadAttachment(file),
     onError: (error) => feedback.notify(error.message, 'error'),
@@ -43,31 +46,6 @@ export function InterviewSetup() {
   const removeAttachment = useMutation({
     mutationFn: deleteAttachment,
     onError: (error) => feedback.notify(error.message, 'error'),
-  })
-  const saveModel = useMutation({
-    mutationFn: saveLlmConfig,
-    onMutate: async (payload) => {
-      await client.cancelQueries({ queryKey: ['llm-config'] })
-      const previous = client.getQueryData<LlmConfigResponse>(['llm-config'])
-      client.setQueryData<LlmConfigResponse>(['llm-config'], (current) =>
-        current
-          ? {
-              ...current,
-              model: payload.model,
-              reasoningLevel: payload.reasoningLevel ?? current.reasoningLevel,
-            }
-          : current,
-      )
-      return { previous }
-    },
-    onSuccess: (config) => {
-      client.setQueryData(['llm-config'], config)
-      feedback.notify('模型配置已更新', 'success')
-    },
-    onError: (error, _payload, context) => {
-      if (context?.previous) client.setQueryData(['llm-config'], context.previous)
-      feedback.notify(error.message, 'error')
-    },
   })
   const create = useMutation({
     mutationFn: startInterview,
@@ -77,30 +55,15 @@ export function InterviewSetup() {
     },
     onError: (error) => feedback.notify(error.message, 'error'),
   })
-  function updateModel(
-    patch: Pick<LlmConfigPayload, 'model'> | Pick<LlmConfigPayload, 'reasoningLevel'>,
-  ) {
+  function updateModel(patch: Partial<Pick<InterviewModelConfig, 'model' | 'reasoningLevel'>>) {
     if (!llmConfig.data) return
-    if ('model' in patch) {
-      const provider = providers.data?.find((item) => item.providerKey === llmConfig.data.provider)
-      const capability = provider?.models.find((item) => item.model === patch.model)
-      if (
-        capability &&
-        !capability.supportedReasoningLevels.includes(llmConfig.data.reasoningLevel)
-      ) {
-        feedback.notify('该模型不支持当前思考深度，请先显式选择兼容的思考深度', 'error')
-        return
-      }
-    }
-    saveModel.mutate({
-      provider: llmConfig.data.provider,
-      customEndpointUrl: llmConfig.data.customEndpointUrl ?? undefined,
-      model: 'model' in patch ? patch.model : llmConfig.data.model,
-      reasoningLevel:
-        'reasoningLevel' in patch ? patch.reasoningLevel : llmConfig.data.reasoningLevel,
-      maxOutputTokens: llmConfig.data.maxOutputTokens,
-      fallbackModels: llmConfig.data.fallbackModels,
-    })
+    setModelDraft((current) => ({
+      source: globalConfigKey,
+      config: {
+        ...(current?.source === globalConfigKey ? current.config : llmConfig.data),
+        ...patch,
+      },
+    }))
   }
   const error = positions.error || resumes.error || llmConfig.error || providers.error
   return (
@@ -113,9 +76,9 @@ export function InterviewSetup() {
           llmConfig.isPending ||
           providers.isPending ? (
             <LoadingState message="正在准备面试资源…" />
-          ) : error ? (
+          ) : error || !composerConfig ? (
             <ErrorState
-              message={error.message}
+              message={error?.message ?? '模型配置不可用'}
               onRetry={() => {
                 void positions.refetch()
                 void resumes.refetch()
@@ -127,16 +90,15 @@ export function InterviewSetup() {
             <InterviewSetupComposer
               resumes={resumes.data ?? []}
               positions={positions.data ?? []}
-              llmConfig={llmConfig.data}
+              llmConfig={composerConfig}
               llmProviders={providers.data ?? []}
               uploadingAttachment={upload.isPending}
-              savingModel={saveModel.isPending}
               creating={create.isPending}
               onUploadAttachment={(file) => upload.mutateAsync(file)}
               onDeleteAttachment={(id) => removeAttachment.mutateAsync(id)}
               onModelChange={(model) => updateModel({ model })}
               onThinkingDepthChange={(reasoningLevel) =>
-                updateModel({ reasoningLevel: reasoningLevel ?? undefined })
+                updateModel({ reasoningLevel: reasoningLevel ?? 'AUTO' })
               }
               onManageModel={(provider) => openSettings({ section: 'llm', provider })}
               onNewResume={() => openSettings({ section: 'resumes', intent: 'upload-resume' })}

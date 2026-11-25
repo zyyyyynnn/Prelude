@@ -14,6 +14,7 @@ const backendSources = [
   'backend/src/main/java/com/prelude/resume/application/ImportResumePdf.java',
   'backend/src/main/java/com/prelude/resume/application/DeleteResume.java',
   'backend/src/main/java/com/prelude/documents/DocumentExtractorImpl.java',
+  'backend/src/main/java/com/prelude/documents/DocumentParserProcess.java',
   'backend/src/main/java/com/prelude/identity/application/ProfileService.java',
   'backend/src/main/java/com/prelude/identity/application/AvatarPublication.java',
 ]

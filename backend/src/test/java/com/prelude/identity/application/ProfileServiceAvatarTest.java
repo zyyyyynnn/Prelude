@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Base64;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doThrow;
@@ -23,6 +25,8 @@ class ProfileServiceAvatarTest {
 
     private static final String OLD_AVATAR = "/api/assets/5/content";
     private static final String CANDIDATE_AVATAR = "/api/assets/9/content";
+    private static final byte[] PNG = Base64.getDecoder().decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4AWJiYGD4DwAAAP//cGajQwAAAAZJREFUAwABDgEC81VxbAAAAABJRU5ErkJggg==");
 
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final AvatarStoragePort avatarStoragePort = mock(AvatarStoragePort.class);
@@ -44,13 +48,13 @@ class ProfileServiceAvatarTest {
         account.setRevision(5L);
         account.setAvatarUrl(OLD_AVATAR);
         when(accounts.findById(7L)).thenReturn(account);
-        when(avatarStoragePort.stage(7L, "image/png", bytes())).thenReturn(CANDIDATE_AVATAR);
+        when(avatarStoragePort.stage(7L, "me.png", "image/png", PNG)).thenReturn(CANDIDATE_AVATAR);
     }
 
     @Test
     void conflictRollsBackThePublicationDiscardsOnlyTheCandidateAndKeepsTheOldReference() {
         doThrow(ExceptionFixtures.revisionConflict("资料已被其他操作更新，请刷新后重试"))
-            .when(avatarPublication).publish(CANDIDATE_AVATAR, account);
+            .when(avatarPublication).publish(CANDIDATE_AVATAR, OLD_AVATAR, account);
 
         ExceptionFixtures.assertBusinessException(() -> profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile())), "revision_conflict");
 
@@ -60,26 +64,42 @@ class ProfileServiceAvatarTest {
     }
 
     @Test
-    void successCommitsTheReferenceThenCleansUpTheObsoleteAvatar() {
+    void candidateCleanupFailureDoesNotMaskThePublicationConflict() {
+        doThrow(ExceptionFixtures.revisionConflict("资料已被其他操作更新，请刷新后重试"))
+            .when(avatarPublication).publish(CANDIDATE_AVATAR, OLD_AVATAR, account);
+        doThrow(new IllegalStateException("registration unavailable"))
+            .when(avatarStoragePort).discard(7L, CANDIDATE_AVATAR);
+
+        ExceptionFixtures.assertBusinessException(
+            () -> profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile())), "revision_conflict");
+
+        assertThat(account.getAvatarUrl()).isEqualTo(OLD_AVATAR);
+        verify(avatarStoragePort, never()).discard(7L, OLD_AVATAR);
+    }
+
+    @Test
+    void successPublishesTheReferenceAndObsoleteAvatarDeletionTogether() {
         when(accounts.findById(7L)).thenReturn(account, reloaded());
 
         UserProfileResponse response = profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile()));
 
         assertThat(response.avatarUrl()).isEqualTo(CANDIDATE_AVATAR);
-        verify(avatarPublication).publish(CANDIDATE_AVATAR, account);
-        verify(avatarStoragePort).discard(7L, OLD_AVATAR);
+        verify(avatarPublication).publish(CANDIDATE_AVATAR, OLD_AVATAR, account);
+        verify(avatarStoragePort, never()).discard(7L, OLD_AVATAR);
         verify(avatarStoragePort, never()).discard(7L, CANDIDATE_AVATAR);
     }
 
     @Test
-    void obsoleteAvatarCleanupFailureDoesNotRollBackTheCommittedReference() {
-        when(accounts.findById(7L)).thenReturn(account, reloaded());
-        doThrow(new IllegalStateException("storage down"))
-            .when(avatarStoragePort).discard(7L, OLD_AVATAR);
+    void previousAvatarDeletionFailureReturnsUploadErrorAndCleansUpTheCandidate() {
+        doThrow(new IllegalStateException("registration unavailable"))
+            .when(avatarPublication).publish(CANDIDATE_AVATAR, OLD_AVATAR, account);
 
-        UserProfileResponse response = profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile()));
+        ExceptionFixtures.assertBusinessException(
+            () -> profileService.updateAvatar(SessionFixtures.avatarUpload(avatarFile())), "bad_request");
 
-        assertThat(response.avatarUrl()).isEqualTo(CANDIDATE_AVATAR);
+        assertThat(account.getAvatarUrl()).isEqualTo(OLD_AVATAR);
+        verify(avatarStoragePort).discard(7L, CANDIDATE_AVATAR);
+        verify(avatarStoragePort, never()).discard(7L, OLD_AVATAR);
     }
 
     private Account reloaded() {
@@ -92,10 +112,6 @@ class ProfileServiceAvatarTest {
     }
 
     private MockMultipartFile avatarFile() {
-        return new MockMultipartFile("file", "me.png", "image/png", bytes());
-    }
-
-    private byte[] bytes() {
-        return new byte[] {1, 2, 3};
+        return new MockMultipartFile("file", "me.png", "image/png", PNG);
     }
 }

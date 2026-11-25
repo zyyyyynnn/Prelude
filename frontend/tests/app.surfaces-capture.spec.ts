@@ -1,7 +1,7 @@
-import { mkdir, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
-import { execFileSync } from 'node:child_process'
 import { expect, test, type Page } from '@playwright/test'
 import {
   createDemoState,
@@ -12,17 +12,36 @@ import {
   releaseVoiceAudio,
 } from './demo-harness'
 
-/**
- * Surface references are filed as
- *   docs/screenshots/<light|dark>/<interview|lab>/<name>.png
- * so theme and product area are visible in the path.
- *
- * Each flow is written once and run for both themes. A per-theme copy of a flow is how the dark
- * set silently fell to a third of the light set: unpaired frames cannot be diffed, so "dark
- * looks wrong" had nothing to compare against.
- */
 type Theme = 'light' | 'dark'
 type Area = 'interview' | 'lab'
+
+type SurfaceManifest = {
+  inputRevision: string
+  capturedAt: string
+  layout: string
+  themes: Theme[]
+  framesPerTheme: Record<string, number>
+  surfaces: string[]
+  surfaceHashes: Record<string, string>
+}
+
+type BuildSurfaceManifestOptions = {
+  previousManifest?: SurfaceManifest
+  screenshotsRoot: string
+  inputRevision: string
+  capturedAt?: string
+  themes: readonly Theme[]
+  framesPerTheme: Record<string, number>
+  surfaces: readonly string[]
+}
+
+const { buildSurfaceManifest, computeInputRevision, dirtyInputFiles } = createRequire(
+  import.meta.url,
+)('../scripts/surface-manifest.cjs') as {
+  buildSurfaceManifest: (options: BuildSurfaceManifestOptions) => SurfaceManifest
+  computeInputRevision: () => string
+  dirtyInputFiles: () => number
+}
 
 const themes: readonly Theme[] = ['light', 'dark']
 
@@ -36,6 +55,8 @@ const captured: string[] = []
 test.use({
   viewport: DEMO_VIEWPORT,
   deviceScaleFactor: 1,
+  locale: 'zh-CN',
+  timezoneId: 'Asia/Shanghai',
   launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] },
 })
 
@@ -48,7 +69,14 @@ async function start(page: Page, colorScheme: Theme, voiceLane = false) {
   await mkdir(surfaceDirectory, { recursive: true })
   await page.goto('/login')
   await expect(page.getByRole('heading', { level: 1, name: '进入面试工作台' })).toBeVisible()
+  await disableCssMotion(page)
   return state
+}
+
+async function disableCssMotion(page: Page) {
+  await page.addStyleTag({
+    content: '*,*::before,*::after{transition:none!important;animation:none!important}',
+  })
 }
 
 async function logIn(page: Page) {
@@ -58,12 +86,51 @@ async function logIn(page: Page) {
   await expect(page).toHaveURL(/\/interview$/)
 }
 
-/**
- * A reference frame shows the resting state. After a click the virtual pointer stays where it
- * landed, so any row that paints a hover background at rest gets that slab baked into the
- * reference — a state no user ever sees. `pointerIsState` is the opt-out for the frames whose
- * subject genuinely is a hover, a tooltip or an open submenu.
- */
+// Resting frames move the pointer away unless hover or an open menu is the subject.
+async function visuallyEquivalent(page: Page, existing: string, candidate: string) {
+  let previous
+  try {
+    previous = await readFile(existing)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+    throw error
+  }
+  const current = await readFile(candidate)
+  if (previous.equals(current)) return true
+  return page.evaluate(
+    async ({ previous, current }) => {
+      const decode = async (value: string) => {
+        const bytes = Uint8Array.from(atob(value), (character) => character.charCodeAt(0))
+        const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
+        const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+        const context = canvas.getContext('2d', { willReadFrequently: true })!
+        context.drawImage(bitmap, 0, 0)
+        const image = context.getImageData(0, 0, bitmap.width, bitmap.height)
+        bitmap.close()
+        return image
+      }
+      const before = await decode(previous)
+      const after = await decode(current)
+      if (before.width !== after.width || before.height !== after.height) return false
+      let changed = 0
+      for (let index = 0; index < before.data.length; index += 4) {
+        let delta = 0
+        for (let channel = 0; channel < 4; channel += 1) {
+          delta = Math.max(
+            delta,
+            Math.abs(before.data[index + channel] - after.data[index + channel]),
+          )
+        }
+        if (delta > 2) return false
+        if (delta > 0) changed += 1
+      }
+      // Chromium can vary antialiased pixels by two RGB levels between identical runs.
+      return changed / (before.width * before.height) <= 0.001
+    },
+    { previous: previous.toString('base64'), current: current.toString('base64') },
+  )
+}
+
 async function capture(
   page: Page,
   theme: Theme,
@@ -77,17 +144,30 @@ async function capture(
   const relative = `${theme}/${area}/${name}.png`
   const target = path.join(surfaceDirectory, theme, area, `${name}.png`)
   await mkdir(path.dirname(target), { recursive: true })
-  await page.screenshot({
-    path: target,
-    fullPage: options.fullPage ?? false,
-    animations: 'disabled',
-  })
+  const temporary = `${target}.${process.pid}.png`
+  try {
+    await page.screenshot({
+      path: temporary,
+      fullPage: options.fullPage ?? false,
+      animations: 'disabled',
+    })
+    if (!(await visuallyEquivalent(page, target, temporary))) {
+      await rename(temporary, target)
+    }
+  } finally {
+    await rm(temporary, { force: true })
+  }
   captured.push(relative)
 }
 
 async function settle(page: Page) {
   await page.evaluate(async () => {
     await document.fonts.ready
+    await Promise.all(Array.from(document.images).map((image) => image.decode().catch(() => {})))
+    const finiteAnimations = document
+      .getAnimations()
+      .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+    await Promise.all(finiteAnimations.map((animation) => animation.finished.catch(() => {})))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
   })
@@ -97,6 +177,7 @@ async function captureLab(page: Page, theme: Theme, name: string) {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/components-lab')
   await expect(page.getByRole('heading', { name: 'Component Lab' })).toBeVisible()
+  await disableCssMotion(page)
   const rose = page.locator('[data-slot="rose-three"]')
   await expect(rose).toHaveAttribute('transform', /rotate\(/)
   const firstFrame = await rose.getAttribute('transform')
@@ -104,8 +185,7 @@ async function captureLab(page: Page, theme: Theme, name: string) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await expect(rose).toHaveAttribute('transform', 'rotate(0.0 50 50)')
   await settle(page)
-  /* The lab lives in a viewport-sized scroll shell. Expand that shell to its
-     content height so fullPage captures the whole gallery as one long reference. */
+  // Expand the lab scroll shell so fullPage captures the complete gallery.
   await page.evaluate(() => {
     const shell = document.querySelector<HTMLElement>('.workspace-page')
     const content = document.querySelector<HTMLElement>('.workspace-page__content')
@@ -123,7 +203,6 @@ async function captureLab(page: Page, theme: Theme, name: string) {
   await capture(page, theme, 'lab', name, { fullPage: true })
 }
 
-/** The interview workspace from the anonymous entry through the five voice states. */
 async function interviewWorkspaceFlow(page: Page, theme: Theme) {
   await start(page, theme, true)
   await capture(page, theme, 'interview', 'login')
@@ -181,11 +260,12 @@ async function interviewWorkspaceFlow(page: Page, theme: Theme) {
 
   await pushVoiceFrame(page, { type: 'error', message: '语音服务异常' })
   await expect(page.getByRole('button', { name: '切换到语音输入' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '切换到语音输入' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: '发送' })).toBeEnabled()
   await expect(holdToTalk).toBeHidden()
   await capture(page, theme, 'interview', 'voice-fallback')
 }
 
-/** Started session, report, analytics and the five settings sections. */
 async function interviewProductFlow(page: Page, theme: Theme) {
   await start(page, theme)
   await logIn(page)
@@ -209,17 +289,15 @@ async function interviewProductFlow(page: Page, theme: Theme) {
   for (const [index, section] of (
     ['账号资料', '简历管理', '岗位管理', '模型管理', '主题'] as const
   ).entries()) {
-    await page
-      .getByRole('dialog', { name: '全局设置' })
-      .getByRole('button', { name: section })
-      .click()
+    const dialog = page.getByRole('dialog', { name: '全局设置' })
+    await dialog.getByRole('button', { name: section }).click()
+    await expect(dialog.getByText(/正在读取|正在加载设置/)).toHaveCount(0)
     await capture(page, theme, 'interview', `settings-${index + 1}-${sectionSlug(section)}`)
   }
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: '全局设置' })).toHaveCount(0)
 }
 
-/** Anonymous pages, the gallery, and the shared primitive surfaces. */
 async function terminalStatesFlow(page: Page, theme: Theme) {
   await start(page, theme)
   await page.getByRole('button', { name: '注册', exact: true }).click()
@@ -251,19 +329,12 @@ for (const theme of themes) {
 
 test.afterAll(async () => {
   await mkdir(surfaceDirectory, { recursive: true })
-  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
-  const inputs = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' })
-    .split('\n')
-    .filter((line) => line.trim() && !line.includes('docs/screenshots/'))
-  if (inputs.length) {
-    console.warn(
-      `capture:surfaces ran on a dirty tree: ${inputs.length} input file(s) differ from ${revision.slice(0, 7)}`,
-    )
+  const inputRevision = computeInputRevision()
+  const dirtyInputs = dirtyInputFiles()
+  if (dirtyInputs) {
+    console.warn(`capture:surfaces ran with ${dirtyInputs} dirty frontend input file(s)`)
   }
 
-  /* The manifest lists what is on disk, not what this worker remembers. Built from the
-     in-memory capture list it silently under-reported whenever a worker restarted or the suite
-     ran in parallel — the file claimed eight frames while thirty-two were committed. */
   const onDisk = await listSurfaces(surfaceDirectory)
   const missing = captured.filter((relative) => !onDisk.has(relative))
   if (missing.length) {
@@ -275,10 +346,7 @@ test.afterAll(async () => {
     throw new Error(`stale surface captures absent from this run: ${stale.join(', ')}`)
   }
 
-  /* Both themes are produced by the same flow, so a frame that exists in one and not the other
-     is a capture that failed on one side — exactly how the dark set fell behind the light one.
-     The comparison is on the `area/name` tail: the theme prefix differs by construction, so
-     comparing full paths would call every run asymmetric. */
+  // Compare area/name tails so both themes must expose the same frames.
   const perTheme = new Map(
     themes.map((theme) => [
       theme,
@@ -295,26 +363,32 @@ test.afterAll(async () => {
     if (asymmetry.length) throw new Error(`theme parity broken: ${asymmetry.join(', ')}`)
   }
 
-  await writeFile(
-    path.join(surfaceDirectory, 'manifest.json'),
-    `${JSON.stringify(
-      {
-        revision,
-        capturedAt: new Date().toISOString(),
-        inputsMatchRevision: inputs.length === 0,
-        dirtyInputFiles: inputs.length,
-        layout: '<theme>/<area>/<name>.png',
-        themes: [...themes],
-        framesPerTheme: Object.fromEntries(
-          themes.map((theme) => [theme, perTheme.get(theme)!.length]),
-        ),
-        surfaces: [...onDisk].sort(),
-      },
-      null,
-      2,
-    )}\n`,
-    'utf8',
-  )
+  const manifestFile = path.join(surfaceDirectory, 'manifest.json')
+  let previousManifest: SurfaceManifest | undefined
+  try {
+    const parsed: unknown = JSON.parse(await readFile(manifestFile, 'utf8'))
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('surface manifest must be a JSON object')
+    }
+    previousManifest = parsed as SurfaceManifest
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  }
+  const manifest = buildSurfaceManifest({
+    previousManifest,
+    screenshotsRoot: surfaceDirectory,
+    inputRevision,
+    themes,
+    framesPerTheme: Object.fromEntries(themes.map((theme) => [theme, perTheme.get(theme)!.length])),
+    surfaces: [...onDisk],
+  })
+  const temporaryManifest = `${manifestFile}.${process.pid}.tmp`
+  try {
+    await writeFile(temporaryManifest, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    await rename(temporaryManifest, manifestFile)
+  } finally {
+    await rm(temporaryManifest, { force: true })
+  }
 })
 
 async function listSurfaces(root: string): Promise<Set<string>> {

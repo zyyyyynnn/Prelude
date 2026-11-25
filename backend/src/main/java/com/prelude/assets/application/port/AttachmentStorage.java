@@ -23,7 +23,7 @@ public interface AttachmentStorage {
      */
     int bindToScope(Long accountId, List<Long> attachmentIds, String scopeType, Long scopeId);
 
-    void unbindScope(Long accountId, String scopeType, Long scopeId);
+    List<AttachmentRow> deleteScope(Long accountId, String scopeType, Long scopeId);
 
     /** Persists a new attachment and returns the stored row with its identifier. */
     AttachmentRow insert(AttachmentRow stored);

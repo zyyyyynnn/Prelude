@@ -1,5 +1,7 @@
 package com.prelude.interview.application;
 
+import com.prelude.interview.domain.AssessmentStatus;
+
 import java.time.LocalDateTime;
 
 public record InterviewMessageView(
@@ -9,6 +11,8 @@ public record InterviewMessageView(
     Integer seqNum,
     LocalDateTime createdAt,
     Integer score,
-    String hint
+    String hint,
+    AssessmentStatus assessmentStatus,
+    String assessmentError
 ) {
 }

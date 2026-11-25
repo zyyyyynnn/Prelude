@@ -2,10 +2,15 @@ package com.prelude.interview.application;
 
 import com.prelude.activity.RealtimeConnection;
 import com.prelude.activity.SseSessionStream;
+import com.prelude.interview.api.InterviewJudgeEventResponse;
 import com.prelude.interview.application.port.InterviewTurnPort;
+import com.prelude.interview.application.port.JudgeOutcome;
+import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -64,11 +69,53 @@ class StreamChatTurnTest {
                 SessionFixtures.userTurn(12L, 51L, "回答"),
                 "business delta");
         });
-        when(interviewTurnPort.judgeAndPersist(any(), any())).thenReturn(java.util.Optional.empty());
+        when(interviewTurnPort.judgeAndPersist(any(), any())).thenReturn(JudgeOutcome.busy());
 
         streamChatTurn.execute(51L, "回答", false, "auth-session-1", opened[0]);
 
         SessionFixtures.verifyConnectionSend(connection, "message", "business delta");
+        ArgumentCaptor<InterviewJudgeEventResponse> event = ArgumentCaptor.forClass(InterviewJudgeEventResponse.class);
+        verify(connection).send(org.mockito.ArgumentMatchers.eq("judge"), event.capture());
+        assertThat(event.getValue().assessmentStatus()).isEqualTo(AssessmentStatus.PENDING);
+        assertThat(event.getValue().error()).isNull();
         verify(interviewTurnPort).summarizeIfNeeded(any());
+    }
+
+    @Test
+    void completedJudgeEventKeepsScoreAndHintAtTheTopLevel() {
+        StreamChatTurn streamChatTurn = streamChatTurn(true);
+        connection = SessionFixtures.openStream(SessionFixtures.mockRealtimePort(), 51L, opened);
+        completedTurn();
+        when(interviewTurnPort.judgeAndPersist(any(), any())).thenReturn(JudgeOutcome.completed(
+            SessionFixtures.judgeResult(8, "补充细节", "{\"score\":8}")));
+
+        streamChatTurn.execute(51L, "回答", false, "auth-session-1", opened[0]);
+
+        ArgumentCaptor<InterviewJudgeEventResponse> event = ArgumentCaptor.forClass(InterviewJudgeEventResponse.class);
+        verify(connection).send(org.mockito.ArgumentMatchers.eq("judge"), event.capture());
+        assertThat(event.getValue().score()).isEqualTo(8);
+        assertThat(event.getValue().hint()).isEqualTo("补充细节");
+        assertThat(event.getValue().assessmentStatus()).isEqualTo(AssessmentStatus.SCORED);
+    }
+
+    @Test
+    void unscoredJudgeEventCarriesTheFailureWithoutAScore() {
+        StreamChatTurn streamChatTurn = streamChatTurn(true);
+        connection = SessionFixtures.openStream(SessionFixtures.mockRealtimePort(), 51L, opened);
+        completedTurn();
+        when(interviewTurnPort.judgeAndPersist(any(), any())).thenReturn(JudgeOutcome.unscored("model unavailable"));
+
+        streamChatTurn.execute(51L, "回答", false, "auth-session-1", opened[0]);
+
+        ArgumentCaptor<InterviewJudgeEventResponse> event = ArgumentCaptor.forClass(InterviewJudgeEventResponse.class);
+        verify(connection).send(org.mockito.ArgumentMatchers.eq("judge"), event.capture());
+        assertThat(event.getValue().score()).isNull();
+        assertThat(event.getValue().assessmentStatus()).isEqualTo(AssessmentStatus.UNSCORED);
+        assertThat(event.getValue().error()).isEqualTo("model unavailable");
+    }
+
+    private void completedTurn() {
+        when(interviewTurnPort.execute(any(), any())).thenReturn(SessionFixtures.turnResult(
+            SessionFixtures.turnSession(51L), SessionFixtures.userTurn(12L, 51L, "回答"), "answer"));
     }
 }

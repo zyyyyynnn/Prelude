@@ -1,7 +1,5 @@
 package com.prelude.interview.application.port;
 
-import java.util.Optional;
-
 /**
  * Cross-module interview turn contract. Voice and other adapters depend on
  * this port instead of application services, keeping package depth shallow.
@@ -12,7 +10,7 @@ public interface InterviewTurnPort {
 
     InterviewTurnResult execute(InterviewTurnCommand command, InterviewTurnSink sink);
 
-    Optional<JudgeResult> judgeAndPersist(Long sessionId, Long messageId);
+    JudgeOutcome judgeAndPersist(Long sessionId, Long messageId);
 
     void summarizeIfNeeded(Long sessionId);
 }

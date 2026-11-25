@@ -100,6 +100,7 @@ class OAuthLoginSuccessHandlerTest {
     @Test
     void aPendingCollisionRedirectsToTheLoginHintWithoutEstablishingASession() throws Exception {
         when(oauthLoginService.resolveLogin(any(), any(), any(), any())).thenReturn(null);
+        OAuthLoginRedirect.remember(request, "/analytics");
         OidcUser oidcUser = oidcUser(Map.of(
             IdTokenClaimNames.SUB, "google-sub-1",
             "email", "owner@example.com",
@@ -107,8 +108,34 @@ class OAuthLoginSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(request, response, token("google", oidcUser));
 
-        assertThat(response.getRedirectedUrl()).isEqualTo("/login?oauth=pending");
+        assertThat(response.getRedirectedUrl())
+            .isEqualTo("/login?oauth=pending&redirect=%2Fanalytics")
+            .doesNotContain("owner@example.com");
         org.mockito.Mockito.verifyNoInteractions(sessionAuthenticationStrategy);
+    }
+
+    @Test
+    void successfulLoginConsumesOnlyTheSafeSessionRedirect() throws Exception {
+        OAuthLoginRedirect.remember(request, "/analytics?range=30d");
+        OidcUser oidcUser = oidcUser(Map.of(
+            IdTokenClaimNames.SUB, "google-sub-1",
+            "email", "owner@example.com",
+            "email_verified", true));
+
+        handler.onAuthenticationSuccess(request, response, token("google", oidcUser));
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/analytics?range=30d");
+        assertThat(session.getAttribute(OAuthLoginRedirect.SESSION_ATTRIBUTE)).isNull();
+    }
+
+    @Test
+    void unsafeSessionRedirectFallsBackToInterview() throws Exception {
+        OAuthLoginRedirect.remember(request, "//evil.example/analytics");
+        OidcUser oidcUser = oidcUser(Map.of(IdTokenClaimNames.SUB, "google-sub-1"));
+
+        handler.onAuthenticationSuccess(request, response, token("google", oidcUser));
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/interview");
     }
 
     private OidcUser oidcUser(Map<String, Object> claims) {

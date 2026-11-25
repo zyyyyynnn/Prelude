@@ -8,6 +8,7 @@ import com.prelude.interview.application.InterviewSessionAccess;
 import com.prelude.interview.application.InterviewStageManager;
 import com.prelude.interview.application.StreamChatTurn;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.application.repository.InterviewStageRepository;
 import com.prelude.interview.application.port.InterviewTurnCommand;
 import com.prelude.interview.application.port.InterviewTurnSessionSnapshot;
@@ -217,8 +218,8 @@ public final class SessionFixtures {
         return new InterviewTurnResult(session, userTurn, delta);
     }
 
-    public static InterviewTurnCommand turnCommand(Long sessionId, Long accountId, String input, boolean stream, boolean isWarmup) {
-        return new InterviewTurnCommand(sessionId, accountId, input, stream, isWarmup);
+    public static InterviewTurnCommand turnCommand(Long sessionId, Long accountId, String input, boolean autoStart) {
+        return new InterviewTurnCommand(sessionId, accountId, input, autoStart);
     }
 
     public static JudgeResult judgeResult(int score, String hint, String json) {
@@ -249,9 +250,7 @@ public final class SessionFixtures {
         Mockito.verify((RealtimeConnection) connection).send(event, data);
     }
 
-    /* A revoked session has to stop emitting, and "stopped" is only proved by what did not go
-       out. Asserting the error frame alone stays green when the implementation sends the
-       authenticated business delta first and the rejection after. */
+    // A revoked session must emit neither business data nor an error frame.
     public static void verifyConnectionNeverSends(Object connection, String event) {
         Mockito.verify((RealtimeConnection) connection, Mockito.never())
             .send(Mockito.eq(event), Mockito.any());
@@ -263,6 +262,7 @@ public final class SessionFixtures {
 
     public static class StageManagerHarness {
         public final InterviewStageRepository stageRepository = Mockito.mock(InterviewStageRepository.class);
+        public final InterviewSessionRepository sessionRepository = Mockito.mock(InterviewSessionRepository.class);
         public final InterviewMessageRepository messageRepository = Mockito.mock(InterviewMessageRepository.class);
         public final InterviewStagePolicy stagePolicy = new InterviewStagePolicy();
         public final List<InterviewStage> stages = new ArrayList<>();
@@ -271,12 +271,20 @@ public final class SessionFixtures {
         public final InterviewStageManager stageManager;
 
         public StageManagerHarness(InterviewMessageService messageService, Long sessionId) {
-            this.stageManager = new InterviewStageManager(stageRepository, messageRepository, messageService, stagePolicy);
+            this.stageManager = new InterviewStageManager(
+                stageRepository, sessionRepository, messageRepository, messageService, stagePolicy);
+            Mockito.when(sessionRepository.lockAppendOrder(Mockito.eq(sessionId))).thenReturn("ongoing");
             Mockito.when(stageRepository.findCurrent(Mockito.eq(sessionId))).thenAnswer(invocation -> stages.stream()
                 .filter(stage -> stage.getEndedAt() == null)
                 .findFirst()
                 .orElse(null));
+            Mockito.when(stageRepository.findCurrentForUpdate(Mockito.eq(sessionId))).thenAnswer(invocation -> stages.stream()
+                .filter(stage -> stage.getEndedAt() == null)
+                .findFirst()
+                .orElse(null));
             Mockito.when(stageRepository.findLatest(Mockito.eq(sessionId))).thenAnswer(invocation ->
+                stages.isEmpty() ? null : stages.get(stages.size() - 1));
+            Mockito.when(stageRepository.findLatestForUpdate(Mockito.eq(sessionId))).thenAnswer(invocation ->
                 stages.isEmpty() ? null : stages.get(stages.size() - 1));
             Mockito.when(stageRepository.listBySession(Mockito.eq(sessionId))).thenAnswer(invocation -> List.copyOf(stages));
             Mockito.when(stageRepository.add(Mockito.any(InterviewStage.class))).thenAnswer(invocation -> {

@@ -9,6 +9,7 @@ import '@fontsource-variable/lora'
 import '@fontsource-variable/noto-serif-sc'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { initializeTheme } from '@/features/settings/theme'
+import { AccountProfileSync } from './AccountProfileSync'
 import { FeedbackProvider } from '@/shared/ui'
 import { queryClient } from './query-client'
 import { NotFoundPage } from './routes/NotFoundPage'
@@ -107,9 +108,11 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <FeedbackProvider>
-          <Tooltip.Provider delay={350}>
-            <RouterProvider router={router} />
-          </Tooltip.Provider>
+          <AccountProfileSync>
+            <Tooltip.Provider delay={350}>
+              <RouterProvider router={router} />
+            </Tooltip.Provider>
+          </AccountProfileSync>
         </FeedbackProvider>
       </AuthProvider>
     </QueryClientProvider>

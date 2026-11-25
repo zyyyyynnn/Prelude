@@ -7,12 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Permanently removes one interview session. Messages, stages, scores and
- * weakness rows follow through database cascades; retrieval chunks and
- * attachment bindings are session-scoped without foreign keys, so they are
- * released explicitly inside the same transaction.
- */
 @Service
 @RequiredArgsConstructor
 public class DeleteInterviewSession {
@@ -24,13 +18,13 @@ public class DeleteInterviewSession {
     private final RetrievalPort retrievalPort;
     private final AttachmentContextPort attachmentContextPort;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Long sessionId) {
         Long accountId = sessionAccess.currentAccountId();
         sessionAccess.requireOwned(sessionId, accountId);
 
         interviewSessionRepository.deleteOwned(sessionId, accountId);
         retrievalPort.invalidate(RetrievalPort.SCOPE_SESSION, sessionId);
-        attachmentContextPort.unbind(accountId, ATTACHMENT_SCOPE, sessionId);
+        attachmentContextPort.deleteScope(accountId, ATTACHMENT_SCOPE, sessionId);
     }
 }

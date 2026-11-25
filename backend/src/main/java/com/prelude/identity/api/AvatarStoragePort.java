@@ -13,12 +13,11 @@ package com.prelude.identity.api;
 public interface AvatarStoragePort {
 
     /**
-     * Creates a PENDING avatar asset and uploads its object. Returns the
-     * candidate reference URL that resolves to the authorized content
-     * endpoint (/api/assets/{id}/content). Storage failures leave the
-     * PENDING row as the recovery anchor.
+     * Validates the image, creates a PENDING asset with its canonical MIME type,
+     * and uploads the object. Invalid images create no asset; storage failures
+     * leave the PENDING row as the reconciler's recovery anchor.
      */
-    String stage(Long accountId, String mediaType, byte[] bytes);
+    String stage(Long accountId, String fileName, String mediaType, byte[] bytes);
 
     /**
      * Moves the staged avatar asset from PENDING_UPLOAD to READY. Must run
@@ -27,8 +26,9 @@ public interface AvatarStoragePort {
     void confirmReady(String avatarUrl);
 
     /**
-     * Best-effort removal of one avatar asset owned by the account. Storage or
-     * database failures propagate; callers treat cleanup as non-fatal.
+     * Registers durable deletion intent for one avatar asset owned by the account.
+     * Joins the caller's transaction when present; publication failures roll back both
+     * the account reference and this deletion intent.
      */
     void discard(Long accountId, String avatarUrl);
 }

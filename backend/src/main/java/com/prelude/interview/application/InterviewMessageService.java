@@ -4,6 +4,7 @@ import com.prelude.BusinessException;
 import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.interview.domain.InterviewMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class InterviewMessageService {
         message.setSessionId(sessionId);
         message.setRole(role);
         message.setContent(content);
+        message.setAssessmentStatus("user".equals(role) ? AssessmentStatus.PENDING : null);
         message.setSeqNum(nextSeqNum(sessionId));
         interviewMessageRepository.add(message);
         return message;
