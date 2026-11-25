@@ -23,7 +23,7 @@
 | `npm run verify:identity` | OAuth provider/redirect/pending 重认证、头像解码与跨账户主题/profile 迟到响应隔离 |
 | `npm run generate:sbom` | 从 lockfile 生成 CycloneDX 1.6 runtime SBOM，排除 dev 依赖，输出到 `frontend/output/sbom.cdx.json` |
 | `npm run verify:licenses` | 两份 runtime SBOM 的许可证必须满足明确 allow/deny 规则；CycloneDX `licenses` 数组按全部条目允许或例外处理，只有 SPDX `expression` 内部使用 `OR` 语义；多选许可可按精确 PURL 版本显式选择一个允许许可证；未知许可证阻断，例外仅接受精确组件、许可证、理由、批准人和到期日 |
-| `npm run verify:evidence` | `docs/screenshots/manifest.json` 与全部 surface 文件存在，每个文件的 SHA-256 与清单一致，`inputRevision` 等于经 Git 过滤器规范化的前端输入内容哈希，且工作树前端输入确实干净；捕获仅对最大通道差 ≤2、差异像素占比 ≤0.1% 的抗锯齿噪声保留原图；CI 在截图捕获前验证已提交证据，捕获后以 `git diff --exit-code -- docs/screenshots` 验证可复现性 |
+| `npm run verify:evidence` | `docs/screenshots/manifest.json` 与全部 surface 文件存在，每个文件的 SHA-256 与清单一致，`inputRevision` 等于经 Git 过滤器规范化的前端输入内容哈希，且工作树前端输入确实干净；捕获上下文固定 `zh-CN` 与 `Asia/Shanghai`，仅对最大通道差 ≤2、差异像素占比 ≤0.1% 的抗锯齿噪声保留原图；CI 在截图捕获前验证已提交证据，捕获后以 `git diff --exit-code -- docs/screenshots` 验证可复现性 |
 
 依赖漏洞由同一 Grype 0.122.1 路径扫描前后端 SBOM，HIGH/CRITICAL 阻断；`npm audit --omit=dev` 仅作为本地辅助命令，不是 CI 门禁。命令顺序与本地复现方式见 `docs/setup.md#依赖与证据门禁`。
 

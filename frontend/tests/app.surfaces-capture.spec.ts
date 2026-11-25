@@ -55,6 +55,8 @@ const captured: string[] = []
 test.use({
   viewport: DEMO_VIEWPORT,
   deviceScaleFactor: 1,
+  locale: 'zh-CN',
+  timezoneId: 'Asia/Shanghai',
   launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] },
 })
 

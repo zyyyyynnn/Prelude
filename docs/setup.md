@@ -110,7 +110,7 @@ CI 上传 Playwright 的 actual/diff PNG、差异报告与 `manifest.json` 作�
 npm --prefix frontend run capture:surfaces
 ```
 
-生成界面参考图，写入 `docs/screenshots/<light|dark>/<interview|lab>/`（主题 × 板块）。`manifest.json` 记录前端输入内容哈希、每个 surface 的 SHA-256 与路径约定；输入哈希、surface 集合或图像字节未变化时保留原 `capturedAt`。捕获会解码比较像素；仅最大通道差不超过 2 且差异像素占比不超过 0.1% 时保留原图，以消除 Chromium 抗锯齿噪声，manifest 的文件 SHA-256 仍严格校验。随后执行 `verify:evidence`；只有前端输入哈希匹配且工作树干净时通过。这是随代码提交的人工回归对照资产，CI 同时校验其哈希、输入一致性与捕获可复现性。
+生成界面参考图，写入 `docs/screenshots/<light|dark>/<interview|lab>/`（主题 × 板块），浏览器上下文固定为 `zh-CN` 与 `Asia/Shanghai`，避免本机时区改变日期文案。`manifest.json` 记录前端输入内容哈希、每个 surface 的 SHA-256 与路径约定；输入哈希、surface 集合或图像字节未变化时保留原 `capturedAt`。捕获会解码比较像素；仅最大通道差不超过 2 且差异像素占比不超过 0.1% 时保留原图，以消除 Chromium 抗锯齿噪声，manifest 的文件 SHA-256 仍严格校验。随后执行 `verify:evidence`；只有前端输入哈希匹配且工作树干净时通过。这是随代码提交的人工回归对照资产，CI 同时校验其哈希、输入一致性与捕获可复现性。
 
 语音实时链路五帧由 `tests/demo-harness.ts` 的 `installVoiceLane` 驱动：假掉 `/api/ws` 传输、`getUserMedia`、`MediaRecorder` 与音频播放端，跑真实 `useVoiceInterview` 状态机与真实 composer。`@demo` 链路测试的截图写入 `frontend/test-results/` 作为该次运行的诊断证据。
 
