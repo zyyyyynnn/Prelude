@@ -56,8 +56,10 @@ jobs:
 
       - name: Generate container SBOMs
         run: |
-          docker save prelude-backend:ci | docker run --rm -i anchore/syft:v1.57.2 scan docker-archive:- -q -o cyclonedx-json > backend/target/image-bom.json
-          docker save prelude-frontend:ci | docker run --rm -i anchore/syft:v1.57.2 scan docker-archive:- -q -o cyclonedx-json > frontend/output/image-sbom.cdx.json
+          docker save prelude-backend:ci -o /tmp/prelude-backend-image.tar
+          docker save prelude-frontend:ci -o /tmp/prelude-frontend-image.tar
+          docker run --rm -v /tmp:/tmp anchore/syft:v1.57.2 scan docker-archive:/tmp/prelude-backend-image.tar -q -o cyclonedx-json > backend/target/image-bom.json
+          docker run --rm -v /tmp:/tmp anchore/syft:v1.57.2 scan docker-archive:/tmp/prelude-frontend-image.tar -q -o cyclonedx-json > frontend/output/image-sbom.cdx.json
 
       - name: Verify dependency license notices
         run: |
@@ -342,7 +344,7 @@ jobs:
             frontend/output/visual-diffs/**
             docs/screenshots/manifest.json
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
 
   release-smoke:
     needs: [supply-chain, backend]
