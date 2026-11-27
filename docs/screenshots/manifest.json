@@ -1,6 +1,6 @@
 {
-  "inputRevision": "ebc26beb7e0a77dd25f817479e1cf0b1d1ad7fe865090ed9b3331144cdb14187",
-  "capturedAt": "2026-11-27T22:48:48.306Z",
+  "inputRevision": "655b419782f30100d38a6792e137afd09a3aa4d577ac3c87b2f87bc2fb2cb89c",
+  "capturedAt": "2026-11-27T22:57:46.893Z",
   "layout": "<theme>/<area>/<name>.png",
   "themes": ["light", "dark"],
   "framesPerTheme": {

@@ -1,0 +1,24 @@
+{
+  auto_https off
+  admin off
+}
+
+:80 {
+  request_body {
+    max_size 10MB
+  }
+
+  @api path /api/*
+  handle @api {
+    reverse_proxy backend:8080 {
+      flush_interval -1
+    }
+  }
+
+  handle {
+    root * /srv
+    encode zstd gzip
+    try_files {path} /index.html
+    file_server
+  }
+}
