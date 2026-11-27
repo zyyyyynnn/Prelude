@@ -1,7 +1,5 @@
 package com.prelude.artifact.domain;
 
-import com.prelude.artifact.domain.InterviewReportDraft;
-
 import java.util.List;
 
 /**
@@ -10,18 +8,8 @@ import java.util.List;
  */
 public interface ReportParser {
 
-    ParsedReport parse(String content);
-
     InterviewReportDraft parseDraft(String content);
 
     /** A JSON array of items, for the extractions that are not the report itself. */
     <T> List<T> parseItems(String content, Class<T> itemType);
-
-    record ParsedReport(
-        String reportMarkdown,
-        int technicalScore,
-        int expressionScore,
-        int logicScore
-    ) {
-    }
 }

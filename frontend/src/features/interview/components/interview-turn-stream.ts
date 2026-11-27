@@ -1,9 +1,10 @@
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
+import { interviewQueryKeys } from '../query-keys'
 
 /** The one cache write the stream needs; React Query satisfies it at the call site. */
 export type SessionReportCache = {
   setQueryData(
-    key: ['interview-session', number],
+    key: ReturnType<typeof interviewQueryKeys.session>,
     updater: (
       old: InterviewSessionDetailResponse | undefined,
     ) => InterviewSessionDetailResponse | undefined,
@@ -30,7 +31,7 @@ export function handleInterviewStreamEvent(
     return
   }
   if (name === 'report_ready') {
-    cache.setQueryData(['interview-session', sessionId], (old) =>
+    cache.setQueryData(interviewQueryKeys.session(sessionId), (old) =>
       old ? { ...old, summaryReport: data, status: 'finished' } : old,
     )
     callbacks.setShowReport(true)

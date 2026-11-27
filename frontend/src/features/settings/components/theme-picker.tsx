@@ -1,10 +1,9 @@
 import { OptionCard } from '@/shared/ui'
 import { cn } from '@/shared/lib/cn'
+import type { ThemePreference } from '../types'
 
 /** The two-tone preview of a theme option: the dark half sits where that theme's surface is. */
-export type ThemeTone = 'light' | 'dark' | 'system'
-
-export function ThemePreview({ tone }: { tone: ThemeTone }) {
+export function ThemePreview({ tone }: { tone: ThemePreference }) {
   return (
     <span className="grid h-(--ui-height-control) grid-cols-2 gap-xs">
       <span
@@ -26,9 +25,9 @@ export function ThemeChoiceGroup({
   options,
   onSelect,
 }: {
-  value: ThemeTone
-  options: ReadonlyArray<{ value: ThemeTone; label: string; description: string }>
-  onSelect: (value: ThemeTone) => void
+  value: ThemePreference
+  options: ReadonlyArray<{ value: ThemePreference; label: string; description: string }>
+  onSelect: (value: ThemePreference) => void
 }) {
   return (
     <div className="grid w-full grid-cols-3 gap-sm" role="radiogroup" aria-label="主题偏好">

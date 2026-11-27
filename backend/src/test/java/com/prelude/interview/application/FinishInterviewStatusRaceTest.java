@@ -14,7 +14,9 @@ import com.prelude.BusinessException;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.interview.integration.InterviewSessionStatus;
+import com.prelude.jobs.integration.BackgroundJobMessages;
+import com.prelude.jobs.integration.JobDispatcher;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
@@ -27,7 +29,7 @@ class FinishInterviewStatusRaceTest {
     private final InterviewSessionAccess sessionAccess = mock(InterviewSessionAccess.class);
     private final InterviewSessionRepository sessions = mock(InterviewSessionRepository.class);
     private final InterviewMessageRepository messages = mock(InterviewMessageRepository.class);
-    private final BackgroundJobOperations jobs = mock(BackgroundJobOperations.class);
+    private final JobDispatcher jobs = mock(JobDispatcher.class);
     private final InterviewStageManager stages = mock(InterviewStageManager.class);
     private final FinishInterview finishInterview =
         new FinishInterview(sessionAccess, sessions, messages, jobs, stages);
@@ -36,7 +38,7 @@ class FinishInterviewStatusRaceTest {
         InterviewSession session = new InterviewSession();
         session.setId(51L);
         session.setAccountId(7L);
-        session.setStatus(status);
+        session.setStatus(InterviewSessionStatus.fromWire(status));
         return session;
     }
 
@@ -44,10 +46,10 @@ class FinishInterviewStatusRaceTest {
     void theWinnerOfTheTransitionSchedulesExactlyOneReportJob() {
         when(sessionAccess.currentAccountId()).thenReturn(7L);
         when(sessionAccess.requireOwned(51L, 7L)).thenReturn(session("ongoing"));
-        when(sessions.lockAppendOrder(51L)).thenReturn("ongoing");
-        when(stages.currentStageName(51L)).thenReturn("closing");
+        when(sessions.lockAppendOrder(51L)).thenReturn(InterviewSessionStatus.ONGOING);
+        when(stages.currentStageNameForUpdate(51L)).thenReturn("closing");
         when(sessions.markGeneratingIfOngoing(51L, 7L)).thenReturn(1);
-        when(jobs.request(any())).thenReturn(new BackgroundJobOperations.BackgroundJobRef("job-1", "op-1"));
+        when(jobs.request(any())).thenReturn(new BackgroundJobMessages.BackgroundJobRef("job-1", "op-1"));
 
         FinishInterviewResult result = finishInterview.execute(51L);
 
@@ -56,7 +58,7 @@ class FinishInterviewStatusRaceTest {
         verify(jobs).request(any());
         InOrder order = inOrder(sessions, stages, messages, jobs);
         order.verify(sessions).lockAppendOrder(51L);
-        order.verify(stages).currentStageName(51L);
+        order.verify(stages).currentStageNameForUpdate(51L);
         order.verify(messages).countPendingAssessments(51L);
         order.verify(stages).closeCurrentStage(51L);
         order.verify(sessions).markGeneratingIfOngoing(51L, 7L);
@@ -67,8 +69,8 @@ class FinishInterviewStatusRaceTest {
     void aLoserOfTheTransitionReportsGeneratingWithoutASecondJob() {
         when(sessionAccess.currentAccountId()).thenReturn(7L);
         when(sessionAccess.requireOwned(51L, 7L)).thenReturn(session("ongoing"));
-        when(sessions.lockAppendOrder(51L)).thenReturn("ongoing");
-        when(stages.currentStageName(51L)).thenReturn("closing");
+        when(sessions.lockAppendOrder(51L)).thenReturn(InterviewSessionStatus.ONGOING);
+        when(stages.currentStageNameForUpdate(51L)).thenReturn("closing");
         when(sessions.markGeneratingIfOngoing(51L, 7L)).thenReturn(0);
 
         FinishInterviewResult result = finishInterview.execute(51L);
@@ -82,8 +84,8 @@ class FinishInterviewStatusRaceTest {
     void pendingAssessmentPreventsTheReportJob() {
         when(sessionAccess.currentAccountId()).thenReturn(7L);
         when(sessionAccess.requireOwned(51L, 7L)).thenReturn(session("ongoing"));
-        when(sessions.lockAppendOrder(51L)).thenReturn("ongoing");
-        when(stages.currentStageName(51L)).thenReturn("closing");
+        when(sessions.lockAppendOrder(51L)).thenReturn(InterviewSessionStatus.ONGOING);
+        when(stages.currentStageNameForUpdate(51L)).thenReturn("closing");
         when(messages.countPendingAssessments(51L)).thenReturn(1L);
 
         assertThatThrownBy(() -> finishInterview.execute(51L))
@@ -101,7 +103,7 @@ class FinishInterviewStatusRaceTest {
     void aSessionThatBecameGeneratingBeforeTheLockDoesNotScheduleAJob() {
         when(sessionAccess.currentAccountId()).thenReturn(7L);
         when(sessionAccess.requireOwned(51L, 7L)).thenReturn(session("ongoing"));
-        when(sessions.lockAppendOrder(51L)).thenReturn("generating");
+        when(sessions.lockAppendOrder(51L)).thenReturn(InterviewSessionStatus.GENERATING);
 
         FinishInterviewResult result = finishInterview.execute(51L);
 
@@ -117,7 +119,7 @@ class FinishInterviewStatusRaceTest {
         finished.setSummaryReport("{\"current\":true}");
         when(sessionAccess.currentAccountId()).thenReturn(7L);
         when(sessionAccess.requireOwned(51L, 7L)).thenReturn(session("ongoing"));
-        when(sessions.lockAppendOrder(51L)).thenReturn("finished");
+        when(sessions.lockAppendOrder(51L)).thenReturn(InterviewSessionStatus.FINISHED);
         when(sessions.selectByIdForUpdate(51L)).thenReturn(finished);
 
         FinishInterviewResult result = finishInterview.execute(51L);

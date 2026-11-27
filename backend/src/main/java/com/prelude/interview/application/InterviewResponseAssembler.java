@@ -3,7 +3,7 @@ package com.prelude.interview.application;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
-import com.prelude.llm.api.LlmPort.FrozenModelConfiguration;
+import com.prelude.llm.api.ModelExecutionPort.FrozenModelConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,7 +15,7 @@ public class InterviewResponseAssembler {
         return new InterviewSessionSummary(
             session.getId(),
             session.getTargetPosition(),
-            session.getStatus(),
+            session.getStatus().wire(),
             session.getCreatedAt(),
             currentStage,
             session.getSummaryReport(),
@@ -30,14 +30,15 @@ public class InterviewResponseAssembler {
         FrozenModelConfiguration modelConfiguration,
         List<InterviewAttachmentView> attachments
     ) {
-        String currentStage = stages.isEmpty()
-            ? InterviewStageManager.STAGE_WARMUP
-            : stages.get(stages.size() - 1).getStageName();
+        if (stages.isEmpty()) {
+            throw new IllegalStateException("Interview session has no stage: " + session.getId());
+        }
+        String currentStage = stages.getLast().getStageName();
 
         return new InterviewSessionDetails(
             session.getId(),
             session.getTargetPosition(),
-            session.getStatus(),
+            session.getStatus().wire(),
             currentStage,
             modelConfiguration.model(),
             modelConfiguration.reasoningLevel(),

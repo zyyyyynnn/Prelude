@@ -2,7 +2,7 @@ package com.prelude.voice.infrastructure;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import com.prelude.interview.application.port.VoicePort;
+import com.prelude.voice.application.VoicePort;
 import com.prelude.llm.api.VoiceModelAccessPort;
 import com.prelude.llm.api.VoiceModelAccessPort.VoiceModelAccess;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class VoiceServiceImpl implements VoicePort {
             .build();
 
     @Override
-    public String speechToText(Long accountId, Long sessionId, byte[] audioBytes, String filename) {
+    public String speechToText(Long accountId, byte[] audioBytes, String filename) {
         try {
             VoiceModelAccess access = voiceModelAccessPort.resolveForAccount(accountId, null);
             String url = access.baseUrl() + "/audio/transcriptions";

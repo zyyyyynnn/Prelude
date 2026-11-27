@@ -7,6 +7,7 @@ public record InterviewStageSnapshot(
     Long id,
     Long sessionId,
     String stageName,
+    int boundarySeq,
     LocalDateTime startedAt,
     LocalDateTime endedAt
 ) {

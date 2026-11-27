@@ -3,37 +3,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { deleteSession, fetchSession, fetchSessions, setSessionPinned } from './api'
-import type { SessionRowState } from './components/session-row'
+import { interviewQueryKeys } from './query-keys'
 import { groupSessions } from './session-groups'
+import type { SessionListRow } from './session-list'
 import type { InterviewSessionItem } from './types'
 
-/** One row of the sidebar's session list, ready for `SessionGroup`. */
-export interface SessionListRow {
-  key: number
-  name: string
-  finished: boolean
-  pinned: boolean
-  state: SessionRowState
-  onOpen: () => void
-  onTogglePin: () => void
-  onRemove: () => void
-}
-
-/** A labelled run of sessions, or the empty note when a group has none. */
 export interface SessionListGroup {
   label: string
   finished: boolean
   rows: SessionListRow[]
 }
 
-/**
- * The sidebar's session list: loading, opening, pinning and deleting, with the
- * in-flight request cancelled when the user picks another session.
- *
- * The state machine lives here rather than in the shell because it is interview
- * behaviour — which session is open, what its copy says, how a failed load is
- * retried — and the shell should only assemble the chrome around it.
- */
 export function useSessionList() {
   const feedback = useFeedback()
   const client = useQueryClient()
@@ -45,7 +25,7 @@ export function useSessionList() {
   const [failedSessionId, setFailedSessionId] = useState<number | null>(null)
   const activeId = Number(params.get('session')) || null
   const sessions = useQuery({
-    queryKey: ['interview-sessions'],
+    queryKey: interviewQueryKeys.sessions(),
     queryFn: ({ signal }) => fetchSessions(signal),
   })
   const grouped = groupSessions(sessions.data ?? [])
@@ -56,7 +36,7 @@ export function useSessionList() {
     const pinned = !session.pinned
     try {
       await setSessionPinned(session.sessionId, pinned)
-      await client.invalidateQueries({ queryKey: ['interview-sessions'] })
+      await client.invalidateQueries({ queryKey: interviewQueryKeys.sessions() })
       feedback.notify(pinned ? '会话已置顶' : '已取消置顶', 'success')
     } catch (error) {
       feedback.notify(error instanceof Error ? error.message : '置顶状态更新失败', 'error')
@@ -68,7 +48,7 @@ export function useSessionList() {
     setFailedSessionId(null)
     try {
       await client.fetchQuery({
-        queryKey: ['interview-session', session.sessionId],
+        queryKey: interviewQueryKeys.session(session.sessionId),
         queryFn: ({ signal }) =>
           fetchSession(session.sessionId, AbortSignal.any([signal, controller.signal])),
       })
@@ -87,14 +67,14 @@ export function useSessionList() {
     const sessionName = session.targetPosition || session.positionName || '未命名岗位'
     const accepted = await feedback.confirm({
       title: '删除会话',
-      message: `“${sessionName}”的问答记录、评分与报告都会被永久删除，无法恢复。`,
+      message: `确认删除“${sessionName}”？删除后无法恢复。`,
       confirmText: '删除',
       danger: true,
     })
     if (!accepted) return
     try {
       await deleteSession(session.sessionId)
-      await client.invalidateQueries({ queryKey: ['interview-sessions'] })
+      await client.invalidateQueries({ queryKey: interviewQueryKeys.sessions() })
       if (activeId === session.sessionId) void navigate('/interview')
       feedback.notify('会话已删除', 'success')
     } catch (error) {
@@ -130,7 +110,7 @@ export function useSessionList() {
               : 'idle',
       onOpen: () => handleSelectSession(session),
       onTogglePin: () => void togglePin(session),
-      onRemove: () => void removeSession(session),
+      onRemove: () => removeSession(session),
     })),
   }))
 

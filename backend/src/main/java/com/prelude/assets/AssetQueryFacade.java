@@ -2,7 +2,7 @@ package com.prelude.assets;
 
 import com.prelude.assets.api.AssetQueryApi;
 import com.prelude.assets.api.AssetRef;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

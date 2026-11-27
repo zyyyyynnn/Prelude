@@ -1,4 +1,5 @@
+export { PositionManagementPanel } from './PositionManagementPanelLazy'
 export { fetchPositions } from './api'
-export { PositionManagementPanel } from './PositionManagementPanel'
+export { positionQueryKeys } from './query-keys'
 export { PositionRow } from './PositionRow'
 export type { Position } from './types'

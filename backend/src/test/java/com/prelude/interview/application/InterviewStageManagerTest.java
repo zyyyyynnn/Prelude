@@ -1,5 +1,6 @@
 package com.prelude.interview.application;
 
+import com.prelude.interview.integration.InterviewSessionStatus;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.SessionFixtures;
 import com.prelude.test.SessionFixtures.StageManagerHarness;
@@ -44,6 +45,19 @@ class InterviewStageManagerTest {
     }
 
     @Test
+    void initialStageStartsAfterTheOpeningContextMessage() {
+        harness.messages.add(harness.systemMessage(SESSION_ID, 0, "opening context"));
+
+        harness.stageManager.ensureInitialStage(SessionFixtures.create(SESSION_ID));
+
+        assertThat(harness.stages).singleElement().satisfies(stage -> {
+            assertThat(stage.getStageName()).isEqualTo("warmup");
+            assertThat(stage.getBoundarySeq()).isZero();
+            assertThat(stage.isAwaitingAnswer()).isFalse();
+        });
+    }
+
+    @Test
     void moveToSameStageIsANoOp() {
         harness.stages.add(harness.stage(SESSION_ID, "warmup"));
 
@@ -51,7 +65,7 @@ class InterviewStageManagerTest {
 
         assertThat(result.getStageName()).isEqualTo("warmup");
         assertThat(harness.stages).hasSize(1);
-        verify(messageService, never()).insertMessage(any(), anyString(), anyString());
+        verify(messageService, never()).insertSystemMessage(any(), anyString());
     }
 
     @Test
@@ -61,12 +75,27 @@ class InterviewStageManagerTest {
         var advanced = harness.stageManager.moveToStage(SESSION_ID, "technical");
 
         assertThat(advanced.getStageName()).isEqualTo("technical");
+        assertThat(advanced.getBoundarySeq()).isEqualTo(-1);
+        assertThat(advanced.isAwaitingAnswer()).isFalse();
         assertThat(harness.stages).hasSize(2);
         assertThat(harness.stages.get(0).getEndedAt()).isNotNull();
         assertThat(harness.stages.get(1).getEndedAt()).isNull();
-        verify(messageService).insertMessage(
-            eq(SESSION_ID), eq("system"),
+        verify(messageService).insertSystemMessage(
+            eq(SESSION_ID),
             eq("面试已进入技术问答阶段，请围绕岗位核心技术栈、项目实现细节和工程实践进行追问。"));
+    }
+
+    @Test
+    void stageBoundaryIsTheLatestCommittedMessageSequence() {
+        harness.stages.add(harness.stage(SESSION_ID, "warmup"));
+        harness.messages.add(harness.systemMessage(SESSION_ID, 8, "opening"));
+        harness.messages.add(harness.assistantMessage(SESSION_ID, 9));
+        harness.messages.add(harness.userMessage(SESSION_ID, 10));
+
+        var advanced = harness.stageManager.moveToStage(SESSION_ID, "technical");
+
+        assertThat(advanced.getBoundarySeq()).isEqualTo(10);
+        assertThat(harness.messages.getLast().getSeqNum()).isEqualTo(11);
     }
 
     @Test
@@ -84,7 +113,9 @@ class InterviewStageManagerTest {
 
     @Test
     void automaticAdvanceUsesTheSameSessionThenStageLockOrder() {
-        harness.stages.add(harness.stage(SESSION_ID, "technical"));
+        var technical = harness.stage(SESSION_ID, "technical");
+        technical.setAwaitingAnswer(true);
+        harness.stages.add(technical);
         harness.messages.add(harness.systemMessage(SESSION_ID, 1, "technical"));
         harness.messages.add(harness.assistantMessage(SESSION_ID, 2));
         harness.messages.add(harness.userMessage(SESSION_ID, 3));
@@ -101,7 +132,7 @@ class InterviewStageManagerTest {
 
     @Test
     void everyStageMutationRejectsANonOngoingSessionBeforeTouchingStages() {
-        when(harness.sessionRepository.lockAppendOrder(SESSION_ID)).thenReturn("generating");
+        when(harness.sessionRepository.lockAppendOrder(SESSION_ID)).thenReturn(InterviewSessionStatus.GENERATING);
 
         ExceptionFixtures.assertBusinessExceptionMessage(
             () -> harness.stageManager.ensureInitialStage(SessionFixtures.create(SESSION_ID)),
@@ -131,7 +162,7 @@ class InterviewStageManagerTest {
     @Test
     void moveToStageBlocksWhileAssistantPromptIsUnanswered() {
         harness.stages.add(harness.stage(SESSION_ID, "warmup"));
-        harness.messages.add(harness.assistantMessage(SESSION_ID, 1));
+        harness.stages.getFirst().setAwaitingAnswer(true);
 
         ExceptionFixtures.assertBusinessExceptionMessage(
             () -> harness.stageManager.moveToStage(SESSION_ID, "technical"),
@@ -159,6 +190,7 @@ class InterviewStageManagerTest {
 
         harness.messages.add(harness.userMessage(SESSION_ID, 3));
         harness.messages.add(harness.assistantMessage(SESSION_ID, 4));
+        harness.stages.getFirst().setAwaitingAnswer(true);
 
         assertThat(harness.stageManager.advanceIfReady(SESSION_ID).getStageName()).isEqualTo("deep_dive");
         assertThat(harness.stages).hasSize(2);
@@ -176,20 +208,13 @@ class InterviewStageManagerTest {
     }
 
     @Test
-    void assistantRepliesUseStageTimeToExcludeEarlierReplies() {
-        LocalDateTime startedAt = LocalDateTime.now();
+    void assistantRepliesUseThePersistedSequenceBoundary() {
         var technical = harness.stage(SESSION_ID, "technical");
-        technical.setStartedAt(startedAt);
+        technical.setBoundarySeq(1);
         harness.stages.add(technical);
-        var earlier = harness.assistantMessage(SESSION_ID, 1);
-        earlier.setCreatedAt(startedAt.minusSeconds(1));
-        harness.messages.add(earlier);
-        var prompt = harness.systemMessage(SESSION_ID, 2, "stage prompt");
-        prompt.setCreatedAt(startedAt);
-        harness.messages.add(prompt);
-        var current = harness.assistantMessage(SESSION_ID, 3);
-        current.setCreatedAt(startedAt.plusSeconds(1));
-        harness.messages.add(current);
+        harness.messages.add(harness.assistantMessage(SESSION_ID, 1));
+        harness.messages.add(harness.systemMessage(SESSION_ID, 2, "stage prompt"));
+        harness.messages.add(harness.assistantMessage(SESSION_ID, 3));
 
         assertThat(harness.stageManager.assistantRepliesInCurrentStage(SESSION_ID)).isEqualTo(1);
     }
@@ -199,6 +224,7 @@ class InterviewStageManagerTest {
         LocalDateTime startedAt = LocalDateTime.of(2026, 11, 25, 12, 0, 0);
         var technical = harness.stage(SESSION_ID, "technical");
         technical.setStartedAt(startedAt);
+        technical.setBoundarySeq(3);
         harness.stages.add(technical);
         var previousPrompt = harness.systemMessage(SESSION_ID, 1, "previous stage");
         previousPrompt.setCreatedAt(startedAt);
@@ -218,8 +244,24 @@ class InterviewStageManagerTest {
     }
 
     @Test
-    void closingClosesAfterItsReplyQuota() {
+    void advanceDoesNothingUntilTheAssistantAnswerIsPersisted() {
+        var technical = harness.stage(SESSION_ID, "technical");
+        technical.setBoundarySeq(1);
+        harness.stages.add(technical);
+        harness.messages.add(harness.assistantMessage(SESSION_ID, 2));
+        harness.messages.add(harness.assistantMessage(SESSION_ID, 3));
+
+        assertThat(harness.stageManager.advanceIfReady(SESSION_ID).getStageName()).isEqualTo("technical");
+        assertThat(harness.stages).hasSize(1);
+
+        technical.setAwaitingAnswer(true);
+        assertThat(harness.stageManager.advanceIfReady(SESSION_ID).getStageName()).isEqualTo("deep_dive");
+    }
+
+    @Test
+    void closingStaysOpenUntilFinishInterviewClosesIt() {
         var closing = harness.stage(SESSION_ID, "closing");
+        closing.setAwaitingAnswer(true);
         harness.stages.add(closing);
         harness.messages.add(harness.systemMessage(SESSION_ID, 1, "closing"));
         harness.messages.add(harness.assistantMessage(SESSION_ID, 2));
@@ -227,16 +269,18 @@ class InterviewStageManagerTest {
         harness.stageManager.advanceIfReady(SESSION_ID);
 
         assertThat(harness.stages).hasSize(1);
-        assertThat(closing.getEndedAt()).isNotNull();
+        assertThat(closing.getEndedAt()).isNull();
+        assertThat(closing.isAwaitingAnswer()).isTrue();
     }
 
     @Test
     void unknownStageFailsInsteadOfFallingBackToWarmup() {
         harness.stages.add(harness.stage(SESSION_ID, "unknown"));
-        harness.messages.add(harness.assistantMessage(SESSION_ID, 1));
 
         ExceptionFixtures.assertBusinessException(() -> harness.stageManager.advanceIfReady(SESSION_ID))
             .hasMessageContaining("无效的面试阶段");
         verify(harness.stageRepository, never()).add(any());
+        ExceptionFixtures.assertBusinessException(() -> harness.stageManager.currentStageName(SESSION_ID))
+            .hasMessageContaining("无效的面试阶段");
     }
 }

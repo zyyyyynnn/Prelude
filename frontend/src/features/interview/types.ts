@@ -1,12 +1,5 @@
 import type { ReasoningLevel } from '@/features/settings'
-
-export type InterviewAttachment = {
-  id: number
-  fileName: string
-  mediaType: string
-  size: number
-  image: boolean
-}
+import type { AttachmentItem } from '@/features/assets'
 
 export type InterviewStageName = 'warmup' | 'technical' | 'deep_dive' | 'closing'
 
@@ -79,7 +72,7 @@ export type InterviewSessionDetailResponse = {
   resumeId?: number
   positionId?: number
   jdText?: string
-  attachments: InterviewAttachment[]
+  attachments: AttachmentItem[]
 }
 
 export type InterviewChatRequest = {

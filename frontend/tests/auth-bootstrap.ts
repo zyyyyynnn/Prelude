@@ -6,6 +6,13 @@ import type { Page } from '@playwright/test'
  * CSRF bootstrap cookie, so no request leaks to the dev proxy target.
  */
 export async function installAnonymousSession(page: Page) {
+  await page.route('**/api/auth/oauth/providers', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 200, message: 'ok', data: [] }),
+    })
+  })
   await page.route('**/api/auth/me', async (route) => {
     await route.fulfill({
       status: 401,

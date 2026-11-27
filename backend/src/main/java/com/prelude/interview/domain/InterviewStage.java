@@ -10,6 +10,8 @@ public class InterviewStage {
     private Long id;
     private Long sessionId;
     private String stageName;
+    private int boundarySeq;
+    private boolean awaitingAnswer;
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
 }

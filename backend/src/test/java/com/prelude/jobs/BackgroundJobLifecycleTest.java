@@ -1,6 +1,6 @@
 package com.prelude.jobs;
 
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.integration.BackgroundJobMessages;
 import com.prelude.jobs.infrastructure.persistence.BackgroundJobMapper;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.JobFixtures;
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class BackgroundJobLifecycleTest {
 
     @Autowired
-    private BackgroundJobOperations jobs;
+    private BackgroundJobService jobs;
 
     @Autowired
     private BackgroundJobMapper jobMapper;
@@ -51,12 +51,12 @@ class BackgroundJobLifecycleTest {
         return "test.lifecycle:operation:" + System.nanoTime();
     }
 
-    private BackgroundJobOperations.BackgroundJobRef requestJob(long accountId, long subjectId, String operationKey) {
-        return jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
+    private BackgroundJobMessages.BackgroundJobRef requestJob(long accountId, long subjectId, String operationKey) {
+        return jobs.request(new BackgroundJobMessages.BackgroundJobRequest(
             "test.lifecycle", accountId, subjectId, operationKey, "{}"));
     }
 
-    private BackgroundJobOperations.BackgroundJobRef requestJob(long accountId, long subjectId) {
+    private BackgroundJobMessages.BackgroundJobRef requestJob(long accountId, long subjectId) {
         return requestJob(accountId, subjectId, uniqueOperationKey());
     }
 
@@ -129,8 +129,8 @@ class BackgroundJobLifecycleTest {
             var outcome = jobs.fail(
                 ref.jobId(), claim.attemptNumber(), new RuntimeException("transient failure"));
             assertThat(outcome).isEqualTo(attempt < 3
-                ? BackgroundJobOperations.FailureOutcome.RETRY_SCHEDULED
-                : BackgroundJobOperations.FailureOutcome.TERMINAL_FAILED);
+                ? BackgroundJobMessages.FailureOutcome.RETRY_SCHEDULED
+                : BackgroundJobMessages.FailureOutcome.TERMINAL_FAILED);
         }
 
         var job = stored(ref.jobId());
@@ -142,7 +142,7 @@ class BackgroundJobLifecycleTest {
         assertThat(applicationEvents.stream(JobFixtures.failedEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
         assertThat(jobs.fail(ref.jobId(), 3, new RuntimeException("duplicate terminal failure")))
-            .isEqualTo(BackgroundJobOperations.FailureOutcome.NOT_RUNNING);
+            .isEqualTo(BackgroundJobMessages.FailureOutcome.NOT_RUNNING);
         assertThat(applicationEvents.stream(JobFixtures.failedEventClass())
             .filter(event -> event.jobId().equals(ref.jobId())).count()).isEqualTo(1);
     }

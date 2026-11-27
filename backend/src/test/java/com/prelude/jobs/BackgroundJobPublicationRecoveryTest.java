@@ -1,6 +1,6 @@
 package com.prelude.jobs;
 
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.integration.BackgroundJobMessages;
 import com.prelude.jobs.integration.BackgroundJobRequested;
 import com.prelude.test.AccountFixtures;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class BackgroundJobPublicationRecoveryTest {
     private static final String JOB_TYPE = "test.publication";
 
     @Autowired
-    private BackgroundJobOperations jobs;
+    private BackgroundJobService jobs;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -60,7 +60,7 @@ class BackgroundJobPublicationRecoveryTest {
             .convertAndSend(anyString(), anyString(), any(), anyMap());
 
         long accountId = createAccount();
-        var job = jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
+        var job = jobs.request(new BackgroundJobMessages.BackgroundJobRequest(
             JOB_TYPE,
             accountId,
             401L,

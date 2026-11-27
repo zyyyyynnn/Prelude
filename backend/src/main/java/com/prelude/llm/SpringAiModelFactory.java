@@ -1,7 +1,7 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.llm.api.LlmPort.ResponseMode;
+import com.prelude.llm.api.ModelExecutionPort.ResponseMode;
 import com.prelude.llm.api.ModelCapabilityResponse.ReasoningLevel;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
 import com.anthropic.backends.AnthropicBackend;

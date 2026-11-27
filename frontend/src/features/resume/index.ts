@@ -1,4 +1,5 @@
+export { ResumeManagementPanel } from './ResumeManagementPanelLazy'
 export { fetchResumes } from './api'
-export { ResumeManagementPanel } from './ResumeManagementPanel'
+export { resumeQueryKeys } from './query-keys'
 export { ResumeRow } from './ResumeRow'
 export type { ResumeItem } from './types'

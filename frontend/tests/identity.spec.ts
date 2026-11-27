@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createDemoState, installDemoHarness } from './demo-harness'
+import { fulfillProblem } from './api-fixtures'
 
 const validPng = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4AWJiYGD4DwAAAP//cGajQwAAAAZJREFUAwABDgEC81VxbAAAAABJRU5ErkJggg==',
@@ -57,6 +58,37 @@ test('unconfigured OAuth hides provider entries and pending asks for password wi
   )
   await expect(page.locator('body')).not.toContainText('owner@example.com')
 })
+
+for (const outcome of ['server', 'network', 'malformed'] as const) {
+  test(`auth bootstrap exposes retry after a ${outcome} failure`, async ({ page }) => {
+    const state = createDemoState()
+    state.authenticated = true
+    await installDemoHarness(page, state)
+    let failBootstrap = true
+    await page.route('**/api/auth/me', async (route) => {
+      if (!failBootstrap) {
+        await route.fallback()
+        return
+      }
+      if (outcome === 'network') {
+        await route.abort('failed')
+        return
+      }
+      if (outcome === 'malformed') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: 'not-json' })
+        return
+      }
+      await fulfillProblem(route, 500, 'bootstrap_failed', '登录状态读取失败')
+    })
+    await page.goto('/interview')
+
+    await expect(page.getByText('登录状态检查失败，请检查网络后重试。')).toBeVisible()
+    await expect(page).toHaveURL(/\/interview$/)
+    failBootstrap = false
+    await page.getByRole('button', { name: '重新加载' }).click()
+    await expect(page.getByRole('heading', { name: '准备开始一场沉浸式模拟面试' })).toBeVisible()
+  })
+}
 
 test('server profile restores theme and account switch replaces account-scoped local state', async ({
   page,

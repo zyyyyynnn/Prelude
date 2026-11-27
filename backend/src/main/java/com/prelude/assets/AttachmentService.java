@@ -4,8 +4,8 @@ import com.prelude.BusinessException;
 import com.prelude.assets.api.AssetRef;
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.assets.api.AttachmentSnapshot;
-import com.prelude.assets.application.port.AssetLookup;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import com.prelude.assets.application.port.AttachmentStorage;
 import com.prelude.assets.application.port.AttachmentStorage.AttachmentRow;
 import com.prelude.documents.api.DocumentContent;
@@ -33,7 +33,7 @@ public class AttachmentService implements AttachmentContextPort {
     private static final int MAX_EXTRACTED_TEXT = 100_000;
 
     private final AttachmentStorage attachmentStorage;
-    private final AssetLookup assetLookup;
+    private final AssetRepository assetRepository;
     private final AssetDeletionService assetDeletionService;
     private final AssetService assetService;
     private final AttachmentPublication attachmentPublication;
@@ -73,19 +73,18 @@ public class AttachmentService implements AttachmentContextPort {
         return toSnapshot(stored, assetService.requireOwnedReady(accountId, asset.id()));
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void deleteUnbound(Long attachmentId) {
         long accountId = currentAccount.requireId();
         AttachmentRow stored = attachmentStorage.findUnboundOwned(accountId, attachmentId);
         if (stored == null) {
             throw BusinessException.badRequest("附件不存在、已被使用或无权删除");
         }
-        AssetRow asset = assetLookup.findById(stored.assetId());
-        if (asset == null) {
-            attachmentStorage.deleteById(stored.id());
-            return;
+        AssetRow asset = requireDeletableAsset(accountId, assetRepository.findById(stored.assetId()));
+        if (attachmentStorage.deleteUnboundOwned(accountId, stored.id()) != 1) {
+            throw BusinessException.badRequest("附件不存在、已被使用或无权删除");
         }
-        objectStoragePort.delete(asset.objectKey());
-        assetLookup.deleteById(asset.id());
+        assetDeletionService.register(asset);
     }
 
     @Override
@@ -125,19 +124,27 @@ public class AttachmentService implements AttachmentContextPort {
         if (deleted.isEmpty()) {
             return;
         }
+        registerDeletion(accountId, deleted);
+    }
+
+    private void registerDeletion(Long accountId, List<AttachmentRow> deleted) {
         List<Long> assetIds = deleted.stream().map(AttachmentRow::assetId).distinct().toList();
-        Map<Long, AssetRow> assetsById = assetLookup.findByIds(assetIds).stream()
+        Map<Long, AssetRow> assetsById = assetRepository.findByIds(assetIds).stream()
             .collect(Collectors.toMap(AssetRow::id, Function.identity()));
         for (AttachmentRow attachment : deleted) {
-            AssetRow asset = assetsById.get(attachment.assetId());
-            if (asset == null) {
-                throw BusinessException.notFound("附件素材不存在，无法删除");
-            }
-            if (!accountId.equals(asset.accountId())) {
-                throw BusinessException.notFound("附件不存在或无权删除");
-            }
+            AssetRow asset = requireDeletableAsset(accountId, assetsById.get(attachment.assetId()));
             assetDeletionService.register(asset);
         }
+    }
+
+    private AssetRow requireDeletableAsset(Long accountId, AssetRow asset) {
+        if (asset == null) {
+            throw BusinessException.notFound("附件素材不存在，无法删除");
+        }
+        if (!accountId.equals(asset.accountId())) {
+            throw BusinessException.notFound("附件不存在或无权删除");
+        }
+        return asset;
     }
 
     @Override
@@ -169,7 +176,7 @@ public class AttachmentService implements AttachmentContextPort {
             .map(AttachmentRow::assetId)
             .distinct()
             .toList();
-        Map<Long, AssetRow> assetsById = assetLookup.findByIds(assetIds).stream()
+        Map<Long, AssetRow> assetsById = assetRepository.findByIds(assetIds).stream()
             .collect(Collectors.toMap(AssetRow::id, Function.identity()));
         return storedRows.stream()
             .map(stored -> {

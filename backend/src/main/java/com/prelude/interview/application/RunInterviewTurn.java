@@ -14,7 +14,7 @@ import com.prelude.interview.application.port.InterviewTurnSessionSnapshot;
 import com.prelude.interview.application.port.InterviewUserTurnSnapshot;
 import com.prelude.interview.application.port.InterviewTurnSink;
 import com.prelude.interview.application.port.JudgeOutcome;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.PromptIds;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,12 +26,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RunInterviewTurn implements InterviewTurnPort {
 
-    private static final String ROLE_USER = "user";
-
     private final InterviewSessionAccess sessionAccess;
     private final InterviewMessageRepository interviewMessageRepository;
     private final InterviewSessionRepository interviewSessionRepository;
-    private final LlmPort llmPort;
+    private final ModelExecutionPort llmPort;
     private final InterviewContextPort interviewContextService;
     private final InterviewMessageService interviewMessageService;
     private final AttachmentContextPort attachmentContextPort;
@@ -53,15 +51,15 @@ public class RunInterviewTurn implements InterviewTurnPort {
             if (content.isEmpty()) {
                 throw BusinessException.badRequest("回答内容不能为空");
             }
-            insertedUserMessage = interviewMessageService.insertMessage(command.sessionId(), ROLE_USER, content);
+            insertedUserMessage = interviewMessageService.insertUserMessage(command.sessionId(), content);
             sink.userAccepted(snapshotOf(insertedUserMessage));
             messages = interviewContextService.buildContextMessages(command.sessionId());
         }
 
-        List<LlmPort.Attachment> imageAttachments = command.autoStart() && firstRound
+        List<ModelExecutionPort.Attachment> imageAttachments = command.autoStart() && firstRound
             ? attachmentContextPort.list(session.getAccountId(), "interview", session.getId()).stream()
                 .filter(attachment -> attachment.image())
-                .map(attachment -> new LlmPort.Attachment(
+                .map(attachment -> new ModelExecutionPort.Attachment(
                     attachment.fileName(),
                     attachment.mediaType(),
                     attachmentContextPort.readOwnedContent(session.getAccountId(), attachment.assetRef())))
@@ -121,23 +119,23 @@ public class RunInterviewTurn implements InterviewTurnPort {
     private void streamAssistantReply(
         InterviewSession session,
         List<Map<String, String>> messages,
-        List<LlmPort.Attachment> attachments,
+        List<ModelExecutionPort.Attachment> attachments,
         StringBuilder assistantReply,
         InterviewTurnSink sink
     ) {
         llmPort.stream(
-            new LlmPort.ModelExecutionRequest(
+            new ModelExecutionPort.ModelExecutionRequest(
                 session.getModelExecutionSnapshotId(),
                 "chat",
                 PromptIds.CHAT,
-                LlmPort.ResponseMode.PLAIN_TEXT,
+                ModelExecutionPort.ResponseMode.PLAIN_TEXT,
                 messages.stream()
-                    .map(message -> new LlmPort.Message(message.get("role"), message.get("content")))
+                    .map(message -> new ModelExecutionPort.Message(message.get("role"), message.get("content")))
                     .toList(),
                 attachments,
                 List.of()
             ),
-            new LlmPort.StreamSink() {
+            new ModelExecutionPort.StreamSink() {
                 @Override
                 public void onNext(String delta) {
                     assistantReply.append(delta);

@@ -86,6 +86,17 @@ class SessionKeyedSerialExecutorTest {
     }
 
     @Test
+    void idleSessionLanesAreRemoved() throws Exception {
+        CountDownLatch done = new CountDownLatch(1);
+        executor.executeForSession(7L, done::countDown);
+
+        assertThat(done.await(2, TimeUnit.SECONDS)).isTrue();
+        pool.shutdown();
+        assertThat(pool.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(executor.laneCount()).isZero();
+    }
+
+    @Test
     void aMissingSessionIdGoesStraightToTheDelegate() throws Exception {
         List<String> order = new ArrayList<>();
         CountDownLatch done = new CountDownLatch(1);

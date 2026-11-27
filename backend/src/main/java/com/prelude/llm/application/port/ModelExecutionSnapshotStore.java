@@ -1,6 +1,6 @@
 package com.prelude.llm.application.port;
 
-import com.prelude.llm.api.LlmPort.FrozenModelConfiguration;
+import com.prelude.llm.api.ModelExecutionPort.FrozenModelConfiguration;
 
 /**
  * Model-execution-snapshot row access. A snapshot is what a run reads its

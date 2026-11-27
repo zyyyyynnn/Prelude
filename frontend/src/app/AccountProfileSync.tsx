@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth'
-import { fetchProfile, profileQueryKey } from '@/features/settings/api'
+import { fetchProfile, profileQueryKeys } from '@/features/profile'
 import { applyTheme, readTheme } from '@/features/settings/theme'
 
 export function AccountProfileSync({ children }: { children: ReactNode }) {
   const { accountId, status } = useAuth()
   const profile = useQuery({
-    queryKey: profileQueryKey(accountId ?? 0),
+    queryKey: profileQueryKeys.detail(accountId ?? 0),
     queryFn: ({ signal }) => fetchProfile(signal),
     enabled: status === 'authenticated' && accountId != null,
   })

@@ -1,8 +1,9 @@
 package com.prelude.assets;
 
-import com.prelude.assets.application.port.AssetLookup;
+import com.prelude.assets.application.port.AssetRepository;
 import com.prelude.assets.application.port.AttachmentStorage;
 import com.prelude.test.ExceptionFixtures;
+import static org.mockito.Mockito.mock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,24 +55,11 @@ class AttachmentServiceNormalizeIdsTest {
                 }
 
                 @Override
-                public void deleteById(Long id) {
+                public int deleteUnboundOwned(Long accountId, Long id) {
+                    return 1;
                 }
             },
-            new AssetLookup() {
-                @Override
-                public List<AssetLookup.AssetRow> findByIds(List<Long> ids) {
-                    return List.of();
-                }
-
-                @Override
-                public AssetLookup.AssetRow findById(Long id) {
-                    return null;
-                }
-
-                @Override
-                public void deleteById(Long id) {
-                }
-            },
+            mock(AssetRepository.class),
             null, null, null, null, null, null
         );
     }

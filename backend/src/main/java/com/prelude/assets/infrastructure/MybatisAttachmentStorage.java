@@ -83,8 +83,11 @@ public class MybatisAttachmentStorage implements AttachmentStorage {
     }
 
     @Override
-    public void deleteById(Long attachmentId) {
-        attachmentMapper.deleteById(attachmentId);
+    public int deleteUnboundOwned(Long accountId, Long attachmentId) {
+        return attachmentMapper.delete(new LambdaQueryWrapper<StoredAttachmentEntity>()
+            .eq(StoredAttachmentEntity::getId, attachmentId)
+            .eq(StoredAttachmentEntity::getAccountId, accountId)
+            .isNull(StoredAttachmentEntity::getScopeType));
     }
 
     private AttachmentRow toRow(StoredAttachmentEntity row) {

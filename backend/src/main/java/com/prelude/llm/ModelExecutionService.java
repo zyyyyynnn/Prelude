@@ -1,14 +1,14 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.llm.api.LlmPort;
-import com.prelude.llm.api.LlmPort.Attachment;
-import com.prelude.llm.api.LlmPort.CompletionResult;
-import com.prelude.llm.api.LlmPort.Message;
-import com.prelude.llm.api.LlmPort.ModelExecutionRequest;
-import com.prelude.llm.api.LlmPort.StreamSink;
-import com.prelude.llm.api.LlmPort.ToolBinding;
-import com.prelude.llm.api.LlmPort.Usage;
+import com.prelude.llm.api.ModelExecutionPort;
+import com.prelude.llm.api.ModelExecutionPort.Attachment;
+import com.prelude.llm.api.ModelExecutionPort.CompletionResult;
+import com.prelude.llm.api.ModelExecutionPort.Message;
+import com.prelude.llm.api.ModelExecutionPort.ModelExecutionRequest;
+import com.prelude.llm.api.ModelExecutionPort.StreamSink;
+import com.prelude.llm.api.ModelExecutionPort.ToolBinding;
+import com.prelude.llm.api.ModelExecutionPort.Usage;
 import com.prelude.llm.api.LlmUsageRecorded;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
@@ -456,67 +456,4 @@ public class ModelExecutionService {
         }
     }
 
-    /**
-     * Public {@link LlmPort} bean. Lives in this file so execution stays free
-     * of profile configuration without adding another source node.
-     */
-    @Service
-    @lombok.RequiredArgsConstructor
-    public static class PortAdapter implements LlmPort {
-
-        private final ModelExecutionSnapshotService snapshotService;
-        private final ModelExecutionService executionService;
-        private final ModelProfileService profileService;
-
-        @Override
-        public com.prelude.llm.api.ModelExecutionSnapshotRef freezeSnapshot(FreezeSnapshotCommand command) {
-            return snapshotService.freeze(command);
-        }
-
-        @Override
-        public FrozenModelConfiguration frozenConfiguration(Long accountId, Long snapshotId) {
-            return snapshotService.frozenConfiguration(accountId, snapshotId);
-        }
-
-        @Override
-        public CompletionResult complete(ModelExecutionRequest request) {
-            return executionService.complete(request);
-        }
-
-        @Override
-        public void stream(ModelExecutionRequest request, StreamSink sink) {
-            executionService.stream(request, sink);
-        }
-
-        @Override
-        public com.prelude.llm.api.ModelConfigurationView currentConfiguration(Long accountId) {
-            return profileService.currentConfiguration(accountId);
-        }
-
-        @Override
-        public com.prelude.llm.api.ModelConfigurationView saveConfiguration(
-            Long accountId,
-            com.prelude.llm.api.SaveConfigurationCommand command
-        ) {
-            return profileService.saveConfiguration(accountId, command);
-        }
-
-        @Override
-        public java.util.List<com.prelude.llm.api.ProviderDescriptorView> listModels() {
-            return profileService.listModels();
-        }
-
-        @Override
-        public DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command) {
-            return profileService.discoverCustomModels(accountId, command);
-        }
-
-        @Override
-        public ModelCapabilityResponse discoverCustomModelCapability(
-            Long accountId,
-            DiscoverModelCapabilityCommand command
-        ) {
-            return profileService.discoverCustomModelCapability(accountId, command);
-        }
-    }
 }

@@ -172,6 +172,27 @@ test('counts a dynamic route import as a consumer of the barrel', () => {
   assert.equal(result.status, 0, result.stderr)
 })
 
+test('counts a destructured lazy callback as a consumer of the barrel', () => {
+  const result = verify({
+    'features/resume/index.ts': "export { ResumeManagementPanel } from './ResumeManagementPanel'",
+    'features/resume/ResumeManagementPanel.tsx': 'export const ResumeManagementPanel = () => null',
+    'app/resource-panels.tsx':
+      "export const Panel = lazy(() => import('@/features/resume').then(({ ResumeManagementPanel }) => ({ default: ResumeManagementPanel })))",
+  })
+  assert.equal(result.status, 0, result.stderr)
+})
+
+test('rejects a lab deep import even when the feature entry registers it', () => {
+  const result = verify({
+    'features/interview/index.ts': "export { InterviewPage } from './InterviewPage'",
+    'features/interview/InterviewPage.tsx': 'export const InterviewPage = () => null',
+    'app/lab/ComponentLab.tsx':
+      "import { InterviewPage } from '@/features/interview/InterviewPage'",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /imports @\/features\/interview\/InterviewPage/)
+})
+
 /* The composition root may name a route module directly — that is what keeps a route out of
    the entry chunk — but only one the surface's own entry registers. */
 test('allows the composition root to load a route module the entry registers', () => {
@@ -274,6 +295,32 @@ test('rejects a glyph rendered without the Icon wrapper', () => {
   assert.equal(result.status, 1)
   assert.match(result.stderr, /bare glyph render of RiSearchLine/)
   assert.match(result.stderr, /bare glyph render of RiCloseLine/)
+})
+
+test('allows registered shell and gallery modules without adding them to the product barrel', () => {
+  const result = verify({
+    'app/shell.tsx':
+      "import { SessionGroup } from '@/features/interview/session-list'\nimport { useSessionList } from '@/features/interview/use-session-list'\nexport const shell = () => SessionGroup(useSessionList())",
+    'app/lab/Gallery.tsx':
+      "import { AnswerComposerSurface } from '@/features/interview/components/AnswerComposerSurface'\nexport const Gallery = () => AnswerComposerSurface",
+    'app/main.tsx': "export const Page = () => import('@/features/interview/InterviewPage')",
+    'features/interview/InterviewPage.tsx': 'export const InterviewPage = () => null',
+    'features/interview/session-list.tsx': 'export const SessionGroup = () => null',
+    'features/interview/use-session-list.ts': 'export const useSessionList = () => null',
+    'features/interview/components/AnswerComposerSurface.tsx':
+      'export const AnswerComposerSurface = () => null',
+  })
+  assert.equal(result.status, 0, result.stderr)
+})
+
+test('rejects resource query keys outside their owning factory', () => {
+  const result = verify({
+    'features/interview/InterviewSetup.tsx':
+      "export const key = ['resumes', 'positions', 'llm-config', 'llm-providers', 'interview-session', 'interview-sessions']",
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /raw query key "resumes"/)
+  assert.match(result.stderr, /raw query key "interview-session"/)
 })
 
 test('accepts a glyph handed to Icon as a value', () => {

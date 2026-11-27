@@ -1,7 +1,7 @@
 package com.prelude.assets;
 
-import com.prelude.assets.application.port.AssetLookup;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,6 @@ import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -30,11 +29,11 @@ class AvatarAssetStorageTest {
         "UklGRjwAAABXRUJQVlA4WAoAAAAAAAAAAAAAAAAAADAAMQA2VlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v02aAA=");
 
     private final AssetService assetService = mock(AssetService.class);
-    private final AssetLookup assetLookup = mock(AssetLookup.class);
+    private final AssetRepository assetRepository = mock(AssetRepository.class);
     private final ObjectStoragePort objectStorage = mock(ObjectStoragePort.class);
     private final AssetDeletionService deletionService = mock(AssetDeletionService.class);
     private final AvatarAssetStorage storage = new AvatarAssetStorage(
-        assetService, assetLookup, objectStorage, new AvatarImageValidator(), deletionService);
+        assetService, assetRepository, objectStorage, new AvatarImageValidator(), deletionService);
 
     @BeforeEach
     void stagePendingAsset() {
@@ -51,7 +50,7 @@ class AvatarAssetStorageTest {
         verify(assetService).createPending(7L, "avatar", "image/png", PNG.length);
         verify(objectStorage).put("object-key", "image/png", PNG);
 
-        when(assetLookup.findById(9L)).thenReturn(new AssetRow(
+        when(assetRepository.findById(9L)).thenReturn(new AssetRow(
             9L, 7L, "avatar", "object-key", "image/png", (long) PNG.length, "PENDING_UPLOAD"));
         when(assetService.markReady(9L)).thenReturn(true);
         storage.confirmReady(url);
@@ -61,19 +60,18 @@ class AvatarAssetStorageTest {
     @Test
     void discardRegistersReadyAvatarDeletionWithoutTouchingStorageOrMetadata() {
         AssetRow ready = new AssetRow(9L, 7L, "avatar", "object-key", "image/png", (long) PNG.length, "READY");
-        when(assetLookup.findById(9L)).thenReturn(ready);
+        when(assetRepository.findById(9L)).thenReturn(ready);
 
         storage.discard(7L, "/api/assets/9/content");
 
         verify(deletionService).register(ready);
         verifyNoInteractions(objectStorage);
-        verify(assetService, never()).delete(any());
     }
 
     @Test
     void discardPropagatesDeletionRegistrationFailure() {
         AssetRow ready = new AssetRow(9L, 7L, "avatar", "object-key", "image/png", (long) PNG.length, "READY");
-        when(assetLookup.findById(9L)).thenReturn(ready);
+        when(assetRepository.findById(9L)).thenReturn(ready);
         IllegalStateException failure = new IllegalStateException("registration unavailable");
         doThrow(failure).when(deletionService).register(ready);
 
@@ -82,13 +80,12 @@ class AvatarAssetStorageTest {
 
     @Test
     void discardDoesNotRegisterAnAvatarOwnedByAnotherAccount() {
-        when(assetLookup.findById(9L)).thenReturn(new AssetRow(
+        when(assetRepository.findById(9L)).thenReturn(new AssetRow(
             9L, 8L, "avatar", "object-key", "image/png", (long) PNG.length, "READY"));
 
         storage.discard(7L, "/api/assets/9/content");
 
         verifyNoInteractions(deletionService, objectStorage);
-        verify(assetService, never()).delete(any());
     }
 
     @Test

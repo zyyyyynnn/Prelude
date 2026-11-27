@@ -1,52 +1,20 @@
 import { expectAccessible } from './a11y'
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import { installAnonymousSession } from './auth-bootstrap'
 import { sampleReport } from '../src/app/lab/samples'
+import {
+  createProviderFixtures,
+  fulfillJson,
+  fulfillUnknownEndpoint,
+  jsonBody,
+  modelCapability,
+} from './api-fixtures'
 
 const schemes = ['light', 'dark'] as const
 type Scheme = (typeof schemes)[number]
 
-const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
-  provider: 'deepseek',
-  model,
-  reasoning: true,
-  structuredOutput: true,
-  toolCalling: true,
-  streaming: true,
-  vision: false,
-  multilingual: true,
-  longContext: true,
-  embedding: false,
-  nativeRealtimeVoice: false,
-  supportedReasoningLevels: ['AUTO', 'LOW', 'HIGH', 'MAX'],
-})
-
-const providers = [
-  {
-    providerKey: 'deepseek',
-    displayName: 'DeepSeek',
-    customEndpoint: false,
-    models: [deepSeekCapability(), deepSeekCapability('deepseek-v4-flash')],
-  },
-  {
-    providerKey: 'openai-responses',
-    displayName: 'OpenAI Responses',
-    customEndpoint: true,
-    models: [],
-  },
-  {
-    providerKey: 'openai-chat-completions',
-    displayName: 'OpenAI Chat Completions',
-    customEndpoint: true,
-    models: [],
-  },
-  {
-    providerKey: 'anthropic-messages',
-    displayName: 'Anthropic Messages',
-    customEndpoint: true,
-    models: [],
-  },
-]
+const deepSeekCapability = (model = 'deepseek-v4-pro') => modelCapability('deepseek', model)
+const providers = createProviderFixtures()
 
 /* The dark preference is written here and nowhere else. Product surfaces used to each repeat
    this line, and five of them dropped the `scheme` parameter instead — their "dark" baselines
@@ -77,7 +45,7 @@ function readPalette(page: Page) {
 }
 
 async function installApi(page: Page) {
-  await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
+  await page.route(/^https?:\/\/[^/]+\/api\//, async (route: Route) => {
     const path = new URL(route.request().url()).pathname
     let data: unknown = null
     if (path === '/api/auth/oauth/providers') data = []
@@ -154,11 +122,8 @@ async function installApi(page: Page) {
         positionId: 1,
         attachments: [],
       }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ code: 200, message: 'ok', data }),
-    })
+    if (data === null) return fulfillUnknownEndpoint(route)
+    await fulfillJson(route, data)
   })
 }
 
@@ -296,11 +261,7 @@ test('@visual keeps no-data pages lightweight and typographically consistent', a
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 200,
-        message: 'ok',
-        data: { technical: 0, expression: 0, logic: 0, sessionCount: 0 },
-      }),
+      body: jsonBody({ technical: 0, expression: 0, logic: 0, sessionCount: 0 }),
     })
   })
   await page.goto('/analytics')
@@ -487,17 +448,12 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
   const expandedSidebarWidth = await page
     .locator('.app-sidebar')
     .evaluate((sidebar) => sidebar.getBoundingClientRect().width)
+  const sidebar = page.locator('.app-sidebar')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.getByRole('button', { name: '收起侧栏' }).click()
-  const collapsingWidth = await page.locator('.app-sidebar').evaluate(async (sidebar) => {
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-    await new Promise((resolve) => setTimeout(resolve, 40))
-    return sidebar.getBoundingClientRect().width
-  })
-  await page.locator('.app-sidebar').evaluate(async (sidebar) => {
-    await Promise.all(
-      sidebar.getAnimations({ subtree: true }).map((animation) => animation.finished),
-    )
-  })
+  await expect(sidebar.locator('.sidebar-frame')).toHaveClass(/is-collapsed/)
+  const collapsingWidth = await sidebar.evaluate((element) => element.getBoundingClientRect().width)
+  expect(collapsingWidth).toBeLessThan(expandedSidebarWidth)
   /* Geometry closure: the collapsed rail is sized *by* the row it has to contain, so
      every number here is read from the tokens rather than written down. A container that
      stops matching its own row geometry fails here instead of in a screenshot review. */
@@ -534,7 +490,7 @@ test('@visual keeps the desktop layout stable and tooltip neutral', async ({ pag
     }
   })
   expect(collapsingWidth).toBeLessThan(expandedSidebarWidth)
-  expect(collapsingWidth).toBeGreaterThan(collapsedRail.frameWidth)
+  expect(collapsingWidth).toBeCloseTo(collapsedRail.frameWidth, 0)
   expect(collapsedRail.frameWidth).toBeCloseTo(
     collapsedRail.control + collapsedRail.gutter * 2 + collapsedRail.border,
     0,
@@ -1214,34 +1170,26 @@ async function installReportSession(
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 200,
-        message: 'ok',
-        data: [
-          { sessionId: 9, targetPosition: title, status: 'finished', currentStage: 'closing' },
-        ],
-      }),
+      body: jsonBody([
+        { sessionId: 9, targetPosition: title, status: 'finished', currentStage: 'closing' },
+      ]),
     })
   })
   await page.route('**/api/interview/9/messages', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        code: 200,
-        message: 'ok',
-        data: {
-          sessionId: 9,
-          targetPosition: title,
-          status,
-          currentStage: 'closing',
-          summaryReport,
-          stages: [],
-          messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
-          resumeId: 1,
-          positionId: 1,
-          attachments: [],
-        },
+      body: jsonBody({
+        sessionId: 9,
+        targetPosition: title,
+        status,
+        currentStage: 'closing',
+        summaryReport,
+        stages: [],
+        messages: [{ id: 1, role: 'assistant', content: '请先介绍一下你自己。' }],
+        resumeId: 1,
+        positionId: 1,
+        attachments: [],
       }),
     })
   })

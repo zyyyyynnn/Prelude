@@ -3,6 +3,7 @@ package com.prelude.context;
 import com.prelude.llm.api.EmbedPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -13,6 +14,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -24,6 +26,7 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
     private static final int CHUNK_OVERLAP = 50;
     private static final int LOCK_STRIPES = 64;
     private static final int MAX_CACHED_SCOPES = 256;
+    private static final int MAX_INVALIDATION_RETRIES = 100;
 
     private final EmbedPort embedPort;
     private final RetrievalChunkStore chunkStore;
@@ -31,6 +34,8 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
     private final double vectorWeight;
     private final double keywordWeight;
     private final Map<ScopeKey, InMemoryVectorIndex> indices = new ConcurrentHashMap<>();
+    private final Set<ScopeKey> pendingInvalidations = ConcurrentHashMap.newKeySet();
+    private final Set<ScopeKey> invalidatedScopes = ConcurrentHashMap.newKeySet();
     private final ReentrantLock[] scopeLocks = new ReentrantLock[LOCK_STRIPES];
 
     public InMemoryRetrievalAdapter(
@@ -55,6 +60,19 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
     public void index(String scopeType, Long scopeId, List<String> documents) {
         ScopeKey key = new ScopeKey(scopeType, scopeId);
         withScopeLock(key, () -> {
+            if (isScopeInvalidated(key)) {
+                try {
+                    persistInvalidation(key);
+                } catch (RuntimeException exception) {
+                    pendingInvalidations.add(key);
+                    log.error(
+                        "retrieval_invalidate_late_index_failed scopeType={} scopeId={} retry=scheduled",
+                        scopeType, scopeId, exception
+                    );
+                }
+                return;
+            }
+            pendingInvalidations.remove(key);
             List<RetrievalChunkStore.StoredChunk> snapshot = buildSnapshot(key, splitDocuments(documents));
             persistSnapshot(key, snapshot);
             indices.put(key, toIndex(snapshot));
@@ -85,6 +103,9 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
             return List.of();
         }
         ScopeKey key = new ScopeKey(scopeType, scopeId);
+        if (isScopeInvalidated(key)) {
+            return List.of();
+        }
         InMemoryVectorIndex index = getOrRebuildIndex(key);
         if (index == null) {
             return List.of();
@@ -128,41 +149,104 @@ public class InMemoryRetrievalAdapter implements RetrievalPort {
     public void invalidate(String scopeType, Long scopeId) {
         ScopeKey key = new ScopeKey(scopeType, scopeId);
         withScopeLock(key, () -> {
+            invalidatedScopes.add(key);
+            indices.remove(key);
+            pendingInvalidations.add(key);
             try {
-                chunkStore.delete(scopeType, scopeId);
-                indices.remove(key);
+                persistInvalidation(key);
             } catch (RuntimeException exception) {
-                log.warn("retrieval_invalidate_failed scopeType={} scopeId={}", scopeType, scopeId);
+                log.error(
+                    "retrieval_invalidate_failed scopeType={} scopeId={} pending={} retry=scheduled",
+                    scopeType, scopeId, pendingInvalidations.size(), exception
+                );
             }
         });
     }
 
+    @Scheduled(fixedDelayString = "${prelude.retrieval.invalidation.retry-delay-ms:30000}")
+    void retryFailedInvalidations() {
+        for (ScopeKey key : pendingInvalidations.stream().limit(MAX_INVALIDATION_RETRIES).toList()) {
+            try {
+                boolean removed = withScopeLock(key, () -> {
+                    if (!pendingInvalidations.contains(key)) {
+                        return false;
+                    }
+                    persistInvalidation(key);
+                    return true;
+                });
+                if (removed) {
+                    log.info(
+                        "retrieval_invalidate_retried scopeType={} scopeId={} pending={}",
+                        key.scopeType(), key.scopeId(), pendingInvalidations.size()
+                    );
+                }
+            } catch (RuntimeException exception) {
+                log.error(
+                    "retrieval_invalidate_retry_failed scopeType={} scopeId={} pending={}",
+                    key.scopeType(), key.scopeId(), pendingInvalidations.size(), exception
+                );
+            }
+        }
+    }
+
+    private boolean isScopeInvalidated(ScopeKey key) {
+        if (pendingInvalidations.contains(key) || invalidatedScopes.contains(key)) {
+            return true;
+        }
+        try {
+            if (chunkStore.isInvalidated(key.scopeType(), key.scopeId())) {
+                return true;
+            }
+        } catch (RuntimeException exception) {
+            log.error("retrieval_tombstone_check_failed scopeType={} scopeId={}", key.scopeType(), key.scopeId(), exception);
+            return true;
+        }
+        return false;
+    }
+
+    private void persistInvalidation(ScopeKey key) {
+        chunkStore.markInvalidated(key.scopeType(), key.scopeId());
+        chunkStore.delete(key.scopeType(), key.scopeId());
+        indices.remove(key);
+        pendingInvalidations.remove(key);
+        invalidatedScopes.remove(key);
+    }
+
     private InMemoryVectorIndex getOrRebuildIndex(ScopeKey key) {
+        if (isScopeInvalidated(key)) {
+            return null;
+        }
         InMemoryVectorIndex cached = indices.get(key);
         if (cached != null) {
             return cached;
         }
 
         return withScopeLock(key, () -> {
+            if (isScopeInvalidated(key)) {
+                return null;
+            }
             InMemoryVectorIndex concurrent = indices.get(key);
             if (concurrent != null) {
                 return concurrent;
+            }
+
+            List<String> sourceDocuments;
+            try {
+                sourceDocuments = retrievalSourcePort.loadDocuments(key.scopeType(), key.scopeId());
+            } catch (RuntimeException exception) {
+                log.warn("retrieval_rebuild_failed scopeType={} scopeId={}", key.scopeType(), key.scopeId());
+                return null;
+            }
+            if (sourceDocuments == null || sourceDocuments.isEmpty()) {
+                return null;
             }
 
             List<RetrievalChunkStore.StoredChunk> stored = loadPersistedChunks(key);
             String source = "persisted";
             if (stored.isEmpty()) {
                 source = "source";
-                try {
-                    stored = buildSnapshot(
-                        key,
-                        splitDocuments(retrievalSourcePort.loadDocuments(key.scopeType(), key.scopeId()))
-                    );
-                    persistSnapshot(key, stored);
-                } catch (RuntimeException exception) {
-                    log.warn("retrieval_rebuild_failed scopeType={} scopeId={}", key.scopeType(), key.scopeId());
-                    return null;
-                }
+                stored = buildSnapshot(key, splitDocuments(sourceDocuments));
+                persistSnapshot(key, stored);
             } else if (requiresEmbeddingRefresh(stored)) {
                 stored = buildSnapshot(key, stored.stream().map(RetrievalChunkStore.StoredChunk::content).toList());
                 persistSnapshot(key, stored);

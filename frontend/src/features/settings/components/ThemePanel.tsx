@@ -2,7 +2,7 @@ import { ErrorState, LoadingState, Button, Panel, useFeedback } from '@/shared/u
 import { ThemeChoiceGroup } from './theme-picker'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchProfile, profileQueryKey, saveProfile } from '../api'
+import { fetchProfile, profileQueryKeys, saveProfile } from '@/features/profile'
 import { themeOptions } from '../types'
 import { sectionTitles } from '../settings-context'
 import { applyTheme } from '../theme'
@@ -11,7 +11,7 @@ import type { ThemePreference } from '../types'
 
 export function ThemePanel() {
   const auth = useAuth()
-  const queryKey = profileQueryKey(auth.accountId ?? 0)
+  const queryKey = profileQueryKeys.detail(auth.accountId ?? 0)
   const profile = useQuery({
     queryKey,
     queryFn: ({ signal }) => fetchProfile(signal),
@@ -34,7 +34,7 @@ export function ThemePanel() {
 function ThemeForm({ initial, revision }: { initial: ThemePreference; revision: number }) {
   const [value, setValue] = useState(initial)
   const auth = useAuth()
-  const queryKey = profileQueryKey(auth.accountId ?? 0)
+  const queryKey = profileQueryKeys.detail(auth.accountId ?? 0)
   const client = useQueryClient()
   const feedback = useFeedback()
   const mounted = useRef(true)

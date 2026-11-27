@@ -2,12 +2,9 @@ package com.prelude.interview.application;
 
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.interview.domain.InterviewStage;
-import com.prelude.interview.domain.InterviewStagePolicy;
 import com.prelude.interview.application.port.InterviewContextPort;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
-import com.prelude.interview.application.repository.InterviewStageRepository;
 import com.prelude.context.RetrievalPort;
 import com.prelude.resume.api.port.ResumeContextPort;
 import com.prelude.resume.api.port.ResumeProjection;
@@ -28,7 +25,7 @@ public class InterviewContextService implements InterviewContextPort {
 
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewMessageRepository interviewMessageRepository;
-    private final InterviewStageRepository interviewStageRepository;
+    private final InterviewStageManager interviewStageManager;
     private final ResumeContextPort resumeContextPort;
     private final RetrievalPort retrievalPort;
 
@@ -165,11 +162,7 @@ public class InterviewContextService implements InterviewContextPort {
     }
 
     private String currentStageName(Long sessionId) {
-        InterviewStage current = interviewStageRepository.findCurrent(sessionId);
-        if (current == null) {
-            current = interviewStageRepository.findLatest(sessionId);
-        }
-        return current == null ? InterviewStagePolicy.WARMUP : current.getStageName();
+        return interviewStageManager.currentStageName(sessionId);
     }
 
     private String limitText(String text, int maxLength) {

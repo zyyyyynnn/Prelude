@@ -1,7 +1,7 @@
 package com.prelude.jobs;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.integration.BackgroundJobMessages;
 import com.prelude.jobs.infrastructure.persistence.BackgroundJobEntity;
 import com.prelude.jobs.infrastructure.persistence.BackgroundJobMapper;
 import com.prelude.jobs.infrastructure.persistence.JobAttemptMapper;
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BackgroundJobConcurrencyTest {
 
     @Autowired
-    private BackgroundJobOperations jobs;
+    private BackgroundJobService jobs;
 
     @Autowired
     private BackgroundJobMapper jobMapper;
@@ -56,12 +56,12 @@ class BackgroundJobConcurrencyTest {
         var ref = request(accountId, 201L);
         CyclicBarrier start = new CyclicBarrier(2);
 
-        List<Future<BackgroundJobOperations.ClaimOutcome>> futures = List.of(
+        List<Future<BackgroundJobMessages.ClaimOutcome>> futures = List.of(
             executor.submit(raced(start, () -> jobs.claim(ref.jobId()))),
             executor.submit(raced(start, () -> jobs.claim(ref.jobId())))
         );
 
-        long winners = futures.stream().map(this::get).filter(BackgroundJobOperations.ClaimOutcome::claimed).count();
+        long winners = futures.stream().map(this::get).filter(BackgroundJobMessages.ClaimOutcome::claimed).count();
         assertThat(winners).isEqualTo(1);
         assertThat(stored(ref.jobId()).getAttemptCount()).isEqualTo(1);
         assertThat(attempts(ref.jobId())).hasSize(1);
@@ -73,8 +73,8 @@ class BackgroundJobConcurrencyTest {
         var ref = request(accountId, 202L);
         CyclicBarrier start = new CyclicBarrier(2);
 
-        Future<BackgroundJobOperations.BackgroundJobView> cancel = executor.submit(raced(start, () -> jobs.cancel(ref.jobId(), accountId)));
-        Future<BackgroundJobOperations.ClaimOutcome> claim = executor.submit(raced(start, () -> jobs.claim(ref.jobId())));
+        Future<BackgroundJobMessages.BackgroundJobView> cancel = executor.submit(raced(start, () -> jobs.cancel(ref.jobId(), accountId)));
+        Future<BackgroundJobMessages.ClaimOutcome> claim = executor.submit(raced(start, () -> jobs.claim(ref.jobId())));
 
         boolean cancelled = JobFixtures.statusCancelled().equals(cancel.get().status());
         boolean claimed = claim.get().claimed();
@@ -134,7 +134,7 @@ class BackgroundJobConcurrencyTest {
 
         jobs.complete(ref.jobId(), first.attemptNumber());
         assertThat(jobs.fail(ref.jobId(), first.attemptNumber(), new RuntimeException("late worker")))
-            .isEqualTo(BackgroundJobOperations.FailureOutcome.NOT_RUNNING);
+            .isEqualTo(BackgroundJobMessages.FailureOutcome.NOT_RUNNING);
         assertThat(jobs.renewLease(ref.jobId(), first.attemptNumber())).isFalse();
 
         BackgroundJobEntity stillSecondAttempt = stored(ref.jobId());
@@ -187,8 +187,8 @@ class BackgroundJobConcurrencyTest {
         }
     }
 
-    private BackgroundJobOperations.BackgroundJobRef request(long accountId, long subjectId) {
-        return jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
+    private BackgroundJobMessages.BackgroundJobRef request(long accountId, long subjectId) {
+        return jobs.request(new BackgroundJobMessages.BackgroundJobRequest(
             "test.concurrent", accountId, subjectId,
             "test.concurrent:operation:" + System.nanoTime(), "{}"));
     }

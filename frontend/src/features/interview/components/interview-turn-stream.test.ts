@@ -1,5 +1,6 @@
 import { expect, test } from 'vite-plus/test'
 import { handleInterviewStreamEvent } from './interview-turn-stream'
+import { interviewQueryKeys } from '../query-keys'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 
 type Captured = {
@@ -36,7 +37,7 @@ function harness() {
     captured,
     cache: {
       setQueryData(
-        _key: ['interview-session', number],
+        _key: ReturnType<typeof interviewQueryKeys.session>,
         updater: (
           old: InterviewSessionDetailResponse | undefined,
         ) => InterviewSessionDetailResponse | undefined,

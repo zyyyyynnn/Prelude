@@ -1,7 +1,8 @@
 package com.prelude.artifact.application;
 
 import com.prelude.jobs.BackgroundJobRecoveryService;
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.BackgroundJobService;
+import com.prelude.jobs.integration.BackgroundJobMessages;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.ArtifactFixtures;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ class ReportJobCompletionMySqlTest {
     private ReportJobCompletion completion;
 
     @Autowired
-    private BackgroundJobOperations jobs;
+    private BackgroundJobService jobs;
 
     @Autowired
     private BackgroundJobRecoveryService recoveryService;
@@ -154,8 +155,8 @@ class ReportJobCompletionMySqlTest {
             "UPDATE interview_session SET status = ? WHERE id = ?", status, sessionId);
     }
 
-    private BackgroundJobOperations.BackgroundJobRef request(long accountId, long sessionId) {
-        return jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
+    private BackgroundJobMessages.BackgroundJobRef request(long accountId, long sessionId) {
+        return jobs.request(new BackgroundJobMessages.BackgroundJobRequest(
             "report.generate",
             accountId,
             sessionId,

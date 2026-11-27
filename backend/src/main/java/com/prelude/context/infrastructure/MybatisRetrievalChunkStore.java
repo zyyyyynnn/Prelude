@@ -7,6 +7,7 @@ import com.prelude.context.RetrievalChunkStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -21,6 +22,9 @@ public class MybatisRetrievalChunkStore implements RetrievalChunkStore {
 
     @Override
     public List<StoredChunk> load(String scopeType, Long scopeId) {
+        if (isInvalidated(scopeType, scopeId)) {
+            return List.of();
+        }
         List<RetrievalChunkEntity> rows = mapper.selectList(scopeQuery(scopeType, scopeId)
             .orderByAsc(RetrievalChunkEntity::getOrdinal));
         if (rows == null) {
@@ -38,8 +42,11 @@ public class MybatisRetrievalChunkStore implements RetrievalChunkStore {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void replace(String scopeType, Long scopeId, List<StoredChunk> chunks) {
+        if (isInvalidated(scopeType, scopeId)) {
+            return;
+        }
         mapper.delete(scopeQuery(scopeType, scopeId));
         for (StoredChunk stored : chunks) {
             RetrievalChunkEntity row = new RetrievalChunkEntity();
@@ -56,9 +63,19 @@ public class MybatisRetrievalChunkStore implements RetrievalChunkStore {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void delete(String scopeType, Long scopeId) {
         mapper.delete(scopeQuery(scopeType, scopeId));
+    }
+
+    @Override
+    public void markInvalidated(String scopeType, Long scopeId) {
+        mapper.insertTombstone(scopeType, scopeId);
+    }
+
+    @Override
+    public boolean isInvalidated(String scopeType, Long scopeId) {
+        return mapper.countTombstones(scopeType, scopeId) > 0;
     }
 
     private LambdaQueryWrapper<RetrievalChunkEntity> scopeQuery(String scopeType, Long scopeId) {

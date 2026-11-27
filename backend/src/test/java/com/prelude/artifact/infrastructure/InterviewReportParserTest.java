@@ -21,14 +21,16 @@ class InterviewReportParserTest {
               "summary": {
                 "fitAssessment": "继续投递",
                 "actionRecommendation": "补强后复试",
-                "overallRisk": "项目量化不足"
+                "overallRisk": "项目量化不足",
+                "providerExtension": "ignored"
               },
               "scores": {"technical": 9, "expression": 7, "logic": 8},
               "stagePerformances": [],
               "strengths": ["结构化表达"],
               "trainingPlan": {"threeDay": [], "sevenDay": [], "nextInterviewFocus": []},
               "finalAdvice": "继续训练",
-              "reportMarkdown": "原始报告"
+              "reportMarkdown": "原始报告",
+              "providerExtension": "ignored"
             }
             """);
 

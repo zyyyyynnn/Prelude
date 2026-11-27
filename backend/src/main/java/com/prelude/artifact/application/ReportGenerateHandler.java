@@ -1,7 +1,8 @@
 package com.prelude.artifact.application;
 
-import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
+import com.prelude.jobs.integration.BackgroundJobMessages.ClaimOutcome;
+import com.prelude.jobs.integration.BackgroundJobMessages.ExecutionLease;
+import com.prelude.jobs.integration.JobWorker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,17 +19,17 @@ public class ReportGenerateHandler {
 
     private final GenerateInterviewReport generateInterviewReport;
     private final ReportJobCompletion reportJobCompletion;
-    private final BackgroundJobOperations backgroundJobOperations;
+    private final JobWorker jobWorker;
 
     public void handle(String jobId, Long sessionId, Long accountId) {
-        ClaimOutcome claim = backgroundJobOperations.claim(jobId);
+        ClaimOutcome claim = jobWorker.claim(jobId);
         if (!claim.claimed()) {
             log.info("Skipping duplicate or terminal report job {} (state: {})", jobId, claim.status());
             return;
         }
         int attemptNumber = claim.attemptNumber();
-        try (BackgroundJobOperations.ExecutionLease ignored =
-                 backgroundJobOperations.keepLeaseAlive(jobId, attemptNumber)) {
+        try (ExecutionLease ignored =
+                 jobWorker.keepLeaseAlive(jobId, attemptNumber)) {
             try {
                 GenerateInterviewReport.GenerationResult result =
                     generateInterviewReport.execute(sessionId, accountId);
@@ -36,7 +37,7 @@ public class ReportGenerateHandler {
                     log.info("Skipping stale report job completion {} attempt {}", jobId, attemptNumber);
                 }
             } catch (RuntimeException error) {
-                backgroundJobOperations.fail(jobId, attemptNumber, error);
+                jobWorker.fail(jobId, attemptNumber, error);
             }
         }
     }

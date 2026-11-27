@@ -5,6 +5,7 @@ import com.prelude.context.RetrievalChunkStore;
 import com.prelude.context.RetrievalPort;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
+import com.prelude.jobs.integration.JobTypes;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.InterviewDataFixtures;
 import java.time.LocalDateTime;
@@ -41,6 +42,12 @@ class InterviewSessionLifecycleMySqlTest {
     private InterviewSessionRepository interviewSessionRepository;
 
     @Autowired
+    private InterviewMessageService interviewMessageService;
+
+    @Autowired
+    private InterviewTurnCompletion interviewTurnCompletion;
+
+    @Autowired
     private RetrievalChunkStore retrievalChunkStore;
 
     @Autowired
@@ -53,7 +60,7 @@ class InterviewSessionLifecycleMySqlTest {
         insert(
             "INSERT INTO interview_message (session_id, role, content, seq_num) VALUES (?, 'user', ?, 1)",
             sessionId, "answer");
-        insert("INSERT INTO interview_stage (session_id, stage_name) VALUES (?, 'warmup')", sessionId);
+        insert("INSERT INTO interview_stage (session_id, stage_name, boundary_seq) VALUES (?, 'warmup', -1)", sessionId);
         insert(
             "INSERT INTO score_history (account_id, session_id, technical_score, expression_score, logic_score)"
                 + " VALUES (?, ?, 6, 7, 8)",
@@ -119,7 +126,7 @@ class InterviewSessionLifecycleMySqlTest {
     void pendingClosingAssessmentBlocksTheReportJobUntilItIsScored() {
         long accountId = AccountFixtures.create(jdbcTemplate, "finish-assessment");
         long sessionId = createSession(accountId);
-        insert("INSERT INTO interview_stage (session_id, stage_name) VALUES (?, 'closing')", sessionId);
+        insert("INSERT INTO interview_stage (session_id, stage_name, boundary_seq) VALUES (?, 'closing', -1)", sessionId);
         long messageId = insert(
             "INSERT INTO interview_message (session_id, role, content, seq_num, assessment_status) VALUES (?, 'user', ?, 0, 'PENDING')",
             sessionId, "closing answer");
@@ -132,7 +139,8 @@ class InterviewSessionLifecycleMySqlTest {
             });
         assertThat(jdbcTemplate.queryForObject(
             "SELECT status FROM interview_session WHERE id = ?", String.class, sessionId)).isEqualTo("ongoing");
-        assertThat(count("SELECT COUNT(*) FROM background_job WHERE subject_id = ?", sessionId)).isZero();
+        assertThat(count("SELECT COUNT(*) FROM background_job WHERE subject_id = ? AND type = ?",
+            sessionId, JobTypes.REPORT_GENERATE)).isZero();
 
         jdbcTemplate.update(
             "UPDATE interview_message SET assessment_status = 'SCORED', score = 8 WHERE id = ?", messageId);
@@ -140,7 +148,44 @@ class InterviewSessionLifecycleMySqlTest {
 
         assertThat(result.status()).isEqualTo("generating");
         assertThat(result.jobId()).isNotBlank();
-        assertThat(count("SELECT COUNT(*) FROM background_job WHERE subject_id = ?", sessionId)).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM background_job WHERE subject_id = ? AND type = ?",
+            sessionId, JobTypes.REPORT_GENERATE)).isEqualTo(1);
+    }
+
+    @Test
+    void explicitBoundariesAndAwaitingAnswerSurviveRealDatabaseRoundTrips() {
+        long accountId = AccountFixtures.create(jdbcTemplate, "stage-boundary");
+        long sessionId = createSession(accountId);
+        long warmupId = insert(
+            "INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer) VALUES (?, 'warmup', -1, FALSE)",
+            sessionId);
+        AccountFixtures.authenticate(accountId);
+
+        interviewMessageService.insertUserMessage(sessionId, "introduction");
+        assertThat(awaitingAnswer(warmupId)).isFalse();
+        interviewMessageService.insertAssistantMessage(sessionId, "candidate introduction");
+        assertThat(awaitingAnswer(warmupId)).isTrue();
+        interviewMessageService.insertUserMessage(sessionId, "additional context");
+        assertThat(awaitingAnswer(warmupId)).isFalse();
+        interviewTurnCompletion.complete(sessionId, "follow-up answer");
+
+        assertThat(awaitingAnswer(warmupId)).isFalse();
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT ended_at IS NOT NULL FROM interview_stage WHERE id = ?", Boolean.class, warmupId)).isTrue();
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT boundary_seq FROM interview_stage WHERE session_id = ? AND stage_name = 'technical'",
+            Integer.class, sessionId)).isEqualTo(3);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT awaiting_answer FROM interview_stage WHERE session_id = ? AND stage_name = 'technical'",
+            Boolean.class, sessionId)).isFalse();
+        assertThat(jdbcTemplate.queryForList(
+            "SELECT seq_num FROM interview_message WHERE session_id = ? ORDER BY seq_num",
+            Integer.class, sessionId)).containsExactly(0, 1, 2, 3, 4);
+    }
+
+    private boolean awaitingAnswer(long stageId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+            "SELECT awaiting_answer FROM interview_stage WHERE id = ?", Boolean.class, stageId));
     }
 
     private List<Long> sessionIds(long accountId) {
@@ -155,8 +200,8 @@ class InterviewSessionLifecycleMySqlTest {
         return Boolean.TRUE.equals(value);
     }
 
-    private long count(String sql, long param) {
-        Long value = jdbcTemplate.queryForObject(sql, Long.class, param);
+    private long count(String sql, Object... parameters) {
+        Long value = jdbcTemplate.queryForObject(sql, Long.class, parameters);
         return value == null ? 0L : value;
     }
 

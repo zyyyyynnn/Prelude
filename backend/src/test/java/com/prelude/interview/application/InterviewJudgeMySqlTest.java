@@ -6,7 +6,8 @@ import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.ModelExecutionService;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
 import com.prelude.test.InterviewDataFixtures;
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.when;
 class InterviewJudgeMySqlTest {
 
     @MockitoBean
-    private LlmPort llm;
+    private ModelExecutionService llm;
 
     @MockitoBean
     private PromptRegistry prompts;
@@ -74,7 +75,7 @@ class InterviewJudgeMySqlTest {
         addMessage(sessionId, "user", "已评分", 3, AssessmentStatus.SCORED, old);
         addMessage(sessionId, "user", "未评分", 4, AssessmentStatus.UNSCORED, old);
         addMessage(sessionId, "assistant", "后续问题", 5, null, old);
-        when(llm.complete(any())).thenReturn(new LlmPort.CompletionResult("{\"score\":8,\"hint\":\"补充量化结果\"}", null));
+        when(llm.complete(any())).thenReturn(new ModelExecutionPort.CompletionResult("{\"score\":8,\"hint\":\"补充量化结果\"}", null));
 
         List<InterviewMessage> pending = messages.findPendingForJudge(LocalDateTime.now().minusMinutes(2), 100);
         assertThat(pending)
@@ -87,7 +88,7 @@ class InterviewJudgeMySqlTest {
 
         assertThat(outcome.status()).isEqualTo(JudgeOutcome.Status.COMPLETED);
         assertThat(status(answer.getId())).isEqualTo("SCORED");
-        ArgumentCaptor<LlmPort.ModelExecutionRequest> request = ArgumentCaptor.forClass(LlmPort.ModelExecutionRequest.class);
+        ArgumentCaptor<ModelExecutionPort.ModelExecutionRequest> request = ArgumentCaptor.forClass(ModelExecutionPort.ModelExecutionRequest.class);
         verify(llm).complete(request.capture());
         assertThat(request.getValue().snapshotId()).isEqualTo(session.getModelExecutionSnapshotId());
         assertThat(request.getValue().purpose()).isEqualTo("judge");

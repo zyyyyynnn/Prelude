@@ -32,7 +32,7 @@ public class InterviewSessionEntity {
         entity.setPositionId(session.getPositionId());
         entity.setTargetPosition(session.getTargetPosition());
         entity.setModelExecutionSnapshotId(session.getModelExecutionSnapshotId());
-        entity.setStatus(session.getStatus());
+        entity.setStatus(session.getStatus().wire());
         entity.setSummary(session.getSummary());
         entity.setSummaryReport(session.getSummaryReport());
         entity.setJdText(session.getJdText());
@@ -49,7 +49,7 @@ public class InterviewSessionEntity {
         session.setPositionId(positionId);
         session.setTargetPosition(targetPosition);
         session.setModelExecutionSnapshotId(modelExecutionSnapshotId);
-        session.setStatus(status);
+        session.setStatus(com.prelude.interview.integration.InterviewSessionStatus.fromWire(status));
         session.setSummary(summary);
         session.setSummaryReport(summaryReport);
         session.setJdText(jdText);

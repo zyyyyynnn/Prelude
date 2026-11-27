@@ -8,7 +8,7 @@ import {
   SettingsNavigation,
   ThemeChoiceGroup,
   type SettingsSection,
-  type ThemeTone,
+  type ThemePreference,
 } from '@/features/settings'
 import type { ReasoningLevel } from '@/features/settings'
 import { BrandMetaballs } from '@/shared/brand/BrandMetaballs'
@@ -252,7 +252,7 @@ export function ComponentLab() {
   const [showPassword, setShowPassword] = useState(false)
   const [pressed, setPressed] = useState(false)
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('profile')
-  const [themeChoice, setThemeChoice] = useState<ThemeTone>('light')
+  const [themeChoice, setThemeChoice] = useState<ThemePreference>('light')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
 
@@ -557,7 +557,7 @@ export function ComponentLab() {
         <Panel
           layout="card"
           title="App rail"
-          description="shared/ui/sidebar · features/interview/components/session-row"
+          description="shared/ui/sidebar · features/interview/session-list"
         >
           <div className="flex flex-wrap items-start gap-lg">
             <DemoGroup label="展开">

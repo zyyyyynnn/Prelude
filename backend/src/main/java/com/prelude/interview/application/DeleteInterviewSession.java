@@ -2,6 +2,7 @@ package com.prelude.interview.application;
 
 import com.prelude.assets.api.AttachmentContextPort;
 import com.prelude.context.RetrievalPort;
+import com.prelude.context.RetrievalTransactions;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class DeleteInterviewSession {
         sessionAccess.requireOwned(sessionId, accountId);
 
         interviewSessionRepository.deleteOwned(sessionId, accountId);
-        retrievalPort.invalidate(RetrievalPort.SCOPE_SESSION, sessionId);
         attachmentContextPort.deleteScope(accountId, ATTACHMENT_SCOPE, sessionId);
+        RetrievalTransactions.afterCommit(() -> retrievalPort.invalidate(RetrievalPort.SCOPE_SESSION, sessionId));
     }
 }

@@ -1,8 +1,8 @@
 package com.prelude.artifact.infrastructure;
 
 import com.prelude.artifact.application.ReportGenerateHandler;
-import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
+import com.prelude.jobs.integration.JobWorker;
+import com.prelude.jobs.integration.BackgroundJobMessages.BackgroundJobView;
 import com.prelude.jobs.integration.BackgroundJobRequested;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +26,11 @@ import org.springframework.stereotype.Service;
 public class ReportJobWorker {
 
     private final ReportGenerateHandler reportGenerateHandler;
-    private final BackgroundJobOperations backgroundJobOperations;
+    private final JobWorker jobWorker;
 
     @RabbitListener(queues = "${prelude.jobs.report.queue:prelude.job.report.queue}")
     public void handleReportJob(BackgroundJobRequested event) {
-        BackgroundJobView job = backgroundJobOperations.dispatchedJob(event.jobId());
+        BackgroundJobView job = jobWorker.dispatchedJob(event.jobId());
         reportGenerateHandler.handle(job.jobId(), job.subjectId(), job.accountId());
     }
 }

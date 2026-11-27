@@ -8,8 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InterviewTurnCompletion {
 
-    private static final String ROLE_ASSISTANT = "assistant";
-
     private final InterviewMessageService interviewMessageService;
     private final InterviewStageManager interviewStageManager;
 
@@ -18,7 +16,7 @@ public class InterviewTurnCompletion {
         if (reply == null || reply.isBlank()) {
             return;
         }
-        interviewMessageService.insertMessage(sessionId, ROLE_ASSISTANT, reply);
+        interviewMessageService.insertAssistantMessage(sessionId, reply);
         interviewStageManager.advanceIfReady(sessionId);
     }
 }

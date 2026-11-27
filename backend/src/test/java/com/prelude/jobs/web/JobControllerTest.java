@@ -3,8 +3,9 @@ package com.prelude.jobs.web;
 import com.prelude.BusinessException;
 import com.prelude.GlobalExceptionHandler;
 import com.prelude.identity.api.CurrentAccount;
-import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
+import com.prelude.jobs.integration.BackgroundJobMessages.BackgroundJobView;
+import com.prelude.jobs.integration.JobDispatcher;
+import com.prelude.jobs.integration.JobQuery;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -19,18 +20,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class JobControllerTest {
 
-    private final BackgroundJobOperations operations = mock(BackgroundJobOperations.class);
+    private final JobQuery jobQuery = mock(JobQuery.class);
+    private final JobDispatcher jobDispatcher = mock(JobDispatcher.class);
     private final CurrentAccount currentAccount = mock(CurrentAccount.class);
 
     private final MockMvc mockMvc = MockMvcBuilders
-        .standaloneSetup(new JobController(operations, currentAccount))
+        .standaloneSetup(new JobController(jobQuery, jobDispatcher, currentAccount))
         .setControllerAdvice(new GlobalExceptionHandler())
         .build();
 
     @Test
     void getReadsTheJobThroughTheAuthenticatedAccount() throws Exception {
         when(currentAccount.requireId()).thenReturn(9L);
-        when(operations.view("job-7", 9L)).thenReturn(
+        when(jobQuery.view("job-7", 9L)).thenReturn(
             new BackgroundJobView("job-7", "report.generate", 41L, 9L, "RUNNING", 1, 3, null));
 
         mockMvc.perform(get("/api/jobs/job-7"))
@@ -45,14 +47,14 @@ class JobControllerTest {
     @Test
     void cancelReturnsTheCancelledProjectionAndTheSameOwnershipScope() throws Exception {
         when(currentAccount.requireId()).thenReturn(9L);
-        when(operations.cancel("job-7", 9L)).thenReturn(
+        when(jobDispatcher.cancel("job-7", 9L)).thenReturn(
             new BackgroundJobView("job-7", "report.generate", 41L, 9L, "CANCELLED", 0, 3, null));
 
         mockMvc.perform(delete("/api/jobs/job-7"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
-        verify(operations).cancel("job-7", 9L);
+        verify(jobDispatcher).cancel("job-7", 9L);
     }
 
     /* A job owned by somebody else answers 404 rather than 403, so polling job ids cannot
@@ -60,7 +62,7 @@ class JobControllerTest {
     @Test
     void aForeignJobAnswersNotFoundRatherThanForbidden() throws Exception {
         when(currentAccount.requireId()).thenReturn(9L);
-        when(operations.view("job-7", 9L)).thenThrow(BusinessException.notFound("任务不存在"));
+        when(jobQuery.view("job-7", 9L)).thenThrow(BusinessException.notFound("任务不存在"));
 
         mockMvc.perform(get("/api/jobs/job-7"))
             .andExpect(status().isNotFound())

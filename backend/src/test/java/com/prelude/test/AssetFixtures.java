@@ -50,9 +50,9 @@ public final class AssetFixtures {
             id, 7L, assetId, fileName, "text", null, null);
     }
 
-    public static com.prelude.assets.application.port.AssetLookup.AssetRow assetRow(
+    public static com.prelude.assets.application.port.AssetRepository.AssetRow assetRow(
         Long id, String mediaType, Long byteSize) {
-        return new com.prelude.assets.application.port.AssetLookup.AssetRow(
+        return new com.prelude.assets.application.port.AssetRepository.AssetRow(
             id, 7L, "attachment", "key-" + id, mediaType, byteSize, "READY");
     }
 }

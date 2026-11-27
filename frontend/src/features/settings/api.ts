@@ -7,8 +7,6 @@ import type {
   LlmModelDiscoveryResponse,
   LlmProviderResponse,
   ModelCapabilityResponse,
-  UserProfilePayload,
-  UserProfileResponse,
 } from './types'
 
 export const fetchProviders = () => apiRequest<LlmProviderResponse[]>('/llm/providers')
@@ -29,17 +27,3 @@ export const discoverCapabilities = (payload: LlmCapabilityDiscoveryPayload) =>
     method: 'POST',
     body: JSON.stringify(payload),
   })
-
-export const profileQueryKey = (accountId: number) => ['profile', accountId] as const
-
-export const fetchProfile = (signal?: AbortSignal) =>
-  apiRequest<UserProfileResponse>('/user/profile', { signal })
-
-export const saveProfile = (payload: UserProfilePayload) =>
-  apiRequest<UserProfileResponse>('/user/profile', { method: 'PUT', body: JSON.stringify(payload) })
-
-export function uploadAvatar(file: File) {
-  const form = new FormData()
-  form.append('file', file)
-  return apiRequest<UserProfileResponse>('/user/avatar', { method: 'POST', body: form })
-}

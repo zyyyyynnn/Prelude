@@ -4,7 +4,7 @@ import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class InterviewSummaryService {
 
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewMessageRepository interviewMessageRepository;
-    private final LlmPort llmPort;
+    private final ModelExecutionPort llmPort;
     private final PromptRegistry promptRegistry;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
@@ -63,15 +63,15 @@ public class InterviewSummaryService {
             "已有摘要历史：" + (existingSummary != null ? existingSummary : "无") + "\n" +
             "新增面试记录：\n" + builder;
 
-        LlmPort.CompletionResult completion = llmPort.complete(
-            new LlmPort.ModelExecutionRequest(
+        ModelExecutionPort.CompletionResult completion = llmPort.complete(
+            new ModelExecutionPort.ModelExecutionRequest(
                 session.getModelExecutionSnapshotId(),
                 "summary",
                 PromptIds.SUMMARY,
-                LlmPort.ResponseMode.PLAIN_TEXT,
+                ModelExecutionPort.ResponseMode.PLAIN_TEXT,
                 List.of(
-                    new LlmPort.Message("system", promptRegistry.load(PromptIds.SUMMARY)),
-                    new LlmPort.Message("user", prompt)
+                    new ModelExecutionPort.Message("system", promptRegistry.load(PromptIds.SUMMARY)),
+                    new ModelExecutionPort.Message("user", prompt)
                 ),
                 List.of(),
                 List.of()

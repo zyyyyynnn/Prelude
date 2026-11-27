@@ -1,6 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
 import com.prelude.llm.application.port.ModelProfileStore;
@@ -34,7 +34,7 @@ class ModelExecutionSnapshotServiceTest {
             profileStore, snapshotStore, new ModelCapabilityCatalog(), new ReasoningLevels(),
             new ModelCapabilityJson(objectMapper), objectMapper);
 
-        var snapshotId = service.freeze(new LlmPort.FreezeSnapshotCommand(
+        var snapshotId = service.freeze(new ModelExecutionPort.FreezeSnapshotCommand(
             7L, "HIGH", "deepseek-v4-flash"));
 
         assertThat(snapshotId.snapshotId()).isEqualTo(42L);

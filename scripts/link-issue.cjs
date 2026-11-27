@@ -1,16 +1,8 @@
 #!/usr/bin/env node
 'use strict'
 
-/**
- * Automates GitHub Development native issue-PR association.
- *
- * Adheres to AGENTS.md rule:
- * "PR 正文只描述最终交付、必要架构与稳定契约，禁止写入 Issue 编号或链接，禁止 Closes、Fixes、Resolves、Refs 等关联标识；
- *  Issue 关系只通过 GitHub Development 原生关系维护；验证事实只由 GitHub Checks / Actions 表达。"
- *
- * Usage:
- *   node scripts/link-issue.cjs <issueNumber> <prNumber>
- */
+/** Links an issue and PR through GitHub Development's native relation. */
+// Usage: node scripts/link-issue.cjs <issueNumber> <prNumber>
 
 const { execFileSync } = require('node:child_process')
 

@@ -4,7 +4,7 @@ import com.prelude.artifact.application.GenerateInterviewReport.GenerationResult
 import com.prelude.artifact.application.GenerateInterviewReport.Outcome;
 import com.prelude.artifact.application.port.AnalyticsRepository;
 import com.prelude.interview.api.port.InterviewReportPort;
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.integration.JobWorker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReportJobCompletion {
 
-    private final BackgroundJobOperations backgroundJobOperations;
+    private final JobWorker jobWorker;
     private final InterviewReportPort interviewReportPort;
     private final AnalyticsRepository analyticsRepository;
 
@@ -32,7 +32,7 @@ public class ReportJobCompletion {
         Long sessionId,
         GenerationResult result
     ) {
-        if (!backgroundJobOperations.complete(jobId, attemptNumber)) {
+        if (!jobWorker.complete(jobId, attemptNumber)) {
             log.info("Ignoring stale report completion for job {} attempt {}", jobId, attemptNumber);
             return false;
         }

@@ -23,7 +23,11 @@ public final class SessionKeyedSerialExecutor implements Executor {
             delegate.execute(command);
             return;
         }
-        lanes.computeIfAbsent(sessionId, ignored -> new SerialLane(delegate)).enqueue(command);
+        SerialLane lane = lanes.computeIfAbsent(sessionId, ignored -> new SerialLane(delegate, sessionId));
+        if (!lane.enqueue(command)) {
+            lanes.remove(sessionId, lane);
+            executeForSession(sessionId, command);
+        }
     }
 
     @Override
@@ -31,22 +35,33 @@ public final class SessionKeyedSerialExecutor implements Executor {
         delegate.execute(command);
     }
 
-    private static final class SerialLane {
+    int laneCount() {
+        return lanes.size();
+    }
+
+    private final class SerialLane {
+        private final Long sessionId;
         private final Executor delegate;
         private final Deque<Runnable> queue = new ArrayDeque<>();
         private final AtomicBoolean draining = new AtomicBoolean(false);
+        private boolean retired;
 
-        private SerialLane(Executor delegate) {
+        private SerialLane(Executor delegate, Long sessionId) {
             this.delegate = delegate;
+            this.sessionId = sessionId;
         }
 
-        private void enqueue(Runnable command) {
+        private boolean enqueue(Runnable command) {
             synchronized (queue) {
+                if (retired) {
+                    return false;
+                }
                 queue.addLast(command);
                 if (!draining.get()) {
                     draining.set(true);
                     delegate.execute(this::drainNext);
                 }
+                return true;
             }
         }
 
@@ -56,6 +71,7 @@ public final class SessionKeyedSerialExecutor implements Executor {
                 next = queue.pollFirst();
                 if (next == null) {
                     draining.set(false);
+                    retired = true;
                     return;
                 }
             }
@@ -65,6 +81,8 @@ public final class SessionKeyedSerialExecutor implements Executor {
                 synchronized (queue) {
                     if (queue.isEmpty()) {
                         draining.set(false);
+                        retired = true;
+                        lanes.remove(sessionId, this);
                     } else {
                         delegate.execute(this::drainNext);
                     }

@@ -1,9 +1,8 @@
 package com.prelude.llm.api;
 
 /**
- * Voice transport access for the voice module: a provider base URL and its
- * runtime key, resolved from the account's frozen model configuration. Voice
- * is a real consumer of the execution snapshot boundary.
+ * Voice transport access for the voice module: the deployment-owned provider
+ * base URL and system key. Account chat credentials are not reused for voice.
  */
 public interface VoiceModelAccessPort {
 

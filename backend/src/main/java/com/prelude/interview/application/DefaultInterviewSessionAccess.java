@@ -2,7 +2,7 @@ package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
-import com.prelude.interview.api.port.InterviewSessionStatus;
+import com.prelude.interview.integration.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class DefaultInterviewSessionAccess implements InterviewSessionAccess {
     @Override
     public InterviewSession requireOngoing(Long sessionId, long accountId) {
         InterviewSession session = requireOwned(sessionId, accountId);
-        if (!InterviewSessionStatus.ONGOING.matches(session.getStatus())) {
+        if (session.getStatus() != InterviewSessionStatus.ONGOING) {
             throw BusinessException.badRequest("面试会话已结束");
         }
         return session;

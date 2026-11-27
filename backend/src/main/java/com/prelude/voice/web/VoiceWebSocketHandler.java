@@ -19,22 +19,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Voice WebSocket transport.
- *
- * Owns the connection lifecycle, the audio buffer, the active-session map,
- * and the JSON wire protocol. The actual turn processing (STT, LLM, TTS,
- * persistence, stage advance, judge, summary) is delegated to
- * {@link VoiceInterviewTurnService}.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
 
-    /** Roughly ten minutes of 16 kHz/16-bit mono audio; a longer client burst is a fault, not a turn. */
     private static final int MAX_BUFFERED_AUDIO_BYTES = 20 * 1024 * 1024;
     private static final int SEND_TIME_LIMIT_MS = 10_000;
     private static final int SEND_BUFFER_LIMIT_BYTES = 4 * 1024 * 1024;
@@ -44,9 +36,7 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     private final InterviewSessionGuard interviewSessionGuard;
     private final com.prelude.identity.api.SessionValidity sessionValidity;
 
-    private final Map<String, ByteArrayOutputStream> sessionBuffers = new ConcurrentHashMap<>();
-    private final Map<String, Long> activeSessionIds = new ConcurrentHashMap<>();
-    private final Map<String, WebSocketSession> outbound = new ConcurrentHashMap<>();
+    private final Map<String, VoiceConnection> connections = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -56,19 +46,23 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             session.close(CloseStatus.BAD_DATA);
             return;
         }
-        // Sink callbacks send from turn-processing threads while the container thread keeps
-        // reading, and a raw WebSocketSession is not safe to write from two threads at once.
-        outbound.put(session.getId(), new ConcurrentWebSocketSessionDecorator(
-            session, SEND_TIME_LIMIT_MS, SEND_BUFFER_LIMIT_BYTES));
-        sessionBuffers.put(session.getId(), new ByteArrayOutputStream());
+        connections.put(session.getId(), new VoiceConnection(
+            new ConcurrentWebSocketSessionDecorator(session, SEND_TIME_LIMIT_MS, SEND_BUFFER_LIMIT_BYTES),
+            accountId,
+            (String) session.getAttributes().get("authSessionId")
+        ));
         log.info("WebSocket connection established for account {}, connection id: {}", accountId, session.getId());
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        sessionBuffers.remove(session.getId());
-        activeSessionIds.remove(session.getId());
-        outbound.remove(session.getId());
+        VoiceConnection connection = connections.remove(session.getId());
+        if (connection != null) {
+            synchronized (connection) {
+                connection.state = VoiceConnectionState.CLOSED;
+                connection.generation++;
+            }
+        }
         log.info("WebSocket connection closed, connection id: {}", session.getId());
     }
 
@@ -78,24 +72,27 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             closeRevokedSession(session);
             return;
         }
-        ByteArrayOutputStream buffer = sessionBuffers.get(session.getId());
-        if (buffer == null) {
+        VoiceConnection connection = connections.get(session.getId());
+        if (connection == null) {
             return;
         }
-        ByteBuffer payload = message.getPayload();
-        int incoming = payload.remaining();
-        byte[] bytes = new byte[incoming];
-        payload.get(bytes);
-        synchronized (buffer) {
-            if (buffer.size() + incoming > MAX_BUFFERED_AUDIO_BYTES) {
-                int discarded = buffer.size() + incoming;
-                buffer.reset();
-                log.warn("Discarding oversized audio buffer for connection {}, buffered {} bytes",
-                    session.getId(), discarded);
-                sendJson(session, Map.of("type", "error", "message", "音频长度超出限制，请重新开始本轮"));
+        synchronized (connection) {
+            if (connection.state != VoiceConnectionState.RECORDING) {
                 return;
             }
-            buffer.write(bytes);
+            ByteBuffer payload = message.getPayload();
+            int incoming = payload.remaining();
+            byte[] bytes = new byte[incoming];
+            payload.get(bytes);
+            if (connection.buffer.size() + incoming > MAX_BUFFERED_AUDIO_BYTES) {
+                int discarded = connection.buffer.size() + incoming;
+                connection.buffer.reset();
+                log.warn("Discarding oversized audio buffer for connection {}, buffered {} bytes",
+                    session.getId(), discarded);
+                sendJson(connection, Map.of("type", "error", "message", "音频长度超出限制，请重新开始本轮"));
+                return;
+            }
+            connection.buffer.write(bytes);
         }
     }
 
@@ -110,6 +107,10 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
             closeRevokedSession(session);
             return;
         }
+        VoiceConnection connection = connections.get(session.getId());
+        if (connection == null) {
+            return;
+        }
 
         Map<String, Object> requestMap;
         try {
@@ -121,94 +122,127 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
         }
 
         String type = (String) requestMap.get("type");
-        if ("start".equalsIgnoreCase(type)) {
-            Number sessionIdNum = (Number) requestMap.get("sessionId");
-            if (sessionIdNum != null) {
-                Long requestedSessionId = sessionIdNum.longValue();
-                if (!interviewSessionGuard.isOngoing(accountId, requestedSessionId)) {
-                    sendJson(session, Map.of("type", "error", "message", "面试会话不可用，请刷新后重试"));
-                    return;
-                }
-                activeSessionIds.put(session.getId(), requestedSessionId);
-                ByteArrayOutputStream buffer = sessionBuffers.get(session.getId());
-                if (buffer != null) {
-                    buffer.reset();
-                }
-                log.info("Started voice session {} on connection {}", requestedSessionId, session.getId());
+        synchronized (connection) {
+            if ("start".equalsIgnoreCase(type)) {
+                start(connection, accountId, requestMap);
+            } else if ("stop".equalsIgnoreCase(type)) {
+                stop(connection, accountId);
             }
-        } else if ("stop".equalsIgnoreCase(type)) {
-            Long activeSessionId = activeSessionIds.get(session.getId());
-            if (activeSessionId == null) {
-                sendJson(session, Map.of("type", "error", "message", "面试会话未初始化"));
-                return;
-            }
-
-            ByteArrayOutputStream buffer = sessionBuffers.get(session.getId());
-            if (buffer == null) {
-                return;
-            }
-            byte[] audioBytes;
-            synchronized (buffer) {
-                if (buffer.size() == 0) {
-                    sendJson(session, Map.of("type", "error", "message", "没有检测到任何音频数据"));
-                    return;
-                }
-                audioBytes = buffer.toByteArray();
-                buffer.reset();
-            }
-
-            voiceInterviewTurnService.processTurn(accountId, activeSessionId, audioBytes, buildSink(session));
         }
     }
 
-    private VoiceTurnEventSink buildSink(WebSocketSession session) {
+    private void start(VoiceConnection connection, Long accountId, Map<String, Object> request) {
+        if (connection.state == VoiceConnectionState.PROCESSING) {
+            sendJson(connection, Map.of("type", "error", "message", "正在处理上一轮语音，请稍后再试"));
+            return;
+        }
+        if (connection.state == VoiceConnectionState.CLOSED) {
+            return;
+        }
+        Number sessionIdNum = (Number) request.get("sessionId");
+        if (sessionIdNum == null) {
+            return;
+        }
+        Long requestedSessionId = sessionIdNum.longValue();
+        if (!interviewSessionGuard.isOngoing(accountId, requestedSessionId)) {
+            sendJson(connection, Map.of("type", "error", "message", "面试会话不可用，请刷新后重试"));
+            return;
+        }
+        connection.sessionId = requestedSessionId;
+        connection.buffer.reset();
+        connection.generation++;
+        connection.state = VoiceConnectionState.RECORDING;
+        log.info("Started voice session {} on connection {}", requestedSessionId, connection.session.getId());
+    }
+
+    private void stop(VoiceConnection connection, Long accountId) {
+        if (connection.state != VoiceConnectionState.RECORDING || connection.sessionId == null) {
+            sendJson(connection, Map.of("type", "error", "message", "面试会话未初始化"));
+            return;
+        }
+        if (connection.buffer.size() == 0) {
+            sendJson(connection, Map.of("type", "error", "message", "没有检测到任何音频数据"));
+            return;
+        }
+        byte[] audioBytes = connection.buffer.toByteArray();
+        connection.buffer.reset();
+        long generation = ++connection.generation;
+        Long sessionId = connection.sessionId;
+        connection.state = VoiceConnectionState.PROCESSING;
+        voiceInterviewTurnService.processTurn(
+            accountId, sessionId, audioBytes, buildSink(connection, generation, sessionId));
+    }
+
+    private VoiceTurnEventSink buildSink(VoiceConnection connection, long generation, Long sessionId) {
         return new VoiceTurnEventSink() {
             @Override
             public void status(String status) {
-                sendJson(session, Map.of("type", "status", "status", status));
+                sendIfCurrent(connection, generation, sessionId, Map.of("type", "status", "status", status));
             }
 
             @Override
             public void userText(String text) {
-                sendJson(session, Map.of("type", "user_text", "text", text));
+                sendIfCurrent(connection, generation, sessionId, Map.of("type", "user_text", "text", text));
             }
 
             @Override
             public void assistantText(String chunk) {
-                sendJson(session, Map.of("type", "text", "chunk", chunk));
+                sendIfCurrent(connection, generation, sessionId, Map.of("type", "text", "chunk", chunk));
             }
 
             @Override
             public void audio(String base64Audio) {
-                sendJson(session, Map.of("type", "audio", "data", base64Audio));
+                sendIfCurrent(connection, generation, sessionId, Map.of("type", "audio", "data", base64Audio));
             }
 
             @Override
             public void judge(int score, String hint) {
-                sendJson(session, Map.of("type", "judge", "score", score, "hint", hint));
+                sendIfCurrent(connection, generation, sessionId, Map.of("type", "judge", "score", score, "hint", hint));
             }
 
             @Override
             public void error(String message) {
-                sendJson(session, Map.of("type", "error", "message", message));
+                sendIfCurrent(connection, generation, sessionId, Map.of("type", "error", "message", message));
             }
 
             @Override
-            public Long currentActiveSessionId() {
-                return activeSessionIds.get(session.getId());
+            public boolean isCurrent() {
+                synchronized (connection) {
+                    return connection.isCurrent(generation, sessionId);
+                }
             }
 
             @Override
-            public void clearActiveSession() {
-                activeSessionIds.remove(session.getId());
+            public void invalidate() {
+                synchronized (connection) {
+                    if (connection.isCurrent(generation, sessionId)) {
+                        connection.generation++;
+                        connection.sessionId = null;
+                        connection.state = VoiceConnectionState.IDLE;
+                    }
+                }
+            }
+
+            @Override
+            public void turnFinished() {
+                synchronized (connection) {
+                    if (connection.isCurrent(generation, sessionId)) {
+                        connection.generation++;
+                        connection.state = VoiceConnectionState.RECORDING;
+                    }
+                }
             }
         };
     }
 
-    /**
-     * The originating Spring Session must still be alive and owned by the same
-     * account; a revoked session closes the connection with a policy status.
-     */
+    private void sendIfCurrent(VoiceConnection connection, long generation, Long sessionId, Object payload) {
+        synchronized (connection) {
+            if (connection.isCurrent(generation, sessionId)) {
+                sendJson(connection, payload);
+            }
+        }
+    }
+
     private boolean sessionRevoked(WebSocketSession session) {
         Long accountId = (Long) session.getAttributes().get("accountId");
         String authSessionId = (String) session.getAttributes().get("authSessionId");
@@ -219,23 +253,48 @@ public class VoiceWebSocketHandler extends AbstractWebSocketHandler {
     }
 
     private void closeRevokedSession(WebSocketSession session) throws IOException {
-        sessionBuffers.remove(session.getId());
-        activeSessionIds.remove(session.getId());
-        outbound.remove(session.getId());
+        VoiceConnection connection = connections.remove(session.getId());
+        if (connection != null) {
+            synchronized (connection) {
+                connection.state = VoiceConnectionState.CLOSED;
+                connection.generation++;
+            }
+        }
         log.info("WebSocket closed: originating session revoked, connection id: {}", session.getId());
         session.close(CloseStatus.POLICY_VIOLATION.withReason("session revoked"));
     }
 
-    private void sendJson(WebSocketSession session, Object payload) {
-        WebSocketSession target = outbound.getOrDefault(session.getId(), session);
-        if (!target.isOpen()) {
+    private void sendJson(VoiceConnection connection, Object payload) {
+        if (!connection.session.isOpen()) {
             return;
         }
         try {
-            String json = objectMapper.writeValueAsString(payload);
-            target.sendMessage(new TextMessage(json));
+            connection.session.sendMessage(new TextMessage(objectMapper.writeValueAsString(payload)));
         } catch (IOException e) {
             log.warn("Failed to push websocket message: {}", e.getMessage());
+        }
+    }
+
+    private final class VoiceConnection {
+        private final WebSocketSession session;
+        private final Long accountId;
+        private final String authSessionId;
+        private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        private VoiceConnectionState state = VoiceConnectionState.IDLE;
+        private Long sessionId;
+        private long generation;
+
+        private VoiceConnection(WebSocketSession session, Long accountId, String authSessionId) {
+            this.session = session;
+            this.accountId = accountId;
+            this.authSessionId = authSessionId;
+        }
+
+        private boolean isCurrent(long generation, Long sessionId) {
+            return state != VoiceConnectionState.CLOSED
+                && this.generation == generation
+                && Objects.equals(this.sessionId, sessionId)
+                && sessionValidity.isActive(authSessionId, accountId);
         }
     }
 }

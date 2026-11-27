@@ -10,6 +10,8 @@ export function HiddenFileInput({
   multiple,
   inputRef,
   onFiles,
+  hidden = false,
+  hiddenFromAccessibility = false,
 }: {
   id: string
   label: string
@@ -17,17 +19,24 @@ export function HiddenFileInput({
   multiple?: boolean
   inputRef?: RefObject<HTMLInputElement | null>
   onFiles: (files: FileList) => void
+  hidden?: boolean
+  hiddenFromAccessibility?: boolean
 }) {
   return (
     <>
-      <label className="sr-only" htmlFor={id}>
-        {label}
-      </label>
+      {!hidden && !hiddenFromAccessibility && (
+        <label className="sr-only" htmlFor={id}>
+          {label}
+        </label>
+      )}
       <input
         id={id}
         ref={inputRef}
         className="sr-only"
         type="file"
+        hidden={hidden}
+        aria-hidden={hiddenFromAccessibility || undefined}
+        tabIndex={hiddenFromAccessibility ? -1 : undefined}
         multiple={multiple}
         accept={accept}
         onChange={(event) => {

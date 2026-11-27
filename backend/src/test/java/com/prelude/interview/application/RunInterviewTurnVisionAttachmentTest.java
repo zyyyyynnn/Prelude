@@ -23,7 +23,7 @@ import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class RunInterviewTurnVisionAttachmentTest {
 
     private final InterviewSessionAccess sessionAccess = mock(InterviewSessionAccess.class);
     private final InterviewMessageRepository messageRepository = mock(InterviewMessageRepository.class);
-    private final LlmPort llmPort = mock(LlmPort.class);
+    private final ModelExecutionPort llmPort = mock(ModelExecutionPort.class);
     private final InterviewSessionRepository sessionRepository = mock(InterviewSessionRepository.class);
     private final InterviewContextPort contextPort = mock(InterviewContextPort.class);
     private final InterviewMessageService messageService = mock(InterviewMessageService.class);
@@ -86,7 +86,7 @@ class RunInterviewTurnVisionAttachmentTest {
         ));
         when(attachmentContextPort.readOwnedContent(7L, imageRef)).thenReturn(new byte[] {1, 2, 3});
         doAnswer(invocation -> {
-            LlmPort.StreamSink streamSink = invocation.getArgument(1);
+            ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
             streamSink.onNext("你好");
             return null;
         }).when(llmPort).stream(any(), any());
@@ -94,10 +94,10 @@ class RunInterviewTurnVisionAttachmentTest {
         runInterviewTurn.execute(
             new InterviewTurnCommand(51L, 7L, "", true), sink);
 
-        ArgumentCaptor<LlmPort.ModelExecutionRequest> request =
-            ArgumentCaptor.forClass(LlmPort.ModelExecutionRequest.class);
+        ArgumentCaptor<ModelExecutionPort.ModelExecutionRequest> request =
+            ArgumentCaptor.forClass(ModelExecutionPort.ModelExecutionRequest.class);
         verify(llmPort).stream(request.capture(), any());
-        List<LlmPort.Attachment> attachments = request.getValue().attachments();
+        List<ModelExecutionPort.Attachment> attachments = request.getValue().attachments();
         assertThat(attachments).hasSize(1);
         assertThat(attachments.get(0).fileName()).isEqualTo("diagram.png");
         assertThat(attachments.get(0).mediaType()).isEqualTo("image/png");
@@ -112,7 +112,7 @@ class RunInterviewTurnVisionAttachmentTest {
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
         when(contextPort.buildContextMessages(51L)).thenReturn(List.of());
         doAnswer(invocation -> {
-            LlmPort.StreamSink streamSink = invocation.getArgument(1);
+            ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
             streamSink.onNext("回答完毕[STAGE_COMPLETE]");
             return null;
         }).when(llmPort).stream(any(), any());
@@ -128,7 +128,7 @@ class RunInterviewTurnVisionAttachmentTest {
         InterviewMessage accepted = acceptedMessage();
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
-        when(messageService.insertMessage(51L, "user", "回答")).thenReturn(accepted);
+        when(messageService.insertUserMessage(51L, "回答")).thenReturn(accepted);
         org.mockito.Mockito.doThrow(new IllegalStateException("model unavailable")).when(llmPort).stream(any(), any());
 
         assertThatThrownBy(() -> runInterviewTurn.execute(new InterviewTurnCommand(51L, 7L, "回答", false), sink))
@@ -145,10 +145,10 @@ class RunInterviewTurnVisionAttachmentTest {
         InterviewMessage accepted = acceptedMessage();
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
-        when(messageService.insertMessage(51L, "user", "回答")).thenReturn(accepted);
+        when(messageService.insertUserMessage(51L, "回答")).thenReturn(accepted);
         when(contextPort.buildContextMessages(51L)).thenReturn(List.of());
         doAnswer(invocation -> {
-            LlmPort.StreamSink streamSink = invocation.getArgument(1);
+            ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
             streamSink.onNext("助手回复");
             return null;
         }).when(llmPort).stream(any(), any());
@@ -177,12 +177,12 @@ class RunInterviewTurnVisionAttachmentTest {
     void aNormalTurnDoesNotAttachFiles() {
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
-        when(messageService.insertMessage(51L, "user", "回答"))
+        when(messageService.insertUserMessage(51L, "回答"))
             .thenReturn(new com.prelude.interview.domain.InterviewMessage());
         when(contextPort.buildContextMessages(51L))
             .thenReturn(List.of(Map.of("role", "user", "content", "回答")));
         doAnswer(invocation -> {
-            LlmPort.StreamSink streamSink = invocation.getArgument(1);
+            ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
             streamSink.onNext("好的");
             return null;
         }).when(llmPort).stream(any(), any());
@@ -190,8 +190,8 @@ class RunInterviewTurnVisionAttachmentTest {
         runInterviewTurn.execute(
             new InterviewTurnCommand(51L, 7L, "回答", false), sink);
 
-        ArgumentCaptor<LlmPort.ModelExecutionRequest> request =
-            ArgumentCaptor.forClass(LlmPort.ModelExecutionRequest.class);
+        ArgumentCaptor<ModelExecutionPort.ModelExecutionRequest> request =
+            ArgumentCaptor.forClass(ModelExecutionPort.ModelExecutionRequest.class);
         verify(llmPort).stream(request.capture(), any());
         assertThat(request.getValue().attachments()).isEmpty();
         verify(attachmentContextPort, never()).list(anyLong(), anyString(), anyLong());

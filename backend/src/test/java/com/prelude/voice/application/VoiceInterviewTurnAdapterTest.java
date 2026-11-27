@@ -1,13 +1,11 @@
-package com.prelude.interview.application;
+package com.prelude.voice.application;
 
 import com.prelude.SessionKeyedSerialExecutor;
 import com.prelude.interview.application.port.InterviewSessionGuard;
 import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.JudgeOutcome;
-import com.prelude.interview.application.port.VoicePort;
 import com.prelude.test.SessionFixtures;
-import com.prelude.voice.application.VoiceInterviewTurnService;
-import com.prelude.voice.application.VoiceTurnEventSink;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,16 +29,16 @@ class VoiceInterviewTurnAdapterTest {
 
     @BeforeEach
     void setUp() {
-        when(sink.currentActiveSessionId()).thenReturn(51L);
+        when(sink.isCurrent()).thenReturn(true);
         when(guard.isOngoing(7L, 51L)).thenReturn(true);
-        when(voice.speechToText(7L, 51L, new byte[] {1}, "voice.webm")).thenReturn("回答");
+        when(voice.speechToText(7L, new byte[] {1}, "voice.webm")).thenReturn("回答");
         when(voice.textToSpeech(any(), any())).thenReturn(new byte[] {1});
-        when(turns.execute(any(), any())).thenAnswer(invocation -> {
+        org.mockito.Mockito.doAnswer(invocation -> {
             com.prelude.interview.application.port.InterviewTurnSink turnSink = invocation.getArgument(1);
             turnSink.assistantDelta("请继续。");
             return SessionFixtures.turnResult(
                 SessionFixtures.turnSession(51L), SessionFixtures.userTurn(12L, 51L, "回答"), "请继续。");
-        });
+        }).when(turns).execute(any(), any());
     }
 
     @Test
@@ -51,6 +49,68 @@ class VoiceInterviewTurnAdapterTest {
         service.processTurn(7L, 51L, new byte[] {1}, sink);
 
         verify(sink).judge(8, "补充细节");
+        verify(sink).turnFinished();
+    }
+
+    @Test
+    void aSupersededTurnDoesNotStartProcessing() {
+        when(sink.isCurrent()).thenReturn(false);
+
+        service.processTurn(7L, 51L, new byte[] {1}, sink);
+
+        verify(voice, never()).speechToText(any(), any(), any());
+        verify(turns, never()).execute(any(), any());
+        verify(sink).turnFinished();
+    }
+
+    @Test
+    void anUnavailableSessionReportsTheErrorBeforeInvalidatingTheTurn() {
+        when(guard.isOngoing(7L, 51L)).thenReturn(false);
+
+        service.processTurn(7L, 51L, new byte[] {1}, sink);
+
+        var order = org.mockito.Mockito.inOrder(sink);
+        order.verify(sink).error("面试会话不可用，请刷新后重试");
+        order.verify(sink).invalidate();
+        verify(voice, never()).speechToText(any(), any(), any());
+    }
+
+    @Test
+    void revocationDuringStreamingStopsBeforeAssistantPersistenceAndJudge() {
+        java.util.concurrent.atomic.AtomicBoolean current = new java.util.concurrent.atomic.AtomicBoolean(true);
+        when(sink.isCurrent()).thenAnswer(invocation -> current.get());
+        org.mockito.Mockito.doAnswer(invocation -> {
+            com.prelude.interview.application.port.InterviewTurnSink turnSink = invocation.getArgument(1);
+            current.set(false);
+            turnSink.assistantDelta("请继续。");
+            return SessionFixtures.turnResult(
+                SessionFixtures.turnSession(51L), SessionFixtures.userTurn(12L, 51L, "回答"), "请继续。");
+        }).when(turns).execute(any(), any());
+
+        service.processTurn(7L, 51L, new byte[] {1}, sink);
+
+        verify(sink, never()).assistantText(any());
+        verify(turns, never()).judgeAndPersist(any(), any());
+        verify(turns, never()).summarizeIfNeeded(any());
+        verify(sink).turnFinished();
+    }
+
+    @Test
+    void revocationAfterStreamingSkipsRemainingSpeechSynthesis() {
+        java.util.concurrent.atomic.AtomicBoolean current = new java.util.concurrent.atomic.AtomicBoolean(true);
+        when(sink.isCurrent()).thenAnswer(invocation -> current.get());
+        org.mockito.Mockito.doAnswer(invocation -> {
+            com.prelude.interview.application.port.InterviewTurnSink turnSink = invocation.getArgument(1);
+            turnSink.assistantDelta("请继续");
+            current.set(false);
+            return SessionFixtures.turnResult(
+                SessionFixtures.turnSession(51L), SessionFixtures.userTurn(12L, 51L, "回答"), "请继续");
+        }).when(turns).execute(any(), any());
+
+        service.processTurn(7L, 51L, new byte[] {1}, sink);
+
+        verify(voice, never()).textToSpeech(any(), any());
+        verify(turns, never()).judgeAndPersist(any(), any());
     }
 
     @Test

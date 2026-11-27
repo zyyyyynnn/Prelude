@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { Icon, IconTooltip } from '@/shared/ui'
 import { RiDeleteBinLine, RiPushpinFill, RiPushpinLine } from '@remixicon/react'
@@ -75,47 +74,5 @@ export function SessionRow({
         </IconTooltip>
       </div>
     </li>
-  )
-}
-
-/** A labelled run of session rows, or the empty note when a group has none. */
-/** The caption above a session group, and the stand-in when the group has no rows. The
- *  loading placeholder in the shell is the same voice as an empty group, so it is the same
- *  element rather than a second copy of the atoms. */
-export function SessionGroupLabel({ children }: { children: ReactNode }) {
-  return <p className="mx-sm text-xs font-semibold tracking-label text-text-tertiary">{children}</p>
-}
-
-export function SessionGroup({
-  label,
-  rows,
-  emptyLabel,
-}: {
-  label: string
-  rows: {
-    key: string | number
-    name: string
-    state?: SessionRowState
-    finished?: boolean
-    pinned?: boolean
-    onOpen: () => void
-    onTogglePin: () => void
-    onRemove: () => void
-  }[]
-  emptyLabel: string
-}) {
-  return (
-    <section className="session-group" aria-label={label}>
-      <SessionGroupLabel>{label}</SessionGroupLabel>
-      {rows.length ? (
-        <ul className="list-plain flex flex-col gap-sm">
-          {rows.map(({ key, ...row }) => (
-            <SessionRow key={key} {...row} />
-          ))}
-        </ul>
-      ) : (
-        <SessionGroupLabel>{emptyLabel}</SessionGroupLabel>
-      )}
-    </section>
   )
 }

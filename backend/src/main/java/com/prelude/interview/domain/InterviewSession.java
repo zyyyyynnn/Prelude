@@ -1,5 +1,6 @@
 package com.prelude.interview.domain;
 
+import com.prelude.interview.integration.InterviewSessionStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -13,7 +14,7 @@ public class InterviewSession {
     private Long positionId;
     private String targetPosition;
     private Long modelExecutionSnapshotId;
-    private String status;
+    private InterviewSessionStatus status;
     private String summary;
     private String summaryReport;
     private String jdText;

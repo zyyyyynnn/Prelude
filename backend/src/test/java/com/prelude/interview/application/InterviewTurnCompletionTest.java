@@ -8,6 +8,7 @@ import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
 import com.prelude.interview.domain.InterviewStagePolicy;
+import com.prelude.interview.integration.InterviewSessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.framework.ProxyFactory;
@@ -40,14 +41,14 @@ class InterviewTurnCompletionTest {
         dataSource.setUsername("sa");
         jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("CREATE TABLE interview_message (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id BIGINT, role VARCHAR(16), content VARCHAR(1000), seq_num INT, assessment_status VARCHAR(16), created_at TIMESTAMP)");
-        jdbc.execute("CREATE TABLE interview_stage (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id BIGINT, stage_name VARCHAR(32), started_at TIMESTAMP, ended_at TIMESTAMP)");
+        jdbc.execute("CREATE TABLE interview_stage (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id BIGINT, stage_name VARCHAR(32), boundary_seq INT, awaiting_answer BOOLEAN, started_at TIMESTAMP, ended_at TIMESTAMP)");
         jdbc.update("INSERT INTO interview_message (session_id, role, content, seq_num, created_at) VALUES (7, 'system', 'opening', 0, CURRENT_TIMESTAMP)");
-        jdbc.update("INSERT INTO interview_stage (session_id, stage_name, started_at) VALUES (7, 'warmup', CURRENT_TIMESTAMP)");
+        jdbc.update("INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at) VALUES (7, 'warmup', 0, FALSE, CURRENT_TIMESTAMP)");
 
         InterviewSessionRepository sessions = mock(InterviewSessionRepository.class);
-        when(sessions.lockAppendOrder(7L)).thenReturn("ongoing");
-        InterviewMessageService messages = new InterviewMessageService(new JdbcMessageRepository(), sessions);
+        when(sessions.lockAppendOrder(7L)).thenReturn(InterviewSessionStatus.ONGOING);
         stages = new JdbcStageRepository();
+        InterviewMessageService messages = new InterviewMessageService(new JdbcMessageRepository(), sessions, stages);
         InterviewStageManager stageManager = new InterviewStageManager(
             stages, sessions, new JdbcMessageRepository(), messages, new InterviewStagePolicy());
         InterviewTurnCompletion target = new InterviewTurnCompletion(messages, stageManager);
@@ -67,6 +68,9 @@ class InterviewTurnCompletionTest {
             .isEqualTo("technical");
         assertThat(jdbc.queryForObject("SELECT assessment_status FROM interview_message WHERE role = 'assistant'", String.class))
             .isNull();
+        assertThat(jdbc.queryForObject("SELECT boundary_seq FROM interview_stage WHERE id = 1", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT boundary_seq FROM interview_stage WHERE id = 2", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT awaiting_answer FROM interview_stage WHERE id = 2", Boolean.class)).isFalse();
     }
 
     @Test
@@ -80,6 +84,7 @@ class InterviewTurnCompletionTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM interview_message", Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM interview_stage", Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT ended_at FROM interview_stage WHERE id = 1", LocalDateTime.class)).isNull();
+        assertThat(jdbc.queryForObject("SELECT awaiting_answer FROM interview_stage WHERE id = 1", Boolean.class)).isFalse();
     }
 
     @Test
@@ -188,15 +193,16 @@ class InterviewTurnCompletionTest {
                 failNextAdd = false;
                 throw new IllegalStateException("stage insert failed");
             }
-            jdbc.update("INSERT INTO interview_stage (session_id, stage_name, started_at) VALUES (?, ?, ?)",
-                stage.getSessionId(), stage.getStageName(), stage.getStartedAt());
+            jdbc.update("INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at) VALUES (?, ?, ?, ?, ?)",
+                stage.getSessionId(), stage.getStageName(), stage.getBoundarySeq(), stage.isAwaitingAnswer(), stage.getStartedAt());
             stage.setId(jdbc.queryForObject("SELECT MAX(id) FROM interview_stage", Long.class));
             return 1;
         }
 
         @Override
         public int update(InterviewStage stage) {
-            return jdbc.update("UPDATE interview_stage SET ended_at = ? WHERE id = ?", stage.getEndedAt(), stage.getId());
+            return jdbc.update("UPDATE interview_stage SET ended_at = ?, awaiting_answer = ? WHERE id = ?",
+                stage.getEndedAt(), stage.isAwaitingAnswer(), stage.getId());
         }
 
         @Override
@@ -231,6 +237,8 @@ class InterviewTurnCompletionTest {
             stage.setId(rs.getLong("id"));
             stage.setSessionId(rs.getLong("session_id"));
             stage.setStageName(rs.getString("stage_name"));
+            stage.setBoundarySeq(rs.getInt("boundary_seq"));
+            stage.setAwaitingAnswer(rs.getBoolean("awaiting_answer"));
             stage.setStartedAt(rs.getTimestamp("started_at").toLocalDateTime());
             var endedAt = rs.getTimestamp("ended_at");
             stage.setEndedAt(endedAt == null ? null : endedAt.toLocalDateTime());

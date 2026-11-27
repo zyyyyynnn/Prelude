@@ -291,6 +291,7 @@ async function interviewProductFlow(page: Page, theme: Theme) {
   ).entries()) {
     const dialog = page.getByRole('dialog', { name: '全局设置' })
     await dialog.getByRole('button', { name: section }).click()
+    await expect(dialog.getByRole('heading', { name: section, exact: true })).toBeVisible()
     await expect(dialog.getByText(/正在读取|正在加载设置/)).toHaveCount(0)
     await capture(page, theme, 'interview', `settings-${index + 1}-${sectionSlug(section)}`)
   }

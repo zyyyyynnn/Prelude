@@ -3,13 +3,16 @@ package com.prelude.jobs;
 import com.prelude.BusinessException;
 import com.prelude.jobs.application.port.BackgroundJobStore;
 import com.prelude.jobs.application.port.BackgroundJobStore.JobRow;
-import com.prelude.jobs.integration.BackgroundJobOperations;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRef;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobRequest;
-import com.prelude.jobs.integration.BackgroundJobOperations.BackgroundJobView;
-import com.prelude.jobs.integration.BackgroundJobOperations.ClaimOutcome;
-import com.prelude.jobs.integration.BackgroundJobOperations.ExecutionLease;
-import com.prelude.jobs.integration.BackgroundJobOperations.FailureOutcome;
+import com.prelude.jobs.integration.BackgroundJobMessages;
+import com.prelude.jobs.integration.JobDispatcher;
+import com.prelude.jobs.integration.JobQuery;
+import com.prelude.jobs.integration.JobWorker;
+import com.prelude.jobs.integration.BackgroundJobMessages.BackgroundJobRef;
+import com.prelude.jobs.integration.BackgroundJobMessages.BackgroundJobRequest;
+import com.prelude.jobs.integration.BackgroundJobMessages.BackgroundJobView;
+import com.prelude.jobs.integration.BackgroundJobMessages.ClaimOutcome;
+import com.prelude.jobs.integration.BackgroundJobMessages.ExecutionLease;
+import com.prelude.jobs.integration.BackgroundJobMessages.FailureOutcome;
 import com.prelude.jobs.integration.BackgroundJobCancelled;
 import com.prelude.jobs.integration.BackgroundJobFailed;
 import com.prelude.jobs.integration.BackgroundJobRequested;
@@ -41,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-public class BackgroundJobService implements BackgroundJobOperations {
+public class BackgroundJobService implements JobDispatcher, JobWorker, JobQuery {
 
     private final BackgroundJobStore jobStore;
     private final ApplicationEventPublisher eventPublisher;

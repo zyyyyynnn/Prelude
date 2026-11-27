@@ -1,6 +1,6 @@
 package com.prelude.interview.application;
 
-import com.prelude.interview.api.port.InterviewSessionStatus;
+import com.prelude.interview.integration.InterviewSessionStatus;
 import com.prelude.interview.application.port.InterviewSessionGuard;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
@@ -23,6 +23,6 @@ public class InterviewSessionGuardAdapter implements InterviewSessionGuard {
         InterviewSession session = interviewSessionRepository.selectById(sessionId);
         return session != null
             && Objects.equals(session.getAccountId(), accountId)
-            && InterviewSessionStatus.ONGOING.matches(session.getStatus());
+            && session.getStatus() == InterviewSessionStatus.ONGOING;
     }
 }

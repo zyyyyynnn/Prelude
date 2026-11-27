@@ -2,7 +2,7 @@ package com.prelude;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.BackgroundJobService;
 import com.prelude.test.ExceptionFixtures;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class DevAcceptanceDataResetMySqlTest {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private BackgroundJobOperations jobs;
+    private BackgroundJobService jobs;
 
     private Long preservedAccountId;
     private Long trackedDemoAssetId;

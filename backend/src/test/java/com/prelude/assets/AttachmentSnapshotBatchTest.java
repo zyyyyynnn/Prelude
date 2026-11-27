@@ -1,7 +1,7 @@
 package com.prelude.assets;
 
 import com.prelude.assets.api.AttachmentSnapshot;
-import com.prelude.assets.application.port.AssetLookup;
+import com.prelude.assets.application.port.AssetRepository;
 import com.prelude.assets.application.port.AttachmentStorage;
 import com.prelude.test.AssetFixtures;
 import com.prelude.test.ExceptionFixtures;
@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Snapshot assembly must batch-load assets once per request instead of
@@ -20,13 +21,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AttachmentSnapshotBatchTest {
 
     private final java.util.List<AttachmentStorage.AttachmentRow> attachments = new java.util.ArrayList<>();
-    private final java.util.Map<Long, AssetLookup.AssetRow> assets = new java.util.HashMap<>();
+    private final java.util.Map<Long, AssetRepository.AssetRow> assets = new java.util.HashMap<>();
     private final java.util.concurrent.atomic.AtomicInteger assetBatchLoads =
         new java.util.concurrent.atomic.AtomicInteger();
     private AttachmentService attachmentService;
 
     @BeforeEach
     void setUp() {
+        AssetRepository assetRepository = mock(AssetRepository.class);
+        when(assetRepository.findByIds(org.mockito.ArgumentMatchers.anyList())).thenAnswer(invocation -> {
+            List<Long> ids = invocation.getArgument(0);
+            assetBatchLoads.incrementAndGet();
+            return ids.stream().map(assets::get).filter(java.util.Objects::nonNull).toList();
+        });
         attachmentService = new AttachmentService(
             new AttachmentStorage() {
                 @Override
@@ -60,25 +67,11 @@ class AttachmentSnapshotBatchTest {
                 }
 
                 @Override
-                public void deleteById(Long id) {
+                public int deleteUnboundOwned(Long accountId, Long id) {
+                    return 1;
                 }
             },
-            new AssetLookup() {
-                @Override
-                public List<AssetLookup.AssetRow> findByIds(List<Long> ids) {
-                    assetBatchLoads.incrementAndGet();
-                    return ids.stream().map(assets::get).filter(java.util.Objects::nonNull).toList();
-                }
-
-                @Override
-                public AssetLookup.AssetRow findById(Long id) {
-                    return assets.get(id);
-                }
-
-                @Override
-                public void deleteById(Long id) {
-                }
-            },
+            assetRepository,
             null, null, null, null, null, null
         );
     }

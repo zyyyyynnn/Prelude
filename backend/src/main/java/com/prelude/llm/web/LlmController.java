@@ -2,7 +2,8 @@ package com.prelude.llm.web;
 
 import com.prelude.Result;
 import com.prelude.identity.api.CurrentAccount;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelConfigurationPort;
+import com.prelude.llm.api.ModelDiscoveryPort;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ProviderDescriptorView;
@@ -22,23 +23,24 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LlmController {
 
-    private final LlmPort llmPort;
+    private final ModelConfigurationPort configurationPort;
+    private final ModelDiscoveryPort discoveryPort;
     private final CurrentAccount currentAccount;
 
     @GetMapping("/providers")
     public Result<List<ProviderDescriptorView>> providers() {
-        return Result.success(llmPort.listModels());
+        return Result.success(discoveryPort.listModels());
     }
 
     @GetMapping("/config")
     public Result<ModelConfigurationView> config() {
-        return Result.success(llmPort.currentConfiguration(currentAccount.requireId()));
+        return Result.success(configurationPort.currentConfiguration(currentAccount.requireId()));
     }
 
     @PutMapping("/config")
     public Result<ModelConfigurationView> updateConfig(
         @jakarta.validation.Valid @RequestBody UpdateConfigurationRequest request) {
-        return Result.success(llmPort.saveConfiguration(currentAccount.requireId(),
+        return Result.success(configurationPort.saveConfiguration(currentAccount.requireId(),
             new SaveConfigurationCommand(
                 request.provider(),
                 request.model(),
@@ -51,17 +53,17 @@ public class LlmController {
     }
 
     @PostMapping("/config/discover-models")
-    public Result<LlmPort.DiscoveredModelsView> discoverModels(
+    public Result<ModelDiscoveryPort.DiscoveredModelsView> discoverModels(
         @jakarta.validation.Valid @RequestBody DiscoverModelsRequest request) {
-        return Result.success(llmPort.discoverCustomModels(currentAccount.requireId(),
-            new LlmPort.DiscoverModelsCommand(request.provider(), request.baseUrl(), request.apiKey())));
+        return Result.success(discoveryPort.discoverCustomModels(currentAccount.requireId(),
+            new ModelDiscoveryPort.DiscoverModelsCommand(request.provider(), request.baseUrl(), request.apiKey())));
     }
 
     @PostMapping("/config/discover-capabilities")
     public Result<ModelCapabilityResponse> discoverCapabilities(
         @jakarta.validation.Valid @RequestBody DiscoverModelCapabilityRequest request) {
-        return Result.success(llmPort.discoverCustomModelCapability(currentAccount.requireId(),
-            new LlmPort.DiscoverModelCapabilityCommand(
+        return Result.success(discoveryPort.discoverCustomModelCapability(currentAccount.requireId(),
+            new ModelDiscoveryPort.DiscoverModelCapabilityCommand(
                 request.provider(), request.baseUrl(), request.apiKey(), request.model())));
     }
 

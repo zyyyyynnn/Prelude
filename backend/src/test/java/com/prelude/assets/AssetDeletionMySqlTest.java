@@ -3,9 +3,10 @@ package com.prelude.assets;
 import com.prelude.BusinessException;
 import com.prelude.assets.api.AttachmentSnapshot;
 import com.prelude.assets.application.port.AssetDeletionStore;
-import com.prelude.assets.application.port.AssetLookup;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import com.prelude.assets.infrastructure.MybatisAssetDeletionStore;
+import com.prelude.assets.infrastructure.MybatisAssetRepository;
 import com.prelude.assets.infrastructure.persistence.AssetDeletionRequestMapper;
 import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import com.prelude.interview.application.DeleteInterviewSession;
@@ -122,6 +123,51 @@ class AssetDeletionMySqlTest {
     }
 
     @Test
+    void deleteUnboundPersistsIdempotentIntentAndWorkerRemovesObjectThenMetadata() {
+        long accountId = AccountFixtures.create(jdbcTemplate, "unbound-delete");
+        AccountFixtures.authenticate(accountId);
+        AttachmentSnapshot snapshot = attachmentService.upload(
+            "unbound.txt", "text/plain", "unbound".getBytes(StandardCharsets.UTF_8));
+        long assetId = snapshot.assetRef().id();
+        String key = objectKey(assetId);
+
+        attachmentService.deleteUnbound(snapshot.id());
+
+        assertThat(count("SELECT COUNT(*) FROM attachment WHERE id = ?", snapshot.id())).isZero();
+        assertThat(count("SELECT COUNT(*) FROM asset WHERE id = ?", assetId)).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM asset_deletion_request WHERE asset_id = ?", assetId)).isEqualTo(1);
+        verify(objectStoragePort, never()).delete(key);
+
+        assetDeletionService.processNextBatch();
+        assetDeletionService.processNextBatch();
+
+        assertThat(count("SELECT COUNT(*) FROM asset WHERE id = ?", assetId)).isZero();
+        assertThat(count("SELECT COUNT(*) FROM asset_deletion_request WHERE asset_id = ?", assetId)).isZero();
+        verify(objectStoragePort).delete(key);
+    }
+
+    @Test
+    void unboundDeletionRollsBackMetadataAndIntentWithTheCallerTransaction() {
+        long accountId = AccountFixtures.create(jdbcTemplate, "unbound-rollback");
+        AccountFixtures.authenticate(accountId);
+        AttachmentSnapshot snapshot = attachmentService.upload(
+            "rollback.txt", "text/plain", "rollback".getBytes(StandardCharsets.UTF_8));
+        long assetId = snapshot.assetRef().id();
+        String key = objectKey(assetId);
+        TransactionTemplate transactions = new TransactionTemplate(transactionManager);
+
+        transactions.executeWithoutResult(status -> {
+            attachmentService.deleteUnbound(snapshot.id());
+            status.setRollbackOnly();
+        });
+
+        assertThat(count("SELECT COUNT(*) FROM attachment WHERE id = ?", snapshot.id())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM asset WHERE id = ?", assetId)).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM asset_deletion_request WHERE asset_id = ?", assetId)).isZero();
+        verify(objectStoragePort, never()).delete(key);
+    }
+
+    @Test
     void failedDiscardRollsBackTheCallerTransactionAndDeletionRegistration() {
         long accountId = AccountFixtures.create(jdbcTemplate, "registration-transaction");
         AccountFixtures.authenticate(accountId);
@@ -129,19 +175,19 @@ class AssetDeletionMySqlTest {
         jdbcTemplate.update("UPDATE asset SET kind = 'avatar', status = 'READY' WHERE id = ?", assetId);
         String objectKey = objectKey(assetId);
         AssetRow asset = new AssetRow(assetId, accountId, "avatar", objectKey, "text/plain", 1L, "READY");
-        MybatisAssetDeletionStore realStore = new MybatisAssetDeletionStore(deletionRequestMapper, assetMapper);
+        MybatisAssetDeletionStore realStore = new MybatisAssetDeletionStore(deletionRequestMapper, new MybatisAssetRepository(assetMapper));
         AssetDeletionStore store = spy(realStore);
         doAnswer(invocation -> {
             realStore.register(accountId, assetId, objectKey);
             throw new IllegalStateException("registration unavailable");
         }).when(store).register(accountId, assetId, objectKey);
-        AssetLookup lookup = mock(AssetLookup.class);
-        when(lookup.findById(assetId)).thenReturn(asset);
+        AssetRepository assetRepository = mock(AssetRepository.class);
+        when(assetRepository.findById(assetId)).thenReturn(asset);
         AssetDeletionService service = new AssetDeletionService(
-            store, lookup, objectStoragePort,
+            store, assetRepository, objectStoragePort,
             new AssetDeletionProperties(10, Duration.ofSeconds(1), Duration.ofMinutes(1), Duration.ofMinutes(1)));
         AvatarAssetStorage storage = new AvatarAssetStorage(
-            mock(AssetService.class), lookup, objectStoragePort, new AvatarImageValidator(),
+            mock(AssetService.class), assetRepository, objectStoragePort, new AvatarImageValidator(),
             transactionalProxy(service));
         AvatarAssetStorage transactionalStorage = transactionalProxy(storage);
         TransactionTemplate transactions = new TransactionTemplate(transactionManager);
@@ -185,7 +231,7 @@ class AssetDeletionMySqlTest {
                     throw exception.getCause();
                 }
             });
-        AssetDeletionStore concurrentStore = new MybatisAssetDeletionStore(pausingMapper, assetMapper);
+        AssetDeletionStore concurrentStore = new MybatisAssetDeletionStore(pausingMapper, new MybatisAssetRepository(assetMapper));
 
         try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
             Future<?> first = executor.submit(() -> transactions.executeWithoutResult(status ->
