@@ -7,7 +7,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM caddyserver/caddy:2.10.2-alpine AS caddy
+FROM caddyserver/caddy:2.11.4-alpine AS caddy
 
 FROM scratch
 COPY --from=caddy /usr/bin/caddy /caddy
