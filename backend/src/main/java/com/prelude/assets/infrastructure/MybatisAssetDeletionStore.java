@@ -4,11 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.prelude.assets.application.port.AssetDeletionStore;
 import com.prelude.assets.application.port.AssetDeletionStore.DeletionRequest;
+import com.prelude.assets.application.port.AssetRepository;
 import com.prelude.assets.domain.AssetDeletionStatus;
 import com.prelude.assets.infrastructure.persistence.AssetDeletionRequestEntity;
 import com.prelude.assets.infrastructure.persistence.AssetDeletionRequestMapper;
-import com.prelude.assets.infrastructure.persistence.AssetEntity;
-import com.prelude.assets.infrastructure.persistence.AssetMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
@@ -27,7 +26,7 @@ public class MybatisAssetDeletionStore implements AssetDeletionStore {
     private static final String LEASE_EXPIRED = "WORKER_LEASE_EXPIRED";
 
     private final AssetDeletionRequestMapper deletionRequestMapper;
-    private final AssetMapper assetMapper;
+    private final AssetRepository assetRepository;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -103,9 +102,7 @@ public class MybatisAssetDeletionStore implements AssetDeletionStore {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void complete(DeletionRequest request) {
-        assetMapper.delete(new LambdaQueryWrapper<AssetEntity>()
-            .eq(AssetEntity::getId, request.assetId())
-            .eq(AssetEntity::getAccountId, request.accountId()));
+        assetRepository.deleteByIdAndAccountId(request.assetId(), request.accountId());
         int removed = deletionRequestMapper.delete(new LambdaQueryWrapper<AssetDeletionRequestEntity>()
             .eq(AssetDeletionRequestEntity::getId, request.id())
             .eq(AssetDeletionRequestEntity::getAccountId, request.accountId())

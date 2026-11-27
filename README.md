@@ -38,23 +38,25 @@ Prelude 以面试为核心，将面试准备、实时问答、结构化评估和
 
 ## 系统架构
 
-16 个应用模块的完整边界与依赖拓扑见[后端架构](docs/backend/architecture.md)。前端状态所有权与目录边界见[前端架构](docs/frontend/architecture.md)。
+16 个应用模块的完整边界与依赖拓扑见[后端架构](docs/backend/architecture.md)。前端状态所有权与目录边界见[前端架构](docs/frontend/architecture.md)。陌生工程师从[60 分钟上手路径](docs/onboarding.md)开始，统一术语见[术语表](GLOSSARY.md)，当前架构决策见[ADR 索引](docs/adr/README.md)。
+
+四个占位模块对应仍开放的 Issue #37/#42/#45/#46，是显式路线图契约，不是死代码。Artifact 正式成果发布模型当前无生产消费者，但 #36 公共契约与数据库表作为预留能力保留；接入或移除条件见[Architecture Decision Records](docs/adr/README.md)。
 
 ## 技术栈
 
-| 层级 | 技术 | 职责 |
-| --- | --- | --- |
-| 前端应用 | React 19、React Router、TypeScript、Vite+、Rolldown、Oxc | 页面组合、路由导航、类型契约和统一前端工具链 |
-| 界面基础 | Base UI、Tailwind CSS | 浮层、焦点与键盘交互原语，以及设计令牌和布局样式 |
-| 服务端状态 | TanStack Query | 请求生命周期、缓存、失效与乐观更新 |
-| 模块化后端 | Java 21、Spring Boot 4.1、Spring Modulith | 接口边界、模块化业务用例与依赖拓扑验证 |
-| 身份与安全 | Spring Security 7、Spring Session Redis | 密码（Argon2id）与 OAuth 登录、服务端会话、CSRF/Origin、账户隔离 |
-| 模型与数据访问 | Spring AI、MyBatis-Plus | 模型协议接入、模型网关与持久化适配 |
-| 对象存储 | AWS SDK for Java v2（S3 兼容）、VersityGW | Asset 二进制存储，local/CI 使用 VersityGW |
-| 持久化 | MySQL 8.4、Flyway | 业务数据与数据库版本治理 |
-| 实时与消息 | Redis 7.4、RabbitMQ 4.1 | 认证会话、实时发布与订阅、异步报告任务 |
-| 训练分析 | ECharts | 能力雷达、分数趋势与薄弱点呈现 |
-| 本地运行 | Docker Compose | 本地基础设施与完整容器栈 |
+| 层级           | 技术                                                     | 职责                                                             |
+| -------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
+| 前端应用       | React 19、React Router、TypeScript、Vite+、Rolldown、Oxc | 页面组合、路由导航、类型契约和统一前端工具链                     |
+| 界面基础       | Base UI、Tailwind CSS                                    | 浮层、焦点与键盘交互原语，以及设计令牌和布局样式                 |
+| 服务端状态     | TanStack Query                                           | 请求生命周期、缓存、失效与乐观更新                               |
+| 模块化后端     | Java 21、Spring Boot 4.1、Spring Modulith                | 接口边界、模块化业务用例与依赖拓扑验证                           |
+| 身份与安全     | Spring Security 7、Spring Session Redis                  | 密码（Argon2id）与 OAuth 登录、服务端会话、CSRF/Origin、账户隔离 |
+| 模型与数据访问 | Spring AI、MyBatis-Plus                                  | 模型协议接入、模型网关与持久化适配                               |
+| 对象存储       | AWS SDK for Java v2（S3 兼容）、VersityGW                | Asset 二进制存储，local/CI 使用 VersityGW                        |
+| 持久化         | MySQL 8.4、Flyway                                        | 业务数据与数据库版本治理                                         |
+| 实时与消息     | Redis 7.4、RabbitMQ 4.1                                  | 认证会话、实时发布与订阅、异步报告任务                           |
+| 训练分析       | ECharts                                                  | 能力雷达、分数趋势与薄弱点呈现                                   |
+| 本地运行       | Docker Compose                                           | 本地基础设施与完整容器栈                                         |
 
 shadcn/ui 与 Beautiful UI 仅提供已采用组件的源码结构或组合参考；本地源码、视觉语义与维护责任归 Prelude 所有。
 
@@ -70,8 +72,9 @@ shadcn/ui 与 Beautiful UI 仅提供已采用组件的源码结构或组合参�
 ### 启动基础设施
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up -d mysql redis rabbitmq versitygw
+docker compose ps
 ```
 
 ### 启动应用
@@ -91,7 +94,7 @@ npm --prefix frontend run dev
 
 ## 验证
 
-完整验证命令以 `docs/setup.md#验证` 与 `docs/quality/ui-quality-system.md` 为准，CI 执行与之对齐。GitHub 仅以 `backend` 和 `frontend` 两个职责域作为必需检查项。
+完整验证命令以 [本地开发](docs/setup.md#验证) 与 [界面质量体系](docs/quality/ui-quality-system.md) 为准。CI 包含 `supply-chain`、`backend`、`frontend` 三个 Job：`backend` 与 `supply-chain` 可并行，`frontend` 在 Windows 上显式要求 `supply-chain` 成功后执行；顺序与本地 Grype 复现见 [CI 顺序](docs/setup.md#ci-顺序)。
 
 ## 仓库结构
 
@@ -104,13 +107,16 @@ docs/      环境、架构、质量体系与产品文档资产
 
 ## 文档
 
-| 文档 | 范围 |
-| --- | --- |
-| [本地开发](docs/setup.md) | 工具链、启动模式与完整验证命令 |
-| [后端架构](docs/backend/architecture.md) | 应用模块、依赖边界与持久化规则 |
-| [前端架构](docs/frontend/architecture.md) | React 目录、状态所有权与界面源码所有权 |
-| [界面质量体系](docs/quality/ui-quality-system.md) | 设计令牌、主题、可访问性与视觉验证 |
-| [设计规范](DESIGN.md) | Prelude 视觉与交互规范 |
+| 文档                                              | 范围                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| [60 分钟上手](docs/onboarding.md)                 | 启动顺序、面试调用链、状态真源、修改落点与排障                 |
+| [术语表](GLOSSARY.md)                             | Account、Artifact、Session、Snapshot、Job、Evidence 等统一语义 |
+| [本地开发](docs/setup.md)                         | 工具链、启动模式、CI 顺序与完整验证命令                        |
+| [后端架构](docs/backend/architecture.md)          | 应用模块、依赖边界、状态机与持久化规则                         |
+| [前端架构](docs/frontend/architecture.md)         | React 目录、公共入口、状态所有权与界面源码所有权               |
+| [ADR 索引](docs/adr/README.md)                    | 当前架构决策、后果与验证方式                                   |
+| [界面质量体系](docs/quality/ui-quality-system.md) | 设计令牌、主题、可访问性与视觉验证                             |
+| [设计规范](DESIGN.md)                             | Prelude 视觉与交互规范                                         |
 
 ## 许可证
 

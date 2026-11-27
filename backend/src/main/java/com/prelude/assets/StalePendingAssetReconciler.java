@@ -1,6 +1,6 @@
 package com.prelude.assets;
 
-import com.prelude.assets.application.port.AssetStorage;
+import com.prelude.assets.application.port.AssetRepository;
 import com.prelude.assets.application.port.StaleAssetRef;
 import com.prelude.assets.domain.AssetStatus;
 import jakarta.annotation.PreDestroy;
@@ -15,30 +15,24 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Bounded in-module cleanup of stale PENDING_UPLOAD assets. A stale PENDING
- * row has no business reference yet, so cleanup only needs the object and the
- * metadata row: object deletion failure keeps the row for the next idempotent
- * pass; only a confirmed object delete removes it. Not a background job runtime.
- */
 @Slf4j
 @Component
 public class StalePendingAssetReconciler {
 
     private static final int BATCH_LIMIT = 100;
 
-    private final AssetStorage assetStorage;
+    private final AssetRepository assetRepository;
     private final ObjectStoragePort objectStoragePort;
     private final Duration stalePendingTtl;
     private final ScheduledExecutorService scheduler;
 
     public StalePendingAssetReconciler(
-        AssetStorage assetStorage,
+        AssetRepository assetRepository,
         ObjectStoragePort objectStoragePort,
         @Value("${prelude.storage.stale-pending-ttl:PT24H}") Duration stalePendingTtl,
         @Value("${prelude.storage.reconcile-interval-ms:300000}") long intervalMillis
     ) {
-        this.assetStorage = assetStorage;
+        this.assetRepository = assetRepository;
         this.objectStoragePort = objectStoragePort;
         this.stalePendingTtl = stalePendingTtl;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -61,7 +55,7 @@ public class StalePendingAssetReconciler {
     void reconcileStalePendingAssets() {
         LocalDateTime cutoff = LocalDateTime.now().minus(stalePendingTtl);
         List<StaleAssetRef> staleAssets =
-            assetStorage.findStaleByStatus(AssetStatus.PENDING_UPLOAD, cutoff, BATCH_LIMIT);
+            assetRepository.findStaleByStatus(AssetStatus.PENDING_UPLOAD, cutoff, BATCH_LIMIT);
         for (StaleAssetRef asset : staleAssets) {
             try {
                 objectStoragePort.delete(asset.objectKey());
@@ -71,7 +65,7 @@ public class StalePendingAssetReconciler {
                 continue;
             }
             try {
-                assetStorage.deleteById(asset.assetId());
+                assetRepository.deleteById(asset.assetId());
             } catch (RuntimeException exception) {
                 log.warn("Failed to delete stale pending asset {} metadata; retrying next pass", asset.assetId());
             }

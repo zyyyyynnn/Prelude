@@ -1,10 +1,7 @@
 package com.prelude.artifact.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.List;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public record InterviewReportDraft(
     ReportSummary summary,
     DimensionScores scores,
@@ -15,7 +12,6 @@ public record InterviewReportDraft(
     String reportMarkdown
 ) {
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public record ReportSummary(
         String fitAssessment,
         String actionRecommendation,
@@ -23,7 +19,6 @@ public record InterviewReportDraft(
     ) {
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public record DimensionScores(
         Integer technical,
         Integer expression,
@@ -31,7 +26,6 @@ public record InterviewReportDraft(
     ) {
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public record StageNarrative(
         String stageName,
         String summary,
@@ -41,7 +35,6 @@ public record InterviewReportDraft(
     ) {
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public record TrainingPlan(
         List<String> threeDay,
         List<String> sevenDay,

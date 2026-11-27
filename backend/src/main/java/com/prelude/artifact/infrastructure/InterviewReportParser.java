@@ -1,5 +1,6 @@
 package com.prelude.artifact.infrastructure;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.prelude.artifact.domain.InterviewReportDraft;
@@ -16,18 +17,13 @@ public class InterviewReportParser implements ReportParser {
     private final ObjectMapper objectMapper;
 
     public InterviewReportParser(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
-    @Override
-    public ParsedReport parse(String content) {
-        InterviewReportDraft draft = parseDraft(content);
-        return new ParsedReport(
-            draft.reportMarkdown(),
-            draft.scores().technical(),
-            draft.scores().expression(),
-            draft.scores().logic()
-        );
+        this.objectMapper = objectMapper.rebuild()
+            .addMixIn(InterviewReportDraft.class, IgnoreUnknownProperties.class)
+            .addMixIn(InterviewReportDraft.ReportSummary.class, IgnoreUnknownProperties.class)
+            .addMixIn(InterviewReportDraft.DimensionScores.class, IgnoreUnknownProperties.class)
+            .addMixIn(InterviewReportDraft.StageNarrative.class, IgnoreUnknownProperties.class)
+            .addMixIn(InterviewReportDraft.TrainingPlan.class, IgnoreUnknownProperties.class)
+            .build();
     }
 
     @Override
@@ -142,6 +138,10 @@ public class InterviewReportParser implements ReportParser {
 
     private <T> List<T> safeList(List<T> values) {
         return values == null ? List.of() : values;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private abstract static class IgnoreUnknownProperties {
     }
 
 }

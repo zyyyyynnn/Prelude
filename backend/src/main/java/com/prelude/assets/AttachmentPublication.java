@@ -1,7 +1,7 @@
 package com.prelude.assets;
 
 import com.prelude.BusinessException;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import com.prelude.assets.application.port.AttachmentStorage;
 import com.prelude.assets.application.port.AttachmentStorage.AttachmentRow;
 import lombok.RequiredArgsConstructor;

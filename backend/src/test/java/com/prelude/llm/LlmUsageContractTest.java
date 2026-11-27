@@ -1,6 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class LlmUsageContractTest {
         ModelExecutionService service = service(
             prompt -> response("ok", 7, 3), publisher);
 
-        LlmPort.CompletionResult result = service.complete(request());
+        ModelExecutionPort.CompletionResult result = service.complete(request());
 
         assertThat(result.content()).isEqualTo("ok");
         assertThat(events).hasValue(1);
@@ -74,7 +74,7 @@ class LlmUsageContractTest {
                 }
             });
 
-        LlmPort.CompletionResult result = service.complete(request());
+        ModelExecutionPort.CompletionResult result = service.complete(request());
 
         assertThat(result.content()).isEqualTo("ok");
         assertThat(result.usage().inputTokens()).isNull();
@@ -96,7 +96,7 @@ class LlmUsageContractTest {
                 }
             });
 
-        LlmPort.CompletionResult result = service.complete(request());
+        ModelExecutionPort.CompletionResult result = service.complete(request());
 
         assertThat(result.content()).isEqualTo("ok");
         assertThat(events).hasValue(1);
@@ -208,7 +208,7 @@ class LlmUsageContractTest {
                 throw new IllegalStateException("telemetry unavailable");
             });
 
-        LlmPort.CompletionResult result = service.complete(request());
+        ModelExecutionPort.CompletionResult result = service.complete(request());
 
         assertThat(result.content()).isEqualTo("business-ok");
         assertThat(result.usage().totalTokens()).isEqualTo(2L);
@@ -249,7 +249,7 @@ class LlmUsageContractTest {
         );
     }
 
-    private LlmPort.ModelExecutionRequest request() {
+    private ModelExecutionPort.ModelExecutionRequest request() {
         return LlmFixtures.executionRequest(
             1L, "usage-contract", "usage.contract", LlmFixtures.responseModePlainText(), "hello");
     }

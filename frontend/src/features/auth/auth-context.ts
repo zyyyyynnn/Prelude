@@ -1,11 +1,12 @@
 import { createContext, use } from 'react'
 
-export type AuthStatus = 'checking' | 'authenticated' | 'anonymous'
+export type AuthStatus = 'checking' | 'authenticated' | 'anonymous' | 'unavailable'
 
 export type AuthValue = {
   status: AuthStatus
   accountId: number | null
   expired: boolean
+  retry: () => Promise<void>
   signIn: (accountId: number) => Promise<void>
   signOut: () => Promise<void>
 }

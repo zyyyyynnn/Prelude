@@ -2,11 +2,22 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { formText } from '@/shared/lib/form-data'
 import { ApiClientError } from '@/shared/api/client'
-import { ProfileAvatar } from '@/features/profile'
+import { ProfileAvatar } from './ProfileAvatar'
+import { fetchProfile, saveProfile, uploadAvatar } from './api'
+import { profileQueryKeys } from './query-keys'
+import type { UserProfilePayload } from './types'
+import {
+  activateProfileAccount,
+  beginProfileRevisionRefresh,
+  beginProfileWrite,
+  createProfileWriteState,
+  deactivateProfileAccount,
+  isCurrentProfileWrite,
+  settleProfileRevisionRefresh,
+  settleProfileWrite,
+  type ProfileWriteContext,
+} from './write-state'
 import { useAuth } from '@/features/auth'
-import { fetchProfile, profileQueryKey, saveProfile, uploadAvatar } from '../api'
-import { sectionTitles } from '../settings-context'
-import type { UserProfilePayload } from '../types'
 import { RiEyeLine, RiEyeOffLine, RiUploadLine } from '@remixicon/react'
 import {
   Button,
@@ -25,9 +36,9 @@ import {
 
 type ProfileWrite = { kind: 'save'; payload: UserProfilePayload } | { kind: 'avatar'; file: File }
 
-export function ProfilePanel() {
+export function ProfilePanel({ title }: { title: string }) {
   const auth = useAuth()
-  const queryKey = profileQueryKey(auth.accountId ?? 0)
+  const queryKey = profileQueryKeys.detail(auth.accountId ?? 0)
   const profile = useQuery({
     queryKey,
     queryFn: ({ signal }) => fetchProfile(signal),
@@ -36,77 +47,62 @@ export function ProfilePanel() {
   const client = useQueryClient()
   const feedback = useFeedback()
   const avatarInput = useRef<HTMLInputElement>(null)
-  const mounted = useRef(true)
-  const activeWrite = useRef(false)
-  const writeSequence = useRef(0)
-  const revisionRefreshPending = useRef(false)
+  const accountWrite = useRef(createProfileWriteState())
   const [refreshingRevision, setRefreshingRevision] = useState(false)
   const [oldVisible, setOldVisible] = useState(false)
   const [newVisible, setNewVisible] = useState(false)
 
   useEffect(() => {
-    mounted.current = true
+    accountWrite.current = activateProfileAccount(accountWrite.current, auth.accountId)
     return () => {
-      mounted.current = false
+      accountWrite.current = deactivateProfileAccount(accountWrite.current)
     }
-  }, [])
+  }, [auth.accountId])
 
   const write = useMutation({
-    mutationFn: ({ operation }: { operation: ProfileWrite; sequence: number }) =>
+    mutationFn: ({ operation }: { operation: ProfileWrite; context: ProfileWriteContext }) =>
       operation.kind === 'save' ? saveProfile(operation.payload) : uploadAvatar(operation.file),
-    onMutate: ({ sequence }) => {
+    onMutate: ({ context }) => {
       void client.cancelQueries({ queryKey })
-      return { sequence, accountId: auth.accountId }
+      return context
     },
-    onSuccess: (data, _, context) => {
+    onSuccess: (data, { operation }, context) => {
       if (
-        !mounted.current ||
-        context.sequence !== writeSequence.current ||
+        !isCurrentProfileWrite(accountWrite.current, context) ||
         data.accountId !== context.accountId
-      ) {
-        return
-      }
-      client.setQueryData(queryKey, data)
-      feedback.notify(
-        write.variables?.operation.kind === 'avatar' ? '头像已更新' : '资料已保存',
-        'success',
       )
+        return
+      accountWrite.current = settleProfileWrite(accountWrite.current, context)
+      client.setQueryData(queryKey, data)
+      feedback.notify(operation.kind === 'avatar' ? '头像已更新' : '资料已保存', 'success')
     },
     onError: (error, _, context) => {
-      if (!mounted.current || !context || context.sequence !== writeSequence.current) return
+      if (!isCurrentProfileWrite(accountWrite.current, context)) return
       if (error instanceof ApiClientError && error.status === 409) {
-        revisionRefreshPending.current = true
+        accountWrite.current = beginProfileRevisionRefresh(accountWrite.current, context)
         setRefreshingRevision(true)
         void profile.refetch().finally(() => {
-          if (mounted.current && context.sequence === writeSequence.current) {
-            revisionRefreshPending.current = false
-            setRefreshingRevision(false)
-          }
+          if (!isCurrentProfileWrite(accountWrite.current, context)) return
+          accountWrite.current = settleProfileRevisionRefresh(accountWrite.current, context)
+          setRefreshingRevision(false)
         })
+      } else {
+        accountWrite.current = settleProfileWrite(accountWrite.current, context)
       }
       feedback.notify(error.message, 'error')
-    },
-    onSettled: (_, __, context) => {
-      if (context.sequence === writeSequence.current) activeWrite.current = false
     },
   })
 
   function beginWrite(operation: ProfileWrite) {
-    if (
-      activeWrite.current ||
-      revisionRefreshPending.current ||
-      !profile.data ||
-      auth.accountId == null
-    ) {
-      return
-    }
-    activeWrite.current = true
-    write.mutate({ operation, sequence: ++writeSequence.current })
+    const next = beginProfileWrite(accountWrite.current)
+    if (!next || !profile.data) return
+    accountWrite.current = next.state
+    write.mutate({ operation, context: next.context })
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (activeWrite.current || revisionRefreshPending.current) return
+    if (accountWrite.current.phase !== 'idle') return
     const data = new FormData(event.currentTarget)
     const oldPassword = formText(data, 'oldPassword')
     const newPassword = formText(data, 'newPassword')
@@ -142,7 +138,7 @@ export function ProfilePanel() {
 
   return (
     <Panel
-      title={sectionTitles.profile}
+      title={title}
       actions={
         <Button
           type="submit"

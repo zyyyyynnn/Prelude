@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 public final class SessionFixtures {
 
@@ -53,7 +52,7 @@ public final class SessionFixtures {
         InterviewSession session = new InterviewSession();
         session.setId(id);
         session.setAccountId(accountId);
-        session.setStatus(status);
+        session.setStatus(com.prelude.interview.integration.InterviewSessionStatus.fromWire(status));
         return session;
     }
 
@@ -61,7 +60,7 @@ public final class SessionFixtures {
         InterviewSession session = new InterviewSession();
         session.setId(id);
         session.setAccountId(accountId);
-        session.setStatus(status);
+        session.setStatus(com.prelude.interview.integration.InterviewSessionStatus.fromWire(status));
         session.setSummaryReport(summaryReport);
         return session;
     }
@@ -69,7 +68,7 @@ public final class SessionFixtures {
     public static InterviewSession create(long id, String status, String summaryReport) {
         InterviewSession session = new InterviewSession();
         session.setId(id);
-        session.setStatus(status);
+        session.setStatus(com.prelude.interview.integration.InterviewSessionStatus.fromWire(status));
         session.setSummaryReport(summaryReport);
         return session;
     }
@@ -267,13 +266,13 @@ public final class SessionFixtures {
         public final InterviewStagePolicy stagePolicy = new InterviewStagePolicy();
         public final List<InterviewStage> stages = new ArrayList<>();
         public final List<InterviewMessage> messages = new ArrayList<>();
-        public final AtomicLong messageSeq = new AtomicLong();
         public final InterviewStageManager stageManager;
 
         public StageManagerHarness(InterviewMessageService messageService, Long sessionId) {
             this.stageManager = new InterviewStageManager(
                 stageRepository, sessionRepository, messageRepository, messageService, stagePolicy);
-            Mockito.when(sessionRepository.lockAppendOrder(Mockito.eq(sessionId))).thenReturn("ongoing");
+            Mockito.when(sessionRepository.lockAppendOrder(Mockito.eq(sessionId)))
+                .thenReturn(com.prelude.interview.integration.InterviewSessionStatus.ONGOING);
             Mockito.when(stageRepository.findCurrent(Mockito.eq(sessionId))).thenAnswer(invocation -> stages.stream()
                 .filter(stage -> stage.getEndedAt() == null)
                 .findFirst()
@@ -293,13 +292,15 @@ public final class SessionFixtures {
             });
             Mockito.when(stageRepository.update(Mockito.any(InterviewStage.class))).thenReturn(1);
             Mockito.when(messageRepository.listBySession(Mockito.eq(sessionId))).thenAnswer(invocation -> List.copyOf(messages));
-            Mockito.when(messageService.insertMessage(Mockito.eq(sessionId), Mockito.anyString(), Mockito.anyString()))
+            Mockito.when(messageRepository.findLatestForAppend(Mockito.eq(sessionId))).thenAnswer(invocation ->
+                messages.isEmpty() ? null : messages.get(messages.size() - 1));
+            Mockito.when(messageService.insertSystemMessage(Mockito.eq(sessionId), Mockito.anyString()))
                 .thenAnswer(invocation -> {
                     InterviewMessage message = new InterviewMessage();
                     message.setSessionId(sessionId);
-                    message.setRole(invocation.getArgument(1));
-                    message.setContent(invocation.getArgument(2));
-                    message.setSeqNum((int) messageSeq.incrementAndGet());
+                    message.setRole("system");
+                    message.setContent(invocation.getArgument(1));
+                    message.setSeqNum(messages.isEmpty() ? 0 : messages.get(messages.size() - 1).getSeqNum() + 1);
                     messages.add(message);
                     return message;
                 });
@@ -310,6 +311,7 @@ public final class SessionFixtures {
             stage.setSessionId(sessionId);
             stage.setStageName(name);
             stage.setStartedAt(java.time.LocalDateTime.now());
+            stage.setBoundarySeq(-1);
             return stage;
         }
 

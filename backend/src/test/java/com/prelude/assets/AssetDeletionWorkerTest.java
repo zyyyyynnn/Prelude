@@ -2,8 +2,8 @@ package com.prelude.assets;
 
 import com.prelude.assets.application.port.AssetDeletionStore;
 import com.prelude.assets.application.port.AssetDeletionStore.DeletionRequest;
-import com.prelude.assets.application.port.AssetLookup;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -25,17 +25,17 @@ import static org.mockito.Mockito.when;
 class AssetDeletionWorkerTest {
 
     private final AssetDeletionStore deletionStore = mock(AssetDeletionStore.class);
-    private final AssetLookup assetLookup = mock(AssetLookup.class);
+    private final AssetRepository assetRepository = mock(AssetRepository.class);
     private final ObjectStoragePort objectStoragePort = mock(ObjectStoragePort.class);
     private final AssetDeletionProperties properties = new AssetDeletionProperties(
         7, Duration.ofSeconds(1), Duration.ofSeconds(8), Duration.ofMinutes(5));
     private final AssetDeletionService service = new AssetDeletionService(
-        deletionStore, assetLookup, objectStoragePort, properties);
+        deletionStore, assetRepository, objectStoragePort, properties);
     private final DeletionRequest request = new DeletionRequest(1L, 10L, 100L, "object-key", 1);
 
     @BeforeEach
     void setUp() {
-        when(assetLookup.findById(100L)).thenReturn(asset(10L, "object-key"));
+        when(assetRepository.findById(100L)).thenReturn(asset(10L, "object-key"));
     }
 
     @Test
@@ -68,7 +68,7 @@ class AssetDeletionWorkerTest {
 
     @Test
     void crossAccountAssetIsBlockedBeforeObjectStorageIsTouched() {
-        when(assetLookup.findById(100L)).thenReturn(asset(11L, "object-key"));
+        when(assetRepository.findById(100L)).thenReturn(asset(11L, "object-key"));
         when(deletionStore.claimDue(eq(7), any(), eq(Duration.ofMinutes(5))))
             .thenReturn(List.of(request));
 
@@ -81,7 +81,7 @@ class AssetDeletionWorkerTest {
 
     @Test
     void changedObjectKeyIsBlockedBeforeObjectStorageIsTouched() {
-        when(assetLookup.findById(100L)).thenReturn(asset(10L, "different-key"));
+        when(assetRepository.findById(100L)).thenReturn(asset(10L, "different-key"));
         when(deletionStore.claimDue(eq(7), any(), eq(Duration.ofMinutes(5))))
             .thenReturn(List.of(request));
 

@@ -1,3 +1,7 @@
+import type { ThemePreference } from '@/features/profile'
+
+export type { ThemePreference } from '@/features/profile'
+
 /** Reasoning levels come from the backend capability catalog — never guessed. */
 export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
 
@@ -71,26 +75,6 @@ export type LlmCapabilityDiscoveryPayload = {
   apiKey?: string
   model: string
 }
-
-export type UserProfilePayload = {
-  username?: string
-  email?: string
-  oldPassword?: string
-  newPassword?: string
-  themePreference?: ThemePreference
-  expectedRevision: number
-  operationId: string
-}
-export type UserProfileResponse = {
-  accountId: number
-  username?: string
-  email?: string
-  avatarUrl?: string
-  themePreference?: ThemePreference
-  revision: number
-}
-
-export type ThemePreference = 'light' | 'dark' | 'system'
 
 /** The theme choices as the settings panel and the gallery both show them. */
 export const themeOptions: Array<{

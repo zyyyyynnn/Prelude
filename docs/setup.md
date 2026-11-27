@@ -6,17 +6,28 @@
 - Java 与 Maven，具体要求见 `backend/pom.xml`
 - Node.js 与 npm，具体要求见 `frontend/package.json`
 - Docker Desktop
+- 可选：Grype 0.122.1，用于本地复现 CI 的 SBOM 漏洞门禁；本机路径为 `C:\Users\ZYN\go\bin\grype.exe`
 
 ## 启动
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up -d mysql redis rabbitmq versitygw
+docker compose ps
 ```
+
+按以下顺序启动并确认上层依赖可用：
+
+1. MySQL、Redis、RabbitMQ、VersityGW 健康。
+2. 后端启动，`http://127.0.0.1:8080/actuator/health` 可用。
+3. 前端启动，`http://127.0.0.1:5173` 可访问。
+4. 配置文字模型；语音另需部署级 `OPENAI_API_KEY`，按需设置 `OPENAI_BASE_URL`。语音不读取聊天 BYOK 凭据。
 
 基础设施端口（MySQL 13306、Redis 16379、RabbitMQ 5672、S3 19000）与 app 的 8080/5173 只发布到 `127.0.0.1`：这套栈的凭据是仓库公开默认值。需要别的设备访问时，改 `docker-compose.yml` 对应映射，并同步 `S3_PUBLIC_ENDPOINT` 与 `application.yml` 的 `app.cors.allowed-origins`（默认放行 localhost/127.0.0.1:5173）。CORS 与 WebSocket 共用该显式 Origin 列表，并始终允许 same-origin；不允许 `*`。
 
-生产部署使用 `prod` profile 时必须设置 `SESSION_COOKIE_SECURE=true`，否则启动失败。密码登录与注册默认按远端地址和端点执行 Redis 令牌桶限流；可通过 `PRELUDE_AUTH_RATE_LIMIT_ENABLED=false` 关闭，容量与速率见 `application.yml`。nginx 用 `$remote_addr` 覆盖 `X-Forwarded-For` 并清除其他转发头，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
+生产部署使用 `prod` profile 时必须设置 `SESSION_COOKIE_SECURE=true`，否则启动失败。密码登录与注册默认按远端地址和端点执行 Redis 令牌桶限流；可通过 `PRELUDE_AUTH_RATE_LIMIT_ENABLED=false` 关闭，容量与速率见 `application.yml`。Redis 限流不可用时登录/注册返回 `503 rate_limit_unavailable`，前端显示服务端 detail 的系统 toast，不当作密码错误。启动探测 `/api/auth/me` 的 401 按匿名处理；网络失败、非 OK 响应或畸形数据进入 `unavailable`，保留原路由并提供重试。普通业务 API 的 401 才触发 Session 失效提示并清空账户 Query cache。
+
+nginx 用 `$remote_addr` 覆盖 `X-Forwarded-For` 并清除其他转发头，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
 
 后端：
 
@@ -39,6 +50,8 @@ npm --prefix frontend run dev
 
 ## 验证
 
+先运行编译、类型与静态门禁，再运行测试、构建与浏览器验证。以下命令以仓库根为工作目录；在 `frontend/` 下改用 `npm run X`。
+
 ```powershell
 mvn -f backend/pom.xml clean test
 mvn -f backend/pom.xml -Pquality cyclonedx:makeBom
@@ -50,33 +63,49 @@ npm --prefix frontend run verify:oxc
 npm --prefix frontend run verify:governance
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
-npm --prefix frontend run verify:demo-copy
 npm --prefix frontend run test:unit
+npm --prefix frontend run test:smoke
+npm --prefix frontend run verify:identity
+npm --prefix frontend run build
+npm --prefix frontend run verify:cascade
+npm --prefix frontend run verify:production
 npm --prefix frontend run verify:byok
 npm --prefix frontend run verify:dark
 npm --prefix frontend run verify:a11y
 npm --prefix frontend run verify:visual
+npm --prefix frontend run verify:evidence
 npm --prefix frontend run capture:surfaces
-npm --prefix frontend run build
-npm --prefix frontend run verify:cascade
-npm --prefix frontend run verify:production
-npm --prefix frontend run test:smoke
-npm --prefix frontend run verify:identity
+npm --prefix frontend run verify:demo-copy
+npm --prefix frontend run visual:diff-report
 git diff --check
 ```
 
-以上 `npm --prefix frontend run X` 以仓库根为工作目录；在 `frontend/` 下改用 `npm run X`。`capture:surfaces` 在提交前更新证据，提交后执行 `npm --prefix frontend run verify:evidence` 验证干净工作树。各门禁的断言范围见 `docs/quality/ui-quality-system.md`。
+`verify:cascade` 必须在 `build` 之后。`capture:surfaces` 在提交前更新证据，提交后执行 `verify:evidence` 验证干净工作树；前端输入有未提交改动时，该门禁按设计失败。SBOM 的 Grype 扫描命令见[依赖与证据门禁](#依赖与证据门禁)。各门禁断言范围见 [UI 质量体系](quality/ui-quality-system.md)。
+
+### CI 顺序
+
+| Job            | 依赖                          | 执行顺序                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supply-chain` | 无，可与 `backend` 并行       | checkout → Java 21/Node 24 → `npm ci` → backend runtime SBOM → frontend runtime SBOM → `verify:licenses` → Grype 扫描 backend → Grype 扫描 frontend → 上传 SBOM 与漏洞证据                                                                                                                                                                                                                                                                                                                |
+| `backend`      | 无，可与 `supply-chain` 并行  | 完整历史 checkout → `git diff --check <merge-base> HEAD` → Java 21 → `mvn clean test`；MySQL/Identity/S3 smoke 均为 `true`                                                                                                                                                                                                                                                                                                                                                                |
+| `frontend`     | 先要求 `supply-chain` success | Windows checkout（完整历史）→ Vite+ Node 24 → `npm ci` → task cache → 安装锁定的 Chromium → `check` → `verify:architecture` → `verify:oxc` → `verify:governance` → `verify:ui` → `verify:tokens` → `test:unit` → `test:smoke` → `verify:identity` → `build` → `verify:cascade` → `verify:production` → `verify:byok` → `verify:dark` → `verify:a11y` → `verify:visual` → `verify:evidence` → `capture:surfaces` → 截图差异检查 → `verify:demo-copy` → `visual:diff-report` → 上传视觉证据 |
+
+`frontend` 使用 `always()` 进入结果检查，但 supply-chain 非 success 时显式失败，不继续执行前端门禁。
 
 ### 依赖与证据门禁
 
 后端 `quality` profile 使用 CycloneDX Maven Plugin 2.9.3 生成 `backend/target/bom.json`，前端使用 `@cyclonedx/cyclonedx-npm` 7.0.1 生成 `frontend/output/sbom.cdx.json`。两份 SBOM 均为 CycloneDX 1.6，只包含 compile/runtime 或非 dev 依赖。
 
-CI 对两份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。本地安装同版本 Grype 后可复现：
+CI 对两份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。`.grype.yaml` 仅忽略 `CVE-2026-133325`：Prelude 的内嵌 Tomcat 未启用 clustering 或 TLS-PSK，受影响路径不可达；Tomcat 11.0.30 发布到 Maven Central 后须重新评估并移除该例外。本机 Grype 安装在 `C:\Users\ZYN\go\bin\grype.exe`，确认版本后复现：
 
 ```powershell
-grype sbom:backend/target/bom.json --fail-on high --output json --file backend/target/vulnerabilities.json
-grype sbom:frontend/output/sbom.cdx.json --fail-on high --output json --file frontend/output/vulnerabilities.json
+$grype = "C:\Users\ZYN\go\bin\grype.exe"
+& $grype version
+& $grype sbom:backend/target/bom.json --fail-on high --output json --file backend/target/vulnerabilities.json
+& $grype sbom:frontend/output/sbom.cdx.json --fail-on high --output json --file frontend/output/vulnerabilities.json
 ```
+
+版本必须为 0.122.1；若 `grype version` 显示 `[not provided]`，用 `go version -m $grype` 核对模块行。其他工作站可替换 `$grype` 路径。
 
 `verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
 
@@ -91,6 +120,19 @@ grype sbom:frontend/output/sbom.cdx.json --fail-on high --output json --file fro
 - `PRELUDE_S3_SMOKE=true`：Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
 
 开关未设置时对应测试跳过。`PreludeApplicationTest` 无开关，加载完整应用上下文；Spring Session 在装配阶段连接 Redis，因此 `mvn clean test` 仍需要上面 `docker compose up -d` 的服务在跑。本机无法拉取 `testcontainers/ryuk` 时设置 `TESTCONTAINERS_RYUK_DISABLED=true`。
+
+## 运行时状态与提交边界
+
+| 机制             | 当前行为                                                                                                                     | 排障证据                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| InterviewSession | `ongoing → generating → finished`；失败/取消可回到 `ongoing`；仅 `ongoing` 接受消息                                          | `interview_session.status`、`FinishInterviewStatusRaceTest`        |
+| InterviewStage   | 目录顺序为 `warmup → technical → deep_dive → closing`；`boundary_seq` 标记阶段起点，`awaiting_answer` 标记待答；配额 1/2/2/1 | `interview_stage`、`InterviewStageManagerTest`                     |
+| Assessment       | 用户消息初始 PENDING，评分完成 SCORED，模型失败 UNSCORED；收尾时仍有 PENDING 会返回 `assessment_pending`                     | `interview_message.assessment_status`、judge retry 日志            |
+| Retrieval        | 开面 index 与删除 invalidate 都通过 `RetrievalTransactions.afterCommit`；invalidation 失败时 scope 在重试成功前不可见        | `retrieval_indexed`、`retrieval_invalidate_*`、`retrieval_rebuilt` |
+| Job publication  | 业务事务提交后才外发 RabbitMQ；未完成 publication 与过期 RUNNING 租约有界恢复                                                | `EVENT_PUBLICATION`、`background_job`、`job_attempt`、DLQ          |
+| Asset 删除       | 业务引用与删除意图同事务；worker 先删对象，再按 attempt fence 删元数据；接口返回不代表物理删除已完成                         | `asset_deletion_request` 的 PENDING/RUNNING/BLOCKED 与 worker 日志 |
+
+完整调用链与故障处理见 [onboarding.md](onboarding.md#排障入口)。
 
 ## 视觉基线与界面资产
 

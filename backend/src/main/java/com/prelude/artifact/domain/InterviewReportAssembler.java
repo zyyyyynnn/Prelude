@@ -4,9 +4,9 @@ import com.prelude.artifact.domain.InterviewReportDraft;
 import com.prelude.artifact.domain.StructuredInterviewReport;
 import com.prelude.interview.api.port.InterviewMessageSnapshot;
 import com.prelude.interview.api.port.InterviewStageSnapshot;
+import com.prelude.interview.integration.InterviewStageCatalog;
 import com.prelude.artifact.domain.AccountWeakness;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -14,10 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@org.springframework.stereotype.Component
 public class InterviewReportAssembler {
 
-    private static final List<String> STAGE_ORDER = List.of("warmup", "technical", "deep_dive", "closing");
     private static final int ANSWER_SUMMARY_LIMIT = 180;
 
     public StructuredInterviewReport assemble(
@@ -29,7 +27,8 @@ public class InterviewReportAssembler {
         InterviewReportDraft safeDraft = Objects.requireNonNull(draft, "report draft must not be null");
         List<InterviewStageSnapshot> orderedStages = safeList(stages).stream()
             .filter(Objects::nonNull)
-            .sorted(Comparator.comparing(InterviewStageSnapshot::startedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+            .sorted(Comparator.comparingInt(InterviewStageSnapshot::boundarySeq)
+                .thenComparing(InterviewStageSnapshot::id, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
         List<InterviewMessageSnapshot> orderedMessages = safeList(messages).stream()
             .filter(Objects::nonNull)
@@ -38,8 +37,8 @@ public class InterviewReportAssembler {
 
         Map<String, InterviewReportDraft.StageNarrative> narratives = new LinkedHashMap<>();
         for (InterviewReportDraft.StageNarrative narrative : safeList(safeDraft.stagePerformances())) {
-            if (narrative != null && STAGE_ORDER.contains(narrative.stageName())) {
-                narratives.put(narrative.stageName(), narrative);
+            if (narrative != null) {
+                narratives.put(InterviewStageCatalog.require(narrative.stageName()).wireName(), narrative);
             }
         }
 
@@ -47,8 +46,7 @@ public class InterviewReportAssembler {
             orderedStages, orderedMessages, narratives
         );
         List<String> persistedStageNames = orderedStages.stream()
-            .map(InterviewStageSnapshot::stageName)
-            .filter(STAGE_ORDER::contains)
+            .map(stage -> InterviewStageCatalog.require(stage.stageName()).wireName())
             .distinct()
             .toList();
         List<String> reportStageNames = persistedStageNames.isEmpty()
@@ -57,7 +55,10 @@ public class InterviewReportAssembler {
                 .distinct()
                 .toList()
             : persistedStageNames;
-        List<StructuredInterviewReport.StagePerformance> stagePerformances = reportStageNames.stream()
+        List<String> orderedReportStageNames = reportStageNames.stream()
+            .sorted(Comparator.comparingInt(stageName -> InterviewStageCatalog.require(stageName).order()))
+            .toList();
+        List<StructuredInterviewReport.StagePerformance> stagePerformances = orderedReportStageNames.stream()
             .map(stageName -> buildStagePerformance(
                 stageName,
                 hasAnswerEvidence(stageName, questionReviews) ? narratives.get(stageName) : null,
@@ -112,7 +113,7 @@ public class InterviewReportAssembler {
             if (!"user".equals(message.role()) || isBlank(message.content())) {
                 continue;
             }
-            String stageName = resolveStageName(stages, message.createdAt());
+            String stageName = resolveStageName(stages, message.seqNum());
             InterviewReportDraft.StageNarrative narrative = narratives.get(stageName);
             reviews.add(new StructuredInterviewReport.QuestionReview(
                 stageName,
@@ -158,24 +159,16 @@ public class InterviewReportAssembler {
         return reviews.stream().anyMatch(review -> stageName.equals(review.stageName()));
     }
 
-    private String resolveStageName(List<InterviewStageSnapshot> stages, LocalDateTime createdAt) {
-        if (createdAt != null) {
-            for (InterviewStageSnapshot stage : stages) {
-                LocalDateTime start = stage.startedAt();
-                LocalDateTime end = stage.endedAt();
-                if (start != null && !createdAt.isBefore(start) && (end == null || createdAt.isBefore(end))) {
-                    return normalizeStage(stage.stageName());
+    private String resolveStageName(List<InterviewStageSnapshot> stages, Integer seqNum) {
+        if (seqNum != null) {
+            for (int index = stages.size() - 1; index >= 0; index--) {
+                InterviewStageSnapshot stage = stages.get(index);
+                if (seqNum > stage.boundarySeq()) {
+                    return InterviewStageCatalog.require(stage.stageName()).wireName();
                 }
             }
         }
-        if (!stages.isEmpty()) {
-            return normalizeStage(stages.getFirst().stageName());
-        }
-        return "warmup";
-    }
-
-    private String normalizeStage(String stageName) {
-        return STAGE_ORDER.contains(stageName) ? stageName : "warmup";
+        throw new IllegalStateException("No interview stage contains message sequence " + seqNum);
     }
 
     private String improvementSuggestion(InterviewReportDraft.StageNarrative narrative) {

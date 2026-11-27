@@ -1,6 +1,6 @@
 # Prelude UI 设计规范
 
-本文件是 Prelude 前端视觉、交互与数据展示的最高规范。技术栈为 React、Base UI 与 Tailwind CSS。
+本文件是 Prelude 前端视觉、交互与数据展示的最高规范。技术栈为 React、Base UI 与 Tailwind CSS；开发、检查、构建与预览由 Vite+ 统一驱动，生产转换与压缩使用 Rolldown/Oxc。
 
 ## 视觉基础
 
@@ -65,21 +65,21 @@ Prelude 使用克制的暖色纸感视觉。页面背景、组件表面、文字
 
 标题、指标、标签与正文的常见配对固定为十三个语义角色，页面选择角色：
 
-| 角色 | 用途 | 组合 |
-| --- | --- | --- |
-| `type-eyebrow` | 标题上方的引导标签 | serif `xs` / medium / `tight` / tertiary |
-| `type-metric` | 大号数字指标 | serif `xl` / medium / `display` / primary |
-| `type-hero` | 页面级大标题（认证、终态页、面试空态） | serif `2xl` / medium / `display` / primary |
-| `type-document-title` | 文档面主标题（报告的 `h1`） | serif `xl` / medium / `display` / primary |
-| `type-title` | 区块主标题 | serif `lg` / medium / `tight` / primary |
-| `type-subtitle` | 次级标题 | serif `md` / medium / `compact` / primary |
-| `type-label` | 字段与条目名称 | serif `sm` / medium / `compact` / secondary |
-| `type-body` | 成段正文 | sans `sm` / regular / `relaxed` / secondary |
-| `type-copy` | 阅读正文（copy 行高） | sans `sm` / `copy` / secondary |
-| `type-caption` | 图注与气泡时间戳 | serif `xs` / tertiary（行高取 Tailwind `text-xs` 自带值） |
-| `type-reading` | 报告正文（报告阅读宽度） | sans `sm` / `copy` / secondary / `--content-reading-max-inline-size` |
-| `type-lead` | 页面导语（正文 + 阅读宽度） | sans `sm` / regular / `relaxed` / secondary / `--layout-lead-max-inline-size` |
-| `type-meta` | 计数、时间、辅助说明 | sans `xs` / regular / `compact` / tertiary |
+| 角色                  | 用途                                   | 组合                                                                          |
+| --------------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `type-eyebrow`        | 标题上方的引导标签                     | serif `xs` / medium / `tight` / tertiary                                      |
+| `type-metric`         | 大号数字指标                           | serif `xl` / medium / `display` / primary                                     |
+| `type-hero`           | 页面级大标题（认证、终态页、面试空态） | serif `2xl` / medium / `display` / primary                                    |
+| `type-document-title` | 文档面主标题（报告的 `h1`）            | serif `xl` / medium / `display` / primary                                     |
+| `type-title`          | 区块主标题                             | serif `lg` / medium / `tight` / primary                                       |
+| `type-subtitle`       | 次级标题                               | serif `md` / medium / `compact` / primary                                     |
+| `type-label`          | 字段与条目名称                         | serif `sm` / medium / `compact` / secondary                                   |
+| `type-body`           | 成段正文                               | sans `sm` / regular / `relaxed` / secondary                                   |
+| `type-copy`           | 阅读正文（copy 行高）                  | sans `sm` / `copy` / secondary                                                |
+| `type-caption`        | 图注与气泡时间戳                       | serif `xs` / tertiary（行高取 Tailwind `text-xs` 自带值）                     |
+| `type-reading`        | 报告正文（报告阅读宽度）               | sans `sm` / `copy` / secondary / `--content-reading-max-inline-size`          |
+| `type-lead`           | 页面导语（正文 + 阅读宽度）            | sans `sm` / regular / `relaxed` / secondary / `--layout-lead-max-inline-size` |
+| `type-meta`           | 计数、时间、辅助说明                   | sans `xs` / regular / `compact` / tertiary                                    |
 
 行高由字号决定：同一字号只对应一种行高。角色表收的是重复配对；一处出现的组合用原子类显式写，同一组合在两个及以上拥有者里重复才升为角色；调用点使用角色名。
 

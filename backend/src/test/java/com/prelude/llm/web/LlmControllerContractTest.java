@@ -1,6 +1,7 @@
 package com.prelude.llm;
 
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelConfigurationPort;
+import com.prelude.llm.api.ModelDiscoveryPort;
 import com.prelude.llm.web.LlmController;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.LlmFixtures;
@@ -25,9 +26,10 @@ class LlmControllerContractTest {
 
     @Test
     void providersEndpointExposesTheCanonicalProviderAndModelCapabilityShape() throws Exception {
-        LlmPort llmPort = mock(LlmPort.class);
+        ModelConfigurationPort configurationPort = mock(ModelConfigurationPort.class);
+        ModelDiscoveryPort discoveryPort = mock(ModelDiscoveryPort.class);
         var currentAccount = AccountFixtures.current(7L);
-        when(llmPort.listModels()).thenReturn(List.of(
+        when(discoveryPort.listModels()).thenReturn(List.of(
             LlmFixtures.providerDescriptor(
                 "deepseek",
                 "DeepSeek",
@@ -41,7 +43,8 @@ class LlmControllerContractTest {
                 List.of()
             )
         ));
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new LlmController(llmPort, currentAccount)).build();
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(
+            new LlmController(configurationPort, discoveryPort, currentAccount)).build();
 
         mvc.perform(get("/api/llm/providers"))
             .andExpect(status().isOk())
@@ -60,14 +63,15 @@ class LlmControllerContractTest {
 
     @Test
     void selectedCustomModelCapabilityEndpointReturnsBackendConfirmedReasoningLevels() throws Exception {
-        LlmPort llmPort = mock(LlmPort.class);
+        ModelDiscoveryPort discoveryPort = mock(ModelDiscoveryPort.class);
         var currentAccount = AccountFixtures.current(7L);
-        when(llmPort.discoverCustomModelCapability(eq(7L), any()))
+        when(discoveryPort.discoverCustomModelCapability(eq(7L), any()))
             .thenReturn(LlmFixtures.customCapability(
                 "openai-chat-completions",
                 "account-model",
                 LlmFixtures.allReasoningLevels()));
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new LlmController(llmPort, currentAccount)).build();
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(
+            new LlmController(mock(ModelConfigurationPort.class), discoveryPort, currentAccount)).build();
 
         mvc.perform(post("/api/llm/config/discover-capabilities")
                 .contentType("application/json")
@@ -89,13 +93,14 @@ class LlmControllerContractTest {
 
     @Test
     void configurationWriteUsesCanonicalMaxOutputTokensField() throws Exception {
-        LlmPort llmPort = mock(LlmPort.class);
+        ModelConfigurationPort configurationPort = mock(ModelConfigurationPort.class);
         var currentAccount = AccountFixtures.current(7L);
-        when(llmPort.saveConfiguration(eq(7L), any()))
+        when(configurationPort.saveConfiguration(eq(7L), any()))
             .thenReturn(LlmFixtures.configView(
                 "deepseek", "deepseek-v4-pro", null, false, null, "HIGH", 8192, List.of(),
                 LlmFixtures.capability("deepseek", "deepseek-v4-pro")));
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new LlmController(llmPort, currentAccount)).build();
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(
+            new LlmController(configurationPort, mock(ModelDiscoveryPort.class), currentAccount)).build();
 
         mvc.perform(put("/api/llm/config")
                 .contentType("application/json")
@@ -111,7 +116,7 @@ class LlmControllerContractTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.maxOutputTokens").value(8192));
 
-        int tokens = LlmFixtures.captureSavedMaxOutputTokens(llmPort, 7L);
+        int tokens = LlmFixtures.captureSavedMaxOutputTokens(configurationPort, 7L);
         assertThat(tokens).isEqualTo(8192);
     }
 }

@@ -2,8 +2,8 @@ package com.prelude.assets;
 
 import com.prelude.assets.application.port.AssetDeletionStore;
 import com.prelude.assets.application.port.AssetDeletionStore.DeletionRequest;
-import com.prelude.assets.application.port.AssetLookup;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ import java.util.Objects;
 class AssetDeletionService {
 
     private final AssetDeletionStore deletionStore;
-    private final AssetLookup assetLookup;
+    private final AssetRepository assetRepository;
     private final ObjectStoragePort objectStoragePort;
     private final AssetDeletionProperties properties;
 
@@ -39,7 +39,7 @@ class AssetDeletionService {
 
     private void process(DeletionRequest request) {
         try {
-            AssetRow asset = assetLookup.findById(request.assetId());
+            AssetRow asset = assetRepository.findById(request.assetId());
             if (asset != null
                 && (!Objects.equals(asset.accountId(), request.accountId())
                     || !Objects.equals(asset.objectKey(), request.objectKey()))) {

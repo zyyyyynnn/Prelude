@@ -1,8 +1,8 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.llm.api.LlmPort.FreezeSnapshotCommand;
-import com.prelude.llm.api.LlmPort.FrozenModelConfiguration;
+import com.prelude.llm.api.ModelExecutionPort.FreezeSnapshotCommand;
+import com.prelude.llm.api.ModelExecutionPort.FrozenModelConfiguration;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore;

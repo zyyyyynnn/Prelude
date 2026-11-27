@@ -8,12 +8,16 @@ import '@fontsource-variable/jetbrains-mono'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/noto-serif-sc'
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import { sectionTitles } from '@/features/settings/settings-context'
 import { initializeTheme } from '@/features/settings/theme'
 import { AccountProfileSync } from './AccountProfileSync'
 import { FeedbackProvider } from '@/shared/ui'
 import { queryClient } from './query-client'
 import { NotFoundPage } from './routes/NotFoundPage'
 import { RequireAuth } from './RequireAuth'
+import { ProfilePanel } from '@/features/profile'
+import { PositionManagementPanel } from '@/features/position'
+import { ResumeManagementPanel } from '@/features/resume'
 import './styles.css'
 
 const router = createBrowserRouter([
@@ -37,29 +41,23 @@ const router = createBrowserRouter([
       {
         path: '/',
         lazy: async () => {
-          const [
-            { AppShell },
-            { SettingsProvider },
-            { ResumeManagementPanel },
-            { PositionManagementPanel },
-          ] = await Promise.all([
+          const [{ AppShell }, { SettingsProvider }] = await Promise.all([
             import('./shell/AppShell'),
             import('@/features/settings/SettingsModal'),
-            import('@/features/resume/ResumeManagementPanel'),
-            import('@/features/position/PositionManagementPanel'),
           ])
           return {
             Component: () => (
               <SettingsProvider
+                renderProfilePanel={(title) => <ProfilePanel title={title} />}
                 renderResourcePanel={(request) =>
                   request.section === 'resumes' ? (
                     <ResumeManagementPanel
-                      uploadRequest={
-                        request.intent === 'upload-resume' ? request.requestId : undefined
-                      }
+                      title={sectionTitles.resumes}
+                      uploadFile={request.uploadFile}
                     />
                   ) : (
                     <PositionManagementPanel
+                      title={sectionTitles.positions}
                       key={
                         request.intent === 'create-position'
                           ? `create-${request.requestId}`

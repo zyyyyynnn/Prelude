@@ -1,6 +1,5 @@
 package com.prelude.llm;
 
-import com.prelude.llm.api.LlmPort;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
@@ -26,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ModelExecutionSnapshotTest {
 
     @Autowired
-    private LlmPort llmPort;
+    private ModelExecutionSnapshotService llmPort;
 
     @Autowired
     private ModelProfileService profileService;
@@ -42,7 +41,7 @@ class ModelExecutionSnapshotTest {
     void frozenSnapshotIgnoresLaterProfileMutation() {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
-        long snapshotId = llmPort.freezeSnapshot(
+        long snapshotId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, "HIGH", null)).snapshotId();
         LlmFixtures.SnapshotRow frozen = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
         assertThat(frozen.model()).isEqualTo("deepseek-v4-pro");
@@ -50,7 +49,7 @@ class ModelExecutionSnapshotTest {
         assertThat(frozen.capabilityVersion())
             .isEqualTo(LlmFixtures.CAPABILITY_VERSION);
 
-        llmPort.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
+        profileService.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
             "deepseek", "deepseek-v4-flash", null, null, "AUTO", 8192, List.of()));
         LlmFixtures.SnapshotRow reloaded = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
         assertThat(reloaded.model()).isEqualTo("deepseek-v4-pro");
@@ -63,7 +62,7 @@ class ModelExecutionSnapshotTest {
     void composerSelectionOverridesProfileModelAndReasoning() {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
-        long snapshotId = llmPort.freezeSnapshot(
+        long snapshotId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, "HIGH", "deepseek-v4-flash")).snapshotId();
 
         LlmFixtures.SnapshotRow frozen = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
@@ -78,7 +77,7 @@ class ModelExecutionSnapshotTest {
             "openai-chat-completions", "account-model", "AUTO", "https://example.com/v1");
         LlmFixtures.CredentialRow credential = LlmFixtures.selectCredential(jdbcTemplate, accountId, "https://example.com/v1");
 
-        long snapshotId = llmPort.freezeSnapshot(
+        long snapshotId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, null, null)).snapshotId();
 
         LlmFixtures.SnapshotRow frozen = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
@@ -105,14 +104,14 @@ class ModelExecutionSnapshotTest {
     @Transactional
     void byokCredentialIsEncryptedAtRestAndMaskedOnRead() {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
-        llmPort.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
+        profileService.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
             "deepseek", "deepseek-v4-pro", null, "sk-live-secret-123456", "AUTO", 4096, List.of()));
 
         LlmFixtures.CredentialRow stored = LlmFixtures.selectFirstCredential(jdbcTemplate, accountId);
         assertThat(stored.apiKeyEncrypted()).doesNotContain("sk-live-secret");
         assertThat(stored.apiKeyEncrypted()).isNotBlank();
 
-        var view = llmPort.currentConfiguration(accountId);
+        var view = profileService.currentConfiguration(accountId);
         assertThat(view.apiKeyMasked()).doesNotContain("sk-live-secret");
         assertThat(view.apiKeyMasked()).startsWith("****");
     }
@@ -122,15 +121,15 @@ class ModelExecutionSnapshotTest {
     void rotatingAKeyCreatesANewCredentialAndKeepsTheFrozenSnapshotOnTheOldSecret() {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
-        llmPort.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
+        profileService.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
             "deepseek", "deepseek-v4-pro", null, "sk-immutable-A", "AUTO", 4096, List.of()));
-        long snapshotAId = llmPort.freezeSnapshot(
+        long snapshotAId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, null, null)).snapshotId();
         LlmFixtures.SnapshotRow snapshotA = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotAId);
 
-        llmPort.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
+        profileService.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
             "deepseek", "deepseek-v4-pro", null, "sk-immutable-B", "AUTO", 4096, List.of()));
-        long snapshotBId = llmPort.freezeSnapshot(
+        long snapshotBId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, null, null)).snapshotId();
         LlmFixtures.SnapshotRow snapshotB = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotBId);
 
@@ -154,7 +153,7 @@ class ModelExecutionSnapshotTest {
             "openai-chat-completions", "custom-model", "AUTO", "https://example.com/v1");
 
         ExceptionFixtures.assertBusinessExceptionMessage(
-            () -> llmPort.freezeSnapshot(
+            () -> llmPort.freeze(
                 LlmFixtures.freezeSnapshotCommand(accountId, "HIGH", null)),
             "所选模型不支持该思考深度");
     }
@@ -168,7 +167,7 @@ class ModelExecutionSnapshotTest {
             LlmFixtures.customCapability("openai-chat-completions", "custom-model",
                 List.of(LlmFixtures.reasoningAuto(), LlmFixtures.reasoningHigh())));
 
-        long snapshotId = llmPort.freezeSnapshot(
+        long snapshotId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, "HIGH", null)).snapshotId();
 
         LlmFixtures.SnapshotRow frozen = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
@@ -181,7 +180,7 @@ class ModelExecutionSnapshotTest {
 
         LlmFixtures.SnapshotRow reloaded = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
         assertThat(reloaded.modelCapabilityJson()).contains("HIGH");
-        long nextSnapshotId = llmPort.freezeSnapshot(
+        long nextSnapshotId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, "AUTO", null)).snapshotId();
         assertThat(LlmFixtures.selectSnapshot(jdbcTemplate, nextSnapshotId).modelCapabilityJson())
             .doesNotContain("HIGH");
@@ -196,7 +195,7 @@ class ModelExecutionSnapshotTest {
             LlmFixtures.customCapability("anthropic-messages", "account-model",
                 List.of(LlmFixtures.reasoningAuto()), false, true));
 
-        long snapshotId = llmPort.freezeSnapshot(
+        long snapshotId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, "AUTO", null)).snapshotId();
         LlmFixtures.SnapshotRow frozen = LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId);
         assertThat(LlmFixtures.readCapabilityVision(frozen.modelCapabilityJson())).isTrue();
@@ -207,7 +206,7 @@ class ModelExecutionSnapshotTest {
 
         assertThat(LlmFixtures.readCapabilityVision(LlmFixtures.selectSnapshot(jdbcTemplate, snapshotId).modelCapabilityJson()))
             .isTrue();
-        long nextSnapshotId = llmPort.freezeSnapshot(
+        long nextSnapshotId = llmPort.freeze(
             LlmFixtures.freezeSnapshotCommand(accountId, "AUTO", null)).snapshotId();
         assertThat(LlmFixtures.readCapabilityVision(LlmFixtures.selectSnapshot(jdbcTemplate, nextSnapshotId).modelCapabilityJson()))
             .isFalse();
@@ -219,7 +218,7 @@ class ModelExecutionSnapshotTest {
         long accountId = createAccountAndProfile("deepseek", "deepseek-v4-pro", "AUTO", null);
 
         ExceptionFixtures.assertBusinessExceptionMessage(
-            () -> llmPort.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
+            () -> profileService.saveConfiguration(accountId, LlmFixtures.saveConfigurationCommand(
                 "deepseek", "deepseek-unknown", null, null, "AUTO", 4096, List.of())),
             "当前接入方式不支持该模型");
     }

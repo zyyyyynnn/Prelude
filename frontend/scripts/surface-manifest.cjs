@@ -26,7 +26,7 @@ function computeInputRevision() {
     'frontend',
   ])
     .split('\0')
-    .filter(Boolean)
+    .filter((file) => file && fs.existsSync(path.join(repositoryRoot, file)))
     .sort()
   if (!files.length) throw new Error('No frontend inputs are available')
   const hashes = git(['hash-object', '--stdin-paths'], {

@@ -1,6 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
@@ -71,7 +71,7 @@ class SpringAiToolCallingContractTest {
         ApplicationEventPublisher events = eventPublisher(usageEvent, usageEvents);
         ModelExecutionService service = service(snapshot(), 2, events, effective -> model);
 
-        LlmPort.CompletionResult result = service.complete(request(tool("double_value", arguments -> {
+        ModelExecutionPort.CompletionResult result = service.complete(request(tool("double_value", arguments -> {
             toolCalls.incrementAndGet();
             return "42";
         })));
@@ -149,7 +149,7 @@ class SpringAiToolCallingContractTest {
             snapshot, 2, eventPublisher(usageEvent, usageEvents),
             effective -> "deepseek-v4-pro".equals(effective.model()) ? primary : fallback);
 
-        LlmPort.CompletionResult result = service.complete(request(tool("unused", arguments -> {
+        ModelExecutionPort.CompletionResult result = service.complete(request(tool("unused", arguments -> {
             toolCalls.incrementAndGet();
             return "unused";
         })));
@@ -253,7 +253,7 @@ class SpringAiToolCallingContractTest {
             mock(ApplicationEventPublisher.class));
         AtomicInteger toolCalls = new AtomicInteger();
 
-        LlmPort.CompletionResult result = service.complete(request(tool("double_value", arguments -> {
+        ModelExecutionPort.CompletionResult result = service.complete(request(tool("double_value", arguments -> {
             toolCalls.incrementAndGet();
             return "42";
         })));
@@ -307,20 +307,20 @@ class SpringAiToolCallingContractTest {
         };
     }
 
-    private LlmPort.ModelExecutionRequest request(LlmPort.ToolBinding tool) {
-        return new LlmPort.ModelExecutionRequest(
+    private ModelExecutionPort.ModelExecutionRequest request(ModelExecutionPort.ToolBinding tool) {
+        return new ModelExecutionPort.ModelExecutionRequest(
             1L,
             "tool-contract",
             "tool.contract",
-            LlmPort.ResponseMode.PLAIN_TEXT,
-            List.of(new LlmPort.Message("user", "Run the tool.")),
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT,
+            List.of(new ModelExecutionPort.Message("user", "Run the tool.")),
             List.of(),
             List.of(tool)
         );
     }
 
-    private LlmPort.ToolBinding tool(String name, LlmPort.ToolHandler handler) {
-        return new LlmPort.ToolBinding(
+    private ModelExecutionPort.ToolBinding tool(String name, ModelExecutionPort.ToolHandler handler) {
+        return new ModelExecutionPort.ToolBinding(
             name,
             "Test tool.",
             "{\"type\":\"object\"}",

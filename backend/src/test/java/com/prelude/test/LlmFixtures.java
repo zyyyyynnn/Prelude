@@ -1,9 +1,11 @@
 package com.prelude.test;
 
 import com.prelude.llm.ModelCapabilityCatalog;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelDiscoveryPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.LlmUsageRecorded;
 import com.prelude.llm.api.ModelCapabilityResponse;
+import com.prelude.llm.api.ModelConfigurationPort;
 import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.llm.api.ProviderDescriptorView;
@@ -32,41 +34,41 @@ public final class LlmFixtures {
     private LlmFixtures() {
     }
 
-    public static LlmPort mockPort() {
-        return Mockito.mock(LlmPort.class);
+    public static ModelExecutionPort mockPort() {
+        return Mockito.mock(ModelExecutionPort.class);
     }
 
-    public static LlmPort mockResponseModePort() {
-        LlmPort port = Mockito.mock(LlmPort.class);
+    public static ModelExecutionPort mockResponseModePort() {
+        ModelExecutionPort port = Mockito.mock(ModelExecutionPort.class);
         Mockito.when(port.complete(Mockito.any())).thenAnswer(invocation -> {
-            LlmPort.ModelExecutionRequest request = invocation.getArgument(0);
-            return new LlmPort.CompletionResult(
-                request.responseMode() == LlmPort.ResponseMode.JSON_ARRAY ? "[]" : "{}",
+            ModelExecutionPort.ModelExecutionRequest request = invocation.getArgument(0);
+            return new ModelExecutionPort.CompletionResult(
+                request.responseMode() == ModelExecutionPort.ResponseMode.JSON_ARRAY ? "[]" : "{}",
                 null
             );
         });
         return port;
     }
 
-    public static List<LlmPort.ResponseMode> captureResponseModes(LlmPort port, int expectedCalls) {
-        ArgumentCaptor<LlmPort.ModelExecutionRequest> requests =
-            ArgumentCaptor.forClass(LlmPort.ModelExecutionRequest.class);
+    public static List<ModelExecutionPort.ResponseMode> captureResponseModes(ModelExecutionPort port, int expectedCalls) {
+        ArgumentCaptor<ModelExecutionPort.ModelExecutionRequest> requests =
+            ArgumentCaptor.forClass(ModelExecutionPort.ModelExecutionRequest.class);
         Mockito.verify(port, Mockito.times(expectedCalls)).complete(requests.capture());
         return requests.getAllValues().stream()
-            .map(LlmPort.ModelExecutionRequest::responseMode)
+            .map(ModelExecutionPort.ModelExecutionRequest::responseMode)
             .toList();
     }
 
-    public static LlmPort.ResponseMode responseModePlainText() {
-        return LlmPort.ResponseMode.PLAIN_TEXT;
+    public static ModelExecutionPort.ResponseMode responseModePlainText() {
+        return ModelExecutionPort.ResponseMode.PLAIN_TEXT;
     }
 
-    public static LlmPort.ResponseMode responseModeJsonObject() {
-        return LlmPort.ResponseMode.JSON_OBJECT;
+    public static ModelExecutionPort.ResponseMode responseModeJsonObject() {
+        return ModelExecutionPort.ResponseMode.JSON_OBJECT;
     }
 
-    public static LlmPort.ResponseMode responseModeJsonArray() {
-        return LlmPort.ResponseMode.JSON_ARRAY;
+    public static ModelExecutionPort.ResponseMode responseModeJsonArray() {
+        return ModelExecutionPort.ResponseMode.JSON_ARRAY;
     }
 
     public static ModelExecutionSnapshotStore.SnapshotRow snapshot(String provider, String model, String reasoningLevel, String customEndpointUrl) {
@@ -99,25 +101,25 @@ public final class LlmFixtures {
         return new SaveConfigurationCommand(provider, model, customEndpointUrl, apiKey, reasoningLevel, maxTokens, fallbackModels);
     }
 
-    public static LlmPort.FreezeSnapshotCommand freezeSnapshotCommand(long accountId, String reasoningLevel, String modelOverride) {
-        return new LlmPort.FreezeSnapshotCommand(accountId, reasoningLevel, modelOverride);
+    public static ModelExecutionPort.FreezeSnapshotCommand freezeSnapshotCommand(long accountId, String reasoningLevel, String modelOverride) {
+        return new ModelExecutionPort.FreezeSnapshotCommand(accountId, reasoningLevel, modelOverride);
     }
 
-    public static LlmPort.DiscoverModelsCommand discoverModelsCommand(String provider, String baseUrl, String apiKey) {
-        return new LlmPort.DiscoverModelsCommand(provider, baseUrl, apiKey);
+    public static ModelDiscoveryPort.DiscoverModelsCommand discoverModelsCommand(String provider, String baseUrl, String apiKey) {
+        return new ModelDiscoveryPort.DiscoverModelsCommand(provider, baseUrl, apiKey);
     }
 
-    public static LlmPort.ModelExecutionRequest executionRequest(
-        long snapshotId, String purpose, String promptId, LlmPort.ResponseMode responseMode, String userMessage) {
-        return new LlmPort.ModelExecutionRequest(
+    public static ModelExecutionPort.ModelExecutionRequest executionRequest(
+        long snapshotId, String purpose, String promptId, ModelExecutionPort.ResponseMode responseMode, String userMessage) {
+        return new ModelExecutionPort.ModelExecutionRequest(
             snapshotId, purpose, promptId, responseMode,
-            List.of(new LlmPort.Message("user", userMessage)), List.of(), List.of());
+            List.of(new ModelExecutionPort.Message("user", userMessage)), List.of(), List.of());
     }
 
-    public static LlmPort.ModelExecutionRequest executionRequest(
-        long snapshotId, String purpose, String promptId, LlmPort.ResponseMode responseMode,
-        List<LlmPort.Message> messages, List<LlmPort.Attachment> attachments, List<LlmPort.ToolBinding> tools) {
-        return new LlmPort.ModelExecutionRequest(
+    public static ModelExecutionPort.ModelExecutionRequest executionRequest(
+        long snapshotId, String purpose, String promptId, ModelExecutionPort.ResponseMode responseMode,
+        List<ModelExecutionPort.Message> messages, List<ModelExecutionPort.Attachment> attachments, List<ModelExecutionPort.ToolBinding> tools) {
+        return new ModelExecutionPort.ModelExecutionRequest(
             snapshotId, purpose, promptId, responseMode, messages, attachments, tools);
     }
 
@@ -384,7 +386,7 @@ public final class LlmFixtures {
             provider, model, customEndpointUrl, hasApiKey, apiKeyMasked, reasoningLevel, maxTokens, fallbackModels, capability);
     }
 
-    public static int captureSavedMaxOutputTokens(LlmPort port, long accountId) {
+    public static int captureSavedMaxOutputTokens(ModelConfigurationPort port, long accountId) {
         ArgumentCaptor<SaveConfigurationCommand> cmd = ArgumentCaptor.forClass(SaveConfigurationCommand.class);
         Mockito.verify(port).saveConfiguration(Mockito.eq(accountId), cmd.capture());
         return cmd.getValue().maxOutputTokens();

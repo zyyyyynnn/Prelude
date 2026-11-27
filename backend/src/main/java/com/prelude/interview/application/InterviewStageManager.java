@@ -1,15 +1,16 @@
 package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
-import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.domain.InterviewStage;
+import com.prelude.interview.domain.InterviewStageDefinition;
+import com.prelude.interview.domain.InterviewStagePolicy;
+import com.prelude.interview.domain.StageTransitionException;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.application.repository.InterviewStageRepository;
-import com.prelude.interview.domain.InterviewStagePolicy;
-import com.prelude.interview.domain.StageTransitionException;
+import com.prelude.interview.integration.InterviewSessionStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,15 +24,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class InterviewStageManager {
 
-    public static final String STAGE_WARMUP = InterviewStagePolicy.WARMUP;
-
-    private static final String ROLE_SYSTEM = "system";
-    private static final String ROLE_ASSISTANT = "assistant";
     private static final Map<String, String> STAGE_PROMPTS = Map.of(
-        STAGE_WARMUP, "当前处于破冰阶段，请从候选人的简历经历入手，提出一条简洁的开场问题。",
-        "technical", "面试已进入技术问答阶段，请围绕岗位核心技术栈、项目实现细节和工程实践进行追问。",
-        "deep_dive", "面试已进入深挖阶段，请针对候选人前面回答中的薄弱点和模糊点继续深挖。",
-        "closing", "面试已进入收尾阶段，请用 1 到 2 个总结性问题结束本场面试。结束后请明确提示候选人可以点击页面上的「生成报告」按钮查看评估结果。"
+        InterviewStageDefinition.WARMUP.key(), "当前处于破冰阶段，请从候选人的简历经历入手，提出一条简洁的开场问题。",
+        InterviewStageDefinition.TECHNICAL.key(), "面试已进入技术问答阶段，请围绕岗位核心技术栈、项目实现细节和工程实践进行追问。",
+        InterviewStageDefinition.DEEP_DIVE.key(), "面试已进入深挖阶段，请针对候选人前面回答中的薄弱点和模糊点继续深挖。",
+        InterviewStageDefinition.CLOSING.key(), "面试已进入收尾阶段，请用 1 到 2 个总结性问题结束本场面试。结束后请明确提示候选人可以点击页面上的「生成报告」按钮查看评估结果。"
     );
 
     private final InterviewStageRepository interviewStageRepository;
@@ -46,12 +43,7 @@ public class InterviewStageManager {
         if (currentOrLatestStageForUpdate(session.getId()) != null) {
             return;
         }
-        InterviewStage stage = new InterviewStage();
-        stage.setSessionId(session.getId());
-        stage.setStageName(STAGE_WARMUP);
-        stage.setStartedAt(LocalDateTime.now());
-        stage.setEndedAt(null);
-        interviewStageRepository.add(stage);
+        insertStage(session.getId(), InterviewStageDefinition.WARMUP, latestMessageSeq(session.getId()));
     }
 
     public InterviewStage currentOrLatestStage(Long sessionId) {
@@ -72,7 +64,14 @@ public class InterviewStageManager {
 
     public String currentStageName(Long sessionId) {
         InterviewStage stage = currentOrLatestStage(sessionId);
-        return stage == null ? STAGE_WARMUP : stage.getStageName();
+        if (stage == null) {
+            throw BusinessException.badRequest("面试阶段不存在");
+        }
+        return normalizeStageName(stage.getStageName());
+    }
+
+    public String currentStageNameForUpdate(Long sessionId) {
+        return normalizeStageName(requireCurrentStage(sessionId).getStageName());
     }
 
     public List<InterviewStage> listStages(Long sessionId) {
@@ -89,7 +88,7 @@ public class InterviewStageManager {
             return currentStage;
         }
         nextStage = requireForwardTransition(currentStageName, nextStage);
-        if (hasPendingAssistantPrompt(sessionId)) {
+        if (currentStage.isAwaitingAnswer()) {
             throw BusinessException.badRequest("请先回答当前阶段的面试官提问");
         }
         return insertNextStage(sessionId, currentStage, nextStage);
@@ -99,6 +98,9 @@ public class InterviewStageManager {
     public InterviewStage advanceIfReady(Long sessionId) {
         lockOngoing(sessionId);
         InterviewStage currentStage = requireCurrentStage(sessionId);
+        if (!currentStage.isAwaitingAnswer()) {
+            return currentStage;
+        }
         try {
             if (!stagePolicy.shouldAdvance(currentStage.getStageName(), assistantRepliesInCurrentStage(sessionId))) {
                 return currentStage;
@@ -113,7 +115,6 @@ public class InterviewStageManager {
             throw BusinessException.badRequest(exception.getMessage());
         }
         if (nextStage.isEmpty()) {
-            closeCurrentStageUnlocked(sessionId);
             return currentStage;
         }
         return insertNextStage(sessionId, currentStage, nextStage.orElseThrow());
@@ -126,33 +127,27 @@ public class InterviewStageManager {
     }
 
     private void closeCurrentStageUnlocked(Long sessionId) {
-        InterviewStage stage = interviewStageRepository.findCurrentForUpdate(sessionId);
-        if (stage != null) {
-            stage.setEndedAt(LocalDateTime.now());
-            interviewStageRepository.update(stage);
-        }
+        InterviewStage stage = requireCurrentStage(sessionId);
+        stage.setEndedAt(LocalDateTime.now());
+        stage.setAwaitingAnswer(false);
+        interviewStageRepository.update(stage);
     }
 
     private void lockOngoing(Long sessionId) {
-        String status = interviewSessionRepository.lockAppendOrder(sessionId);
+        InterviewSessionStatus status = interviewSessionRepository.lockAppendOrder(sessionId);
         if (status == null) {
             throw BusinessException.badRequest("面试会话不存在");
         }
-        if (!InterviewSessionStatus.ONGOING.matches(status)) {
+        if (status != InterviewSessionStatus.ONGOING) {
             throw BusinessException.badRequest("面试会话已结束或正在生成报告");
         }
     }
 
     int assistantRepliesInCurrentStage(Long sessionId) {
-        InterviewStage stage = currentOrLatestStageForUpdate(sessionId);
-        if (stage == null) {
-            return 0;
-        }
-        List<InterviewMessage> messages = listMessages(sessionId);
-        int boundarySeq = stageBoundarySeq(messages, stage);
-        return (int) messages.stream()
-            .filter(message -> ROLE_ASSISTANT.equals(message.getRole()))
-            .filter(message -> message.getSeqNum() != null && message.getSeqNum() > boundarySeq)
+        InterviewStage stage = requireCurrentStage(sessionId);
+        return (int) listMessages(sessionId).stream()
+            .filter(message -> "assistant".equals(message.getRole()))
+            .filter(message -> message.getSeqNum() != null && message.getSeqNum() > stage.getBoundarySeq())
             .count();
     }
 
@@ -169,6 +164,7 @@ public class InterviewStageManager {
         if (stage == null) {
             throw BusinessException.badRequest("面试阶段不存在");
         }
+        normalizeStageName(stage.getStageName());
         return stage;
     }
 
@@ -181,81 +177,29 @@ public class InterviewStageManager {
     }
 
     private InterviewStage insertNextStage(Long sessionId, InterviewStage currentStage, String nextStage) {
-        LocalDateTime now = LocalDateTime.now();
-        currentStage.setEndedAt(now);
+        currentStage.setEndedAt(LocalDateTime.now());
+        currentStage.setAwaitingAnswer(false);
         interviewStageRepository.update(currentStage);
-
-        InterviewStage stage = new InterviewStage();
-        stage.setSessionId(sessionId);
-        stage.setStageName(nextStage);
-        stage.setStartedAt(now);
-        stage.setEndedAt(null);
-        interviewStageRepository.add(stage);
-
-        interviewMessageService.insertMessage(sessionId, ROLE_SYSTEM, STAGE_PROMPTS.get(nextStage));
+        InterviewStage stage = insertStage(
+            sessionId, InterviewStageDefinition.fromKey(nextStage), latestMessageSeq(sessionId));
+        interviewMessageService.insertSystemMessage(sessionId, STAGE_PROMPTS.get(nextStage));
         return stage;
     }
 
-    private boolean hasPendingAssistantPrompt(Long sessionId) {
-        List<InterviewMessage> messages = listMessages(sessionId);
-        int lastSystemIndex = -1;
-        for (int index = messages.size() - 1; index >= 0; index--) {
-            if (ROLE_SYSTEM.equals(messages.get(index).getRole())) {
-                lastSystemIndex = index;
-                break;
-            }
-        }
-        boolean hasAssistant = false;
-        boolean hasUser = false;
-        for (int index = lastSystemIndex + 1; index < messages.size(); index++) {
-            String role = messages.get(index).getRole();
-            if (ROLE_ASSISTANT.equals(role)) {
-                hasAssistant = true;
-            } else if ("user".equals(role)) {
-                hasUser = true;
-            }
-        }
-        return hasAssistant && !hasUser;
+    private InterviewStage insertStage(Long sessionId, InterviewStageDefinition definition, int boundarySeq) {
+        InterviewStage stage = new InterviewStage();
+        stage.setSessionId(sessionId);
+        stage.setStageName(definition.key());
+        stage.setBoundarySeq(boundarySeq);
+        stage.setAwaitingAnswer(false);
+        stage.setStartedAt(LocalDateTime.now());
+        interviewStageRepository.add(stage);
+        return stage;
     }
 
-    private int stageBoundarySeq(List<InterviewMessage> messages, InterviewStage stage) {
-        if (stage.getStartedAt() != null) {
-            Optional<Integer> sameTimestampPromptSeq = messages.stream()
-                .filter(message -> ROLE_SYSTEM.equals(message.getRole()))
-                .filter(message -> message.getCreatedAt() != null)
-                .filter(message -> message.getCreatedAt().equals(stage.getStartedAt()))
-                .map(InterviewMessage::getSeqNum)
-                .filter(seqNum -> seqNum != null)
-                .max(Integer::compareTo);
-            if (sameTimestampPromptSeq.isPresent()) {
-                return sameTimestampPromptSeq.get();
-            }
-            Optional<Integer> stagePromptSeq = messages.stream()
-                .filter(message -> ROLE_SYSTEM.equals(message.getRole()))
-                .filter(message -> message.getCreatedAt() != null)
-                .filter(message -> !message.getCreatedAt().isBefore(stage.getStartedAt()))
-                .map(InterviewMessage::getSeqNum)
-                .filter(seqNum -> seqNum != null)
-                .min(Integer::compareTo);
-            if (stagePromptSeq.isPresent()) {
-                return stagePromptSeq.get();
-            }
-            Optional<Integer> firstMessageSeq = messages.stream()
-                .filter(message -> message.getCreatedAt() != null)
-                .filter(message -> !message.getCreatedAt().isBefore(stage.getStartedAt()))
-                .map(InterviewMessage::getSeqNum)
-                .filter(seqNum -> seqNum != null)
-                .min(Integer::compareTo);
-            if (firstMessageSeq.isPresent()) {
-                return firstMessageSeq.get() - 1;
-            }
-        }
-        return messages.stream()
-            .filter(message -> ROLE_SYSTEM.equals(message.getRole()))
-            .map(InterviewMessage::getSeqNum)
-            .filter(seqNum -> seqNum != null)
-            .max(Integer::compareTo)
-            .orElse(-1);
+    private int latestMessageSeq(Long sessionId) {
+        InterviewMessage latest = interviewMessageRepository.findLatestForAppend(sessionId);
+        return latest == null || latest.getSeqNum() == null ? -1 : latest.getSeqNum();
     }
 
     private List<InterviewMessage> listMessages(Long sessionId) {

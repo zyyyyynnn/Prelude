@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { sectionTitles } from '@/features/settings'
 import { createPosition, deletePosition, fetchPositions, updatePosition } from './api'
+import { positionQueryKeys } from './query-keys'
 import { PositionRow } from './PositionRow'
 import type { Position } from './types'
 import { RiAddLine, RiDeleteBinLine } from '@remixicon/react'
@@ -19,19 +19,19 @@ import {
 
 const emptyDraft = { name: '', systemPrompt: '' }
 
-export function PositionManagementPanel() {
+export function PositionManagementPanel({ title }: { title: string }) {
   const client = useQueryClient()
   const feedback = useFeedback()
   const [editing, setEditing] = useState<Position | null>(null)
   const [draft, setDraft] = useState(emptyDraft)
-  const positions = useQuery({ queryKey: ['positions'], queryFn: fetchPositions })
+  const positions = useQuery({ queryKey: positionQueryKeys.list(), queryFn: fetchPositions })
   const save = useMutation({
     mutationFn: () => (editing ? updatePosition(editing.id, draft) : createPosition(draft)),
     onSuccess: () => {
       feedback.notify(editing ? '岗位已更新' : '岗位已创建', 'success')
       setEditing(null)
       setDraft(emptyDraft)
-      void client.invalidateQueries({ queryKey: ['positions'] })
+      void client.invalidateQueries({ queryKey: positionQueryKeys.list() })
     },
     onError: (error) => feedback.notify(error.message, 'error'),
   })
@@ -41,7 +41,7 @@ export function PositionManagementPanel() {
       feedback.notify('岗位已删除', 'success')
       setEditing(null)
       setDraft(emptyDraft)
-      void client.invalidateQueries({ queryKey: ['positions'] })
+      void client.invalidateQueries({ queryKey: positionQueryKeys.list() })
     },
     onError: (error) => feedback.notify(error.message, 'error'),
   })
@@ -72,7 +72,7 @@ export function PositionManagementPanel() {
 
   return (
     <Panel
-      title={sectionTitles.positions}
+      title={title}
       actions={
         <>
           {editing && (

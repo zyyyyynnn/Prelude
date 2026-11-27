@@ -11,8 +11,6 @@ public interface AnalyticsRepository {
 
     List<AccountWeakness> listWeaknessesByAccount(Long accountId);
 
-    List<AccountWeakness> listWeaknessesBySession(Long sessionId);
-
     void replaceScore(ScoreHistory score);
 
     void replaceWeaknesses(Long sessionId, List<AccountWeakness> weaknesses);

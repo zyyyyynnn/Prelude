@@ -3,7 +3,7 @@ package com.prelude.jobs;
 import com.prelude.artifact.application.GenerateInterviewReport;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.jobs.infrastructure.RabbitMqConfig;
-import com.prelude.jobs.integration.BackgroundJobOperations;
+import com.prelude.jobs.integration.BackgroundJobMessages;
 import com.prelude.jobs.integration.BackgroundJobSucceeded;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.SessionFixtures;
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 class BackgroundJobAmqpContractTest {
 
     @Autowired
-    private BackgroundJobOperations jobs;
+    private BackgroundJobService jobs;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -93,7 +93,7 @@ class BackgroundJobAmqpContractTest {
     @Test
     void externalizedRequestIsDecodedToTheAuthoritativeJobIdAndExecuted() throws Exception {
         long accountId = createAccount();
-        var ref = jobs.request(new BackgroundJobOperations.BackgroundJobRequest(
+        var ref = jobs.request(new BackgroundJobMessages.BackgroundJobRequest(
             "report.generate", accountId, 301L,
             "report.generate:amqp:" + System.nanoTime(), "{}"));
 

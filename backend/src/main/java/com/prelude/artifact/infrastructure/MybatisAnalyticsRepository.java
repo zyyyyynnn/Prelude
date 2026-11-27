@@ -44,17 +44,6 @@ public class MybatisAnalyticsRepository implements AnalyticsRepository {
     }
 
     @Override
-    public List<AccountWeakness> listWeaknessesBySession(Long sessionId) {
-        return accountWeaknessMapper.selectList(new LambdaQueryWrapper<AccountWeaknessEntity>()
-            .eq(AccountWeaknessEntity::getSessionId, sessionId)
-            .orderByAsc(AccountWeaknessEntity::getCreatedAt)
-            .orderByAsc(AccountWeaknessEntity::getId))
-            .stream()
-            .map(AccountWeaknessEntity::toDomain)
-            .toList();
-    }
-
-    @Override
     public void replaceScore(ScoreHistory score) {
         scoreHistoryMapper.delete(new LambdaQueryWrapper<ScoreHistoryEntity>()
             .eq(ScoreHistoryEntity::getSessionId, score.getSessionId()));

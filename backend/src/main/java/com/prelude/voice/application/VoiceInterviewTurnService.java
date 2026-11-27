@@ -7,7 +7,6 @@ import com.prelude.interview.application.port.InterviewTurnPort;
 import com.prelude.interview.application.port.InterviewTurnResult;
 import com.prelude.interview.application.port.InterviewTurnSink;
 import com.prelude.interview.application.port.JudgeOutcome;
-import com.prelude.interview.application.port.VoicePort;
 import com.prelude.interview.application.port.InterviewUserTurnSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -46,20 +44,22 @@ public class VoiceInterviewTurnService {
 
     private void runTurn(Long accountId, Long sessionId, byte[] audioBytes, VoiceTurnEventSink sink) {
         try {
-            if (!Objects.equals(sink.currentActiveSessionId(), sessionId)) {
-                sink.error("面试会话已切换，请重新开始语音输入");
+            if (!sink.isCurrent()) {
                 return;
             }
             if (!interviewSessionGuard.isOngoing(accountId, sessionId)) {
-                sink.clearActiveSession();
                 sink.error("面试会话不可用，请刷新后重试");
+                sink.invalidate();
                 return;
             }
 
             sink.status("stt_processing");
-            String transcribed = voiceService.speechToText(accountId, sessionId, audioBytes, "voice.webm");
+            String transcribed = voiceService.speechToText(accountId, audioBytes, "voice.webm");
             if (transcribed == null || transcribed.trim().isEmpty()) {
                 sink.error("网络状况不佳，已为您切回文字模式");
+                return;
+            }
+            if (!sink.isCurrent()) {
                 return;
             }
             sink.status("tts_processing");
@@ -79,10 +79,13 @@ public class VoiceInterviewTurnService {
 
                     @Override
                     public void assistantDelta(String delta) {
+                        if (!sink.isCurrent()) {
+                            throw new VoiceSessionRevokedException();
+                        }
                         sink.assistantText(delta);
                         sentenceBuilder.append(delta);
                         String sentence = extractSentenceIfComplete(sentenceBuilder);
-                        if (sentence != null && !sentence.trim().isEmpty() && !ttsFailed.get()) {
+                        if (sentence != null && !sentence.trim().isEmpty() && !ttsFailed.get() && sink.isCurrent()) {
                             ttsFutures.add(submitTtsTask(
                                 sessionId,
                                 () -> synthesizeSentence(accountId, sentence, sink, ttsFailed, ttsTimedOut)
@@ -93,7 +96,7 @@ public class VoiceInterviewTurnService {
             );
 
             String remaining = sentenceBuilder.toString();
-            if (!remaining.trim().isEmpty() && !ttsFailed.get()) {
+            if (!remaining.trim().isEmpty() && !ttsFailed.get() && sink.isCurrent()) {
                 ttsFutures.add(submitTtsTask(
                     sessionId,
                     () -> synthesizeSentence(accountId, remaining, sink, ttsFailed, ttsTimedOut)
@@ -102,11 +105,17 @@ public class VoiceInterviewTurnService {
             awaitTtsFutures(ttsFutures, TTS_AWAIT_SECONDS, sessionId, sink, ttsFailed, ttsTimedOut);
             sink.status("speech_end");
 
-            triggerJudge(result.session().sessionId(), result.userTurn(), sink);
-            interviewTurnPort.summarizeIfNeeded(result.session().sessionId());
+            if (sink.isCurrent()) {
+                triggerJudge(result.session().sessionId(), result.userTurn(), sink);
+                interviewTurnPort.summarizeIfNeeded(result.session().sessionId());
+            }
+        } catch (VoiceSessionRevokedException ignored) {
+            log.debug("Voice turn stopped after the originating session was revoked");
         } catch (RuntimeException error) {
             log.error("Voice turn processing chain crashed", error);
             sink.error("网络状况不佳，已为您切回文字模式");
+        } finally {
+            sink.turnFinished();
         }
     }
 
@@ -130,7 +139,7 @@ public class VoiceInterviewTurnService {
         AtomicBoolean ttsFailed,
         AtomicBoolean ttsTimedOut
     ) {
-        if (ttsFailed.get() || ttsTimedOut.get()) {
+        if (ttsFailed.get() || ttsTimedOut.get() || !sink.isCurrent()) {
             return;
         }
         try {
@@ -191,6 +200,9 @@ public class VoiceInterviewTurnService {
         } catch (RuntimeException error) {
             log.warn("Failed to update and push message score/hint in voice mode", error);
         }
+    }
+
+    private static final class VoiceSessionRevokedException extends RuntimeException {
     }
 
     private String extractSentenceIfComplete(StringBuilder builder) {

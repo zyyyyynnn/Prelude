@@ -1,6 +1,6 @@
 package com.prelude.llm;
 
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.test.ExceptionFixtures;
 import com.prelude.test.LlmFixtures;
 import com.prelude.llm.application.port.ModelExecutionSnapshotStore.SnapshotRow;
@@ -56,11 +56,11 @@ class SpringAiExecutionContractTest {
 
         SnapshotRow deepseek = snapshot("deepseek", "deepseek-v4-pro", "HIGH", null);
         OpenAiChatOptions deepseekPlain = (OpenAiChatOptions) factory.requestOptions(
-            deepseek, LlmPort.ResponseMode.PLAIN_TEXT);
+            deepseek, ModelExecutionPort.ResponseMode.PLAIN_TEXT);
         OpenAiChatOptions deepseekObject = (OpenAiChatOptions) factory.requestOptions(
-            deepseek, LlmPort.ResponseMode.JSON_OBJECT);
+            deepseek, ModelExecutionPort.ResponseMode.JSON_OBJECT);
         OpenAiChatOptions deepseekArray = (OpenAiChatOptions) factory.requestOptions(
-            deepseek, LlmPort.ResponseMode.JSON_ARRAY);
+            deepseek, ModelExecutionPort.ResponseMode.JSON_ARRAY);
         assertThat(deepseekPlain.getModel()).isEqualTo("deepseek-v4-pro");
         assertThat(deepseekPlain.getReasoningEffort()).isEqualTo("high");
         assertThat(deepseekPlain.getMaxTokens()).isEqualTo(4096);
@@ -75,25 +75,25 @@ class SpringAiExecutionContractTest {
         SnapshotRow chatCompletions = snapshot(
             "openai-chat-completions", "account-model", "AUTO", "https://example.com/v1");
         OpenAiChatOptions customPlain = (OpenAiChatOptions) factory.requestOptions(
-            chatCompletions, LlmPort.ResponseMode.PLAIN_TEXT);
+            chatCompletions, ModelExecutionPort.ResponseMode.PLAIN_TEXT);
         OpenAiChatOptions customObject = (OpenAiChatOptions) factory.requestOptions(
-            chatCompletions, LlmPort.ResponseMode.JSON_OBJECT);
+            chatCompletions, ModelExecutionPort.ResponseMode.JSON_OBJECT);
         OpenAiChatOptions customArray = (OpenAiChatOptions) factory.requestOptions(
-            chatCompletions, LlmPort.ResponseMode.JSON_ARRAY);
+            chatCompletions, ModelExecutionPort.ResponseMode.JSON_ARRAY);
         assertThat(customPlain.getModel()).isEqualTo("account-model");
         assertThat(customPlain.getResponseFormat()).isNull();
         assertThat(customObject.getResponseFormat()).isNull();
         assertThat(customArray.getResponseFormat()).isNull();
         OpenAiChatOptions customHigh = (OpenAiChatOptions) factory.requestOptions(
             snapshot("openai-chat-completions", "account-model", "HIGH", "https://example.com/v1"),
-            LlmPort.ResponseMode.PLAIN_TEXT);
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT);
         assertThat(customHigh.getReasoningEffort()).isEqualTo("high");
         OpenAiChatOptions customExtraHigh = (OpenAiChatOptions) factory.requestOptions(
             snapshot("openai-chat-completions", "account-model", "XHIGH", "https://example.com/v1"),
-            LlmPort.ResponseMode.PLAIN_TEXT);
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT);
         OpenAiChatOptions customMax = (OpenAiChatOptions) factory.requestOptions(
             snapshot("openai-chat-completions", "account-model", "MAX", "https://example.com/v1"),
-            LlmPort.ResponseMode.PLAIN_TEXT);
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT);
         assertThat(customExtraHigh.getReasoningEffort()).isEqualTo("xhigh");
         assertThat(customMax.getReasoningEffort()).isEqualTo("max");
         assertThat(customMax.getMaxCompletionTokens()).isEqualTo(4096);
@@ -101,20 +101,20 @@ class SpringAiExecutionContractTest {
 
         ChatOptions responses = factory.requestOptions(
             snapshot("openai-responses", "discovered-responses-model", "AUTO", "https://example.com/v1"),
-            LlmPort.ResponseMode.JSON_OBJECT);
+            ModelExecutionPort.ResponseMode.JSON_OBJECT);
         AnthropicChatOptions anthropic = (AnthropicChatOptions) factory.requestOptions(
             snapshot("anthropic-messages", "discovered-anthropic-model", "AUTO", "https://example.com"),
-            LlmPort.ResponseMode.JSON_ARRAY);
+            ModelExecutionPort.ResponseMode.JSON_ARRAY);
         assertThat(responses.getModel()).isEqualTo("discovered-responses-model");
         assertThat(anthropic.getModel()).isEqualTo("discovered-anthropic-model");
         assertThat(anthropic.getMaxTokens()).isEqualTo(4096);
         assertThat(anthropic.getThinking()).isNull();
         AnthropicChatOptions anthropicExtraHigh = (AnthropicChatOptions) factory.requestOptions(
             snapshot("anthropic-messages", "discovered-anthropic-model", "XHIGH", "https://example.com"),
-            LlmPort.ResponseMode.PLAIN_TEXT);
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT);
         AnthropicChatOptions anthropicMax = (AnthropicChatOptions) factory.requestOptions(
             snapshot("anthropic-messages", "discovered-anthropic-model", "MAX", "https://example.com"),
-            LlmPort.ResponseMode.PLAIN_TEXT);
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT);
         assertThat(anthropicExtraHigh.getOutputConfig().effort().orElseThrow().asString()).isEqualTo("xhigh");
         assertThat(anthropicMax.getOutputConfig().effort().orElseThrow().asString()).isEqualTo("max");
     }
@@ -163,7 +163,7 @@ class SpringAiExecutionContractTest {
             ChatModel model = factory.chatModel(snapshot, "sk-account");
             model.call(new Prompt(
                 List.of(new org.springframework.ai.chat.messages.UserMessage("hello")),
-                factory.requestOptions(snapshot, LlmPort.ResponseMode.JSON_OBJECT)));
+                factory.requestOptions(snapshot, ModelExecutionPort.ResponseMode.JSON_OBJECT)));
         }
 
         assertThat(requestPath.get()).isEqualTo("/chat/completions");
@@ -193,7 +193,7 @@ class SpringAiExecutionContractTest {
                 1);
 
             ExceptionFixtures.assertBusinessExceptionMessage(
-                () -> service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT)),
+                () -> service.complete(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT)),
                 "所选模型不支持该思考深度");
         }
     }
@@ -211,7 +211,7 @@ class SpringAiExecutionContractTest {
         });
 
         ModelExecutionService service = realCustomEndpointService(server.getAddress().getPort(), 3);
-        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
+        ModelExecutionPort.CompletionResult result = service.complete(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT));
 
         assertThat(result.content()).isEqualTo("ok");
         assertThat(requests).hasValue(3);
@@ -229,7 +229,7 @@ class SpringAiExecutionContractTest {
         ModelExecutionService service = realCustomEndpointService(server.getAddress().getPort(), 3);
 
         ExceptionFixtures.assertBusinessException(
-            () -> service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT)));
+            () -> service.complete(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT)));
         assertThat(requests).hasValue(1);
     }
 
@@ -244,13 +244,13 @@ class SpringAiExecutionContractTest {
             true,
             true));
         ModelExecutionService service = fakeService(successfulCallModel("vision-ok"), snapshot, 1);
-        LlmPort.ModelExecutionRequest request = new LlmPort.ModelExecutionRequest(
+        ModelExecutionPort.ModelExecutionRequest request = new ModelExecutionPort.ModelExecutionRequest(
             1L,
             "vision-contract",
             "vision.contract",
-            LlmPort.ResponseMode.PLAIN_TEXT,
-            List.of(new LlmPort.Message("user", "describe")),
-            List.of(new LlmPort.Attachment("image.png", "image/png", new byte[]{1, 2, 3})),
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT,
+            List.of(new ModelExecutionPort.Message("user", "describe")),
+            List.of(new ModelExecutionPort.Attachment("image.png", "image/png", new byte[]{1, 2, 3})),
             List.of());
 
         assertThat(service.complete(request).content()).isEqualTo("vision-ok");
@@ -267,7 +267,7 @@ class SpringAiExecutionContractTest {
         });
 
         ModelExecutionService service = realCustomEndpointService(server.getAddress().getPort(), 3);
-        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.JSON_OBJECT));
+        ModelExecutionPort.CompletionResult result = service.complete(request(1L, ModelExecutionPort.ResponseMode.JSON_OBJECT));
 
         assertThat(result.content()).isEqualTo("{\"ok\":true}");
         assertThat(requests).hasValue(1);
@@ -289,7 +289,7 @@ class SpringAiExecutionContractTest {
 
         ModelExecutionService service = realCustomProtocolService(
             "openai-responses", "account-discovered-model", server.getAddress().getPort(), 1);
-        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.JSON_OBJECT));
+        ModelExecutionPort.CompletionResult result = service.complete(request(1L, ModelExecutionPort.ResponseMode.JSON_OBJECT));
 
         assertThat(result.content()).isEqualTo("responses-ok");
         assertThat(requestBody.get())
@@ -310,7 +310,7 @@ class SpringAiExecutionContractTest {
         for (String level : List.of("LOW", "MEDIUM", "HIGH", "XHIGH", "MAX")) {
             ModelExecutionService service = realCustomProtocolService(
                 "openai-responses", "account-discovered-model", server.getAddress().getPort(), 1, level);
-            service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
+            service.complete(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT));
         }
 
         assertThat(requestBodies).hasSize(5);
@@ -338,7 +338,7 @@ class SpringAiExecutionContractTest {
 
         ModelExecutionService service = realCustomProtocolService(
             "anthropic-messages", "account-discovered-model", server.getAddress().getPort(), 1);
-        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.JSON_ARRAY));
+        ModelExecutionPort.CompletionResult result = service.complete(request(1L, ModelExecutionPort.ResponseMode.JSON_ARRAY));
 
         assertThat(result.content()).isEqualTo("anthropic-ok");
         assertThat(observedKey.get()).isEqualTo("sk-test");
@@ -363,7 +363,7 @@ class SpringAiExecutionContractTest {
 
         ModelExecutionService service = realCustomProtocolService(
             "anthropic-messages", "account-discovered-model", server.getAddress().getPort(), 1, "MEDIUM");
-        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
+        ModelExecutionPort.CompletionResult result = service.complete(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT));
 
         assertThat(result.content()).isEqualTo("anthropic-ok");
         assertThat(requestBody.get()).contains("\"thinking\":{\"type\":\"adaptive\"}");
@@ -421,7 +421,7 @@ class SpringAiExecutionContractTest {
             "anthropic-messages", "account-discovered-model", server.getAddress().getPort(), 1, "HIGH");
         List<String> deltas = new ArrayList<>();
 
-        service.stream(request(1L, LlmPort.ResponseMode.PLAIN_TEXT), sink(deltas));
+        service.stream(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT), sink(deltas));
 
         assertThat(String.join("", deltas)).isEqualTo("anthropic-stream-ok");
         assertThat(deltas).noneMatch(delta -> delta.contains("private reasoning"));
@@ -444,14 +444,14 @@ class SpringAiExecutionContractTest {
         };
         ModelExecutionService service = fakeService(
             model, snapshot("deepseek", "deepseek-v4-pro", "AUTO", null), 1);
-        LlmPort.ToolBinding tool = new LlmPort.ToolBinding(
+        ModelExecutionPort.ToolBinding tool = new ModelExecutionPort.ToolBinding(
             "noop", "noop", "{\"type\":\"object\"}", ignored -> "ok");
-        LlmPort.ModelExecutionRequest streamingToolRequest = new LlmPort.ModelExecutionRequest(
+        ModelExecutionPort.ModelExecutionRequest streamingToolRequest = new ModelExecutionPort.ModelExecutionRequest(
             1L,
             "test",
             "test.prompt",
-            LlmPort.ResponseMode.PLAIN_TEXT,
-            List.of(new LlmPort.Message("user", "hello")),
+            ModelExecutionPort.ResponseMode.PLAIN_TEXT,
+            List.of(new ModelExecutionPort.Message("user", "hello")),
             List.of(),
             List.of(tool)
         );
@@ -485,7 +485,7 @@ class SpringAiExecutionContractTest {
             model, snapshot("deepseek", "deepseek-v4-pro", "AUTO", null), 3);
         List<String> deltas = new ArrayList<>();
 
-        service.stream(request(1L, LlmPort.ResponseMode.PLAIN_TEXT), sink(deltas));
+        service.stream(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT), sink(deltas));
 
         assertThat(subscriptions).hasValue(3);
         assertThat(deltas).containsExactly("done");
@@ -516,7 +516,7 @@ class SpringAiExecutionContractTest {
         List<String> deltas = new ArrayList<>();
 
         ExceptionFixtures.assertLlmServerException(
-            () -> service.stream(request(1L, LlmPort.ResponseMode.PLAIN_TEXT), sink(deltas)));
+            () -> service.stream(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT), sink(deltas)));
         assertThat(subscriptions).hasValue(1);
         assertThat(deltas).containsExactly("partial");
     }
@@ -553,7 +553,7 @@ class SpringAiExecutionContractTest {
         ModelExecutionService service = new ModelExecutionService(factory, snapshotService, credentialResolver, capabilityJson, new LlmTransportRetry(1),
             mock(ApplicationEventPublisher.class));
 
-        LlmPort.CompletionResult result = service.complete(request(1L, LlmPort.ResponseMode.PLAIN_TEXT));
+        ModelExecutionPort.CompletionResult result = service.complete(request(1L, ModelExecutionPort.ResponseMode.PLAIN_TEXT));
 
         assertThat(result.content()).isEqualTo("fallback-ok");
         assertThat(executedModels).containsExactly("deepseek-v4-pro", "deepseek-v4-flash");
@@ -670,13 +670,13 @@ class SpringAiExecutionContractTest {
             capabilityJson, "[]", null, endpoint);
     }
 
-    private LlmPort.ModelExecutionRequest request(long snapshotId, LlmPort.ResponseMode mode) {
-        return new LlmPort.ModelExecutionRequest(
+    private ModelExecutionPort.ModelExecutionRequest request(long snapshotId, ModelExecutionPort.ResponseMode mode) {
+        return new ModelExecutionPort.ModelExecutionRequest(
             snapshotId, "test", "test.prompt", mode,
-            List.of(new LlmPort.Message("user", "hello")), List.of(), List.of());
+            List.of(new ModelExecutionPort.Message("user", "hello")), List.of(), List.of());
     }
 
-    private LlmPort.StreamSink sink(List<String> deltas) {
+    private ModelExecutionPort.StreamSink sink(List<String> deltas) {
         return deltas::add;
     }
 

@@ -1,7 +1,7 @@
 import { ErrorState, LoadingState, useFeedback, GeneratingSurface } from '@/shared/ui'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchResumes } from '@/features/resume'
+import { fetchResumes, resumeQueryKeys } from '@/features/resume'
 import { printInterviewReport, ReportPanel } from '@/features/report'
 import { REASONING_LABELS } from '@/features/settings'
 import { InterviewAnswerComposer } from './InterviewAnswerComposer'
@@ -23,7 +23,7 @@ export function InterviewSession({ sessionId }: { sessionId: number }) {
   const [printing, setPrinting] = useState(false)
   const controller = useInterviewSession(sessionId, (message) => feedback.notify(message, 'error'))
   const resumes = useQuery({
-    queryKey: ['resumes'],
+    queryKey: resumeQueryKeys.list(),
     queryFn: ({ signal }) => fetchResumes(signal),
   })
   if (controller.session.isPending)

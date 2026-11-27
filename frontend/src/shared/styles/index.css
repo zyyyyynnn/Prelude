@@ -2122,7 +2122,7 @@ input[type='password']::-webkit-credentials-auto-fill-button {
   }
 }
 
-/* @internal src/features/interview/components/session-row.tsx */
+/* @internal src/features/interview/session-list.tsx */
 @utility session-group {
   display: grid;
   gap: var(--spacing-sm);

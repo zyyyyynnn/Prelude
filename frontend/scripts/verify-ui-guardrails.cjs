@@ -71,7 +71,7 @@ const singleOwnerRules = [
     label: 'an inset card is the `inset-card` utility, not a fill plus a radius plus a padding',
   },
   {
-    owner: 'src/features/interview/components/session-row.tsx',
+    owner: 'src/features/interview/session-list.tsx',
     pattern: /mx-sm text-xs font-semibold tracking-label/,
     label: 'a session group caption goes through SessionGroupLabel',
   },

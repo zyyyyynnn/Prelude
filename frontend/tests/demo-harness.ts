@@ -1,84 +1,17 @@
 import type { Page, Route } from '@playwright/test'
-
-export type ReasoningLevel = 'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'
-
-export type ModelCapabilityResponse = {
-  provider: string
-  model: string
-  reasoning: boolean
-  structuredOutput: boolean
-  toolCalling: boolean
-  streaming: boolean
-  vision: boolean
-  multilingual: boolean
-  longContext: boolean
-  embedding: boolean
-  nativeRealtimeVoice: boolean
-  supportedReasoningLevels: ReasoningLevel[]
-}
-
-export type LlmProviderResponse = {
-  providerKey: string
-  displayName: string
-  customEndpoint: boolean
-  models: ModelCapabilityResponse[]
-}
-
-export type LlmConfigResponse = {
-  provider: string
-  model: string
-  customEndpointUrl: string | null
-  hasApiKey: boolean
-  apiKeyMasked: string | null
-  reasoningLevel: ReasoningLevel
-  maxOutputTokens: number
-  fallbackModels: string[]
-  capability?: ModelCapabilityResponse
-}
-
-export type InterviewSessionItem = {
-  sessionId: number
-  targetPosition?: string
-  positionName?: string
-  status?: string
-  currentStage?: 'warmup' | 'technical' | 'deep_dive' | 'closing'
-  createdAt?: string
-  summaryReport?: string
-}
-
-export type InterviewSessionDetailResponse = {
-  sessionId: number
-  targetPosition?: string
-  status?: string
-  currentStage?: 'warmup' | 'technical' | 'deep_dive' | 'closing'
-  model?: string
-  reasoningLevel?: string
-  summaryReport?: string
-  stages: {
-    stageName: 'warmup' | 'technical' | 'deep_dive' | 'closing'
-    startedAt?: string
-    endedAt?: string | null
-  }[]
-  messages: {
-    id: number
-    role: 'system' | 'user' | 'assistant'
-    content: string
-    seqNum?: number
-    createdAt?: string
-    score?: number
-    hint?: string
-  }[]
-  resumeId?: number
-  positionId?: number
-  jdText?: string
-  attachments: {
-    id: number
-    fileName: string
-    mediaType: string
-    size: number
-    image: boolean
-  }[]
-}
+import type {
+  InterviewSessionDetailResponse,
+  InterviewSessionItem,
+} from '../src/features/interview/types'
+import type { ThemePreference, UserProfileResponse } from '../src/features/profile/types'
+import type { LlmConfigResponse, LlmProviderResponse } from '../src/features/settings/types'
+import {
+  createProviderFixtures,
+  fulfillJson,
+  fulfillProblem,
+  fulfillUnknownEndpoint,
+  modelCapability,
+} from './api-fixtures'
 
 export const DEMO_VIEWPORT = { width: 1440, height: 900 } as const
 
@@ -103,13 +36,14 @@ export type DemoResumeRow = {
   inUse: boolean
 }
 
-export type DemoProfile = {
-  accountId: number
+export type DemoProfile = Omit<
+  UserProfileResponse,
+  'username' | 'email' | 'avatarUrl' | 'themePreference'
+> & {
   username: string
   email: string | null
   avatarUrl: string | null
-  themePreference: string
-  revision: number
+  themePreference: ThemePreference
 }
 
 export type DemoState = {
@@ -124,57 +58,18 @@ export type DemoState = {
   profile: DemoProfile
 }
 
-function capability(
-  provider: string,
-  model: string,
-  supportedReasoningLevels: ReasoningLevel[],
-  overrides: Partial<ModelCapabilityResponse> = {},
-): ModelCapabilityResponse {
-  return {
-    provider,
-    model,
-    reasoning: supportedReasoningLevels.length > 1,
-    structuredOutput: true,
-    toolCalling: true,
-    streaming: true,
-    vision: false,
-    multilingual: true,
-    longContext: true,
-    embedding: false,
-    nativeRealtimeVoice: false,
-    supportedReasoningLevels,
-    ...overrides,
-  }
-}
-
-const deepSeekPro = capability('deepseek', 'deepseek-v4-pro', ['AUTO', 'LOW', 'HIGH', 'MAX'])
-const deepSeekFlash = capability('deepseek', 'deepseek-v4-flash', ['AUTO', 'LOW', 'HIGH', 'MAX'])
-export const demoProviders: LlmProviderResponse[] = [
-  {
-    providerKey: 'deepseek',
-    displayName: 'DeepSeek',
-    customEndpoint: false,
-    models: [deepSeekPro, deepSeekFlash],
-  },
-  {
-    providerKey: 'openai-responses',
-    displayName: 'OpenAI Responses',
-    customEndpoint: true,
-    models: [],
-  },
-  {
-    providerKey: 'openai-chat-completions',
-    displayName: 'OpenAI Chat Completions',
-    customEndpoint: true,
-    models: [],
-  },
-  {
-    providerKey: 'anthropic-messages',
-    displayName: 'Anthropic Messages',
-    customEndpoint: true,
-    models: [],
-  },
-]
+const deepSeekPro = modelCapability('deepseek', 'deepseek-v4-pro', ['AUTO', 'LOW', 'HIGH', 'MAX'])
+const deepSeekFlash = modelCapability('deepseek', 'deepseek-v4-flash', [
+  'AUTO',
+  'LOW',
+  'HIGH',
+  'MAX',
+])
+export const demoProviders: LlmProviderResponse[] = createProviderFixtures().map((provider) =>
+  provider.providerKey === 'deepseek'
+    ? { ...provider, models: [deepSeekPro, deepSeekFlash] }
+    : provider,
+)
 
 const report = JSON.stringify({
   summary: {
@@ -639,7 +534,7 @@ async function respond(route: Route, state: DemoState) {
     const draft = (body ?? {}) as {
       username?: string
       email?: string
-      themePreference?: string
+      themePreference?: ThemePreference
       expectedRevision?: number
     }
     if (draft.expectedRevision !== state.profile.revision)
@@ -711,7 +606,7 @@ async function respond(route: Route, state: DemoState) {
       { category: '线上实验归因', count: 1, descriptions: ['已有实验缺少分层结果和置信区间。'] },
     ])
 
-  return fulfillProblem(route, 501, 'not_implemented', `Demo harness 未处理 ${method} ${path}`)
+  return fulfillUnknownEndpoint(route)
 }
 
 function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessionItem {
@@ -727,22 +622,6 @@ function sessionSummary(session: InterviewSessionDetailResponse): InterviewSessi
 
 function nextId(rows: { id: number }[]): number {
   return rows.reduce((max, row) => Math.max(max, row.id), 0) + 1
-}
-
-async function fulfillProblem(route: Route, status: number, code: string, detail: string) {
-  await route.fulfill({
-    status,
-    contentType: 'application/problem+json',
-    body: JSON.stringify({ type: 'about:blank', title: code, status, detail, code }),
-  })
-}
-
-async function fulfillJson(route: Route, data: unknown) {
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ code: 200, message: 'ok', data }),
-  })
 }
 
 /* ── Voice lane ───────────────────────────────────────────────────────────────

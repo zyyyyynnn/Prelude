@@ -55,7 +55,7 @@ class InterviewMessageOrderMySqlTest {
 
     @Test
     void theSchemaRefusesASecondMessageWithTheSameNumberInOneSession() {
-        long sessionId = InterviewDataFixtures.sessionInProgress(jdbcTemplate, "message-order-key");
+        long sessionId = sessionWithStage("message-order-key");
         append(sessionId, 0, "first");
 
         assertThatThrownBy(() -> append(sessionId, 0, "collision"))
@@ -64,7 +64,7 @@ class InterviewMessageOrderMySqlTest {
 
     @Test
     void concurrentAppendsLeaveOneSessionWithNoGapAndNoDuplicate() throws Exception {
-        long sessionId = InterviewDataFixtures.sessionInProgress(jdbcTemplate, "message-order-race");
+        long sessionId = sessionWithStage("message-order-race");
         CyclicBarrier start = new CyclicBarrier(6);
 
         List<Future<Integer>> writes = new ArrayList<>();
@@ -72,7 +72,7 @@ class InterviewMessageOrderMySqlTest {
             int index = writer;
             writes.add(executor.submit(() -> {
                 start.await();
-                return messages.insertMessage(sessionId, "user", "answer-" + index).getSeqNum();
+                return messages.insertUserMessage(sessionId, "answer-" + index).getSeqNum();
             }));
         }
 
@@ -88,21 +88,29 @@ class InterviewMessageOrderMySqlTest {
     /* The shape a real turn has: a transaction that looked at the session before it appended,
        with another writer committing in between. MySQL's default isolation freezes such a
        transaction's plain reads at that first one, so numbering from a plain read would allocate
-       a number already taken; the locking read behind `insertMessage` is what stops it. */
+       a number already taken; the locking read behind `insertUserMessage` is what stops it. */
     @Test
     void anAppendInsideAnOpenTransactionNumbersPastWhatAnotherTransactionCommitted() {
-        long sessionId = InterviewDataFixtures.sessionInProgress(jdbcTemplate, "message-order-snapshot");
+        long sessionId = sessionWithStage("message-order-snapshot");
         TransactionTemplate opened = new TransactionTemplate(transactionManager);
         TransactionTemplate elsewhere = new TransactionTemplate(transactionManager);
         elsewhere.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
         opened.executeWithoutResult(status -> {
             assertThat(messageRepository.findLatest(sessionId)).isNull();
-            elsewhere.execute(withoutResult -> messages.insertMessage(sessionId, "user", "committed elsewhere"));
-            messages.insertMessage(sessionId, "user", "appended after it");
+            elsewhere.execute(withoutResult -> messages.insertUserMessage(sessionId, "committed elsewhere"));
+            messages.insertUserMessage(sessionId, "appended after it");
         });
 
         assertThat(seqNums(sessionId)).containsExactly(0, 1);
+    }
+
+    private long sessionWithStage(String accountPrefix) {
+        long sessionId = InterviewDataFixtures.sessionInProgress(jdbcTemplate, accountPrefix);
+        jdbcTemplate.update(
+            "INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer) VALUES (?, 'warmup', -1, FALSE)",
+            sessionId);
+        return sessionId;
     }
 
     private List<Integer> seqNums(long sessionId) {

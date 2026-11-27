@@ -1,5 +1,7 @@
 package com.prelude.interview.infrastructure;
 
+import com.prelude.assets.api.AttachmentContextPort;
+import com.prelude.interview.application.InterviewRetrievalDocuments;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.context.RetrievalPort;
@@ -9,7 +11,6 @@ import com.prelude.resume.api.port.ResumeProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -18,6 +19,7 @@ public class InterviewRetrievalSourceAdapter implements RetrievalSourcePort {
 
     private final InterviewSessionRepository interviewSessionRepository;
     private final ResumeContextPort resumeContextPort;
+    private final AttachmentContextPort attachmentContextPort;
 
     @Override
     public List<String> loadDocuments(String scopeType, Long scopeId) {
@@ -32,15 +34,11 @@ public class InterviewRetrievalSourceAdapter implements RetrievalSourcePort {
             session.getAccountId(),
             session.getResumeId()
         );
-        List<String> documents = new ArrayList<>();
-        addIfPresent(documents, resume.plainText());
-        addIfPresent(documents, session.getJdText());
-        return documents;
+        return InterviewRetrievalDocuments.from(
+            resume,
+            session.getJdText(),
+            attachmentContextPort.list(session.getAccountId(), "interview", session.getId())
+        );
     }
 
-    private void addIfPresent(List<String> documents, String value) {
-        if (value != null && !value.isBlank()) {
-            documents.add(value);
-        }
-    }
 }

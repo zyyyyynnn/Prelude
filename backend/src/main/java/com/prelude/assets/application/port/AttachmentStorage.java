@@ -28,7 +28,7 @@ public interface AttachmentStorage {
     /** Persists a new attachment and returns the stored row with its identifier. */
     AttachmentRow insert(AttachmentRow stored);
 
-    void deleteById(Long attachmentId);
+    int deleteUnboundOwned(Long accountId, Long attachmentId);
 
     /** The attachment row as the service sees it. */
     record AttachmentRow(

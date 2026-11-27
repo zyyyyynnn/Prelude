@@ -1,5 +1,14 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { installAnonymousSession } from './auth-bootstrap'
+import {
+  createProviderFixtures,
+  customModelCapability,
+  fulfillJson,
+  fulfillProblem,
+  fulfillUnknownEndpoint,
+  jsonBody,
+  modelCapability,
+} from './api-fixtures'
 
 type ApiState = {
   sessions?: unknown[]
@@ -7,68 +16,8 @@ type ApiState = {
   requests: Array<{ path: string; method: string; body: unknown }>
 }
 
-const deepSeekCapability = (model = 'deepseek-v4-pro') => ({
-  provider: 'deepseek',
-  model,
-  reasoning: true,
-  structuredOutput: true,
-  toolCalling: true,
-  streaming: true,
-  vision: false,
-  multilingual: true,
-  longContext: true,
-  embedding: false,
-  nativeRealtimeVoice: false,
-  supportedReasoningLevels: ['AUTO', 'LOW', 'HIGH', 'MAX'],
-})
-
-const customCapability = (
-  provider: string,
-  model: string,
-  supportedReasoningLevels: Array<'AUTO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX'> = ['AUTO'],
-) => ({
-  provider,
-  model,
-  reasoning: supportedReasoningLevels.length > 1,
-  structuredOutput: false,
-  toolCalling: false,
-  streaming: true,
-  vision: false,
-  multilingual: false,
-  longContext: false,
-  embedding: false,
-  nativeRealtimeVoice: false,
-  supportedReasoningLevels,
-})
-
-const providers = [
-  {
-    providerKey: 'deepseek',
-    displayName: 'DeepSeek',
-    customEndpoint: false,
-    models: [deepSeekCapability(), deepSeekCapability('deepseek-v4-flash')],
-  },
-  {
-    providerKey: 'openai-responses',
-    displayName: 'OpenAI Responses',
-    customEndpoint: true,
-    models: [],
-  },
-  {
-    providerKey: 'openai-chat-completions',
-    displayName: 'OpenAI Chat Completions',
-    customEndpoint: true,
-    models: [],
-  },
-  {
-    providerKey: 'anthropic-messages',
-    displayName: 'Anthropic Messages',
-    customEndpoint: true,
-    models: [],
-  },
-]
-
-const ok = (data: unknown) => JSON.stringify({ code: 200, message: 'ok', data })
+const deepSeekCapability = (model = 'deepseek-v4-pro') => modelCapability('deepseek', model)
+const providers = createProviderFixtures()
 
 async function installApi(page: Page, state: ApiState) {
   await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => respond(route, state))
@@ -170,12 +119,14 @@ async function respond(route: Route, state: ApiState) {
     })
     return
   }
+  let handled = false
   const deleted = /^\/api\/interview\/(\d+)$/.exec(path)
   if (deleted && method === 'DELETE') {
     const id = Number(deleted[1])
     state.sessions = (state.sessions ?? []).filter(
       (item) => (item as { sessionId: number }).sessionId !== id,
     )
+    handled = true
   } else if (/\/api\/interview\/\d+\/pin$/.test(path) && method === 'PATCH') {
     const id = Number(/\/api\/interview\/(\d+)\/pin$/.exec(path)?.[1])
     const pinned = Boolean((body as { pinned?: boolean }).pinned)
@@ -183,6 +134,9 @@ async function respond(route: Route, state: ApiState) {
       const session = item as { sessionId: number }
       return session.sessionId === id ? { ...session, pinned } : item
     })
+    handled = true
+  } else if (path === '/api/auth/logout' && method === 'POST') {
+    handled = true
   }
   let data: unknown = null
   if (path === '/api/auth/me') data = { accountId: 1, username: 'prelude' }
@@ -199,6 +153,8 @@ async function respond(route: Route, state: ApiState) {
       { id: 1, fileName: '候选人简历.pdf', sessionCount: 2, inUse: false },
       { id: 2, fileName: '作品集简历.pdf', sessionCount: 0, inUse: false },
     ]
+  else if (path === '/api/resume/upload' && method === 'POST')
+    data = { id: 3, fileName: 'intent-resume.pdf' }
   else if (path === '/api/user/profile')
     data = {
       accountId: 1,
@@ -212,14 +168,14 @@ async function respond(route: Route, state: ApiState) {
     data = {
       baseUrl: (body as { baseUrl?: string }).baseUrl ?? '',
       models: [
-        customCapability(
+        customModelCapability(
           (body as { provider?: string }).provider ?? 'openai-chat-completions',
           'account-discovered-model',
         ),
       ],
     }
   else if (path === '/api/llm/config/discover-capabilities' && method === 'POST')
-    data = customCapability(
+    data = customModelCapability(
       (body as { provider?: string }).provider ?? 'openai-chat-completions',
       (body as { model?: string }).model ?? 'account-discovered-model',
       ['AUTO', 'LOW', 'MEDIUM', 'HIGH', 'XHIGH', 'MAX'],
@@ -263,7 +219,7 @@ async function respond(route: Route, state: ApiState) {
       capability:
         ((body as { provider?: string }).provider ?? 'deepseek') === 'deepseek'
           ? deepSeekCapability((body as { model?: string }).model ?? 'deepseek-v4-pro')
-          : customCapability(
+          : customModelCapability(
               (body as { provider?: string }).provider ?? 'openai-chat-completions',
               (body as { model?: string }).model ?? 'account-discovered-model',
               (body as { reasoningLevel?: string }).reasoningLevel === 'HIGH'
@@ -271,11 +227,8 @@ async function respond(route: Route, state: ApiState) {
                 : ['AUTO'],
             ),
     }
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: ok(data),
-  })
+  if (!handled && data === null) return fulfillUnknownEndpoint(route)
+  await fulfillJson(route, data)
 }
 
 test('@smoke sends the selected prompt bar context when starting an interview', async ({
@@ -415,7 +368,16 @@ test('@smoke routes prompt bar management actions into global settings', async (
   await page.getByRole('menuitem', { name: /选择简历/ }).hover()
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('menuitem', { name: '新建简历' }).click()
-  await chooser
+  const fileChooser = await chooser
+  await fileChooser.setFiles({
+    name: 'intent-resume.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4\n% intent fixture\n'),
+  })
+  await expect(page.getByText('简历已上传并完成解析')).toBeVisible()
+  expect(
+    state.requests.filter((item) => item.method === 'POST' && item.path === '/api/resume/upload'),
+  ).toHaveLength(1)
   await expect(page.getByRole('heading', { name: '简历管理' })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: '全局设置' })).toBeHidden()
@@ -454,7 +416,7 @@ test('@smoke centers the async button indicator without resizing the control', a
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: ok({
+      body: jsonBody({
         provider: (body as { provider?: string }).provider ?? 'deepseek',
         model: (body as { model?: string }).model ?? 'deepseek-v4-pro',
         customEndpointUrl: null,
@@ -547,7 +509,7 @@ test('@smoke blocks incompatible model drafts and preserves selections after sta
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: ok(
+      body: jsonBody(
         providers.map((provider) =>
           provider.providerKey === 'deepseek'
             ? {
@@ -837,7 +799,7 @@ test('@smoke keeps the active session when a requested session fails and retries
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: ok({
+      body: jsonBody({
         sessionId,
         targetPosition: sessionId === 11 ? '会话 A' : '会话 B',
         status: 'ongoing',
@@ -883,28 +845,36 @@ test('@smoke prevents a late session request from overwriting the latest target'
   }
   await installApi(page, state)
   let releaseB!: () => void
+  let finishB!: () => void
   const bGate = new Promise<void>((resolve) => {
     releaseB = resolve
   })
+  const bFinished = new Promise<void>((resolve) => {
+    finishB = resolve
+  })
   await page.route('**/api/interview/*/messages', async (route) => {
     const sessionId = Number(new URL(route.request().url()).pathname.split('/').at(-2))
-    if (sessionId === 12) await bGate
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: ok({
-        sessionId,
-        targetPosition: `会话 ${String.fromCharCode(54 + sessionId)}`,
-        status: 'ongoing',
-        currentStage: 'technical',
-        summaryReport: null,
-        stages: [],
-        messages: [{ id: sessionId, role: 'assistant', content: `会话 ${sessionId} 已加载` }],
-        resumeId: 1,
-        positionId: 1,
-        attachments: [],
-      }),
-    })
+    try {
+      if (sessionId === 12) await bGate
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: jsonBody({
+          sessionId,
+          targetPosition: `会话 ${String.fromCharCode(54 + sessionId)}`,
+          status: 'ongoing',
+          currentStage: 'technical',
+          summaryReport: null,
+          stages: [],
+          messages: [{ id: sessionId, role: 'assistant', content: `会话 ${sessionId} 已加载` }],
+          resumeId: 1,
+          positionId: 1,
+          attachments: [],
+        }),
+      })
+    } finally {
+      if (sessionId === 12) finishB()
+    }
   })
 
   await page.goto('/interview?session=11')
@@ -912,7 +882,7 @@ test('@smoke prevents a late session request from overwriting the latest target'
   await page.getByRole('button', { name: '打开会话 会话 C' }).click()
   await expect(page).toHaveURL(/session=13/)
   releaseB()
-  await page.waitForTimeout(100)
+  await bFinished
   await expect(page).toHaveURL(/session=13/)
   await expect(page.getByText('会话 13 已加载')).toBeVisible()
 })
@@ -931,7 +901,7 @@ test('@smoke auto-starts a prefetched empty session once under StrictMode', asyn
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: ok({
+      body: jsonBody({
         sessionId,
         targetPosition: sessionId === 11 ? '会话 A' : '会话 B',
         status: 'ongoing',
@@ -947,14 +917,22 @@ test('@smoke auto-starts a prefetched empty session once under StrictMode', asyn
   })
 
   await page.goto('/interview?session=11')
+  const autoStartResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname.endsWith('/api/interview/12/chat') &&
+      response.request().method() === 'POST',
+  )
   await page.getByRole('button', { name: '打开会话 会话 B' }).click()
   await expect(page).toHaveURL(/session=12/)
+  await autoStartResponse
+  await expect(page.getByText('下面继续讨论系统边界。')).toBeVisible()
+  await expect(page.getByRole('button', { name: '发送' })).toBeDisabled()
+  await page.getByPlaceholder('输入回答…').fill('继续回答')
+  await expect(page.getByRole('button', { name: '发送' })).toBeEnabled()
   const autoStartRequests = () =>
     state.requests.filter(
       (request) => request.path === '/api/interview/12/chat' && request.method === 'POST',
     )
-  await expect.poll(() => autoStartRequests()).toHaveLength(1)
-  await page.waitForTimeout(100)
   expect(autoStartRequests()).toHaveLength(1)
 })
 
@@ -977,8 +955,12 @@ test('@smoke restores the authoritative session after stream failure under Stric
     },
   }
   await installApi(page, state)
+  let releaseFailure!: () => void
+  const failureGate = new Promise<void>((resolve) => {
+    releaseFailure = resolve
+  })
   await page.route('**/api/interview/11/chat', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 150))
+    await failureGate
     await route.fulfill({
       status: 503,
       contentType: 'application/json',
@@ -994,8 +976,13 @@ test('@smoke restores the authoritative session after stream failure under Stric
 
   await page.goto('/interview?session=11')
   await page.getByPlaceholder('输入回答…').fill('这条乐观消息必须回滚')
+  const failureResponse = page.waitForResponse((response) =>
+    response.url().endsWith('/api/interview/11/chat'),
+  )
   await page.getByRole('button', { name: '发送' }).click()
   await expect(page.getByText('这条乐观消息必须回滚')).toBeVisible()
+  releaseFailure()
+  await failureResponse
   await expect(page.getByText('流式服务暂不可用')).toBeVisible()
   await expect(page.getByText('这条乐观消息必须回滚')).toHaveCount(0)
   await expect(page.getByText('服务端权威消息')).toBeVisible()
@@ -1064,7 +1051,11 @@ test('@smoke isolates account-scoped queries when a previous principal completes
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: ok({ username: account, email: `${account}@example.com`, themePreference: 'system' }),
+        body: jsonBody({
+          username: account,
+          email: `${account}@example.com`,
+          themePreference: 'system',
+        }),
       })
     } finally {
       if (requestNumber === 1) finishAccountA()
@@ -1074,7 +1065,7 @@ test('@smoke isolates account-scoped queries when a previous principal completes
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: ok({ accountId: 2 }),
+      body: jsonBody({ accountId: 2 }),
     })
   })
 
@@ -1352,6 +1343,140 @@ test('@byok keeps the backend conservative capability when a selected-model prob
   await expect(page.getByRole('option', { name: '高', exact: true })).toHaveCount(0)
 })
 
+for (const outcome of ['success', 'error'] as const) {
+  test(`@byok ignores a late model-discovery ${outcome} after switching provider`, async ({
+    page,
+  }) => {
+    const state: ApiState = { requests: [] }
+    await installApi(page, state)
+    let releaseDiscovery!: () => void
+    let markDiscoveryStarted!: () => void
+    const discoveryGate = new Promise<void>((resolve) => {
+      releaseDiscovery = resolve
+    })
+    const discoveryStarted = new Promise<void>((resolve) => {
+      markDiscoveryStarted = resolve
+    })
+    await page.route('**/api/llm/config/discover-models', async (route) => {
+      markDiscoveryStarted()
+      await discoveryGate
+      if (outcome === 'error') {
+        await fulfillProblem(route, 500, 'old_provider_failure', '旧供应商探测失败')
+        return
+      }
+      await fulfillJson(route, {
+        baseUrl: 'https://old.example/v1',
+        models: [customModelCapability('openai-chat-completions', 'stale-discovered-model')],
+      })
+    })
+    await page.goto('/interview')
+    await page.getByRole('button', { name: '设置' }).click()
+    await page.getByRole('button', { name: '模型管理' }).click()
+    await page.getByLabel('接入方式').click()
+    await page.getByRole('option', { name: 'OpenAI Chat Completions' }).click()
+    await page.getByLabel('Base URL').fill('https://old.example/v1')
+    await page.getByRole('button', { name: '检测模型' }).click()
+    await discoveryStarted
+
+    await page.getByLabel('接入方式').click()
+    await page.getByRole('option', { name: 'Anthropic Messages' }).click()
+    const lateResponse = page.waitForResponse((response) =>
+      response.url().endsWith('/api/llm/config/discover-models'),
+    )
+    releaseDiscovery()
+    await lateResponse
+    await expect(page.getByRole('button', { name: '检测模型' })).not.toHaveAttribute('aria-busy')
+
+    await expect(page.getByLabel('接入方式')).toContainText('Anthropic Messages')
+    await expect(page.getByLabel('模型', { exact: true })).toHaveJSProperty('tagName', 'INPUT')
+    await expect(page.getByLabel('模型', { exact: true })).toHaveValue('')
+    await expect(page.getByText('旧供应商探测失败')).toHaveCount(0)
+  })
+}
+
+for (const outcome of ['success', 'error'] as const) {
+  test(`@byok ignores a late selected-model capability ${outcome}`, async ({ page }) => {
+    const state: ApiState = { requests: [] }
+    await installApi(page, state)
+    await page.route('**/api/llm/config/discover-models', async (route) => {
+      await fulfillJson(route, {
+        baseUrl: 'https://models.example/v1',
+        models: [
+          customModelCapability('openai-chat-completions', 'old-model'),
+          customModelCapability('openai-chat-completions', 'new-model', ['AUTO', 'LOW']),
+        ],
+      })
+    })
+    let releaseOldProbe!: () => void
+    let markOldProbeStarted!: () => void
+    const oldProbeGate = new Promise<void>((resolve) => {
+      releaseOldProbe = resolve
+    })
+    const oldProbeStarted = new Promise<void>((resolve) => {
+      markOldProbeStarted = resolve
+    })
+    await page.route('**/api/llm/config/discover-capabilities', async (route) => {
+      const model = (route.request().postDataJSON() as { model: string }).model
+      if (model === 'new-model') {
+        await fulfillJson(
+          route,
+          customModelCapability('openai-chat-completions', 'new-model', ['AUTO', 'LOW']),
+        )
+        return
+      }
+      markOldProbeStarted()
+      await oldProbeGate
+      if (outcome === 'error') {
+        await fulfillProblem(route, 500, 'old_model_failure', '旧模型探测失败')
+        return
+      }
+      await fulfillJson(
+        route,
+        customModelCapability('openai-chat-completions', 'old-model', ['AUTO', 'MAX']),
+      )
+    })
+    await page.goto('/interview')
+    await page.getByRole('button', { name: '设置' }).click()
+    await page.getByRole('button', { name: '模型管理' }).click()
+    await page.getByLabel('接入方式').click()
+    await page.getByRole('option', { name: 'OpenAI Chat Completions' }).click()
+    await page.getByLabel('Base URL').fill('https://models.example/v1')
+    await page.getByRole('button', { name: '检测模型' }).click()
+    await page.getByLabel('模型', { exact: true }).click()
+    await page.getByRole('option', { name: 'old-model', exact: true }).click()
+    await oldProbeStarted
+
+    const newProbeResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/llm/config/discover-capabilities') &&
+        (response.request().postDataJSON() as { model?: string } | null)?.model === 'new-model',
+    )
+    await page.getByLabel('模型', { exact: true }).click()
+    await page.getByRole('option', { name: 'new-model', exact: true }).click()
+    await newProbeResponse
+    await page.getByRole('combobox', { name: '思考深度' }).click()
+    await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
+    await expect(page.getByRole('option', { name: '低', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
+
+    const oldProbeResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/llm/config/discover-capabilities') &&
+        (response.request().postDataJSON() as { model?: string } | null)?.model === 'old-model',
+    )
+    releaseOldProbe()
+    await (await oldProbeResponse).finished()
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    )
+    await page.getByRole('combobox', { name: '思考深度' }).click()
+    await expect(page.getByRole('option', { name: '默认', exact: true })).toBeVisible()
+    await expect(page.getByRole('option', { name: '低', exact: true })).toBeVisible()
+    await expect(page.getByRole('option', { name: '最大', exact: true })).toHaveCount(0)
+    await expect(page.getByText('旧模型探测失败')).toHaveCount(0)
+  })
+}
+
 const report = JSON.stringify({
   summary: {
     fitAssessment: '具备岗位所需的工程能力',
@@ -1597,7 +1722,7 @@ test('@smoke renders analytics charts and recent-score labels from the React das
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: ok(data),
+      body: jsonBody(data),
     })
   })
   await page.goto('/analytics')

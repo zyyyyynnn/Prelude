@@ -1,8 +1,8 @@
 package com.prelude.interview.infrastructure;
 
-import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.interview.domain.InterviewSession;
+import com.prelude.interview.integration.InterviewSessionStatus;
 import com.prelude.interview.infrastructure.persistence.InterviewSessionEntity;
 import com.prelude.interview.infrastructure.persistence.InterviewSessionMapper;
 import java.time.LocalDateTime;
@@ -10,7 +10,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-/** Adapts the session port to the row table, so the port never carries the row type. */
 @Repository
 @RequiredArgsConstructor
 public class MybatisInterviewSessionRepository implements InterviewSessionRepository {
@@ -43,27 +42,21 @@ public class MybatisInterviewSessionRepository implements InterviewSessionReposi
     }
 
     @Override
-    public String lockAppendOrder(Long sessionId) {
-        return sessionMapper.lockAppendOrder(sessionId);
+    public int markGeneratingIfOngoing(Long sessionId, Long accountId) {
+        InterviewSessionStatus next = InterviewSessionStatus.ONGOING.startGenerating();
+        return sessionMapper.transitionStatusOwned(
+            sessionId, accountId, InterviewSessionStatus.ONGOING.wire(), next.wire());
     }
 
     @Override
-    public int markGeneratingIfOngoing(Long sessionId, Long accountId) {
-        return sessionMapper.transitionStatusOwned(
-            sessionId,
-            accountId,
-            InterviewSessionStatus.ONGOING.wire(),
-            InterviewSessionStatus.GENERATING.wire()
-        );
+    public InterviewSessionStatus lockAppendOrder(Long sessionId) {
+        String status = sessionMapper.lockAppendOrder(sessionId);
+        return status == null ? null : InterviewSessionStatus.fromWire(status);
     }
 
     @Override
     public int updateSummary(Long sessionId, String summary) {
-        return sessionMapper.updateSummaryIfStatus(
-            sessionId,
-            summary,
-            InterviewSessionStatus.ONGOING.wire()
-        );
+        return sessionMapper.updateSummaryIfStatus(sessionId, summary, InterviewSessionStatus.ONGOING.wire());
     }
 
     @Override
@@ -72,22 +65,17 @@ public class MybatisInterviewSessionRepository implements InterviewSessionReposi
     }
 
     @Override
-    public int completeReportIfGenerating(Long sessionId, String reportJson) {
+    public int completeReport(Long sessionId, String reportJson) {
+        InterviewSessionStatus next = InterviewSessionStatus.GENERATING.finishGenerating();
         return sessionMapper.completeReportIfStatus(
-            sessionId,
-            reportJson,
-            InterviewSessionStatus.GENERATING.wire(),
-            InterviewSessionStatus.FINISHED.wire()
-        );
+            sessionId, reportJson, InterviewSessionStatus.GENERATING.wire(), next.wire());
     }
 
     @Override
-    public int restoreOngoingIfGenerating(Long sessionId) {
+    public int restoreOngoing(Long sessionId) {
+        InterviewSessionStatus next = InterviewSessionStatus.GENERATING.restoreOngoing();
         return sessionMapper.transitionStatus(
-            sessionId,
-            InterviewSessionStatus.GENERATING.wire(),
-            InterviewSessionStatus.ONGOING.wire()
-        );
+            sessionId, InterviewSessionStatus.GENERATING.wire(), next.wire());
     }
 
     @Override

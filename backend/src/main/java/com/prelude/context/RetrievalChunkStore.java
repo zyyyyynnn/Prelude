@@ -10,6 +10,10 @@ public interface RetrievalChunkStore {
 
     void delete(String scopeType, Long scopeId);
 
+    void markInvalidated(String scopeType, Long scopeId);
+
+    boolean isInvalidated(String scopeType, Long scopeId);
+
     record StoredChunk(
         int ordinal,
         String content,

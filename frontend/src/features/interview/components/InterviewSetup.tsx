@@ -1,13 +1,15 @@
+import { useAuth } from '@/features/auth'
 import { ErrorState, LoadingState, useFeedback } from '@/shared/ui'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteAttachment, uploadAttachment } from '@/features/assets'
-import { fetchPositions } from '@/features/position'
-import { fetchResumes } from '@/features/resume'
-import { fetchLlmConfig, fetchProviders, useSettings } from '@/features/settings'
+import { fetchPositions, positionQueryKeys } from '@/features/position'
+import { fetchResumes, resumeQueryKeys } from '@/features/resume'
+import { fetchLlmConfig, fetchProviders, llmQueryKeys, useSettings } from '@/features/settings'
 import type { InterviewModelConfig } from '../types'
 import { startInterview } from '../api'
+import { interviewQueryKeys } from '../query-keys'
 import { InterviewSetupComposer } from './InterviewSetupComposer'
 import {
   interviewModelSource,
@@ -19,21 +21,23 @@ export function InterviewSetup() {
   const navigate = useNavigate()
   const client = useQueryClient()
   const feedback = useFeedback()
+  const { accountId } = useAuth()
   const { openSettings } = useSettings()
   const positions = useQuery({
-    queryKey: ['positions'],
+    queryKey: positionQueryKeys.list(),
     queryFn: fetchPositions,
   })
   const resumes = useQuery({
-    queryKey: ['resumes'],
+    queryKey: resumeQueryKeys.list(),
     queryFn: ({ signal }) => fetchResumes(signal),
   })
   const llmConfig = useQuery({
-    queryKey: ['llm-config'],
+    queryKey: llmQueryKeys.config(accountId ?? 0),
     queryFn: fetchLlmConfig,
+    enabled: accountId != null,
   })
   const providers = useQuery({
-    queryKey: ['llm-providers'],
+    queryKey: llmQueryKeys.providers(),
     queryFn: fetchProviders,
   })
   const globalConfigKey = llmConfig.data ? interviewModelSource(llmConfig.data) : ''
@@ -50,7 +54,7 @@ export function InterviewSetup() {
   const create = useMutation({
     mutationFn: startInterview,
     onSuccess: async (data) => {
-      await client.invalidateQueries({ queryKey: ['interview-sessions'] })
+      await client.invalidateQueries({ queryKey: interviewQueryKeys.sessions() })
       await navigate(`/interview?session=${data.sessionId}`)
     },
     onError: (error) => feedback.notify(error.message, 'error'),

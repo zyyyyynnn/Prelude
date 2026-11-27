@@ -1,6 +1,8 @@
+import { useAuth } from '@/features/auth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchLlmConfig, fetchProviders } from '../api'
 import { sectionTitles } from '../settings-context'
+import { llmQueryKeys } from '../query-keys'
 import { REASONING_LABELS, type LlmConfigResponse, type LlmProviderResponse } from '../types'
 import { useLlmSettings } from '../use-llm-settings'
 import { RiDeleteBinLine, RiEyeLine, RiEyeOffLine, RiRefreshLine } from '@remixicon/react'
@@ -19,8 +21,13 @@ import {
 } from '@/shared/ui'
 
 export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
-  const config = useQuery({ queryKey: ['llm-config'], queryFn: fetchLlmConfig })
-  const providers = useQuery({ queryKey: ['llm-providers'], queryFn: fetchProviders })
+  const { accountId } = useAuth()
+  const config = useQuery({
+    queryKey: llmQueryKeys.config(accountId ?? 0),
+    queryFn: fetchLlmConfig,
+    enabled: accountId != null,
+  })
+  const providers = useQuery({ queryKey: llmQueryKeys.providers(), queryFn: fetchProviders })
   if (config.isPending || providers.isPending) return <LoadingState message="正在读取模型配置…" />
   const error = config.error || providers.error
   if (error || !config.data || !providers.data)
@@ -35,7 +42,8 @@ export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
     )
   return (
     <LlmSettingsForm
-      key={`${providerKey ?? config.data.provider}:${config.data.customEndpointUrl}:${config.data.model}`}
+      key={`${accountId}:${providerKey ?? config.data.provider}:${config.data.customEndpointUrl}:${config.data.model}`}
+      accountId={accountId ?? 0}
       config={config.data}
       providers={providers.data}
     />
@@ -44,13 +52,15 @@ export function LlmSettingsPanel({ providerKey }: { providerKey?: string }) {
 
 /** The whole form is one hook's state: it only decides how that state is laid out. */
 function LlmSettingsForm({
+  accountId,
   config,
   providers,
 }: {
+  accountId: number
   config: LlmConfigResponse
   providers: LlmProviderResponse[]
 }) {
-  const state = useLlmSettings(config, providers)
+  const state = useLlmSettings(accountId, config, providers)
   const endpointHint = state.protocol
     ? `填写接口根地址，系统会请求 ${state.protocol.endpointSuffix}。`
     : '内置接入方式使用系统配置的服务地址。'
@@ -188,11 +198,6 @@ function LlmSettingsForm({
           </Field>
         </div>
       </SubSection>
-      {state.testMessage && (
-        <p className="type-meta" role="status">
-          {state.testMessage}
-        </p>
-      )}
     </Panel>
   )
 }

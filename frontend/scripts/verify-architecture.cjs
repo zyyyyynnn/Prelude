@@ -119,6 +119,34 @@ for (const file of walk(sourceRoot).filter((item) => sourceExtensions.has(path.e
   }
 }
 
+const resourceQueryNames = new Set([
+  'resumes',
+  'positions',
+  'llm-config',
+  'llm-providers',
+  'profile',
+  'interview-session',
+  'interview-sessions',
+])
+for (const file of walk(sourceRoot).filter((item) =>
+  ['.ts', '.tsx'].includes(path.extname(item)),
+)) {
+  const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
+  if (relative.endsWith('/query-keys.ts')) continue
+  const source = fs.readFileSync(file, 'utf8')
+  const tree = parseTree(file, source)
+  walkAst(tree, (node) => {
+    if (node.type !== 'ArrayExpression') return
+    for (const element of node.elements) {
+      if (element?.type !== 'Literal' || !resourceQueryNames.has(element.value)) continue
+      const line = source.slice(0, element.start).split('\n').length
+      violations.push(
+        `${relative}:${line}: raw query key ${JSON.stringify(element.value)} must come from its resource query-key factory`,
+      )
+    }
+  })
+}
+
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const declared = { ...packageJson.dependencies, ...packageJson.devDependencies }
 for (const name of blockedPackages) {
@@ -288,7 +316,25 @@ for (const name of blockedPackages) {
         const element = pattern?.type === 'ArrayPattern' ? pattern.elements[position] : undefined
         return patternNames(element)
       }
+      if (anchor.type === 'CallExpression') {
+        if (
+          anchor.callee?.type === 'MemberExpression' &&
+          anchor.callee.property.type === 'Identifier' &&
+          anchor.callee.property.name === 'then'
+        ) {
+          const callback = anchor.arguments[0]
+          if (callback?.type === 'ArrowFunctionExpression') {
+            return patternNames(callback.params[0])
+          }
+          continue
+        }
+        return []
+      }
+      if (anchor.type === 'ArrowFunctionExpression') {
+        return patternNames(anchor.params[0])
+      }
       if (anchor.type === 'MemberExpression') {
+        if (anchor.property.type === 'Identifier' && anchor.property.name === 'then') continue
         return anchor.property.type === 'Identifier' ? [anchor.property.name] : []
       }
       if (anchor.type === 'VariableDeclarator') return patternNames(anchor.id)
@@ -388,13 +434,10 @@ for (const name of blockedPackages) {
   }
   for (const surface of publicEntries) surface.info = readEntry(surface)
 
-  /* Nothing outside the surface may name a file inside it — with one boundary drawn on purpose.
-     `app/` (but not `app/lab`, a gallery that decides nothing about loading) is the composition
-     root, so it may name a route module directly, but only one the entry registers, and only the
-     names that registration exports. Routing every page through `index.ts` instead was measured,
-     not assumed — it folded login, settings, resume and position into the entry chunk
-     (+8.5 kB gzipped on every first paint, unauthenticated visitors included), because a static
-     barrel import drags the whole surface into the entry graph. */
+  /* Nothing outside the surface may name a file inside it. `app/` is the composition
+     root, so it may name a registered module directly. Registration is explicit for
+     shell modules and gallery-only displays, which stay out of product barrels and
+     therefore out of unrelated production chunks. */
   const readsByFile = new Map(tsSources.map((file) => [file, moduleReads(file)]))
   for (const file of tsSources) {
     const relative = rel(file)

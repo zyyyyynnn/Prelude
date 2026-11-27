@@ -20,6 +20,15 @@ class FrameworkLeakageTest {
         "software.amazon.awssdk..",
     };
 
+    private static final String[] SPRING_STEREOTYPES = {
+        "org.springframework.stereotype..",
+    };
+
+    private static final String[] JACKSON_FRAMEWORKS = {
+        "com.fasterxml.jackson..",
+        "tools.jackson..",
+    };
+
     private static final String[] PERSISTENCE_FRAMEWORKS = {
         "com.baomidou.mybatisplus..",
         "org.apache.ibatis..",
@@ -31,12 +40,15 @@ class FrameworkLeakageTest {
         "javax.servlet..",
     };
 
-    /** A domain model carrying an ORM annotation has stopped being the model. */
+    /** Domain models stay independent of delivery, persistence and serialization frameworks. */
     @ArchTest
     static final ArchRule DOMAIN_STAYS_FRAMEWORK_FREE = noClasses()
         .that().resideInAPackage("..domain..")
         .should().dependOnClassesThat().resideInAnyPackage(
-            concat(EXTERNAL_FRAMEWORKS, PERSISTENCE_FRAMEWORKS)
+            concat(
+                concat(EXTERNAL_FRAMEWORKS, PERSISTENCE_FRAMEWORKS),
+                concat(SPRING_STEREOTYPES, JACKSON_FRAMEWORKS)
+            )
         );
 
     /** Ports and DTOs are the contract other layers implement; they cannot name a table. */

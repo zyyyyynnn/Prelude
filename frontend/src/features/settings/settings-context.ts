@@ -34,6 +34,7 @@ export type SettingsOpenRequest = {
 export type SettingsRequest = SettingsOpenRequest & {
   section: SettingsSection
   requestId: number
+  uploadFile?: File
 }
 
 export type SettingsContextValue = {

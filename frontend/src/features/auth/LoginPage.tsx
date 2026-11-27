@@ -6,11 +6,13 @@ import { apiBaseUrl } from '@/shared/api/client'
 import { cn } from '@/shared/lib/cn'
 import { fetchOAuthProviders, login, register } from './api'
 import { useAuth } from './auth-context'
+import { AuthPage } from './AuthPage'
 import { oauthStartPath, safeLocalRedirect } from './redirect'
 import type { OAuthProvider } from './types'
 import { RiEyeLine, RiEyeOffLine, RiGithubLine, RiGoogleLine } from '@remixicon/react'
 import {
   Button,
+  ErrorState,
   Field,
   FieldAction,
   FieldActions,
@@ -99,7 +101,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="page page--center page--viewport">
+    <AuthPage>
       <section className="login-card" aria-labelledby="auth-title">
         <div className="login-card__content">
           <aside className="login-card__brand-panel">
@@ -113,6 +115,13 @@ export function LoginPage() {
                 {mode === 'login' ? '进入面试工作台' : '创建工作台账号'}
               </h1>
             </header>
+
+            {auth.status === 'unavailable' && (
+              <ErrorState
+                message="登录状态检查失败，请检查网络后重试。"
+                onRetry={() => void auth.retry()}
+              />
+            )}
 
             {mode === 'login' && oauthPending && (
               <p role="alert" className="text-sm text-text-secondary">
@@ -219,6 +228,6 @@ export function LoginPage() {
           </div>
         </div>
       </section>
-    </main>
+    </AuthPage>
   )
 }

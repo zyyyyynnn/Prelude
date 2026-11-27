@@ -14,6 +14,8 @@ public class InterviewStageEntity {
     private Long id;
     private Long sessionId;
     private String stageName;
+    private int boundarySeq;
+    private boolean awaitingAnswer;
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
 
@@ -22,6 +24,8 @@ public class InterviewStageEntity {
         entity.setId(stage.getId());
         entity.setSessionId(stage.getSessionId());
         entity.setStageName(stage.getStageName());
+        entity.setBoundarySeq(stage.getBoundarySeq());
+        entity.setAwaitingAnswer(stage.isAwaitingAnswer());
         entity.setStartedAt(stage.getStartedAt());
         entity.setEndedAt(stage.getEndedAt());
         return entity;
@@ -32,6 +36,8 @@ public class InterviewStageEntity {
         stage.setId(id);
         stage.setSessionId(sessionId);
         stage.setStageName(stageName);
+        stage.setBoundarySeq(boundarySeq);
+        stage.setAwaitingAnswer(awaitingAnswer);
         stage.setStartedAt(startedAt);
         stage.setEndedAt(endedAt);
         return stage;

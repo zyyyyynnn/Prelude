@@ -6,40 +6,41 @@ import com.prelude.position.api.port.PositionCatalogPort;
 import com.prelude.position.api.port.PositionCatalogPort.PositionSnapshot;
 import com.prelude.BusinessException;
 import com.prelude.identity.api.CurrentAccount;
-import com.prelude.interview.api.port.InterviewSessionStatus;
+import com.prelude.interview.integration.InterviewSessionStatus;
+import com.prelude.interview.integration.InterviewStageCatalog;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.ModelExecutionSnapshotRef;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
 import com.prelude.context.RetrievalPort;
+import com.prelude.context.RetrievalTransactions;
 import com.prelude.resume.api.port.ResumeContextPort;
 import com.prelude.resume.api.port.ResumeProjection;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StartInterview {
 
-    private static final String ROLE_SYSTEM = "system";
-
     private final ResumeContextPort resumeContextPort;
     private final PositionCatalogPort positionCatalogPort;
     private final InterviewSessionRepository interviewSessionRepository;
-    private final LlmPort llmPort;
+    private final ModelExecutionPort modelExecutionPort;
     private final InterviewStageManager interviewStageManager;
     private final InterviewMessageService interviewMessageService;
-    @Qualifier("sseTaskExecutor")
-    private final Executor sseTaskExecutor;
     private final RetrievalPort retrievalPort;
     private final AttachmentContextPort attachmentContextPort;
     private final CurrentAccount currentAccount;
+    @Qualifier("sseTaskExecutor")
+    private final Executor sseTaskExecutor;
 
     @Transactional(rollbackFor = Exception.class)
     public StartInterviewResult execute(StartInterviewCommand command) {
@@ -58,39 +59,38 @@ public class StartInterview {
         session.setResumeId(resume.resumeId());
         session.setPositionId(position.id());
         session.setTargetPosition(position.name());
-        ModelExecutionSnapshotRef snapshotRef = llmPort.freezeSnapshot(
-            new LlmPort.FreezeSnapshotCommand(accountId, command.reasoningLevel(), command.model()));
+        ModelExecutionSnapshotRef snapshotRef = modelExecutionPort.freezeSnapshot(
+            new ModelExecutionPort.FreezeSnapshotCommand(accountId, command.reasoningLevel(), command.model()));
         session.setModelExecutionSnapshotId(snapshotRef.snapshotId());
-        session.setStatus(InterviewSessionStatus.ONGOING.wire());
+        session.setStatus(InterviewSessionStatus.ONGOING);
         session.setJdText(command.jdText());
         interviewSessionRepository.add(session);
         attachmentContextPort.bind(accountId, command.attachmentIds(), "interview", session.getId());
 
-        List<String> retrievalDocuments = new ArrayList<>();
-        addIfPresent(retrievalDocuments, resume.plainText());
-        addIfPresent(retrievalDocuments, command.jdText());
-        attachments.stream()
-            .filter(attachment -> !attachment.image())
-            .map(AttachmentSnapshot::text)
-            .forEach(text -> addIfPresent(retrievalDocuments, text));
-        sseTaskExecutor.execute(() -> retrievalPort.index(
-            RetrievalPort.SCOPE_SESSION,
-            session.getId(),
-            retrievalDocuments
-        ));
-        interviewMessageService.insertMessage(session.getId(), ROLE_SYSTEM, position.systemPrompt());
+        List<String> retrievalDocuments = InterviewRetrievalDocuments.from(
+            resume, command.jdText(), attachments);
+        Long sessionId = session.getId();
+        RetrievalTransactions.afterCommit(() -> {
+            try {
+                sseTaskExecutor.execute(() -> retrievalPort.index(
+                    RetrievalPort.SCOPE_SESSION,
+                    sessionId,
+                    retrievalDocuments
+                ));
+            } catch (RuntimeException exception) {
+                log.warn("Retrieval indexing was rejected for committed session {}; source rebuild remains available",
+                    sessionId, exception);
+            }
+        });
+        interviewMessageService.insertSystemMessage(session.getId(), position.systemPrompt());
         interviewStageManager.ensureInitialStage(session);
 
-        return new StartInterviewResult(session.getId(), position.name(), InterviewStageManager.STAGE_WARMUP);
+        return new StartInterviewResult(
+            session.getId(), position.name(), InterviewStageCatalog.STAGES.getFirst().wireName());
     }
 
     private long currentAccountId() {
         return currentAccount.requireId();
     }
 
-    private void addIfPresent(List<String> documents, String value) {
-        if (value != null && !value.isBlank()) {
-            documents.add(value);
-        }
-    }
 }

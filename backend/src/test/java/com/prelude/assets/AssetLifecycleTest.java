@@ -93,7 +93,19 @@ class AssetLifecycleTest {
             .isEqualTo("attachment body");
 
         attachmentService.deleteUnbound(snapshot.attachmentId());
+        assertThat(count("SELECT COUNT(*) FROM attachment WHERE id = ?", snapshot.attachmentId())).isZero();
+        assertThat(assetMapper.selectById(snapshot.assetId())).isNotNull();
+        assertThat(count("SELECT COUNT(*) FROM asset_deletion_request WHERE asset_id = ?", snapshot.assetId()))
+            .isEqualTo(1);
+        assertThat(new String(objectStoragePort.get(asset.getObjectKey()), StandardCharsets.UTF_8))
+            .isEqualTo("attachment body");
+
+        assetDeletionService.processNextBatch();
+        assetDeletionService.processNextBatch();
+
         assertThat(assetMapper.selectById(snapshot.assetId())).isNull();
+        assertThat(count("SELECT COUNT(*) FROM asset_deletion_request WHERE asset_id = ?", snapshot.assetId()))
+            .isZero();
         assertThatThrownBy(() -> objectStoragePort.get(asset.getObjectKey()))
             .isInstanceOf(RuntimeException.class);
     }
@@ -223,6 +235,15 @@ class AssetLifecycleTest {
             .isEqualTo("the same content");
 
         attachmentService.deleteUnbound(first.attachmentId());
+        assertThat(new String(objectStoragePort.get(firstKey), StandardCharsets.UTF_8))
+            .isEqualTo("the same content");
+        assertThat(new String(objectStoragePort.get(secondKey), StandardCharsets.UTF_8))
+            .isEqualTo("the same content");
+
+        assetDeletionService.processNextBatch();
+
+        assertThat(assetMapper.selectById(first.assetId())).isNull();
+        assertThatThrownBy(() -> objectStoragePort.get(firstKey)).isInstanceOf(RuntimeException.class);
         assertThat(new String(objectStoragePort.get(secondKey), StandardCharsets.UTF_8))
             .isEqualTo("the same content");
     }

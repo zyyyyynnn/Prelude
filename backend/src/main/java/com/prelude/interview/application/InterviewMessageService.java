@@ -1,45 +1,72 @@
 package com.prelude.interview.application;
 
 import com.prelude.BusinessException;
-import com.prelude.interview.api.port.InterviewSessionStatus;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewStageRepository;
 import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.interview.domain.InterviewMessage;
+import com.prelude.interview.domain.InterviewStage;
+import com.prelude.interview.integration.InterviewSessionStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Appends messages to a session, numbering them from 0 within that session. */
 @Service
 @RequiredArgsConstructor
 public class InterviewMessageService {
 
     private final InterviewMessageRepository interviewMessageRepository;
     private final InterviewSessionRepository interviewSessionRepository;
+    private final InterviewStageRepository interviewStageRepository;
 
-    /**
-     * The number is allocated under the session row's write lock, so whoever appends next reads
-     * what the previous append committed rather than racing it, and the unique key on
-     * {@code (session_id, seq_num)} refuses the alternative outloud. The same lock carries the
-     * status gate: a turn that lost the ongoing→generating race to {@code FinishInterview} is
-     * refused here instead of appending into a closed session.
-     */
     @Transactional(rollbackFor = Exception.class)
-    public InterviewMessage insertMessage(Long sessionId, String role, String content) {
-        String status = interviewSessionRepository.lockAppendOrder(sessionId);
+    public InterviewMessage insertUserMessage(Long sessionId, String content) {
+        lockOngoing(sessionId);
+        setAwaitingAnswer(sessionId, false);
+        return append(sessionId, "user", content, AssessmentStatus.PENDING);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public InterviewMessage insertAssistantMessage(Long sessionId, String content) {
+        lockOngoing(sessionId);
+        setAwaitingAnswer(sessionId, true);
+        return append(sessionId, "assistant", content, null);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public InterviewMessage insertSystemMessage(Long sessionId, String content) {
+        lockOngoing(sessionId);
+        return append(sessionId, "system", content, null);
+    }
+
+    private void lockOngoing(Long sessionId) {
+        InterviewSessionStatus status = interviewSessionRepository.lockAppendOrder(sessionId);
         if (status == null) {
             throw BusinessException.badRequest("面试会话不存在");
         }
-        if (!InterviewSessionStatus.ONGOING.matches(status)) {
+        if (status != InterviewSessionStatus.ONGOING) {
             throw BusinessException.badRequest("面试会话已结束或正在生成报告");
         }
+    }
 
+    private void setAwaitingAnswer(Long sessionId, boolean awaitingAnswer) {
+        InterviewStage stage = interviewStageRepository.findCurrentForUpdate(sessionId);
+        if (stage == null) {
+            throw BusinessException.badRequest("面试阶段不存在");
+        }
+        stage.setAwaitingAnswer(awaitingAnswer);
+        interviewStageRepository.update(stage);
+    }
+
+    private InterviewMessage append(
+        Long sessionId, String role, String content, AssessmentStatus assessmentStatus
+    ) {
         InterviewMessage message = new InterviewMessage();
         message.setSessionId(sessionId);
         message.setRole(role);
         message.setContent(content);
-        message.setAssessmentStatus("user".equals(role) ? AssessmentStatus.PENDING : null);
+        message.setAssessmentStatus(assessmentStatus);
         message.setSeqNum(nextSeqNum(sessionId));
         interviewMessageRepository.add(message);
         return message;

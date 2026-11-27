@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchSession, finishInterview, streamInterview } from '../api'
+import { interviewQueryKeys } from '../query-keys'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 import { applyMessageUpdate } from './message-updates'
 import { buildOptimisticTurn, shouldAutoStart } from './turn-buffer'
@@ -13,7 +14,7 @@ export function useInterviewSession(sessionId: number, onError: (message: string
   const abort = useRef<AbortController | null>(null)
   const autoStartedSessionId = useRef<number | null>(null)
   const session = useQuery({
-    queryKey: ['interview-session', sessionId],
+    queryKey: interviewQueryKeys.session(sessionId),
     queryFn: ({ signal }) => fetchSession(sessionId, signal),
     refetchInterval: (query) => (query.state.data?.status === 'generating' ? 2000 : false),
   })
@@ -70,7 +71,7 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     onSuccess: async () => {
       await session.refetch()
       setMessages(null)
-      await client.invalidateQueries({ queryKey: ['interview-sessions'] })
+      await client.invalidateQueries({ queryKey: interviewQueryKeys.sessions() })
     },
     onError: async (error) => {
       if (error.name === 'AbortError') return
@@ -99,16 +100,18 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     mutationFn: () => finishInterview(sessionId),
     onSuccess: async (result) => {
       setShowReport(true)
-      client.setQueryData<InterviewSessionDetailResponse>(['interview-session', sessionId], (old) =>
-        old
-          ? {
-              ...old,
-              status: result.status ?? 'generating',
-              summaryReport: result.summaryReport || old.summaryReport,
-            }
-          : old,
+      client.setQueryData<InterviewSessionDetailResponse>(
+        interviewQueryKeys.session(sessionId),
+        (old) =>
+          old
+            ? {
+                ...old,
+                status: result.status ?? 'generating',
+                summaryReport: result.summaryReport || old.summaryReport,
+              }
+            : old,
       )
-      await client.invalidateQueries({ queryKey: ['interview-sessions'] })
+      await client.invalidateQueries({ queryKey: interviewQueryKeys.sessions() })
     },
     onError: (error) => onError(error.message),
   })

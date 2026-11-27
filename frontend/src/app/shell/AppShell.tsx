@@ -2,7 +2,8 @@ import { Icon, SidebarAction, SidebarBrand, SidebarFrame, SidebarPane } from '@/
 import { useState } from 'react'
 import { RiAddLine, RiBarChartLine, RiSettings3Line, RiSideBarLine } from '@remixicon/react'
 import { Outlet, useNavigate } from 'react-router'
-import { SessionGroup, SessionGroupLabel, useSessionList } from '@/features/interview'
+import { SessionGroup, SessionGroupLabel } from '@/features/interview/session-list'
+import { useSessionList } from '@/features/interview/use-session-list'
 import { useSettings } from '@/features/settings'
 
 export function AppShell() {

@@ -30,7 +30,7 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
             session.getAccountId(),
             session.getTargetPosition(),
             session.getModelExecutionSnapshotId(),
-            session.getStatus(),
+            session.getStatus().wire(),
             session.getSummary(),
             session.getSummaryReport()
         );
@@ -52,12 +52,12 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
 
     @Override
     public boolean completeReport(Long sessionId, String reportJson) {
-        return interviewSessionRepository.completeReportIfGenerating(sessionId, reportJson) == 1;
+        return interviewSessionRepository.completeReport(sessionId, reportJson) == 1;
     }
 
     @Override
     public void restoreOngoing(Long sessionId) {
-        interviewSessionRepository.restoreOngoingIfGenerating(sessionId);
+        interviewSessionRepository.restoreOngoing(sessionId);
     }
 
     private InterviewMessageSnapshot toSnapshot(InterviewMessage message) {
@@ -80,6 +80,7 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
             stage.getId(),
             stage.getSessionId(),
             stage.getStageName(),
+            stage.getBoundarySeq(),
             stage.getStartedAt(),
             stage.getEndedAt()
         );

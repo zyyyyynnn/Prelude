@@ -6,12 +6,16 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -103,12 +107,14 @@ class InMemoryRetrievalAdapterTest {
             "test-embed-v1",
             new float[] {1.0f, 0.0f, 0.1f}
         ));
+        when(sourcePort.loadDocuments(eq(SCOPE_TYPE), eq(SCOPE_ID)))
+            .thenReturn(List.of("Persisted Spring interview context"));
         adapter = new InMemoryRetrievalAdapter(embedPort, chunkStore, sourcePort, 0.7, 0.3);
 
         List<String> hits = adapter.search(SCOPE_TYPE, SCOPE_ID, "Spring interview", 3);
 
         assertThat(hits).containsExactly("Persisted Spring interview context");
-        verify(sourcePort, never()).loadDocuments(anyString(), org.mockito.ArgumentMatchers.anyLong());
+        verify(sourcePort).loadDocuments(SCOPE_TYPE, SCOPE_ID);
     }
 
     @Test
@@ -131,6 +137,88 @@ class InMemoryRetrievalAdapterTest {
         assertThat(stored).isEmpty();
         assertThat(adapter.search(SCOPE_TYPE, SCOPE_ID, "Spring", 3)).isEmpty();
         verify(chunkStore).delete(SCOPE_TYPE, SCOPE_ID);
+    }
+
+    @Test
+    void failedInvalidationDropsMemoryAndRetriesWithoutServingStaleChunks() {
+        adapter.index(SCOPE_TYPE, SCOPE_ID, List.of("Spring Boot interview transcript"));
+        AtomicBoolean failFirstDelete = new AtomicBoolean(true);
+        doAnswer(invocation -> {
+            if (failFirstDelete.getAndSet(false)) {
+                throw new IllegalStateException("chunk store unavailable");
+            }
+            stored.clear();
+            return null;
+        }).when(chunkStore).delete(SCOPE_TYPE, SCOPE_ID);
+
+        adapter.invalidate(SCOPE_TYPE, SCOPE_ID);
+
+        assertThat(stored).hasSize(1);
+        assertThat(adapter.search(SCOPE_TYPE, SCOPE_ID, "Spring", 3)).isEmpty();
+        verify(sourcePort, never()).loadDocuments(anyString(), org.mockito.ArgumentMatchers.anyLong());
+
+        adapter.retryFailedInvalidations();
+
+        assertThat(stored).isEmpty();
+        assertThat(adapter.search(SCOPE_TYPE, SCOPE_ID, "Spring", 3)).isEmpty();
+        verify(chunkStore, times(2)).delete(SCOPE_TYPE, SCOPE_ID);
+    }
+
+    @Test
+    void failedInvalidationRetriesRemainPendingUntilPersistenceRecovers() {
+        adapter.index(SCOPE_TYPE, SCOPE_ID, List.of("Spring Boot interview transcript"));
+        doThrow(new IllegalStateException("chunk store unavailable")).when(chunkStore).delete(SCOPE_TYPE, SCOPE_ID);
+
+        adapter.invalidate(SCOPE_TYPE, SCOPE_ID);
+        adapter.retryFailedInvalidations();
+        adapter.retryFailedInvalidations();
+
+        assertThat(adapter.search(SCOPE_TYPE, SCOPE_ID, "Spring", 3)).isEmpty();
+        verify(chunkStore, times(3)).delete(SCOPE_TYPE, SCOPE_ID);
+    }
+
+    @Test
+    void aDeletedScopeRejectsALateStartIndexAndRetriesPersistentCleanup() {
+        adapter.index(SCOPE_TYPE, SCOPE_ID, List.of("Spring Boot interview transcript"));
+        java.util.concurrent.atomic.AtomicBoolean failDelete = new java.util.concurrent.atomic.AtomicBoolean(true);
+        doAnswer(invocation -> {
+            if (failDelete.getAndSet(false)) {
+                throw new IllegalStateException("chunk store unavailable");
+            }
+            stored.clear();
+            return null;
+        }).when(chunkStore).delete(SCOPE_TYPE, SCOPE_ID);
+        adapter.invalidate(SCOPE_TYPE, SCOPE_ID);
+
+        adapter.index(SCOPE_TYPE, SCOPE_ID, List.of("React workspace application"));
+        adapter.retryFailedInvalidations();
+
+        assertThat(stored).isEmpty();
+        assertThat(adapter.search(SCOPE_TYPE, SCOPE_ID, "React", 3)).isEmpty();
+        verify(chunkStore, times(2)).delete(SCOPE_TYPE, SCOPE_ID);
+    }
+
+    @Test
+    void durableTombstoneSurvivesAdapterRestartAndRejectsStaleChunks() {
+        when(chunkStore.isInvalidated(SCOPE_TYPE, SCOPE_ID)).thenReturn(true);
+        stored.add(new RetrievalChunkStore.StoredChunk(
+            0, "deleted interview transcript", "hash", "test-embed-v1", new float[] {1, 0, 0}));
+        InMemoryRetrievalAdapter restarted = new InMemoryRetrievalAdapter(
+            embedPort, chunkStore, sourcePort, 0.7, 0.3);
+
+        assertThat(restarted.search(SCOPE_TYPE, SCOPE_ID, "interview", 3)).isEmpty();
+        verify(sourcePort, never()).loadDocuments(anyString(), org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void deletedSourceDoesNotServeOrphanedPersistedChunksAfterRestart() {
+        stored.add(new RetrievalChunkStore.StoredChunk(
+            0, "deleted interview transcript", "hash", "test-embed-v1", new float[] {1, 0, 0}));
+        InMemoryRetrievalAdapter restarted = new InMemoryRetrievalAdapter(
+            embedPort, chunkStore, sourcePort, 0.7, 0.3);
+
+        assertThat(restarted.search(SCOPE_TYPE, SCOPE_ID, "interview", 3)).isEmpty();
+        verify(sourcePort).loadDocuments(SCOPE_TYPE, SCOPE_ID);
     }
 
     @Test

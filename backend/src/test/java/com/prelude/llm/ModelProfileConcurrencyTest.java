@@ -1,7 +1,6 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.llm.api.LlmPort;
 import com.prelude.test.AccountFixtures;
 import com.prelude.test.LlmFixtures;
 import java.util.List;
@@ -32,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ModelProfileConcurrencyTest {
 
     @Autowired
-    private LlmPort llmPort;
+    private ModelProfileService llmPort;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

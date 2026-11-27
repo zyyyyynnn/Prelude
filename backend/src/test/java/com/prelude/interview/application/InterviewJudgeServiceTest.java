@@ -6,7 +6,7 @@ import com.prelude.interview.application.port.JudgeOutcome;
 import com.prelude.interview.domain.AssessmentStatus;
 import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.PromptRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 class InterviewJudgeServiceTest {
 
     private final InterviewMessageRepository messages = mock(InterviewMessageRepository.class);
-    private final LlmPort llm = mock(LlmPort.class);
+    private final ModelExecutionPort llm = mock(ModelExecutionPort.class);
     private final StringRedisTemplate redis = mock(StringRedisTemplate.class);
     private final PromptRegistry prompts = mock(PromptRegistry.class);
     @SuppressWarnings("unchecked")
@@ -255,7 +255,7 @@ class InterviewJudgeServiceTest {
         verify(messages, never()).updateAssessmentIfPending(any());
     }
 
-    private LlmPort.CompletionResult completion(String content) {
-        return new LlmPort.CompletionResult(content, null);
+    private ModelExecutionPort.CompletionResult completion(String content) {
+        return new ModelExecutionPort.CompletionResult(content, null);
     }
 }

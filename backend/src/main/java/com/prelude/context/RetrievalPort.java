@@ -5,7 +5,6 @@ import java.util.List;
 public interface RetrievalPort {
 
     String SCOPE_SESSION = "session";
-    String SCOPE_RESUME = "resume";
 
     void index(String scopeType, Long scopeId, List<String> documents);
 

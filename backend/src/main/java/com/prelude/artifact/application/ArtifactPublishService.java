@@ -20,11 +20,14 @@ import java.util.List;
 /**
  * The single publication entry for formal results. Version numbers come from
  * the database unique constraint; concurrent publishers retry deterministically.
+ *
+ * <p>This is a reserved module implementation: the public contract and persistence
+ * schema are retained, but no production consumer currently invokes it.</p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ArtifactPublishService implements ArtifactCommandApi, ArtifactQueryApi {
+class ArtifactPublishService implements ArtifactCommandApi, ArtifactQueryApi {
 
     private static final int MAX_VERSION_ASSIGNMENT_ATTEMPTS = 5;
 

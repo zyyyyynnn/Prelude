@@ -1,8 +1,8 @@
 package com.prelude.llm;
 
 import com.prelude.BusinessException;
-import com.prelude.llm.api.LlmPort.DiscoverModelsCommand;
-import com.prelude.llm.api.LlmPort.DiscoveredModelsView;
+import com.prelude.llm.api.ModelDiscoveryPort.DiscoverModelsCommand;
+import com.prelude.llm.api.ModelDiscoveryPort.DiscoveredModelsView;
 import com.prelude.llm.api.ModelCapabilityResponse;
 import com.prelude.llm.api.ModelConfigurationView;
 import com.prelude.llm.api.ProviderDescriptorView;
@@ -168,7 +168,7 @@ public class ModelProfileService {
 
     public ModelCapabilityResponse discoverCustomModelCapability(
         Long accountId,
-        com.prelude.llm.api.LlmPort.DiscoverModelCapabilityCommand command
+        com.prelude.llm.api.ModelDiscoveryPort.DiscoverModelCapabilityCommand command
     ) {
         CustomLlmProtocol.require(command.provider());
         String baseUrl = EndpointRoots.normalize(command.baseUrl(), command.provider());

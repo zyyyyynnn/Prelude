@@ -3,11 +3,10 @@ package com.prelude.llm.api;
 import java.util.List;
 
 /**
- * The llm module's public boundary for model execution. Runs execute against
- * immutable ModelExecutionSnapshots; mutable profiles only affect the next
- * snapshot, never a running one.
+ * Executes model calls against immutable snapshots. Mutable profiles only affect
+ * the next snapshot, never a running one.
  */
-public interface LlmPort {
+public interface ModelExecutionPort {
 
     ModelExecutionSnapshotRef freezeSnapshot(FreezeSnapshotCommand command);
 
@@ -16,19 +15,6 @@ public interface LlmPort {
     CompletionResult complete(ModelExecutionRequest request);
 
     void stream(ModelExecutionRequest request, StreamSink sink);
-
-    ModelConfigurationView currentConfiguration(Long accountId);
-
-    ModelConfigurationView saveConfiguration(Long accountId, SaveConfigurationCommand command);
-
-    List<ProviderDescriptorView> listModels();
-
-    DiscoveredModelsView discoverCustomModels(Long accountId, DiscoverModelsCommand command);
-
-    ModelCapabilityResponse discoverCustomModelCapability(
-        Long accountId,
-        DiscoverModelCapabilityCommand command
-    );
 
     record FreezeSnapshotCommand(
         Long accountId,
@@ -101,14 +87,5 @@ public interface LlmPort {
         Long outputTokens,
         Long totalTokens
     ) {
-    }
-
-    record DiscoverModelsCommand(String provider, String baseUrl, String apiKey) {
-    }
-
-    record DiscoverModelCapabilityCommand(String provider, String baseUrl, String apiKey, String model) {
-    }
-
-    record DiscoveredModelsView(String baseUrl, List<ModelCapabilityResponse> models) {
     }
 }

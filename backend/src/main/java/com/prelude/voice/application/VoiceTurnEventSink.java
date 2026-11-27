@@ -21,11 +21,9 @@ public interface VoiceTurnEventSink {
 
     void error(String message);
 
-    /**
-     * @return the active session id currently bound to the underlying transport,
-     *         or {@code null} if the user has switched sessions mid-turn.
-     */
-    Long currentActiveSessionId();
+    boolean isCurrent();
 
-    void clearActiveSession();
+    void invalidate();
+
+    void turnFinished();
 }

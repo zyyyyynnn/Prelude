@@ -2,7 +2,7 @@ package com.prelude.artifact.application;
 
 import com.prelude.artifact.infrastructure.InterviewReportParser;
 import com.prelude.test.ArtifactFixtures;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.test.LlmFixtures;
 import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class GenerateInterviewReportResponseModeTest {
         assertThat(result.outcome()).isEqualTo(GenerateInterviewReport.Outcome.GENERATED);
         assertThat(result.reportJson()).isNotBlank();
 
-        List<LlmPort.ResponseMode> responseModes = LlmFixtures.captureResponseModes(llmPort, 2);
+        List<ModelExecutionPort.ResponseMode> responseModes = LlmFixtures.captureResponseModes(llmPort, 2);
         assertThat(responseModes).containsExactly(
             LlmFixtures.responseModeJsonObject(),
             LlmFixtures.responseModeJsonArray()
@@ -44,10 +44,10 @@ class GenerateInterviewReportResponseModeTest {
     @Test
     void weaknessExtractionReadsTheFencedArrayThroughTheParser() {
         var reportPort = SessionFixtures.mockReportPort();
-        var llmPort = mock(LlmPort.class);
+        var llmPort = mock(ModelExecutionPort.class);
         when(llmPort.complete(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> {
-            LlmPort.ModelExecutionRequest request = invocation.getArgument(0);
-            String content = request.responseMode() == LlmPort.ResponseMode.JSON_ARRAY
+            ModelExecutionPort.ModelExecutionRequest request = invocation.getArgument(0);
+            String content = request.responseMode() == ModelExecutionPort.ResponseMode.JSON_ARRAY
                 ? """
                 ```json
                 [{"category":"JVM 内存模型","description":"对堆、栈和 GC 场景回答不完整"}]
@@ -66,7 +66,7 @@ class GenerateInterviewReportResponseModeTest {
                   "finalAdvice": "继续训练",
                   "reportMarkdown": "原始报告"
                 }""";
-            return new LlmPort.CompletionResult(content, null);
+            return new ModelExecutionPort.CompletionResult(content, null);
         });
         var assembler = ArtifactFixtures.mockAssembler();
         var session = SessionFixtures.reportSession(42L, 7L, "generating", "Backend Engineer", 99L);

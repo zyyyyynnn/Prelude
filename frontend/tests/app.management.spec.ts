@@ -103,19 +103,19 @@ test('@smoke deletes a custom position only after confirmation', async ({ page }
 
 test('@smoke appends an uploaded pdf resume', async ({ page }) => {
   const dialog = await openSettings(page, '简历管理')
-  await dialog.locator('input[type="file"]').setInputFiles({
+  await dialog.locator('#settings-resume-upload').setInputFiles({
     name: '数据工程师简历.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4\n% prelude test fixture\n'),
   })
 
   await expect(dialog.getByText('数据工程师简历.pdf')).toBeVisible()
-  expect(requested('POST', '/api/resume/upload')).toHaveLength(1)
+  await sentRequests('POST', '/api/resume/upload', 1)
 })
 
 test('@smoke rejects a non-pdf resume locally without uploading it', async ({ page }) => {
   const dialog = await openSettings(page, '简历管理')
-  await dialog.locator('input[type="file"]').setInputFiles({
+  await dialog.locator('#settings-resume-upload').setInputFiles({
     name: 'notes.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('not a pdf'),
@@ -128,14 +128,14 @@ test('@smoke rejects a non-pdf resume locally without uploading it', async ({ pa
 
 test('@smoke surfaces a backend parse failure on an uploaded resume', async ({ page }) => {
   const dialog = await openSettings(page, '简历管理')
-  await dialog.locator('input[type="file"]').setInputFiles({
+  await dialog.locator('#settings-resume-upload').setInputFiles({
     name: 'broken-scan.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4\n% scanned image without text layer\n'),
   })
 
   await expect(toast(page, 'PDF 文本提取失败，请检查文件格式')).toBeAttached()
-  expect(requested('POST', '/api/resume/upload')).toHaveLength(1)
+  await sentRequests('POST', '/api/resume/upload', 1)
   await expect(dialog.getByText('broken-scan.pdf')).toHaveCount(0)
 })
 

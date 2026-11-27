@@ -8,11 +8,12 @@ import com.prelude.artifact.domain.AccountWeakness;
 import com.prelude.interview.api.port.InterviewMessageSnapshot;
 import com.prelude.interview.api.port.InterviewReportPort;
 import com.prelude.interview.api.port.InterviewSessionSnapshot;
-import com.prelude.interview.api.port.InterviewSessionStatus;
+import com.prelude.interview.integration.InterviewSessionStatus;
+import com.prelude.interview.integration.InterviewStageCatalog;
 import com.prelude.interview.api.port.InterviewStageSnapshot;
 import com.prelude.artifact.domain.InterviewReportAssembler;
 import com.prelude.artifact.domain.ReportParser;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.PromptIds;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ public class GenerateInterviewReport {
 
     private final ObjectMapper objectMapper;
     private final InterviewReportPort interviewReportPort;
-    private final LlmPort llmPort;
+    private final ModelExecutionPort llmPort;
     private final ReportParser interviewReportParser;
     private final InterviewReportAssembler interviewReportAssembler;
 
@@ -40,13 +41,14 @@ public class GenerateInterviewReport {
             if (session == null) {
                 throw new IllegalStateException("Interview session does not exist: " + sessionId);
             }
-            if (!InterviewSessionStatus.GENERATING.matches(session.status())) {
-                if (InterviewSessionStatus.FINISHED.matches(session.status())
-                    && session.summaryReport() != null && !session.summaryReport().isBlank()) {
-                    log.info("Session {} already has a completed report; treating delivery as idempotent", sessionId);
-                    return new GenerationResult(
-                        Outcome.SKIPPED, session.summaryReport(), null, List.of());
-                }
+            InterviewSessionStatus status = InterviewSessionStatus.fromWire(session.status());
+            if (status == InterviewSessionStatus.FINISHED
+                && session.summaryReport() != null && !session.summaryReport().isBlank()) {
+                log.info("Session {} already has a completed report; treating delivery as idempotent", sessionId);
+                return new GenerationResult(
+                    Outcome.SKIPPED, session.summaryReport(), null, List.of());
+            }
+            if (status != InterviewSessionStatus.GENERATING) {
                 throw new IllegalStateException(
                     "Report job requires a generating interview session; session=" + sessionId
                         + ", status=" + session.status());
@@ -54,14 +56,14 @@ public class GenerateInterviewReport {
 
             List<InterviewMessageSnapshot> messages = interviewReportPort.listMessages(sessionId);
             String prompt = buildFinishPrompt(session, messages);
-            LlmPort.CompletionResult reportCompletion = llmPort.complete(
-                new LlmPort.ModelExecutionRequest(
+            ModelExecutionPort.CompletionResult reportCompletion = llmPort.complete(
+                new ModelExecutionPort.ModelExecutionRequest(
                     session.modelExecutionSnapshotId(),
                     "report",
                     PromptIds.REPORT,
-                    LlmPort.ResponseMode.JSON_OBJECT,
+                    ModelExecutionPort.ResponseMode.JSON_OBJECT,
                     List.of(
-                        new LlmPort.Message("system", """
+                        new ModelExecutionPort.Message("system", """
                                 你是严谨的面试评估助手。请只输出严格 JSON，不要输出 Markdown 代码围栏。
                                 JSON Schema（不得增加 overall、stage score、question score 或 weaknesses）：
                                 {
@@ -76,7 +78,7 @@ public class GenerateInterviewReport {
                                     "logic": 1-10 的整数
                                   },
                                   "stagePerformances": [{
-                                    "stageName": "warmup|technical|deep_dive|closing",
+                                    "stageName": "%s",
                                     "summary": "阶段总结",
                                     "positiveSignals": ["正向信号"],
                                     "negativeSignals": ["风险信号"],
@@ -92,8 +94,8 @@ public class GenerateInterviewReport {
                                   "reportMarkdown": "完整 Markdown 报告"
                                 }
                             三个评分必须使用 1-10 整数范围。
-                            """),
-                        new LlmPort.Message("user", prompt)
+                            """.formatted(stageNames())),
+                        new ModelExecutionPort.Message("user", prompt)
                     ),
                     List.of(),
                     List.of()
@@ -113,6 +115,13 @@ public class GenerateInterviewReport {
         } catch (Exception e) {
             throw new ReportGenerationException(sessionId, e);
         }
+    }
+
+    private String stageNames() {
+        return InterviewStageCatalog.STAGES.stream()
+            .map(InterviewStageCatalog.StageDescription::wireName)
+            .reduce((first, second) -> first + "|" + second)
+            .orElseThrow();
     }
 
     private String buildFinishPrompt(InterviewSessionSnapshot session, List<InterviewMessageSnapshot> messages) {
@@ -162,19 +171,19 @@ public class GenerateInterviewReport {
     }
 
     private List<AccountWeakness> extractWeaknesses(InterviewSessionSnapshot session, String report) throws Exception {
-        LlmPort.CompletionResult weaknessCompletion = llmPort.complete(
-            new LlmPort.ModelExecutionRequest(
+        ModelExecutionPort.CompletionResult weaknessCompletion = llmPort.complete(
+            new ModelExecutionPort.ModelExecutionRequest(
                 session.modelExecutionSnapshotId(),
                 "weaknesses",
                 PromptIds.REPORT,
-                LlmPort.ResponseMode.JSON_ARRAY,
+                ModelExecutionPort.ResponseMode.JSON_ARRAY,
                 List.of(
-                    new LlmPort.Message("system", """
+                    new ModelExecutionPort.Message("system", """
                         你是面试分析助手。请只输出严格 JSON 数组，不要输出 Markdown。
                         每个元素必须包含 category 和 description 两个字段。
                         示例：[{"category":"JVM 内存模型","description":"对堆、栈和 GC 场景回答不完整"}]
                         """),
-                    new LlmPort.Message("user", "请从以下面试报告中提取 1 到 5 个候选人的薄弱点：\n" + report)
+                    new ModelExecutionPort.Message("user", "请从以下面试报告中提取 1 到 5 个候选人的薄弱点：\n" + report)
                 ),
                 List.of(),
                 List.of()

@@ -2,8 +2,8 @@ package com.prelude.assets;
 
 import com.prelude.BusinessException;
 import com.prelude.identity.api.AvatarStoragePort;
-import com.prelude.assets.application.port.AssetLookup;
-import com.prelude.assets.application.port.AssetLookup.AssetRow;
+import com.prelude.assets.application.port.AssetRepository;
+import com.prelude.assets.application.port.AssetRepository.AssetRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +17,7 @@ public class AvatarAssetStorage implements AvatarStoragePort {
     private static final String AVATAR_URL_SUFFIX = "/content";
 
     private final AssetService assetService;
-    private final AssetLookup assetLookup;
+    private final AssetRepository assetRepository;
     private final ObjectStoragePort objectStoragePort;
     private final AvatarImageValidator avatarImageValidator;
     private final AssetDeletionService assetDeletionService;
@@ -61,7 +61,7 @@ public class AvatarAssetStorage implements AvatarStoragePort {
             AVATAR_URL_PREFIX.length(), avatarUrl.length() - AVATAR_URL_SUFFIX.length());
         try {
             Long assetId = Long.valueOf(idSegment);
-            AssetRow asset = assetLookup.findById(assetId);
+            AssetRow asset = assetRepository.findById(assetId);
             return asset != null
                 && (accountId == null || accountId.equals(asset.accountId()))
                 && KIND_AVATAR.equals(asset.kind())

@@ -183,11 +183,11 @@ INSERT INTO interview_session (
   NULL, '2026-09-03 10:00:00'
 );
 SET @session_java_1 = LAST_INSERT_ID();
-INSERT INTO interview_stage (session_id, stage_name, started_at, ended_at) VALUES
-  (@session_java_1, 'warmup', '2026-09-03 10:00:00', '2026-09-03 10:08:00'),
-  (@session_java_1, 'technical', '2026-09-03 10:08:00', '2026-09-03 10:16:00'),
-  (@session_java_1, 'deep_dive', '2026-09-03 10:16:00', '2026-09-03 10:25:00'),
-  (@session_java_1, 'closing', '2026-09-03 10:25:00', '2026-09-03 10:31:00');
+INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at, ended_at) VALUES
+  (@session_java_1, 'warmup', 0, FALSE, '2026-09-03 10:00:00', '2026-09-03 10:08:00'),
+  (@session_java_1, 'technical', 3, FALSE, '2026-09-03 10:08:00', '2026-09-03 10:16:00'),
+  (@session_java_1, 'deep_dive', 6, FALSE, '2026-09-03 10:16:00', '2026-09-03 10:25:00'),
+  (@session_java_1, 'closing', 9, FALSE, '2026-09-03 10:25:00', '2026-09-03 10:31:00');
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
 SELECT @session_java_1, 'system', system_prompt, 0, NULL, NULL, '2026-09-03 10:00:00' FROM position_template WHERE id = @position_java_id;
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES
@@ -250,11 +250,11 @@ INSERT INTO interview_session (
   '负责 React 工作台开发，重视 TypeScript、性能测量、组件复用和可访问性。', '2026-09-03 14:00:00'
 );
 SET @session_frontend_1 = LAST_INSERT_ID();
-INSERT INTO interview_stage (session_id, stage_name, started_at, ended_at) VALUES
-  (@session_frontend_1, 'warmup', '2026-09-03 14:00:00', '2026-09-03 14:08:00'),
-  (@session_frontend_1, 'technical', '2026-09-03 14:08:00', '2026-09-03 14:17:00'),
-  (@session_frontend_1, 'deep_dive', '2026-09-03 14:17:00', '2026-09-03 14:26:00'),
-  (@session_frontend_1, 'closing', '2026-09-03 14:26:00', '2026-09-03 14:33:00');
+INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at, ended_at) VALUES
+  (@session_frontend_1, 'warmup', 0, FALSE, '2026-09-03 14:00:00', '2026-09-03 14:08:00'),
+  (@session_frontend_1, 'technical', 3, FALSE, '2026-09-03 14:08:00', '2026-09-03 14:17:00'),
+  (@session_frontend_1, 'deep_dive', 6, FALSE, '2026-09-03 14:17:00', '2026-09-03 14:26:00'),
+  (@session_frontend_1, 'closing', 9, FALSE, '2026-09-03 14:26:00', '2026-09-03 14:33:00');
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
 SELECT @session_frontend_1, 'system', system_prompt, 0, NULL, NULL, '2026-09-03 14:00:00' FROM position_template WHERE id = @position_frontend_id;
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES
@@ -317,11 +317,11 @@ INSERT INTO interview_session (
   '负责推荐召回与离线评估，熟悉 Python、Spark、Faiss 和 A/B 实验。', '2026-09-04 09:00:00'
 );
 SET @session_algorithm_1 = LAST_INSERT_ID();
-INSERT INTO interview_stage (session_id, stage_name, started_at, ended_at) VALUES
-  (@session_algorithm_1, 'warmup', '2026-09-04 09:00:00', '2026-09-04 09:08:00'),
-  (@session_algorithm_1, 'technical', '2026-09-04 09:08:00', '2026-09-04 09:17:00'),
-  (@session_algorithm_1, 'deep_dive', '2026-09-04 09:17:00', '2026-09-04 09:26:00'),
-  (@session_algorithm_1, 'closing', '2026-09-04 09:26:00', '2026-09-04 09:33:00');
+INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at, ended_at) VALUES
+  (@session_algorithm_1, 'warmup', 0, FALSE, '2026-09-04 09:00:00', '2026-09-04 09:08:00'),
+  (@session_algorithm_1, 'technical', 3, FALSE, '2026-09-04 09:08:00', '2026-09-04 09:17:00'),
+  (@session_algorithm_1, 'deep_dive', 6, FALSE, '2026-09-04 09:17:00', '2026-09-04 09:26:00'),
+  (@session_algorithm_1, 'closing', 9, FALSE, '2026-09-04 09:26:00', '2026-09-04 09:33:00');
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
 SELECT @session_algorithm_1, 'system', system_prompt, 0, NULL, NULL, '2026-09-04 09:00:00' FROM position_template WHERE id = @position_algorithm_id;
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES
@@ -351,9 +351,9 @@ INSERT INTO interview_session (
   '参与推荐模型迭代、特征质量监控和线上实验分析。', '2026-09-05 09:00:00'
 );
 SET @session_ongoing_id = LAST_INSERT_ID();
-INSERT INTO interview_stage (session_id, stage_name, started_at, ended_at) VALUES
-  (@session_ongoing_id, 'warmup', '2026-09-05 09:00:00', '2026-09-05 09:08:00'),
-  (@session_ongoing_id, 'technical', '2026-09-05 09:08:00', NULL);
+INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at, ended_at) VALUES
+  (@session_ongoing_id, 'warmup', 0, FALSE, '2026-09-05 09:00:00', '2026-09-05 09:08:00'),
+  (@session_ongoing_id, 'technical', 3, TRUE, '2026-09-05 09:08:00', NULL);
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
 SELECT @session_ongoing_id, 'system', system_prompt, 0, NULL, NULL, '2026-09-05 09:00:00' FROM position_template WHERE id = @position_algorithm_id;
 INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES

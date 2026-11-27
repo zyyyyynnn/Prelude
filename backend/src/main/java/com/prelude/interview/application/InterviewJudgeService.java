@@ -7,7 +7,7 @@ import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.port.JudgeOutcome;
 import com.prelude.interview.application.port.JudgeResult;
-import com.prelude.llm.api.LlmPort;
+import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.LlmResponseText;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
@@ -39,7 +39,7 @@ public class InterviewJudgeService {
         Long.class);
 
     private final InterviewMessageRepository interviewMessageRepository;
-    private final LlmPort llmPort;
+    private final ModelExecutionPort llmPort;
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final PromptRegistry promptRegistry;
@@ -113,15 +113,15 @@ public class InterviewJudgeService {
             "面试官提出的问题：" + questionContent + "\n" +
             "候选人的回答：" + userMessage.getContent() + "\n";
 
-        LlmPort.CompletionResult completion = llmPort.complete(
-            new LlmPort.ModelExecutionRequest(
+        ModelExecutionPort.CompletionResult completion = llmPort.complete(
+            new ModelExecutionPort.ModelExecutionRequest(
                 session.getModelExecutionSnapshotId(),
                 "judge",
                 PromptIds.JUDGE,
-                LlmPort.ResponseMode.JSON_OBJECT,
+                ModelExecutionPort.ResponseMode.JSON_OBJECT,
                 List.of(
-                    new LlmPort.Message("system", systemPrompt),
-                    new LlmPort.Message("user", userPrompt)
+                    new ModelExecutionPort.Message("system", systemPrompt),
+                    new ModelExecutionPort.Message("user", userPrompt)
                 ),
                 List.of(),
                 List.of()
