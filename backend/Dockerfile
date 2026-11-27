@@ -12,6 +12,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --home /app prelude
 COPY --from=build /app/target/prelude-backend-1.0.0.jar app.jar
+COPY --from=build /app/src/main/resources/licenses /app/licenses
 USER prelude
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=45s --retries=12 \

@@ -20,6 +20,10 @@ public interface InterviewMessageRepository {
 
     InterviewMessage findById(Long messageId);
 
+    InterviewMessage findByReplyToMessageId(Long userMessageId);
+
+    int markSuperseded(Long messageId, Long supersedingMessageId);
+
     List<InterviewMessage> listBySession(Long sessionId);
 
     long countConversationMessages(Long sessionId);

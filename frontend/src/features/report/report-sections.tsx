@@ -81,7 +81,7 @@ export function ScoreCard({
           <div className="flex items-baseline gap-xs font-serif text-text-secondary">
             <span>{copy.scores.overall}</span>
             <strong className="text-2xl font-semibold text-brand">
-              {report.scores.overall.toFixed(1)}
+              {report.scores.overall == null ? '暂无' : report.scores.overall.toFixed(1)}
             </strong>
             <small>/ 10</small>
           </div>

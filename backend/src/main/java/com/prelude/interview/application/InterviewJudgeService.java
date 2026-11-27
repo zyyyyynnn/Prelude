@@ -51,6 +51,9 @@ public class InterviewJudgeService {
         if (!session.getId().equals(userMessage.getSessionId()) || !ROLE_USER.equals(userMessage.getRole())) {
             throw BusinessException.badRequest("面试消息不属于当前会话或不是候选人回答");
         }
+        if (userMessage.getSupersededByMessageId() != null) {
+            return JudgeOutcome.superseded();
+        }
         JudgeOutcome terminal = terminalOutcome(userMessage);
         if (terminal != null) {
             return terminal;
@@ -69,6 +72,9 @@ public class InterviewJudgeService {
             }
             if (!session.getId().equals(current.getSessionId()) || !ROLE_USER.equals(current.getRole())) {
                 throw BusinessException.badRequest("面试消息不属于当前会话或不是候选人回答");
+            }
+            if (current.getSupersededByMessageId() != null) {
+                return JudgeOutcome.superseded();
             }
             terminal = terminalOutcome(current);
             if (terminal != null) {
@@ -179,9 +185,13 @@ public class InterviewJudgeService {
             userMessage.setAssessmentError(update.getAssessmentError());
             return result == null ? JudgeOutcome.unscored(error) : JudgeOutcome.completed(result);
         }
-        JudgeOutcome terminal = terminalOutcome(interviewMessageRepository.findById(userMessage.getId()));
+        InterviewMessage current = interviewMessageRepository.findById(userMessage.getId());
+        JudgeOutcome terminal = terminalOutcome(current);
         if (terminal != null) {
             return terminal;
+        }
+        if (current != null && current.getSupersededByMessageId() != null) {
+            return JudgeOutcome.superseded();
         }
         throw new IllegalStateException("Failed to persist assessment for message " + userMessage.getId());
     }
@@ -230,7 +240,7 @@ public class InterviewJudgeService {
         if (userMessage.getSeqNum() == null) {
             return null;
         }
-        List<InterviewMessage> messages = interviewMessageRepository.listBySession(sessionId);
+        List<InterviewMessage> messages = InterviewMessage.effectiveMessages(interviewMessageRepository.listBySession(sessionId));
         for (int index = messages.size() - 1; index >= 0; index--) {
             InterviewMessage message = messages.get(index);
             if (ROLE_ASSISTANT.equals(message.getRole()) && message.getSeqNum() != null

@@ -35,6 +35,9 @@ jobs:
           cache: 'true'
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Verify vulnerability exception expiry
+        run: node --test scripts/verify-vulnerability-exceptions.test.mjs && node scripts/verify-vulnerability-exceptions.mjs
+
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
@@ -46,12 +49,27 @@ jobs:
         working-directory: frontend
         run: npm run generate:sbom
 
+      - name: Build runtime images
+        run: |
+          docker build -t prelude-backend:ci ./backend
+          docker build -t prelude-frontend:ci ./frontend
+
+      - name: Generate container SBOMs
+        run: |
+          docker save prelude-backend:ci | docker run --rm -i anchore/syft:v1.57.2 scan docker-archive:- -q -o cyclonedx-json > backend/target/image-bom.json
+          docker save prelude-frontend:ci | docker run --rm -i anchore/syft:v1.57.2 scan docker-archive:- -q -o cyclonedx-json > frontend/output/image-sbom.cdx.json
+
+      - name: Verify dependency license notices
+        run: |
+          npm --prefix frontend run licenses:notices
+          git diff --exit-code -- backend/src/main/resources/licenses/NOTICE.txt frontend/public/licenses/NOTICE.txt
+
       - name: Verify dependency licenses
         working-directory: frontend
         run: npm run verify:licenses
 
       - name: Scan backend runtime vulnerabilities
-        uses: anchore/scan-action@82049099348cd4edcc94d22cafd8f1e9f8493321 # v7.4.3
+        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
         with:
           sbom: backend/target/bom.json
           grype-version: v0.122.1
@@ -63,7 +81,7 @@ jobs:
 
       - name: Scan frontend runtime vulnerabilities
         if: ${{ !cancelled() }}
-        uses: anchore/scan-action@82049099348cd4edcc94d22cafd8f1e9f8493321 # v7.4.3
+        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
         with:
           sbom: frontend/output/sbom.cdx.json
           grype-version: v0.122.1
@@ -73,6 +91,30 @@ jobs:
           output-format: json
           output-file: frontend-vulnerabilities.json
 
+      - name: Scan backend container vulnerabilities
+        if: ${{ !cancelled() }}
+        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
+        with:
+          sbom: backend/target/image-bom.json
+          grype-version: v0.122.1
+          fail-build: true
+          only-fixed: false
+          severity-cutoff: high
+          output-format: json
+          output-file: backend-image-vulnerabilities.json
+
+      - name: Scan frontend container vulnerabilities
+        if: ${{ !cancelled() }}
+        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
+        with:
+          sbom: frontend/output/image-sbom.cdx.json
+          grype-version: v0.122.1
+          fail-build: true
+          only-fixed: false
+          severity-cutoff: high
+          output-format: json
+          output-file: frontend-image-vulnerabilities.json
+
       - name: Upload dependency scan evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4.6.2
@@ -80,9 +122,16 @@ jobs:
           name: runtime-dependency-sboms
           path: |
             backend/target/bom.json
+            backend/target/image-bom.json
             frontend/output/sbom.cdx.json
+            frontend/output/image-sbom.cdx.json
+            frontend/output/license-report.json
+            backend/src/main/resources/licenses/NOTICE.txt
+            frontend/public/licenses/NOTICE.txt
             backend-vulnerabilities.json
             frontend-vulnerabilities.json
+            backend-image-vulnerabilities.json
+            frontend-image-vulnerabilities.json
           if-no-files-found: error
           retention-days: 7
 
@@ -135,12 +184,20 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Prepare empty Flyway database
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot_password -e "DROP DATABASE IF EXISTS prelude_flyway; CREATE DATABASE prelude_flyway CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
       - name: Verify backend
         working-directory: backend
         env:
           PRELUDE_MYSQL_SMOKE: 'true'
           PRELUDE_IDENTITY_SMOKE: 'true'
           PRELUDE_S3_SMOKE: 'true'
+          PRELUDE_FLYWAY_SMOKE: 'true'
+          PRELUDE_FLYWAY_SMOKE_URL: jdbc:mysql://127.0.0.1:3306/prelude_flyway?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+          PRELUDE_FLYWAY_SMOKE_USERNAME: root
+          PRELUDE_FLYWAY_SMOKE_PASSWORD: root_password
           SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/prelude?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: root_password
@@ -204,6 +261,7 @@ jobs:
           npm run verify:architecture
           npm run verify:oxc
           npm run verify:governance
+          npm run verify:flaky
           npm run verify:ui
           npm run verify:tokens
 
@@ -285,3 +343,76 @@ jobs:
             docs/screenshots/manifest.json
           retention-days: 7
           if-no-files-found: error
+
+  release-smoke:
+    needs: [supply-chain, backend]
+    runs-on: ubuntu-latest
+    env:
+      APP_CRYPTO_AES_SECRET: prelude-release-smoke-only-secret
+      COMPOSE_PROFILES: app
+      COMPOSE_PROJECT_NAME: prelude-release-${{ github.run_id }}
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: '24'
+          working-directory: frontend
+          run-install: 'false'
+          cache: 'true'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install the pinned browser
+        working-directory: frontend
+        run: npx playwright install chromium
+
+      - name: Build release images
+        run: |
+          docker build -t prelude/backend:release ./backend
+          docker build -t prelude/frontend:release ./frontend
+
+      - name: Start isolated release services
+        run: docker compose -f docker-compose.yml -f docker-compose.release-smoke.yml up -d --wait --wait-timeout 180
+
+      - name: Wait for release frontend
+        run: curl --retry 30 --retry-delay 2 --retry-connrefused -fsS http://127.0.0.1:14173/api/auth/oauth/providers
+
+      - name: Run full-stack release smoke
+        working-directory: frontend
+        env:
+          RELEASE_BASE_URL: http://127.0.0.1:14173
+        run: npx playwright test --config=playwright.release.config.ts
+
+      - name: Collect release diagnostics
+        if: ${{ always() }}
+        run: |
+          mkdir -p release-smoke
+          docker compose -f docker-compose.yml -f docker-compose.release-smoke.yml ps > release-smoke/services.txt
+          docker compose -f docker-compose.yml -f docker-compose.release-smoke.yml logs --no-color > release-smoke/services.log
+          jq -n \
+            --arg sha "$GITHUB_SHA" \
+            --arg run "$GITHUB_RUN_ID" \
+            --arg backend "$(docker image inspect prelude/backend:release --format '{{.Id}}')" \
+            --arg frontend "$(docker image inspect prelude/frontend:release --format '{{.Id}}')" \
+            '{sha:$sha,run:$run,backendImage:$backend,frontendImage:$frontend}' > release-smoke/summary.json
+
+      - name: Stop isolated release services
+        if: ${{ always() }}
+        run: docker compose -f docker-compose.yml -f docker-compose.release-smoke.yml down -v --remove-orphans
+
+      - name: Upload release smoke evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: release-smoke-evidence
+          path: |
+            release-smoke/**
+            frontend/output/release-smoke/**
+            frontend/test-results/**
+          if-no-files-found: error
+          retention-days: 14

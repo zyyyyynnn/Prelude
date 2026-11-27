@@ -97,7 +97,8 @@ public class InterviewController {
         SseSessionStream stream = SseSessionStream.open(realtimePort, sessionId, sseHeartbeatExecutor);
         try {
             streamChatTurn.execute(
-                sessionId, request.getContent(), autoStart, authSessionId(servletRequest), stream);
+                sessionId, request.getContent(), autoStart, request.getRetryOfMessageId(),
+                request.getSupersedesMessageId(), authSessionId(servletRequest), stream);
         } catch (RuntimeException failure) {
             stream.complete();
             throw failure;

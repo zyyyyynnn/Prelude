@@ -2,6 +2,7 @@ package com.prelude.interview.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.prelude.interview.domain.AssessmentStatus;
 
 import java.time.LocalDateTime;
@@ -29,6 +30,19 @@ public interface InterviewMessageMapper extends BaseMapper<InterviewMessageEntit
             .last("LIMIT 1 FOR UPDATE"));
     }
 
+    default InterviewMessageEntity findByReplyToMessageId(Long userMessageId) {
+        return selectOne(new LambdaQueryWrapper<InterviewMessageEntity>()
+            .eq(InterviewMessageEntity::getReplyToMessageId, userMessageId)
+            .last("LIMIT 1"));
+    }
+
+    default int markSuperseded(Long messageId, Long supersedingMessageId) {
+        return update(null, new LambdaUpdateWrapper<InterviewMessageEntity>()
+            .set(InterviewMessageEntity::getSupersededByMessageId, supersedingMessageId)
+            .eq(InterviewMessageEntity::getId, messageId)
+            .isNull(InterviewMessageEntity::getSupersededByMessageId));
+    }
+
     default List<InterviewMessageEntity> listBySession(Long sessionId) {
         return selectList(new LambdaQueryWrapper<InterviewMessageEntity>()
             .eq(InterviewMessageEntity::getSessionId, sessionId)
@@ -39,6 +53,7 @@ public interface InterviewMessageMapper extends BaseMapper<InterviewMessageEntit
         return selectList(new LambdaQueryWrapper<InterviewMessageEntity>()
             .eq(InterviewMessageEntity::getRole, "user")
             .eq(InterviewMessageEntity::getAssessmentStatus, AssessmentStatus.PENDING)
+            .isNull(InterviewMessageEntity::getSupersededByMessageId)
             .le(InterviewMessageEntity::getCreatedAt, cutoff)
             .orderByAsc(InterviewMessageEntity::getCreatedAt)
             .orderByAsc(InterviewMessageEntity::getId)
@@ -56,6 +71,7 @@ public interface InterviewMessageMapper extends BaseMapper<InterviewMessageEntit
             .eq(InterviewMessageEntity::getSessionId, sessionId)
             .eq(InterviewMessageEntity::getRole, "user")
             .eq(InterviewMessageEntity::getAssessmentStatus, AssessmentStatus.PENDING)
+            .isNull(InterviewMessageEntity::getSupersededByMessageId)
             .last("FOR UPDATE"));
     }
 }

@@ -13,10 +13,17 @@ public class InterviewTurnCompletion {
 
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long sessionId, String reply) {
+        complete(sessionId, null, reply);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void complete(Long sessionId, Long userMessageId, String reply) {
         if (reply == null || reply.isBlank()) {
             return;
         }
-        interviewMessageService.insertAssistantMessage(sessionId, reply);
+        if (interviewMessageService.insertAssistantMessage(sessionId, reply, userMessageId) == null) {
+            return;
+        }
         interviewStageManager.advanceIfReady(sessionId);
     }
 }

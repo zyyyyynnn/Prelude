@@ -35,8 +35,22 @@ public class StreamChatTurn {
         String authSessionId,
         SseSessionStream stream
     ) {
+        execute(sessionId, content, autoStart, null, null, authSessionId, stream);
+    }
+
+    public void execute(
+        Long sessionId,
+        String content,
+        boolean autoStart,
+        Long retryOfMessageId,
+        Long supersedesMessageId,
+        String authSessionId,
+        SseSessionStream stream
+    ) {
         long accountId = sessionAccess.currentAccountId();
-        sseTaskExecutor.execute(() -> runTurn(sessionId, accountId, authSessionId, content, autoStart, stream));
+        sseTaskExecutor.execute(() -> runTurn(
+            sessionId, accountId, authSessionId, content, autoStart,
+            retryOfMessageId, supersedesMessageId, stream));
     }
 
     private void runTurn(
@@ -45,6 +59,8 @@ public class StreamChatTurn {
         String authSessionId,
         String content,
         boolean autoStart,
+        Long retryOfMessageId,
+        Long supersedesMessageId,
         SseSessionStream stream
     ) {
         try {
@@ -53,7 +69,9 @@ public class StreamChatTurn {
                     sessionId,
                     accountId,
                     content,
-                    autoStart
+                    autoStart,
+                    retryOfMessageId,
+                    supersedesMessageId
                 ),
                 delta -> {
                     // Natural send boundary: a revoked session stops the stream
@@ -89,6 +107,9 @@ public class StreamChatTurn {
     }
 
     private void sendJudgeEvent(SseSessionStream stream, JudgeOutcome outcome) {
+        if (outcome.status() == JudgeOutcome.Status.SUPERSEDED) {
+            return;
+        }
         try {
             JudgeResult result = outcome.result();
             stream.send("judge", new InterviewJudgeEventResponse(
@@ -98,6 +119,7 @@ public class StreamChatTurn {
                     case COMPLETED -> AssessmentStatus.SCORED;
                     case BUSY -> AssessmentStatus.PENDING;
                     case UNSCORED -> AssessmentStatus.UNSCORED;
+                    case SUPERSEDED -> AssessmentStatus.PENDING;
                 },
                 outcome.error()
             ));

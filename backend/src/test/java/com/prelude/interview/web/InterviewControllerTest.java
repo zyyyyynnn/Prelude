@@ -226,7 +226,7 @@ class InterviewControllerTest {
                 .content("{\"content\":\"我的回答\"}"))
             .andExpect(status().isOk());
 
-        verify(streamChatTurn).execute(eq(41L), eq("我的回答"), eq(true), eq(session.getId()), any(com.prelude.activity.SseSessionStream.class));
+        verify(streamChatTurn).execute(eq(41L), eq("我的回答"), eq(true), isNull(), isNull(), eq(session.getId()), any(com.prelude.activity.SseSessionStream.class));
     }
 
     @Test
@@ -236,7 +236,7 @@ class InterviewControllerTest {
                 .content("{\"content\":\"我的回答\"}"))
             .andExpect(status().isOk());
 
-        verify(streamChatTurn).execute(eq(41L), eq("我的回答"), eq(false), isNull(), any(com.prelude.activity.SseSessionStream.class));
+        verify(streamChatTurn).execute(eq(41L), eq("我的回答"), eq(false), isNull(), isNull(), isNull(), any(com.prelude.activity.SseSessionStream.class));
     }
 
     /* A missing `content` is deliberately not rejected here: auto-start opens a session by
@@ -251,7 +251,7 @@ class InterviewControllerTest {
                 .content("{}"))
             .andExpect(status().isOk());
 
-        verify(streamChatTurn).execute(eq(41L), isNull(), eq(true), isNull(), any(com.prelude.activity.SseSessionStream.class));
+        verify(streamChatTurn).execute(eq(41L), isNull(), eq(true), isNull(), isNull(), isNull(), any(com.prelude.activity.SseSessionStream.class));
     }
 
     @Test

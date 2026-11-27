@@ -1,5 +1,6 @@
 /.gitattributes text eol=lf
 /.github/workflows/** text=auto eol=lf
 /frontend/** text=auto eol=lf
+/frontend/tests/fixtures/*.pdf binary
 /backend/** text=auto eol=lf
 /docs/** text=auto eol=lf

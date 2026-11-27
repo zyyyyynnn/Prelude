@@ -26,7 +26,11 @@ import com.prelude.interview.domain.InterviewSession;
 import com.prelude.llm.api.ModelExecutionPort;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,6 +53,9 @@ class RunInterviewTurnVisionAttachmentTest {
     private final InterviewJudgeService judgeService = mock(InterviewJudgeService.class);
     private final InterviewSummaryService summaryService = mock(InterviewSummaryService.class);
     private final InterviewTurnSink sink = mock(InterviewTurnSink.class);
+    private final StringRedisTemplate redis = mock(StringRedisTemplate.class);
+    @SuppressWarnings("unchecked")
+    private final ValueOperations<String, String> redisValues = mock(ValueOperations.class);
 
     private final RunInterviewTurn runInterviewTurn = new RunInterviewTurn(
         sessionAccess,
@@ -60,8 +67,15 @@ class RunInterviewTurnVisionAttachmentTest {
         attachmentContextPort,
         completion,
         judgeService,
-        summaryService
+        summaryService,
+        redis
     );
+
+    @BeforeEach
+    void setUpRedis() {
+        when(redis.opsForValue()).thenReturn(redisValues);
+        when(redisValues.setIfAbsent(any(), any(), any(Duration.class))).thenReturn(true);
+    }
 
     private InterviewSession session() {
         InterviewSession session = new InterviewSession();
@@ -70,6 +84,35 @@ class RunInterviewTurnVisionAttachmentTest {
         session.setTargetPosition("前端工程师");
         session.setModelExecutionSnapshotId(3L);
         return session;
+    }
+
+    @Test
+    void repeatedAutoStartReturnsTheExistingOpeningWithoutCallingTheModel() {
+        InterviewMessage opening = new InterviewMessage();
+        opening.setId(10L);
+        opening.setSessionId(51L);
+        opening.setRole("assistant");
+        opening.setContent("existing opening");
+        when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
+        when(messageRepository.countConversationMessages(51L)).thenReturn(1L);
+        when(messageRepository.findLatest(51L)).thenReturn(opening);
+
+        var result = runInterviewTurn.execute(new InterviewTurnCommand(51L, 7L, "", true), sink);
+
+        assertThat(result.assistantReply()).isEqualTo("existing opening");
+        verify(sink).assistantDelta("existing opening");
+        verifyNoInteractions(llmPort, contextPort, completion);
+    }
+
+    @Test
+    void concurrentAutoStartWithoutAnOpeningIsRejected() {
+        when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
+        when(messageRepository.countConversationMessages(51L)).thenReturn(0L);
+        when(redisValues.setIfAbsent(any(), any(), any(Duration.class))).thenReturn(false);
+
+        assertThatThrownBy(() -> runInterviewTurn.execute(new InterviewTurnCommand(51L, 7L, "", true), sink))
+            .hasMessageContaining("面试正在开始");
+        verifyNoInteractions(llmPort, contextPort, completion);
     }
 
     @Test
@@ -110,6 +153,7 @@ class RunInterviewTurnVisionAttachmentTest {
     void modelStageMarkerIsOrdinaryReplyTextAndDoesNotAdvanceTheStage() {
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
+        when(messageService.insertUserMessage(51L, "回答", null)).thenReturn(acceptedMessage());
         when(contextPort.buildContextMessages(51L)).thenReturn(List.of());
         doAnswer(invocation -> {
             ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
@@ -120,7 +164,7 @@ class RunInterviewTurnVisionAttachmentTest {
         var result = runInterviewTurn.execute(new InterviewTurnCommand(51L, 7L, "回答", false), sink);
 
         assertThat(result.assistantReply()).isEqualTo("回答完毕[STAGE_COMPLETE]");
-        verify(completion).complete(51L, "回答完毕[STAGE_COMPLETE]");
+        verify(completion).complete(51L, 9L, "回答完毕[STAGE_COMPLETE]");
     }
 
     @Test
@@ -128,7 +172,7 @@ class RunInterviewTurnVisionAttachmentTest {
         InterviewMessage accepted = acceptedMessage();
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
-        when(messageService.insertUserMessage(51L, "回答")).thenReturn(accepted);
+        when(messageService.insertUserMessage(51L, "回答", null)).thenReturn(accepted);
         org.mockito.Mockito.doThrow(new IllegalStateException("model unavailable")).when(llmPort).stream(any(), any());
 
         assertThatThrownBy(() -> runInterviewTurn.execute(new InterviewTurnCommand(51L, 7L, "回答", false), sink))
@@ -145,7 +189,7 @@ class RunInterviewTurnVisionAttachmentTest {
         InterviewMessage accepted = acceptedMessage();
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
-        when(messageService.insertUserMessage(51L, "回答")).thenReturn(accepted);
+        when(messageService.insertUserMessage(51L, "回答", null)).thenReturn(accepted);
         when(contextPort.buildContextMessages(51L)).thenReturn(List.of());
         doAnswer(invocation -> {
             ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
@@ -153,7 +197,7 @@ class RunInterviewTurnVisionAttachmentTest {
             return null;
         }).when(llmPort).stream(any(), any());
         org.mockito.Mockito.doThrow(new IllegalStateException("stage persistence failed"))
-            .when(completion).complete(51L, "助手回复");
+            .when(completion).complete(51L, 9L, "助手回复");
 
         assertThatThrownBy(() -> runInterviewTurn.execute(new InterviewTurnCommand(51L, 7L, "回答", false), sink))
             .hasMessage("stage persistence failed");
@@ -177,8 +221,8 @@ class RunInterviewTurnVisionAttachmentTest {
     void aNormalTurnDoesNotAttachFiles() {
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
-        when(messageService.insertUserMessage(51L, "回答"))
-            .thenReturn(new com.prelude.interview.domain.InterviewMessage());
+        when(messageService.insertUserMessage(51L, "回答", null))
+            .thenReturn(acceptedMessage());
         when(contextPort.buildContextMessages(51L))
             .thenReturn(List.of(Map.of("role", "user", "content", "回答")));
         doAnswer(invocation -> {

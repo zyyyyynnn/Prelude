@@ -5,7 +5,8 @@ public record JudgeOutcome(Status status, JudgeResult result, String error) {
     public enum Status {
         COMPLETED,
         BUSY,
-        UNSCORED
+        UNSCORED,
+        SUPERSEDED
     }
 
     public static JudgeOutcome completed(JudgeResult result) {
@@ -18,5 +19,9 @@ public record JudgeOutcome(Status status, JudgeResult result, String error) {
 
     public static JudgeOutcome unscored(String error) {
         return new JudgeOutcome(Status.UNSCORED, null, error);
+    }
+
+    public static JudgeOutcome superseded() {
+        return new JudgeOutcome(Status.SUPERSEDED, null, null);
     }
 }

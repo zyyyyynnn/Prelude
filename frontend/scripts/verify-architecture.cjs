@@ -20,6 +20,25 @@ const blockedPackages = [
   'jspdf',
 ]
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.vue', '.css'])
+const forbiddenFeatures = new Set([
+  'workspace',
+  'resume-workspace',
+  'resume-template',
+  'template',
+  'templates',
+])
+const forbiddenRoutes = new Set([
+  '/resume-workspace',
+  '/resume-template',
+  '/resume/workspace',
+  '/resume/template',
+  '/template',
+  '/templates',
+])
+const isForbiddenFeature = (name) =>
+  [...forbiddenFeatures].some((feature) => name === feature || name.startsWith(`${feature}-`))
+const isForbiddenRoute = (route) =>
+  [...forbiddenRoutes].some((forbidden) => route === forbidden || route.startsWith(`${forbidden}/`))
 
 function parseTree(file, source) {
   const result = parseSync(file, source, { sourceType: 'unambiguous', preserveParens: false })
@@ -80,12 +99,34 @@ for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
   if (entry.isDirectory() && !allowedRoots.has(entry.name)) {
     violations.push(`src/${entry.name}: source must live under app, features, or shared`)
   }
+  if (entry.name === 'features') {
+    for (const feature of fs.readdirSync(path.join(sourceRoot, 'features'), {
+      withFileTypes: true,
+    })) {
+      if (feature.isDirectory() && isForbiddenFeature(feature.name)) {
+        violations.push(`src/features/${feature.name}: deprecated product feature is forbidden`)
+      }
+    }
+  }
 }
 
 for (const file of walk(sourceRoot).filter((item) => sourceExtensions.has(path.extname(item)))) {
   const relative = path.relative(sourceRoot, file).replaceAll('\\', '/')
   if (file.endsWith('.vue')) violations.push(`${relative}: Vue source is forbidden`)
   const source = fs.readFileSync(file, 'utf8')
+  if (relative === 'app/main.tsx') {
+    const tree = parseTree(file, source)
+    walkAst(tree, (node) => {
+      if (
+        node.type === 'Literal' &&
+        typeof node.value === 'string' &&
+        isForbiddenRoute(node.value)
+      ) {
+        const line = source.slice(0, node.start).split('\n').length
+        violations.push(`${relative}:${line}: deprecated route ${node.value} is forbidden`)
+      }
+    })
+  }
   const specifiers = []
   if (path.extname(file) === '.css') {
     let cssMatch

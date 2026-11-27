@@ -3,6 +3,7 @@ package com.prelude.interview.domain;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class InterviewMessage {
@@ -16,5 +17,17 @@ public class InterviewMessage {
     private String hint;
     private AssessmentStatus assessmentStatus;
     private String assessmentError;
+    private Long supersededByMessageId;
+    private Long replyToMessageId;
     private LocalDateTime createdAt;
+
+    public static List<InterviewMessage> effectiveMessages(List<InterviewMessage> messages) {
+        return InterviewMessageLineage.effective(
+            messages,
+            InterviewMessage::getId,
+            InterviewMessage::getRole,
+            InterviewMessage::getSupersededByMessageId,
+            InterviewMessage::getReplyToMessageId
+        );
+    }
 }

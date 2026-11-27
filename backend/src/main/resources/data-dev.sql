@@ -188,20 +188,20 @@ INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answ
   (@session_java_1, 'technical', 3, FALSE, '2026-09-03 10:08:00', '2026-09-03 10:16:00'),
   (@session_java_1, 'deep_dive', 6, FALSE, '2026-09-03 10:16:00', '2026-09-03 10:25:00'),
   (@session_java_1, 'closing', 9, FALSE, '2026-09-03 10:25:00', '2026-09-03 10:31:00');
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
-SELECT @session_java_1, 'system', system_prompt, 0, NULL, NULL, '2026-09-03 10:00:00' FROM position_template WHERE id = @position_java_id;
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES
-  (@session_java_1, 'assistant', @q1, 1, NULL, NULL, '2026-09-03 10:01:00'),
-  (@session_java_1, 'user', @a1, 2, 7, @h1, '2026-09-03 10:04:00'),
-  (@session_java_1, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, '2026-09-03 10:08:00'),
-  (@session_java_1, 'assistant', @q2, 4, NULL, NULL, '2026-09-03 10:09:00'),
-  (@session_java_1, 'user', @a2, 5, 7, @h2, '2026-09-03 10:13:00'),
-  (@session_java_1, 'system', '面试已进入深挖阶段，请针对回答中的边界与失败路径继续追问。', 6, NULL, NULL, '2026-09-03 10:16:00'),
-  (@session_java_1, 'assistant', @q3, 7, NULL, NULL, '2026-09-03 10:17:00'),
-  (@session_java_1, 'user', @a3, 8, 6, @h3, '2026-09-03 10:22:00'),
-  (@session_java_1, 'system', '面试已进入收尾阶段，请用总结性问题结束本场面试。', 9, NULL, NULL, '2026-09-03 10:25:00'),
-  (@session_java_1, 'assistant', @q4, 10, NULL, NULL, '2026-09-03 10:26:00'),
-  (@session_java_1, 'user', @a4, 11, 6, @h4, '2026-09-03 10:30:00');
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at)
+SELECT @session_java_1, 'system', system_prompt, 0, NULL, NULL, NULL, '2026-09-03 10:00:00' FROM position_template WHERE id = @position_java_id;
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at) VALUES
+  (@session_java_1, 'assistant', @q1, 1, NULL, NULL, NULL, '2026-09-03 10:01:00'),
+  (@session_java_1, 'user', @a1, 2, 7, @h1, 'SCORED', '2026-09-03 10:04:00'),
+  (@session_java_1, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, NULL, '2026-09-03 10:08:00'),
+  (@session_java_1, 'assistant', @q2, 4, NULL, NULL, NULL, '2026-09-03 10:09:00'),
+  (@session_java_1, 'user', @a2, 5, 7, @h2, 'SCORED', '2026-09-03 10:13:00'),
+  (@session_java_1, 'system', '面试已进入深挖阶段，请针对回答中的边界与失败路径继续追问。', 6, NULL, NULL, NULL, '2026-09-03 10:16:00'),
+  (@session_java_1, 'assistant', @q3, 7, NULL, NULL, NULL, '2026-09-03 10:17:00'),
+  (@session_java_1, 'user', @a3, 8, 6, @h3, 'SCORED', '2026-09-03 10:22:00'),
+  (@session_java_1, 'system', '面试已进入收尾阶段，请用总结性问题结束本场面试。', 9, NULL, NULL, NULL, '2026-09-03 10:25:00'),
+  (@session_java_1, 'assistant', @q4, 10, NULL, NULL, NULL, '2026-09-03 10:26:00'),
+  (@session_java_1, 'user', @a4, 11, 6, @h4, 'SCORED', '2026-09-03 10:30:00');
 INSERT INTO score_history (account_id, session_id, technical_score, expression_score, logic_score, created_at)
 VALUES (@demo_account_id, @session_java_1, 6, 7, 6, '2026-09-03 10:32:00');
 INSERT INTO account_weakness (account_id, session_id, category, description, created_at)
@@ -255,20 +255,20 @@ INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answ
   (@session_frontend_1, 'technical', 3, FALSE, '2026-09-03 14:08:00', '2026-09-03 14:17:00'),
   (@session_frontend_1, 'deep_dive', 6, FALSE, '2026-09-03 14:17:00', '2026-09-03 14:26:00'),
   (@session_frontend_1, 'closing', 9, FALSE, '2026-09-03 14:26:00', '2026-09-03 14:33:00');
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
-SELECT @session_frontend_1, 'system', system_prompt, 0, NULL, NULL, '2026-09-03 14:00:00' FROM position_template WHERE id = @position_frontend_id;
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES
-  (@session_frontend_1, 'assistant', @q1, 1, NULL, NULL, '2026-09-03 14:01:00'),
-  (@session_frontend_1, 'user', @a1, 2, 7, @h1, '2026-09-03 14:05:00'),
-  (@session_frontend_1, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, '2026-09-03 14:08:00'),
-  (@session_frontend_1, 'assistant', @q2, 4, NULL, NULL, '2026-09-03 14:09:00'),
-  (@session_frontend_1, 'user', @a2, 5, 7, @h2, '2026-09-03 14:14:00'),
-  (@session_frontend_1, 'system', '面试已进入深挖阶段，请针对回答中的边界与失败路径继续追问。', 6, NULL, NULL, '2026-09-03 14:17:00'),
-  (@session_frontend_1, 'assistant', @q3, 7, NULL, NULL, '2026-09-03 14:18:00'),
-  (@session_frontend_1, 'user', @a3, 8, 8, @h3, '2026-09-03 14:23:00'),
-  (@session_frontend_1, 'system', '面试已进入收尾阶段，请用总结性问题结束本场面试。', 9, NULL, NULL, '2026-09-03 14:26:00'),
-  (@session_frontend_1, 'assistant', @q4, 10, NULL, NULL, '2026-09-03 14:27:00'),
-  (@session_frontend_1, 'user', @a4, 11, 5, @h4, '2026-09-03 14:32:00');
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at)
+SELECT @session_frontend_1, 'system', system_prompt, 0, NULL, NULL, NULL, '2026-09-03 14:00:00' FROM position_template WHERE id = @position_frontend_id;
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at) VALUES
+  (@session_frontend_1, 'assistant', @q1, 1, NULL, NULL, NULL, '2026-09-03 14:01:00'),
+  (@session_frontend_1, 'user', @a1, 2, 7, @h1, 'SCORED', '2026-09-03 14:05:00'),
+  (@session_frontend_1, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, NULL, '2026-09-03 14:08:00'),
+  (@session_frontend_1, 'assistant', @q2, 4, NULL, NULL, NULL, '2026-09-03 14:09:00'),
+  (@session_frontend_1, 'user', @a2, 5, 7, @h2, 'SCORED', '2026-09-03 14:14:00'),
+  (@session_frontend_1, 'system', '面试已进入深挖阶段，请针对回答中的边界与失败路径继续追问。', 6, NULL, NULL, NULL, '2026-09-03 14:17:00'),
+  (@session_frontend_1, 'assistant', @q3, 7, NULL, NULL, NULL, '2026-09-03 14:18:00'),
+  (@session_frontend_1, 'user', @a3, 8, 8, @h3, 'SCORED', '2026-09-03 14:23:00'),
+  (@session_frontend_1, 'system', '面试已进入收尾阶段，请用总结性问题结束本场面试。', 9, NULL, NULL, NULL, '2026-09-03 14:26:00'),
+  (@session_frontend_1, 'assistant', @q4, 10, NULL, NULL, NULL, '2026-09-03 14:27:00'),
+  (@session_frontend_1, 'user', @a4, 11, 5, @h4, 'SCORED', '2026-09-03 14:32:00');
 INSERT INTO score_history (account_id, session_id, technical_score, expression_score, logic_score, created_at)
 VALUES (@demo_account_id, @session_frontend_1, 8, 6, 7, '2026-09-03 14:34:00');
 INSERT INTO account_weakness (account_id, session_id, category, description, created_at)
@@ -322,20 +322,20 @@ INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answ
   (@session_algorithm_1, 'technical', 3, FALSE, '2026-09-04 09:08:00', '2026-09-04 09:17:00'),
   (@session_algorithm_1, 'deep_dive', 6, FALSE, '2026-09-04 09:17:00', '2026-09-04 09:26:00'),
   (@session_algorithm_1, 'closing', 9, FALSE, '2026-09-04 09:26:00', '2026-09-04 09:33:00');
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
-SELECT @session_algorithm_1, 'system', system_prompt, 0, NULL, NULL, '2026-09-04 09:00:00' FROM position_template WHERE id = @position_algorithm_id;
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES
-  (@session_algorithm_1, 'assistant', @q1, 1, NULL, NULL, '2026-09-04 09:01:00'),
-  (@session_algorithm_1, 'user', @a1, 2, 7, @h1, '2026-09-04 09:05:00'),
-  (@session_algorithm_1, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, '2026-09-04 09:08:00'),
-  (@session_algorithm_1, 'assistant', @q2, 4, NULL, NULL, '2026-09-04 09:09:00'),
-  (@session_algorithm_1, 'user', @a2, 5, 7, @h2, '2026-09-04 09:14:00'),
-  (@session_algorithm_1, 'system', '面试已进入深挖阶段，请针对回答中的边界与失败路径继续追问。', 6, NULL, NULL, '2026-09-04 09:17:00'),
-  (@session_algorithm_1, 'assistant', @q3, 7, NULL, NULL, '2026-09-04 09:18:00'),
-  (@session_algorithm_1, 'user', @a3, 8, 5, @h3, '2026-09-04 09:23:00'),
-  (@session_algorithm_1, 'system', '面试已进入收尾阶段，请用总结性问题结束本场面试。', 9, NULL, NULL, '2026-09-04 09:26:00'),
-  (@session_algorithm_1, 'assistant', @q4, 10, NULL, NULL, '2026-09-04 09:27:00'),
-  (@session_algorithm_1, 'user', @a4, 11, 6, @h4, '2026-09-04 09:32:00');
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at)
+SELECT @session_algorithm_1, 'system', system_prompt, 0, NULL, NULL, NULL, '2026-09-04 09:00:00' FROM position_template WHERE id = @position_algorithm_id;
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at) VALUES
+  (@session_algorithm_1, 'assistant', @q1, 1, NULL, NULL, NULL, '2026-09-04 09:01:00'),
+  (@session_algorithm_1, 'user', @a1, 2, 7, @h1, 'SCORED', '2026-09-04 09:05:00'),
+  (@session_algorithm_1, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, NULL, '2026-09-04 09:08:00'),
+  (@session_algorithm_1, 'assistant', @q2, 4, NULL, NULL, NULL, '2026-09-04 09:09:00'),
+  (@session_algorithm_1, 'user', @a2, 5, 7, @h2, 'SCORED', '2026-09-04 09:14:00'),
+  (@session_algorithm_1, 'system', '面试已进入深挖阶段，请针对回答中的边界与失败路径继续追问。', 6, NULL, NULL, NULL, '2026-09-04 09:17:00'),
+  (@session_algorithm_1, 'assistant', @q3, 7, NULL, NULL, NULL, '2026-09-04 09:18:00'),
+  (@session_algorithm_1, 'user', @a3, 8, 5, @h3, 'SCORED', '2026-09-04 09:23:00'),
+  (@session_algorithm_1, 'system', '面试已进入收尾阶段，请用总结性问题结束本场面试。', 9, NULL, NULL, NULL, '2026-09-04 09:26:00'),
+  (@session_algorithm_1, 'assistant', @q4, 10, NULL, NULL, NULL, '2026-09-04 09:27:00'),
+  (@session_algorithm_1, 'user', @a4, 11, 6, @h4, 'SCORED', '2026-09-04 09:32:00');
 INSERT INTO score_history (account_id, session_id, technical_score, expression_score, logic_score, created_at)
 VALUES (@demo_account_id, @session_algorithm_1, 6, 5, 6, '2026-09-04 09:34:00');
 INSERT INTO account_weakness (account_id, session_id, category, description, created_at)
@@ -354,10 +354,27 @@ SET @session_ongoing_id = LAST_INSERT_ID();
 INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at, ended_at) VALUES
   (@session_ongoing_id, 'warmup', 0, FALSE, '2026-09-05 09:00:00', '2026-09-05 09:08:00'),
   (@session_ongoing_id, 'technical', 3, TRUE, '2026-09-05 09:08:00', NULL);
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at)
-SELECT @session_ongoing_id, 'system', system_prompt, 0, NULL, NULL, '2026-09-05 09:00:00' FROM position_template WHERE id = @position_algorithm_id;
-INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, created_at) VALUES
-  (@session_ongoing_id, 'assistant', '请介绍你最近一次推荐效果优化中负责的范围。', 1, NULL, NULL, '2026-09-05 09:01:00'),
-  (@session_ongoing_id, 'user', '我负责向量召回的数据准备和离线评估，通过调整样本时间窗和负样本抽样，将候选集召回率从 82% 提升到 86%。', 2, 7, '职责和结果清楚，可以继续说明评估口径。', '2026-09-05 09:05:00'),
-  (@session_ongoing_id, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, '2026-09-05 09:08:00'),
-  (@session_ongoing_id, 'assistant', '为了避免未来信息泄漏，你会怎样划分训练集和验证集？', 4, NULL, NULL, '2026-09-05 09:09:00');
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at)
+SELECT @session_ongoing_id, 'system', system_prompt, 0, NULL, NULL, NULL, '2026-09-05 09:00:00' FROM position_template WHERE id = @position_algorithm_id;
+INSERT INTO interview_message (session_id, role, content, seq_num, score, hint, assessment_status, created_at) VALUES
+  (@session_ongoing_id, 'assistant', '请介绍你最近一次推荐效果优化中负责的范围。', 1, NULL, NULL, NULL, '2026-09-05 09:01:00'),
+  (@session_ongoing_id, 'user', '我负责向量召回的数据准备和离线评估，通过调整样本时间窗和负样本抽样，将候选集召回率从 82% 提升到 86%。', 2, 7, '职责和结果清楚，可以继续说明评估口径。', 'SCORED', '2026-09-05 09:05:00'),
+  (@session_ongoing_id, 'system', '面试已进入技术问答阶段，请围绕岗位核心技术栈和工程实践追问。', 3, NULL, NULL, NULL, '2026-09-05 09:08:00'),
+  (@session_ongoing_id, 'assistant', '为了避免未来信息泄漏，你会怎样划分训练集和验证集？', 4, NULL, NULL, NULL, '2026-09-05 09:09:00');
+
+UPDATE interview_message AS reply
+JOIN (
+  SELECT assistant.id, (
+    SELECT answer.id
+    FROM interview_message AS answer
+    WHERE answer.session_id = assistant.session_id
+      AND answer.role = 'user'
+      AND answer.seq_num < assistant.seq_num
+    ORDER BY answer.seq_num DESC
+    LIMIT 1
+  ) AS answer_id
+  FROM interview_message AS assistant
+  WHERE assistant.role = 'assistant'
+) AS lineage ON lineage.id = reply.id
+SET reply.reply_to_message_id = lineage.answer_id
+WHERE reply.reply_to_message_id IS NULL;

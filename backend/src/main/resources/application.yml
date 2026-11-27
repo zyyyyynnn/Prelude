@@ -109,6 +109,8 @@ prelude:
         interval-ms: ${PRELUDE_INTERVIEW_JUDGE_RETRY_INTERVAL_MS:60000}
         batch-size: ${PRELUDE_INTERVIEW_JUDGE_RETRY_BATCH_SIZE:100}
   llm:
+    rate-limit:
+      enabled: ${PRELUDE_LLM_RATE_LIMIT_ENABLED:true}
     provider:
       deepseek:
         base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}

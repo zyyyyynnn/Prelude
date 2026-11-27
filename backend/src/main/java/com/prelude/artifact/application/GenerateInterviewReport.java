@@ -54,7 +54,8 @@ public class GenerateInterviewReport {
                         + ", status=" + session.status());
             }
 
-            List<InterviewMessageSnapshot> messages = interviewReportPort.listMessages(sessionId);
+            List<InterviewMessageSnapshot> messages = InterviewMessageSnapshot.effectiveMessages(
+                interviewReportPort.listMessages(sessionId));
             String prompt = buildFinishPrompt(session, messages);
             ModelExecutionPort.CompletionResult reportCompletion = llmPort.complete(
                 new ModelExecutionPort.ModelExecutionRequest(
@@ -102,7 +103,7 @@ public class GenerateInterviewReport {
                 ));
 
             InterviewReportDraft reportDraft = interviewReportParser.parseDraft(reportCompletion.content());
-            ScoreHistory scoreHistory = scoreHistory(session, reportDraft);
+            ScoreHistory scoreHistory = canPersistScoreHistory(messages) ? scoreHistory(session, reportDraft) : null;
             List<AccountWeakness> weaknesses = extractWeaknessesBestEffort(session, reportDraft.reportMarkdown());
             List<InterviewStageSnapshot> stages = interviewReportPort.listStages(sessionId);
             StructuredInterviewReport structuredReport = interviewReportAssembler.assemble(
@@ -149,6 +150,15 @@ public class GenerateInterviewReport {
             }
         }
         return builder.toString();
+    }
+
+
+    private boolean canPersistScoreHistory(List<InterviewMessageSnapshot> messages) {
+        List<InterviewMessageSnapshot> answers = messages.stream()
+            .filter(message -> "user".equals(message.role()))
+            .toList();
+        return !answers.isEmpty() && answers.stream().allMatch(message ->
+            "SCORED".equals(message.assessmentStatus()) && message.score() != null);
     }
 
     private ScoreHistory scoreHistory(InterviewSessionSnapshot session, InterviewReportDraft report) {

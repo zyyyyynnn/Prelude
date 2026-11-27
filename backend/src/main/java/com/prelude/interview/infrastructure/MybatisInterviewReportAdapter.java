@@ -71,6 +71,8 @@ public class MybatisInterviewReportAdapter implements InterviewReportPort {
             message.getHint(),
             message.getAssessmentStatus() == null ? null : message.getAssessmentStatus().name(),
             message.getAssessmentError(),
+            message.getSupersededByMessageId(),
+            message.getReplyToMessageId(),
             message.getCreatedAt()
         );
     }

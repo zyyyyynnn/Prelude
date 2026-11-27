@@ -24,7 +24,7 @@ public record StructuredInterviewReport(
         int technical,
         int expression,
         int logic,
-        double overall
+        Double overall
     ) {
     }
 

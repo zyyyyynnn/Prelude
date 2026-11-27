@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tools.jackson.databind.ObjectMapper;
@@ -188,6 +189,67 @@ class InterviewJudgeServiceTest {
             .hasMessageContaining("不是候选人回答");
         verifyNoInteractions(redis, llm);
         verify(messages, never()).updateAssessmentIfPending(any());
+    }
+
+    @Test
+    void reanswerJudgingIgnoresTheSupersededAnswersFollowUpQuestion() {
+        InterviewMessage question = new InterviewMessage();
+        question.setId(8L);
+        question.setSessionId(7L);
+        question.setRole("assistant");
+        question.setContent("原始问题");
+        question.setSeqNum(1);
+        InterviewMessage oldAnswer = new InterviewMessage();
+        oldAnswer.setId(10L);
+        oldAnswer.setSessionId(7L);
+        oldAnswer.setRole("user");
+        oldAnswer.setContent("旧回答");
+        oldAnswer.setSeqNum(2);
+        oldAnswer.setSupersededByMessageId(11L);
+        InterviewMessage oldFollowUp = new InterviewMessage();
+        oldFollowUp.setId(9L);
+        oldFollowUp.setSessionId(7L);
+        oldFollowUp.setRole("assistant");
+        oldFollowUp.setContent("旧回答的追问");
+        oldFollowUp.setSeqNum(3);
+        oldFollowUp.setReplyToMessageId(10L);
+        answer.setSeqNum(4);
+        when(messages.listBySession(7L)).thenReturn(List.of(question, oldAnswer, oldFollowUp, answer));
+        when(llm.complete(any())).thenReturn(completion("{\"score\":8}"));
+
+        service.judgeAndPersist(session, answer);
+
+        ArgumentCaptor<ModelExecutionPort.ModelExecutionRequest> request =
+            ArgumentCaptor.forClass(ModelExecutionPort.ModelExecutionRequest.class);
+        verify(llm).complete(request.capture());
+        String prompt = request.getValue().messages().get(1).content();
+        assertThat(prompt).contains("原始问题").doesNotContain("旧回答的追问");
+    }
+
+    @Test
+    void aSupersededAnswerIsNotSubmittedToTheModel() {
+        answer.setSupersededByMessageId(12L);
+
+        JudgeOutcome outcome = service.judgeAndPersist(session, answer);
+
+        assertThat(outcome.status()).isEqualTo(JudgeOutcome.Status.SUPERSEDED);
+        verifyNoInteractions(redis, llm);
+        verify(messages, never()).updateAssessmentIfPending(any());
+    }
+
+    @Test
+    void anAnswerSupersededDuringJudgingCannotPersistItsAssessment() {
+        when(llm.complete(any())).thenAnswer(invocation -> {
+            answer.setSupersededByMessageId(12L);
+            return completion("{\"score\":8}");
+        });
+        when(messages.updateAssessmentIfPending(any())).thenReturn(0);
+
+        JudgeOutcome outcome = service.judgeAndPersist(session, answer);
+
+        assertThat(outcome.status()).isEqualTo(JudgeOutcome.Status.SUPERSEDED);
+        assertThat(answer.getAssessmentStatus()).isEqualTo(AssessmentStatus.PENDING);
+        verify(messages).updateAssessmentIfPending(any());
     }
 
     @Test
