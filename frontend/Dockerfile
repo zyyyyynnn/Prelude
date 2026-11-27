@@ -1,19 +1,19 @@
+FROM golang:1.27-alpine AS server-build
+WORKDIR /src
+COPY server*.go .
+RUN go test server.go server_test.go
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /server server.go
+
 FROM node:24-alpine AS build
 WORKDIR /app
-RUN mkdir -p /app/caddy-data /app/caddy-config
 RUN npm install --global npm@12.0.2
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM caddy:2-alpine AS caddy
-
 FROM scratch
-COPY --from=caddy /usr/bin/caddy /caddy
-COPY Caddyfile /etc/caddy/Caddyfile
-COPY --from=build /app/caddy-data /data
-COPY --from=build /app/caddy-config /config
+COPY --from=server-build /server /server
 COPY --from=build /app/dist /srv
 EXPOSE 80
-ENTRYPOINT ["/caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+ENTRYPOINT ["/server"]
