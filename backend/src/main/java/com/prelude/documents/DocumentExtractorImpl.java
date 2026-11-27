@@ -30,9 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.jar.Attributes;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 
 @Slf4j
 @Component
@@ -271,12 +269,7 @@ class DocumentExtractorImpl implements DocumentExtractor {
             return null;
         }
         try (JarFile jar = new JarFile(candidate.toFile())) {
-            Manifest manifest = jar.getManifest();
-            String mainClass = manifest == null
-                ? null
-                : manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-            if (!"org.springframework.boot.loader.launch.JarLauncher".equals(mainClass)
-                || jar.getJarEntry("org/springframework/boot/loader/launch/PropertiesLauncher.class") == null
+            if (jar.getJarEntry("org/springframework/boot/loader/launch/PropertiesLauncher.class") == null
                 || jar.getJarEntry("BOOT-INF/classes/"
                     + parserClass.getName().replace('.', '/') + ".class") == null) {
                 return null;
