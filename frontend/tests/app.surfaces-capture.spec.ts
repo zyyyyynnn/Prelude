@@ -3,6 +3,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
+import { format } from 'oxfmt'
 import {
   createDemoState,
   DEMO_VIEWPORT,
@@ -385,7 +386,11 @@ test.afterAll(async () => {
   })
   const temporaryManifest = `${manifestFile}.${process.pid}.tmp`
   try {
-    await writeFile(temporaryManifest, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    const formatted = await format(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`)
+    if (formatted.errors.length) {
+      throw new Error(`Could not format surface manifest: ${formatted.errors[0].message}`)
+    }
+    await writeFile(temporaryManifest, formatted.code, 'utf8')
     await rename(temporaryManifest, manifestFile)
   } finally {
     await rm(temporaryManifest, { force: true })
