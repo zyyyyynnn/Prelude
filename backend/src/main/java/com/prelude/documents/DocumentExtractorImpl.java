@@ -121,6 +121,7 @@ class DocumentExtractorImpl implements DocumentExtractor {
             if (process.exitValue() == 2) {
                 throw BusinessException.badRequest(readChildError(error));
             }
+            log.warn("Document parser exited with code {}: {}", process.exitValue(), readChildDiagnostic(error));
             throw BusinessException.badRequest("文档解析失败，请检查文件格式");
         } catch (InterruptedException exception) {
             Thread.interrupted();
@@ -173,6 +174,16 @@ class DocumentExtractorImpl implements DocumentExtractor {
         }
     }
 
+    private String readChildDiagnostic(Path error) throws IOException {
+        if (!Files.exists(error) || Files.size(error) == 0) {
+            return "";
+        }
+        try (InputStream input = Files.newInputStream(error)) {
+            byte[] bytes = input.readNBytes(MAX_CHILD_ERROR_BYTES);
+            return new String(bytes, StandardCharsets.UTF_8).lines().findFirst().orElse("");
+        }
+    }
+
     private void terminate(Process process) {
         process.destroyForcibly();
         try {
@@ -198,7 +209,7 @@ class DocumentExtractorImpl implements DocumentExtractor {
     private static Process startParserProcess(String format, Path input, Path output, Path error) throws IOException {
         return new ProcessBuilder(parserCommand(DocumentParserProcess.class, format, input, output, error))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-            .redirectError(ProcessBuilder.Redirect.DISCARD)
+            .redirectError(error.toFile())
             .start();
     }
 
@@ -207,6 +218,9 @@ class DocumentExtractorImpl implements DocumentExtractor {
         String executable = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
             ? "java.exe" : "java";
         Path java = Path.of(System.getProperty("java.home"), "bin", executable);
+        if (!Files.isExecutable(java)) {
+            java = ProcessHandle.current().info().command().map(Path::of).orElse(java);
+        }
         List<String> command = new ArrayList<>();
         command.add(java.toString());
         command.add("-Xmx256m");

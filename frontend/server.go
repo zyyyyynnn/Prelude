@@ -27,6 +27,15 @@ func newHandler(root string, backend *url.URL) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/", func(writer http.ResponseWriter, request *http.Request) {
 		request.Body = http.MaxBytesReader(writer, request.Body, maxUploadBytes)
+		for _, header := range []string{
+			"Forwarded",
+			"X-Forwarded-For",
+			"X-Forwarded-Host",
+			"X-Forwarded-Port",
+			"X-Forwarded-Prefix",
+		} {
+			request.Header.Del(header)
+		}
 		proxy.ServeHTTP(writer, request)
 	})
 	mux.Handle("/", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
