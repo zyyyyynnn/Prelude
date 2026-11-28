@@ -11,6 +11,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -243,6 +244,12 @@ class DocumentExtractorImpl implements DocumentExtractor {
     }
 
     private static Path executableSpringBootJar(Class<?> parserClass) throws IOException {
+        for (String entry : System.getProperty("java.class.path").split(File.pathSeparator)) {
+            Path candidate = Path.of(entry).toAbsolutePath();
+            if (Files.isRegularFile(candidate) && isExecutableSpringBootJar(candidate, parserClass)) {
+                return candidate;
+            }
+        }
         CodeSource codeSource = parserClass.getProtectionDomain().getCodeSource();
         if (codeSource == null || codeSource.getLocation() == null) {
             return null;
@@ -265,17 +272,19 @@ class DocumentExtractorImpl implements DocumentExtractor {
         } catch (URISyntaxException exception) {
             throw new IOException("Invalid document parser code source", exception);
         }
-        if (!Files.isRegularFile(candidate)) {
-            return null;
-        }
+        return Files.isRegularFile(candidate) && isExecutableSpringBootJar(candidate, parserClass)
+            ? candidate
+            : null;
+    }
+
+    private static boolean isExecutableSpringBootJar(Path candidate, Class<?> parserClass) {
         try (JarFile jar = new JarFile(candidate.toFile())) {
-            if (jar.getJarEntry("org/springframework/boot/loader/launch/PropertiesLauncher.class") == null
-                || jar.getJarEntry("BOOT-INF/classes/"
-                    + parserClass.getName().replace('.', '/') + ".class") == null) {
-                return null;
-            }
+            return jar.getJarEntry("org/springframework/boot/loader/launch/PropertiesLauncher.class") != null
+                && jar.getJarEntry("BOOT-INF/classes/"
+                    + parserClass.getName().replace('.', '/') + ".class") != null;
+        } catch (IOException exception) {
+            return false;
         }
-        return candidate;
     }
 
     private String decodeUtf8(byte[] content) {
