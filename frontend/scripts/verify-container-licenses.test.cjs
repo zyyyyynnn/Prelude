@@ -73,6 +73,19 @@ test('rejects unknown OS toolchain licenses without a policy entry', () => {
   )
 })
 
+test('rejects scancode unknown OS licenses without a policy entry', () => {
+  const unknown = library(
+    'os-tool',
+    '1.0.0',
+    [{ license: { id: 'LicenseRef-scancode-unknown' } }],
+    'pkg:deb/debian/os-tool@1.0.0',
+  )
+  assert.match(
+    checkContainerBom(bom([unknown]), bom([]), policy).join('\n'),
+    /unknown container toolchain license/,
+  )
+})
+
 test('accepts explicitly governed toolchain components', () => {
   const image = bom([library('tool', '1.0.0', [{ license: { id: 'NOASSERTION' } }])])
   assert.deepEqual(checkContainerBom(image, bom([]), policy), [])

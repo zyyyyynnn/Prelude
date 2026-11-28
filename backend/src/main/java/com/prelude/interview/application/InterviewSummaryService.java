@@ -80,7 +80,8 @@ public class InterviewSummaryService {
     }
 
     private List<InterviewMessage> dialogMessages(Long sessionId) {
-        List<InterviewMessage> allMessages = interviewMessageRepository.listBySession(sessionId);
+        List<InterviewMessage> allMessages = InterviewMessage.effectiveMessages(
+            interviewMessageRepository.listBySession(sessionId));
         List<InterviewMessage> dialogMsgs = new ArrayList<>();
         for (InterviewMessage message : allMessages) {
             if (!ROLE_SYSTEM.equals(message.getRole())) {

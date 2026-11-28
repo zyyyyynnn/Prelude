@@ -26,6 +26,16 @@ export function buildOptimisticTurn(
   return { messages: base, assistantId, context }
 }
 
+export function retryOrSupersedeTarget(
+  last: InterviewMessageRecord | undefined,
+  content: string,
+): { retryOfMessageId?: number; supersedesMessageId?: number } {
+  if (last?.role !== 'user') return {}
+  return content.trim() === last.content.trim()
+    ? { retryOfMessageId: last.id }
+    : { supersedesMessageId: last.id }
+}
+
 /** An empty, unfinished session starts one turn and only one. */
 export function shouldAutoStart(
   session: { messages: InterviewMessageRecord[]; status?: InterviewSessionStatus } | undefined,

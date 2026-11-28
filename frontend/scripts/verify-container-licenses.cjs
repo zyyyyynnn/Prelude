@@ -55,7 +55,7 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
       component.purl?.startsWith('pkg:apk/') ||
       component.purl?.startsWith('pkg:golang/')
     ) {
-      const unknown = labels.some((label) => /NOASSERTION|sha256:/i.test(label))
+      const unknown = labels.some((label) => /NOASSERTION|sha256:|LicenseRef-|unknown/i.test(label))
       if (unknown) {
         const key = artifactKey(component)
         const toolchain = policy.containerToolchainComponents.find((item) => item.component === key)

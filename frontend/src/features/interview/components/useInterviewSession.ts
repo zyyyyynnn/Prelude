@@ -4,7 +4,7 @@ import { fetchSession, finishInterview, streamInterview } from '../api'
 import { interviewQueryKeys } from '../query-keys'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 import { applyMessageUpdate } from './message-updates'
-import { buildOptimisticTurn, shouldAutoStart } from './turn-buffer'
+import { buildOptimisticTurn, retryOrSupersedeTarget, shouldAutoStart } from './turn-buffer'
 import { handleInterviewStreamEvent, type SessionReportCache } from './interview-turn-stream'
 
 export function useInterviewSession(sessionId: number, onError: (message: string) => void) {
@@ -43,10 +43,12 @@ export function useInterviewSession(sessionId: number, onError: (message: string
       content,
       autoStart = false,
       retryOfMessageId,
+      supersedesMessageId,
     }: {
       content: string
       autoStart?: boolean
       retryOfMessageId?: number
+      supersedesMessageId?: number
     }) => {
       const {
         messages: base,
@@ -58,7 +60,12 @@ export function useInterviewSession(sessionId: number, onError: (message: string
       abort.current = new AbortController()
       await streamInterview(
         sessionId,
-        { content, messages: context, ...(retryOfMessageId == null ? {} : { retryOfMessageId }) },
+        {
+          content,
+          messages: context,
+          ...(retryOfMessageId == null ? {} : { retryOfMessageId }),
+          ...(supersedesMessageId == null ? {} : { supersedesMessageId }),
+        },
         (event) =>
           handleInterviewStreamEvent(event, assistantId, sessionId, sessionCache, {
             updateMessage,
@@ -126,8 +133,7 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     sending: send.isPending,
     finishing: finish.isPending,
     send: (content: string) => {
-      const last = visibleMessages.at(-1)
-      send.mutate({ content, retryOfMessageId: last?.role === 'user' ? last.id : undefined })
+      send.mutate({ content, ...retryOrSupersedeTarget(visibleMessages.at(-1), content) })
     },
     finish: () => finish.mutate(),
     updateMessage,
