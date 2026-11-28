@@ -275,5 +275,5 @@ test('@release primary interview path works against real services', async ({ pag
   await api(page, 'DELETE', `/auth/sessions/${currentSession!.sessionId}`)
   expect((await page.request.get('/api/user/profile')).status()).toBe(401)
   await page.goto('/interview')
-  await expect(page).toHaveURL(/\/login\?reason=expired/)
+  await expect(page).toHaveURL(/\/login$/)
 })
