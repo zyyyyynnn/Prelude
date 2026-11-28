@@ -26,6 +26,14 @@ test('the prompt context drops the empty assistant row and caps the window', () 
   expect(built.context.every((item) => item.id !== built.assistantId)).toBe(true)
 })
 
+test('a retry keeps the accepted user row and only reserves an assistant placeholder', () => {
+  const visible = [{ id: 9, role: 'user' as const, content: 'accepted answer' }]
+  const built = buildOptimisticTurn(visible, 'ignored', false, 1000, 9)
+  expect(built.messages.map((item) => item.role)).toEqual(['user', 'assistant'])
+  expect(built.messages[0].id).toBe(9)
+  expect(built.context.at(-1)?.id).toBe(9)
+})
+
 test('auto-start runs once for an empty unfinished session', () => {
   expect(shouldAutoStart({ messages: [], status: 'ongoing' }, 51, null)).toBe(true)
   expect(shouldAutoStart({ messages: [], status: 'ongoing' }, 51, 51)).toBe(false)

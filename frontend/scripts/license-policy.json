@@ -49,6 +49,18 @@
     "polyform-",
     "sspl-"
   ],
+  "allowedContainerToolchainLicenses": [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "GPL-2.0-or-later",
+    "GPL-2.0-with-classpath-exception",
+    "GPL-3.0-only WITH GCC-exception-3.1",
+    "GPL-3.0-or-later",
+    "LGPL-2.1-only",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-or-later",
+    "MIT"
+  ],
   "licenseAliases": {
     "al 2.0": "Apache-2.0",
     "asl 2.0": "Apache-2.0",
@@ -106,6 +118,131 @@
       "component": "spring-boot-jarmode-tools@4.1.3",
       "license": "Apache-2.0",
       "reason": "Spring Boot runtime tooling."
+    },
+    {
+      "component": "command-line-arguments@UNKNOWN",
+      "license": "MIT",
+      "reason": "Prelude frontend server binary."
+    },
+    {
+      "component": "gcc-16-base@16-20260322-1ubuntu1",
+      "license": "GPL-3.0-only WITH GCC-exception-3.1",
+      "reason": "GCC runtime package."
+    },
+    {
+      "component": "github.com/GehirnInc/crypt@v0.0.0-20230320061759-8cc1b52080c5",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "github.com/canonical/go-flags@v0.0.0-20230403090104-105d09a091b8",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "github.com/canonical/pebble@v1.33.3-0.20261021134118-f036f355de35",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "github.com/canonical/x-go@v0.0.0-20230522092633-7947a7587f5b",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "github.com/gorilla/websocket@v1.5.3",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "golang.org/x/sys@v0.48.0",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "golang.org/x/term@v0.46.0",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "gopkg.in/tomb.v2@v2.0.0-20161208151619-d5d1b5820637",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "gopkg.in/yaml.v2@v2.4.0",
+      "license": "Apache-2.0",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "gopkg.in/yaml.v3@v3.0.1",
+      "license": "Apache-2.0",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "libcrypt1@1:4.5.1-1",
+      "license": "LGPL-2.1-or-later",
+      "reason": "Ubuntu libcrypt runtime package."
+    },
+    {
+      "component": "libgcc-s1@16-20260322-1ubuntu1",
+      "license": "GPL-3.0-only WITH GCC-exception-3.1",
+      "reason": "GCC runtime package."
+    },
+    {
+      "component": "libgcrypt20@1.12.0-2ubuntu1.1",
+      "license": "LGPL-2.1-or-later",
+      "reason": "Ubuntu libgcrypt runtime package."
+    },
+    {
+      "component": "libgnutls30t64@3.8.12-2ubuntu1.1",
+      "license": "LGPL-3.0-or-later",
+      "reason": "Ubuntu GnuTLS runtime package."
+    },
+    {
+      "component": "libgssapi-krb5-2@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "libk5crypto3@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "libkrb5-3@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "libkrb5support0@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "libksba8@1.6.7-2build1",
+      "license": "LGPL-3.0-or-later",
+      "reason": "Ubuntu KSBA runtime package."
+    },
+    {
+      "component": "libstdc++6@16-20260322-1ubuntu1",
+      "license": "GPL-3.0-only WITH GCC-exception-3.1",
+      "reason": "GCC C++ runtime package."
+    },
+    {
+      "component": "libtasn1-6@4.21.0-2",
+      "license": "LGPL-2.1-or-later",
+      "reason": "Ubuntu libtasn1 runtime package."
+    },
+    {
+      "component": "ubuntu-keyring@2023.11.28.1build1",
+      "license": "GPL-2.0-or-later",
+      "reason": "Ubuntu keyring package."
+    },
+    {
+      "component": "wget@1.25.0-2ubuntu4.4",
+      "license": "GPL-3.0-or-later",
+      "reason": "Ubuntu wget package."
     }
   ],
   "exceptions": []

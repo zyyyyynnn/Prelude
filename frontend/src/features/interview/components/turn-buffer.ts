@@ -8,11 +8,12 @@ export function buildOptimisticTurn(
   content: string,
   autoStart: boolean,
   now: number = Date.now(),
+  retryOfMessageId?: number,
 ): { messages: InterviewMessageRecord[]; assistantId: number; context: InterviewMessageRecord[] } {
   const optimisticId = now
   const assistantId = now + 1
   const base = [...visible]
-  if (!autoStart) {
+  if (!autoStart && retryOfMessageId == null) {
     base.push({ id: optimisticId, role: 'user', content, createdAt: new Date(now).toISOString() })
   }
   base.push({

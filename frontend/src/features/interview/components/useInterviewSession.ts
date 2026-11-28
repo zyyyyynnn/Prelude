@@ -42,21 +42,23 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     mutationFn: async ({
       content,
       autoStart = false,
+      retryOfMessageId,
     }: {
       content: string
       autoStart?: boolean
+      retryOfMessageId?: number
     }) => {
       const {
         messages: base,
         assistantId,
         context,
-      } = buildOptimisticTurn(visibleMessages, content, autoStart)
+      } = buildOptimisticTurn(visibleMessages, content, autoStart, Date.now(), retryOfMessageId)
       setMessages(base)
       abort.current?.abort()
       abort.current = new AbortController()
       await streamInterview(
         sessionId,
-        { content, messages: context },
+        { content, messages: context, ...(retryOfMessageId == null ? {} : { retryOfMessageId }) },
         (event) =>
           handleInterviewStreamEvent(event, assistantId, sessionId, sessionCache, {
             updateMessage,
@@ -123,7 +125,10 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     setShowReport,
     sending: send.isPending,
     finishing: finish.isPending,
-    send: (content: string) => send.mutate({ content }),
+    send: (content: string) => {
+      const last = visibleMessages.at(-1)
+      send.mutate({ content, retryOfMessageId: last?.role === 'user' ? last.id : undefined })
+    },
     finish: () => finish.mutate(),
     updateMessage,
     refresh: () => void session.refetch(),

@@ -55,6 +55,16 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
       component.purl?.startsWith('pkg:apk/') ||
       component.purl?.startsWith('pkg:golang/')
     ) {
+      const unknown = labels.some((label) => /NOASSERTION|sha256:/i.test(label))
+      if (unknown) {
+        const key = artifactKey(component)
+        const toolchain = policy.containerToolchainComponents.find((item) => item.component === key)
+        if (!toolchain || !policy.allowedContainerToolchainLicenses.includes(toolchain.license)) {
+          errors.push(
+            `${key}: unknown container toolchain license requires an explicit policy entry`,
+          )
+        }
+      }
       continue
     }
     const key = artifactKey(component)
@@ -70,16 +80,9 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
       )
       continue
     }
-    errors.push(
-      ...checkBom(
-        {
-          bomFormat: 'CycloneDX',
-          components: [{ name: key, licenses: [{ license: { id: toolchain.license } }] }],
-        },
-        policy,
-        today,
-      ),
-    )
+    if (!policy.allowedContainerToolchainLicenses.includes(toolchain.license)) {
+      errors.push(`${key}: container toolchain license ${toolchain.license} is not allowed`)
+    }
   }
   return errors
 }

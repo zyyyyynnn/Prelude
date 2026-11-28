@@ -18,6 +18,7 @@ function loadPolicy(filePath = policyPath) {
     'deniedLicenseFamilies',
     'licenseSelections',
     'containerToolchainComponents',
+    'allowedContainerToolchainLicenses',
     'exceptions',
   ]) {
     if (!Array.isArray(policy[key])) throw new Error(`license policy ${key} must be an array`)

@@ -78,6 +78,8 @@ export type InterviewSessionDetailResponse = {
 export type InterviewChatRequest = {
   content: string
   messages?: InterviewMessageRecord[]
+  retryOfMessageId?: number
+  supersedesMessageId?: number
 }
 
 export type InterviewModelCapability = {

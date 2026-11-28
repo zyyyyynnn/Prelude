@@ -14,6 +14,7 @@ const policy = {
   containerToolchainComponents: [
     { component: 'tool@1.0.0', license: 'Apache-2.0', reason: 'test toolchain' },
   ],
+  allowedContainerToolchainLicenses: ['Apache-2.0'],
   exceptions: [],
 }
 const bom = (components) => ({ bomFormat: 'CycloneDX', components })
@@ -56,6 +57,19 @@ test('allows governed OS packages but rejects network-copyleft licenses', () => 
   assert.match(
     checkContainerBom(bom([agpl]), bom([]), policy).join('\n'),
     /denied container license/,
+  )
+})
+
+test('rejects unknown OS toolchain licenses without a policy entry', () => {
+  const unknown = library(
+    'os-tool',
+    '1.0.0',
+    [{ license: { id: 'NOASSERTION' } }],
+    'pkg:deb/debian/os-tool@1.0.0',
+  )
+  assert.match(
+    checkContainerBom(bom([unknown]), bom([]), policy).join('\n'),
+    /unknown container toolchain license/,
   )
 })
 
