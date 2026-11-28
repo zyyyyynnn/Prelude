@@ -5,27 +5,27 @@ Generated from the runtime and container CycloneDX SBOMs; do not edit by hand.
 Prelude is distributed under the MIT license; see the repository LICENSE file.
 
 Components:
-- command-line-arguments@UNKNOWN — MIT — pkg:golang/command-line-arguments
+- command-line-arguments@UNKNOWN — MIT — pkg:golang/command-line-arguments@unknown
 - stdlib@go1.27.4 — BSD-3-Clause — pkg:golang/stdlib@1.27.4
-- runtime@7.29.7 — MIT — pkg:npm/%40babel/runtime@7.29.7
-- react@1.9.0 — MIT — pkg:npm/%40base-ui/react@1.9.0
-- utils@0.5.0 — MIT — pkg:npm/%40base-ui/utils@0.5.0
-- core@1.8.0 — MIT — pkg:npm/%40floating-ui/core@1.8.0
-- dom@1.8.0 — MIT — pkg:npm/%40floating-ui/dom@1.8.0
-- react-dom@2.1.9 — MIT — pkg:npm/%40floating-ui/react-dom@2.1.9
-- utils@0.2.12 — MIT — pkg:npm/%40floating-ui/utils@0.2.12
-- inter@5.3.0 — OFL-1.1 — pkg:npm/%40fontsource-variable/inter@5.3.0
-- jetbrains-mono@5.3.0 — OFL-1.1 — pkg:npm/%40fontsource-variable/jetbrains-mono@5.3.0
-- lora@5.3.0 — OFL-1.1 — pkg:npm/%40fontsource-variable/lora@5.3.0
-- noto-serif-sc@5.3.1 — OFL-1.1 — pkg:npm/%40fontsource-variable/noto-serif-sc@5.3.1
-- shaders-react@0.0.82 — Apache-2.0 — pkg:npm/%40paper-design/shaders-react@0.0.82
-- shaders@0.0.82 — Apache-2.0 — pkg:npm/%40paper-design/shaders@0.0.82
-- route-pattern@0.22.1 — MIT — pkg:npm/%40remix-run/route-pattern@0.22.1
-- react@4.9.0 — Remix Icon License 1.0 — pkg:npm/%40remixicon/react@4.9.0
-- query-core@5.108.4 — MIT — pkg:npm/%40tanstack/query-core@5.108.4
-- react-query@5.108.4 — MIT — pkg:npm/%40tanstack/react-query@5.108.4
-- react-dom@19.3.0 — MIT — pkg:npm/%40types/react-dom@19.3.0
-- react@19.3.0 — MIT — pkg:npm/%40types/react@19.3.0
+- runtime@7.29.7 — MIT — pkg:npm/@babel/runtime@7.29.7
+- react@1.9.0 — MIT — pkg:npm/@base-ui/react@1.9.0
+- utils@0.5.0 — MIT — pkg:npm/@base-ui/utils@0.5.0
+- core@1.8.0 — MIT — pkg:npm/@floating-ui/core@1.8.0
+- dom@1.8.0 — MIT — pkg:npm/@floating-ui/dom@1.8.0
+- react-dom@2.1.9 — MIT — pkg:npm/@floating-ui/react-dom@2.1.9
+- utils@0.2.12 — MIT — pkg:npm/@floating-ui/utils@0.2.12
+- inter@5.3.0 — OFL-1.1 — pkg:npm/@fontsource-variable/inter@5.3.0
+- jetbrains-mono@5.3.0 — OFL-1.1 — pkg:npm/@fontsource-variable/jetbrains-mono@5.3.0
+- lora@5.3.0 — OFL-1.1 — pkg:npm/@fontsource-variable/lora@5.3.0
+- noto-serif-sc@5.3.1 — OFL-1.1 — pkg:npm/@fontsource-variable/noto-serif-sc@5.3.1
+- shaders-react@0.0.82 — Apache-2.0 — pkg:npm/@paper-design/shaders-react@0.0.82
+- shaders@0.0.82 — Apache-2.0 — pkg:npm/@paper-design/shaders@0.0.82
+- route-pattern@0.22.1 — MIT — pkg:npm/@remix-run/route-pattern@0.22.1
+- react@4.9.0 — Remix Icon License 1.0 — pkg:npm/@remixicon/react@4.9.0
+- query-core@5.108.4 — MIT — pkg:npm/@tanstack/query-core@5.108.4
+- react-query@5.108.4 — MIT — pkg:npm/@tanstack/react-query@5.108.4
+- react-dom@19.3.0 — MIT — pkg:npm/@types/react-dom@19.3.0
+- react@19.3.0 — MIT — pkg:npm/@types/react@19.3.0
 - cn@0.5.2 — MIT — pkg:npm/cn@0.5.2
 - cookie-es@3.1.1 — MIT — pkg:npm/cookie-es@3.1.1
 - csstype@3.2.3 — MIT — pkg:npm/csstype@3.2.3

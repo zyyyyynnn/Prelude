@@ -205,194 +205,194 @@
   },
   "licenseSelections": [
     {
-      "component": "pkg:maven/com.rabbitmq/amqp-client@5.37.1?type=jar",
+      "component": "pkg:maven/com.rabbitmq/amqp-client@5.37.1",
       "license": "AL 2.0",
       "reason": "RabbitMQ offers Apache-2.0 as one of three selectable licenses; this project selects the permissive option."
     }
   ],
   "containerToolchainComponents": [
     {
-      "component": "app@1.0.0",
+      "component": "pkg:maven/org.springframework.boot.loader.launch.JarLauncher/app@1.0.0",
       "license": "Apache-2.0",
       "reason": "Spring Boot executable loader metadata for the Prelude application."
     },
     {
-      "component": "gson@2.13.1",
+      "component": "pkg:maven/com.google.code.gson/gson@2.13.1",
       "license": "Apache-2.0",
       "reason": "Spring Boot tooling dependency."
     },
     {
-      "component": "javassist@3.30.2-GA",
+      "component": "pkg:maven/org.javassist/javassist@3.30.2-GA",
       "license": "LGPL-2.1-only",
       "reason": "Bytecode transformation library; LGPL is an allowed license."
     },
     {
-      "component": "jctools-core@4.0.7",
+      "component": "pkg:maven/org.jctools/jctools-core@4.0.7",
       "license": "Apache-2.0",
       "reason": "JCTools core library."
     },
     {
-      "component": "jctools-core-jdk11@4.0.7",
+      "component": "pkg:maven/org.jctools/jctools-core-jdk11@4.0.7",
       "license": "Apache-2.0",
       "reason": "JCTools JDK11 variant."
     },
     {
-      "component": "jrt-fs@21.0.13.1",
+      "component": "pkg:maven/jrt-fs/jrt-fs@21.0.13.1",
       "license": "GPL-2.0-with-classpath-exception",
       "reason": "JDK runtime filesystem provider."
     },
     {
-      "component": "ognl@3.4.4",
+      "component": "pkg:maven/ognl/ognl@3.4.4",
       "license": "Apache-2.0",
       "reason": "Expression language used by MyBatis."
     },
     {
-      "component": "openjdk@21.0.13.1+2-LTS",
+      "component": "pkg:generic/oracle/openjdk@21.0.13.1+2-LTS",
       "license": "GPL-2.0-with-classpath-exception",
       "reason": "Eclipse Temurin JRE runtime distribution."
     },
     {
-      "component": "prelude-backend@1.0.0",
+      "component": "pkg:maven/com.prelude/prelude-backend@1.0.0",
       "license": "MIT",
       "reason": "Prelude application artifact."
     },
     {
-      "component": "spring-boot-jarmode-tools@4.1.3",
+      "component": "pkg:maven/spring-boot-jarmode-tools/spring-boot-jarmode-tools@4.1.3",
       "license": "Apache-2.0",
       "reason": "Spring Boot runtime tooling."
     },
     {
-      "component": "command-line-arguments@UNKNOWN",
+      "component": "pkg:golang/command-line-arguments@unknown",
       "license": "MIT",
       "reason": "Prelude frontend server binary."
     },
     {
-      "component": "gcc-16-base@16-20260322-1ubuntu1",
+      "component": "pkg:deb/ubuntu/gcc-16-base@16-20260322-1ubuntu1",
       "license": "GPL-3.0-only WITH GCC-exception-3.1",
       "reason": "GCC runtime package."
     },
     {
-      "component": "github.com/GehirnInc/crypt@v0.0.0-20230320061759-8cc1b52080c5",
+      "component": "pkg:golang/github.com/GehirnInc/crypt@v0.0.0-20230320061759-8cc1b52080c5",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "github.com/canonical/go-flags@v0.0.0-20230403090104-105d09a091b8",
+      "component": "pkg:golang/github.com/canonical/go-flags@v0.0.0-20230403090104-105d09a091b8",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "github.com/canonical/pebble@v1.33.3-0.20261021134118-f036f355de35",
+      "component": "pkg:golang/github.com/canonical/pebble@v1.33.3-0.20261021134118-f036f355de35",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "github.com/canonical/x-go@v0.0.0-20230522092633-7947a7587f5b",
+      "component": "pkg:golang/github.com/canonical/x-go@v0.0.0-20230522092633-7947a7587f5b",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "github.com/gorilla/websocket@v1.5.3",
+      "component": "pkg:golang/github.com/gorilla/websocket@v1.5.3",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "golang.org/x/sys@v0.48.0",
+      "component": "pkg:golang/golang.org/x/sys@v0.48.0",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "golang.org/x/term@v0.46.0",
+      "component": "pkg:golang/golang.org/x/term@v0.46.0",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "gopkg.in/tomb.v2@v2.0.0-20161208151619-d5d1b5820637",
+      "component": "pkg:golang/gopkg.in/tomb.v2@v2.0.0-20161208151619-d5d1b5820637",
       "license": "BSD-3-Clause",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "gopkg.in/yaml.v2@v2.4.0",
+      "component": "pkg:golang/gopkg.in/yaml.v2@v2.4.0",
       "license": "Apache-2.0",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "gopkg.in/yaml.v3@v3.0.1",
+      "component": "pkg:golang/gopkg.in/yaml.v3@v3.0.1",
       "license": "Apache-2.0",
       "reason": "Ubuntu packaged Go dependency."
     },
     {
-      "component": "libcrypt1@1:4.5.1-1",
+      "component": "pkg:deb/ubuntu/libcrypt1@1:4.5.1-1",
       "license": "LGPL-2.1-or-later",
       "reason": "Ubuntu libcrypt runtime package."
     },
     {
-      "component": "libgcc-s1@16-20260322-1ubuntu1",
+      "component": "pkg:deb/ubuntu/libgcc-s1@16-20260322-1ubuntu1",
       "license": "GPL-3.0-only WITH GCC-exception-3.1",
       "reason": "GCC runtime package."
     },
     {
-      "component": "libgcrypt20@1.12.0-2ubuntu1.1",
+      "component": "pkg:deb/ubuntu/libgcrypt20@1.12.0-2ubuntu1.1",
       "license": "LGPL-2.1-or-later",
       "reason": "Ubuntu libgcrypt runtime package."
     },
     {
-      "component": "libgnutls30t64@3.8.12-2ubuntu1.1",
+      "component": "pkg:deb/ubuntu/libgnutls30t64@3.8.12-2ubuntu1.1",
       "license": "LGPL-3.0-or-later",
       "reason": "Ubuntu GnuTLS runtime package."
     },
     {
-      "component": "libgssapi-krb5-2@1.22.1-2ubuntu4.1",
+      "component": "pkg:deb/ubuntu/libgssapi-krb5-2@1.22.1-2ubuntu4.1",
       "license": "MIT",
       "reason": "Ubuntu Kerberos runtime package."
     },
     {
-      "component": "libk5crypto3@1.22.1-2ubuntu4.1",
+      "component": "pkg:deb/ubuntu/libk5crypto3@1.22.1-2ubuntu4.1",
       "license": "MIT",
       "reason": "Ubuntu Kerberos runtime package."
     },
     {
-      "component": "libkrb5-3@1.22.1-2ubuntu4.1",
+      "component": "pkg:deb/ubuntu/libkrb5-3@1.22.1-2ubuntu4.1",
       "license": "MIT",
       "reason": "Ubuntu Kerberos runtime package."
     },
     {
-      "component": "libkrb5support0@1.22.1-2ubuntu4.1",
+      "component": "pkg:deb/ubuntu/libkrb5support0@1.22.1-2ubuntu4.1",
       "license": "MIT",
       "reason": "Ubuntu Kerberos runtime package."
     },
     {
-      "component": "libksba8@1.6.7-2build1",
+      "component": "pkg:deb/ubuntu/libksba8@1.6.7-2build1",
       "license": "LGPL-3.0-or-later",
       "reason": "Ubuntu KSBA runtime package."
     },
     {
-      "component": "libstdc++6@16-20260322-1ubuntu1",
+      "component": "pkg:deb/ubuntu/libstdc++6@16-20260322-1ubuntu1",
       "license": "GPL-3.0-only WITH GCC-exception-3.1",
       "reason": "GCC C++ runtime package."
     },
     {
-      "component": "libtasn1-6@4.21.0-2",
+      "component": "pkg:deb/ubuntu/libtasn1-6@4.21.0-2",
       "license": "LGPL-2.1-or-later",
       "reason": "Ubuntu libtasn1 runtime package."
     },
     {
-      "component": "ubuntu-keyring@2023.11.28.1build1",
+      "component": "pkg:deb/ubuntu/ubuntu-keyring@2023.11.28.1build1",
       "license": "GPL-2.0-or-later",
       "reason": "Ubuntu keyring package."
     },
     {
-      "component": "wget@1.25.0-2ubuntu4.4",
+      "component": "pkg:deb/ubuntu/wget@1.25.0-2ubuntu4.4",
       "license": "GPL-3.0-or-later",
       "reason": "Ubuntu wget package."
     },
     {
-      "component": "base-files@14ubuntu6.3",
+      "component": "pkg:deb/ubuntu/base-files@14ubuntu6.3",
       "licenses": ["GPL-2.0-or-later"],
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "bash@5.3-2ubuntu1",
+      "component": "pkg:deb/ubuntu/bash@5.3-2ubuntu1",
       "licenses": [
         "BSD-4-Clause-UC",
         "GFDL-1.3-only",
@@ -406,7 +406,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "dirmngr@2.4.8-4ubuntu3.1",
+      "component": "pkg:deb/ubuntu/dirmngr@2.4.8-4ubuntu3.1",
       "licenses": [
         "BSD-3-Clause",
         "CC0-1.0",
@@ -425,7 +425,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "gnupg@2.4.8-4ubuntu3.1",
+      "component": "pkg:deb/ubuntu/gnupg@2.4.8-4ubuntu3.1",
       "licenses": [
         "BSD-3-Clause",
         "CC0-1.0",
@@ -444,7 +444,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "gpg@2.4.8-4ubuntu3.1",
+      "component": "pkg:deb/ubuntu/gpg@2.4.8-4ubuntu3.1",
       "licenses": [
         "BSD-3-Clause",
         "CC0-1.0",
@@ -463,7 +463,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "gpg-agent@2.4.8-4ubuntu3.1",
+      "component": "pkg:deb/ubuntu/gpg-agent@2.4.8-4ubuntu3.1",
       "licenses": [
         "BSD-3-Clause",
         "CC0-1.0",
@@ -482,7 +482,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "gpgconf@2.4.8-4ubuntu3.1",
+      "component": "pkg:deb/ubuntu/gpgconf@2.4.8-4ubuntu3.1",
       "licenses": [
         "BSD-3-Clause",
         "CC0-1.0",
@@ -501,7 +501,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "gpgsm@2.4.8-4ubuntu3.1",
+      "component": "pkg:deb/ubuntu/gpgsm@2.4.8-4ubuntu3.1",
       "licenses": [
         "BSD-3-Clause",
         "CC0-1.0",
@@ -520,7 +520,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "gpgv@2.4.8-4ubuntu3.1",
+      "component": "pkg:deb/ubuntu/gpgv@2.4.8-4ubuntu3.1",
       "licenses": [
         "BSD-3-Clause",
         "CC0-1.0",
@@ -539,12 +539,12 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "libbz2-1.0@1.0.8-6ubuntu0.1",
+      "component": "pkg:deb/ubuntu/libbz2-1.0@1.0.8-6ubuntu0.1",
       "licenses": ["BSD-4-Clause", "GPL-2.0-only"],
       "reason": "bzip2 uses the BSD-4-Clause license; Debian metadata also lists GPL-2.0-only."
     },
     {
-      "component": "libdb5.3t64@5.3.28+dfsg2-10ubuntu1",
+      "component": "pkg:deb/ubuntu/libdb5.3t64@5.3.28+dfsg2-10ubuntu1",
       "licenses": [
         "BSD-3-Clause",
         "GPL-3.0-only",
@@ -559,7 +559,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "liblzma5@5.8.3-1ubuntu0.1",
+      "component": "pkg:deb/ubuntu/liblzma5@5.8.3-1ubuntu0.1",
       "licenses": [
         "0BSD",
         "FSFUL",
@@ -575,17 +575,17 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "libnghttp2-14@1.68.0-2ubuntu0.2",
+      "component": "pkg:deb/ubuntu/libnghttp2-14@1.68.0-2ubuntu0.2",
       "licenses": ["BSD-2-Clause", "GPL-3.0-only", "GPL-3.0-or-later", "MIT", "Expat"],
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "libpsl5t64@0.21.2-1.1build2",
+      "component": "pkg:deb/ubuntu/libpsl5t64@0.21.2-1.1build2",
       "licenses": ["MIT"],
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "libunistring5@1.3-2build1",
+      "component": "pkg:deb/ubuntu/libunistring5@1.3-2build1",
       "licenses": [
         "BSD-3-Clause",
         "GFDL-1.2-or-later",
@@ -608,7 +608,7 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "perl-base@5.40.1-7ubuntu0.3",
+      "component": "pkg:deb/ubuntu/perl-base@5.40.1-7ubuntu0.3",
       "licenses": [
         "Artistic-1.0",
         "Artistic-2.0",
@@ -636,12 +636,12 @@
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "rust-coreutils@0.10.0-1ubuntu2~26.04.1",
+      "component": "pkg:deb/ubuntu/rust-coreutils@0.10.0-1ubuntu2~26.04.1",
       "licenses": ["Apache-2.0", "CC-BY-4.0", "MIT"],
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     },
     {
-      "component": "sensible-utils@0.0.26build1",
+      "component": "pkg:deb/ubuntu/sensible-utils@0.0.26build1",
       "licenses": ["GPL-2.0-only", "GPL-2.0-or-later"],
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
     }

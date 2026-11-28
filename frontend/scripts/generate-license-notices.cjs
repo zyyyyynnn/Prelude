@@ -2,8 +2,13 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
-const { loadPolicy } = require('./verify-license-policy.cjs')
-const { canonicalLicenseLabels, checkContainerBom } = require('./verify-container-licenses.cjs')
+const { componentKey, loadPolicy } = require('./verify-license-policy.cjs')
+const {
+  canonicalLicenseLabels,
+  checkContainerBom,
+  resolveRuntimeComponent,
+  runtimeComponentIndex,
+} = require('./verify-container-licenses.cjs')
 
 const repositoryRoot = path.resolve(__dirname, '../..')
 const backendNotice = path.join(repositoryRoot, 'backend/src/main/resources/licenses/NOTICE.txt')
@@ -32,16 +37,20 @@ function licenseLabel(component, policy) {
 }
 
 function identity(component) {
-  return (
-    component.purl || `${component.group || ''}:${component.name}@${component.version || 'unknown'}`
-  )
+  const key = componentKey(component)
+  if (!key) {
+    throw new Error(`${component.name}@${component.version || 'unknown'} requires a valid purl`)
+  }
+  return key
 }
 
 function mergeComponents(runtimeComponents, imageComponents) {
   const merged = new Map()
+  const runtimeIndex = runtimeComponentIndex(runtimeComponents)
   for (const component of [...runtimeComponents, ...imageComponents]) {
     if (component.type === 'file' || component.type === 'operating-system') continue
-    const key = `${component.name}@${component.version || 'unknown'}`
+    const runtime = resolveRuntimeComponent(runtimeIndex, component)
+    const key = runtime ? identity(runtime) : identity(component)
     if (!merged.has(key)) merged.set(key, component)
   }
   return [...merged.values()]

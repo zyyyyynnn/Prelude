@@ -3,6 +3,7 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { canonicalLicenseLabels, checkContainerBom } = require('./verify-container-licenses.cjs')
+const { componentKey } = require('./verify-license-policy.cjs')
 
 const policy = {
   allowedLicenses: ['MIT', 'Apache-2.0', 'LGPL-2.1-only', 'GPL-2.0-with-classpath-exception'],
@@ -12,7 +13,7 @@ const policy = {
   licenseAliases: {},
   licenseSelections: [],
   containerToolchainComponents: [
-    { component: 'tool@1.0.0', license: 'Apache-2.0', reason: 'test toolchain' },
+    { component: 'pkg:npm/tool@1.0.0', license: 'Apache-2.0', reason: 'test toolchain' },
   ],
   allowedContainerToolchainLicenses: ['Apache-2.0'],
   exceptions: [],
@@ -157,7 +158,7 @@ test('requires every canonical toolchain license to be allowed', () => {
     ...policy,
     containerToolchainComponents: [
       {
-        component: 'tool@1.0.0',
+        component: 'pkg:npm/tool@1.0.0',
         licenses: ['Apache-2.0', 'MIT'],
         reason: 'test multi-license toolchain',
       },
@@ -174,11 +175,132 @@ test('does not let a toolchain mapping hide a denied license', () => {
   const governed = {
     ...policy,
     containerToolchainComponents: [
-      { component: 'tool@1.0.0', license: 'Apache-2.0', reason: 'test toolchain' },
+      { component: 'pkg:npm/tool@1.0.0', license: 'Apache-2.0', reason: 'test toolchain' },
     ],
   }
   const image = bom([
     library('tool', '1.0.0', [{ license: { id: 'AGPL-3.0-only' } }], 'pkg:deb/debian/tool@1.0.0'),
   ])
   assert.match(checkContainerBom(image, bom([]), governed).join('\n'), /denied container license/)
+})
+
+test('normalizes equivalent purl qualifiers and encoding', () => {
+  assert.equal(
+    componentKey({ purl: 'pkg:maven/org.example/tool@1.0.0?type=jar' }),
+    'pkg:maven/org.example/tool@1.0.0',
+  )
+  assert.equal(
+    componentKey({
+      purl: 'pkg:generic/oracle/openjdk@21.0.13.1%2B2-LTS?repository_url=example',
+    }),
+    'pkg:generic/oracle/openjdk@21.0.13.1+2-LTS',
+  )
+})
+
+test('matches exact toolchain mappings across equivalent purls', () => {
+  const governed = {
+    ...policy,
+    containerToolchainComponents: [
+      {
+        component: 'pkg:maven/org.example/tool@1.0.0',
+        license: 'Apache-2.0',
+        reason: 'test Maven toolchain',
+      },
+    ],
+  }
+  const image = bom([
+    library(
+      'tool',
+      '1.0.0',
+      [{ license: { id: 'NOASSERTION' } }],
+      'pkg:maven/org.example/tool@1.0.0?type=jar',
+    ),
+  ])
+  assert.deepEqual(checkContainerBom(image, bom([]), governed), [])
+})
+
+test('does not match toolchain policy across ecosystems or namespaces', () => {
+  const governed = {
+    ...policy,
+    containerToolchainComponents: [
+      {
+        component: 'pkg:maven/org.springframework.boot.loader.launch.JarLauncher/app@1.0.0',
+        license: 'Apache-2.0',
+        reason: 'test Spring loader',
+      },
+    ],
+  }
+  const image = bom([
+    library('app', '1.0.0', [{ license: { id: 'NOASSERTION' } }], 'pkg:npm/app@1.0.0'),
+  ])
+  assert.match(
+    checkContainerBom(image, bom([]), governed).join('\n'),
+    /absent from the runtime license inventory/,
+  )
+})
+
+test('does not match runtime licenses across ecosystems or namespaces', () => {
+  const image = bom([
+    library(
+      'shared',
+      '1.0.0',
+      [{ license: { id: 'NOASSERTION' } }],
+      'pkg:maven/org.example/shared@1.0.0',
+    ),
+  ])
+  const runtime = bom([
+    library('shared', '1.0.0', [{ license: { id: 'MIT' } }], 'pkg:npm/shared@1.0.0'),
+  ])
+  assert.match(
+    checkContainerBom(image, runtime, policy).join('\n'),
+    /absent from the runtime license inventory/,
+  )
+})
+
+test('resolves a unique Syft Maven artifact alias to its runtime group', () => {
+  const image = bom([
+    library('tool', '1.0.0', [{ license: { id: 'NOASSERTION' } }], 'pkg:maven/tool/tool@1.0.0'),
+  ])
+  const runtime = bom([
+    library(
+      'tool',
+      '1.0.0',
+      [{ license: { id: 'MIT' } }],
+      'pkg:maven/org.example/tool@1.0.0?type=jar',
+    ),
+  ])
+  assert.deepEqual(checkContainerBom(image, runtime, policy), [])
+})
+
+test('rejects an ambiguous Syft Maven artifact alias', () => {
+  const image = bom([
+    library(
+      'shared',
+      '1.0.0',
+      [{ license: { id: 'NOASSERTION' } }],
+      'pkg:maven/shared/shared@1.0.0',
+    ),
+  ])
+  const runtime = bom([
+    library('shared', '1.0.0', [{ license: { id: 'MIT' } }], 'pkg:maven/org.first/shared@1.0.0'),
+    library(
+      'shared',
+      '1.0.0',
+      [{ license: { id: 'Apache-2.0' } }],
+      'pkg:maven/org.second/shared@1.0.0',
+    ),
+  ])
+  assert.match(
+    checkContainerBom(image, runtime, policy).join('\n'),
+    /absent from the runtime license inventory/,
+  )
+})
+
+test('rejects governed components without a unique purl', () => {
+  const component = library('unknown', '1.0.0', [{ license: { id: 'MIT' } }])
+  delete component.purl
+  assert.match(
+    checkContainerBom(bom([component]), bom([]), policy).join('\n'),
+    /component identity requires a valid purl/,
+  )
 })

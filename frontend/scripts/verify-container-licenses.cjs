@@ -1,7 +1,12 @@
 'use strict'
 
 const fs = require('node:fs')
-const { checkBom, evaluateExpression, loadPolicy } = require('./verify-license-policy.cjs')
+const {
+  checkBom,
+  componentKey,
+  evaluateExpression,
+  loadPolicy,
+} = require('./verify-license-policy.cjs')
 
 const deniedContainerFamilies = [
   'agpl-',
@@ -20,8 +25,33 @@ function flatten(components, output = []) {
   return output
 }
 
-function artifactKey(component) {
-  return `${component.name}@${component.version || 'unknown'}`
+function runtimeComponentIndex(components) {
+  const byKey = new Map()
+  const byMavenArtifact = new Map()
+  for (const component of components) {
+    const key = componentKey(component)
+    if (!key) continue
+    byKey.set(key, component)
+    if (!key.startsWith('pkg:maven/')) continue
+    const version = key.slice(key.lastIndexOf('@') + 1)
+    const artifact = `${component.name}@${version}`
+    const matches = byMavenArtifact.get(artifact) || new Set()
+    matches.add(key)
+    byMavenArtifact.set(artifact, matches)
+  }
+  return { byKey, byMavenArtifact }
+}
+
+function resolveRuntimeComponent(index, component) {
+  const key = componentKey(component)
+  if (!key) return undefined
+  const direct = index.byKey.get(key)
+  if (direct) return direct
+  if (!key.startsWith('pkg:maven/')) return undefined
+  const version = key.slice(key.lastIndexOf('@') + 1)
+  const matches = index.byMavenArtifact.get(`${component.name}@${version}`)
+  if (matches?.size !== 1) return undefined
+  return index.byKey.get([...matches][0])
 }
 
 function normalized(value) {
@@ -29,9 +59,10 @@ function normalized(value) {
 }
 
 function toolchainEntry(component, policy) {
-  return policy.containerToolchainComponents.find(
-    (item) => item.component === artifactKey(component),
-  )
+  const key = componentKey(component)
+  return key
+    ? policy.containerToolchainComponents.find((item) => item.component === key)
+    : undefined
 }
 
 function entryLicenses(entry) {
@@ -77,7 +108,7 @@ function checkToolchainEntry(component, policy, errors) {
   if (!entry) return false
   const licenses = entryLicenses(entry)
   if (!licenses.length || licenses.some((license) => !allowedContainerLicense(license, policy))) {
-    errors.push(`${artifactKey(component)}: container toolchain license policy is not allowed`)
+    errors.push(`${componentKey(component)}: container toolchain license policy is not allowed`)
   }
   return true
 }
@@ -94,12 +125,17 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
   if (imageBom?.bomFormat !== 'CycloneDX' || runtimeBom?.bomFormat !== 'CycloneDX') {
     throw new Error('container license policy requires CycloneDX JSON SBOMs')
   }
-  const runtime = new Map(
-    flatten(runtimeBom.components).map((component) => [artifactKey(component), component]),
-  )
+  const runtimeIndex = runtimeComponentIndex(flatten(runtimeBom.components))
   const errors = []
   for (const component of flatten(imageBom.components)) {
     if (['file', 'operating-system'].includes(component.type)) continue
+    const key = componentKey(component)
+    if (!key) {
+      errors.push(
+        `${component.name}@${component.version || 'unknown'}: component identity requires a valid purl`,
+      )
+      continue
+    }
     const labels = licenseLabels(component)
     const denied = labels.find((label) => {
       const tokens = label.match(/\(|\)|[^\s()]+/g) || []
@@ -110,7 +146,7 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
       )
     })
     if (denied) {
-      errors.push(`${artifactKey(component)}: denied container license ${denied}`)
+      errors.push(`${key}: denied container license ${denied}`)
       continue
     }
     if (
@@ -123,21 +159,18 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
         (label) => !allowedContainerLicense(label, policy),
       )
       if (rejected.length) {
-        errors.push(
-          `${artifactKey(component)}: container license ${rejected.join(', ')} is not allowed`,
-        )
+        errors.push(`${key}: container license ${rejected.join(', ')} is not allowed`)
       }
       continue
     }
-    const key = artifactKey(component)
-    const governed = runtime.get(key)
+    const governed = resolveRuntimeComponent(runtimeIndex, component)
     if (governed) {
       errors.push(...checkBom({ bomFormat: 'CycloneDX', components: [governed] }, policy, today))
       continue
     }
     if (!toolchainEntry(component, policy)) {
       errors.push(
-        `${artifactKey(component)}: container application dependency is absent from the runtime license inventory`,
+        `${key}: container application dependency is absent from the runtime license inventory`,
       )
       continue
     }
@@ -176,4 +209,9 @@ function main() {
 
 if (require.main === module) main()
 
-module.exports = { canonicalLicenseLabels, checkContainerBom }
+module.exports = {
+  canonicalLicenseLabels,
+  checkContainerBom,
+  resolveRuntimeComponent,
+  runtimeComponentIndex,
+}
