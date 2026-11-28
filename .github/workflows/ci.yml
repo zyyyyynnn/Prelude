@@ -56,10 +56,24 @@ jobs:
 
       - name: Generate container SBOMs
         run: |
+          node --test scripts/normalize-sbom.test.mjs
           docker save prelude-backend:ci -o /tmp/prelude-backend-image.tar
           docker save prelude-frontend:ci -o /tmp/prelude-frontend-image.tar
-          docker run --rm -v /tmp:/tmp anchore/syft:v1.57.2 scan docker-archive:/tmp/prelude-backend-image.tar -q -o cyclonedx-json > backend/target/image-bom.json
-          docker run --rm -v /tmp:/tmp anchore/syft:v1.57.2 scan docker-archive:/tmp/prelude-frontend-image.tar -q -o cyclonedx-json > frontend/output/image-sbom.cdx.json
+          scan_image() {
+            docker run --rm -v /tmp:/tmp anchore/syft:v1.57.2 scan "docker-archive:/tmp/$1" -q -o cyclonedx-json
+          }
+          scan_image prelude-backend-image.tar > backend/target/image-bom.json
+          node scripts/normalize-sbom.mjs backend/target/image-bom.json
+          cp backend/target/image-bom.json /tmp/backend-image-bom-first.json
+          scan_image prelude-backend-image.tar > /tmp/backend-image-bom-second.json
+          node scripts/normalize-sbom.mjs /tmp/backend-image-bom-second.json
+          cmp backend/target/image-bom.json /tmp/backend-image-bom-second.json
+          scan_image prelude-frontend-image.tar > frontend/output/image-sbom.cdx.json
+          node scripts/normalize-sbom.mjs frontend/output/image-sbom.cdx.json
+          cp frontend/output/image-sbom.cdx.json /tmp/frontend-image-bom-first.json
+          scan_image prelude-frontend-image.tar > /tmp/frontend-image-bom-second.json
+          node scripts/normalize-sbom.mjs /tmp/frontend-image-bom-second.json
+          cmp frontend/output/image-sbom.cdx.json /tmp/frontend-image-bom-second.json
 
       - name: Verify dependency license notices
         run: |
