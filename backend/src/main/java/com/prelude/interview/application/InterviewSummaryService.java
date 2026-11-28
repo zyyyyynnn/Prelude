@@ -4,6 +4,7 @@ import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.interview.application.repository.InterviewMessageRepository;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.integration.InterviewSessionStatus;
 import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.llm.api.PromptIds;
 import com.prelude.llm.api.PromptRegistry;
@@ -11,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +33,7 @@ public class InterviewSummaryService {
     private final PromptRegistry promptRegistry;
     @Qualifier("sseTaskExecutor")
     private final Executor sseTaskExecutor;
+    private final PlatformTransactionManager transactionManager;
 
     public void triggerAsyncSummarizeIfNeeded(InterviewSession session) {
         List<InterviewMessage> dialogMsgs = dialogMessages(session.getId());
@@ -40,17 +44,43 @@ public class InterviewSummaryService {
         int summaryRounds = rounds - 7;
         int msgEndIndex = summaryRounds * 2;
         List<InterviewMessage> messagesToSummarize = dialogMsgs.subList(0, msgEndIndex);
+        List<Long> lineage = messagesToSummarize.stream().map(InterviewMessage::getId).toList();
+        String expectedSummary = session.getSummary();
 
         sseTaskExecutor.execute(() -> {
             try {
                 String newSummary = buildSummary(session, messagesToSummarize);
-                session.setSummary(newSummary);
-                interviewSessionRepository.updateSummary(session.getId(), newSummary);
-                log.info("Successfully updated sliding window memory summary for session {}", session.getId());
+                new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                    commitSummaryIfCurrent(session.getId(), newSummary, lineage, expectedSummary));
             } catch (Exception exception) {
                 log.error("Failed to generate sliding window memory summary for session {}", session.getId(), exception);
             }
         });
+    }
+
+    private void commitSummaryIfCurrent(
+        Long sessionId, String newSummary, List<Long> expectedLineage, String expectedSummary
+    ) {
+        if (interviewSessionRepository.lockAppendOrder(sessionId) != InterviewSessionStatus.ONGOING) {
+            return;
+        }
+        InterviewSession current = interviewSessionRepository.selectById(sessionId);
+        if (current == null || !java.util.Objects.equals(current.getSummary(), expectedSummary)) {
+            return;
+        }
+        List<InterviewMessage> currentDialog = dialogMessages(sessionId);
+        if (currentDialog.size() < expectedLineage.size()) {
+            return;
+        }
+        List<Long> currentLineage = currentDialog.subList(0, expectedLineage.size()).stream()
+            .map(InterviewMessage::getId)
+            .toList();
+        if (!expectedLineage.equals(currentLineage)) {
+            return;
+        }
+        current.setSummary(newSummary);
+        interviewSessionRepository.updateSummary(sessionId, newSummary);
+        log.info("Successfully updated sliding window memory summary for session {}", sessionId);
     }
 
     private String buildSummary(InterviewSession session, List<InterviewMessage> messagesToSummarize) {
