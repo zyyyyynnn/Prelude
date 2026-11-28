@@ -1,6 +1,7 @@
 package com.prelude.interview.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -55,6 +56,16 @@ class RunInterviewTurnRetryTest {
     }
 
     @Test
+    void autoStartRejectsRetrySupersedeAndContentCombinations() {
+        assertThatThrownBy(() -> new InterviewTurnCommand(51L, 7L, "", true, 9L, null))
+            .isInstanceOf(com.prelude.BusinessException.class);
+        assertThatThrownBy(() -> new InterviewTurnCommand(51L, 7L, "", true, null, 8L))
+            .isInstanceOf(com.prelude.BusinessException.class);
+        assertThatThrownBy(() -> new InterviewTurnCommand(51L, 7L, "answer", true))
+            .isInstanceOf(com.prelude.BusinessException.class);
+    }
+
+    @Test
     void retryReturnsTheExistingReplyWithoutCallingTheModelAgain() {
         InterviewSession session = new InterviewSession();
         session.setId(51L);
@@ -83,6 +94,7 @@ class RunInterviewTurnRetryTest {
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session);
         when(messages.countConversationMessages(51L)).thenReturn(1L);
         when(messageService.insertUserMessage(51L, "answer", null)).thenReturn(message(9L, "user", "answer", null));
+        when(messages.findById(9L)).thenReturn(message(9L, "user", "answer", null));
         when(context.buildContextMessages(51L)).thenReturn(List.of());
         when(redis.opsForValue()).thenReturn(redisValues);
         when(redisValues.setIfAbsent(any(), any(), any(Duration.class))).thenReturn(true);
@@ -99,6 +111,55 @@ class RunInterviewTurnRetryTest {
             any(),
             org.mockito.ArgumentMatchers.eq(Duration.ofMinutes(5)));
         verify(completion).complete(51L, 9L, "reply");
+    }
+
+    @Test
+    void retryUsesCachedReplyWithoutCallingTheModelAgain() {
+        InterviewSession session = new InterviewSession();
+        session.setId(51L);
+        session.setAccountId(7L);
+        session.setTargetPosition("Engineer");
+        session.setModelExecutionSnapshotId(3L);
+        when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session);
+        when(messages.findById(9L)).thenReturn(message(9L, "user", "answer", null));
+        when(redis.opsForValue()).thenReturn(redisValues);
+        when(redisValues.setIfAbsent(any(), any(), any(Duration.class))).thenReturn(true);
+        when(redisValues.get("interview-reply-cache:9")).thenReturn("cached reply");
+
+        var result = service.execute(new InterviewTurnCommand(51L, 7L, "ignored", false, 9L, null), sink);
+
+        assertThat(result.assistantReply()).isEqualTo("cached reply");
+        verify(sink).assistantDelta("cached reply");
+        verify(completion).complete(51L, 9L, "cached reply");
+        verifyNoInteractions(llm, context);
+    }
+
+    @Test
+    void completionFailureCachesTheGeneratedReplyForStepSpecificRetry() {
+        InterviewSession session = new InterviewSession();
+        session.setId(51L);
+        session.setAccountId(7L);
+        session.setTargetPosition("Engineer");
+        session.setModelExecutionSnapshotId(3L);
+        when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session);
+        when(messages.countConversationMessages(51L)).thenReturn(1L);
+        when(messageService.insertUserMessage(51L, "answer", null)).thenReturn(message(9L, "user", "answer", null));
+        when(messages.findById(9L)).thenReturn(message(9L, "user", "answer", null));
+        when(context.buildContextMessages(51L)).thenReturn(List.of());
+        when(redis.opsForValue()).thenReturn(redisValues);
+        when(redisValues.setIfAbsent(any(), any(), any(Duration.class))).thenReturn(true);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            ((com.prelude.llm.api.ModelExecutionPort.StreamSink) invocation.getArgument(1)).onNext("reply");
+            return null;
+        }).when(llm).stream(any(), any());
+        org.mockito.Mockito.doThrow(new IllegalStateException("stage persistence failed"))
+            .when(completion).complete(51L, 9L, "reply");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.execute(new InterviewTurnCommand(51L, 7L, "answer", false), sink))
+            .hasMessage("stage persistence failed");
+
+        verify(redisValues).set("interview-reply-cache:9", "reply", Duration.ofHours(24));
     }
 
     @Test

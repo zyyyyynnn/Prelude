@@ -105,7 +105,7 @@ interview voice     activity  telemetry
 | 自动推进     | 当前阶段助手回答达到配额                                               | 只统计 `seq_num > boundary_seq` 的助手消息；达到配额后关闭当前阶段并插入下一阶段 system prompt                                                                                          |
 | 消息顺序     | `interview_message.seq_num` 单调递增                                   | `uk_message_session_seq` 唯一键；`InterviewMessageService` 在会话行 `SELECT … FOR UPDATE` 下分配序号；跨进程追加串行，唯一键拒绝绕过分配器的写入                                        |
 | 回合提交     | 助手消息、待答状态与阶段推进同一事务                                   | `InterviewTurnCompletion.complete`；阶段失败回滚助手消息和状态                                                                                                                          |
-| 回复血缘     | `reply_to_message_id` 指向被回答的用户消息，且唯一；迁移回填旧会话的第一条后续助手回复 | `interview_message`；重试复用已接受的用户消息；Redis 租约互斥并在执行期间续期，已有助手回复时直接返回，不重复调用模型或追加消息 |
+| 回复血缘     | `reply_to_message_id` 指向被回答的用户消息，且唯一；迁移回填旧会话的第一条后续助手回复 | `interview_message`；重试复用已接受的用户消息；Redis 租约互斥并在执行期间续期，已有助手回复时直接返回；生成的回复先进入 24 小时缓存，completion 失败时仅重试持久化 |
 | 重答历史     | 旧用户消息的 `superseded_by_message_id` 指向新回答                     | 重答不覆盖历史；上下文、评估重试与报告聚合排除被取代的回答及其助手回复                                                                                                                  |
 | 回答评估     | `PENDING / SCORED / UNSCORED`                                          | `interview_message.assessment_status`；用户回答初始为 PENDING；模型失败落 UNSCORED 并保存错误；重试调度只处理超龄 PENDING                                                               |
 | 生成报告     | 仅 `closing` 且无 PENDING 评估                                         | 同事务关闭阶段、将会话置为 GENERATING 并请求耐久 Job；重复请求复用当前状态，不重复创建执行                                                                                              |

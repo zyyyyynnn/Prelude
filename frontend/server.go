@@ -33,9 +33,15 @@ func newHandler(root string, backend *url.URL) http.Handler {
 			"X-Forwarded-Host",
 			"X-Forwarded-Port",
 			"X-Forwarded-Prefix",
+			"X-Forwarded-Proto",
 		} {
 			request.Header.Del(header)
 		}
+		protocol := "http"
+		if request.TLS != nil {
+			protocol = "https"
+		}
+		request.Header.Set("X-Forwarded-Proto", protocol)
 		proxy.ServeHTTP(writer, request)
 	})
 	mux.Handle("/", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

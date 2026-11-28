@@ -154,6 +154,7 @@ class RunInterviewTurnVisionAttachmentTest {
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
         when(messageService.insertUserMessage(51L, "回答", null)).thenReturn(acceptedMessage());
+        when(messageRepository.findById(9L)).thenReturn(acceptedMessage());
         when(contextPort.buildContextMessages(51L)).thenReturn(List.of());
         doAnswer(invocation -> {
             ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
@@ -173,6 +174,7 @@ class RunInterviewTurnVisionAttachmentTest {
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
         when(messageService.insertUserMessage(51L, "回答", null)).thenReturn(accepted);
+        when(messageRepository.findById(9L)).thenReturn(accepted);
         org.mockito.Mockito.doThrow(new IllegalStateException("model unavailable")).when(llmPort).stream(any(), any());
 
         assertThatThrownBy(() -> runInterviewTurn.execute(new InterviewTurnCommand(51L, 7L, "回答", false), sink))
@@ -181,6 +183,7 @@ class RunInterviewTurnVisionAttachmentTest {
         verify(sink).userAccepted(org.mockito.ArgumentMatchers.argThat(turn -> turn.messageId().equals(9L)));
         verifyNoInteractions(completion);
         verify(messageRepository).countConversationMessages(51L);
+        verify(messageRepository).findById(9L);
         verifyNoMoreInteractions(messageRepository);
     }
 
@@ -190,6 +193,7 @@ class RunInterviewTurnVisionAttachmentTest {
         when(sessionAccess.requireOngoing(51L, 7L)).thenReturn(session());
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
         when(messageService.insertUserMessage(51L, "回答", null)).thenReturn(accepted);
+        when(messageRepository.findById(9L)).thenReturn(accepted);
         when(contextPort.buildContextMessages(51L)).thenReturn(List.of());
         doAnswer(invocation -> {
             ModelExecutionPort.StreamSink streamSink = invocation.getArgument(1);
@@ -204,6 +208,7 @@ class RunInterviewTurnVisionAttachmentTest {
 
         verify(sink).userAccepted(org.mockito.ArgumentMatchers.argThat(turn -> turn.messageId().equals(9L)));
         verify(messageRepository).countConversationMessages(51L);
+        verify(messageRepository).findById(9L);
         verifyNoMoreInteractions(messageRepository);
     }
 
@@ -223,6 +228,7 @@ class RunInterviewTurnVisionAttachmentTest {
         when(messageRepository.countConversationMessages(51L)).thenReturn(2L);
         when(messageService.insertUserMessage(51L, "回答", null))
             .thenReturn(acceptedMessage());
+        when(messageRepository.findById(9L)).thenReturn(acceptedMessage());
         when(contextPort.buildContextMessages(51L))
             .thenReturn(List.of(Map.of("role", "user", "content", "回答")));
         doAnswer(invocation -> {

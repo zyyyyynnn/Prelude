@@ -70,6 +70,16 @@ jobs:
         working-directory: frontend
         run: npm run verify:licenses
 
+      - name: Verify container license notices
+        run: |
+          docker create --name prelude-backend-notice prelude-backend:ci
+          docker cp prelude-backend-notice:/app/licenses/NOTICE.txt /tmp/prelude-backend-NOTICE.txt
+          docker rm prelude-backend-notice
+          docker create --name prelude-frontend-notice prelude-frontend:ci
+          docker cp prelude-frontend-notice:/srv/licenses/NOTICE.txt /tmp/prelude-frontend-NOTICE.txt
+          docker cp prelude-frontend-notice:/srv/licenses/paper-design-shaders.txt /tmp/prelude-paper-design-shaders.txt
+          docker rm prelude-frontend-notice
+
       - name: Scan backend runtime vulnerabilities
         uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
         with:

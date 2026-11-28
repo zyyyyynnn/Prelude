@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class RunInterviewTurn implements InterviewTurnPort {
 
     private static final Duration REPLY_RETRY_LEASE = Duration.ofMinutes(5);
+    private static final Duration REPLY_CACHE_TTL = Duration.ofHours(24);
     private static final RedisScript<Long> RELEASE_REPLY_LOCK = RedisScript.of(
         "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
         Long.class);
@@ -64,14 +65,12 @@ public class RunInterviewTurn implements InterviewTurnPort {
 
     @Override
     public InterviewTurnResult execute(InterviewTurnCommand command, InterviewTurnSink sink) {
-        if (command.retryOfMessageId() != null && command.supersedesMessageId() != null) {
-            throw BusinessException.badRequest("重试与取代回答不能同时指定");
-        }
         InterviewSession session = sessionAccess.requireOngoing(command.sessionId(), command.accountId());
         String content = normalizeContent(command.content());
         boolean firstRound = !hasConversationRound(command.sessionId());
         InterviewMessage insertedUserMessage = null;
         List<Map<String, String>> messages;
+        String pendingReply = null;
         String replyLockKey = null;
         String replyLockToken = null;
         ScheduledFuture<?> replyLockRenewal = null;
@@ -95,6 +94,7 @@ public class RunInterviewTurn implements InterviewTurnPort {
                 }
                 replyLockAcquired = true;
                 replyLockRenewal = startReplyLockRenewal(replyLockKey, replyLockToken, replyLockOwned);
+                insertedUserMessage = requireOwnedUserMessage(command.sessionId(), insertedUserMessage.getId());
                 if (insertedUserMessage.getSupersededByMessageId() != null) {
                     throw BusinessException.badRequest("原回答已被其他回答取代");
                 }
@@ -104,7 +104,10 @@ public class RunInterviewTurn implements InterviewTurnPort {
                     return completedReply(session, insertedUserMessage, existingReply, sink);
                 }
                 content = insertedUserMessage.getContent();
-                messages = interviewContextService.buildContextMessages(command.sessionId());
+                pendingReply = readCachedReply(insertedUserMessage.getId());
+                messages = pendingReply == null
+                    ? interviewContextService.buildContextMessages(command.sessionId())
+                    : List.of();
             } else if (command.autoStart() && content.isEmpty()) {
                 replyLockKey = "lock:interview-auto-start:" + command.sessionId();
                 replyLockToken = UUID.randomUUID().toString();
@@ -138,6 +141,10 @@ public class RunInterviewTurn implements InterviewTurnPort {
                 }
                 replyLockAcquired = true;
                 replyLockRenewal = startReplyLockRenewal(replyLockKey, replyLockToken, replyLockOwned);
+                insertedUserMessage = requireOwnedUserMessage(command.sessionId(), insertedUserMessage.getId());
+                if (insertedUserMessage.getSupersededByMessageId() != null) {
+                    throw BusinessException.badRequest("原回答已被其他回答取代");
+                }
                 sink.userAccepted(snapshotOf(insertedUserMessage));
                 messages = interviewContextService.buildContextMessages(command.sessionId());
             }
@@ -151,14 +158,27 @@ public class RunInterviewTurn implements InterviewTurnPort {
                         attachmentContextPort.readOwnedContent(session.getAccountId(), attachment.assetRef())))
                     .toList()
                 : List.of();
-            StringBuilder assistantReply = new StringBuilder();
-            streamAssistantReply(session, messages, imageAttachments, assistantReply, replyLockOwned, sink);
+            String finalReply = pendingReply != null
+                ? pendingReply
+                : insertedUserMessage == null ? null : readCachedReply(insertedUserMessage.getId());
+            if (finalReply != null) {
+                sink.assistantDelta(finalReply);
+            } else {
+                StringBuilder assistantReply = new StringBuilder();
+                streamAssistantReply(session, messages, imageAttachments, assistantReply, replyLockOwned, sink);
+                finalReply = assistantReply.toString().trim();
+            }
             if (!replyLockOwned.get()) {
                 throw BusinessException.badRequest("回答处理锁已失效，请重试");
             }
-            String finalReply = assistantReply.toString().trim();
+            if (insertedUserMessage != null) {
+                cacheReply(insertedUserMessage.getId(), finalReply);
+            }
             interviewTurnCompletion.complete(
                 command.sessionId(), insertedUserMessage == null ? null : insertedUserMessage.getId(), finalReply);
+            if (insertedUserMessage != null) {
+                clearCachedReply(insertedUserMessage.getId());
+            }
             return new InterviewTurnResult(snapshotOf(session), snapshotOf(insertedUserMessage), finalReply);
         } finally {
             if (replyLockRenewal != null) {
@@ -184,6 +204,31 @@ public class RunInterviewTurn implements InterviewTurnPort {
     ) {
         return REPLY_LOCK_RENEWER.scheduleAtFixedRate(
             () -> renewReplyLock(lockKey, lockToken, lockOwned), 1, 1, TimeUnit.MINUTES);
+    }
+
+    private String replyCacheKey(Long messageId) {
+        return "interview-reply-cache:" + messageId;
+    }
+
+    private String readCachedReply(Long messageId) {
+        String cached = stringRedisTemplate.opsForValue().get(replyCacheKey(messageId));
+        return cached == null || cached.isBlank() ? null : cached;
+    }
+
+    private void cacheReply(Long messageId, String reply) {
+        try {
+            stringRedisTemplate.opsForValue().set(replyCacheKey(messageId), reply, REPLY_CACHE_TTL);
+        } catch (RuntimeException exception) {
+            log.warn("Could not cache interview reply for message {}", messageId, exception);
+        }
+    }
+
+    private void clearCachedReply(Long messageId) {
+        try {
+            stringRedisTemplate.delete(replyCacheKey(messageId));
+        } catch (RuntimeException exception) {
+            log.warn("Could not clear cached interview reply for message {}", messageId, exception);
+        }
     }
 
     private InterviewTurnResult completedReplyAfterLockFailure(

@@ -148,12 +148,16 @@ if (
 ) {
   throw new Error('Production proxy must sanitize client-supplied forwarding headers')
 }
+if (!server.includes('request.Header.Set("X-Forwarded-Proto", protocol)')) {
+  throw new Error('Production proxy must set the trusted forwarded protocol')
+}
 for (const header of [
   'Forwarded',
   'X-Forwarded-For',
   'X-Forwarded-Host',
   'X-Forwarded-Port',
   'X-Forwarded-Prefix',
+  'X-Forwarded-Proto',
 ]) {
   if (!server.includes(`"${header}"`)) {
     throw new Error(`Production proxy must clear the client-supplied ${header} header`)

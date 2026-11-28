@@ -138,8 +138,9 @@ test('@release primary interview path works against real services', async ({ pag
     },
   })
 
+  const positionName = `发布 smoke 岗位 ${Date.now()}`
   const position = await api<Position>(page, 'POST', '/position', {
-    data: { name: `发布 smoke 岗位 ${Date.now()}`, systemPrompt: '你是一名严谨的模拟面试官。' },
+    data: { name: positionName, systemPrompt: '你是一名严谨的模拟面试官。' },
   })
   const resume = await api<Resume>(page, 'POST', '/resume/upload', {
     multipart: {
@@ -268,6 +269,7 @@ test('@release primary interview path works against real services', async ({ pag
   await page.keyboard.press('Escape')
   const isolatedSessions = await api<SessionItem[]>(page, 'GET', '/interview/sessions')
   expect(isolatedSessions).toEqual([])
+  await expect(page.getByRole('button', { name: `打开已结束会话 ${positionName}` })).toHaveCount(0)
 
   const sessions = await api<SessionView[]>(page, 'GET', '/auth/sessions')
   const currentSession = sessions.find((session) => session.current)

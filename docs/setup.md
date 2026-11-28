@@ -27,7 +27,7 @@ docker compose ps
 
 生产部署使用 `prod` profile 时必须设置 `SESSION_COOKIE_SECURE=true`，否则启动失败。密码登录与注册默认按远端地址和端点执行 Redis 令牌桶限流；可通过 `PRELUDE_AUTH_RATE_LIMIT_ENABLED=false` 关闭，容量与速率见 `application.yml`。Redis 限流不可用时登录/注册返回 `503 rate_limit_unavailable`，前端显示服务端 detail 的系统 toast，不当作密码错误。启动探测 `/api/auth/me` 的 401 按匿名处理；网络失败、非 OK 响应或畸形数据进入 `unavailable`，保留原路由并提供重试。普通业务 API 的 401 才触发 Session 失效提示并清空账户 Query cache。
 
-nginx 用 `$remote_addr` 覆盖 `X-Forwarded-For` 并清除其他转发头，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
+前端 Go 代理用客户端地址覆盖 `X-Forwarded-For`，清除其他转发头并设置可信的 `X-Forwarded-Proto`，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
 
 后端：
 
@@ -99,7 +99,7 @@ git diff --check
 
 后端 `quality` profile 使用 CycloneDX Maven Plugin 2.9.3 生成 `backend/target/bom.json`，前端使用 `@cyclonedx/cyclonedx-npm` 7.0.1 生成 `frontend/output/sbom.cdx.json`。CI 另用 Syft 1.57.2 从运行镜像生成 `backend/target/image-bom.json` 与 `frontend/output/image-sbom.cdx.json`。四份 SBOM 均为 CycloneDX 1.6；依赖 SBOM 来自 Maven/NPM resolved graph，image SBOM 另含 OS 包。
 
-CI 对四份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。`.grype.yaml` 仅忽略 `CVE-2026-133325`：Prelude 的内嵌 Tomcat 未启用 clustering 或 TLS-PSK，受影响路径不可达；例外于 2027-02-28 到期，CI 会拒绝例外缺失到期日或已过期。Tomcat 11.0.30 发布到 Maven Central 后须重新评估并移除该例外。本机 Grype 安装在 `C:\Users\ZYN\go\bin\grype.exe`，确认版本后复现：
+CI 对四份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。依赖许可证策略覆盖前后端 resolved graph，容器门禁验证 backend/frontend NOTICE 与 paper-design 通知实际进入运行镜像。`.grype.yaml` 仅忽略 `CVE-2026-133325`：Prelude 的内嵌 Tomcat 未启用 clustering 或 TLS-PSK，受影响路径不可达；例外于 2027-02-28 到期，CI 会拒绝例外缺失到期日或已过期。Tomcat 11.0.30 发布到 Maven Central 后须重新评估并移除该例外。本机 Grype 安装在 `C:\Users\ZYN\go\bin\grype.exe`，确认版本后复现：
 
 ```powershell
 $grype = "C:\Users\ZYN\go\bin\grype.exe"
