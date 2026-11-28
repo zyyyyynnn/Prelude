@@ -223,7 +223,8 @@ test('@release primary interview path works against real services', async ({ pag
     started.sessionId,
     `[RELEASE_FAIL:${failureToken}:3] 故障恢复测试回答`,
   )
-  expect(failed.response.ok(), failed.body).toBeFalsy()
+  expect(failed.body).toContain('event:error')
+  expect(failed.body).toContain('模型服务暂时不可用')
   const afterFailure = await api<SessionDetail>(
     page,
     'GET',

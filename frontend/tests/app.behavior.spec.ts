@@ -296,9 +296,14 @@ test('@smoke presents request failures as a dismissible top system toast', async
   await page.goto('/login')
   await page.getByLabel('用户名').fill('demo')
   await page.locator('#auth-password').fill('password')
+  const failureResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/api/auth/login'),
+  )
   await page.getByRole('button', { name: '登录', exact: true }).last().click()
+  await failureResponse
 
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: '服务暂不可用' })
+  await expect(toast).toBeVisible()
   await toast.evaluate((element) => {
     const closeButton = element.querySelector<HTMLButtonElement>(
       'button[aria-label="关闭系统提示"]',
@@ -924,7 +929,8 @@ test('@smoke auto-starts a prefetched empty session once under StrictMode', asyn
   )
   await page.getByRole('button', { name: '打开会话 会话 B' }).click()
   await expect(page).toHaveURL(/session=12/)
-  await autoStartResponse
+  const response = await autoStartResponse
+  await response.finished()
   await expect(page.getByText('下面继续讨论系统边界。')).toBeVisible()
   await expect(page.getByRole('button', { name: '发送' })).toBeDisabled()
   await page.getByPlaceholder('输入回答…').fill('继续回答')
