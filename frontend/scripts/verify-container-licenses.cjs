@@ -25,9 +25,12 @@ function flatten(components, output = []) {
   return output
 }
 
-function runtimeComponentIndex(components) {
+function runtimeComponentIndex(components, policy) {
   const byKey = new Map()
   const byMavenArtifact = new Map()
+  const aliases = new Map(
+    (policy.containerRuntimeAliases || []).map((alias) => [alias.image, alias.runtime]),
+  )
   for (const component of components) {
     const key = componentKey(component)
     if (!key) continue
@@ -39,7 +42,7 @@ function runtimeComponentIndex(components) {
     matches.add(key)
     byMavenArtifact.set(artifact, matches)
   }
-  return { byKey, byMavenArtifact }
+  return { byKey, byMavenArtifact, aliases }
 }
 
 function resolveRuntimeComponent(index, component) {
@@ -48,10 +51,21 @@ function resolveRuntimeComponent(index, component) {
   const direct = index.byKey.get(key)
   if (direct) return direct
   if (!key.startsWith('pkg:maven/')) return undefined
+  const aliased = index.aliases.get(key)
+  if (aliased) return index.byKey.get(aliased)
   const version = key.slice(key.lastIndexOf('@') + 1)
   const matches = index.byMavenArtifact.get(`${component.name}@${version}`)
   if (matches?.size !== 1) return undefined
-  return index.byKey.get([...matches][0])
+  const runtimeKey = [...matches][0]
+  const imageNamespace = key.slice('pkg:maven/'.length, key.lastIndexOf('/'))
+  const runtimeNamespace = runtimeKey.slice('pkg:maven/'.length, runtimeKey.lastIndexOf('/'))
+  if (
+    imageNamespace !== component.name &&
+    imageNamespace !== `${runtimeNamespace}.${component.name}`
+  ) {
+    return undefined
+  }
+  return index.byKey.get(runtimeKey)
 }
 
 function normalized(value) {
@@ -125,7 +139,7 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
   if (imageBom?.bomFormat !== 'CycloneDX' || runtimeBom?.bomFormat !== 'CycloneDX') {
     throw new Error('container license policy requires CycloneDX JSON SBOMs')
   }
-  const runtimeIndex = runtimeComponentIndex(flatten(runtimeBom.components))
+  const runtimeIndex = runtimeComponentIndex(flatten(runtimeBom.components), policy)
   const errors = []
   for (const component of flatten(imageBom.components)) {
     if (['file', 'operating-system'].includes(component.type)) continue

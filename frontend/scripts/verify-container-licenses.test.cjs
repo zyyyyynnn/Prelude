@@ -195,6 +195,16 @@ test('normalizes equivalent purl qualifiers and encoding', () => {
     }),
     'pkg:generic/oracle/openjdk@21.0.13.1+2-LTS',
   )
+  assert.notEqual(
+    componentKey({ purl: 'pkg:generic/foo%2Fbar@1.0.0' }),
+    componentKey({ purl: 'pkg:generic/foo/bar@1.0.0' }),
+  )
+  assert.equal(
+    componentKey({ purl: 'pkg:pypi/Foo_Bar@1.0.0' }),
+    componentKey({ purl: 'pkg:pypi/foo-bar@1.0.0' }),
+  )
+  const canonical = componentKey({ purl: 'pkg:maven/org.example/tool@1.0.0?type=jar' })
+  assert.equal(componentKey({ purl: canonical }), canonical)
 })
 
 test('matches exact toolchain mappings across equivalent purls', () => {
@@ -270,6 +280,68 @@ test('resolves a unique Syft Maven artifact alias to its runtime group', () => {
     ),
   ])
   assert.deepEqual(checkContainerBom(image, runtime, policy), [])
+})
+
+test('resolves the Syft group-plus-artifact namespace shape', () => {
+  const image = bom([
+    library(
+      'tool',
+      '1.0.0',
+      [{ license: { id: 'NOASSERTION' } }],
+      'pkg:maven/org.example.tool/tool@1.0.0',
+    ),
+  ])
+  const runtime = bom([
+    library('tool', '1.0.0', [{ license: { id: 'MIT' } }], 'pkg:maven/org.example/tool@1.0.0'),
+  ])
+  assert.deepEqual(checkContainerBom(image, runtime, policy), [])
+})
+
+test('rejects unrelated Maven groups with the same artifact and version', () => {
+  const image = bom([
+    library(
+      'tool',
+      '1.0.0',
+      [{ license: { id: 'NOASSERTION' } }],
+      'pkg:maven/org.other/tool@1.0.0',
+    ),
+  ])
+  const runtime = bom([
+    library('tool', '1.0.0', [{ license: { id: 'MIT' } }], 'pkg:maven/org.real/tool@1.0.0'),
+  ])
+  assert.match(
+    checkContainerBom(image, runtime, policy).join('\n'),
+    /absent from the runtime license inventory/,
+  )
+})
+
+test('resolves only explicitly reviewed Syft namespace aliases', () => {
+  const governed = {
+    ...policy,
+    containerRuntimeAliases: [
+      {
+        image: 'pkg:maven/org.objectweb.asm/asm@9.11.1',
+        runtime: 'pkg:maven/org.ow2.asm/asm@9.11.1',
+        reason: 'test reviewed Syft namespace alias',
+      },
+    ],
+  }
+  const image = bom([
+    library(
+      'asm',
+      '9.11.1',
+      [{ license: { id: 'NOASSERTION' } }],
+      'pkg:maven/org.objectweb.asm/asm@9.11.1',
+    ),
+  ])
+  const runtime = bom([
+    library('asm', '9.11.1', [{ license: { id: 'MIT' } }], 'pkg:maven/org.ow2.asm/asm@9.11.1'),
+  ])
+  assert.deepEqual(checkContainerBom(image, runtime, governed), [])
+  assert.match(
+    checkContainerBom(image, runtime, policy).join('\n'),
+    /absent from the runtime license inventory/,
+  )
 })
 
 test('rejects an ambiguous Syft Maven artifact alias', () => {

@@ -367,7 +367,7 @@
       "reason": "Ubuntu KSBA runtime package."
     },
     {
-      "component": "pkg:deb/ubuntu/libstdc++6@16-20260322-1ubuntu1",
+      "component": "pkg:deb/ubuntu/libstdc%2B%2B6@16-20260322-1ubuntu1",
       "license": "GPL-3.0-only WITH GCC-exception-3.1",
       "reason": "GCC C++ runtime package."
     },
@@ -644,6 +644,13 @@
       "component": "pkg:deb/ubuntu/sensible-utils@0.0.26build1",
       "licenses": ["GPL-2.0-only", "GPL-2.0-or-later"],
       "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    }
+  ],
+  "containerRuntimeAliases": [
+    {
+      "image": "pkg:maven/org.objectweb.asm/asm@9.11.1",
+      "runtime": "pkg:maven/org.ow2.asm/asm@9.11.1",
+      "reason": "Syft uses the ASM project namespace while the runtime SBOM uses the Maven group."
     }
   ],
   "exceptions": []

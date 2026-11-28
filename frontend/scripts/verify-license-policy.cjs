@@ -2,6 +2,7 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { PackageURL } = require('packageurl-js')
 
 const policyPath = path.join(__dirname, 'license-policy.json')
 
@@ -9,31 +10,18 @@ function normalized(value) {
   return value.trim().toLowerCase()
 }
 
-function decodePurlPart(value) {
+function componentKey(component) {
   try {
-    return decodeURIComponent(value)
+    const parsed = PackageURL.fromString(component?.purl)
+    return new PackageURL(
+      parsed.type,
+      parsed.namespace,
+      parsed.name,
+      parsed.version || 'unknown',
+    ).toString()
   } catch {
     return null
   }
-}
-
-function componentKey(component) {
-  const purl = component?.purl
-  if (typeof purl !== 'string') return null
-  const match = /^pkg:([^/]+)\/(.+)$/i.exec(purl.split(/[?#]/, 1)[0])
-  if (!match) return null
-  const path = match[2]
-  const versionSeparator = path.lastIndexOf('@')
-  const coordinate = decodePurlPart(versionSeparator > 0 ? path.slice(0, versionSeparator) : path)
-  const version = decodePurlPart(
-    versionSeparator > 0 ? path.slice(versionSeparator + 1) : 'unknown',
-  )
-  if (!coordinate || !version) return null
-  const segments = coordinate.split('/').filter(Boolean)
-  const name = segments.pop()
-  if (!name) return null
-  const namespace = segments.join('/')
-  return `pkg:${match[1].toLowerCase()}/${namespace ? `${namespace}/` : ''}${name}@${version}`
 }
 
 function normalizePolicyComponent(value) {
@@ -49,6 +37,7 @@ function loadPolicy(filePath = policyPath) {
     'deniedLicenseFamilies',
     'licenseSelections',
     'containerToolchainComponents',
+    'containerRuntimeAliases',
     'allowedContainerToolchainLicenses',
     'exceptions',
   ]) {
@@ -60,6 +49,7 @@ function loadPolicy(filePath = policyPath) {
   validateExceptions(policy.exceptions)
   validateLicenseSelections(policy.licenseSelections)
   validateContainerToolchainComponents(policy.containerToolchainComponents)
+  validateContainerRuntimeAliases(policy.containerRuntimeAliases)
   return policy
 }
 
@@ -85,6 +75,30 @@ function validateContainerToolchainComponents(components) {
       throw new Error(`container toolchain component ${component} is duplicated`)
     }
     seen.add(component)
+  }
+}
+
+function validateContainerRuntimeAliases(aliases) {
+  const seen = new Set()
+  for (const alias of aliases) {
+    const image = normalizePolicyComponent(alias.image)
+    const runtime = normalizePolicyComponent(alias.runtime)
+    if (
+      !image ||
+      !runtime ||
+      image.includes('*') ||
+      runtime.includes('*') ||
+      !image.startsWith('pkg:maven/') ||
+      !runtime.startsWith('pkg:maven/') ||
+      image === runtime ||
+      !alias.reason?.trim()
+    ) {
+      throw new Error('container runtime aliases require exact distinct Maven purls and a reason')
+    }
+    if (seen.has(image)) {
+      throw new Error(`container runtime alias ${image} is duplicated`)
+    }
+    seen.add(image)
   }
 }
 

@@ -65,6 +65,7 @@
     "oxc-parser": "^0.160.0",
     "oxc-resolver": "^11.24.2",
     "oxc-transform": "^0.160.0",
+    "packageurl-js": "2.0.1",
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
     "vite-plus": "latest"
   },

@@ -44,9 +44,9 @@ function identity(component) {
   return key
 }
 
-function mergeComponents(runtimeComponents, imageComponents) {
+function mergeComponents(runtimeComponents, imageComponents, policy) {
   const merged = new Map()
-  const runtimeIndex = runtimeComponentIndex(runtimeComponents)
+  const runtimeIndex = runtimeComponentIndex(runtimeComponents, policy)
   for (const component of [...runtimeComponents, ...imageComponents]) {
     if (component.type === 'file' || component.type === 'operating-system') continue
     const runtime = resolveRuntimeComponent(runtimeIndex, component)
@@ -113,10 +113,12 @@ if (licenseErrors.length) {
 const backend = mergeComponents(
   flattenComponents(backendRuntime.components),
   flattenComponents(backendImage.components),
+  policy,
 )
 const frontend = mergeComponents(
   flattenComponents(frontendRuntime.components),
   flattenComponents(frontendImage.components),
+  policy,
 )
 const backendText = noticeFor('backend', backend, policy)
 const frontendText = noticeFor('frontend', frontend, policy)

@@ -109,7 +109,7 @@ Components:
 - libss2@1.47.2-3ubuntu4 — 0BSD; Apache-2.0; BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; ISC; Kazlib; LGPL-2.0-only; Latex2e; BSD-3-Clause-Variant; BSD-4-Clause-CMU; Expat — pkg:deb/ubuntu/libss2@1.47.2-3ubuntu4
 - libssh2-1t64@1.11.1-1ubuntu0.26.04.4 — ISC; BSD-3-Clause — pkg:deb/ubuntu/libssh2-1t64@1.11.1-1ubuntu0.26.04.4
 - libssl3t64@3.5.5-1ubuntu3.7 — Apache-2.0; GPL-1.0-only; GPL-1.0-or-later; Artistic-1.0 — pkg:deb/ubuntu/libssl3t64@3.5.5-1ubuntu3.7
-- libstdc++6@16-20260322-1ubuntu1 — GPL-3.0-only WITH GCC-exception-3.1 — pkg:deb/ubuntu/libstdc++6@16-20260322-1ubuntu1
+- libstdc++6@16-20260322-1ubuntu1 — GPL-3.0-only WITH GCC-exception-3.1 — pkg:deb/ubuntu/libstdc%2B%2B6@16-20260322-1ubuntu1
 - libsystemd0@259.9-0ubuntu0.1 — CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; Expat; Public-Domain — pkg:deb/ubuntu/libsystemd0@259.9-0ubuntu0.1
 - libtasn1-6@4.21.0-2 — LGPL-2.1-or-later — pkg:deb/ubuntu/libtasn1-6@4.21.0-2
 - libtinfo6@6.6+20251231-1 — BSD-3-Clause; X11; MIT/X11 — pkg:deb/ubuntu/libtinfo6@6.6+20251231-1

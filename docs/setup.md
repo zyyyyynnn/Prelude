@@ -110,7 +110,7 @@ $grype = "C:\Users\ZYN\go\bin\grype.exe"
 
 版本必须为 0.122.1；若 `grype version` 显示 `[not provided]`，用 `go version -m $grype` 核对模块行。其他工作站可替换 `$grype` 路径。
 
-`licenses:notices` 从 runtime 与 container 四份 SBOM 生成前后端 `NOTICE.txt` 与 `frontend/output/license-report.json`，组件身份统一使用包含生态、命名空间、名称与版本的规范化 PURL；Syft 丢失 Maven group 时，仅在运行时清单中可唯一解析为同一 artifact/version 才建立等价关系。OS/Go 包的模糊扫描标签按精确组件策略映射为规范许可证，CI 以 `git diff --exit-code` 验证清单与依赖同步。`verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
+`licenses:notices` 从 runtime 与 container 四份 SBOM 生成前后端 `NOTICE.txt` 与 `frontend/output/license-report.json`，组件身份使用 `packageurl-js` 按 PURL 规范归一化为生态、命名空间、名称与版本；Syft 丢失 Maven group 时，仅接受 `artifact/artifact`、`group.artifact` 或策略中精确审核的别名，且运行时 artifact/version 必须唯一。OS/Go 包的模糊扫描标签按精确组件策略映射为规范许可证，CI 以 `git diff --exit-code` 验证清单与依赖同步。`verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
 
 `npm audit --omit=dev` 仅可作为本地辅助命令，不是 CI 门禁；CI 统一使用上述 SBOM 与 Grype 的 HIGH/CRITICAL 漏洞门禁。
 
