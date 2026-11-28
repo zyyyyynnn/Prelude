@@ -41,6 +41,16 @@ func newHandler(root string, backend *url.URL) http.Handler {
 		if request.TLS != nil {
 			protocol = "https"
 		}
+		forwardedHost := &url.URL{Host: request.Host}
+		host, port := forwardedHost.Hostname(), forwardedHost.Port()
+		if port == "" {
+			port = "80"
+			if protocol == "https" {
+				port = "443"
+			}
+		}
+		request.Header.Set("X-Forwarded-Host", host)
+		request.Header.Set("X-Forwarded-Port", port)
 		request.Header.Set("X-Forwarded-Proto", protocol)
 		proxy.ServeHTTP(writer, request)
 	})

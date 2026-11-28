@@ -27,7 +27,7 @@ docker compose ps
 
 生产部署使用 `prod` profile 时必须设置 `SESSION_COOKIE_SECURE=true`，否则启动失败。密码登录与注册默认按远端地址和端点执行 Redis 令牌桶限流；可通过 `PRELUDE_AUTH_RATE_LIMIT_ENABLED=false` 关闭，容量与速率见 `application.yml`。Redis 限流不可用时登录/注册返回 `503 rate_limit_unavailable`，前端显示服务端 detail 的系统 toast，不当作密码错误。启动探测 `/api/auth/me` 的 401 按匿名处理；网络失败、非 OK 响应或畸形数据进入 `unavailable`，保留原路由并提供重试。普通业务 API 的 401 才触发 Session 失效提示并清空账户 Query cache。
 
-前端 Go 代理用客户端地址覆盖 `X-Forwarded-For`，清除其他转发头并设置可信的 `X-Forwarded-Proto`，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
+前端 Go 代理用客户端地址覆盖 `X-Forwarded-For`，清除其他转发头并重写可信的 `X-Forwarded-Host`、`X-Forwarded-Port`、`X-Forwarded-Proto`，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
 
 后端：
 

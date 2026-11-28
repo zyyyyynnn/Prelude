@@ -37,8 +37,8 @@ func TestStaticFilesAndSpaFallback(t *testing.T) {
 func TestApiProxyPreservesPathAndBodyAndTrustsOnlyClientAddress(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		body, _ := io.ReadAll(request.Body)
-		if request.Header.Get("Forwarded") != "" || request.Header.Get("X-Forwarded-Host") != "" ||
-			request.Header.Get("X-Forwarded-Port") != "" || request.Header.Get("X-Forwarded-Prefix") != "" ||
+		if request.Header.Get("Forwarded") != "" || request.Header.Get("X-Forwarded-Host") != "example.com" ||
+			request.Header.Get("X-Forwarded-Port") != "14173" || request.Header.Get("X-Forwarded-Prefix") != "" ||
 			request.Header.Get("X-Forwarded-For") != "192.0.2.1" ||
 			request.Header.Get("X-Forwarded-Proto") != "http" {
 			writer.WriteHeader(http.StatusBadRequest)
@@ -52,6 +52,7 @@ func TestApiProxyPreservesPathAndBodyAndTrustsOnlyClientAddress(t *testing.T) {
 	backend, _ := url.Parse(backendServer.URL)
 	handler := newHandler(t.TempDir(), backend)
 	request := httptest.NewRequest(http.MethodPost, "/api/interview/7/chat", strings.NewReader("answer"))
+	request.Host = "example.com:14173"
 	for _, header := range []string{
 		"Forwarded",
 		"X-Forwarded-For",

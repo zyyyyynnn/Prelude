@@ -151,6 +151,11 @@ if (
 if (!server.includes('request.Header.Set("X-Forwarded-Proto", protocol)')) {
   throw new Error('Production proxy must set the trusted forwarded protocol')
 }
+for (const header of ['X-Forwarded-Host', 'X-Forwarded-Port']) {
+  if (!server.includes(`request.Header.Set("${header}",`)) {
+    throw new Error(`Production proxy must set the trusted ${header} header`)
+  }
+}
 for (const header of [
   'Forwarded',
   'X-Forwarded-For',
