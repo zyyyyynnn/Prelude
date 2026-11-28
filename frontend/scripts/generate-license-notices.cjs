@@ -39,16 +39,26 @@ function identity(component) {
   )
 }
 
+function mergeComponents(runtimeComponents, imageComponents) {
+  const merged = new Map()
+  for (const component of [...runtimeComponents, ...imageComponents]) {
+    if (component.type === 'file' || component.type === 'operating-system') continue
+    const key = `${component.name}@${component.version || 'unknown'}`
+    if (!merged.has(key)) merged.set(key, component)
+  }
+  return [...merged.values()]
+}
+
 function noticeFor(label, components) {
   const rows = [...components].sort((left, right) => identity(left).localeCompare(identity(right)))
   const lines = [
     'Prelude third-party notices',
     `Artifact: ${label}`,
-    'Generated from the runtime CycloneDX SBOM; do not edit by hand.',
+    'Generated from the runtime and container CycloneDX SBOMs; do not edit by hand.',
     '',
     'Prelude is distributed under the MIT license; see the repository LICENSE file.',
     '',
-    'Runtime components:',
+    'Components:',
   ]
   for (const component of rows) {
     lines.push(
@@ -74,8 +84,14 @@ function writeOrCheck(file, content) {
   fs.writeFileSync(file, content)
 }
 
-const backend = readBom(path.join(repositoryRoot, 'backend/target/bom.json'))
-const frontend = readBom(path.join(repositoryRoot, 'frontend/output/sbom.cdx.json'))
+const backend = mergeComponents(
+  readBom(path.join(repositoryRoot, 'backend/target/bom.json')),
+  readBom(path.join(repositoryRoot, 'backend/target/image-bom.json')),
+)
+const frontend = mergeComponents(
+  readBom(path.join(repositoryRoot, 'frontend/output/sbom.cdx.json')),
+  readBom(path.join(repositoryRoot, 'frontend/output/image-sbom.cdx.json')),
+)
 const backendText = noticeFor('backend', backend)
 const frontendText = noticeFor('frontend', frontend)
 const report = {

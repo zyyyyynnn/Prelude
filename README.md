@@ -120,4 +120,4 @@ docs/      环境、架构、质量体系与产品文档资产
 
 ## 许可证
 
-Prelude 自有源码采用 [MIT License](LICENSE)。采用或打包的第三方源码与运行时组件保留各自条款；shadcn/ui、Beautiful UI 和 Paper Design Shaders 的分发许可声明位于 [frontend/public/licenses](frontend/public/licenses)。其中 Paper Design Shaders 使用 PolyForm Shield 1.0.0，不属于 Prelude 的 MIT 授权范围。
+Prelude 自有源码采用 [MIT License](LICENSE)。采用或打包的第三方源码与运行时组件保留各自条款；shadcn/ui、Beautiful UI 和 Paper Design Shaders 的分发许可声明位于 [frontend/public/licenses](frontend/public/licenses)。其中 Paper Design Shaders 使用 Apache-2.0，不属于 Prelude 的 MIT 授权范围。

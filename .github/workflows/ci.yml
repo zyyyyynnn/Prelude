@@ -93,11 +93,18 @@ jobs:
         run: |
           docker create --name prelude-backend-notice prelude-backend:ci
           docker cp prelude-backend-notice:/app/licenses/NOTICE.txt /tmp/prelude-backend-NOTICE.txt
+          docker cp prelude-backend-notice:/app/licenses/LICENSE /tmp/prelude-backend-LICENSE
           docker rm prelude-backend-notice
+          cmp backend/src/main/resources/licenses/NOTICE.txt /tmp/prelude-backend-NOTICE.txt
+          cmp LICENSE /tmp/prelude-backend-LICENSE
           docker create --name prelude-frontend-notice prelude-frontend:ci
           docker cp prelude-frontend-notice:/srv/licenses/NOTICE.txt /tmp/prelude-frontend-NOTICE.txt
+          docker cp prelude-frontend-notice:/srv/licenses/LICENSE /tmp/prelude-frontend-LICENSE
           docker cp prelude-frontend-notice:/srv/licenses/paper-design-shaders.txt /tmp/prelude-paper-design-shaders.txt
           docker rm prelude-frontend-notice
+          cmp frontend/public/licenses/NOTICE.txt /tmp/prelude-frontend-NOTICE.txt
+          cmp LICENSE /tmp/prelude-frontend-LICENSE
+          cmp frontend/public/licenses/paper-design-shaders.txt /tmp/prelude-paper-design-shaders.txt
 
       - name: Scan backend runtime vulnerabilities
         uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
