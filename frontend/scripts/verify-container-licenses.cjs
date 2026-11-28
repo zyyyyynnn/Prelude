@@ -43,9 +43,14 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
   for (const component of flatten(imageBom.components)) {
     if (['file', 'operating-system', 'application'].includes(component.type)) continue
     const labels = licenseLabels(component)
-    const denied = labels.find((label) =>
-      deniedContainerFamilies.some((family) => label.toLowerCase().startsWith(family)),
-    )
+    const denied = labels.find((label) => {
+      const tokens = label.match(/\(|\)|[^\s()]+/g) || []
+      return tokens.some(
+        (token) =>
+          !['AND', 'OR', 'WITH'].includes(token) &&
+          deniedContainerFamilies.some((family) => token.toLowerCase().startsWith(family)),
+      )
+    })
     if (denied) {
       errors.push(`${artifactKey(component)}: denied container license ${denied}`)
       continue

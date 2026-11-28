@@ -1,8 +1,8 @@
 FROM maven:3.9.11-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY pom.xml .
+COPY backend/pom.xml .
 RUN mvn dependency:go-offline -B
-COPY src ./src
+COPY backend/src ./src
 RUN mvn package -DskipTests -B
 
 FROM eclipse-temurin:21-jre
@@ -13,6 +13,7 @@ RUN apt-get update \
     && useradd --system --uid 10001 --home /app prelude
 COPY --from=build /app/target/prelude-backend-1.0.0.jar app.jar
 COPY --from=build /app/src/main/resources/licenses /app/licenses
+COPY LICENSE /app/licenses/LICENSE
 USER prelude
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=45s --retries=12 \

@@ -35,6 +35,9 @@ public class InterviewMessageService {
             superseded.getId(), inserted.getId()) != 1) {
             throw BusinessException.badRequest("原回答已被其他回答取代");
         }
+        if (superseded != null) {
+            interviewSessionRepository.updateSummary(sessionId, null);
+        }
         return inserted;
     }
 

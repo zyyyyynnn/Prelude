@@ -60,6 +60,19 @@ test('allows governed OS packages but rejects network-copyleft licenses', () => 
   )
 })
 
+test('rejects denied licenses inside OS license expressions', () => {
+  const mixed = library(
+    'os-tool',
+    '1.0.0',
+    [{ expression: 'MIT AND AGPL-3.0-only' }],
+    'pkg:deb/debian/os-tool@1.0.0',
+  )
+  assert.match(
+    checkContainerBom(bom([mixed]), bom([]), policy).join('\n'),
+    /denied container license/,
+  )
+})
+
 test('rejects unknown OS toolchain licenses without a policy entry', () => {
   const unknown = library(
     'os-tool',

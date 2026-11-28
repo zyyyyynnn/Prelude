@@ -110,6 +110,7 @@ class InterviewMessageStatusGateTest {
 
         assertThat(inserted.getId()).isEqualTo(5L);
         verify(messages).markSuperseded(4L, 5L);
+        verify(sessions).updateSummary(9L, null);
     }
 
     @Test

@@ -51,8 +51,8 @@ jobs:
 
       - name: Build runtime images
         run: |
-          docker build -t prelude-backend:ci ./backend
-          docker build -t prelude-frontend:ci ./frontend
+          docker build -f backend/Dockerfile -t prelude-backend:ci .
+          docker build -f frontend/Dockerfile -t prelude-frontend:ci .
 
       - name: Generate container SBOMs
         run: |

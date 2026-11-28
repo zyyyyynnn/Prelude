@@ -81,7 +81,8 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     image: prelude/backend:latest
     container_name: prelude-backend
     restart: unless-stopped
@@ -121,7 +122,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
     image: prelude/frontend:latest
     container_name: prelude-frontend
     restart: unless-stopped
