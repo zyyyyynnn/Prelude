@@ -119,6 +119,12 @@ test('@release primary interview path works against real services', async ({ pag
     },
   })
   expect(withFirstAvatar.avatarUrl).toBeTruthy()
+  const withReplacementAvatar = await api<Profile>(page, 'POST', '/user/avatar', {
+    multipart: {
+      file: { name: 'replacement-avatar.png', mimeType: 'image/png', buffer: secondAvatar },
+    },
+  })
+  expect(withReplacementAvatar.avatarUrl).not.toBe(withFirstAvatar.avatarUrl)
 
   await api(page, 'PUT', '/llm/config', {
     data: {
@@ -222,18 +228,14 @@ test('@release primary interview path works against real services', async ({ pag
   const avatarGate = new Promise<void>((resolve) => {
     releaseAvatar = resolve
   })
-  let markAvatarFetched!: () => void
-  const avatarFetched = new Promise<void>((resolve) => {
-    markAvatarFetched = resolve
-  })
-  let delaySecondAvatar = true
   await page.route('**/api/user/avatar', async (route) => {
-    if (route.request().method() === 'POST' && delaySecondAvatar) {
-      delaySecondAvatar = false
-      const response = await route.fetch()
-      markAvatarFetched()
+    if (route.request().method() === 'POST') {
       await avatarGate
-      await route.fulfill({ response })
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'ok', data: withFirstAvatar }),
+      })
       return
     }
     await route.continue()
@@ -242,12 +244,11 @@ test('@release primary interview path works against real services', async ({ pag
   const settings = await openSettings(page)
   const avatarRequest = page.waitForRequest('**/api/user/avatar')
   await settings.locator('#avatar-upload').setInputFiles({
-    name: 'replacement-avatar.png',
+    name: 'stale-avatar.png',
     mimeType: 'image/png',
-    buffer: secondAvatar,
+    buffer: firstAvatar,
   })
   await avatarRequest
-  await avatarFetched
   await settings.getByRole('button', { name: '退出登录' }).click()
   await expect(page).toHaveURL(/\/login$/)
 
