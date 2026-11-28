@@ -254,11 +254,12 @@ test('@release primary interview path works against real services', async ({ pag
   await page.request.get('/api/auth/me')
   await api(page, 'POST', '/auth/register', { data: { username: secondUsername, password } })
   await login(page, secondUsername, password)
-  releaseAvatar()
-  await page.waitForResponse(
+  const oldAvatarResponse = page.waitForResponse(
     (response) =>
       response.url().endsWith('/api/user/avatar') && response.request().method() === 'POST',
   )
+  releaseAvatar()
+  await oldAvatarResponse
 
   const secondSettings = await openSettings(page)
   await expect(secondSettings.getByLabel('用户名')).toHaveValue(secondUsername)
