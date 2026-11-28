@@ -174,7 +174,10 @@ jobs:
           echo "/tmp" >> "$GITHUB_PATH"
 
       - name: Scan runtime and container vulnerabilities
+        env:
+          GRYPE_DB_AUTO_UPDATE: 'false'
         run: |
+          grype db update
           scan() {
             grype "sbom:$1" --fail-on high --output json > "$2"
           }
