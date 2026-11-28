@@ -9,11 +9,10 @@ function shouldFail(messages) {
   const match = content.match(/\[RELEASE_FAIL:([^\]:]+):(\d+)\]/)
   if (!match) return false
   const [, token, configured] = match
-  const remaining = injectedFailures.get(token) ?? Number(configured)
-  if (remaining <= 0) {
-    injectedFailures.delete(token)
-    return false
-  }
+  const remaining = injectedFailures.has(token)
+    ? injectedFailures.get(token)
+    : Number(configured)
+  if (remaining <= 0) return false
   injectedFailures.set(token, remaining - 1)
   return true
 }
