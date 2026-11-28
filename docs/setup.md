@@ -66,7 +66,8 @@ npm --prefix frontend run verify:flaky
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
 npm --prefix frontend run test:unit
-npm --prefix frontend run test:browser-core
+npm --prefix frontend run test:smoke
+npm --prefix frontend run test:browser-features
 npm --prefix frontend run verify:identity
 npm --prefix frontend run build
 npm --prefix frontend run verify:cascade
@@ -90,7 +91,7 @@ git diff --check
 | `backend-tests`       | `detect` 为代码变更                  | 完整历史 checkout → `git diff --check <merge-base> HEAD` → Java 21 → 准备独立空库 → `mvn clean test`；MySQL/Identity/S3/Flyway smoke 均为 `true` |
 | `backend`             | `detect`、`backend-tests`，始终执行   | 必需聚合检查：检测失败或后端测试失败时失败；文档-only 变更在后端测试跳过后成功 |
 | `frontend-checks`     | `detect` 为代码变更                  | Ubuntu checkout → Node 24 → `npm ci` → Vite task cache → `check` → architecture/Oxc/governance/flaky/UI/tokens → unit → build → cascade → production bundle → evidence → demo copy |
-| `frontend-browser`    | `detect` 为代码变更                  | Windows 三并发分片：`core` 运行 smoke/BYOK/dark/a11y，`identity` 运行账户隔离，`visual` 运行像素回归、surface 捕获与可复现性检查；Chromium 与 npm 使用 setup/cache 复用 |
+| `frontend-browser`    | `detect` 为代码变更                  | Windows 四并发分片：`smoke` 运行核心行为，`features` 运行 BYOK/dark/a11y，`identity` 运行账户隔离，`visual` 运行像素回归、surface 捕获与可复现性检查；Chromium 与 npm 使用 setup/cache 复用 |
 | `frontend`            | `detect`、`frontend-checks`、`frontend-browser`，始终执行 | 必需聚合检查：检测、静态检查或任一浏览器分片失败时失败；文档-only 变更在重任务跳过后成功 |
 | `release-smoke`       | `detect` 为代码变更且 `supply-chain` 成功 | Linux checkout → Node 24 → `npm ci` → 下载并加载已扫描镜像 → Compose 启动隔离 MySQL/Redis/RabbitMQ/VersityGW/LLM stub → Playwright 真实服务主链路 → 采集 JSON/JUnit/HTML/trace 与服务日志 → 清理卷与容器 → 上传证据 |
 

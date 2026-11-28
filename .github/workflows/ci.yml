@@ -394,7 +394,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [core, identity, visual]
+        suite: [smoke, features, identity, visual]
     runs-on: windows-latest
 
     steps:
@@ -426,8 +426,11 @@ jobs:
         shell: bash
         run: |
           case "${{ matrix.suite }}" in
-            core)
-              npm --prefix frontend run test:browser-core
+            smoke)
+              npm --prefix frontend run test:smoke
+              ;;
+            features)
+              npm --prefix frontend run test:browser-features
               ;;
             identity)
               npm --prefix frontend run verify:identity
