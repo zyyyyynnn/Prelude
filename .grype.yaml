@@ -2,5 +2,6 @@ ignore:
   - vulnerability: CVE-2026-133325
     reason: >-
       Prelude runs embedded Tomcat without clustering or TLS-PSK, so the affected
-      cluster key-exchange path is unreachable. Expires: 2027-02-28. Re-evaluate
-      when Tomcat 11.0.30 is published to Maven Central.
+      cluster key-exchange path is unreachable. Approved-by: zyyyyynnn.
+      Approval-ref: PR #91. Expires: 2027-02-28. Re-evaluate when Tomcat 11.0.30
+      is published to Maven Central.

@@ -5,7 +5,7 @@ Generated from the runtime and container CycloneDX SBOMs; do not edit by hand.
 Prelude is distributed under the MIT license; see the repository LICENSE file.
 
 Components:
-- command-line-arguments@UNKNOWN — NOASSERTION — pkg:golang/command-line-arguments
+- command-line-arguments@UNKNOWN — MIT — pkg:golang/command-line-arguments
 - stdlib@go1.27.4 — BSD-3-Clause — pkg:golang/stdlib@1.27.4
 - runtime@7.29.7 — MIT — pkg:npm/%40babel/runtime@7.29.7
 - react@1.9.0 — MIT — pkg:npm/%40base-ui/react@1.9.0

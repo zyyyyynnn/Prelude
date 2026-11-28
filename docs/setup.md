@@ -91,7 +91,7 @@ git diff --check
 | `supply-chain`  | 无，可与 `backend` 并行                  | checkout → Java 21/Node 24 → `npm ci` → backend/frontend runtime SBOM → 构建前后端镜像 → Syft 生成两份 image SBOM → `licenses:notices` → `verify:licenses` → Grype 扫描四份 SBOM → 上传 SBOM、notice 与漏洞证据                                                                                                                                                                                                                                                                                            |
 | `backend`       | 无，可与 `supply-chain` 并行             | 完整历史 checkout → `git diff --check <merge-base> HEAD` → Java 21 → 准备独立空库 → `mvn clean test`；MySQL/Identity/S3/Flyway smoke 均为 `true`                                                                                                                                                                                                                                                                                                                                                           |
 | `frontend`      | 先要求 `supply-chain` success            | Windows checkout（完整历史）→ Vite+ Node 24 → `npm ci` → task cache → 安装锁定的 Chromium → `check` → `verify:architecture` → `verify:oxc` → `verify:governance` → `verify:flaky` → `verify:ui` → `verify:tokens` → `test:unit` → `test:smoke` → `verify:identity` → `build` → `verify:cascade` → `verify:production` → `verify:byok` → `verify:dark` → `verify:a11y` → `verify:visual` → `verify:evidence` → `capture:surfaces` → 截图差异检查 → `verify:demo-copy` → `visual:diff-report` → 上传视觉证据 |
-| `release-smoke` | 等待 `supply-chain` 与 `backend` success | Linux checkout → Node 24 → `npm ci` → 安装 Chromium → 构建镜像 → Compose 启动隔离 MySQL/Redis/RabbitMQ/VersityGW/LLM stub → Playwright 真实服务主链路 → 采集 JSON/JUnit/HTML/trace 与服务日志 → 清理卷与容器 → 上传证据                                                                                                                                                                                                                                                                                    |
+| `release-smoke` | 等待 `supply-chain` 与 `backend` success | Linux checkout → Node 24 → `npm ci` → 安装 Chromium → 下载并加载已扫描镜像 → Compose 启动隔离 MySQL/Redis/RabbitMQ/VersityGW/LLM stub → Playwright 真实服务主链路 → 采集 JSON/JUnit/HTML/trace 与服务日志 → 清理卷与容器 → 上传证据                                                                                                                                                                                                                                                                                    |
 
 `frontend` 使用 `always()` 进入结果检查，但 supply-chain 非 success 时显式失败，不继续执行前端门禁。
 
@@ -99,7 +99,7 @@ git diff --check
 
 后端 `quality` profile 使用 CycloneDX Maven Plugin 2.9.3 生成 `backend/target/bom.json`，前端使用 `@cyclonedx/cyclonedx-npm` 7.0.1 生成 `frontend/output/sbom.cdx.json`。CI 另用 Syft 1.57.2 从运行镜像生成 `backend/target/image-bom.json` 与 `frontend/output/image-sbom.cdx.json`。四份 SBOM 均为 CycloneDX 1.6；依赖 SBOM 来自 Maven/NPM resolved graph，image SBOM 另含 OS 包。
 
-CI 对四份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。依赖许可证策略覆盖前后端 resolved graph，容器门禁验证 backend/frontend NOTICE 与 paper-design 通知实际进入运行镜像。`.grype.yaml` 仅忽略 `CVE-2026-133325`：Prelude 的内嵌 Tomcat 未启用 clustering 或 TLS-PSK，受影响路径不可达；例外于 2027-02-28 到期，CI 会拒绝例外缺失到期日或已过期。Tomcat 11.0.30 发布到 Maven Central 后须重新评估并移除该例外。本机 Grype 安装在 `C:\Users\ZYN\go\bin\grype.exe`，确认版本后复现：
+CI 对四份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。依赖许可证策略覆盖前后端 resolved graph，容器门禁对 OS/Go 包执行显式许可证允许清单，并要求模糊扫描标签使用精确组件的规范许可证映射；backend/frontend NOTICE 与 paper-design 通知实际进入运行镜像。`.grype.yaml` 仅忽略 `CVE-2026-133325`：Prelude 的内嵌 Tomcat 未启用 clustering 或 TLS-PSK，受影响路径不可达；例外记录批准人与 PR/Issue 批准引用，于 2027-02-28 到期，CI 会拒绝缺失批准依据、缺失到期日或已过期的例外。Tomcat 11.0.30 发布到 Maven Central 后须重新评估并移除该例外。本机 Grype 安装在 `C:\Users\ZYN\go\bin\grype.exe`，确认版本后复现：
 
 ```powershell
 $grype = "C:\Users\ZYN\go\bin\grype.exe"
@@ -110,7 +110,7 @@ $grype = "C:\Users\ZYN\go\bin\grype.exe"
 
 版本必须为 0.122.1；若 `grype version` 显示 `[not provided]`，用 `go version -m $grype` 核对模块行。其他工作站可替换 `$grype` 路径。
 
-`licenses:notices` 从 runtime SBOM 生成前后端 `NOTICE.txt` 与 `frontend/output/license-report.json`，CI 以 `git diff --exit-code` 验证清单与依赖同步。`verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
+`licenses:notices` 从 runtime 与 container 四份 SBOM 生成前后端 `NOTICE.txt` 与 `frontend/output/license-report.json`，OS/Go 包的模糊扫描标签按精确组件策略映射为规范许可证，CI 以 `git diff --exit-code` 验证清单与依赖同步。`verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
 
 `npm audit --omit=dev` 仅可作为本地辅助命令，不是 CI 门禁；CI 统一使用上述 SBOM 与 Grype 的 HIGH/CRITICAL 漏洞门禁。
 

@@ -2,6 +2,8 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { loadPolicy } = require('./verify-license-policy.cjs')
+const { canonicalLicenseLabels, checkContainerBom } = require('./verify-container-licenses.cjs')
 
 const repositoryRoot = path.resolve(__dirname, '../..')
 const backendNotice = path.join(repositoryRoot, 'backend/src/main/resources/licenses/NOTICE.txt')
@@ -22,15 +24,11 @@ function readBom(file) {
   if (bom?.bomFormat !== 'CycloneDX' || !Array.isArray(bom.components)) {
     throw new Error(`${file} is not a CycloneDX SBOM`)
   }
-  return flattenComponents(bom.components)
+  return bom
 }
 
-function licenseLabel(component) {
-  const entries = Array.isArray(component.licenses) ? component.licenses : []
-  if (!entries.length) return 'NOASSERTION'
-  return entries
-    .map((entry) => entry.expression || entry.license?.id || entry.license?.name || 'NOASSERTION')
-    .join('; ')
+function licenseLabel(component, policy) {
+  return canonicalLicenseLabels(component, policy).join('; ')
 }
 
 function identity(component) {
@@ -49,8 +47,12 @@ function mergeComponents(runtimeComponents, imageComponents) {
   return [...merged.values()]
 }
 
-function noticeFor(label, components) {
-  const rows = [...components].sort((left, right) => identity(left).localeCompare(identity(right)))
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
+function noticeFor(label, components, policy) {
+  const rows = [...components].sort((left, right) => compareText(identity(left), identity(right)))
   const lines = [
     'Prelude third-party notices',
     `Artifact: ${label}`,
@@ -62,7 +64,7 @@ function noticeFor(label, components) {
   ]
   for (const component of rows) {
     lines.push(
-      `- ${component.name}@${component.version || 'unknown'} — ${licenseLabel(component)} — ${identity(component)}`,
+      `- ${component.name}@${component.version || 'unknown'} — ${licenseLabel(component, policy)} — ${identity(component)}`,
     )
   }
   if (label === 'frontend') {
@@ -84,28 +86,43 @@ function writeOrCheck(file, content) {
   fs.writeFileSync(file, content)
 }
 
+const policy = loadPolicy()
+const backendRuntime = readBom(path.join(repositoryRoot, 'backend/target/bom.json'))
+const frontendRuntime = readBom(path.join(repositoryRoot, 'frontend/output/sbom.cdx.json'))
+const backendImage = readBom(path.join(repositoryRoot, 'backend/target/image-bom.json'))
+const frontendImage = readBom(path.join(repositoryRoot, 'frontend/output/image-sbom.cdx.json'))
+const licenseErrors = [
+  ...checkContainerBom(backendImage, backendRuntime, policy),
+  ...checkContainerBom(frontendImage, frontendRuntime, policy),
+]
+if (licenseErrors.length) {
+  throw new Error(
+    `License notices require approved component licenses:\n${licenseErrors.join('\n')}`,
+  )
+}
+
 const backend = mergeComponents(
-  readBom(path.join(repositoryRoot, 'backend/target/bom.json')),
-  readBom(path.join(repositoryRoot, 'backend/target/image-bom.json')),
+  flattenComponents(backendRuntime.components),
+  flattenComponents(backendImage.components),
 )
 const frontend = mergeComponents(
-  readBom(path.join(repositoryRoot, 'frontend/output/sbom.cdx.json')),
-  readBom(path.join(repositoryRoot, 'frontend/output/image-sbom.cdx.json')),
+  flattenComponents(frontendRuntime.components),
+  flattenComponents(frontendImage.components),
 )
-const backendText = noticeFor('backend', backend)
-const frontendText = noticeFor('frontend', frontend)
+const backendText = noticeFor('backend', backend, policy)
+const frontendText = noticeFor('frontend', frontend, policy)
 const report = {
   backend: backend.map((component) => ({
     id: identity(component),
     name: component.name,
     version: component.version,
-    licenses: licenseLabel(component),
+    licenses: licenseLabel(component, policy),
   })),
   frontend: frontend.map((component) => ({
     id: identity(component),
     name: component.name,
     version: component.version,
-    licenses: licenseLabel(component),
+    licenses: licenseLabel(component, policy),
   })),
 }
 

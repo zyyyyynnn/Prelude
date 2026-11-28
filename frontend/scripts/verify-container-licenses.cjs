@@ -1,7 +1,7 @@
 'use strict'
 
 const fs = require('node:fs')
-const { checkBom, loadPolicy } = require('./verify-license-policy.cjs')
+const { checkBom, evaluateExpression, loadPolicy } = require('./verify-license-policy.cjs')
 
 const deniedContainerFamilies = [
   'agpl-',
@@ -24,6 +24,64 @@ function artifactKey(component) {
   return `${component.name}@${component.version || 'unknown'}`
 }
 
+function normalized(value) {
+  return value.trim().toLowerCase()
+}
+
+function toolchainEntry(component, policy) {
+  return policy.containerToolchainComponents.find(
+    (item) => item.component === artifactKey(component),
+  )
+}
+
+function entryLicenses(entry) {
+  return entry.licenses || (entry.license ? [entry.license] : [])
+}
+
+function canonicalLicenseLabels(component, policy) {
+  const entry = toolchainEntry(component, policy)
+  if (entry) return entryLicenses(entry)
+  const labels = licenseLabels(component).map(
+    (label) => policy.licenseAliases[normalized(label)] || label,
+  )
+  let filtered = labels
+  for (const family of ['GPL', 'LGPL', 'GFDL']) {
+    if (filtered.includes(family) && filtered.some((label) => label.startsWith(`${family}-`))) {
+      filtered = filtered.filter((label) => label !== family)
+    }
+  }
+  return [...new Set(filtered)]
+}
+
+function allowedContainerLicense(label, policy) {
+  const alias = policy.licenseAliases[normalized(label)] || label
+  if (
+    policy.allowedContainerToolchainLicenses.some(
+      (allowed) => normalized(allowed) === normalized(alias),
+    )
+  ) {
+    return true
+  }
+  return (
+    evaluateExpression(alias, {
+      ...policy,
+      allowedLicenses: policy.allowedContainerToolchainLicenses,
+      allowedLicenseNames: [],
+      deniedLicenseFamilies: deniedContainerFamilies,
+    }).state === 'allowed'
+  )
+}
+
+function checkToolchainEntry(component, policy, errors) {
+  const entry = toolchainEntry(component, policy)
+  if (!entry) return false
+  const licenses = entryLicenses(entry)
+  if (!licenses.length || licenses.some((license) => !allowedContainerLicense(license, policy))) {
+    errors.push(`${artifactKey(component)}: container toolchain license policy is not allowed`)
+  }
+  return true
+}
+
 function licenseLabels(component) {
   const entries =
     Array.isArray(component.licenses) && component.licenses.length ? component.licenses : [null]
@@ -41,7 +99,7 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
   )
   const errors = []
   for (const component of flatten(imageBom.components)) {
-    if (['file', 'operating-system', 'application'].includes(component.type)) continue
+    if (['file', 'operating-system'].includes(component.type)) continue
     const labels = licenseLabels(component)
     const denied = labels.find((label) => {
       const tokens = label.match(/\(|\)|[^\s()]+/g) || []
@@ -60,15 +118,14 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
       component.purl?.startsWith('pkg:apk/') ||
       component.purl?.startsWith('pkg:golang/')
     ) {
-      const unknown = labels.some((label) => /NOASSERTION|sha256:|LicenseRef-|unknown/i.test(label))
-      if (unknown) {
-        const key = artifactKey(component)
-        const toolchain = policy.containerToolchainComponents.find((item) => item.component === key)
-        if (!toolchain || !policy.allowedContainerToolchainLicenses.includes(toolchain.license)) {
-          errors.push(
-            `${key}: unknown container toolchain license requires an explicit policy entry`,
-          )
-        }
+      if (checkToolchainEntry(component, policy, errors)) continue
+      const rejected = canonicalLicenseLabels(component, policy).filter(
+        (label) => !allowedContainerLicense(label, policy),
+      )
+      if (rejected.length) {
+        errors.push(
+          `${artifactKey(component)}: container license ${rejected.join(', ')} is not allowed`,
+        )
       }
       continue
     }
@@ -78,16 +135,13 @@ function checkContainerBom(imageBom, runtimeBom, policy, today = new Date()) {
       errors.push(...checkBom({ bomFormat: 'CycloneDX', components: [governed] }, policy, today))
       continue
     }
-    const toolchain = policy.containerToolchainComponents.find((item) => item.component === key)
-    if (!toolchain) {
+    if (!toolchainEntry(component, policy)) {
       errors.push(
-        `${key}: container application dependency is absent from the runtime license inventory`,
+        `${artifactKey(component)}: container application dependency is absent from the runtime license inventory`,
       )
       continue
     }
-    if (!policy.allowedContainerToolchainLicenses.includes(toolchain.license)) {
-      errors.push(`${key}: container toolchain license ${toolchain.license} is not allowed`)
-    }
+    checkToolchainEntry(component, policy, errors)
   }
   return errors
 }
@@ -122,4 +176,4 @@ function main() {
 
 if (require.main === module) main()
 
-module.exports = { checkContainerBom }
+module.exports = { canonicalLicenseLabels, checkContainerBom }

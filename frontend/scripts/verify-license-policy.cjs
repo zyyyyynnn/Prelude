@@ -35,14 +35,18 @@ function loadPolicy(filePath = policyPath) {
 function validateContainerToolchainComponents(components) {
   const seen = new Set()
   for (const component of components) {
+    const licenses = component.licenses || (component.license ? [component.license] : [])
     if (
       !component.component ||
       component.component.includes('*') ||
-      !component.license ||
+      !Array.isArray(licenses) ||
+      !licenses.length ||
+      licenses.some((license) => !license?.trim()) ||
+      (component.license && component.licenses) ||
       !component.reason?.trim()
     ) {
       throw new Error(
-        'container toolchain components require an exact artifact, license, and reason',
+        'container toolchain components require an exact artifact, license or licenses, and reason',
       )
     }
     if (seen.has(component.component)) {
