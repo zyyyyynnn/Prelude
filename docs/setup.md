@@ -66,14 +66,11 @@ npm --prefix frontend run verify:flaky
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
 npm --prefix frontend run test:unit
-npm --prefix frontend run test:smoke
+npm --prefix frontend run test:browser-core
 npm --prefix frontend run verify:identity
 npm --prefix frontend run build
 npm --prefix frontend run verify:cascade
 npm --prefix frontend run verify:production
-npm --prefix frontend run verify:byok
-npm --prefix frontend run verify:dark
-npm --prefix frontend run verify:a11y
 npm --prefix frontend run verify:visual
 npm --prefix frontend run verify:evidence
 npm --prefix frontend run capture:surfaces
@@ -86,14 +83,18 @@ git diff --check
 
 ### CI 顺序
 
-| Job             | 依赖                                     | 执行顺序                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `supply-chain`  | 无，可与 `backend` 并行                  | checkout → Java 21/Node 24 → `npm ci` → backend/frontend runtime SBOM → 构建前后端镜像 → Syft 生成两份 image SBOM → `licenses:notices` → `verify:licenses` → Grype 扫描四份 SBOM → 上传 SBOM、notice 与漏洞证据                                                                                                                                                                                                                                                                                            |
-| `backend`       | 无，可与 `supply-chain` 并行             | 完整历史 checkout → `git diff --check <merge-base> HEAD` → Java 21 → 准备独立空库 → `mvn clean test`；MySQL/Identity/S3/Flyway smoke 均为 `true`                                                                                                                                                                                                                                                                                                                                                           |
-| `frontend`      | 先要求 `supply-chain` success            | Windows checkout（完整历史）→ Vite+ Node 24 → `npm ci` → task cache → 安装锁定的 Chromium → `check` → `verify:architecture` → `verify:oxc` → `verify:governance` → `verify:flaky` → `verify:ui` → `verify:tokens` → `test:unit` → `test:smoke` → `verify:identity` → `build` → `verify:cascade` → `verify:production` → `verify:byok` → `verify:dark` → `verify:a11y` → `verify:visual` → `verify:evidence` → `capture:surfaces` → 截图差异检查 → `verify:demo-copy` → `visual:diff-report` → 上传视觉证据 |
-| `release-smoke` | 等待 `supply-chain` 与 `backend` success | Linux checkout → Node 24 → `npm ci` → 安装 Chromium → 下载并加载已扫描镜像 → Compose 启动隔离 MySQL/Redis/RabbitMQ/VersityGW/LLM stub → Playwright 真实服务主链路 → 采集 JSON/JUnit/HTML/trace 与服务日志 → 清理卷与容器 → 上传证据                                                                                                                                                                                                                                                                                    |
+| Job                   | 依赖                                  | 执行顺序                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `detect`              | 无                                    | PR 使用 shell `git diff` 区分代码、Markdown/README/docs 与 `docs/screenshots/**` 证据；push 与手动运行始终按代码变更处理 |
+| `supply-chain`        | `detect` 为代码变更                  | checkout → Java 21/Node 24 → `npm ci` → 并行生成 runtime SBOM → Buildx Bake 并行构建前后端镜像并复用 GHA 层缓存 → 并行生成并双次校验 image SBOM → 许可证与 NOTICE 门禁 → 并行 Grype 扫描四份 SBOM → 上传证据与运行时镜像 |
+| `backend-tests`       | `detect` 为代码变更                  | 完整历史 checkout → `git diff --check <merge-base> HEAD` → Java 21 → 准备独立空库 → `mvn clean test`；MySQL/Identity/S3/Flyway smoke 均为 `true` |
+| `backend`             | `detect`、`backend-tests`，始终执行   | 必需聚合检查：检测失败或后端测试失败时失败；文档-only 变更在后端测试跳过后成功 |
+| `frontend-checks`     | `detect` 为代码变更                  | Ubuntu checkout → Node 24 → `npm ci` → Vite task cache → `check` → architecture/Oxc/governance/flaky/UI/tokens → unit → build → cascade → production bundle → evidence → demo copy |
+| `frontend-browser`    | `detect` 为代码变更                  | Windows 三并发分片：`core` 运行 smoke/BYOK/dark/a11y，`identity` 运行账户隔离，`visual` 运行像素回归、surface 捕获与可复现性检查；Chromium 与 npm 使用 setup/cache 复用 |
+| `frontend`            | `detect`、`frontend-checks`、`frontend-browser`，始终执行 | 必需聚合检查：检测、静态检查或任一浏览器分片失败时失败；文档-only 变更在重任务跳过后成功 |
+| `release-smoke`       | `detect` 为代码变更且 `supply-chain` 成功 | Linux checkout → Node 24 → `npm ci` → 下载并加载已扫描镜像 → Compose 启动隔离 MySQL/Redis/RabbitMQ/VersityGW/LLM stub → Playwright 真实服务主链路 → 采集 JSON/JUnit/HTML/trace 与服务日志 → 清理卷与容器 → 上传证据 |
 
-`frontend` 使用 `always()` 进入结果检查，但 supply-chain 非 success 时显式失败，不继续执行前端门禁。
+PR 连续推送时，旧运行由 `cancel-in-progress` 取消；`main` push 按提交 SHA 分组且不取消，确保每个提交完整执行。`backend` 与 `frontend` 始终报告状态，文档-only 变更不会因重任务跳过而阻塞合并。
 
 ### 依赖与证据门禁
 

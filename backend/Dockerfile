@@ -3,7 +3,7 @@ WORKDIR /app
 COPY backend/pom.xml .
 RUN mvn dependency:go-offline -B
 COPY backend/src ./src
-RUN mvn package -DskipTests -B
+RUN mvn package -Dmaven.test.skip=true -B --no-transfer-progress
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

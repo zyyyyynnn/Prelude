@@ -5,16 +5,56 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      code_changed: ${{ steps.classify.outputs.code_changed }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0
+
+      - name: Classify changes
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          code_changed=false
+          evidence_changed=false
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            case "$file" in
+              README.md|docs/*|*.md) ;;
+              *) code_changed=true ;;
+            esac
+            case "$file" in
+              docs/screenshots/*) evidence_changed=true ;;
+            esac
+          done < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          if [ "$evidence_changed" = "true" ]; then
+            code_changed=true
+          fi
+          echo "code_changed=$code_changed" >> "$GITHUB_OUTPUT"
+
   supply-chain:
+    needs: detect
+    if: needs.detect.outputs.code_changed == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -27,12 +67,10 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
-      - uses: voidzero-dev/setup-vp@v1.22.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
-          working-directory: frontend
-          run-install: 'false'
-          cache: 'true'
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Verify vulnerability exception expiry
@@ -40,19 +78,28 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
-      - name: Generate backend runtime SBOM
-        run: mvn --batch-mode -f backend/pom.xml -Pquality cyclonedx:makeBom
+      - name: Generate runtime SBOMs
+        run: |
+          mvn --batch-mode -f backend/pom.xml -Pquality cyclonedx:makeBom > /tmp/backend-sbom.log 2>&1 &
+          backend_pid=$!
+          npm --prefix frontend run generate:sbom > /tmp/frontend-sbom.log 2>&1 &
+          frontend_pid=$!
+          status=0
+          wait "$backend_pid" || status=1
+          wait "$frontend_pid" || status=1
+          cat /tmp/backend-sbom.log /tmp/frontend-sbom.log
+          exit "$status"
 
-      - name: Generate frontend runtime SBOM
-        working-directory: frontend
-        run: npm run generate:sbom
+      - uses: docker/setup-buildx-action@v4.4.1
 
       - name: Build runtime images
-        run: |
-          docker build -f backend/Dockerfile -t prelude-backend:ci .
-          docker build -f frontend/Dockerfile -t prelude-frontend:ci .
+        uses: docker/bake-action@v7.5.0
+        with:
+          files: ./docker-bake.hcl
+          load: true
+          push: false
 
       - name: Generate container SBOMs
         run: |
@@ -62,16 +109,23 @@ jobs:
           scan_image() {
             docker run --rm -v /tmp:/tmp anchore/syft:v1.57.2 scan "docker-archive:/tmp/$1" -q -o cyclonedx-json
           }
-          scan_image prelude-backend-image.tar > backend/target/image-bom.json
+          scan_image prelude-backend-image.tar > backend/target/image-bom.json &
+          backend_first=$!
+          scan_image prelude-backend-image.tar > /tmp/backend-image-bom-second.json &
+          backend_second=$!
+          scan_image prelude-frontend-image.tar > frontend/output/image-sbom.cdx.json &
+          frontend_first=$!
+          scan_image prelude-frontend-image.tar > /tmp/frontend-image-bom-second.json &
+          frontend_second=$!
+          status=0
+          for pid in "$backend_first" "$backend_second" "$frontend_first" "$frontend_second"; do
+            wait "$pid" || status=1
+          done
+          [ "$status" -eq 0 ] || exit "$status"
           node scripts/normalize-sbom.mjs backend/target/image-bom.json
-          cp backend/target/image-bom.json /tmp/backend-image-bom-first.json
-          scan_image prelude-backend-image.tar > /tmp/backend-image-bom-second.json
           node scripts/normalize-sbom.mjs /tmp/backend-image-bom-second.json
           cmp backend/target/image-bom.json /tmp/backend-image-bom-second.json
-          scan_image prelude-frontend-image.tar > frontend/output/image-sbom.cdx.json
           node scripts/normalize-sbom.mjs frontend/output/image-sbom.cdx.json
-          cp frontend/output/image-sbom.cdx.json /tmp/frontend-image-bom-first.json
-          scan_image prelude-frontend-image.tar > /tmp/frontend-image-bom-second.json
           node scripts/normalize-sbom.mjs /tmp/frontend-image-bom-second.json
           cmp frontend/output/image-sbom.cdx.json /tmp/frontend-image-bom-second.json
 
@@ -106,58 +160,43 @@ jobs:
           cmp LICENSE /tmp/prelude-frontend-LICENSE
           cmp frontend/public/licenses/paper-design-shaders.txt /tmp/prelude-paper-design-shaders.txt
 
-      - name: Scan backend runtime vulnerabilities
-        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
-        with:
-          sbom: backend/target/bom.json
-          grype-version: v0.122.1
-          fail-build: true
-          only-fixed: false
-          severity-cutoff: high
-          output-format: json
-          output-file: backend-vulnerabilities.json
+      - name: Install pinned Grype
+        run: |
+          version=0.122.1
+          archive="grype_${version}_linux_amd64.tar.gz"
+          release_url="https://github.com/anchore/grype/releases/download/v${version}"
+          curl -fsSL "$release_url/$archive" -o "/tmp/$archive"
+          curl -fsSL "$release_url/grype_${version}_checksums.txt" -o /tmp/grype-checksums.txt
+          expected=$(grep -F " $archive" /tmp/grype-checksums.txt | cut -d' ' -f1)
+          test -n "$expected"
+          echo "$expected  /tmp/$archive" | sha256sum --check --status
+          tar -xzf "/tmp/$archive" -C /tmp grype
+          echo "/tmp" >> "$GITHUB_PATH"
 
-      - name: Scan frontend runtime vulnerabilities
-        if: ${{ !cancelled() }}
-        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
-        with:
-          sbom: frontend/output/sbom.cdx.json
-          grype-version: v0.122.1
-          fail-build: true
-          only-fixed: false
-          severity-cutoff: high
-          output-format: json
-          output-file: frontend-vulnerabilities.json
-
-      - name: Scan backend container vulnerabilities
-        if: ${{ !cancelled() }}
-        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
-        with:
-          sbom: backend/target/image-bom.json
-          grype-version: v0.122.1
-          fail-build: true
-          only-fixed: false
-          severity-cutoff: high
-          output-format: json
-          output-file: backend-image-vulnerabilities.json
-
-      - name: Scan frontend container vulnerabilities
-        if: ${{ !cancelled() }}
-        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
-        with:
-          sbom: frontend/output/image-sbom.cdx.json
-          grype-version: v0.122.1
-          fail-build: true
-          only-fixed: false
-          severity-cutoff: high
-          output-format: json
-          output-file: frontend-image-vulnerabilities.json
+      - name: Scan runtime and container vulnerabilities
+        run: |
+          scan() {
+            grype "sbom:$1" --fail-on high --output json > "$2"
+          }
+          scan backend/target/bom.json backend-vulnerabilities.json &
+          backend_runtime=$!
+          scan frontend/output/sbom.cdx.json frontend-vulnerabilities.json &
+          frontend_runtime=$!
+          scan backend/target/image-bom.json backend-image-vulnerabilities.json &
+          backend_image=$!
+          scan frontend/output/image-sbom.cdx.json frontend-image-vulnerabilities.json &
+          frontend_image=$!
+          status=0
+          for pid in "$backend_runtime" "$frontend_runtime" "$backend_image" "$frontend_image"; do
+            wait "$pid" || status=1
+          done
+          exit "$status"
 
       - name: Package scanned runtime images
         run: docker save prelude-backend:ci prelude-frontend:ci | gzip > runtime-images.tar.gz
 
       - name: Upload scanned runtime images
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: runtime-images
           path: runtime-images.tar.gz
@@ -166,7 +205,7 @@ jobs:
 
       - name: Upload dependency scan evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: runtime-dependency-sboms
           path: |
@@ -184,7 +223,9 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  backend:
+  backend-tests:
+    needs: detect
+    if: needs.detect.outputs.code_changed == 'true'
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -232,6 +273,7 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+          cache-dependency-path: backend/pom.xml
 
       - name: Prepare empty Flyway database
         run: |
@@ -256,47 +298,55 @@ jobs:
           SPRING_RABBITMQ_PORT: '5672'
         run: mvn --batch-mode clean test
 
-  frontend:
-    needs: supply-chain
+  backend:
+    needs: [detect, backend-tests]
     if: ${{ always() }}
-    runs-on: windows-latest
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Require supply chain success
-        shell: bash
+      - name: Require backend tests
         env:
-          SUPPLY_CHAIN_RESULT: ${{ needs.supply-chain.result }}
+          DETECT_RESULT: ${{ needs.detect.result }}
+          CODE_CHANGED: ${{ needs.detect.outputs.code_changed }}
+          BACKEND_RESULT: ${{ needs.backend-tests.result }}
         run: |
-          if [ "$SUPPLY_CHAIN_RESULT" != "success" ]; then
-            echo "supply-chain did not succeed: $SUPPLY_CHAIN_RESULT"
+          if [ "$DETECT_RESULT" != "success" ]; then
+            echo "change detection failed"
+            exit 1
+          fi
+          if [ "$CODE_CHANGED" != "true" ]; then
+            echo "Docs-only change; backend tests skipped"
+            exit 0
+          fi
+          if [ "$BACKEND_RESULT" != "success" ]; then
+            echo "backend tests did not succeed: $BACKEND_RESULT"
             exit 1
           fi
 
-      # Governance compares the full commit range against main.
+  frontend-checks:
+    needs: detect
+    if: needs.detect.outputs.code_changed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
-      - uses: voidzero-dev/setup-vp@v1.22.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
-          working-directory: frontend
-          run-install: 'false'
-          cache: 'true'
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Cache Vite task cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         with:
           path: frontend/node_modules/.vite/task-cache
-          key: ${{ runner.os }}-vite-task-cache-${{ hashFiles('frontend/package-lock.json', 'frontend/vite.config.ts') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vite-task-cache-${{ hashFiles('frontend/package-lock.json', 'frontend/vite.config.ts') }}-
-            ${{ runner.os }}-vite-task-cache-
+          key: ${{ runner.os }}-vite-task-${{ hashFiles('frontend/package-lock.json', 'frontend/vite.config.ts') }}
 
       - name: Verify frontend
         working-directory: frontend
@@ -318,24 +368,10 @@ jobs:
         working-directory: frontend
         run: npm run test:unit
 
-      # Use the browser version pinned by @playwright/test.
-      - name: Install the pinned browser
-        working-directory: frontend
-        run: npx playwright install chromium
-
-      - name: Smoke tests
-        working-directory: frontend
-        run: npm run test:smoke
-
-      - name: Identity and account isolation
-        working-directory: frontend
-        run: npm run verify:identity
-
       - name: Build production frontend
         working-directory: frontend
         run: npm run build
 
-      # Needs the built stylesheet: cascade order only exists in the emitted CSS.
       - name: Verify cascade collisions
         working-directory: frontend
         run: npm run verify:cascade
@@ -344,45 +380,69 @@ jobs:
         working-directory: frontend
         run: npm run verify:production
 
-      - name: BYOK behavior
-        working-directory: frontend
-        run: npm run verify:byok
-
-      - name: Dark theme
-        working-directory: frontend
-        run: npm run verify:dark
-
-      - name: Accessibility
-        working-directory: frontend
-        run: npm run verify:a11y
-
-      - name: Visual regression
-        working-directory: frontend
-        run: npm run verify:visual
-
       - name: Verify committed visual evidence
         working-directory: frontend
         run: npm run verify:evidence
-
-      - name: Capture surface references
-        working-directory: frontend
-        run: npm run capture:surfaces
-
-      - name: Verify surface capture reproducibility
-        run: git diff --exit-code -- docs/screenshots
 
       - name: Verify demo copy
         working-directory: frontend
         run: npm run verify:demo-copy
 
-      - name: Collect visual evidence
-        working-directory: frontend
-        run: npm run visual:diff-report
+  frontend-browser:
+    needs: detect
+    if: needs.detect.outputs.code_changed == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [core, identity, visual]
+    runs-on: windows-latest
 
-      # Preserve actual and diff frames so pixel failures remain diagnosable.
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~\ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install the pinned browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: frontend
+        run: npx playwright install chromium
+
+      - name: Run browser suite
+        shell: bash
+        run: |
+          case "${{ matrix.suite }}" in
+            core)
+              npm --prefix frontend run test:browser-core
+              ;;
+            identity)
+              npm --prefix frontend run verify:identity
+              ;;
+            visual)
+              npm --prefix frontend run verify:visual
+              npm --prefix frontend run capture:surfaces
+              git diff --exit-code -- docs/screenshots
+              npm --prefix frontend run visual:diff-report
+              ;;
+          esac
+
       - name: Upload visual evidence
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4.6.2
+        if: ${{ !cancelled() && matrix.suite == 'visual' }}
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: visual-regression-evidence
           path: |
@@ -393,8 +453,34 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  frontend:
+    needs: [detect, frontend-checks, frontend-browser]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require frontend checks
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+          CODE_CHANGED: ${{ needs.detect.outputs.code_changed }}
+          CHECKS_RESULT: ${{ needs.frontend-checks.result }}
+          BROWSER_RESULT: ${{ needs.frontend-browser.result }}
+        run: |
+          if [ "$DETECT_RESULT" != "success" ]; then
+            echo "change detection failed"
+            exit 1
+          fi
+          if [ "$CODE_CHANGED" != "true" ]; then
+            echo "Docs-only change; frontend checks skipped"
+            exit 0
+          fi
+          if [ "$CHECKS_RESULT" != "success" ] || [ "$BROWSER_RESULT" != "success" ]; then
+            echo "frontend checks did not succeed: checks=$CHECKS_RESULT browser=$BROWSER_RESULT"
+            exit 1
+          fi
+
   release-smoke:
-    needs: [supply-chain, backend]
+    needs: [detect, supply-chain]
+    if: ${{ always() && needs.detect.result == 'success' && needs.detect.outputs.code_changed == 'true' && needs.supply-chain.result == 'success' }}
     runs-on: ubuntu-latest
     env:
       APP_CRYPTO_AES_SECRET: prelude-release-smoke-only-secret
@@ -404,24 +490,30 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: voidzero-dev/setup-vp@v1.22.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
-          working-directory: frontend
-          run-install: 'false'
-          cache: 'true'
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
 
       - name: Install the pinned browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: frontend
         run: npx playwright install chromium
 
       - name: Download scanned runtime images
-        uses: actions/download-artifact@v4.3.0
+        uses: actions/download-artifact@v8.0.2
         with:
           name: runtime-images
 
@@ -462,7 +554,7 @@ jobs:
 
       - name: Upload release smoke evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: release-smoke-evidence
           path: |
