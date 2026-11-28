@@ -6,10 +6,13 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /server server.go
 
 FROM node:24-alpine AS build
 WORKDIR /app
-RUN npm install --global npm@12.0.2
 COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/. .
+RUN npm ci --no-audit --no-fund
+COPY frontend/index.html frontend/vite.config.ts frontend/tsconfig.json frontend/components.json frontend/beautiful-ui.sources.json ./
+COPY frontend/src ./src
+COPY frontend/public ./public
+COPY frontend/scripts ./scripts
+COPY frontend/tokens ./tokens
 RUN npm run build
 
 FROM scratch

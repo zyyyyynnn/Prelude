@@ -94,7 +94,7 @@ npm --prefix frontend run dev
 
 ## 验证
 
-完整验证命令以 [本地开发](docs/setup.md#验证) 与 [界面质量体系](docs/quality/ui-quality-system.md) 为准。CI 包含 `supply-chain`、`backend`、`frontend` 三个 Job：`backend` 与 `supply-chain` 可并行，`frontend` 在 Windows 上显式要求 `supply-chain` 成功后执行；顺序与本地 Grype 复现见 [CI 顺序](docs/setup.md#ci-顺序)。
+完整验证命令以 [本地开发](docs/setup.md#验证) 与 [界面质量体系](docs/quality/ui-quality-system.md) 为准。CI 先由 `detect` 识别代码与视觉证据变更：代码变更并行执行供应链、后端测试、前端静态检查与 Windows 浏览器分片；`release-smoke` 在扫描镜像就绪后运行。`backend` 与 `frontend` 是始终完成的必需聚合检查，文档-only 变更会跳过重任务但不会让必需检查悬空。顺序与本地 Grype 复现见 [CI 顺序](docs/setup.md#ci-顺序)。
 
 ## 仓库结构
 

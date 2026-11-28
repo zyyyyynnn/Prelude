@@ -2,6 +2,8 @@
 .env*
 **/.env*
 **/node_modules
+**/.playwright-cli
+**/.vite-hooks
 **/dist
 **/target
 **/test-results
