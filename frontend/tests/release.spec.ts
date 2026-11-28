@@ -213,6 +213,7 @@ test('@release primary interview path works against real services', async ({ pag
     })
     .toBe('SUCCEEDED')
   await page.reload()
+  await page.getByRole('button', { name: '报告', exact: true }).click()
   await expect(page.getByRole('heading', { name: '求职训练报告' })).toBeVisible()
   await page.getByRole('link', { name: '数据看板' }).click()
   await expect(page.getByRole('heading', { name: '能力雷达' })).toBeVisible()
