@@ -2,11 +2,30 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
+const { PackageURL } = require('packageurl-js')
 
 const policyPath = path.join(__dirname, 'license-policy.json')
 
 function normalized(value) {
   return value.trim().toLowerCase()
+}
+
+function componentKey(component) {
+  try {
+    const parsed = PackageURL.fromString(component?.purl)
+    return new PackageURL(
+      parsed.type,
+      parsed.namespace,
+      parsed.name,
+      parsed.version || 'unknown',
+    ).toString()
+  } catch {
+    return null
+  }
+}
+
+function normalizePolicyComponent(value) {
+  return typeof value === 'string' ? componentKey({ purl: value }) : null
 }
 
 function loadPolicy(filePath = policyPath) {
@@ -17,6 +36,9 @@ function loadPolicy(filePath = policyPath) {
     'allowedLicenseExceptions',
     'deniedLicenseFamilies',
     'licenseSelections',
+    'containerToolchainComponents',
+    'containerRuntimeAliases',
+    'allowedContainerToolchainLicenses',
     'exceptions',
   ]) {
     if (!Array.isArray(policy[key])) throw new Error(`license policy ${key} must be an array`)
@@ -26,31 +48,84 @@ function loadPolicy(filePath = policyPath) {
   }
   validateExceptions(policy.exceptions)
   validateLicenseSelections(policy.licenseSelections)
+  validateContainerToolchainComponents(policy.containerToolchainComponents)
+  validateContainerRuntimeAliases(policy.containerRuntimeAliases)
   return policy
+}
+
+function validateContainerToolchainComponents(components) {
+  const seen = new Set()
+  for (const entry of components) {
+    const component = normalizePolicyComponent(entry.component)
+    const licenses = entry.licenses || (entry.license ? [entry.license] : [])
+    if (
+      !component ||
+      component.includes('*') ||
+      !Array.isArray(licenses) ||
+      !licenses.length ||
+      licenses.some((license) => !license?.trim()) ||
+      (entry.license && entry.licenses) ||
+      !entry.reason?.trim()
+    ) {
+      throw new Error(
+        'container toolchain components require an exact artifact, license or licenses, and reason',
+      )
+    }
+    if (seen.has(component)) {
+      throw new Error(`container toolchain component ${component} is duplicated`)
+    }
+    seen.add(component)
+  }
+}
+
+function validateContainerRuntimeAliases(aliases) {
+  const seen = new Set()
+  for (const alias of aliases) {
+    const image = normalizePolicyComponent(alias.image)
+    const runtime = normalizePolicyComponent(alias.runtime)
+    if (
+      !image ||
+      !runtime ||
+      image.includes('*') ||
+      runtime.includes('*') ||
+      !image.startsWith('pkg:maven/') ||
+      !runtime.startsWith('pkg:maven/') ||
+      image === runtime ||
+      !alias.reason?.trim()
+    ) {
+      throw new Error('container runtime aliases require exact distinct Maven purls and a reason')
+    }
+    if (seen.has(image)) {
+      throw new Error(`container runtime alias ${image} is duplicated`)
+    }
+    seen.add(image)
+  }
 }
 
 function validateLicenseSelections(selections) {
   const components = new Set()
   for (const selection of selections) {
-    if (!selection.component || selection.component === '*' || selection.component.includes('*')) {
+    const component = normalizePolicyComponent(selection.component)
+    if (!component || component.includes('*')) {
       throw new Error('license selections require an exact component purl; wildcards are forbidden')
     }
     if (!selection.license || selection.license === '*' || selection.license.includes('*')) {
       throw new Error('license selections require an exact license')
     }
     if (!selection.reason?.trim()) {
-      throw new Error(`license selection for ${selection.component} requires a reason`)
+      throw new Error(`license selection for ${component} requires a reason`)
     }
-    if (components.has(selection.component)) {
-      throw new Error(`license selection for ${selection.component} is duplicated`)
+    if (components.has(component)) {
+      throw new Error(`license selection for ${component} is duplicated`)
     }
-    components.add(selection.component)
+    components.add(component)
   }
 }
 
 function validateExceptions(exceptions) {
   for (const exception of exceptions) {
-    if (!exception.component || exception.component === '*' || exception.component.includes('*')) {
+    const component = normalizePolicyComponent(exception.component)
+    if (!component || component.includes('*')) {
       throw new Error('license exceptions require an exact component purl; wildcards are forbidden')
     }
     if (!exception.license || exception.license === '*') {
@@ -59,19 +134,17 @@ function validateExceptions(exceptions) {
       )
     }
     if (!exception.reason?.trim() || !exception.approvedBy?.trim()) {
-      throw new Error(`license exception for ${exception.component} requires reason and approvedBy`)
+      throw new Error(`license exception for ${component} requires reason and approvedBy`)
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(exception.expiresOn || '')) {
-      throw new Error(
-        `license exception for ${exception.component} requires expiresOn in YYYY-MM-DD format`,
-      )
+      throw new Error(`license exception for ${component} requires expiresOn in YYYY-MM-DD format`)
     }
     const expiration = Date.parse(`${exception.expiresOn}T00:00:00Z`)
     if (
       !Number.isFinite(expiration) ||
       new Date(expiration).toISOString().slice(0, 10) !== exception.expiresOn
     ) {
-      throw new Error(`license exception for ${exception.component} has an invalid expiration date`)
+      throw new Error(`license exception for ${component} has an invalid expiration date`)
     }
   }
 }
@@ -190,14 +263,16 @@ function licenseLabel(entry) {
 
 function componentName(component) {
   return (
-    component.purl || `${component.group || ''}:${component.name}@${component.version || 'unknown'}`
+    componentKey(component) ||
+    component.purl ||
+    `${component.group || ''}:${component.name}@${component.version || 'unknown'}`
   )
 }
 
 function activeException(policy, component, license, today) {
   return policy.exceptions.find(
     (exception) =>
-      exception.component === component.purl &&
+      exception.component === componentKey(component) &&
       exception.license === license &&
       Date.parse(`${exception.expiresOn}T00:00:00Z`) >= today.getTime(),
   )
@@ -226,7 +301,9 @@ function checkBom(bom, policy, today = new Date()) {
         : evaluateLicenseEntry(entry, policy)
     })
 
-    const selection = policy.licenseSelections.find((item) => item.component === component.purl)
+    const selection = policy.licenseSelections.find(
+      (item) => item.component === componentKey(component),
+    )
     if (selection) {
       const selected = evaluations.find(
         (_, index) => normalized(licenseLabel(entries[index])) === normalized(selection.license),
@@ -279,6 +356,7 @@ if (require.main === module) main()
 
 module.exports = {
   checkBom,
+  componentKey,
   evaluateExpression,
   loadPolicy,
   validateExceptions,

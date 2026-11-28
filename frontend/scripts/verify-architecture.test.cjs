@@ -297,6 +297,52 @@ test('rejects a glyph rendered without the Icon wrapper', () => {
   assert.match(result.stderr, /bare glyph render of RiCloseLine/)
 })
 
+test('rejects deprecated resume and template feature surfaces', () => {
+  for (const feature of [
+    'workspace',
+    'resume-workspace',
+    'resume-template',
+    'template',
+    'templates',
+    'workspace-admin',
+    'resume-template-editor',
+  ]) {
+    const result = verify({
+      [`features/${feature}/index.ts`]: 'export const value = 1',
+      'app/page.tsx': `import { value } from '@/features/${feature}'`,
+    })
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /deprecated product feature is forbidden/)
+  }
+})
+
+test('rejects deprecated resume and template routes', () => {
+  for (const route of [
+    '/resume-workspace',
+    '/resume-template',
+    '/resume/workspace',
+    '/templates',
+    '/resume/workspace/edit',
+    '/templates/public',
+  ]) {
+    const result = verify({
+      'app/main.tsx': `const route = { path: '${route}' }`,
+    })
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /deprecated route .* is forbidden/)
+  }
+})
+
+test('allows the position template domain without resume template surfaces', () => {
+  const result = verify({
+    'app/main.tsx':
+      "import { fetchPositions } from '@/features/position'\nconst route = { path: '/interview' }",
+    'features/position/index.ts': "export { fetchPositions } from './api'",
+    'features/position/api.ts': 'export const fetchPositions = () => []',
+  })
+  assert.equal(result.status, 0, result.stderr)
+})
+
 test('allows registered shell and gallery modules without adding them to the product barrel', () => {
   const result = verify({
     'app/shell.tsx':

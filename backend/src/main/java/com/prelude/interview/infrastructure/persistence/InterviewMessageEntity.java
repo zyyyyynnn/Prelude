@@ -26,6 +26,8 @@ public class InterviewMessageEntity {
     private AssessmentStatus assessmentStatus;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String assessmentError;
+    private Long supersededByMessageId;
+    private Long replyToMessageId;
     private LocalDateTime createdAt;
 
     public static InterviewMessageEntity of(InterviewMessage message) {
@@ -41,6 +43,8 @@ public class InterviewMessageEntity {
             ? message.getAssessmentStatus()
             : "user".equals(message.getRole()) ? AssessmentStatus.PENDING : null);
         entity.setAssessmentError(message.getAssessmentError());
+        entity.setSupersededByMessageId(message.getSupersededByMessageId());
+        entity.setReplyToMessageId(message.getReplyToMessageId());
         entity.setCreatedAt(message.getCreatedAt());
         return entity;
     }
@@ -56,6 +60,8 @@ public class InterviewMessageEntity {
         message.setHint(hint);
         message.setAssessmentStatus(assessmentStatus);
         message.setAssessmentError(assessmentError);
+        message.setSupersededByMessageId(supersededByMessageId);
+        message.setReplyToMessageId(replyToMessageId);
         message.setCreatedAt(createdAt);
         return message;
     }

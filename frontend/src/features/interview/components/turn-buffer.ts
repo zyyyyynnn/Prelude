@@ -8,11 +8,12 @@ export function buildOptimisticTurn(
   content: string,
   autoStart: boolean,
   now: number = Date.now(),
+  retryOfMessageId?: number,
 ): { messages: InterviewMessageRecord[]; assistantId: number; context: InterviewMessageRecord[] } {
   const optimisticId = now
   const assistantId = now + 1
   const base = [...visible]
-  if (!autoStart) {
+  if (!autoStart && retryOfMessageId == null) {
     base.push({ id: optimisticId, role: 'user', content, createdAt: new Date(now).toISOString() })
   }
   base.push({
@@ -23,6 +24,16 @@ export function buildOptimisticTurn(
   })
   const context = base.filter((item) => item.id !== assistantId).slice(-MAX_CONTEXT_MESSAGES)
   return { messages: base, assistantId, context }
+}
+
+export function retryOrSupersedeTarget(
+  last: InterviewMessageRecord | undefined,
+  content: string,
+): { retryOfMessageId?: number; supersedesMessageId?: number } {
+  if (last?.role !== 'user') return {}
+  return content.trim() === last.content.trim()
+    ? { retryOfMessageId: last.id }
+    : { supersedesMessageId: last.id }
 }
 
 /** An empty, unfinished session starts one turn and only one. */

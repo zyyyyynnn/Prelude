@@ -1,6 +1,7 @@
 package com.prelude.artifact.application;
 
 import com.prelude.artifact.infrastructure.InterviewReportParser;
+import com.prelude.interview.api.port.InterviewMessageSnapshot;
 import com.prelude.test.ArtifactFixtures;
 import com.prelude.llm.api.ModelExecutionPort;
 import com.prelude.test.LlmFixtures;
@@ -8,6 +9,7 @@ import com.prelude.test.SessionFixtures;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,6 +41,44 @@ class GenerateInterviewReportResponseModeTest {
             LlmFixtures.responseModeJsonObject(),
             LlmFixtures.responseModeJsonArray()
         );
+    }
+
+    @Test
+    void mixedScoredAndUnscoredAnswersDoNotWriteScoreHistory() {
+        GenerateInterviewReport.GenerationResult result = generateWithMessages(List.of(
+            answer(1L, 2, "SCORED", 8),
+            answer(2L, 4, "UNSCORED", null)
+        ));
+
+        assertThat(result.scoreHistory()).isNull();
+    }
+
+    @Test
+    void fullyScoredAnswersWriteScoreHistory() {
+        GenerateInterviewReport.GenerationResult result = generateWithMessages(List.of(
+            answer(1L, 2, "SCORED", 8),
+            answer(2L, 4, "SCORED", 9)
+        ));
+
+        assertThat(result.scoreHistory()).isNotNull();
+    }
+
+    private GenerateInterviewReport.GenerationResult generateWithMessages(List<InterviewMessageSnapshot> messages) {
+        var reportPort = SessionFixtures.mockReportPort();
+        var llmPort = LlmFixtures.mockResponseModePort();
+        var parser = ArtifactFixtures.mockParser();
+        var assembler = ArtifactFixtures.mockAssembler();
+        var session = SessionFixtures.reportSession(42L, 7L, "generating", "Backend Engineer", 99L);
+        when(reportPort.findSession(42L)).thenReturn(session);
+        when(reportPort.listMessages(42L)).thenReturn(messages);
+        when(reportPort.listStages(42L)).thenReturn(List.of());
+        return new GenerateInterviewReport(new ObjectMapper(), reportPort, llmPort, parser, assembler).execute(42L, 7L);
+    }
+
+    private InterviewMessageSnapshot answer(Long id, int seqNum, String status, Integer score) {
+        return new InterviewMessageSnapshot(
+            id, 42L, "user", "answer", seqNum, score, null, status, null, null, null,
+            LocalDateTime.now());
     }
 
     @Test

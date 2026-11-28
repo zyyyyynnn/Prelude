@@ -141,12 +141,30 @@ for (const [name, chunk] of [
   }
 }
 
-const nginx = fs.readFileSync(path.resolve(__dirname, '..', 'nginx.conf'), 'utf8')
-if (!nginx.includes('proxy_set_header X-Forwarded-For $remote_addr;')) {
-  throw new Error('Production proxy must overwrite X-Forwarded-For with the client address')
+const server = fs.readFileSync(path.resolve(__dirname, '..', 'server.go'), 'utf8')
+if (
+  !server.includes('httputil.NewSingleHostReverseProxy') ||
+  !server.includes('request.Header.Del(header)')
+) {
+  throw new Error('Production proxy must sanitize client-supplied forwarding headers')
 }
-for (const header of ['Forwarded', 'X-Forwarded-Host', 'X-Forwarded-Port', 'X-Forwarded-Prefix']) {
-  if (!nginx.includes(`proxy_set_header ${header} "";`)) {
+if (!server.includes('request.Header.Set("X-Forwarded-Proto", protocol)')) {
+  throw new Error('Production proxy must set the trusted forwarded protocol')
+}
+for (const header of ['X-Forwarded-Host', 'X-Forwarded-Port']) {
+  if (!server.includes(`request.Header.Set("${header}",`)) {
+    throw new Error(`Production proxy must set the trusted ${header} header`)
+  }
+}
+for (const header of [
+  'Forwarded',
+  'X-Forwarded-For',
+  'X-Forwarded-Host',
+  'X-Forwarded-Port',
+  'X-Forwarded-Prefix',
+  'X-Forwarded-Proto',
+]) {
+  if (!server.includes(`"${header}"`)) {
     throw new Error(`Production proxy must clear the client-supplied ${header} header`)
   }
 }

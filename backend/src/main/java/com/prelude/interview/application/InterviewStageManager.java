@@ -145,7 +145,8 @@ public class InterviewStageManager {
 
     int assistantRepliesInCurrentStage(Long sessionId) {
         InterviewStage stage = requireCurrentStage(sessionId);
-        return (int) listMessages(sessionId).stream()
+        List<InterviewMessage> messages = InterviewMessage.effectiveMessages(listMessages(sessionId));
+        return (int) messages.stream()
             .filter(message -> "assistant".equals(message.getRole()))
             .filter(message -> message.getSeqNum() != null && message.getSeqNum() > stage.getBoundarySeq())
             .count();

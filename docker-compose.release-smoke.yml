@@ -1,0 +1,47 @@
+services:
+  mysql:
+    environment:
+      MYSQL_DATABASE: prelude_release
+
+  redis:
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  rabbitmq:
+    environment:
+      RABBITMQ_DEFAULT_USER: prelude
+      RABBITMQ_DEFAULT_PASS: prelude
+
+  llm-stub:
+    image: node:24-alpine
+    command: ["node", "/work/scripts/release-llm-stub.mjs"]
+    volumes:
+      - ./scripts:/work/scripts:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/v1/models"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  backend:
+    image: prelude/backend:release
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_SQL_INIT_MODE: never
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/prelude_release?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      SPRING_RABBITMQ_USERNAME: prelude
+      SPRING_RABBITMQ_PASSWORD: prelude
+      OPENAI_BASE_URL: http://llm-stub:8080/v1
+      OPENAI_API_KEY: release-test
+      DEEPSEEK_BASE_URL: http://llm-stub:8080/v1
+      DEEPSEEK_API_KEY: release-test
+      PRELUDE_LLM_RATE_LIMIT_ENABLED: "false"
+    ports:
+      - "127.0.0.1:18080:8080"
+    depends_on:
+      llm-stub:
+        condition: service_healthy
+
+  frontend:
+    image: prelude/frontend:release
+    ports:
+      - "127.0.0.1:14173:80"

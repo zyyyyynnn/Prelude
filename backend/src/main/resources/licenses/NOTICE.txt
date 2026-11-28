@@ -1,0 +1,438 @@
+Prelude third-party notices
+Artifact: backend
+Generated from the runtime and container CycloneDX SBOMs; do not edit by hand.
+
+Prelude is distributed under the MIT license; see the repository LICENSE file.
+
+Components:
+- adduser@3.153ubuntu1 — GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/adduser@3.153ubuntu1
+- apt@3.2.1ubuntu0.1 — BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; curl; Expat — pkg:deb/ubuntu/apt@3.2.1ubuntu0.1
+- base-files@14ubuntu6.3 — GPL-2.0-or-later — pkg:deb/ubuntu/base-files@14ubuntu6.3
+- base-passwd@3.6.8 — GPL-2.0-only; Public-Domain — pkg:deb/ubuntu/base-passwd@3.6.8
+- bash@5.3-2ubuntu1 — BSD-4-Clause-UC; GFDL-1.3-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; Latex2e; GFDL-NIV-1.3 — pkg:deb/ubuntu/bash@5.3-2ubuntu1
+- bsdutils@1:2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/bsdutils@1:2.41.3-3ubuntu2.2
+- ca-certificates@20260816ubuntu0.26.04.2 — GPL-2.0-only; GPL-2.0-or-later; MPL-2.0 — pkg:deb/ubuntu/ca-certificates@20260816ubuntu0.26.04.2
+- coreutils-from-uutils@0.0.0~ubuntu25 — GPL-3.0-only — pkg:deb/ubuntu/coreutils-from-uutils@0.0.0~ubuntu25
+- coreutils@9.5-1ubuntu2+0.0.0~ubuntu25 — GPL-3.0-only — pkg:deb/ubuntu/coreutils@9.5-1ubuntu2+0.0.0~ubuntu25
+- curl@8.18.0-1ubuntu2.8 — BSD-4-Clause-UC; FSFUL; FSFULLR; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-or-later; ISC; OLDAP-2.8; X11; curl — pkg:deb/ubuntu/curl@8.18.0-1ubuntu2.8
+- dash@0.5.12-12ubuntu3 — BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; Public-Domain — pkg:deb/ubuntu/dash@0.5.12-12ubuntu3
+- debconf@1.5.92 — BSD-2-Clause — pkg:deb/ubuntu/debconf@1.5.92
+- debianutils@5.23.2build1 — GPL-2.0-only; GPL-2.0-or-later; SMAIL-GPL; Public-Domain — pkg:deb/ubuntu/debianutils@5.23.2build1
+- diffutils@1:3.12-1ubuntu0.1 — FSFAP; FSFULLR; GFDL-1.3-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; X11; GFDL-NIV-1.3; Public-Domain — pkg:deb/ubuntu/diffutils@1:3.12-1ubuntu0.1
+- dirmngr@2.4.8-4ubuntu3.1 — BSD-3-Clause; CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; RFC-Reference; TinySCHEME — pkg:deb/ubuntu/dirmngr@2.4.8-4ubuntu3.1
+- dpkg@1.23.7ubuntu1 — GPL-2.0-only; GPL-2.0-or-later; Public-Domain — pkg:deb/ubuntu/dpkg@1.23.7ubuntu1
+- e2fsprogs@1.47.2-3ubuntu4 — 0BSD; Apache-2.0; BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; ISC; Kazlib; LGPL-2.0-only; Latex2e; BSD-3-Clause-Variant; BSD-4-Clause-CMU; Expat — pkg:deb/ubuntu/e2fsprogs@1.47.2-3ubuntu4
+- findutils@4.10.0-3build2 — BSD-3-Clause; FSFAP; FSFULLR; GFDL-1.3-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; X11; GFDL-NIV-1.3+; Public-Domain — pkg:deb/ubuntu/findutils@4.10.0-3build2
+- fontconfig-config@2.17.1-3ubuntu1 — HPND-sell-variant — pkg:deb/ubuntu/fontconfig-config@2.17.1-3ubuntu1
+- fontconfig@2.17.1-3ubuntu1 — HPND-sell-variant — pkg:deb/ubuntu/fontconfig@2.17.1-3ubuntu1
+- fonts-dejavu-core@2.37-8build1 — GPL-2.0-only; GPL-2.0-or-later; Bitstream-Vera — pkg:deb/ubuntu/fonts-dejavu-core@2.37-8build1
+- fonts-dejavu-mono@2.37-8build1 — GPL-2.0-only; GPL-2.0-or-later; Bitstream-Vera — pkg:deb/ubuntu/fonts-dejavu-mono@2.37-8build1
+- gcc-16-base@16-20260322-1ubuntu1 — GPL-3.0-only WITH GCC-exception-3.1 — pkg:deb/ubuntu/gcc-16-base@16-20260322-1ubuntu1
+- gnu-coreutils@9.7-3ubuntu2.1 — BSD-4-Clause-UC; FSFULLR; GFDL-1.3-only; GPL-3.0-only; GPL-3.0-or-later; ISC; GFDL-NIV-1.3 — pkg:deb/ubuntu/gnu-coreutils@9.7-3ubuntu2.1
+- gnupg@2.4.8-4ubuntu3.1 — BSD-3-Clause; CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; RFC-Reference; TinySCHEME — pkg:deb/ubuntu/gnupg@2.4.8-4ubuntu3.1
+- gpg-agent@2.4.8-4ubuntu3.1 — BSD-3-Clause; CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; RFC-Reference; TinySCHEME — pkg:deb/ubuntu/gpg-agent@2.4.8-4ubuntu3.1
+- gpg@2.4.8-4ubuntu3.1 — BSD-3-Clause; CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; RFC-Reference; TinySCHEME — pkg:deb/ubuntu/gpg@2.4.8-4ubuntu3.1
+- gpgconf@2.4.8-4ubuntu3.1 — BSD-3-Clause; CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; RFC-Reference; TinySCHEME — pkg:deb/ubuntu/gpgconf@2.4.8-4ubuntu3.1
+- gpgsm@2.4.8-4ubuntu3.1 — BSD-3-Clause; CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; RFC-Reference; TinySCHEME — pkg:deb/ubuntu/gpgsm@2.4.8-4ubuntu3.1
+- gpgv@2.4.8-4ubuntu3.1 — BSD-3-Clause; CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; RFC-Reference; TinySCHEME — pkg:deb/ubuntu/gpgv@2.4.8-4ubuntu3.1
+- grep@3.12-1 — BSD-3-Clause; FSFAP; FSFUL; FSFULLR; GFDL-1.3-only; GFDL-1.3-or-later; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; X11; Public-Domain — pkg:deb/ubuntu/grep@3.12-1
+- gzip@1.14-1~exp2ubuntu1.1 — GFDL-1.3-only; GPL-3.0-only; GPL-3.0-or-later; FSF-manpages; GFDL-1.3+-no-invariant — pkg:deb/ubuntu/gzip@1.14-1~exp2ubuntu1.1
+- hostname@3.25build1 — GPL-2.0-only — pkg:deb/ubuntu/hostname@3.25build1
+- init-system-helpers@1.69 — BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/init-system-helpers@1.69
+- libacl1@2.3.2-2 — GPL-2.0-only; GPL-2.0-or-later; LGPL-2.0-or-later; LGPL-2.1-only — pkg:deb/ubuntu/libacl1@2.3.2-2
+- libapt-pkg7.0@3.2.1ubuntu0.1 — BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; curl; Expat — pkg:deb/ubuntu/libapt-pkg7.0@3.2.1ubuntu0.1
+- libassuan9@3.0.2-2build1 — FSFULLR; FSFULLRWD; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; X11; GPL-2.with.nonstandard.Autoconf-data.exception — pkg:deb/ubuntu/libassuan9@3.0.2-2build1
+- libattr1@1:2.5.2-4ubuntu0.1 — GPL-2.0-only; GPL-2.0-or-later; LGPL-2.0-or-later; LGPL-2.1-only — pkg:deb/ubuntu/libattr1@1:2.5.2-4ubuntu0.1
+- libaudit-common@1:4.1.2-1ubuntu0.1 — GPL-2.0-only; LGPL-2.1-only — pkg:deb/ubuntu/libaudit-common@1:4.1.2-1ubuntu0.1
+- libaudit1@1:4.1.2-1ubuntu0.1 — GPL-2.0-only; LGPL-2.1-only — pkg:deb/ubuntu/libaudit1@1:4.1.2-1ubuntu0.1
+- libblkid1@2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/libblkid1@2.41.3-3ubuntu2.2
+- libbrotli1@1.2.0-3ubuntu0.1 — MIT — pkg:deb/ubuntu/libbrotli1@1.2.0-3ubuntu0.1
+- libbsd0@0.12.2-2build2 — BSD-2-Clause; BSD-3-Clause; Beerware; ISC; BSD-2-clause-author; BSD-2-clause-verbatim; BSD-3-clause-John-Birrell; BSD-3-clause-Regents; BSD-3-clause-author; BSD-5-clause-Peter-Wemm; Expat; ISC-Original; Public-Domain — pkg:deb/ubuntu/libbsd0@0.12.2-2build2
+- libbz2-1.0@1.0.8-6ubuntu0.1 — BSD-4-Clause; GPL-2.0-only — pkg:deb/ubuntu/libbz2-1.0@1.0.8-6ubuntu0.1
+- libc-bin@2.43-2ubuntu2.7 — BSD-2-Clause; BSL-1.0; FSFAP; GFDL-1.3-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; SunPro; Unicode-DFS-2016; BSD-3-clause-Berkeley; BSD-3-clause-Carnegie; BSD-3-clause-Oracle; BSD-3-clause-WIDE; BSD-like-Spencer; CORE-MATH; Carnegie; DEC; GPL-2+-with-link-exception; IBM; Inner-Net; LGPL-2.1+-with-link-exception; MIT-like-Lord; PCRE; Univ-Coimbra; Public-Domain — pkg:deb/ubuntu/libc-bin@2.43-2ubuntu2.7
+- libc-gconv-modules-extra@2.43-2ubuntu2.7 — BSD-2-Clause; BSL-1.0; FSFAP; GFDL-1.3-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; SunPro; Unicode-DFS-2016; BSD-3-clause-Berkeley; BSD-3-clause-Carnegie; BSD-3-clause-Oracle; BSD-3-clause-WIDE; BSD-like-Spencer; CORE-MATH; Carnegie; DEC; GPL-2+-with-link-exception; IBM; Inner-Net; LGPL-2.1+-with-link-exception; MIT-like-Lord; PCRE; Univ-Coimbra; Public-Domain — pkg:deb/ubuntu/libc-gconv-modules-extra@2.43-2ubuntu2.7
+- libc6@2.43-2ubuntu2.7 — BSD-2-Clause; BSL-1.0; FSFAP; GFDL-1.3-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; SunPro; Unicode-DFS-2016; BSD-3-clause-Berkeley; BSD-3-clause-Carnegie; BSD-3-clause-Oracle; BSD-3-clause-WIDE; BSD-like-Spencer; CORE-MATH; Carnegie; DEC; GPL-2+-with-link-exception; IBM; Inner-Net; LGPL-2.1+-with-link-exception; MIT-like-Lord; PCRE; Univ-Coimbra; Public-Domain — pkg:deb/ubuntu/libc6@2.43-2ubuntu2.7
+- libcap-ng0@0.8.5-4build5 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/libcap-ng0@0.8.5-4build5
+- libcom-err2@1.47.2-3ubuntu4 — 0BSD; Apache-2.0; BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; ISC; Kazlib; LGPL-2.0-only; Latex2e; BSD-3-Clause-Variant; BSD-4-Clause-CMU; Expat — pkg:deb/ubuntu/libcom-err2@1.47.2-3ubuntu4
+- libcrypt1@1:4.5.1-1 — LGPL-2.1-or-later — pkg:deb/ubuntu/libcrypt1@1:4.5.1-1
+- libcurl4t64@8.18.0-1ubuntu2.8 — BSD-4-Clause-UC; FSFUL; FSFULLR; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-or-later; ISC; OLDAP-2.8; X11; curl — pkg:deb/ubuntu/libcurl4t64@8.18.0-1ubuntu2.8
+- libdb5.3t64@5.3.28+dfsg2-10ubuntu1 — BSD-3-Clause; GPL-3.0-only; MS-PL; Sleepycat; X11; Zlib; Artistic-1.0; BSD-3-clause-fjord; MIT-old — pkg:deb/ubuntu/libdb5.3t64@5.3.28+dfsg2-10ubuntu1
+- libdebconfclient0@0.280ubuntu1 — BSD-2-Clause; GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/libdebconfclient0@0.280ubuntu1
+- libexpat1@2.7.4-1ubuntu0.2 — MIT — pkg:deb/ubuntu/libexpat1@2.7.4-1ubuntu0.2
+- libext2fs2t64@1.47.2-3ubuntu4 — 0BSD; Apache-2.0; BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; ISC; Kazlib; LGPL-2.0-only; Latex2e; BSD-3-Clause-Variant; BSD-4-Clause-CMU; Expat — pkg:deb/ubuntu/libext2fs2t64@1.47.2-3ubuntu4
+- libffi8@3.5.2-4 — GPL-2.0-or-later; GPL-3.0-or-later; MPL-1.1; X11; Expat; Public-Domain — pkg:deb/ubuntu/libffi8@3.5.2-4
+- libfontconfig1@2.17.1-3ubuntu1 — HPND-sell-variant — pkg:deb/ubuntu/libfontconfig1@2.17.1-3ubuntu1
+- libfreetype6@2.14.2+dfsg-1ubuntu0.2 — BSD-3-Clause; BSL-1.0; FSFAP; FTL; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; MIT-Modern-Variant; Zlib; Expat; MIT-SMC; OpenGroup-MIT; Public-Domain — pkg:deb/ubuntu/libfreetype6@2.14.2+dfsg-1ubuntu0.2
+- libgcc-s1@16-20260322-1ubuntu1 — GPL-3.0-only WITH GCC-exception-3.1 — pkg:deb/ubuntu/libgcc-s1@16-20260322-1ubuntu1
+- libgcrypt20@1.12.0-2ubuntu1.1 — LGPL-2.1-or-later — pkg:deb/ubuntu/libgcrypt20@1.12.0-2ubuntu1.1
+- libgmp10@2:6.3.0+dfsg-5ubuntu2 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-3.0-only; LGPL-3.0-or-later — pkg:deb/ubuntu/libgmp10@2:6.3.0+dfsg-5ubuntu2
+- libgnutls30t64@3.8.12-2ubuntu1.1 — LGPL-3.0-or-later — pkg:deb/ubuntu/libgnutls30t64@3.8.12-2ubuntu1.1
+- libgpg-error0@1.58-2 — BSD-3-Clause; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; g10-permissive — pkg:deb/ubuntu/libgpg-error0@1.58-2
+- libgssapi-krb5-2@1.22.1-2ubuntu4.1 — MIT — pkg:deb/ubuntu/libgssapi-krb5-2@1.22.1-2ubuntu4.1
+- libhogweed6t64@3.10.2-1 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-3.0-or-later; Expat; GAP; Public-Domain — pkg:deb/ubuntu/libhogweed6t64@3.10.2-1
+- libidn2-0@2.3.8-4build1 — FSFAP; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Expat; Unicode — pkg:deb/ubuntu/libidn2-0@2.3.8-4build1
+- libk5crypto3@1.22.1-2ubuntu4.1 — MIT — pkg:deb/ubuntu/libk5crypto3@1.22.1-2ubuntu4.1
+- libkeyutils1@1.6.3-6ubuntu3 — GPL-2.0-only; GPL-2.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later — pkg:deb/ubuntu/libkeyutils1@1.6.3-6ubuntu3
+- libkrb5-3@1.22.1-2ubuntu4.1 — MIT — pkg:deb/ubuntu/libkrb5-3@1.22.1-2ubuntu4.1
+- libkrb5support0@1.22.1-2ubuntu4.1 — MIT — pkg:deb/ubuntu/libkrb5support0@1.22.1-2ubuntu4.1
+- libksba8@1.6.7-2build1 — LGPL-3.0-or-later — pkg:deb/ubuntu/libksba8@1.6.7-2build1
+- libldap-common@2.6.10+dfsg-1ubuntu5 — BSD-3-Clause; Beerware; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; BSD-3-clause-California; BSD-3-clause-variant; BSD-4-clause-California; Expat; Expat-ISC; Expat-UNM; F5; FSF-unlimited; JCG; MIT-XC; NeoSoft-permissive; OpenLDAP-2.8; UMich; Public-Domain — pkg:deb/ubuntu/libldap-common@2.6.10+dfsg-1ubuntu5
+- libldap2@2.6.10+dfsg-1ubuntu5 — BSD-3-Clause; Beerware; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; BSD-3-clause-California; BSD-3-clause-variant; BSD-4-clause-California; Expat; Expat-ISC; Expat-UNM; F5; FSF-unlimited; JCG; MIT-XC; NeoSoft-permissive; OpenLDAP-2.8; UMich; Public-Domain — pkg:deb/ubuntu/libldap2@2.6.10+dfsg-1ubuntu5
+- liblz4-1@1.10.0-8 — BSD-2-Clause; GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/liblz4-1@1.10.0-8
+- liblzma5@5.8.3-1ubuntu0.1 — 0BSD; FSFUL; FSFULLR; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; LGPL-2.1-only; LGPL-2.1-or-later; GPL-3.0-or-later-WITH-Autoconf-exception-macro; Public-Domain — pkg:deb/ubuntu/liblzma5@5.8.3-1ubuntu0.1
+- libmd0@1.1.0-2build4 — BSD-2-Clause; BSD-3-Clause; Beerware; ISC; BSD-3-clause-Aaron-D-Gifford; Public-Domain — pkg:deb/ubuntu/libmd0@1.1.0-2build4
+- libmount1@2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/libmount1@2.41.3-3ubuntu2.2
+- libncursesw6@6.6+20251231-1 — BSD-3-Clause; X11; MIT/X11 — pkg:deb/ubuntu/libncursesw6@6.6+20251231-1
+- libnettle8t64@3.10.2-1 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-3.0-or-later; Expat; GAP; Public-Domain — pkg:deb/ubuntu/libnettle8t64@3.10.2-1
+- libnghttp2-14@1.68.0-2ubuntu0.2 — BSD-2-Clause; GPL-3.0-only; GPL-3.0-or-later; MIT; Expat — pkg:deb/ubuntu/libnghttp2-14@1.68.0-2ubuntu0.2
+- libnpth0t64@1.8-3build1 — LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/libnpth0t64@1.8-3build1
+- libp11-kit0@0.26.2-2 — Apache-2.0; BSD-3-Clause; FSFAP; FSFULLR; GPL-2.0-or-later; GPL-3.0-or-later; ISC; LGPL-2.1-only; LGPL-2.1-or-later; X11; customFSFULLRWD — pkg:deb/ubuntu/libp11-kit0@0.26.2-2
+- libpam-modules-bin@1.7.0-5ubuntu3.2 — BSD-3-Clause; Beerware; GPL-1.0-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; BSD-tcp_wrappers; Public-Domain — pkg:deb/ubuntu/libpam-modules-bin@1.7.0-5ubuntu3.2
+- libpam-modules@1.7.0-5ubuntu3.2 — BSD-3-Clause; Beerware; GPL-1.0-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; BSD-tcp_wrappers; Public-Domain — pkg:deb/ubuntu/libpam-modules@1.7.0-5ubuntu3.2
+- libpam-runtime@1.7.0-5ubuntu3.2 — BSD-3-Clause; Beerware; GPL-1.0-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; BSD-tcp_wrappers; Public-Domain — pkg:deb/ubuntu/libpam-runtime@1.7.0-5ubuntu3.2
+- libpam0g@1.7.0-5ubuntu3.2 — BSD-3-Clause; Beerware; GPL-1.0-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; BSD-tcp_wrappers; Public-Domain — pkg:deb/ubuntu/libpam0g@1.7.0-5ubuntu3.2
+- libpcre2-8-0@10.46-1ubuntu0.1 — BSD-2-Clause; BSD-3-Clause; X11; BSD-3-clause-Cambridge; Public-Domain — pkg:deb/ubuntu/libpcre2-8-0@10.46-1ubuntu0.1
+- libpng16-16t64@1.6.57-1ubuntu0.1 — Apache-2.0; BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; Libpng; BSD-like-with-advertising-clause; Expat — pkg:deb/ubuntu/libpng16-16t64@1.6.57-1ubuntu0.1
+- libproc2-0@2:4.0.4-9ubuntu1 — GPL-2.0-only; GPL-2.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/libproc2-0@2:4.0.4-9ubuntu1
+- libpsl5t64@0.21.2-1.1build2 — MIT — pkg:deb/ubuntu/libpsl5t64@0.21.2-1.1build2
+- libreadline8t64@8.3-4 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; GFDL-NIV-1.3+; ISC-no-attribution — pkg:deb/ubuntu/libreadline8t64@8.3-4
+- librtmp1@2.4+20151223.gitfa8646d.1-3 — GPL-2.0-only; GPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/librtmp1@2.4+20151223.gitfa8646d.1-3
+- libsasl2-2@2.1.28+dfsg1-9ubuntu3 — BSD-2-Clause; BSD-3-Clause-Attribution; BSD-3-Clause; BSD-4-Clause-UC; FSFULLR; GPL-3.0-only; GPL-3.0-or-later; MIT-CMU; RSA-MD; BSD-2.2-clause; BSD-3-clause-JANET; BSD-3-clause-PADL; IBM-as-is; MIT-Export; MIT-OpenVision; OpenLDAP — pkg:deb/ubuntu/libsasl2-2@2.1.28+dfsg1-9ubuntu3
+- libsasl2-modules-db@2.1.28+dfsg1-9ubuntu3 — BSD-2-Clause; BSD-3-Clause-Attribution; BSD-3-Clause; BSD-4-Clause-UC; FSFULLR; GPL-3.0-only; GPL-3.0-or-later; MIT-CMU; RSA-MD; BSD-2.2-clause; BSD-3-clause-JANET; BSD-3-clause-PADL; IBM-as-is; MIT-Export; MIT-OpenVision; OpenLDAP — pkg:deb/ubuntu/libsasl2-modules-db@2.1.28+dfsg1-9ubuntu3
+- libseccomp2@2.6.0-2ubuntu5 — LGPL-2.1-only — pkg:deb/ubuntu/libseccomp2@2.6.0-2ubuntu5
+- libselinux1@3.9-4build1 — GPL-2.0-only; Public-Domain — pkg:deb/ubuntu/libselinux1@3.9-4build1
+- libsemanage-common@3.9-1build1 — GPL-2.0-only; LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/libsemanage-common@3.9-1build1
+- libsemanage2@3.9-1build1 — GPL-2.0-only; LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/libsemanage2@3.9-1build1
+- libsepol2@3.9-2 — GPL-2.0-only; GPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; Zlib — pkg:deb/ubuntu/libsepol2@3.9-2
+- libsmartcols1@2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/libsmartcols1@2.41.3-3ubuntu2.2
+- libsqlite3-0@3.46.1-9ubuntu0.3 — GPL-2.0-only; GPL-2.0-or-later; Public-Domain — pkg:deb/ubuntu/libsqlite3-0@3.46.1-9ubuntu0.3
+- libss2@1.47.2-3ubuntu4 — 0BSD; Apache-2.0; BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; ISC; Kazlib; LGPL-2.0-only; Latex2e; BSD-3-Clause-Variant; BSD-4-Clause-CMU; Expat — pkg:deb/ubuntu/libss2@1.47.2-3ubuntu4
+- libssh2-1t64@1.11.1-1ubuntu0.26.04.4 — ISC; BSD-3-Clause — pkg:deb/ubuntu/libssh2-1t64@1.11.1-1ubuntu0.26.04.4
+- libssl3t64@3.5.5-1ubuntu3.7 — Apache-2.0; GPL-1.0-only; GPL-1.0-or-later; Artistic-1.0 — pkg:deb/ubuntu/libssl3t64@3.5.5-1ubuntu3.7
+- libstdc++6@16-20260322-1ubuntu1 — GPL-3.0-only WITH GCC-exception-3.1 — pkg:deb/ubuntu/libstdc%2B%2B6@16-20260322-1ubuntu1
+- libsystemd0@259.9-0ubuntu0.1 — CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; Expat; Public-Domain — pkg:deb/ubuntu/libsystemd0@259.9-0ubuntu0.1
+- libtasn1-6@4.21.0-2 — LGPL-2.1-or-later — pkg:deb/ubuntu/libtasn1-6@4.21.0-2
+- libtinfo6@6.6+20251231-1 — BSD-3-Clause; X11; MIT/X11 — pkg:deb/ubuntu/libtinfo6@6.6+20251231-1
+- libudev1@259.9-0ubuntu0.1 — CC0-1.0; GPL-2.0-only; GPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; Expat; Public-Domain — pkg:deb/ubuntu/libudev1@259.9-0ubuntu0.1
+- libunistring5@1.3-2build1 — BSD-3-Clause; GFDL-1.2-or-later; GFDL-1.3-or-later; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; Unicode-DFS-2016; X11; Public-Domain — pkg:deb/ubuntu/libunistring5@1.3-2build1
+- libuuid1@2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/libuuid1@2.41.3-3ubuntu2.2
+- libxxhash0@0.8.3-2build1 — BSD-2-Clause; GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/libxxhash0@0.8.3-2build1
+- libzstd1@1.5.7+dfsg-3 — BSD-3-Clause; GPL-2.0-only; Zlib; Expat — pkg:deb/ubuntu/libzstd1@1.5.7+dfsg-3
+- locales@2.43-2ubuntu2.7 — BSD-2-Clause; BSL-1.0; FSFAP; GFDL-1.3-only; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; SunPro; Unicode-DFS-2016; BSD-3-clause-Berkeley; BSD-3-clause-Carnegie; BSD-3-clause-Oracle; BSD-3-clause-WIDE; BSD-like-Spencer; CORE-MATH; Carnegie; DEC; GPL-2+-with-link-exception; IBM; Inner-Net; LGPL-2.1+-with-link-exception; MIT-like-Lord; PCRE; Univ-Coimbra; Public-Domain — pkg:deb/ubuntu/locales@2.43-2ubuntu2.7
+- login.defs@1:4.17.4-2ubuntu3 — BSD-3-Clause; GPL-1.0-only; GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/login.defs@1:4.17.4-2ubuntu3
+- login@1:4.16.0-2+really2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/login@1:4.16.0-2+really2.41.3-3ubuntu2.2
+- logsave@1.47.2-3ubuntu4 — 0BSD; Apache-2.0; BSD-3-Clause; GPL-2.0-only; GPL-2.0-or-later; ISC; Kazlib; LGPL-2.0-only; Latex2e; BSD-3-Clause-Variant; BSD-4-Clause-CMU; Expat — pkg:deb/ubuntu/logsave@1.47.2-3ubuntu4
+- mawk@1.3.4.20260129-1 — CC-BY-3.0; GPL-2.0-only; X11 — pkg:deb/ubuntu/mawk@1.3.4.20260129-1
+- mount@2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/mount@2.41.3-3ubuntu2.2
+- ncurses-base@6.6+20251231-1 — BSD-3-Clause; X11; MIT/X11 — pkg:deb/ubuntu/ncurses-base@6.6+20251231-1
+- ncurses-bin@6.6+20251231-1 — BSD-3-Clause; X11; MIT/X11 — pkg:deb/ubuntu/ncurses-bin@6.6+20251231-1
+- openssl-provider-legacy@3.5.5-1ubuntu3.7 — Apache-2.0; GPL-1.0-only; GPL-1.0-or-later; Artistic-1.0 — pkg:deb/ubuntu/openssl-provider-legacy@3.5.5-1ubuntu3.7
+- openssl@3.5.5-1ubuntu3.7 — Apache-2.0; GPL-1.0-only; GPL-1.0-or-later; Artistic-1.0 — pkg:deb/ubuntu/openssl@3.5.5-1ubuntu3.7
+- p11-kit-modules@0.26.2-2 — Apache-2.0; BSD-3-Clause; FSFAP; FSFULLR; GPL-2.0-or-later; GPL-3.0-or-later; ISC; LGPL-2.1-only; LGPL-2.1-or-later; X11; customFSFULLRWD — pkg:deb/ubuntu/p11-kit-modules@0.26.2-2
+- p11-kit@0.26.2-2 — Apache-2.0; BSD-3-Clause; FSFAP; FSFULLR; GPL-2.0-or-later; GPL-3.0-or-later; ISC; LGPL-2.1-only; LGPL-2.1-or-later; X11; customFSFULLRWD — pkg:deb/ubuntu/p11-kit@0.26.2-2
+- passwd@1:4.17.4-2ubuntu3 — BSD-3-Clause; GPL-1.0-only; GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/passwd@1:4.17.4-2ubuntu3
+- perl-base@5.40.1-7ubuntu0.3 — Artistic-1.0; Artistic-2.0; Artistic-dist; BSD-3-Clause; BSD-3-clause-GENERIC; BSD-3-clause-with-weird-numbering; BSD-4-clause-POWERDOG; BZIP; DONT-CHANGE-THE-GPL; Expat; FSFAP; GPL-1.0-only; GPL-1.0-or-later; GPL-2.0-only; GPL-2.0-or-later; GPL-3+-WITH-BISON-EXCEPTION; LGPL-2.1-only; REGCOMP; Public-Domain; TEXT-TABS; Unicode; Zlib — pkg:deb/ubuntu/perl-base@5.40.1-7ubuntu0.3
+- pinentry-curses@1.3.2-3ubuntu1 — GPL-2.0-only; GPL-2.0-or-later; LGPL-3.0-only; LGPL-3.0-or-later; X11 — pkg:deb/ubuntu/pinentry-curses@1.3.2-3ubuntu1
+- procps@2:4.0.4-9ubuntu1 — GPL-2.0-only; GPL-2.0-or-later; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/procps@2:4.0.4-9ubuntu1
+- readline-common@8.3-4 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; GFDL-NIV-1.3+; ISC-no-attribution — pkg:deb/ubuntu/readline-common@8.3-4
+- rust-coreutils@0.10.0-1ubuntu2~26.04.1 — Apache-2.0; CC-BY-4.0; MIT — pkg:deb/ubuntu/rust-coreutils@0.10.0-1ubuntu2~26.04.1
+- sed@4.9-2ubuntu1 — BSD-4-Clause-UC; BSL-1.0; GFDL-1.3-only; GPL-3.0-only; GPL-3.0-or-later; ISC; X11; GFDL-NIV-1.3+; PCRE — pkg:deb/ubuntu/sed@4.9-2ubuntu1
+- sensible-utils@0.0.26build1 — GPL-2.0-only; GPL-2.0-or-later — pkg:deb/ubuntu/sensible-utils@0.0.26build1
+- sysvinit-utils@3.15-5ubuntu1 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; LGPL-2.1-only; LGPL-2.1-or-later — pkg:deb/ubuntu/sysvinit-utils@3.15-5ubuntu1
+- tar@1.35+dfsg-4ubuntu0.4 — GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later — pkg:deb/ubuntu/tar@1.35+dfsg-4ubuntu0.4
+- tzdata@2026e-0ubuntu0.26.04.1 — ICU; Public-Domain — pkg:deb/ubuntu/tzdata@2026e-0ubuntu0.26.04.1
+- ubuntu-keyring@2023.11.28.1build1 — GPL-2.0-or-later — pkg:deb/ubuntu/ubuntu-keyring@2023.11.28.1build1
+- util-linux@2.41.3-3ubuntu2.2 — BSD-2-Clause; BSD-3-Clause; BSD-4-Clause; GPL-2.0-only; GPL-2.0-or-later; GPL-3.0-only; GPL-3.0-or-later; ISC; LGPL-2.0-only; LGPL-2.0-or-later; LGPL-2.1-only; LGPL-2.1-or-later; LGPL-3.0-only; LGPL-3.0-or-later; BSLA; Expat; Public-Domain — pkg:deb/ubuntu/util-linux@2.41.3-3ubuntu2.2
+- wget@1.25.0-2ubuntu4.4 — GPL-3.0-or-later — pkg:deb/ubuntu/wget@1.25.0-2ubuntu4.4
+- zlib1g@1:1.3.dfsg+really1.3.1-1ubuntu3.2 — Zlib — pkg:deb/ubuntu/zlib1g@1:1.3.dfsg+really1.3.1-1ubuntu3.2
+- openjdk@21.0.13.1+2-LTS — GPL-2.0-with-classpath-exception — pkg:generic/oracle/openjdk@21.0.13.1+2-LTS
+- github.com/GehirnInc/crypt@v0.0.0-20230320061759-8cc1b52080c5 — BSD-3-Clause — pkg:golang/github.com/GehirnInc/crypt@v0.0.0-20230320061759-8cc1b52080c5
+- github.com/canonical/go-flags@v0.0.0-20230403090104-105d09a091b8 — BSD-3-Clause — pkg:golang/github.com/canonical/go-flags@v0.0.0-20230403090104-105d09a091b8
+- github.com/canonical/pebble@v1.33.3-0.20261021134118-f036f355de35 — BSD-3-Clause — pkg:golang/github.com/canonical/pebble@v1.33.3-0.20261021134118-f036f355de35
+- github.com/canonical/x-go@v0.0.0-20230522092633-7947a7587f5b — BSD-3-Clause — pkg:golang/github.com/canonical/x-go@v0.0.0-20230522092633-7947a7587f5b
+- github.com/gorilla/websocket@v1.5.3 — BSD-3-Clause — pkg:golang/github.com/gorilla/websocket@v1.5.3
+- golang.org/x/sys@v0.48.0 — BSD-3-Clause — pkg:golang/golang.org/x/sys@v0.48.0
+- golang.org/x/term@v0.46.0 — BSD-3-Clause — pkg:golang/golang.org/x/term@v0.46.0
+- gopkg.in/tomb.v2@v2.0.0-20161208151619-d5d1b5820637 — BSD-3-Clause — pkg:golang/gopkg.in/tomb.v2@v2.0.0-20161208151619-d5d1b5820637
+- gopkg.in/yaml.v2@v2.4.0 — Apache-2.0 — pkg:golang/gopkg.in/yaml.v2@v2.4.0
+- gopkg.in/yaml.v3@v3.0.1 — Apache-2.0 — pkg:golang/gopkg.in/yaml.v3@v3.0.1
+- stdlib@go1.27.3 — BSD-3-Clause — pkg:golang/stdlib@1.27.3
+- logback-classic@1.5.38 — EPL-2.0; LGPL-2.1-only — pkg:maven/ch.qos.logback/logback-classic@1.5.38
+- logback-core@1.5.38 — EPL-2.0; LGPL-2.1-only — pkg:maven/ch.qos.logback/logback-core@1.5.38
+- anthropic-java-client-okhttp@2.52.0 — MIT — pkg:maven/com.anthropic/anthropic-java-client-okhttp@2.52.0
+- anthropic-java-core@2.52.0 — MIT — pkg:maven/com.anthropic/anthropic-java-core@2.52.0
+- mybatis-plus-annotation@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus-annotation@3.5.17
+- mybatis-plus-core@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus-core@3.5.17
+- mybatis-plus-extension@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus-extension@3.5.17
+- mybatis-plus-spring-boot-autoconfigure@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus-spring-boot-autoconfigure@3.5.17
+- mybatis-plus-spring-boot-native-image@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus-spring-boot-native-image@3.5.17
+- mybatis-plus-spring-boot4-starter@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus-spring-boot4-starter@3.5.17
+- mybatis-plus-spring@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus-spring@3.5.17
+- mybatis-plus@3.5.17 — Apache-2.0 — pkg:maven/com.baomidou/mybatis-plus@3.5.17
+- itu@1.14.0 — Apache-2.0 — pkg:maven/com.ethlo.time/itu@1.14.0
+- jackson-annotations@2.21 — Apache-2.0 — pkg:maven/com.fasterxml.jackson.core/jackson-annotations@2.21
+- jackson-core@2.21.8 — Apache-2.0 — pkg:maven/com.fasterxml.jackson.core/jackson-core@2.21.8
+- jackson-databind@2.21.8 — Apache-2.0 — pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.21.8
+- jackson-datatype-jdk8@2.21.8 — Apache-2.0 — pkg:maven/com.fasterxml.jackson.datatype/jackson-datatype-jdk8@2.21.8
+- jackson-datatype-jsr310@2.21.8 — Apache-2.0 — pkg:maven/com.fasterxml.jackson.datatype/jackson-datatype-jsr310@2.21.8
+- jackson-module-kotlin@2.21.8 — Apache-2.0 — pkg:maven/com.fasterxml.jackson.module/jackson-module-kotlin@2.21.8
+- classmate@1.7.3 — Apache-2.0 — pkg:maven/com.fasterxml/classmate@1.7.3
+- caffeine@3.2.4 — Apache-2.0 — pkg:maven/com.github.ben-manes.caffeine/caffeine@3.2.4
+- jcip-annotations@1.0-1 — Apache-2.0 — pkg:maven/com.github.stephenc.jcip/jcip-annotations@1.0-1
+- jsonschema-generator@5.0.0 — Apache-2.0 — pkg:maven/com.github.victools/jsonschema-generator@5.0.0
+- jsonschema-module-jackson@5.0.0 — Apache-2.0 — pkg:maven/com.github.victools/jsonschema-module-jackson@5.0.0
+- jsonschema-module-swagger-2@5.0.0 — Apache-2.0 — pkg:maven/com.github.victools/jsonschema-module-swagger-2@5.0.0
+- curvesapi@1.08 — BSD-3-Clause — pkg:maven/com.github.virtuald/curvesapi@1.08
+- gson@2.13.1 — Apache-2.0 — pkg:maven/com.google.code.gson/gson@2.13.1
+- error_prone_annotations@2.49.0 — Apache-2.0 — pkg:maven/com.google.errorprone/error_prone_annotations@2.49.0
+- jtokkit@1.1.0 — MIT — pkg:maven/com.knuddels/jtokkit@1.1.0
+- mysql-connector-j@26.10.0 — The GNU General Public License, v2 with Universal FOSS Exception, v1.0 — pkg:maven/com.mysql/mysql-connector-j@26.10.0
+- json-schema-validator@3.0.1 — Apache-2.0 — pkg:maven/com.networknt/json-schema-validator@3.0.1
+- content-type@2.3 — Apache-2.0 — pkg:maven/com.nimbusds/content-type@2.3
+- lang-tag@1.7 — Apache-2.0 — pkg:maven/com.nimbusds/lang-tag@1.7
+- nimbus-jose-jwt@10.9.1 — Apache-2.0 — pkg:maven/com.nimbusds/nimbus-jose-jwt@10.9.1
+- oauth2-oidc-sdk@11.38.2 — Apache-2.0 — pkg:maven/com.nimbusds/oauth2-oidc-sdk@11.38.2
+- openai-java-client-okhttp@4.49.0 — Apache-2.0 — pkg:maven/com.openai/openai-java-client-okhttp@4.49.0
+- openai-java-core@4.49.0 — Apache-2.0 — pkg:maven/com.openai/openai-java-core@4.49.0
+- prelude-backend@1.0.0 — MIT — pkg:maven/com.prelude/prelude-backend@1.0.0
+- amqp-client@5.37.1 — Apache-2.0; GPL-2.0-only; MPL-2.0 — pkg:maven/com.rabbitmq/amqp-client@5.37.1
+- okhttp@4.12.0 — Apache-2.0 — pkg:maven/com.squareup.okhttp3/okhttp@4.12.0
+- okio-jvm@3.6.0 — Apache-2.0 — pkg:maven/com.squareup.okio/okio-jvm@3.6.0
+- okio@3.6.0 — Apache-2.0 — pkg:maven/com.squareup.okio/okio@3.6.0
+- standardwebhooks@1.1.1 — MIT — pkg:maven/com.standardwebhooks/standardwebhooks@1.1.1
+- archunit@1.4.2 — Apache-2.0; BSD-4-Clause — pkg:maven/com.tngtech.archunit/archunit@1.4.2
+- common-image@3.12.0 — BSD-4-Clause — pkg:maven/com.twelvemonkeys.common/common-image@3.12.0
+- common-io@3.12.0 — BSD-4-Clause — pkg:maven/com.twelvemonkeys.common/common-io@3.12.0
+- common-lang@3.12.0 — BSD-4-Clause — pkg:maven/com.twelvemonkeys.common/common-lang@3.12.0
+- imageio-core@3.12.0 — BSD-4-Clause — pkg:maven/com.twelvemonkeys.imageio/imageio-core@3.12.0
+- imageio-metadata@3.12.0 — BSD-4-Clause — pkg:maven/com.twelvemonkeys.imageio/imageio-metadata@3.12.0
+- imageio-webp@3.12.0 — BSD-4-Clause — pkg:maven/com.twelvemonkeys.imageio/imageio-webp@3.12.0
+- HikariCP@7.0.2 — Apache-2.0 — pkg:maven/com.zaxxer/HikariCP@7.0.2
+- SparseBitSet@1.3 — Apache-2.0 — pkg:maven/com.zaxxer/SparseBitSet@1.3
+- commons-codec@1.21.0 — Apache-2.0 — pkg:maven/commons-codec/commons-codec@1.21.0
+- commons-io@2.21.0 — Apache-2.0 — pkg:maven/commons-io/commons-io@2.21.0
+- commons-logging@1.3.6 — Apache-2.0 — pkg:maven/commons-logging/commons-logging@1.3.6
+- resilience4j-annotations@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-annotations@2.4.0
+- resilience4j-bulkhead@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-bulkhead@2.4.0
+- resilience4j-circuitbreaker@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-circuitbreaker@2.4.0
+- resilience4j-circularbuffer@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-circularbuffer@2.4.0
+- resilience4j-consumer@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-consumer@2.4.0
+- resilience4j-core@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-core@2.4.0
+- resilience4j-framework-common@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-framework-common@2.4.0
+- resilience4j-micrometer@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-micrometer@2.4.0
+- resilience4j-ratelimiter@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-ratelimiter@2.4.0
+- resilience4j-retry@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-retry@2.4.0
+- resilience4j-spring-boot4@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-spring-boot4@2.4.0
+- resilience4j-spring6@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-spring6@2.4.0
+- resilience4j-timelimiter@2.4.0 — Apache-2.0 — pkg:maven/io.github.resilience4j/resilience4j-timelimiter@2.4.0
+- lettuce-core@7.5.2.RELEASE — MIT — pkg:maven/io.lettuce/lettuce-core@7.5.2.RELEASE
+- context-propagation@1.2.1 — Apache-2.0 — pkg:maven/io.micrometer/context-propagation@1.2.1
+- micrometer-commons@1.17.3 — Apache-2.0 — pkg:maven/io.micrometer/micrometer-commons@1.17.3
+- micrometer-core@1.17.3 — Apache-2.0 — pkg:maven/io.micrometer/micrometer-core@1.17.3
+- micrometer-jakarta9@1.17.3 — Apache-2.0 — pkg:maven/io.micrometer/micrometer-jakarta9@1.17.3
+- micrometer-observation@1.17.3 — Apache-2.0 — pkg:maven/io.micrometer/micrometer-observation@1.17.3
+- netty-buffer@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-buffer@4.2.20.Final
+- netty-codec-base@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec-base@4.2.20.Final
+- netty-codec-compression@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec-compression@4.2.20.Final
+- netty-codec-dns@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec-dns@4.2.20.Final
+- netty-codec-http2@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec-http2@4.2.20.Final
+- netty-codec-http@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec-http@4.2.20.Final
+- netty-codec-marshalling@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec-marshalling@4.2.20.Final
+- netty-codec-protobuf@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec-protobuf@4.2.20.Final
+- netty-codec@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-codec@4.2.20.Final
+- netty-common@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-common@4.2.20.Final
+- netty-handler@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-handler@4.2.20.Final
+- netty-resolver-dns@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-resolver-dns@4.2.20.Final
+- netty-resolver@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-resolver@4.2.20.Final
+- netty-transport-classes-epoll@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-transport-classes-epoll@4.2.20.Final
+- netty-transport-native-unix-common@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-transport-native-unix-common@4.2.20.Final
+- netty-transport@4.2.20.Final — Apache-2.0 — pkg:maven/io.netty/netty-transport@4.2.20.Final
+- reactor-core@3.8.9 — Apache-2.0 — pkg:maven/io.projectreactor/reactor-core@3.8.9
+- swagger-annotations-jakarta@2.2.38 — Apache-2.0 — pkg:maven/io.swagger.core.v3/swagger-annotations-jakarta@2.2.38
+- swagger-annotations@2.2.31 — Apache-2.0 — pkg:maven/io.swagger.core.v3/swagger-annotations@2.2.31
+- jakarta.activation-api@2.1.4 — BSD-3-Clause — pkg:maven/jakarta.activation/jakarta.activation-api@2.1.4
+- jakarta.annotation-api@3.0.0 — EPL-2.0; GPL-2.0-with-classpath-exception — pkg:maven/jakarta.annotation/jakarta.annotation-api@3.0.0
+- jakarta.validation-api@3.1.1 — Apache-2.0 — pkg:maven/jakarta.validation/jakarta.validation-api@3.1.1
+- jakarta.xml.bind-api@4.0.5 — BSD-3-Clause — pkg:maven/jakarta.xml.bind/jakarta.xml.bind-api@4.0.5
+- jrt-fs@21.0.13.1 — GPL-2.0-with-classpath-exception — pkg:maven/jrt-fs/jrt-fs@21.0.13.1
+- accessors-smart@2.6.1 — Apache-2.0 — pkg:maven/net.minidev/accessors-smart@2.6.1
+- json-smart@2.6.1 — Apache-2.0 — pkg:maven/net.minidev/json-smart@2.6.1
+- ognl@3.4.4 — Apache-2.0 — pkg:maven/ognl/ognl@3.4.4
+- ST4@4.3.4 — BSD-4-Clause — pkg:maven/org.antlr/ST4@4.3.4
+- antlr-runtime@3.5.3 — BSD licence — pkg:maven/org.antlr/antlr-runtime@3.5.3
+- antlr4-runtime@4.13.1 — BSD-3-Clause — pkg:maven/org.antlr/antlr4-runtime@4.13.1
+- commons-collections4@4.5.0 — Apache-2.0 — pkg:maven/org.apache.commons/commons-collections4@4.5.0
+- commons-compress@1.28.0 — Apache-2.0 — pkg:maven/org.apache.commons/commons-compress@1.28.0
+- commons-lang3@3.20.0 — Apache-2.0 — pkg:maven/org.apache.commons/commons-lang3@3.20.0
+- commons-math3@3.6.1 — Apache-2.0 — pkg:maven/org.apache.commons/commons-math3@3.6.1
+- httpclient5@5.6.5 — Apache-2.0 — pkg:maven/org.apache.httpcomponents.client5/httpclient5@5.6.5
+- httpcore5-h2@5.4.4 — Apache-2.0 — pkg:maven/org.apache.httpcomponents.core5/httpcore5-h2@5.4.4
+- httpcore5@5.4.4 — Apache-2.0 — pkg:maven/org.apache.httpcomponents.core5/httpcore5@5.4.4
+- log4j-api@2.25.5 — Apache-2.0 — pkg:maven/org.apache.logging.log4j/log4j-api@2.25.5
+- log4j-to-slf4j@2.25.5 — Apache-2.0 — pkg:maven/org.apache.logging.log4j/log4j-to-slf4j@2.25.5
+- fontbox@3.0.6 — Apache-2.0 — pkg:maven/org.apache.pdfbox/fontbox@3.0.6
+- pdfbox-io@3.0.6 — Apache-2.0 — pkg:maven/org.apache.pdfbox/pdfbox-io@3.0.6
+- pdfbox@3.0.6 — Apache-2.0 — pkg:maven/org.apache.pdfbox/pdfbox@3.0.6
+- poi-ooxml-lite@5.5.1 — Apache-2.0 — pkg:maven/org.apache.poi/poi-ooxml-lite@5.5.1
+- poi-ooxml@5.5.1 — Apache-2.0 — pkg:maven/org.apache.poi/poi-ooxml@5.5.1
+- poi@5.5.1 — Apache-2.0 — pkg:maven/org.apache.poi/poi@5.5.1
+- tomcat-embed-core@11.0.29 — Apache-2.0 — pkg:maven/org.apache.tomcat.embed/tomcat-embed-core@11.0.29
+- tomcat-embed-el@11.0.29 — Apache-2.0 — pkg:maven/org.apache.tomcat.embed/tomcat-embed-el@11.0.29
+- tomcat-embed-websocket@11.0.29 — Apache-2.0 — pkg:maven/org.apache.tomcat.embed/tomcat-embed-websocket@11.0.29
+- xmlbeans@5.3.0 — Apache-2.0 — pkg:maven/org.apache.xmlbeans/xmlbeans@5.3.0
+- bcprov-jdk18on@1.85.2 — Bouncy Castle Licence — pkg:maven/org.bouncycastle/bcprov-jdk18on@1.85.2
+- async-generator@4.3.1 — MIT — pkg:maven/org.bsc.async/async-generator@4.3.1
+- langgraph4j-core@1.8.25 — MIT — pkg:maven/org.bsc.langgraph4j/langgraph4j-core@1.8.25
+- flyway-core@12.4.0 — Apache-2.0 — pkg:maven/org.flywaydb/flyway-core@12.4.0
+- flyway-mysql@12.4.0 — Apache-2.0 — pkg:maven/org.flywaydb/flyway-mysql@12.4.0
+- HdrHistogram@2.2.2 — CC0-1.0; BSD-2-Clause — pkg:maven/org.hdrhistogram/HdrHistogram@2.2.2
+- hibernate-validator@9.1.6.Final — Apache-2.0 — pkg:maven/org.hibernate.validator/hibernate-validator@9.1.6.Final
+- javassist@3.30.2-GA — LGPL-2.1-only — pkg:maven/org.javassist/javassist@3.30.2-GA
+- jboss-logging@3.6.3.Final — Apache-2.0 — pkg:maven/org.jboss.logging/jboss-logging@3.6.3.Final
+- jctools-core-jdk11@4.0.7 — Apache-2.0 — pkg:maven/org.jctools/jctools-core-jdk11@4.0.7
+- jctools-core@4.0.7 — Apache-2.0 — pkg:maven/org.jctools/jctools-core@4.0.7
+- kotlin-reflect@2.3.21 — Apache-2.0 — pkg:maven/org.jetbrains.kotlin/kotlin-reflect@2.3.21
+- kotlin-stdlib-common@1.9.10 — Apache-2.0 — pkg:maven/org.jetbrains.kotlin/kotlin-stdlib-common@1.9.10
+- kotlin-stdlib-jdk7@2.3.21 — Apache-2.0 — pkg:maven/org.jetbrains.kotlin/kotlin-stdlib-jdk7@2.3.21
+- kotlin-stdlib-jdk8@2.3.21 — Apache-2.0 — pkg:maven/org.jetbrains.kotlin/kotlin-stdlib-jdk8@2.3.21
+- kotlin-stdlib@2.3.21 — Apache-2.0 — pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.3.21
+- annotations@17.0.0 — Apache-2.0 — pkg:maven/org.jetbrains/annotations@17.0.0
+- jmolecules-events@2.0.1 — Apache-2.0 — pkg:maven/org.jmolecules/jmolecules-events@2.0.1
+- jstereotype@2.0.1 — Apache-2.0 — pkg:maven/org.jmolecules/jstereotype@2.0.1
+- jspecify@1.0.1 — Apache-2.0 — pkg:maven/org.jspecify/jspecify@1.0.1
+- mybatis-spring@4.0.0 — Apache-2.0 — pkg:maven/org.mybatis/mybatis-spring@4.0.0
+- mybatis@3.5.19 — Apache-2.0 — pkg:maven/org.mybatis/mybatis@3.5.19
+- asm@9.11.1 — BSD-3-Clause — pkg:maven/org.ow2.asm/asm@9.11.1
+- lombok@1.18.48 — MIT — pkg:maven/org.projectlombok/lombok@1.18.48
+- reactive-streams@1.0.4 — MIT-0 — pkg:maven/org.reactivestreams/reactive-streams@1.0.4
+- jcl-over-slf4j@2.0.20 — Apache-2.0 — pkg:maven/org.slf4j/jcl-over-slf4j@2.0.20
+- jul-to-slf4j@2.0.20 — MIT — pkg:maven/org.slf4j/jul-to-slf4j@2.0.20
+- slf4j-api@2.0.20 — MIT — pkg:maven/org.slf4j/slf4j-api@2.0.20
+- spring-ai-anthropic@2.0.1 — Apache-2.0 — pkg:maven/org.springframework.ai/spring-ai-anthropic@2.0.1
+- spring-ai-client-chat@2.0.1 — Apache-2.0 — pkg:maven/org.springframework.ai/spring-ai-client-chat@2.0.1
+- spring-ai-commons@2.0.1 — Apache-2.0 — pkg:maven/org.springframework.ai/spring-ai-commons@2.0.1
+- spring-ai-model@2.0.1 — Apache-2.0 — pkg:maven/org.springframework.ai/spring-ai-model@2.0.1
+- spring-ai-openai@2.0.1 — Apache-2.0 — pkg:maven/org.springframework.ai/spring-ai-openai@2.0.1
+- spring-ai-retry@2.0.1 — Apache-2.0 — pkg:maven/org.springframework.ai/spring-ai-retry@2.0.1
+- spring-ai-template-st@2.0.1 — Apache-2.0 — pkg:maven/org.springframework.ai/spring-ai-template-st@2.0.1
+- spring-amqp@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.amqp/spring-amqp@4.1.3
+- spring-rabbit@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.amqp/spring-rabbit@4.1.3
+- app@1.0.0 — Apache-2.0 — pkg:maven/org.springframework.boot.loader.launch.JarLauncher/app@1.0.0
+- spring-boot-actuator-autoconfigure@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-actuator-autoconfigure@4.1.3
+- spring-boot-actuator@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-actuator@4.1.3
+- spring-boot-amqp@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-amqp@4.1.3
+- spring-boot-autoconfigure@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-autoconfigure@4.1.3
+- spring-boot-data-commons@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-data-commons@4.1.3
+- spring-boot-data-redis@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-data-redis@4.1.3
+- spring-boot-flyway@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-flyway@4.1.3
+- spring-boot-health@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-health@4.1.3
+- spring-boot-http-converter@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-http-converter@4.1.3
+- spring-boot-jackson@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-jackson@4.1.3
+- spring-boot-jdbc@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-jdbc@4.1.3
+- spring-boot-micrometer-metrics@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-micrometer-metrics@4.1.3
+- spring-boot-micrometer-observation@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-micrometer-observation@4.1.3
+- spring-boot-netty@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-netty@4.1.3
+- spring-boot-persistence@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-persistence@4.1.3
+- spring-boot-security-oauth2-client@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-security-oauth2-client@4.1.3
+- spring-boot-security@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-security@4.1.3
+- spring-boot-servlet@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-servlet@4.1.3
+- spring-boot-session-data-redis@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-session-data-redis@4.1.3
+- spring-boot-session@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-session@4.1.3
+- spring-boot-sql@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-sql@4.1.3
+- spring-boot-starter-actuator@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-actuator@4.1.3
+- spring-boot-starter-amqp@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-amqp@4.1.3
+- spring-boot-starter-data-redis@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-data-redis@4.1.3
+- spring-boot-starter-flyway@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-flyway@4.1.3
+- spring-boot-starter-jackson@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-jackson@4.1.3
+- spring-boot-starter-jdbc@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-jdbc@4.1.3
+- spring-boot-starter-logging@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-logging@4.1.3
+- spring-boot-starter-micrometer-metrics@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-micrometer-metrics@4.1.3
+- spring-boot-starter-oauth2-client@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-oauth2-client@4.1.3
+- spring-boot-starter-security@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-security@4.1.3
+- spring-boot-starter-session-data-redis@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-session-data-redis@4.1.3
+- spring-boot-starter-tomcat-runtime@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-tomcat-runtime@4.1.3
+- spring-boot-starter-tomcat@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-tomcat@4.1.3
+- spring-boot-starter-validation@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-validation@4.1.3
+- spring-boot-starter-webmvc@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-webmvc@4.1.3
+- spring-boot-starter-websocket@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter-websocket@4.1.3
+- spring-boot-starter@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-starter@4.1.3
+- spring-boot-tomcat@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-tomcat@4.1.3
+- spring-boot-transaction@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-transaction@4.1.3
+- spring-boot-validation@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-validation@4.1.3
+- spring-boot-web-server@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-web-server@4.1.3
+- spring-boot-webmvc@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-webmvc@4.1.3
+- spring-boot-websocket@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot-websocket@4.1.3
+- spring-boot@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.boot/spring-boot@4.1.3
+- spring-data-commons@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.data/spring-data-commons@4.1.3
+- spring-data-keyvalue@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.data/spring-data-keyvalue@4.1.3
+- spring-data-redis@4.1.3 — Apache-2.0 — pkg:maven/org.springframework.data/spring-data-redis@4.1.3
+- spring-modulith-api@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-api@2.1.3
+- spring-modulith-apt@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-apt@2.1.3
+- spring-modulith-core@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-core@2.1.3
+- spring-modulith-events-amqp@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-events-amqp@2.1.3
+- spring-modulith-events-api@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-events-api@2.1.3
+- spring-modulith-events-core@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-events-core@2.1.3
+- spring-modulith-events-jackson@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-events-jackson@2.1.3
+- spring-modulith-events-jdbc@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-events-jdbc@2.1.3
+- spring-modulith-moments@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-moments@2.1.3
+- spring-modulith-starter-core@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-starter-core@2.1.3
+- spring-modulith-starter-jdbc@2.1.3 — Apache-2.0 — pkg:maven/org.springframework.modulith/spring-modulith-starter-jdbc@2.1.3
+- spring-security-config@7.1.3 — Apache-2.0 — pkg:maven/org.springframework.security/spring-security-config@7.1.3
+- spring-security-core@7.1.3 — Apache-2.0 — pkg:maven/org.springframework.security/spring-security-core@7.1.3
+- spring-security-crypto@7.1.3 — Apache-2.0 — pkg:maven/org.springframework.security/spring-security-crypto@7.1.3
+- spring-security-oauth2-client@7.1.3 — Apache-2.0 — pkg:maven/org.springframework.security/spring-security-oauth2-client@7.1.3
+- spring-security-oauth2-core@7.1.3 — Apache-2.0 — pkg:maven/org.springframework.security/spring-security-oauth2-core@7.1.3
+- spring-security-oauth2-jose@7.1.3 — Apache-2.0 — pkg:maven/org.springframework.security/spring-security-oauth2-jose@7.1.3
+- spring-security-web@7.1.3 — Apache-2.0 — pkg:maven/org.springframework.security/spring-security-web@7.1.3
+- spring-session-core@4.1.2 — Apache-2.0 — pkg:maven/org.springframework.session/spring-session-core@4.1.2
+- spring-session-data-redis@4.1.2 — Apache-2.0 — pkg:maven/org.springframework.session/spring-session-data-redis@4.1.2
+- spring-aop@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-aop@7.0.11
+- spring-beans@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-beans@7.0.11
+- spring-context-support@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-context-support@7.0.11
+- spring-context@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-context@7.0.11
+- spring-core@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-core@7.0.11
+- spring-expression@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-expression@7.0.11
+- spring-jdbc@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-jdbc@7.0.11
+- spring-messaging@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-messaging@7.0.11
+- spring-oxm@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-oxm@7.0.11
+- spring-tx@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-tx@7.0.11
+- spring-web@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-web@7.0.11
+- spring-webmvc@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-webmvc@7.0.11
+- spring-websocket@7.0.11 — Apache-2.0 — pkg:maven/org.springframework/spring-websocket@7.0.11
+- snakeyaml@2.6 — Apache-2.0 — pkg:maven/org.yaml/snakeyaml@2.6
+- redis-authx-core@0.1.1-beta2 — MIT — pkg:maven/redis.clients.authentication/redis-authx-core@0.1.1-beta2
+- annotations@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/annotations@2.54.7
+- apache5-client@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/apache5-client@2.54.7
+- arns@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/arns@2.54.7
+- auth@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/auth@2.54.7
+- aws-core@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/aws-core@2.54.7
+- aws-query-protocol@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/aws-query-protocol@2.54.7
+- aws-xml-protocol@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/aws-xml-protocol@2.54.7
+- checksums-spi@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/checksums-spi@2.54.7
+- checksums@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/checksums@2.54.7
+- crt-core@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/crt-core@2.54.7
+- endpoints-spi@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/endpoints-spi@2.54.7
+- http-auth-aws-eventstream@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/http-auth-aws-eventstream@2.54.7
+- http-auth-aws@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/http-auth-aws@2.54.7
+- http-auth-spi@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/http-auth-spi@2.54.7
+- http-auth@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/http-auth@2.54.7
+- http-client-spi@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/http-client-spi@2.54.7
+- identity-spi@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/identity-spi@2.54.7
+- json-utils@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/json-utils@2.54.7
+- metrics-spi@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/metrics-spi@2.54.7
+- netty-nio-client@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/netty-nio-client@2.54.7
+- profiles@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/profiles@2.54.7
+- protocol-core@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/protocol-core@2.54.7
+- regions@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/regions@2.54.7
+- retries-spi@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/retries-spi@2.54.7
+- retries@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/retries@2.54.7
+- s3@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/s3@2.54.7
+- sdk-core@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/sdk-core@2.54.7
+- third-party-jackson-core@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/third-party-jackson-core@2.54.7
+- url-connection-client@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/url-connection-client@2.54.7
+- utils-lite@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/utils-lite@2.54.7
+- utils@2.54.7 — Apache-2.0 — pkg:maven/software.amazon.awssdk/utils@2.54.7
+- eventstream@1.0.1 — Apache-2.0 — pkg:maven/software.amazon.eventstream/eventstream@1.0.1
+- spring-boot-jarmode-tools@4.1.3 — Apache-2.0 — pkg:maven/spring-boot-jarmode-tools/spring-boot-jarmode-tools@4.1.3
+- jackson-core@3.1.8 — Apache-2.0 — pkg:maven/tools.jackson.core/jackson-core@3.1.8
+- jackson-databind@3.1.8 — Apache-2.0 — pkg:maven/tools.jackson.core/jackson-databind@3.1.8

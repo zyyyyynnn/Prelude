@@ -27,7 +27,7 @@ docker compose ps
 
 生产部署使用 `prod` profile 时必须设置 `SESSION_COOKIE_SECURE=true`，否则启动失败。密码登录与注册默认按远端地址和端点执行 Redis 令牌桶限流；可通过 `PRELUDE_AUTH_RATE_LIMIT_ENABLED=false` 关闭，容量与速率见 `application.yml`。Redis 限流不可用时登录/注册返回 `503 rate_limit_unavailable`，前端显示服务端 detail 的系统 toast，不当作密码错误。启动探测 `/api/auth/me` 的 401 按匿名处理；网络失败、非 OK 响应或畸形数据进入 `unavailable`，保留原路由并提供重试。普通业务 API 的 401 才触发 Session 失效提示并清空账户 Query cache。
 
-nginx 用 `$remote_addr` 覆盖 `X-Forwarded-For` 并清除其他转发头，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
+前端 Go 代理用客户端地址覆盖 `X-Forwarded-For`，清除其他转发头并重写可信的 `X-Forwarded-Host`、`X-Forwarded-Port`、`X-Forwarded-Proto`，compose 中的后端启用 `SERVER_FORWARD_HEADERS_STRATEGY=framework`；其他部署只能在受信任代理边界启用该配置，且不得公开后端端口，避免客户端伪造限流地址或 same-origin 判断。
 
 后端：
 
@@ -56,11 +56,13 @@ npm --prefix frontend run dev
 mvn -f backend/pom.xml clean test
 mvn -f backend/pom.xml -Pquality cyclonedx:makeBom
 npm --prefix frontend run generate:sbom
+npm --prefix frontend run licenses:notices
 npm --prefix frontend run verify:licenses
 npm --prefix frontend run check
 npm --prefix frontend run verify:architecture
 npm --prefix frontend run verify:oxc
 npm --prefix frontend run verify:governance
+npm --prefix frontend run verify:flaky
 npm --prefix frontend run verify:ui
 npm --prefix frontend run verify:tokens
 npm --prefix frontend run test:unit
@@ -84,19 +86,20 @@ git diff --check
 
 ### CI 顺序
 
-| Job            | 依赖                          | 执行顺序                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| -------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `supply-chain` | 无，可与 `backend` 并行       | checkout → Java 21/Node 24 → `npm ci` → backend runtime SBOM → frontend runtime SBOM → `verify:licenses` → Grype 扫描 backend → Grype 扫描 frontend → 上传 SBOM 与漏洞证据                                                                                                                                                                                                                                                                                                                |
-| `backend`      | 无，可与 `supply-chain` 并行  | 完整历史 checkout → `git diff --check <merge-base> HEAD` → Java 21 → `mvn clean test`；MySQL/Identity/S3 smoke 均为 `true`                                                                                                                                                                                                                                                                                                                                                                |
-| `frontend`     | 先要求 `supply-chain` success | Windows checkout（完整历史）→ Vite+ Node 24 → `npm ci` → task cache → 安装锁定的 Chromium → `check` → `verify:architecture` → `verify:oxc` → `verify:governance` → `verify:ui` → `verify:tokens` → `test:unit` → `test:smoke` → `verify:identity` → `build` → `verify:cascade` → `verify:production` → `verify:byok` → `verify:dark` → `verify:a11y` → `verify:visual` → `verify:evidence` → `capture:surfaces` → 截图差异检查 → `verify:demo-copy` → `visual:diff-report` → 上传视觉证据 |
+| Job             | 依赖                                     | 执行顺序                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supply-chain`  | 无，可与 `backend` 并行                  | checkout → Java 21/Node 24 → `npm ci` → backend/frontend runtime SBOM → 构建前后端镜像 → Syft 生成两份 image SBOM → `licenses:notices` → `verify:licenses` → Grype 扫描四份 SBOM → 上传 SBOM、notice 与漏洞证据                                                                                                                                                                                                                                                                                            |
+| `backend`       | 无，可与 `supply-chain` 并行             | 完整历史 checkout → `git diff --check <merge-base> HEAD` → Java 21 → 准备独立空库 → `mvn clean test`；MySQL/Identity/S3/Flyway smoke 均为 `true`                                                                                                                                                                                                                                                                                                                                                           |
+| `frontend`      | 先要求 `supply-chain` success            | Windows checkout（完整历史）→ Vite+ Node 24 → `npm ci` → task cache → 安装锁定的 Chromium → `check` → `verify:architecture` → `verify:oxc` → `verify:governance` → `verify:flaky` → `verify:ui` → `verify:tokens` → `test:unit` → `test:smoke` → `verify:identity` → `build` → `verify:cascade` → `verify:production` → `verify:byok` → `verify:dark` → `verify:a11y` → `verify:visual` → `verify:evidence` → `capture:surfaces` → 截图差异检查 → `verify:demo-copy` → `visual:diff-report` → 上传视觉证据 |
+| `release-smoke` | 等待 `supply-chain` 与 `backend` success | Linux checkout → Node 24 → `npm ci` → 安装 Chromium → 下载并加载已扫描镜像 → Compose 启动隔离 MySQL/Redis/RabbitMQ/VersityGW/LLM stub → Playwright 真实服务主链路 → 采集 JSON/JUnit/HTML/trace 与服务日志 → 清理卷与容器 → 上传证据                                                                                                                                                                                                                                                                                    |
 
 `frontend` 使用 `always()` 进入结果检查，但 supply-chain 非 success 时显式失败，不继续执行前端门禁。
 
 ### 依赖与证据门禁
 
-后端 `quality` profile 使用 CycloneDX Maven Plugin 2.9.3 生成 `backend/target/bom.json`，前端使用 `@cyclonedx/cyclonedx-npm` 7.0.1 生成 `frontend/output/sbom.cdx.json`。两份 SBOM 均为 CycloneDX 1.6，只包含 compile/runtime 或非 dev 依赖。
+后端 `quality` profile 使用 CycloneDX Maven Plugin 2.9.3 生成 `backend/target/bom.json`，前端使用 `@cyclonedx/cyclonedx-npm` 7.0.1 生成 `frontend/output/sbom.cdx.json`。CI 另用 Syft 1.57.2 从运行镜像生成 `backend/target/image-bom.json` 与 `frontend/output/image-sbom.cdx.json`。四份 SBOM 均为 CycloneDX 1.6；依赖 SBOM 来自 Maven/NPM resolved graph，image SBOM 另含 OS 包。
 
-CI 对两份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。`.grype.yaml` 仅忽略 `CVE-2026-133325`：Prelude 的内嵌 Tomcat 未启用 clustering 或 TLS-PSK，受影响路径不可达；Tomcat 11.0.30 发布到 Maven Central 后须重新评估并移除该例外。本机 Grype 安装在 `C:\Users\ZYN\go\bin\grype.exe`，确认版本后复现：
+CI 对四份 SBOM 使用同一 Anchore Grype 0.122.1 扫描路径，HIGH/CRITICAL 漏洞阻断，未修复漏洞也计入；扫描步骤不使用 `continue-on-error`。依赖许可证策略覆盖前后端 resolved graph，容器门禁对 OS/Go 包执行显式许可证允许清单，并要求模糊扫描标签使用精确组件的规范许可证映射；backend/frontend NOTICE 与 paper-design 通知实际进入运行镜像。`.grype.yaml` 仅忽略 `CVE-2026-133325`：Prelude 的内嵌 Tomcat 未启用 clustering 或 TLS-PSK，受影响路径不可达；例外记录批准人与 PR/Issue 批准引用，于 2027-02-28 到期，CI 会拒绝缺失批准依据、缺失到期日或已过期的例外。Tomcat 11.0.30 发布到 Maven Central 后须重新评估并移除该例外。本机 Grype 安装在 `C:\Users\ZYN\go\bin\grype.exe`，确认版本后复现：
 
 ```powershell
 $grype = "C:\Users\ZYN\go\bin\grype.exe"
@@ -107,7 +110,7 @@ $grype = "C:\Users\ZYN\go\bin\grype.exe"
 
 版本必须为 0.122.1；若 `grype version` 显示 `[not provided]`，用 `go version -m $grype` 核对模块行。其他工作站可替换 `$grype` 路径。
 
-`verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
+`licenses:notices` 从 runtime 与 container 四份 SBOM 生成前后端 `NOTICE.txt` 与 `frontend/output/license-report.json`，组件身份使用 `packageurl-js` 按 PURL 规范归一化为生态、命名空间、名称与版本；Syft 丢失 Maven group 时，仅接受 `artifact/artifact`、`group.artifact` 或策略中精确审核的别名，且运行时 artifact/version 必须唯一。OS/Go 包的模糊扫描标签按精确组件策略映射为规范许可证，CI 以 `git diff --exit-code` 验证清单与依赖同步。`verify:licenses` 按 `frontend/scripts/license-policy.json` 检查明确允许和拒绝的许可证；CycloneDX `licenses` 数组的每个条目都必须是允许许可证或有效例外，只有 SPDX `expression` 内部使用 `OR` 语义。发布方提供多选许可时，`licenseSelections` 可按精确 PURL 版本选择一个已声明的允许许可证；版本变化会重新阻断审查。缺失或未知许可证阻断。例外必须指定精确组件 PURL、许可证、理由、批准人和到期日，通配符与永久例外无效。
 
 `npm audit --omit=dev` 仅可作为本地辅助命令，不是 CI 门禁；CI 统一使用上述 SBOM 与 Grype 的 HIGH/CRITICAL 漏洞门禁。
 
@@ -118,6 +121,9 @@ $grype = "C:\Users\ZYN\go\bin\grype.exe"
 - `PRELUDE_MYSQL_SMOKE=true`：MySQL 8.4 执行当前 Flyway baseline，验证数据库集成契约与 `demo` 验收数据的确定性重置。
 - `PRELUDE_IDENTITY_SMOKE=true`：真实 MySQL 与 Redis 上的注册登录、Session rotation/revoke、CSRF、Origin 与 profile revision 契约。
 - `PRELUDE_S3_SMOKE=true`：Testcontainers 启动 VersityGW，验证 S3 适配器契约与 Asset 生命周期。
+- `PRELUDE_FLYWAY_SMOKE=true`：对独立空库执行全部 Flyway migration，并要求迁移后无 pending 版本。
+
+`release-smoke` 使用独立 Compose project、临时卷和唯一账号前缀；LLM stub 只替代外部模型服务，MySQL、Redis、RabbitMQ、VersityGW、后端与前端均运行真实镜像。测试关闭 LLM 限流以避免确定性主链路触发 10 次/分钟限额，生产默认仍开启。
 
 开关未设置时对应测试跳过。`PreludeApplicationTest` 无开关，加载完整应用上下文；Spring Session 在装配阶段连接 Redis，因此 `mvn clean test` 仍需要上面 `docker compose up -d` 的服务在跑。本机无法拉取 `testcontainers/ryuk` 时设置 `TESTCONTAINERS_RYUK_DISABLED=true`。
 

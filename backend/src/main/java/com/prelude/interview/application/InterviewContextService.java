@@ -33,10 +33,11 @@ public class InterviewContextService implements InterviewContextPort {
     public List<Map<String, String>> buildContextMessages(Long sessionId) {
         InterviewSession session = interviewSessionRepository.selectById(sessionId);
         List<InterviewMessage> allMessages = listMessages(sessionId);
+        List<InterviewMessage> effectiveMessages = InterviewMessage.effectiveMessages(allMessages);
         List<InterviewMessage> systemMsgs = new ArrayList<>();
         List<InterviewMessage> dialogMsgs = new ArrayList<>();
 
-        for (InterviewMessage message : allMessages) {
+        for (InterviewMessage message : effectiveMessages) {
             if (ROLE_SYSTEM.equals(message.getRole())) {
                 systemMsgs.add(message);
             } else {
@@ -44,7 +45,7 @@ public class InterviewContextService implements InterviewContextPort {
             }
         }
 
-        String latestUserMsg = latestUserMessage(allMessages);
+        String latestUserMsg = latestUserMessage(effectiveMessages);
         if (latestUserMsg.isEmpty() && session != null) {
             latestUserMsg = session.getTargetPosition();
         }
@@ -156,6 +157,7 @@ public class InterviewContextService implements InterviewContextPort {
         }
         return builder.toString();
     }
+
 
     private List<InterviewMessage> listMessages(Long sessionId) {
         return interviewMessageRepository.listBySession(sessionId);

@@ -10,7 +10,7 @@ export type StructuredReportScores = {
   technical: number
   expression: number
   logic: number
-  overall: number
+  overall: number | null
 }
 
 export type StructuredStagePerformance = {

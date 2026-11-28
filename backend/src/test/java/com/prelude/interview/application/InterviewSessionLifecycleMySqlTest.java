@@ -4,6 +4,11 @@ import com.prelude.BusinessException;
 import com.prelude.context.RetrievalChunkStore;
 import com.prelude.context.RetrievalPort;
 import com.prelude.interview.application.repository.InterviewSessionRepository;
+import com.prelude.interview.application.repository.InterviewMessageRepository;
+import com.prelude.interview.application.port.InterviewTurnCommand;
+import com.prelude.interview.application.port.InterviewTurnSink;
+import com.prelude.interview.domain.AssessmentStatus;
+import com.prelude.interview.domain.InterviewMessage;
 import com.prelude.interview.domain.InterviewSession;
 import com.prelude.jobs.integration.JobTypes;
 import com.prelude.test.AccountFixtures;
@@ -19,6 +24,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 /**
  * Proves the session lifecycle guarantees that only a real database can: the
@@ -42,10 +48,16 @@ class InterviewSessionLifecycleMySqlTest {
     private InterviewSessionRepository interviewSessionRepository;
 
     @Autowired
+    private InterviewMessageRepository interviewMessageRepository;
+
+    @Autowired
     private InterviewMessageService interviewMessageService;
 
     @Autowired
     private InterviewTurnCompletion interviewTurnCompletion;
+
+    @Autowired
+    private RunInterviewTurn runInterviewTurn;
 
     @Autowired
     private RetrievalChunkStore retrievalChunkStore;
@@ -85,6 +97,39 @@ class InterviewSessionLifecycleMySqlTest {
         assertThat(count("SELECT COUNT(*) FROM account_weakness WHERE session_id = ?", sessionId)).isZero();
         assertThat(count("SELECT COUNT(*) FROM retrieval_chunk WHERE scope_type = 'session' AND scope_id = ?",
             sessionId)).isZero();
+    }
+
+    @Test
+    void reAnswerPreservesHistoryAndRetryDoesNotDuplicateTheReply() {
+        long accountId = AccountFixtures.create(jdbcTemplate, "reply-lineage");
+        long sessionId = createSession(accountId);
+        insert("INSERT INTO interview_stage (session_id, stage_name, boundary_seq) VALUES (?, 'warmup', -1)", sessionId);
+        InterviewMessage original = interviewMessageService.insertUserMessage(sessionId, "original answer");
+        interviewTurnCompletion.complete(sessionId, original.getId(), "first reply");
+        InterviewTurnSink sink = mock(InterviewTurnSink.class);
+        var retried = runInterviewTurn.execute(
+            new InterviewTurnCommand(sessionId, accountId, "ignored", false, original.getId(), null), sink);
+        InterviewMessage correction = interviewMessageService.insertUserMessage(
+            sessionId, "corrected answer", original.getId());
+
+        assertThat(retried.assistantReply()).isEqualTo("first reply");
+        assertThat(count("SELECT COUNT(*) FROM interview_message WHERE session_id = ? AND role = 'user'", sessionId))
+            .isEqualTo(2);
+        assertThat(count("SELECT COUNT(*) FROM interview_message WHERE session_id = ? AND role = 'assistant'", sessionId))
+            .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT superseded_by_message_id FROM interview_message WHERE id = ?", Long.class, original.getId()))
+            .isEqualTo(correction.getId());
+        InterviewMessage lateAssessment = new InterviewMessage();
+        lateAssessment.setId(original.getId());
+        lateAssessment.setAssessmentStatus(AssessmentStatus.SCORED);
+        lateAssessment.setScore(8);
+        assertThat(interviewMessageRepository.updateAssessmentIfPending(lateAssessment)).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT assessment_status FROM interview_message WHERE id = ?", String.class, original.getId()))
+            .isEqualTo("PENDING");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT score FROM interview_message WHERE id = ?", Integer.class, original.getId())).isNull();
     }
 
     @Test

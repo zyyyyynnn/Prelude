@@ -30,7 +30,7 @@ public class InterviewReportAssembler {
             .sorted(Comparator.comparingInt(InterviewStageSnapshot::boundarySeq)
                 .thenComparing(InterviewStageSnapshot::id, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
-        List<InterviewMessageSnapshot> orderedMessages = safeList(messages).stream()
+        List<InterviewMessageSnapshot> orderedMessages = InterviewMessageSnapshot.effectiveMessages(safeList(messages)).stream()
             .filter(Objects::nonNull)
             .sorted(Comparator.comparing(InterviewMessageSnapshot::seqNum, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
@@ -74,8 +74,8 @@ public class InterviewReportAssembler {
             .map(StructuredInterviewReport.QuestionReview::score)
             .filter(Objects::nonNull)
             .toList();
-        double overall = persistedQuestionScores.isEmpty()
-            ? oneDecimal((technical + expression + logic) / 3.0)
+        Double overall = persistedQuestionScores.isEmpty()
+            ? null
             : oneDecimal(persistedQuestionScores.stream().mapToInt(Integer::intValue).average().orElse(0));
 
         InterviewReportDraft.ReportSummary summary = safeDraft.summary();
@@ -97,6 +97,7 @@ public class InterviewReportAssembler {
             safeDraft.finalAdvice()
         );
     }
+
 
     private List<StructuredInterviewReport.QuestionReview> buildQuestionReviews(
         List<InterviewStageSnapshot> stages,

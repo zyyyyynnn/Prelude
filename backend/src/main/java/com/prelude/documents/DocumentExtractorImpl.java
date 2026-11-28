@@ -11,6 +11,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -30,9 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.jar.Attributes;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 
 @Slf4j
 @Component
@@ -121,6 +120,7 @@ class DocumentExtractorImpl implements DocumentExtractor {
             if (process.exitValue() == 2) {
                 throw BusinessException.badRequest(readChildError(error));
             }
+            log.warn("Document parser exited with code {}: {}", process.exitValue(), readChildDiagnostic(error));
             throw BusinessException.badRequest("文档解析失败，请检查文件格式");
         } catch (InterruptedException exception) {
             Thread.interrupted();
@@ -173,6 +173,16 @@ class DocumentExtractorImpl implements DocumentExtractor {
         }
     }
 
+    private String readChildDiagnostic(Path error) throws IOException {
+        if (!Files.exists(error) || Files.size(error) == 0) {
+            return "";
+        }
+        try (InputStream input = Files.newInputStream(error)) {
+            byte[] bytes = input.readNBytes(MAX_CHILD_ERROR_BYTES);
+            return new String(bytes, StandardCharsets.UTF_8).lines().findFirst().orElse("");
+        }
+    }
+
     private void terminate(Process process) {
         process.destroyForcibly();
         try {
@@ -198,7 +208,7 @@ class DocumentExtractorImpl implements DocumentExtractor {
     private static Process startParserProcess(String format, Path input, Path output, Path error) throws IOException {
         return new ProcessBuilder(parserCommand(DocumentParserProcess.class, format, input, output, error))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-            .redirectError(ProcessBuilder.Redirect.DISCARD)
+            .redirectError(error.toFile())
             .start();
     }
 
@@ -207,6 +217,9 @@ class DocumentExtractorImpl implements DocumentExtractor {
         String executable = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
             ? "java.exe" : "java";
         Path java = Path.of(System.getProperty("java.home"), "bin", executable);
+        if (!Files.isExecutable(java)) {
+            java = ProcessHandle.current().info().command().map(Path::of).orElse(java);
+        }
         List<String> command = new ArrayList<>();
         command.add(java.toString());
         command.add("-Xmx256m");
@@ -231,6 +244,12 @@ class DocumentExtractorImpl implements DocumentExtractor {
     }
 
     private static Path executableSpringBootJar(Class<?> parserClass) throws IOException {
+        for (String entry : System.getProperty("java.class.path").split(File.pathSeparator)) {
+            Path candidate = Path.of(entry).toAbsolutePath();
+            if (Files.isRegularFile(candidate) && isExecutableSpringBootJar(candidate, parserClass)) {
+                return candidate;
+            }
+        }
         CodeSource codeSource = parserClass.getProtectionDomain().getCodeSource();
         if (codeSource == null || codeSource.getLocation() == null) {
             return null;
@@ -253,22 +272,19 @@ class DocumentExtractorImpl implements DocumentExtractor {
         } catch (URISyntaxException exception) {
             throw new IOException("Invalid document parser code source", exception);
         }
-        if (!Files.isRegularFile(candidate)) {
-            return null;
-        }
+        return Files.isRegularFile(candidate) && isExecutableSpringBootJar(candidate, parserClass)
+            ? candidate
+            : null;
+    }
+
+    private static boolean isExecutableSpringBootJar(Path candidate, Class<?> parserClass) {
         try (JarFile jar = new JarFile(candidate.toFile())) {
-            Manifest manifest = jar.getManifest();
-            String mainClass = manifest == null
-                ? null
-                : manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-            if (!"org.springframework.boot.loader.launch.JarLauncher".equals(mainClass)
-                || jar.getJarEntry("org/springframework/boot/loader/launch/PropertiesLauncher.class") == null
-                || jar.getJarEntry("BOOT-INF/classes/"
-                    + parserClass.getName().replace('.', '/') + ".class") == null) {
-                return null;
-            }
+            return jar.getJarEntry("org/springframework/boot/loader/launch/PropertiesLauncher.class") != null
+                && jar.getJarEntry("BOOT-INF/classes/"
+                    + parserClass.getName().replace('.', '/') + ".class") != null;
+        } catch (IOException exception) {
+            return false;
         }
-        return candidate;
     }
 
     private String decodeUtf8(byte[] content) {

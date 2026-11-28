@@ -208,6 +208,27 @@ class InterviewStageManagerTest {
     }
 
     @Test
+    void assistantRepliesToSupersededAnswersDoNotCountTowardTheStageQuota() {
+        harness.stages.add(harness.stage(SESSION_ID, "technical"));
+        var supersededAnswer = harness.userMessage(SESSION_ID, 2);
+        supersededAnswer.setId(3L);
+        supersededAnswer.setSupersededByMessageId(6L);
+        var supersededReply = harness.assistantMessage(SESSION_ID, 3);
+        supersededReply.setId(4L);
+        supersededReply.setReplyToMessageId(3L);
+        harness.messages.add(supersededAnswer);
+        harness.messages.add(supersededReply);
+
+        assertThat(harness.stageManager.assistantRepliesInCurrentStage(SESSION_ID)).isZero();
+
+        var effectiveReply = harness.assistantMessage(SESSION_ID, 5);
+        effectiveReply.setId(5L);
+        effectiveReply.setReplyToMessageId(6L);
+        harness.messages.add(effectiveReply);
+        assertThat(harness.stageManager.assistantRepliesInCurrentStage(SESSION_ID)).isEqualTo(1);
+    }
+
+    @Test
     void assistantRepliesUseThePersistedSequenceBoundary() {
         var technical = harness.stage(SESSION_ID, "technical");
         technical.setBoundarySeq(1);

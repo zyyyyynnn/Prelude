@@ -33,7 +33,8 @@ public class MybatisInterviewMessageRepository implements InterviewMessageReposi
             .set(InterviewMessageEntity::getAssessmentStatus, message.getAssessmentStatus())
             .set(InterviewMessageEntity::getAssessmentError, message.getAssessmentError())
             .eq(InterviewMessageEntity::getId, message.getId())
-            .eq(InterviewMessageEntity::getAssessmentStatus, AssessmentStatus.PENDING));
+            .eq(InterviewMessageEntity::getAssessmentStatus, AssessmentStatus.PENDING)
+            .isNull(InterviewMessageEntity::getSupersededByMessageId));
     }
 
     @Override
@@ -59,6 +60,17 @@ public class MybatisInterviewMessageRepository implements InterviewMessageReposi
     public InterviewMessage findById(Long messageId) {
         InterviewMessageEntity entity = messageMapper.selectById(messageId);
         return entity == null ? null : entity.toDomain();
+    }
+
+    @Override
+    public InterviewMessage findByReplyToMessageId(Long userMessageId) {
+        InterviewMessageEntity entity = messageMapper.findByReplyToMessageId(userMessageId);
+        return entity == null ? null : entity.toDomain();
+    }
+
+    @Override
+    public int markSuperseded(Long messageId, Long supersedingMessageId) {
+        return messageMapper.markSuperseded(messageId, supersedingMessageId);
     }
 
     @Override

@@ -148,15 +148,15 @@ test('rejects wildcard, unexplained, and duplicate license selections', () => {
   assert.throws(
     () =>
       validateLicenseSelections([
-        { component: 'pkg:maven/example@1.0.0', license: 'MIT', reason: 'review' },
-        { component: 'pkg:maven/example@1.0.0', license: 'MIT', reason: 'review' },
+        { component: 'pkg:maven/org.example/example@1.0.0', license: 'MIT', reason: 'review' },
+        { component: 'pkg:maven/org.example/example@1.0.0', license: 'MIT', reason: 'review' },
       ]),
     /duplicated/,
   )
   assert.throws(
     () =>
       validateLicenseSelections([
-        { component: 'pkg:maven/example@1.0.0', license: 'MIT', reason: '' },
+        { component: 'pkg:maven/org.example/example@1.0.0', license: 'MIT', reason: '' },
       ]),
     /requires a reason/,
   )

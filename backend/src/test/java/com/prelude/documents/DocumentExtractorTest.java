@@ -102,6 +102,28 @@ class DocumentExtractorTest {
     }
 
     @Test
+    void classPathJarStartsTheParserThroughPropertiesLauncher(@TempDir Path directory) throws Exception {
+        Path jar = executableSpringBootJar(directory);
+        String originalClassPath = System.getProperty("java.class.path");
+        try {
+            System.setProperty("java.class.path", jar.toString());
+            List<String> command = DocumentExtractorImpl.parserCommand(
+                BootParserFixture.class, "pdf", Path.of("input.pdf"), Path.of("output.txt"), Path.of("error.txt"));
+            assertThat(command).containsSequence(
+                javaExecutable().toString(),
+                "-Xmx256m",
+                "-XX:MaxMetaspaceSize=256m",
+                "-Dloader.main=" + DocumentParserProcess.class.getName(),
+                "-cp",
+                jar.toString(),
+                "org.springframework.boot.loader.launch.PropertiesLauncher"
+            );
+        } finally {
+            System.setProperty("java.class.path", originalClassPath);
+        }
+    }
+
+    @Test
     void directoryClassPathStartsTheParserMainClassDirectly() throws Exception {
         List<String> command = DocumentExtractorImpl.parserCommand(
             DocumentParserProcess.class, "docx", Path.of("input.docx"), Path.of("output.txt"), Path.of("error.txt"));

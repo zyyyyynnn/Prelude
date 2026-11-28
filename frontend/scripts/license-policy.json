@@ -49,16 +49,608 @@
     "polyform-",
     "sspl-"
   ],
+  "allowedContainerToolchainLicenses": [
+    "0BSD",
+    "Apache-2.0",
+    "Artistic-1.0",
+    "Artistic-2.0",
+    "Artistic-dist",
+    "BSD-2-Clause",
+    "BSD-2-clause-author",
+    "BSD-2-clause-verbatim",
+    "BSD-2.2-clause",
+    "BSD-3-Clause",
+    "BSD-3-Clause-Attribution",
+    "BSD-3-Clause-Variant",
+    "BSD-3-clause-Aaron-D-Gifford",
+    "BSD-3-clause-Berkeley",
+    "BSD-3-clause-California",
+    "BSD-3-clause-Cambridge",
+    "BSD-3-clause-Carnegie",
+    "BSD-3-clause-GENERIC",
+    "BSD-3-clause-JANET",
+    "BSD-3-clause-John-Birrell",
+    "BSD-3-clause-Oracle",
+    "BSD-3-clause-PADL",
+    "BSD-3-clause-Regents",
+    "BSD-3-clause-WIDE",
+    "BSD-3-clause-author",
+    "BSD-3-clause-fjord",
+    "BSD-3-clause-variant",
+    "BSD-3-clause-with-weird-numbering",
+    "BSD-4-Clause",
+    "BSD-4-Clause-CMU",
+    "BSD-4-Clause-UC",
+    "BSD-4-clause-California",
+    "BSD-4-clause-POWERDOG",
+    "BSD-5-clause-Peter-Wemm",
+    "BSD-like-Spencer",
+    "BSD-like-with-advertising-clause",
+    "BSD-tcp_wrappers",
+    "BSL-1.0",
+    "BSLA",
+    "BZIP",
+    "Beerware",
+    "Bitstream-Vera",
+    "CC-BY-3.0",
+    "CC-BY-4.0",
+    "CC0-1.0",
+    "CORE-MATH",
+    "Carnegie",
+    "DEC",
+    "DONT-CHANGE-THE-GPL",
+    "Expat",
+    "Expat-ISC",
+    "Expat-UNM",
+    "F5",
+    "FSF-manpages",
+    "FSF-unlimited",
+    "FSFAP",
+    "FSFUL",
+    "FSFULLR",
+    "FSFULLRWD",
+    "FTL",
+    "GAP",
+    "GFDL-1.2-or-later",
+    "GFDL-1.3+-no-invariant",
+    "GFDL-1.3-only",
+    "GFDL-1.3-or-later",
+    "GFDL-NIV-1.3",
+    "GFDL-NIV-1.3+",
+    "GPL-1.0-only",
+    "GPL-1.0-or-later",
+    "GPL-2+-with-link-exception",
+    "GPL-2.0-only",
+    "GPL-2.0-or-later",
+    "GPL-2.0-with-classpath-exception",
+    "GPL-2.with.nonstandard.Autoconf-data.exception",
+    "GPL-3+-WITH-BISON-EXCEPTION",
+    "GPL-3.0-only",
+    "GPL-3.0-only WITH GCC-exception-3.1",
+    "GPL-3.0-or-later",
+    "GPL-3.0-or-later-WITH-Autoconf-exception-macro",
+    "HPND-sell-variant",
+    "IBM",
+    "IBM-as-is",
+    "ICU",
+    "ISC",
+    "ISC-Original",
+    "ISC-no-attribution",
+    "Inner-Net",
+    "JCG",
+    "Kazlib",
+    "LGPL-2.0-only",
+    "LGPL-2.0-or-later",
+    "LGPL-2.1+-with-link-exception",
+    "LGPL-2.1-only",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later",
+    "Latex2e",
+    "Libpng",
+    "MIT",
+    "MIT-CMU",
+    "MIT-Export",
+    "MIT-Modern-Variant",
+    "MIT-OpenVision",
+    "MIT-SMC",
+    "MIT-XC",
+    "MIT-like-Lord",
+    "MIT-old",
+    "MIT/X11",
+    "MPL-1.1",
+    "MPL-2.0",
+    "MS-PL",
+    "NeoSoft-permissive",
+    "OLDAP-2.8",
+    "OpenGroup-MIT",
+    "OpenLDAP",
+    "OpenLDAP-2.8",
+    "PCRE",
+    "Public-Domain",
+    "REGCOMP",
+    "RFC-Reference",
+    "RSA-MD",
+    "SMAIL-GPL",
+    "Sleepycat",
+    "SunPro",
+    "TEXT-TABS",
+    "TinySCHEME",
+    "UMich",
+    "Unicode",
+    "Unicode-DFS-2016",
+    "Univ-Coimbra",
+    "X11",
+    "Zlib",
+    "curl",
+    "customFSFULLRWD",
+    "g10-permissive"
+  ],
   "licenseAliases": {
     "al 2.0": "Apache-2.0",
+    "artistic": "Artistic-1.0",
     "asl 2.0": "Apache-2.0",
-    "gpl v2": "GPL-2.0-only"
+    "bsd3": "BSD-3-Clause",
+    "expat": "Expat",
+    "gpl v2": "GPL-2.0-only",
+    "pcre": "PCRE",
+    "pd": "Public-Domain",
+    "pd-debian": "Public-Domain",
+    "public-domain": "Public-Domain",
+    "public-domain-md4": "Public-Domain",
+    "public-domain-md5": "Public-Domain",
+    "public-domain-s-s-d": "Public-Domain",
+    "public-domain-sha1": "Public-Domain",
+    "sdbm-public-domain": "Public-Domain"
   },
   "licenseSelections": [
     {
-      "component": "pkg:maven/com.rabbitmq/amqp-client@5.37.1?type=jar",
+      "component": "pkg:maven/com.rabbitmq/amqp-client@5.37.1",
       "license": "AL 2.0",
       "reason": "RabbitMQ offers Apache-2.0 as one of three selectable licenses; this project selects the permissive option."
+    }
+  ],
+  "containerToolchainComponents": [
+    {
+      "component": "pkg:maven/org.springframework.boot.loader.launch.JarLauncher/app@1.0.0",
+      "license": "Apache-2.0",
+      "reason": "Spring Boot executable loader metadata for the Prelude application."
+    },
+    {
+      "component": "pkg:maven/com.google.code.gson/gson@2.13.1",
+      "license": "Apache-2.0",
+      "reason": "Spring Boot tooling dependency."
+    },
+    {
+      "component": "pkg:maven/org.javassist/javassist@3.30.2-GA",
+      "license": "LGPL-2.1-only",
+      "reason": "Bytecode transformation library; LGPL is an allowed license."
+    },
+    {
+      "component": "pkg:maven/org.jctools/jctools-core@4.0.7",
+      "license": "Apache-2.0",
+      "reason": "JCTools core library."
+    },
+    {
+      "component": "pkg:maven/org.jctools/jctools-core-jdk11@4.0.7",
+      "license": "Apache-2.0",
+      "reason": "JCTools JDK11 variant."
+    },
+    {
+      "component": "pkg:maven/jrt-fs/jrt-fs@21.0.13.1",
+      "license": "GPL-2.0-with-classpath-exception",
+      "reason": "JDK runtime filesystem provider."
+    },
+    {
+      "component": "pkg:maven/ognl/ognl@3.4.4",
+      "license": "Apache-2.0",
+      "reason": "Expression language used by MyBatis."
+    },
+    {
+      "component": "pkg:generic/oracle/openjdk@21.0.13.1+2-LTS",
+      "license": "GPL-2.0-with-classpath-exception",
+      "reason": "Eclipse Temurin JRE runtime distribution."
+    },
+    {
+      "component": "pkg:maven/com.prelude/prelude-backend@1.0.0",
+      "license": "MIT",
+      "reason": "Prelude application artifact."
+    },
+    {
+      "component": "pkg:maven/spring-boot-jarmode-tools/spring-boot-jarmode-tools@4.1.3",
+      "license": "Apache-2.0",
+      "reason": "Spring Boot runtime tooling."
+    },
+    {
+      "component": "pkg:golang/command-line-arguments@unknown",
+      "license": "MIT",
+      "reason": "Prelude frontend server binary."
+    },
+    {
+      "component": "pkg:deb/ubuntu/gcc-16-base@16-20260322-1ubuntu1",
+      "license": "GPL-3.0-only WITH GCC-exception-3.1",
+      "reason": "GCC runtime package."
+    },
+    {
+      "component": "pkg:golang/github.com/GehirnInc/crypt@v0.0.0-20230320061759-8cc1b52080c5",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/github.com/canonical/go-flags@v0.0.0-20230403090104-105d09a091b8",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/github.com/canonical/pebble@v1.33.3-0.20261021134118-f036f355de35",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/github.com/canonical/x-go@v0.0.0-20230522092633-7947a7587f5b",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/github.com/gorilla/websocket@v1.5.3",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/golang.org/x/sys@v0.48.0",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/golang.org/x/term@v0.46.0",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/gopkg.in/tomb.v2@v2.0.0-20161208151619-d5d1b5820637",
+      "license": "BSD-3-Clause",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/gopkg.in/yaml.v2@v2.4.0",
+      "license": "Apache-2.0",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:golang/gopkg.in/yaml.v3@v3.0.1",
+      "license": "Apache-2.0",
+      "reason": "Ubuntu packaged Go dependency."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libcrypt1@1:4.5.1-1",
+      "license": "LGPL-2.1-or-later",
+      "reason": "Ubuntu libcrypt runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libgcc-s1@16-20260322-1ubuntu1",
+      "license": "GPL-3.0-only WITH GCC-exception-3.1",
+      "reason": "GCC runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libgcrypt20@1.12.0-2ubuntu1.1",
+      "license": "LGPL-2.1-or-later",
+      "reason": "Ubuntu libgcrypt runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libgnutls30t64@3.8.12-2ubuntu1.1",
+      "license": "LGPL-3.0-or-later",
+      "reason": "Ubuntu GnuTLS runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libgssapi-krb5-2@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libk5crypto3@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libkrb5-3@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libkrb5support0@1.22.1-2ubuntu4.1",
+      "license": "MIT",
+      "reason": "Ubuntu Kerberos runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libksba8@1.6.7-2build1",
+      "license": "LGPL-3.0-or-later",
+      "reason": "Ubuntu KSBA runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libstdc%2B%2B6@16-20260322-1ubuntu1",
+      "license": "GPL-3.0-only WITH GCC-exception-3.1",
+      "reason": "GCC C++ runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libtasn1-6@4.21.0-2",
+      "license": "LGPL-2.1-or-later",
+      "reason": "Ubuntu libtasn1 runtime package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/ubuntu-keyring@2023.11.28.1build1",
+      "license": "GPL-2.0-or-later",
+      "reason": "Ubuntu keyring package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/wget@1.25.0-2ubuntu4.4",
+      "license": "GPL-3.0-or-later",
+      "reason": "Ubuntu wget package."
+    },
+    {
+      "component": "pkg:deb/ubuntu/base-files@14ubuntu6.3",
+      "licenses": ["GPL-2.0-or-later"],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/bash@5.3-2ubuntu1",
+      "licenses": [
+        "BSD-4-Clause-UC",
+        "GFDL-1.3-only",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "Latex2e",
+        "GFDL-NIV-1.3"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/dirmngr@2.4.8-4ubuntu3.1",
+      "licenses": [
+        "BSD-3-Clause",
+        "CC0-1.0",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Expat",
+        "RFC-Reference",
+        "TinySCHEME"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/gnupg@2.4.8-4ubuntu3.1",
+      "licenses": [
+        "BSD-3-Clause",
+        "CC0-1.0",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Expat",
+        "RFC-Reference",
+        "TinySCHEME"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/gpg@2.4.8-4ubuntu3.1",
+      "licenses": [
+        "BSD-3-Clause",
+        "CC0-1.0",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Expat",
+        "RFC-Reference",
+        "TinySCHEME"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/gpg-agent@2.4.8-4ubuntu3.1",
+      "licenses": [
+        "BSD-3-Clause",
+        "CC0-1.0",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Expat",
+        "RFC-Reference",
+        "TinySCHEME"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/gpgconf@2.4.8-4ubuntu3.1",
+      "licenses": [
+        "BSD-3-Clause",
+        "CC0-1.0",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Expat",
+        "RFC-Reference",
+        "TinySCHEME"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/gpgsm@2.4.8-4ubuntu3.1",
+      "licenses": [
+        "BSD-3-Clause",
+        "CC0-1.0",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Expat",
+        "RFC-Reference",
+        "TinySCHEME"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/gpgv@2.4.8-4ubuntu3.1",
+      "licenses": [
+        "BSD-3-Clause",
+        "CC0-1.0",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Expat",
+        "RFC-Reference",
+        "TinySCHEME"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libbz2-1.0@1.0.8-6ubuntu0.1",
+      "licenses": ["BSD-4-Clause", "GPL-2.0-only"],
+      "reason": "bzip2 uses the BSD-4-Clause license; Debian metadata also lists GPL-2.0-only."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libdb5.3t64@5.3.28+dfsg2-10ubuntu1",
+      "licenses": [
+        "BSD-3-Clause",
+        "GPL-3.0-only",
+        "MS-PL",
+        "Sleepycat",
+        "X11",
+        "Zlib",
+        "Artistic-1.0",
+        "BSD-3-clause-fjord",
+        "MIT-old"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/liblzma5@5.8.3-1ubuntu0.1",
+      "licenses": [
+        "0BSD",
+        "FSFUL",
+        "FSFULLR",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "GPL-3.0-or-later-WITH-Autoconf-exception-macro",
+        "Public-Domain"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libnghttp2-14@1.68.0-2ubuntu0.2",
+      "licenses": ["BSD-2-Clause", "GPL-3.0-only", "GPL-3.0-or-later", "MIT", "Expat"],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libpsl5t64@0.21.2-1.1build2",
+      "licenses": ["MIT"],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/libunistring5@1.3-2build1",
+      "licenses": [
+        "BSD-3-Clause",
+        "GFDL-1.2-or-later",
+        "GFDL-1.3-or-later",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3.0-only",
+        "GPL-3.0-or-later",
+        "ISC",
+        "LGPL-2.0-only",
+        "LGPL-2.0-or-later",
+        "LGPL-2.1-only",
+        "LGPL-2.1-or-later",
+        "LGPL-3.0-only",
+        "LGPL-3.0-or-later",
+        "Unicode-DFS-2016",
+        "X11",
+        "Public-Domain"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/perl-base@5.40.1-7ubuntu0.3",
+      "licenses": [
+        "Artistic-1.0",
+        "Artistic-2.0",
+        "Artistic-dist",
+        "BSD-3-Clause",
+        "BSD-3-clause-GENERIC",
+        "BSD-3-clause-with-weird-numbering",
+        "BSD-4-clause-POWERDOG",
+        "BZIP",
+        "DONT-CHANGE-THE-GPL",
+        "Expat",
+        "FSFAP",
+        "GPL-1.0-only",
+        "GPL-1.0-or-later",
+        "GPL-2.0-only",
+        "GPL-2.0-or-later",
+        "GPL-3+-WITH-BISON-EXCEPTION",
+        "LGPL-2.1-only",
+        "REGCOMP",
+        "Public-Domain",
+        "TEXT-TABS",
+        "Unicode",
+        "Zlib"
+      ],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/rust-coreutils@0.10.0-1ubuntu2~26.04.1",
+      "licenses": ["Apache-2.0", "CC-BY-4.0", "MIT"],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    },
+    {
+      "component": "pkg:deb/ubuntu/sensible-utils@0.0.26build1",
+      "licenses": ["GPL-2.0-only", "GPL-2.0-or-later"],
+      "reason": "Ubuntu package copyright metadata contains scanner classifications; policy retains its specific license identifiers."
+    }
+  ],
+  "containerRuntimeAliases": [
+    {
+      "image": "pkg:maven/org.objectweb.asm/asm@9.11.1",
+      "runtime": "pkg:maven/org.ow2.asm/asm@9.11.1",
+      "reason": "Syft uses the ASM project namespace while the runtime SBOM uses the Maven group."
     }
   ],
   "exceptions": []

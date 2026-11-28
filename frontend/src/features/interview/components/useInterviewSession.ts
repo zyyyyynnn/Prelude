@@ -4,7 +4,7 @@ import { fetchSession, finishInterview, streamInterview } from '../api'
 import { interviewQueryKeys } from '../query-keys'
 import type { InterviewMessageRecord, InterviewSessionDetailResponse } from '../types'
 import { applyMessageUpdate } from './message-updates'
-import { buildOptimisticTurn, shouldAutoStart } from './turn-buffer'
+import { buildOptimisticTurn, retryOrSupersedeTarget, shouldAutoStart } from './turn-buffer'
 import { handleInterviewStreamEvent, type SessionReportCache } from './interview-turn-stream'
 
 export function useInterviewSession(sessionId: number, onError: (message: string) => void) {
@@ -42,21 +42,30 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     mutationFn: async ({
       content,
       autoStart = false,
+      retryOfMessageId,
+      supersedesMessageId,
     }: {
       content: string
       autoStart?: boolean
+      retryOfMessageId?: number
+      supersedesMessageId?: number
     }) => {
       const {
         messages: base,
         assistantId,
         context,
-      } = buildOptimisticTurn(visibleMessages, content, autoStart)
+      } = buildOptimisticTurn(visibleMessages, content, autoStart, Date.now(), retryOfMessageId)
       setMessages(base)
       abort.current?.abort()
       abort.current = new AbortController()
       await streamInterview(
         sessionId,
-        { content, messages: context },
+        {
+          content,
+          messages: context,
+          ...(retryOfMessageId == null ? {} : { retryOfMessageId }),
+          ...(supersedesMessageId == null ? {} : { supersedesMessageId }),
+        },
         (event) =>
           handleInterviewStreamEvent(event, assistantId, sessionId, sessionCache, {
             updateMessage,
@@ -123,7 +132,9 @@ export function useInterviewSession(sessionId: number, onError: (message: string
     setShowReport,
     sending: send.isPending,
     finishing: finish.isPending,
-    send: (content: string) => send.mutate({ content }),
+    send: (content: string) => {
+      send.mutate({ content, ...retryOrSupersedeTarget(visibleMessages.at(-1), content) })
+    },
     finish: () => finish.mutate(),
     updateMessage,
     refresh: () => void session.refetch(),

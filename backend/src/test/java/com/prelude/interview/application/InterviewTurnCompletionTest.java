@@ -18,6 +18,8 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +42,7 @@ class InterviewTurnCompletionTest {
         dataSource.setUrl("jdbc:h2:mem:turn-completion-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
         dataSource.setUsername("sa");
         jdbc = new JdbcTemplate(dataSource);
-        jdbc.execute("CREATE TABLE interview_message (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id BIGINT, role VARCHAR(16), content VARCHAR(1000), seq_num INT, assessment_status VARCHAR(16), created_at TIMESTAMP)");
+        jdbc.execute("CREATE TABLE interview_message (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id BIGINT, role VARCHAR(16), content VARCHAR(1000), seq_num INT, assessment_status VARCHAR(16), superseded_by_message_id BIGINT, reply_to_message_id BIGINT, created_at TIMESTAMP)");
         jdbc.execute("CREATE TABLE interview_stage (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id BIGINT, stage_name VARCHAR(32), boundary_seq INT, awaiting_answer BOOLEAN, started_at TIMESTAMP, ended_at TIMESTAMP)");
         jdbc.update("INSERT INTO interview_message (session_id, role, content, seq_num, created_at) VALUES (7, 'system', 'opening', 0, CURRENT_TIMESTAMP)");
         jdbc.update("INSERT INTO interview_stage (session_id, stage_name, boundary_seq, awaiting_answer, started_at) VALUES (7, 'warmup', 0, FALSE, CURRENT_TIMESTAMP)");
@@ -74,6 +76,18 @@ class InterviewTurnCompletionTest {
     }
 
     @Test
+    void assistantReplyKeepsTheAcceptedUserMessageLink() {
+        jdbc.update("INSERT INTO interview_message (session_id, role, content, seq_num, assessment_status, created_at) VALUES (7, 'user', 'answer', 1, 'PENDING', CURRENT_TIMESTAMP)");
+        Long userMessageId = jdbc.queryForObject("SELECT MAX(id) FROM interview_message", Long.class);
+
+        completion.complete(7L, userMessageId, "assistant reply");
+
+        assertThat(jdbc.queryForObject(
+            "SELECT reply_to_message_id FROM interview_message WHERE role = 'assistant'", Long.class))
+            .isEqualTo(2L);
+    }
+
+    @Test
     void stageFailureRollsBackTheAssistantMessage() {
         stages.failNextAdd = true;
 
@@ -98,11 +112,27 @@ class InterviewTurnCompletionTest {
     }
 
     private class JdbcMessageRepository implements InterviewMessageRepository {
+        private InterviewMessage map(ResultSet rs) throws SQLException {
+            InterviewMessage message = new InterviewMessage();
+            message.setId(rs.getLong("id"));
+            message.setSessionId(rs.getLong("session_id"));
+            message.setRole(rs.getString("role"));
+            message.setContent(rs.getString("content"));
+            message.setSeqNum(rs.getInt("seq_num"));
+            String status = rs.getString("assessment_status");
+            message.setAssessmentStatus(status == null ? null : AssessmentStatus.valueOf(status));
+            message.setSupersededByMessageId(rs.getObject("superseded_by_message_id", Long.class));
+            message.setReplyToMessageId(rs.getObject("reply_to_message_id", Long.class));
+            message.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+            return message;
+        }
+
         @Override
         public int add(InterviewMessage message) {
-            jdbc.update("INSERT INTO interview_message (session_id, role, content, seq_num, assessment_status, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            jdbc.update("INSERT INTO interview_message (session_id, role, content, seq_num, assessment_status, reply_to_message_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 message.getSessionId(), message.getRole(), message.getContent(), message.getSeqNum(),
-                message.getAssessmentStatus() == null ? null : message.getAssessmentStatus().name(), LocalDateTime.now());
+                message.getAssessmentStatus() == null ? null : message.getAssessmentStatus().name(),
+                message.getReplyToMessageId(), LocalDateTime.now());
             message.setId(jdbc.queryForObject("SELECT MAX(id) FROM interview_message", Long.class));
             return 1;
         }
@@ -136,38 +166,32 @@ class InterviewTurnCompletionTest {
         @Override
         public InterviewMessage findLatestForAppend(Long sessionId) {
             return jdbc.query("SELECT * FROM interview_message WHERE session_id = ? ORDER BY seq_num DESC LIMIT 1",
-                (rs, rowNum) -> {
-                    InterviewMessage message = new InterviewMessage();
-                    message.setId(rs.getLong("id"));
-                    message.setSessionId(rs.getLong("session_id"));
-                    message.setRole(rs.getString("role"));
-                    message.setContent(rs.getString("content"));
-                    message.setSeqNum(rs.getInt("seq_num"));
-                    String status = rs.getString("assessment_status");
-                    message.setAssessmentStatus(status == null ? null : AssessmentStatus.valueOf(status));
-                    message.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-                    return message;
-                }, sessionId).stream().findFirst().orElse(null);
+                (rs, rowNum) -> map(rs), sessionId).stream().findFirst().orElse(null);
         }
 
         @Override
         public InterviewMessage findById(Long messageId) {
-            return null;
+            return jdbc.query("SELECT * FROM interview_message WHERE id = ?", (rs, rowNum) -> map(rs), messageId)
+                .stream().findFirst().orElse(null);
+        }
+
+        @Override
+        public InterviewMessage findByReplyToMessageId(Long userMessageId) {
+            return jdbc.query("SELECT * FROM interview_message WHERE reply_to_message_id = ?",
+                (rs, rowNum) -> map(rs), userMessageId).stream().findFirst().orElse(null);
+        }
+
+        @Override
+        public int markSuperseded(Long messageId, Long supersedingMessageId) {
+            return jdbc.update(
+                "UPDATE interview_message SET superseded_by_message_id = ? WHERE id = ? AND superseded_by_message_id IS NULL",
+                supersedingMessageId, messageId);
         }
 
         @Override
         public List<InterviewMessage> listBySession(Long sessionId) {
             return jdbc.query("SELECT * FROM interview_message WHERE session_id = ? ORDER BY seq_num",
-                (rs, rowNum) -> {
-                    InterviewMessage message = new InterviewMessage();
-                    message.setId(rs.getLong("id"));
-                    message.setSessionId(rs.getLong("session_id"));
-                    message.setRole(rs.getString("role"));
-                    message.setContent(rs.getString("content"));
-                    message.setSeqNum(rs.getInt("seq_num"));
-                    message.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-                    return message;
-                }, sessionId);
+                (rs, rowNum) -> map(rs), sessionId);
         }
 
         @Override

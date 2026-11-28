@@ -1,5 +1,5 @@
 import { expect, test } from 'vite-plus/test'
-import { buildOptimisticTurn, shouldAutoStart } from './turn-buffer'
+import { buildOptimisticTurn, retryOrSupersedeTarget, shouldAutoStart } from './turn-buffer'
 
 test('a user turn appends optimistic user and assistant rows', () => {
   const built = buildOptimisticTurn([], 'hello', false, 1000)
@@ -24,6 +24,21 @@ test('the prompt context drops the empty assistant row and caps the window', () 
   expect(built.context).toHaveLength(20)
   expect(built.context.at(-1)?.content).toBe('hello')
   expect(built.context.every((item) => item.id !== built.assistantId)).toBe(true)
+})
+
+test('a retry keeps the accepted user row and only reserves an assistant placeholder', () => {
+  const visible = [{ id: 9, role: 'user' as const, content: 'accepted answer' }]
+  const built = buildOptimisticTurn(visible, 'ignored', false, 1000, 9)
+  expect(built.messages.map((item) => item.role)).toEqual(['user', 'assistant'])
+  expect(built.messages[0].id).toBe(9)
+  expect(built.context.at(-1)?.id).toBe(9)
+})
+
+test('retries identical content and supersedes changed content', () => {
+  const accepted = { id: 9, role: 'user' as const, content: 'answer' }
+  expect(retryOrSupersedeTarget(accepted, ' answer ')).toEqual({ retryOfMessageId: 9 })
+  expect(retryOrSupersedeTarget(accepted, 'corrected answer')).toEqual({ supersedesMessageId: 9 })
+  expect(retryOrSupersedeTarget(undefined, 'answer')).toEqual({})
 })
 
 test('auto-start runs once for an empty unfinished session', () => {

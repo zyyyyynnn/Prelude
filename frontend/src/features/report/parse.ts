@@ -94,7 +94,7 @@ export function parseInterviewReport(source: string): ParsedInterviewReport {
     const technical = score(dimensions.technical)
     const expression = score(dimensions.expression)
     const logic = score(dimensions.logic)
-    const overall = score(dimensions.overall)
+    const overall = dimensions.overall === null ? null : score(dimensions.overall)
     const finalAdvice = requiredText(parsed.finalAdvice)
     if (
       !fitAssessment ||
@@ -103,7 +103,7 @@ export function parseInterviewReport(source: string): ParsedInterviewReport {
       technical == null ||
       expression == null ||
       logic == null ||
-      overall == null ||
+      (dimensions.overall !== null && overall == null) ||
       !finalAdvice
     ) {
       return { kind: 'plain', text: raw }
