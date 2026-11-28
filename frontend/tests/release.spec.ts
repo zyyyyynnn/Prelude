@@ -73,7 +73,7 @@ async function postChat(page: Page, sessionId: number, content: string, autoStar
 }
 
 async function login(page: Page, username: string, password: string) {
-  await page.goto('/login')
+  if (!/\/login(?:\?|$)/.test(page.url())) await page.goto('/login')
   await page.getByLabel('用户名').fill(username)
   await page.getByLabel('密码', { exact: true }).fill(password)
   await page.locator('form').getByRole('button', { name: '登录', exact: true }).click()
