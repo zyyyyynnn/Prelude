@@ -21,7 +21,7 @@ type StartedSession = { sessionId: number }
 type SessionItem = { sessionId: number }
 type SessionDetail = {
   currentStage: string
-  messages: Array<{ role: string; assessmentStatus?: string }>
+  messages: Array<{ id: number; role: string; assessmentStatus?: string }>
 }
 type FinishResult = { status: string; jobId: string }
 type JobView = { status: string }
@@ -54,7 +54,13 @@ async function api<T = unknown>(
   return payload.data as T
 }
 
-async function postChat(page: Page, sessionId: number, content: string, autoStart = false) {
+async function postChat(
+  page: Page,
+  sessionId: number,
+  content: string,
+  autoStart = false,
+  retryOfMessageId?: number,
+) {
   const cookies = await page.context().cookies()
   const csrf = cookies.find((cookie) => cookie.name === 'XSRF-TOKEN')?.value
   const response = await page.request.post(
@@ -65,11 +71,11 @@ async function postChat(page: Page, sessionId: number, content: string, autoStar
         'Content-Type': 'application/json',
         ...(csrf ? { 'X-XSRF-TOKEN': csrf } : {}),
       },
-      data: { content },
+      data: { content, ...(retryOfMessageId == null ? {} : { retryOfMessageId }) },
     },
   )
   const body = await response.text()
-  expect(response.ok(), body).toBeTruthy()
+  return { response, body }
 }
 
 async function login(page: Page, username: string, password: string) {
@@ -208,6 +214,43 @@ test('@release primary interview path works against real services', async ({ pag
       )
       const answers = detail.messages.filter((message) => message.role === 'user')
       return answers.at(-1)?.assessmentStatus
+    })
+    .toBe('SCORED')
+
+  const failureToken = `release-${Date.now()}`
+  const failed = await postChat(
+    page,
+    started.sessionId,
+    `[RELEASE_FAIL:${failureToken}:3] 故障恢复测试回答`,
+  )
+  expect(failed.response.ok(), failed.body).toBeFalsy()
+  const afterFailure = await api<SessionDetail>(
+    page,
+    'GET',
+    `/interview/${started.sessionId}/messages`,
+  )
+  const failedAnswer = afterFailure.messages.filter((message) => message.role === 'user').at(-1)
+  expect(failedAnswer).toBeDefined()
+  expect(afterFailure.messages.filter((message) => message.role === 'user')).toHaveLength(7)
+  const retried = await postChat(page, started.sessionId, 'ignored', false, failedAnswer!.id)
+  expect(retried.response.ok(), retried.body).toBeTruthy()
+  await page.reload()
+  await expect(page.getByText(answer)).toHaveCount(8)
+  const afterRetry = await api<SessionDetail>(
+    page,
+    'GET',
+    `/interview/${started.sessionId}/messages`,
+  )
+  expect(afterRetry.messages.filter((message) => message.role === 'user')).toHaveLength(7)
+  expect(afterRetry.messages.filter((message) => message.role === 'assistant')).toHaveLength(8)
+  await expect
+    .poll(async () => {
+      const detail = await api<SessionDetail>(
+        page,
+        'GET',
+        `/interview/${started.sessionId}/messages`,
+      )
+      return detail.messages.filter((message) => message.role === 'user').at(-1)?.assessmentStatus
     })
     .toBe('SCORED')
 

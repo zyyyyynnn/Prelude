@@ -19,6 +19,17 @@ test('rejects a missing retry policy', () => {
   assert.throws(() => verifyRetries('export default {}', 'playwright.config.ts'), /explicit zero/)
 })
 
+test('rejects a later nonzero retry policy', () => {
+  assert.throws(
+    () =>
+      verifyRetries(
+        'export default { retries: 0, nested: { retries: 2 } }',
+        'playwright.config.ts',
+      ),
+    /remain zero/,
+  )
+})
+
 test('rejects a computed retry policy', () => {
   assert.throws(
     () =>

@@ -70,6 +70,11 @@ jobs:
         working-directory: frontend
         run: npm run verify:licenses
 
+      - name: Verify container licenses
+        run: |
+          node --test frontend/scripts/verify-container-licenses.test.cjs
+          node frontend/scripts/verify-container-licenses.cjs backend/target/bom.json frontend/output/sbom.cdx.json backend/target/image-bom.json frontend/output/image-sbom.cdx.json
+
       - name: Verify container license notices
         run: |
           docker create --name prelude-backend-notice prelude-backend:ci
@@ -126,6 +131,17 @@ jobs:
           severity-cutoff: high
           output-format: json
           output-file: frontend-image-vulnerabilities.json
+
+      - name: Package scanned runtime images
+        run: docker save prelude-backend:ci prelude-frontend:ci | gzip > runtime-images.tar.gz
+
+      - name: Upload scanned runtime images
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: runtime-images
+          path: runtime-images.tar.gz
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Upload dependency scan evidence
         if: ${{ !cancelled() }}
@@ -383,10 +399,16 @@ jobs:
         working-directory: frontend
         run: npx playwright install chromium
 
-      - name: Build release images
+      - name: Download scanned runtime images
+        uses: actions/download-artifact@v4.3.0
+        with:
+          name: runtime-images
+
+      - name: Load scanned runtime images
         run: |
-          docker build -t prelude/backend:release ./backend
-          docker build -t prelude/frontend:release ./frontend
+          docker load -i runtime-images.tar.gz
+          docker tag prelude-backend:ci prelude/backend:release
+          docker tag prelude-frontend:ci prelude/frontend:release
 
       - name: Start isolated release services
         run: docker compose -f docker-compose.yml -f docker-compose.release-smoke.yml up -d --wait --wait-timeout 180

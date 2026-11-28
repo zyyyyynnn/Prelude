@@ -61,5 +61,52 @@
       "reason": "RabbitMQ offers Apache-2.0 as one of three selectable licenses; this project selects the permissive option."
     }
   ],
+  "containerToolchainComponents": [
+    {
+      "component": "app@1.0.0",
+      "license": "Apache-2.0",
+      "reason": "Spring Boot executable loader metadata for the Prelude application."
+    },
+    {
+      "component": "gson@2.13.1",
+      "license": "Apache-2.0",
+      "reason": "Spring Boot tooling dependency."
+    },
+    {
+      "component": "javassist@3.30.2-GA",
+      "license": "LGPL-2.1-only",
+      "reason": "Bytecode transformation library; LGPL is an allowed license."
+    },
+    {
+      "component": "jctools-core@4.0.7",
+      "license": "Apache-2.0",
+      "reason": "JCTools core library."
+    },
+    {
+      "component": "jctools-core-jdk11@4.0.7",
+      "license": "Apache-2.0",
+      "reason": "JCTools JDK11 variant."
+    },
+    {
+      "component": "jrt-fs@21.0.13.1",
+      "license": "GPL-2.0-with-classpath-exception",
+      "reason": "JDK runtime filesystem provider."
+    },
+    {
+      "component": "ognl@3.4.4",
+      "license": "Apache-2.0",
+      "reason": "Expression language used by MyBatis."
+    },
+    {
+      "component": "prelude-backend@1.0.0",
+      "license": "MIT",
+      "reason": "Prelude application artifact."
+    },
+    {
+      "component": "spring-boot-jarmode-tools@4.1.3",
+      "license": "Apache-2.0",
+      "reason": "Spring Boot runtime tooling."
+    }
+  ],
   "exceptions": []
 }

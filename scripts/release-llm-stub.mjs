@@ -2,6 +2,21 @@ import http from 'node:http'
 
 const port = Number(process.env.PORT || 8080)
 const answer = '这是来自真实服务链路的测试回答。'
+const injectedFailures = new Map()
+
+function shouldFail(messages) {
+  const content = (messages || []).map((message) => message.content || '').join('\n')
+  const match = content.match(/\[RELEASE_FAIL:([^\]:]+):(\d+)\]/)
+  if (!match) return false
+  const [, token, configured] = match
+  const remaining = injectedFailures.get(token) ?? Number(configured)
+  if (remaining <= 0) {
+    injectedFailures.delete(token)
+    return false
+  }
+  injectedFailures.set(token, remaining - 1)
+  return true
+}
 
 function json(response, status, body) {
   response.writeHead(status, { 'content-type': 'application/json' })
@@ -78,6 +93,9 @@ const server = http.createServer(async (request, response) => {
   }
   if (request.method === 'POST' && url.pathname === '/v1/chat/completions') {
     const body = JSON.parse(await readBody(request))
+    if (shouldFail(body.messages)) {
+      return json(response, 500, { error: { message: 'Injected release failure', type: 'server_error' } })
+    }
     const content = completionFor(body.messages)
     if (body.stream) {
       response.writeHead(200, {

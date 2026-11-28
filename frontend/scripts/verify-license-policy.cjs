@@ -17,6 +17,7 @@ function loadPolicy(filePath = policyPath) {
     'allowedLicenseExceptions',
     'deniedLicenseFamilies',
     'licenseSelections',
+    'containerToolchainComponents',
     'exceptions',
   ]) {
     if (!Array.isArray(policy[key])) throw new Error(`license policy ${key} must be an array`)
@@ -26,7 +27,28 @@ function loadPolicy(filePath = policyPath) {
   }
   validateExceptions(policy.exceptions)
   validateLicenseSelections(policy.licenseSelections)
+  validateContainerToolchainComponents(policy.containerToolchainComponents)
   return policy
+}
+
+function validateContainerToolchainComponents(components) {
+  const seen = new Set()
+  for (const component of components) {
+    if (
+      !component.component ||
+      component.component.includes('*') ||
+      !component.license ||
+      !component.reason?.trim()
+    ) {
+      throw new Error(
+        'container toolchain components require an exact artifact, license, and reason',
+      )
+    }
+    if (seen.has(component.component)) {
+      throw new Error(`container toolchain component ${component.component} is duplicated`)
+    }
+    seen.add(component.component)
+  }
 }
 
 function validateLicenseSelections(selections) {

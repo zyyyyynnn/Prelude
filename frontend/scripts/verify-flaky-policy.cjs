@@ -6,11 +6,11 @@ const path = require('node:path')
 const root = path.resolve(__dirname, '..')
 
 function verifyRetries(source, file) {
-  const retries = source.match(/\bretries:\s*(\d+)\s*,?/)
-  if (!retries) {
+  const retries = [...source.matchAll(/\bretries:\s*(\d+)\s*,?/g)]
+  if (retries.length === 0) {
     throw new Error(`${file}: Playwright retries must be an explicit zero`)
   }
-  if (Number(retries[1]) !== 0) {
+  if (retries.some((match) => Number(match[1]) !== 0)) {
     throw new Error(
       `${file}: Playwright retries must remain zero; register a dated flaky-test record instead`,
     )
